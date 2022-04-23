@@ -3,6 +3,7 @@
 namespace Psalm\Tests;
 
 use DOMDocument;
+use Generator;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
@@ -17,6 +18,7 @@ use Psalm\Report\ReportOptions;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
+use function explode;
 use function file_get_contents;
 use function json_decode;
 use function ob_end_clean;
@@ -25,6 +27,8 @@ use function preg_replace;
 use function unlink;
 
 use const JSON_THROW_ON_ERROR;
+
+use const PHP_EOL;
 
 class ReportOutputTest extends TestCase
 {
@@ -1322,5 +1326,97 @@ EOF;
     private function toUnixLineEndings(string $output): string
     {
         return preg_replace('~\r\n?~', "\n", $output);
+    }
+
+    /**
+     * @dataProvider outputProvider()
+     */
+    public function testConsoleReportWithPrettyPrint(string $file_contents, $expected_output): void
+    {
+        $this->addFile(
+            'somefile.php',
+            $file_contents
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $console_report_options = new ReportOptions();
+        $console_report_options->use_color = false;
+        $console_report_options->show_info = false;
+        $console_report_options->pretty_print_array = true;
+
+        $output = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
+        foreach (explode(PHP_EOL, $expected_output) as $line) {
+            $this->assertStringContainsString($line, $output);
+        }
+    }
+
+    /**
+     * @return Generator<string, array<string>>
+     */
+    public function outputProvider(): Generator
+    {
+        $file_contents = <<<'EOT'
+<?php
+/**
+ * @return array<int>
+ */
+function request(): array
+{
+ return [ "aa" => "bar"];
+}
+
+function accept(array $input): void
+{
+    $v = $input["foo"];
+}
+
+accept(request());
+';
+EOT;
+
+        $exp = <<<"EOT"
+| Expected                                           | Provided
+| ---                                                | ---
+| array {                                            | array {
+|  array-key,                                        |  aa: 'bar'
+|  int                                               | }
+| }                                                  |
+|                                                    |
+EOT;
+
+        yield 'C1' => [$file_contents, $exp];
+
+
+        $file_contents = <<<'EOT'
+<?php
+/**
+ * @return array<string>
+ */
+function request(): array
+{
+ return [ "aa" => 111];
+}
+
+function accept(array $input): void
+{
+    $v = $input["foo"];
+}
+
+accept(request());
+';
+EOT;
+
+        $exp = <<<"EOT"
+| Expected                                           | Provided
+| ---                                                | ---
+| array {                                            | array {
+|  array-key,                                        |  aa: 111
+|  string                                            | }
+| }                                                  |
+|                                                    |
+EOT;
+
+        yield 'C2' => [$file_contents, $exp];
     }
 }
