@@ -196,9 +196,10 @@ function shuffle(array &$array): bool
 
 /**
  * @psalm-template T
+ * @psalm-template TArray as T[]
  *
- * @param T[] $array
- * @param-out list<T> $array
+ * @param TArray $array
+ * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $array
  */
 function sort(array &$array, int $flags = SORT_REGULAR): bool
 {
