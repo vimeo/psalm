@@ -1778,7 +1778,7 @@ class ArrayFunctionCallTest extends TestCase
             'rsort' => [
                 '<?php
                     $array = ["foo" => 123, "bar" => 456];
-                    sort($array);',
+                    rsort($array);',
                 'assertions' => [
                     '$array' => 'list<int>',
                 ],
