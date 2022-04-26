@@ -128,11 +128,7 @@ class TextDocument
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
-        if ($this->project_analyzer->onchange_line_limit === 0) {
-            return;
-        }
-
-        if (count($contentChanges) === 1 && isset($contentChanges[0]) && $contentChanges[0]->range === null) {
+        if (count($contentChanges) === 1 && $contentChanges[0]->range === null) {
             $new_content = $contentChanges[0]->text;
         } else {
             throw new UnexpectedValueException('Not expecting partial diff');

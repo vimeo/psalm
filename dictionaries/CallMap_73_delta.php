@@ -26,7 +26,7 @@ return [
     'JsonException::getLine' => ['int'],
     'JsonException::getMessage' => ['string'],
     'JsonException::getPrevious' => ['?Throwable'],
-    'JsonException::getTrace' => ['list<array{file:string,line:int,function:string,class?:string,type?:\'::\'|\'->\',args?:array<mixed>}>'],
+    'JsonException::getTrace' => ['list<array{file?:string,line?:int,function:string,class?:class-string,type?:\'::\'|\'->\',args?:array<mixed>}>'],
     'JsonException::getTraceAsString' => ['string'],
     'SplPriorityQueue::isCorrupted' => ['bool'],
     'array_key_first' => ['int|string|null', 'array'=>'array'],
