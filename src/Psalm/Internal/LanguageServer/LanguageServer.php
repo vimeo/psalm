@@ -880,8 +880,13 @@ class LanguageServer extends Dispatcher
      */
     public function log(int $type, string $message, array $context = []): void
     {
-        if ($this->client->clientConfiguration->logLevel < $type) {
-            //return;
+        $logLevel = $this->client->clientConfiguration->logLevel;
+        if ($logLevel === null) {
+            return;
+        }
+
+        if ($logLevel < $type) {
+            return;
         }
 
         if (!empty($context)) {

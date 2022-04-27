@@ -356,6 +356,8 @@ HELP;
 
         if (isset($options['verbose'])) {
             $clientConfiguration->logLevel = $options['verbose'] ? MessageType::LOG : MessageType::INFO;
+        } else {
+            $clientConfiguration->logLevel = MessageType::INFO;
         }
 
         $clientConfiguration->TCPServerAddress = $options['tcp'] ?? null;
