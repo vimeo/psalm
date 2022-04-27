@@ -753,9 +753,8 @@ class AttributeTest extends TestCase
                     }
                 ',
                 'error_message' => 'UndefinedConstant',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
