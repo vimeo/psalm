@@ -885,7 +885,7 @@ class LanguageServer extends Dispatcher
             return;
         }
 
-        if ($logLevel < $type) {
+        if ($type < $logLevel) {
             return;
         }
 
