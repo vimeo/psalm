@@ -367,7 +367,7 @@ class Pool
             }
 
             // For each stream that was ready, read the content.
-            foreach ($needs_read as $file) {
+            foreach ((array)$needs_read as $file) {
                 $buffer = fread($file, 1_024);
                 if ($buffer !== false) {
                     $content[(int)$file] .= $buffer;
