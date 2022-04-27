@@ -85,10 +85,9 @@ class LanguageClient
                 if ($error) {
                     $this->server->logError('There was an error getting configuration');
                 } else {
-                    /** @var array<int, array> $value */
+                    /** @var array<int, object> $value */
                     [$config] = $value;
-                    $this->mapper->map($config, $this->clientConfiguration);
-                    $this->configurationRefreshed();
+                    $this->configurationRefreshed((array) $config);
                 }
             });
         }
@@ -153,9 +152,18 @@ class LanguageClient
         );
     }
 
-    private function configurationRefreshed(): void
+    /**
+     * Configuration Refreshed from Client
+     *
+     * @param array $config
+     */
+    private function configurationRefreshed(array $config): void
     {
         //do things when the config is refreshed
+
+        if (empty($config)) {
+            return;
+        }
 
         if (!is_null($this->clientConfiguration->provideCompletion)) {
             //$this->server->project_analyzer->provide_completion = $this->clientConfiguration->provideCompletion;
