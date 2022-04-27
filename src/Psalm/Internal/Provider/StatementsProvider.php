@@ -57,6 +57,11 @@ class StatementsProvider
     private $file_storage_cache_provider;
 
     /**
+     * @var ?VolatileCacheProvider
+     */
+    private $volatile_cache_provider;
+
+    /**
      * @var array<string, array<string, bool>>
      */
     private $unchanged_members = [];
@@ -99,12 +104,14 @@ class StatementsProvider
     public function __construct(
         FileProvider $file_provider,
         ?ParserCacheProvider $parser_cache_provider = null,
-        ?FileStorageCacheProvider $file_storage_cache_provider = null
+        ?FileStorageCacheProvider $file_storage_cache_provider = null,
+        ?VolatileCacheProvider $volatile_cache_provider = null
     ) {
         $this->file_provider = $file_provider;
         $this->parser_cache_provider = $parser_cache_provider;
         $this->this_modified_time = filemtime(__FILE__);
         $this->file_storage_cache_provider = $file_storage_cache_provider;
+        $this->volatile_cache_provider = $volatile_cache_provider ?: new VolatileCacheProvider();
     }
 
     /**
@@ -130,19 +137,30 @@ class StatementsProvider
 
         $config = Config::getInstance();
 
+        $file_content_hash = md5($version . $file_contents);
+
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
+            $cache_key = "${file_content_hash}:${php_version}";
+            if ($this->volatile_cache_provider->has($cache_key)) {
+                return $this->volatile_cache_provider->get($cache_key);
+            }
+
             $progress->debug('Parsing ' . $file_path . "\n");
 
             $has_errors = false;
 
+<<<<<<< HEAD
             $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
+=======
+            $stmts = self::parseStatements($file_contents, $php_version, $has_errors, $file_path) ?: [];
+>>>>>>> 1dc2b3b02 (cache statements even without persistent parser cache)
 
-            return $stmts ?: [];
+            $this->volatile_cache_provider->set($cache_key, $stmts);
+
+            return $stmts;
         }
-
-        $file_content_hash = md5($version . $file_contents);
 
         $stmts = $this->parser_cache_provider->loadStatementsFromCache(
             $file_path,

@@ -14,6 +14,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\StatementsProvider;
+use Psalm\Internal\Provider\VolatileCacheProvider;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\IssueBuffer;
@@ -41,5 +42,6 @@ abstract class RuntimeCaches
         StatementsProvider::clearLexer();
         StatementsProvider::clearParser();
         ParsedDocblock::resetNewlineBetweenAnnotations();
+        VolatileCacheProvider::getInstance()->clearCache();
     }
 }
