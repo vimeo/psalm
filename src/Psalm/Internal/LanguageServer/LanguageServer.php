@@ -59,6 +59,7 @@ use function array_map;
 use function array_reduce;
 use function array_shift;
 use function array_unshift;
+use function array_values;
 use function cli_set_process_title;
 use function explode;
 use function extension_loaded;
@@ -825,7 +826,7 @@ class LanguageServer extends Dispatcher
                 )
             );
 
-            $this->client->textDocument->publishDiagnostics($uri, $diagnostics, $version);
+            $this->client->textDocument->publishDiagnostics($uri, array_values($diagnostics), $version);
         }
     }
 
