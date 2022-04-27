@@ -2,6 +2,9 @@
 
 namespace Psalm\Internal\Provider;
 
+use InvalidArgumentException;
+use PhpParser\Node\Stmt;
+
 use function array_key_exists;
 use function array_search;
 use function array_splice;
@@ -11,17 +14,18 @@ use function key;
 use function reset;
 
 /**
+ * @internal Owned by StatementsProvider
  * @todo: track variables size instead
  */
-class VolatileCacheProvider extends FileProvider
+final class StatementsVolatileCache
 {
     /**
-     * @var array
+     * @var array<string, list<Stmt>>
      */
     protected $cache = [];
 
     /**
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $access = [];
 
@@ -31,7 +35,7 @@ class VolatileCacheProvider extends FileProvider
     protected $max_size;
 
     /**
-     * @var VolatileCacheProvider
+     * @var ?StatementsVolatileCache
      */
     protected static $instance;
 
@@ -40,7 +44,7 @@ class VolatileCacheProvider extends FileProvider
         $this->max_size = $max_size;
     }
 
-    public static function getInstance(): VolatileCacheProvider
+    public static function getInstance(): StatementsVolatileCache
     {
         if (is_null(self::$instance)) {
             self::$instance = new self();
@@ -56,12 +60,13 @@ class VolatileCacheProvider extends FileProvider
 
     /**
      * @param string $key
-     * @return mixed
+     * @return list<Stmt>
+     * @throws InvalidArgumentException
      */
-    public function get(string $key)
+    public function get(string $key): array
     {
         if (! $this->has($key)) {
-            return null;
+            throw new InvalidArgumentException('Given $key does not exists');
         }
 
         $access_index = array_search($key, $this->access);
@@ -73,7 +78,11 @@ class VolatileCacheProvider extends FileProvider
         return $this->cache[$key];
     }
 
-    public function set(string $key, &$content): void
+    /**
+     * @param string $key
+     * @param list<Stmt> $content
+     */
+    public function set(string $key, array $content): void
     {
         if (count($this->cache) > $this->max_size) {
             reset($this->access);
@@ -87,7 +96,7 @@ class VolatileCacheProvider extends FileProvider
             }
         }
 
-        $this->cache[$key] = & $content;
+        $this->cache[$key] = $content;
         $this->access[] = $key;
     }
 

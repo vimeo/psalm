@@ -57,9 +57,9 @@ class StatementsProvider
     private $file_storage_cache_provider;
 
     /**
-     * @var ?VolatileCacheProvider
+     * @var StatementsVolatileCache
      */
-    private $volatile_cache_provider;
+    private $statements_volatile_cache;
 
     /**
      * @var array<string, array<string, bool>>
@@ -104,14 +104,13 @@ class StatementsProvider
     public function __construct(
         FileProvider $file_provider,
         ?ParserCacheProvider $parser_cache_provider = null,
-        ?FileStorageCacheProvider $file_storage_cache_provider = null,
-        ?VolatileCacheProvider $volatile_cache_provider = null
+        ?FileStorageCacheProvider $file_storage_cache_provider = null
     ) {
         $this->file_provider = $file_provider;
         $this->parser_cache_provider = $parser_cache_provider;
         $this->this_modified_time = filemtime(__FILE__);
         $this->file_storage_cache_provider = $file_storage_cache_provider;
-        $this->volatile_cache_provider = $volatile_cache_provider ?: new VolatileCacheProvider();
+        $this->statements_volatile_cache = StatementsVolatileCache::getInstance();
     }
 
     /**
@@ -143,21 +142,17 @@ class StatementsProvider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
             $cache_key = "${file_content_hash}:${php_version}";
-            if ($this->volatile_cache_provider->has($cache_key)) {
-                return $this->volatile_cache_provider->get($cache_key);
+            if ($this->statements_volatile_cache->has($cache_key)) {
+                return $this->statements_volatile_cache->get($cache_key);
             }
 
             $progress->debug('Parsing ' . $file_path . "\n");
 
             $has_errors = false;
 
-<<<<<<< HEAD
-            $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
-=======
-            $stmts = self::parseStatements($file_contents, $php_version, $has_errors, $file_path) ?: [];
->>>>>>> 1dc2b3b02 (cache statements even without persistent parser cache)
+            $stmts = self::parseStatements($file_contents, $php_version, $has_errors, $file_path);
 
-            $this->volatile_cache_provider->set($cache_key, $stmts);
+            $this->statements_volatile_cache->set($cache_key, $stmts);
 
             return $stmts;
         }
