@@ -897,7 +897,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'DocblockTypeContradiction',
             ],
             'maxSpecifiedAsFirst' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<max, 0> $a
                      */
@@ -907,7 +907,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'minSpecifiedAsSecond' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<0, min> $a
                      */
@@ -917,7 +917,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'unknownConstant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<0, FOO> $a
                      */
@@ -927,7 +927,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'floatAsABoundary' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<0, 5.5> $a
                      */
@@ -937,7 +937,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'stringAsABoundary' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<0, "bar"> $a
                      */
@@ -947,7 +947,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'minGreaterThanMax' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<4, 3> $a
                      */

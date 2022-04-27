@@ -731,7 +731,7 @@ class AttributeTest extends TestCase
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:28 - Attribute Foo is not repeatable',
             ],
             'invalidAttributeConstructionWithReturningFunction' => [
-                '<?php
+                'code' => '<?php
                     enum Enumm
                     {
                         case SOME_CASE;

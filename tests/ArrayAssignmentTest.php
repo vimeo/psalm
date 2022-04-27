@@ -1741,7 +1741,7 @@ class ArrayAssignmentTest extends TestCase
                 'php_version' => '8.1'
             ],
             'allowsArrayAccessNullOffset' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-implements ArrayAccess<int, string>
                      */

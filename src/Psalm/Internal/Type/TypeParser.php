@@ -889,10 +889,6 @@ class TypeParser
                 return new TInt();
             }
 
-            if ($min_bound === 1 && $max_bound === null) {
-                return new TPositiveInt();
-            }
-
             if (is_int($min_bound) && is_int($max_bound) && $min_bound > $max_bound) {
                 throw new TypeParseTreeException(
                     "Min bound can't be greater than max bound, int<$min_bound, $max_bound> given"

@@ -6,7 +6,6 @@ namespace Psalm\Internal\LanguageServer\Server;
 
 use Amp\Promise;
 use Amp\Success;
-use InvalidArgumentException;
 use LanguageServerProtocol\CompletionList;
 use LanguageServerProtocol\Hover;
 use LanguageServerProtocol\Location;
@@ -27,7 +26,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use UnexpectedValueException;
 
-use function array_combine;
 use function array_values;
 use function count;
 use function error_log;
@@ -94,8 +92,9 @@ class TextDocument
      * The document save notification is sent from the client to the server when the document was saved in the client
      *
      * @param TextDocumentItem $textDocument the document that was opened
+     * @param ?string $text the content when saved
      */
-    public function didSave(TextDocumentItem $textDocument): void
+    public function didSave(TextDocumentItem $textDocument, ?string $text): void
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
@@ -105,7 +104,7 @@ class TextDocument
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
-        $this->codebase->file_provider->setOpenContents($file_path, $textDocument->text);
+        $this->codebase->file_provider->setOpenContents($file_path, (string) $text);
 
         $this->server->queueFileAnalysis($file_path, $textDocument->uri);
     }
@@ -121,10 +120,6 @@ class TextDocument
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return;
-        }
-
-        if ($this->project_analyzer->onchange_line_limit === 0) {
             return;
         }
 
@@ -268,8 +263,6 @@ class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        $this->server->doAnalysis();
-
         $file_path = LanguageServer::uriToPath($textDocument->uri);
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
             return new Success([]);
@@ -360,18 +353,6 @@ class TextDocument
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
         if (!$this->codebase->file_provider->isOpen($file_path)) {
-            return new Success(null);
-        }
-
-        $all_file_paths_to_analyze = [$file_path];
-        $this->codebase->analyzer->addFilesToAnalyze(
-            array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze)
-        );
-
-        try {
-            $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-        } catch (UnexpectedValueException | InvalidArgumentException $e) {
-            error_log('codeAction errored on file ' . $file_path. ', Reason: '.$e->getMessage());
             return new Success(null);
         }
 
