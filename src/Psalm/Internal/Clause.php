@@ -17,11 +17,7 @@ use function ksort;
 use function md5;
 use function reset;
 use function serialize;
-use function sort;
-use function strpos;
 use function substr;
-
-use const JSON_THROW_ON_ERROR;
 
 /**
  * @internal
