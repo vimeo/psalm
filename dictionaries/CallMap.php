@@ -1762,7 +1762,7 @@ return [
 'DateInterval::__construct' => ['void', 'spec'=>'string'],
 'DateInterval::__set_state' => ['DateInterval', 'array'=>'array'],
 'DateInterval::__wakeup' => ['void'],
-'DateInterval::createFromDateString' => ['DateInterval', 'time'=>'string'],
+'DateInterval::createFromDateString' => ['DateInterval|false', 'time'=>'string'],
 'DateInterval::format' => ['string', 'format'=>'string'],
 'DatePeriod::__construct' => ['void', 'start'=>'DateTimeInterface', 'interval'=>'DateInterval', 'recur'=>'int', 'options='=>'int'],
 'DatePeriod::__construct\'1' => ['void', 'start'=>'DateTimeInterface', 'interval'=>'DateInterval', 'end'=>'DateTimeInterface', 'options='=>'int'],
