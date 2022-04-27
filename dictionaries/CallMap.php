@@ -9911,7 +9911,7 @@ return [
 'PDOStatement::errorInfo' => ['array{0: ?string, 1: ?int, 2: ?string, 3?: mixed, 4?: mixed}'],
 'PDOStatement::execute' => ['bool', 'params='=>'?array'],
 'PDOStatement::fetch' => ['mixed', 'mode='=>'int', 'cursorOrientation='=>'int', 'cursorOffset='=>'int'],
-'PDOStatement::fetchAll' => ['array|false', 'mode='=>'int', '...args='=>'mixed'],
+'PDOStatement::fetchAll' => ['array', 'mode='=>'int', '...args='=>'mixed'],
 'PDOStatement::fetchColumn' => ['mixed', 'column='=>'int'],
 'PDOStatement::fetchObject' => ['object|false', 'class='=>'?string', 'ctorArgs='=>'?array'],
 'PDOStatement::getAttribute' => ['mixed', 'attribute'=>'int'],

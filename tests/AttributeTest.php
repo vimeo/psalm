@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -11,6 +12,29 @@ class AttributeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testStubsWithDifferentAttributes(): void
+    {
+        $this->addStubFile(
+            'stubOne.phpstub',
+            '<?php
+                #[Attribute]
+                class Attr {}
+
+                #[Attr]
+                class Foo {}
+            '
+        );
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo {}
+            '
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     /**
      * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
@@ -705,6 +729,33 @@ class AttributeTest extends TestCase
                     class Baz {}
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:28 - Attribute Foo is not repeatable',
+            ],
+            'invalidAttributeConstructionWithReturningFunction' => [
+                '<?php
+                    enum Enumm
+                    {
+                        case SOME_CASE;
+                    }
+
+                    #[Attribute]
+                    final class Attr
+                    {
+                        public function __construct(public Enumm $e) {}
+                    }
+
+                    final class SomeClass
+                    {
+                        #[Attr(Enumm::WRONG_CASE)]
+                        public function anotherMethod(): string
+                        {
+                            return "";
+                        }
+                    }
+                ',
+                'error_message' => 'UndefinedConstant',
+                [],
+                false,
+                '8.1',
             ],
         ];
     }

@@ -29,6 +29,7 @@
         <xs:attribute name="cacheDirectory" type="xs:string" />
         <xs:attribute name="errorBaseline" type="xs:string" />
         <xs:attribute name="maxStringLength" type="xs:string" />
+        <xs:attribute name="maxShapedArraySize" type="xs:string" default="100" />
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="phpVersion" type="xs:string" />
         <xs:attribute name="serializer" type="xs:string" />

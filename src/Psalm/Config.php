@@ -476,6 +476,11 @@ class Config
     public $max_avg_path_length = 70;
 
     /**
+     * @var int
+     */
+    public $max_shaped_array_size = 100;
+
+    /**
      * @var string[]
      */
     public $plugin_paths = [];
@@ -1139,6 +1144,11 @@ class Config
         if (isset($config_xml['maxStringLength'])) {
             $attribute_text = (int)$config_xml['maxStringLength'];
             $config->max_string_length = $attribute_text;
+        }
+
+        if (isset($config_xml['maxShapedArraySize'])) {
+            $attribute_text = (int)$config_xml['maxShapedArraySize'];
+            $config->max_shaped_array_size = $attribute_text;
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {

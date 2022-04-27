@@ -484,8 +484,12 @@ class ArrayAnalyzer
             }
         }
 
+        $config = $codebase->config;
+
         if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
-            if ($item_key_value !== null && count($array_creation_info->property_types) <= 100) {
+            if ($item_key_value !== null
+                && count($array_creation_info->property_types) <= $config->max_shaped_array_size
+            ) {
                 $array_creation_info->property_types[$item_key_value] = $item_value_type;
             } else {
                 $array_creation_info->can_create_objectlike = false;
@@ -498,7 +502,9 @@ class ArrayAnalyzer
         } else {
             $array_creation_info->item_value_atomic_types[] = new TMixed();
 
-            if ($item_key_value !== null && count($array_creation_info->property_types) <= 100) {
+            if ($item_key_value !== null
+                && count($array_creation_info->property_types) <= $config->max_shaped_array_size
+            ) {
                 $array_creation_info->property_types[$item_key_value] = Type::getMixed();
             } else {
                 $array_creation_info->can_create_objectlike = false;
