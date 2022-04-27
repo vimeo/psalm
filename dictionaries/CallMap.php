@@ -13811,7 +13811,7 @@ return [
 'stream_notification_callback' => ['callback', 'notification_code'=>'int', 'severity'=>'int', 'message'=>'string', 'message_code'=>'int', 'bytes_transferred'=>'int', 'bytes_max'=>'int'],
 'stream_register_wrapper' => ['bool', 'protocol'=>'string', 'class'=>'string', 'flags='=>'int'],
 'stream_resolve_include_path' => ['string|false', 'filename'=>'string'],
-'stream_select' => ['int|false', '&rw_read'=>'?resource[]', '&rw_write'=>'?resource[]', '&rw_except'=>'?resource[]', 'seconds'=>'?int', 'microseconds='=>'?int'],
+'stream_select' => ['int|false', '&rw_read'=>'resource[]', '&rw_write'=>'?resource[]', '&rw_except'=>'?resource[]', 'seconds'=>'?int', 'microseconds='=>'?int'],
 'stream_set_blocking' => ['bool', 'stream'=>'resource', 'enable'=>'bool'],
 'stream_set_chunk_size' => ['int|false', 'stream'=>'resource', 'size'=>'int'],
 'stream_set_read_buffer' => ['int', 'stream'=>'resource', 'size'=>'int'],
