@@ -885,6 +885,66 @@ class IntRangeTest extends TestCase
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
+            'maxSpecifiedAsFirst' => [
+                '<?php
+                    /**
+                     * @param int<max, 0> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'minSpecifiedAsSecond' => [
+                '<?php
+                    /**
+                     * @param int<0, min> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'unknownConstant' => [
+                '<?php
+                    /**
+                     * @param int<0, FOO> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'floatAsABoundary' => [
+                '<?php
+                    /**
+                     * @param int<0, 5.5> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'stringAsABoundary' => [
+                '<?php
+                    /**
+                     * @param int<0, "bar"> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'minGreaterThanMax' => [
+                '<?php
+                    /**
+                     * @param int<4, 3> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
