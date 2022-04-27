@@ -66,9 +66,6 @@ jobs:
       - attach_workspace:
           at: /home/docker/project/
       - run:
-          name: Analyse PHPUnit
-          command: bin/test-with-real-projects.sh phpunit
-      - run:
           name: Analyse Collections
           command: bin/test-with-real-projects.sh collections
 
