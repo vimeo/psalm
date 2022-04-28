@@ -196,7 +196,7 @@ function shuffle(array &$array): bool
 
 /**
  * @psalm-template T
- * @psalm-template TArray as T[]
+ * @psalm-template TArray as array<T>
  *
  * @param TArray $array
  * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $array
