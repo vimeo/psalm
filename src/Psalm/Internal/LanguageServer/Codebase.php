@@ -821,7 +821,7 @@ class Codebase extends PsalmCodebase
                 null,
                 new Command(
                     'Trigger parameter hints',
-                    'editor.action.triggerParameterHints',
+                    'editor.action.triggerParameterHints'
                 ),
                 null,
                 2
