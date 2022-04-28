@@ -372,7 +372,7 @@ class Codebase extends PsalmCodebase
         $offset = $position->toOffset($file_contents);
 
         [$reference_map, $type_map] = $this->analyzer->getMapsForFile(
-            $file_path,
+            $file_path
         );
 
         if (!$reference_map && !$type_map) {
