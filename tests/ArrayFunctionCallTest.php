@@ -687,15 +687,22 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'uksort' => [
                 '<?php
+                    function foo (string $a, string $b): int {
+                        return $a <=> $b;
+                    }
                     $array = ["b" => 1, "a" => 2];
                     uksort(
                         $array,
-                        function (string $a, string $b) {
-                            return $a <=> $b;
-                        }
+                        "foo"
+                    );
+                    $emptyArray = [];
+                    uksort(
+                        $emptyArray,
+                        "foo"
                     );',
                 'assertions' => [
-                    '$array' => 'array<string, int>',
+                    '$array' => 'non-empty-array<string, int>',
+                    '$emptyArray' => 'array<empty, empty>',
                 ],
             ],
             'arrayMergeTKeyedArray' => [
