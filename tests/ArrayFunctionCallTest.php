@@ -666,28 +666,43 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'uasort' => [
                 '<?php
+                    function foo (int $a, int $b): int {
+                        return $a > $b ? 1 : -1;
+                    }
                     $manifest = ["a" => 1, "b" => 2];
                     uasort(
                         $manifest,
-                        function (int $a, int $b) {
-                            return $a > $b ? 1 : -1;
-                        }
-                    );',
+                        "foo"
+                    );
+                    $emptyManifest = [];
+                    uasort(
+                        $emptyManifest,
+                        "foo"
+                    );
+                    ',
                 'assertions' => [
-                    '$manifest' => 'array<string, int>'
+                    '$manifest' => 'non-empty-array<string, int>',
+                    '$emptyManifest' => 'array<empty, empty>',
                 ],
             ],
             'uksort' => [
                 '<?php
+                    function foo (string $a, string $b): int {
+                        return $a <=> $b;
+                    }
                     $array = ["b" => 1, "a" => 2];
                     uksort(
                         $array,
-                        function (string $a, string $b) {
-                            return $a <=> $b;
-                        }
+                        "foo"
+                    );
+                    $emptyArray = [];
+                    uksort(
+                        $emptyArray,
+                        "foo"
                     );',
                 'assertions' => [
-                    '$array' => 'array<string, int>',
+                    '$array' => 'non-empty-array<string, int>',
+                    '$emptyArray' => 'array<empty, empty>',
                 ],
             ],
             'arrayMergeTKeyedArray' => [
@@ -1762,33 +1777,46 @@ class ArrayFunctionCallTest extends TestCase
             'shuffle' => [
                 '<?php
                     $array = ["foo" => 123, "bar" => 456];
-                    shuffle($array);',
+                    shuffle($array);
+                    $emptyArray = [];
+                    shuffle($emptyArray);',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<empty>',
                 ],
             ],
             'sort' => [
                 '<?php
                     $array = ["foo" => 123, "bar" => 456];
-                    sort($array);',
+                    sort($array);
+                    $emptyArray = [];
+                    sort($emptyArray);',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<empty>',
                 ],
             ],
             'rsort' => [
                 '<?php
                     $array = ["foo" => 123, "bar" => 456];
-                    sort($array);',
+                    rsort($array);
+                    $emptyArray = [];
+                    rsort($emptyArray);',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<empty>',
                 ],
             ],
             'usort' => [
                 '<?php
+                    function baz (int $a, int $b): int { return $a <=> $b; }
                     $array = ["foo" => 123, "bar" => 456];
-                    usort($array, function (int $a, int $b) { return $a <=> $b; });',
+                    usort($array, "baz");
+                    $emptyArray = [];
+                    usort($emptyArray, "baz");',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<empty>',
                 ],
             ],
             'closureParamConstraintsMet' => [
