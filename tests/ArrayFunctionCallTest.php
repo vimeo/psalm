@@ -1781,9 +1781,12 @@ class ArrayFunctionCallTest extends TestCase
             'rsort' => [
                 '<?php
                     $array = ["foo" => 123, "bar" => 456];
-                    rsort($array);',
+                    rsort($array);
+                    $emptyArray = [];
+                    rsort($emptyArray);',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<empty>',
                 ],
             ],
             'usort' => [
