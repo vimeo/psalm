@@ -208,12 +208,12 @@ class Codebase extends PsalmCodebase
 
             [$fq_classlike_name, $const_name] = explode(
                 '::',
-                $reference->symbol,
+                $reference->symbol
             );
 
             $class_constants = $this->classlikes->getConstantsForClass(
                 $fq_classlike_name,
-                ReflectionProperty::IS_PRIVATE,
+                ReflectionProperty::IS_PRIVATE
             );
 
             if (!isset($class_constants[$const_name])) {
@@ -291,7 +291,7 @@ class Codebase extends PsalmCodebase
 
             $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
                 $namespace_name,
-                ReflectionProperty::IS_PUBLIC,
+                ReflectionProperty::IS_PUBLIC
             );
             //Namespace Constant
             if (isset($namespace_constants[$const_name])) {
@@ -392,7 +392,7 @@ class Codebase extends PsalmCodebase
                 $file_contents,
                 $matches,
                 0,
-                $end_pos_excluding_whitespace,
+                $end_pos_excluding_whitespace
             )
                 ? strlen($matches[0])
                 : 0;
