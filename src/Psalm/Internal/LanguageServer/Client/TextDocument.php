@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Client;
 
-use JsonMapper;
 use LanguageServerProtocol\Diagnostic;
 use Psalm\Internal\LanguageServer\ClientHandler;
 use Psalm\Internal\LanguageServer\LanguageServer;

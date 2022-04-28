@@ -35,8 +35,10 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 use UnexpectedValueException;
 
+use function array_merge;
 use function array_pop;
 use function array_reverse;
+use function array_values;
 use function count;
 use function dirname;
 use function error_log;
@@ -47,6 +49,7 @@ use function krsort;
 use function ksort;
 use function preg_match;
 use function preg_replace;
+use function str_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -78,8 +81,6 @@ class Codebase extends PsalmCodebase
 
         $reference_maps = $this->analyzer->getMapsForFile($file_path);
 
-        [$r] = $reference_maps;
-
         $reference_start_pos = null;
         $reference_end_pos = null;
         $symbol = null;
@@ -87,10 +88,7 @@ class Codebase extends PsalmCodebase
         foreach ($reference_maps as $reference_map) {
             ksort($reference_map);
 
-            foreach (
-                $reference_map
-                as $start_pos => [$end_pos, $possible_reference]
-            ) {
+            foreach ($reference_map as $start_pos => [$end_pos, $possible_reference]) {
                 if ($offset < $start_pos) {
                     break;
                 }
@@ -103,8 +101,7 @@ class Codebase extends PsalmCodebase
                 $symbol = $possible_reference;
             }
 
-            if (
-                $symbol !== null &&
+            if ($symbol !== null &&
                 $reference_start_pos !== null &&
                 $reference_end_pos !== null
             ) {
@@ -112,11 +109,7 @@ class Codebase extends PsalmCodebase
             }
         }
 
-        if (
-            $symbol === null ||
-            $reference_start_pos === null ||
-            $reference_end_pos === null
-        ) {
+        if ($symbol === null || $reference_start_pos === null || $reference_end_pos === null) {
             return null;
         }
 
@@ -195,7 +188,8 @@ class Codebase extends PsalmCodebase
                 //Get Docblock properties
                 if (isset($class_storage->pseudo_property_set_types['$'.$property_name])) {
                     return new PHPMarkdownContent(
-                        'public '.(string) $class_storage->pseudo_property_set_types['$'.$property_name].' $'.$property_name,
+                        'public '.
+                        (string) $class_storage->pseudo_property_set_types['$'.$property_name].' $'.$property_name,
                         $reference->symbol
                     );
                 }
@@ -203,13 +197,13 @@ class Codebase extends PsalmCodebase
                 //Get Docblock properties
                 if (isset($class_storage->pseudo_property_get_types['$'.$property_name])) {
                     return new PHPMarkdownContent(
-                        'public '.(string) $class_storage->pseudo_property_get_types['$'.$property_name].' $'.$property_name,
+                        'public '.
+                        (string) $class_storage->pseudo_property_get_types['$'.$property_name].' $'.$property_name,
                         $reference->symbol
                     );
                 }
 
                 return null;
-
             }
 
             [$fq_classlike_name, $const_name] = explode(
@@ -387,10 +381,7 @@ class Codebase extends PsalmCodebase
 
         krsort($type_map);
 
-        foreach (
-            $type_map
-            as $start_pos => [$end_pos_excluding_whitespace, $possible_type]
-        ) {
+        foreach ($type_map as $start_pos => [$end_pos_excluding_whitespace, $possible_type]) {
             if ($offset < $start_pos) {
                 continue;
             }
@@ -438,18 +429,12 @@ class Codebase extends PsalmCodebase
             }
         }
 
-        foreach (
-            $reference_map
-            as $start_pos => [$end_pos, $possible_reference]
-        ) {
+        foreach ($reference_map as $start_pos => [$end_pos, $possible_reference]) {
             if ($offset < $start_pos) {
                 continue;
             }
             // If the reference precedes a "::" then treat it as a class reference.
-            if (
-                $offset - $end_pos === 2 &&
-                substr($file_contents, $end_pos, 2) === '::'
-            ) {
+            if ($offset - $end_pos === 2 && substr($file_contents, $end_pos, 2) === '::') {
                 return [$possible_reference, '::', $offset];
             }
 
@@ -483,10 +468,7 @@ class Codebase extends PsalmCodebase
         if (!$reference_map && !$type_map && !$argument_map) {
             return null;
         }
-        foreach (
-            $argument_map
-            as $start_pos => [$end_pos, $function, $argument_num]
-        ) {
+        foreach ($argument_map as $start_pos => [$end_pos, $function, $argument_num]) {
             if ($offset < $start_pos || $offset > $end_pos) {
                 continue;
             }
@@ -495,11 +477,7 @@ class Codebase extends PsalmCodebase
                 $file_path,
                 $function . '()',
             );
-            if (
-                !$function_storage ||
-                !$function_storage->params ||
-                !isset($function_storage->params[$argument_num])
-            ) {
+            if (!$function_storage || !$function_storage->params || !isset($function_storage->params[$argument_num])) {
                 return null;
             }
 
@@ -510,7 +488,7 @@ class Codebase extends PsalmCodebase
     }
 
     /**
-     * @return list<CompletionItem>
+     * @return CompletionItem[]
      */
     public function getCompletionItemsForClassishThing(
         string $type_string,
@@ -528,10 +506,7 @@ class Codebase extends PsalmCodebase
                         $atomic_type->value,
                     );
 
-                    foreach (
-                        $class_storage->appearing_method_ids
-                        as $declaring_method_id
-                    ) {
+                    foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
                         try {
                             $method_storage = $this->methods->getStorage(
                                 $declaring_method_id,
@@ -556,10 +531,7 @@ class Codebase extends PsalmCodebase
                                     2,
                                 );
 
-                                if (
-                                    $snippets_supported &&
-                                    count($method_storage->params) > 0
-                                ) {
+                                if ($snippets_supported && count($method_storage->params) > 0) {
                                     $completion_item->insertText .= '($0)';
                                     $completion_item->insertTextFormat =
                                         InsertTextFormat::SNIPPET;
@@ -576,10 +548,7 @@ class Codebase extends PsalmCodebase
                     }
 
                     $pseudo_property_types = [];
-                    foreach (
-                        $class_storage->pseudo_property_get_types
-                        as $property_name => $type
-                    ) {
+                    foreach ($class_storage->pseudo_property_get_types as $property_name => $type) {
                         $pseudo_property_types[$property_name] = new CompletionItem(
                             str_replace('$', '', $property_name),
                             CompletionItemKind::PROPERTY,
@@ -592,10 +561,7 @@ class Codebase extends PsalmCodebase
                         );
                     }
 
-                    foreach (
-                        $class_storage->pseudo_property_set_types
-                        as $property_name => $type
-                    ) {
+                    foreach ($class_storage->pseudo_property_set_types as $property_name => $type) {
                         $pseudo_property_types[$property_name] = new CompletionItem(
                             str_replace('$', '', $property_name),
                             CompletionItemKind::PROPERTY,
@@ -610,10 +576,7 @@ class Codebase extends PsalmCodebase
 
                     $completion_items = array_merge($completion_items, array_values($pseudo_property_types));
 
-                    foreach (
-                        $class_storage->declaring_property_ids
-                        as $property_name => $declaring_class
-                    ) {
+                    foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
                         try {
                             $property_storage = $this->properties->getStorage(
                                 $declaring_class . '::$' . $property_name,
@@ -636,10 +599,7 @@ class Codebase extends PsalmCodebase
                         }
                     }
 
-                    foreach (
-                        $class_storage->constants
-                        as $const_name => $const
-                    ) {
+                    foreach ($class_storage->constants as $const_name => $const) {
                         $completion_items[] = new CompletionItem(
                             $const_name,
                             CompletionItemKind::VARIABLE,
@@ -661,7 +621,7 @@ class Codebase extends PsalmCodebase
     }
 
     /**
-     * @return list<CompletionItem>
+     * @return CompletionItem[]
      */
     public function getCompletionItemsForArrayKeys(string $type_string): array
     {
@@ -669,10 +629,7 @@ class Codebase extends PsalmCodebase
         $type = Type::parseString($type_string);
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TKeyedArray) {
-                foreach (
-                    $atomic_type->properties
-                    as $property_name => $property
-                ) {
+                foreach ($atomic_type->properties as $property_name => $property) {
                     $completion_items[] = new CompletionItem(
                         (string) $property_name,
                         CompletionItemKind::PROPERTY,
@@ -689,7 +646,7 @@ class Codebase extends PsalmCodebase
     }
 
     /**
-     * @return list<CompletionItem>
+     * @return CompletionItem[]
      */
     public function getCompletionItemsForPartialSymbol(
         string $type_string,
@@ -725,20 +682,15 @@ class Codebase extends PsalmCodebase
                 continue;
             }
 
-            if (
-                $offset > $class_storage->stmt_location->raw_file_start &&
-                $offset < $class_storage->stmt_location->raw_file_end
-            ) {
+            if ($offset > $class_storage->stmt_location->raw_file_start
+            && $offset < $class_storage->stmt_location->raw_file_end) {
                 $aliases = $class_storage->aliases;
                 break;
             }
         }
 
         if (!$aliases) {
-            foreach (
-                $file_storage->namespace_aliases
-                as $namespace_start => $namespace_aliases
-            ) {
+            foreach ($file_storage->namespace_aliases as $namespace_start => $namespace_aliases) {
                 if ($namespace_start < $offset) {
                     $aliases = $namespace_aliases;
                     break;
@@ -760,8 +712,7 @@ class Codebase extends PsalmCodebase
                 null,
             );
 
-            if (
-                $aliases &&
+            if ($aliases &&
                 !$fq_suggestion &&
                 $aliases->namespace &&
                 $insertion_text === '\\' . $fq_class_name &&
@@ -881,7 +832,7 @@ class Codebase extends PsalmCodebase
     }
 
     /**
-     * @return list<CompletionItem>
+     * @return CompletionItem[]
      */
     public function getCompletionItemsForType(Union $type): array
     {
@@ -973,11 +924,7 @@ class Codebase extends PsalmCodebase
 
         ksort($argument_map);
 
-        foreach (
-            $argument_map
-            as $start_pos =>
-                [$end_pos, $possible_reference, $possible_argument_number]
-        ) {
+        foreach ($argument_map as $start_pos => [$end_pos, $possible_reference, $possible_argument_number]) {
             if ($offset < $start_pos) {
                 break;
             }
@@ -990,12 +937,7 @@ class Codebase extends PsalmCodebase
             $argument_number = $possible_argument_number;
         }
 
-        if (
-            $reference === null ||
-            $start_pos === null ||
-            $end_pos === null ||
-            $argument_number === null
-        ) {
+        if ($reference === null || $start_pos === null || $end_pos === null || $argument_number === null) {
             return null;
         }
 

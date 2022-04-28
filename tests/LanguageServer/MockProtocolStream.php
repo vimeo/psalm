@@ -1,16 +1,17 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace Psalm\Tests\LanguageServer;
 
 use Amp\Deferred;
 use Amp\Loop;
 use Amp\Promise;
-use Psalm\Internal\LanguageServer\Message;
 use Psalm\Internal\LanguageServer\EmitterInterface;
+use Psalm\Internal\LanguageServer\EmitterTrait;
+use Psalm\Internal\LanguageServer\Message;
 use Psalm\Internal\LanguageServer\ProtocolReader;
 use Psalm\Internal\LanguageServer\ProtocolWriter;
-use Psalm\Internal\LanguageServer\EmitterTrait;
 
 /**
  * A fake duplex protocol stream
@@ -22,11 +23,10 @@ class MockProtocolStream implements ProtocolReader, ProtocolWriter, EmitterInter
      * Sends a Message to the client
      *
      * @param Message $msg
-     * @return Promise
      */
     public function write(Message $msg): Promise
     {
-        Loop::defer(function () use ($msg) {
+        Loop::defer(function () use ($msg): void {
             $this->emit('message', [Message::parse((string)$msg)]);
         });
 

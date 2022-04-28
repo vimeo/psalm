@@ -57,7 +57,6 @@ use const PHP_MAJOR_VERSION;
 use const PHP_MINOR_VERSION;
 use const PHP_VERSION_ID;
 
-
 class Codebase
 {
     /**

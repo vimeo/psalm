@@ -2,37 +2,27 @@
 
 namespace Psalm\Tests\LanguageServer;
 
-use Amp\ByteStream\InMemoryStream;
-use Amp\ByteStream\ResourceInputStream;
-use Amp\ByteStream\ResourceOutputStream;
-use LanguageServerProtocol\Position;
-use LanguageServerProtocol\Range;
-use Psalm\Context;
-use Psalm\Internal\Analyzer\FileAnalyzer;
+use Amp\Deferred;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\LanguageServer\Codebase;
-use Psalm\Internal\LanguageServer\Reference;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\IssueBuffer;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
-use Psalm\Tests\AsyncTestCase;
-use Psalm\Tests\TestConfig;
-use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
+use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\LanguageServer\Message;
 use Psalm\Internal\LanguageServer\Progress;
-use Psalm\Internal\LanguageServer\ProtocolStreamReader;
-use Psalm\Internal\LanguageServer\ProtocolStreamWriter;
-use Psalm\Progress\VoidProgress;
+use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
+use Psalm\IssueBuffer;
+use Psalm\Tests\AsyncTestCase;
+use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
+use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
+use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\LanguageServer\Message as MessageBody;
-use AdvancedJsonRpc\Request;
-use AdvancedJsonRpc\SuccessResponse;
-use Amp\Deferred;
+use Psalm\Tests\LanguageServer\MockProtocolStream;
+use Psalm\Tests\TestConfig;
+
+use function Amp\Promise\wait;
+use function rand;
 
 class DiagnosticTest extends AsyncTestCase
 {
@@ -84,7 +74,7 @@ class DiagnosticTest extends AsyncTestCase
         $this->project_analyzer->getCodebase()->store_node_types = true;
     }
 
-    public function testSnippetSupportDisabled()
+    public function testSnippetSupportDisabled(): void
     {
         // Create a new promisor
         $deferred = new Deferred;
@@ -96,6 +86,7 @@ class DiagnosticTest extends AsyncTestCase
         $write = new MockProtocolStream();
 
         $array = $this->generateInitializeRequest();
+        /**  @psalm-suppress MixedArrayAssignment */
         $array['params']['capabilities']['textDocument']['completion']['completionItem']['snippetSupport'] = false;
         $read->write(new Message(MessageBody::parseArray($array)));
 
@@ -108,14 +99,15 @@ class DiagnosticTest extends AsyncTestCase
             new Progress
         );
 
-        $write->on('message', function (Message $message) use ($deferred, $server): void  {
+        $write->on('message', function (Message $message) use ($deferred, $server): void {
+            /** @psalm-suppress PossiblyNullPropertyFetch,UndefinedPropertyFetch,MixedPropertyFetch */
             if ($message->body->method === 'telemetry/event' && $message->body->params->message === 'initialized') {
                 $this->assertFalse($server->clientCapabilities->textDocument->completion->completionItem->snippetSupport);
                 $deferred->resolve(null);
             }
         });
 
-        \Amp\Promise\wait($deferred->promise());
+        wait($deferred->promise());
     }
 
     public function jestRun(): void
@@ -195,7 +187,7 @@ class DiagnosticTest extends AsyncTestCase
             }'
         );
 
-        print_r($issues);
+        $this->assertArrayHasKey('somefile.php', $issues);
 
         $issues = $this->changeFile(
             'somefile.php',
@@ -216,7 +208,7 @@ class DiagnosticTest extends AsyncTestCase
             }'
         );
 
-        print_r($issues);
+        $this->assertArrayHasKey('somefile.php', $issues);
 
         $issues = $this->changeFile(
             'somefile.php',
@@ -234,7 +226,7 @@ class DiagnosticTest extends AsyncTestCase
             }'
         );
 
-        print_r($issues);
+        $this->assertArrayHasKey('somefile.php', $issues);
 
         $issues = $this->changeFile(
             'somefile.php',

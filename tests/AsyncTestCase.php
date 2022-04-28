@@ -3,7 +3,6 @@
 namespace Psalm\Tests;
 
 use Amp\PHPUnit\AsyncTestCase as BaseAsyncTestCase;
-use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;

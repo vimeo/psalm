@@ -128,7 +128,7 @@ class TextDocument
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
-        if (count($contentChanges) === 1 && $contentChanges[0]->range === null) {
+        if (count($contentChanges) === 1 && isset($contentChanges[0]) && $contentChanges[0]->range === null) {
             $new_content = $contentChanges[0]->text;
         } else {
             throw new UnexpectedValueException('Not expecting partial diff');
@@ -196,7 +196,7 @@ class TextDocument
         try {
             $reference = $this->codebase->getReferenceAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
-            $this->server->logError((string) $e);
+            $this->server->logThrowable($e);
             return new Success(null);
         }
 
@@ -250,7 +250,7 @@ class TextDocument
         try {
             $reference = $this->codebase->getReferenceAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
-            $this->server->logError((string) $e);
+            $this->server->logThrowable($e);
             return new Success(null);
         }
 
@@ -261,7 +261,7 @@ class TextDocument
         try {
             $markup = $this->codebase->getMarkupContentForSymbol($reference);
         } catch (UnexpectedValueException $e) {
-            $this->server->logError((string) $e);
+            $this->server->logThrowable($e);
             return new Success(null);
         }
 
@@ -305,24 +305,6 @@ class TextDocument
 
         try {
             $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
-        } catch (UnanalyzedFileException $e) {
-            $this->server->logError((string) $e);
-            return new Success(null);
-        }
-
-        try {
-            $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
-        } catch (UnexpectedValueException $e) {
-            $this->server->logError((string) $e);
-            return new Success(null);
-        }
-
-        if (!$completion_data && !$type_context) {
-            $this->server->logError('completion not found at ' . $position->line . ':' . $position->character);
-            return new Success(null);
-        }
-
-        try {
             if ($completion_data) {
                 [$recent_type, $gap, $offset] = $completion_data;
 
@@ -344,15 +326,32 @@ class TextDocument
                         $file_path
                     );
                 }
-            } else {
-                $completion_items = $this->codebase->getCompletionItemsForType($type_context);
+                return new Success(new CompletionList($completion_items, false));
             }
+        } catch (UnanalyzedFileException $e) {
+            $this->server->logThrowable($e);
+            return new Success(null);
         } catch (TypeParseTreeException $e) {
-            $this->server->logError((string) $e);
+            $this->server->logThrowable($e);
             return new Success(null);
         }
 
-        return new Success(new CompletionList($completion_items, false));
+        try {
+            $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
+            if ($type_context) {
+                $completion_items = $this->codebase->getCompletionItemsForType($type_context);
+                return new Success(new CompletionList($completion_items, false));
+            }
+        } catch (UnexpectedValueException $e) {
+            $this->server->logThrowable($e);
+            return new Success(null);
+        } catch (TypeParseTreeException $e) {
+            $this->server->logThrowable($e);
+            return new Success(null);
+        }
+
+        $this->server->logError('completion not found at ' . $position->line . ':' . $position->character);
+        return new Success(null);
     }
 
     /**
@@ -379,7 +378,7 @@ class TextDocument
         try {
             $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
-            $this->server->logError((string) $e);
+            $this->server->logThrowable($e);
             return new Success(null);
         }
 
@@ -390,7 +389,7 @@ class TextDocument
         try {
             $signature_information = $this->codebase->getSignatureInformation($argument_location[0], $file_path);
         } catch (UnexpectedValueException $e) {
-            $this->server->logError((string) $e);
+            $this->server->logThrowable($e);
             return new Success(null);
         }
 

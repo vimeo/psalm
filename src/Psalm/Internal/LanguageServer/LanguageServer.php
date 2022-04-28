@@ -148,6 +148,12 @@ class LanguageServer extends Dispatcher
      */
     protected $versionedAnalysisDelayToken = '';
 
+    /**
+     * Whether analysis is queued/processing
+     * @var bool
+     */
+    public $analyzing = false;
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -696,6 +702,7 @@ class LanguageServer extends Dispatcher
      */
     public function doVersionedAnalysisDebounce(array $files, ?int $version = null): void
     {
+        $this->analyzing = true;
         Loop::cancel($this->versionedAnalysisDelayToken);
         if ($this->client->clientConfiguration->onChangeDebounceMs === null) {
             $this->doVersionedAnalysis($files, $version);
@@ -734,6 +741,7 @@ class LanguageServer extends Dispatcher
         } catch (Throwable $e) {
             $this->logError((string) $e);
         }
+        $this->analyzing = false;
     }
 
     /**
@@ -903,6 +911,16 @@ class LanguageServer extends Dispatcher
             // do nothing as we could potentially go into a loop here is not careful
             //TODO: Investigate if we can use error_log instead
         }
+    }
+
+    /**
+     * Log Throwable Error
+     *
+     * @param Throwable $throwable
+     */
+    public function logThrowable(Throwable $throwable): void
+    {
+        $this->log(MessageType::ERROR, (string) $throwable);
     }
 
     /**
