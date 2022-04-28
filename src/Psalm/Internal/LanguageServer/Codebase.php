@@ -115,7 +115,7 @@ class Codebase extends PsalmCodebase
 
         $range = new Range(
             self::getPositionFromOffset($reference_start_pos, $file_contents),
-            self::getPositionFromOffset($reference_end_pos, $file_contents),
+            self::getPositionFromOffset($reference_end_pos, $file_contents)
         );
 
         return new Reference($file_path, $symbol, $range);
@@ -132,7 +132,7 @@ class Codebase extends PsalmCodebase
         //Direct Assignment
         if (is_numeric($reference->symbol[0])) {
             return new PHPMarkdownContent(
-                preg_replace('/^[^:]*:/', '', $reference->symbol),
+                preg_replace('/^[^:]*:/', '', $reference->symbol)
             );
         }
 
@@ -158,7 +158,7 @@ class Codebase extends PsalmCodebase
                 return new PHPMarkdownContent(
                     $storage->getHoverMarkdown(),
                     "{$storage->defining_fqcln}::{$storage->cased_name}",
-                    $storage->description,
+                    $storage->description
                 );
             }
 
@@ -180,7 +180,7 @@ class Codebase extends PsalmCodebase
                         return new PHPMarkdownContent(
                             "{$storage->getInfo()} {$symbol_name}",
                             $reference->symbol,
-                            $storage->description,
+                            $storage->description
                         );
                     }
                 }
@@ -224,7 +224,7 @@ class Codebase extends PsalmCodebase
             return new PHPMarkdownContent(
                 $class_constants[$const_name]->getHoverMarkdown($const_name),
                 $fq_classlike_name . '::' . $const_name,
-                $class_constants[$const_name]->description,
+                $class_constants[$const_name]->description
             );
         }
 
@@ -232,7 +232,7 @@ class Codebase extends PsalmCodebase
         if (strpos($reference->symbol, '()')) {
             $function_id = strtolower(substr($reference->symbol, 0, -2));
             $file_storage = $this->file_storage_provider->get(
-                $reference->file_path,
+                $reference->file_path
             );
 
             if (isset($file_storage->functions[$function_id])) {
@@ -241,7 +241,7 @@ class Codebase extends PsalmCodebase
                 return new PHPMarkdownContent(
                     $function_storage->getHoverMarkdown(),
                     $function_id,
-                    $function_storage->description,
+                    $function_storage->description
                 );
             }
 
@@ -254,7 +254,7 @@ class Codebase extends PsalmCodebase
             return new PHPMarkdownContent(
                 $function->getHoverMarkdown(),
                 $function_id,
-                $function->description,
+                $function->description
             );
         }
 
@@ -264,21 +264,21 @@ class Codebase extends PsalmCodebase
             if (!$type->isMixed()) {
                 return new PHPMarkdownContent(
                     (string) $type,
-                    $reference->symbol,
+                    $reference->symbol
                 );
             }
         }
 
         try {
             $storage = $this->classlike_storage_provider->get(
-                $reference->symbol,
+                $reference->symbol
             );
             return new PHPMarkdownContent(
                 ($storage->abstract ? 'abstract ' : '') .
                     'class ' .
                     $storage->name,
                 $storage->name,
-                $storage->description,
+                $storage->description
             );
         } catch (InvalidArgumentException $e) {
             //continue on as normal
@@ -298,12 +298,12 @@ class Codebase extends PsalmCodebase
                 $type = $namespace_constants[$const_name];
                 return new PHPMarkdownContent(
                     $reference->symbol . ' ' . $type,
-                    $reference->symbol,
+                    $reference->symbol
                 );
             }
         } else {
             $file_storage = $this->file_storage_provider->get(
-                $reference->file_path,
+                $reference->file_path
             );
             // ?
             if (isset($file_storage->constants[$reference->symbol])) {
@@ -312,20 +312,20 @@ class Codebase extends PsalmCodebase
                         $reference->symbol .
                         ' ' .
                         $file_storage->constants[$reference->symbol],
-                    $reference->symbol,
+                    $reference->symbol
                 );
             }
             $type = ConstFetchAnalyzer::getGlobalConstType(
                 $this,
                 $reference->symbol,
-                $reference->symbol,
+                $reference->symbol
             );
 
             //Global Constant
             if ($type) {
                 return new PHPMarkdownContent(
                     'const ' . $reference->symbol . ' ' . $type,
-                    $reference->symbol,
+                    $reference->symbol
                 );
             }
         }
@@ -350,7 +350,7 @@ class Codebase extends PsalmCodebase
 
         return new Position(
             substr_count($file_contents, "\n"),
-            $offset - (int) $before_newline_count - 1,
+            $offset - (int) $before_newline_count - 1
         );
     }
 
@@ -475,7 +475,7 @@ class Codebase extends PsalmCodebase
             // First parameter to a function-like
             $function_storage = $this->getFunctionStorageForSymbol(
                 $file_path,
-                $function . '()',
+                $function . '()'
             );
             if (!$function_storage || !$function_storage->params || !isset($function_storage->params[$argument_num])) {
                 return null;
@@ -503,13 +503,13 @@ class Codebase extends PsalmCodebase
             if ($atomic_type instanceof TNamedObject) {
                 try {
                     $class_storage = $this->classlike_storage_provider->get(
-                        $atomic_type->value,
+                        $atomic_type->value
                     );
 
                     foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
                         try {
                             $method_storage = $this->methods->getStorage(
-                                $declaring_method_id,
+                                $declaring_method_id
                             );
 
                             if ($method_storage->is_static || $gap === '->') {
@@ -528,7 +528,7 @@ class Codebase extends PsalmCodebase
                                         'editor.action.triggerParameterHints',
                                     ),
                                     null,
-                                    2,
+                                    2
                                 );
 
                                 if ($snippets_supported && count($method_storage->params) > 0) {
@@ -557,7 +557,7 @@ class Codebase extends PsalmCodebase
                             '1', //sort text
                             str_replace('$', '', $property_name),
                             ($gap === '::' ? '$' : '') .
-                                str_replace('$', '', $property_name),
+                                str_replace('$', '', $property_name)
                         );
                     }
 
@@ -570,7 +570,7 @@ class Codebase extends PsalmCodebase
                             '1',
                             str_replace('$', '', $property_name),
                             ($gap === '::' ? '$' : '') .
-                                str_replace('$', '', $property_name),
+                                str_replace('$', '', $property_name)
                         );
                     }
 
@@ -579,7 +579,7 @@ class Codebase extends PsalmCodebase
                     foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
                         try {
                             $property_storage = $this->properties->getStorage(
-                                $declaring_class . '::$' . $property_name,
+                                $declaring_class . '::$' . $property_name
                             );
 
                             if ($property_storage->is_static || $gap === '->') {
@@ -590,7 +590,7 @@ class Codebase extends PsalmCodebase
                                     $property_storage->description,
                                     (string) $property_storage->visibility,
                                     $property_name,
-                                    ($gap === '::' ? '$' : '') . $property_name,
+                                    ($gap === '::' ? '$' : '') . $property_name
                                 );
                             }
                         } catch (Exception $e) {
@@ -607,7 +607,7 @@ class Codebase extends PsalmCodebase
                             $const->description,
                             null,
                             $const_name,
-                            $const_name,
+                            $const_name
                         );
                     }
                 } catch (Exception $e) {
@@ -637,7 +637,7 @@ class Codebase extends PsalmCodebase
                         null,
                         null,
                         null,
-                        "'$property_name'",
+                        "'$property_name'"
                     );
                 }
             }
@@ -672,7 +672,7 @@ class Codebase extends PsalmCodebase
         foreach ($file_storage->classlikes_in_file as $fq_class_name => $_) {
             try {
                 $class_storage = $this->classlike_storage_provider->get(
-                    $fq_class_name,
+                    $fq_class_name
                 );
             } catch (Exception $e) {
                 continue;
@@ -725,20 +725,20 @@ class Codebase extends PsalmCodebase
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset(
                         $aliases->uses_end,
-                        $file_contents,
+                        $file_contents
                     );
                     $extra_edits[] = new TextEdit(
                         new Range($position, $position),
-                        "\n" . 'use ' . $fq_class_name . ';',
+                        "\n" . 'use ' . $fq_class_name . ';'
                     );
                 } else {
                     $position = self::getPositionFromOffset(
                         $aliases->namespace_first_stmt_start,
-                        $file_contents,
+                        $file_contents
                     );
                     $extra_edits[] = new TextEdit(
                         new Range($position, $position),
-                        'use ' . $fq_class_name . ';' . "\n" . "\n",
+                        'use ' . $fq_class_name . ';' . "\n" . "\n"
                     );
                 }
 
@@ -747,7 +747,7 @@ class Codebase extends PsalmCodebase
 
             try {
                 $class_storage = $this->classlike_storage_provider->get(
-                    $fq_class_name,
+                    $fq_class_name
                 );
                 $description = $class_storage->description;
             } catch (Exception $e) {
@@ -763,7 +763,7 @@ class Codebase extends PsalmCodebase
                 $fq_class_name,
                 $insertion_text,
                 null,
-                $extra_edits,
+                $extra_edits
             );
         }
 
@@ -771,7 +771,7 @@ class Codebase extends PsalmCodebase
             $type_string,
             $offset,
             $file_path,
-            $this,
+            $this
         );
 
         $namespace_map = [];
@@ -824,7 +824,7 @@ class Codebase extends PsalmCodebase
                     'editor.action.triggerParameterHints',
                 ),
                 null,
-                2,
+                2
             );
         }
 
@@ -851,7 +851,7 @@ class Codebase extends PsalmCodebase
                         null,
                         null,
                         null,
-                        $property_name,
+                        $property_name
                     );
                 }
             } elseif ($atomic_type instanceof TLiteralString) {
@@ -862,7 +862,7 @@ class Codebase extends PsalmCodebase
                     null,
                     null,
                     null,
-                    "'$atomic_type->value'",
+                    "'$atomic_type->value'"
                 );
             } elseif ($atomic_type instanceof TLiteralInt) {
                 $completion_items[] = new CompletionItem(
@@ -872,7 +872,7 @@ class Codebase extends PsalmCodebase
                     null,
                     null,
                     null,
-                    (string) $atomic_type->value,
+                    (string) $atomic_type->value
                 );
             } elseif ($atomic_type instanceof TClassConstant) {
                 $const =
@@ -886,7 +886,7 @@ class Codebase extends PsalmCodebase
                     null,
                     null,
                     null,
-                    $const,
+                    $const
                 );
             }
         }
@@ -943,7 +943,7 @@ class Codebase extends PsalmCodebase
 
         $range = new Range(
             self::getPositionFromOffset($start_pos, $file_contents),
-            self::getPositionFromOffset($end_pos, $file_contents),
+            self::getPositionFromOffset($end_pos, $file_contents)
         );
 
         return [$reference, $argument_number, $range];
@@ -961,7 +961,7 @@ class Codebase extends PsalmCodebase
         if (strpos($function_symbol, '::') !== false) {
             /** @psalm-suppress ArgumentTypeCoercion */
             $method_id = new MethodIdentifier(
-                ...explode('::', $function_symbol),
+                ...explode('::', $function_symbol)
             );
 
             $declaring_method_id = $this->methods->getDeclaringMethodId(
@@ -983,12 +983,12 @@ class Codebase extends PsalmCodebase
                         null,
                         strtolower($function_symbol),
                         dirname($file_path),
-                        $file_path,
+                        $file_path
                     );
                 } else {
                     $function_storage = $this->functions->getStorage(
                         null,
-                        strtolower($function_symbol),
+                        strtolower($function_symbol)
                     );
                 }
                 $params = $function_storage->params;
@@ -1057,7 +1057,7 @@ class Codebase extends PsalmCodebase
                 $reference->file_path,
                 $this->config->shortenFileName($reference->file_path),
                 (int) $symbol_parts[0],
-                (int) $symbol_parts[1],
+                (int) $symbol_parts[1]
             );
         }
 
@@ -1068,11 +1068,11 @@ class Codebase extends PsalmCodebase
 
                     /** @psalm-suppress ArgumentTypeCoercion */
                     $method_id = new MethodIdentifier(
-                        ...explode('::', $symbol),
+                        ...explode('::', $symbol)
                     );
 
                     $declaring_method_id = $this->methods->getDeclaringMethodId(
-                        $method_id,
+                        $method_id
                     );
 
                     if (!$declaring_method_id) {
@@ -1086,7 +1086,7 @@ class Codebase extends PsalmCodebase
 
                 if (strpos($reference->symbol, '$') !== false) {
                     $storage = $this->properties->getStorage(
-                        $reference->symbol,
+                        $reference->symbol
                     );
 
                     return $storage->location;
@@ -1099,7 +1099,7 @@ class Codebase extends PsalmCodebase
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
-                    ReflectionProperty::IS_PRIVATE,
+                    ReflectionProperty::IS_PRIVATE
                 );
 
                 if (!isset($class_constants[$const_name])) {
@@ -1111,7 +1111,7 @@ class Codebase extends PsalmCodebase
 
             if (strpos($reference->symbol, '()')) {
                 $file_storage = $this->file_storage_provider->get(
-                    $reference->file_path,
+                    $reference->file_path
                 );
 
                 $function_id = strtolower(substr($reference->symbol, 0, -2));
@@ -1129,7 +1129,7 @@ class Codebase extends PsalmCodebase
             }
 
             return $this->classlike_storage_provider->get(
-                $reference->symbol,
+                $reference->symbol
             )->location;
         } catch (UnexpectedValueException $e) {
             error_log($e->getMessage());
@@ -1148,7 +1148,7 @@ class Codebase extends PsalmCodebase
         $this->file_provider->addTemporaryFileChanges(
             $file_path,
             $new_content,
-            $version,
+            $version
         );
     }
 
