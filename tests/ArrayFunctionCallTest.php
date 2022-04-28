@@ -1809,10 +1809,14 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'usort' => [
                 '<?php
+                    function baz (int $a, int $b): int { return $a <=> $b; }
                     $array = ["foo" => 123, "bar" => 456];
-                    usort($array, function (int $a, int $b) { return $a <=> $b; });',
+                    usort($array, "baz");
+                    $emptyArray = [];
+                    usort($emptyArray, "baz");',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<empty>',
                 ],
             ],
             'closureParamConstraintsMet' => [
