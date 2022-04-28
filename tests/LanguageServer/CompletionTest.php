@@ -422,7 +422,7 @@ class CompletionTest extends TestCase
 
         $this->assertSame(['B\C<string>', '->', 726], $completion_data);
 
-        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
 
         $this->assertCount(3, $completion_items);
     }
@@ -718,7 +718,7 @@ class CompletionTest extends TestCase
 
         $this->assertSame(['B\A&static', '->', 146], $completion_data);
 
-        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
 
         $this->assertCount(2, $completion_items);
 
@@ -1257,7 +1257,7 @@ class CompletionTest extends TestCase
 
         $this->assertSame(['Bar\Alpha', '::', 221], $completion_data);
 
-        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
         $this->assertCount(2, $completion_items);
     }
 
@@ -1292,7 +1292,7 @@ class CompletionTest extends TestCase
 
         $this->assertSame(['Bar\Alpha', '->', 200], $completion_data);
 
-        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
         $this->assertCount(1, $completion_items);
     }
 
@@ -1326,7 +1326,7 @@ class CompletionTest extends TestCase
 
         $this->assertSame(['Bar\Alpha', '::', 201], $completion_data);
 
-        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
         $this->assertCount(2, $completion_items);
     }
 
@@ -1461,7 +1461,7 @@ class CompletionTest extends TestCase
 
         $this->assertSame(['Foo&static', '->', 129], $completion_data);
 
-        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1]);
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
 
         $this->assertCount(3, $completion_items);
     }
