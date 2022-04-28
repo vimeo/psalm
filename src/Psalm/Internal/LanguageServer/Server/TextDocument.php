@@ -352,7 +352,6 @@ class TextDocument
             return new Success(null);
         }
 
-
         return new Success(new CompletionList($completion_items, false));
     }
 

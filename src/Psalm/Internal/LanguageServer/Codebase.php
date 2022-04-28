@@ -59,12 +59,13 @@ use function substr_count;
  */
 class Codebase extends PsalmCodebase
 {
-
     /**
      * Get Reference from Position
      */
-    public function getReferenceAtPosition(string $file_path, Position $position): ?Reference
-    {
+    public function getReferenceAtPosition(
+        string $file_path,
+        Position $position,
+    ): ?Reference {
         $is_open = $this->file_provider->isOpen($file_path);
 
         if (!$is_open) {
@@ -75,39 +76,53 @@ class Codebase extends PsalmCodebase
 
         $offset = $position->toOffset($file_contents);
 
-        [$reference_map, $type_map] = $this->analyzer->getMapsForFile($file_path);
+        $reference_maps = $this->analyzer->getMapsForFile($file_path);
 
-        $symbol = null;
-
-        if (!$reference_map && !$type_map) {
-            return null;
-        }
+        [$r] = $reference_maps;
 
         $reference_start_pos = null;
         $reference_end_pos = null;
+        $symbol = null;
 
-        ksort($reference_map);
+        foreach ($reference_maps as $reference_map) {
+            ksort($reference_map);
 
-        foreach ($reference_map as $start_pos => [$end_pos, $possible_reference]) {
-            if ($offset < $start_pos) {
+            foreach (
+                $reference_map
+                as $start_pos => [$end_pos, $possible_reference]
+            ) {
+                if ($offset < $start_pos) {
+                    break;
+                }
+
+                if ($offset > $end_pos) {
+                    continue;
+                }
+                $reference_start_pos = $start_pos;
+                $reference_end_pos = $end_pos;
+                $symbol = $possible_reference;
+            }
+
+            if (
+                $symbol !== null &&
+                $reference_start_pos !== null &&
+                $reference_end_pos !== null
+            ) {
                 break;
             }
-
-            if ($offset > $end_pos) {
-                continue;
-            }
-            $reference_start_pos = $start_pos;
-            $reference_end_pos = $end_pos;
-            $symbol = $possible_reference;
         }
 
-        if ($symbol === null || $reference_start_pos === null || $reference_end_pos === null) {
+        if (
+            $symbol === null ||
+            $reference_start_pos === null ||
+            $reference_end_pos === null
+        ) {
             return null;
         }
 
         $range = new Range(
             self::getPositionFromOffset($reference_start_pos, $file_contents),
-            self::getPositionFromOffset($reference_end_pos, $file_contents)
+            self::getPositionFromOffset($reference_end_pos, $file_contents),
         );
 
         return new Reference($file_path, $symbol, $range);
@@ -118,12 +133,13 @@ class Codebase extends PsalmCodebase
      *
      * @param Reference $reference
      */
-    public function getMarkupContentForSymbol(Reference $reference): ?PHPMarkdownContent
-    {
+    public function getMarkupContentForSymbol(
+        Reference $reference,
+    ): ?PHPMarkdownContent {
         //Direct Assignment
         if (is_numeric($reference->symbol[0])) {
             return new PHPMarkdownContent(
-                preg_replace('/^[^:]*:/', '', $reference->symbol)
+                preg_replace('/^[^:]*:/', '', $reference->symbol),
             );
         }
 
@@ -136,7 +152,9 @@ class Codebase extends PsalmCodebase
                 /** @psalm-suppress ArgumentTypeCoercion */
                 $method_id = new MethodIdentifier(...explode('::', $symbol));
 
-                $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
+                $declaring_method_id = $this->methods->getDeclaringMethodId(
+                    $method_id,
+                );
 
                 if (!$declaring_method_id) {
                     return null;
@@ -147,7 +165,7 @@ class Codebase extends PsalmCodebase
                 return new PHPMarkdownContent(
                     $storage->getHoverMarkdown(),
                     "{$storage->defining_fqcln}::{$storage->cased_name}",
-                    $storage->description
+                    $storage->description,
                 );
             }
 
@@ -155,20 +173,53 @@ class Codebase extends PsalmCodebase
 
             //Class Property
             if (strpos($reference->symbol, '$') !== false) {
-                $storage = $this->properties->getStorage($reference->symbol);
+                $property_id = preg_replace('/^\\\\/', '', $reference->symbol);
+                [$fq_class_name, $property_name] = explode('::$', $property_id);
+                $class_storage = $this->classlikes->getStorageFor($fq_class_name);
 
-                return new PHPMarkdownContent(
-                    "{$storage->getInfo()} {$symbol_name}",
-                    $reference->symbol,
-                    $storage->description
-                );
+                //Get Real Properties
+                if (isset($class_storage->declaring_property_ids[$property_name])) {
+                    $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
+                    $declaring_class_storage = $this->classlike_storage_provider->get($declaring_property_class);
+
+                    if (isset($declaring_class_storage->properties[$property_name])) {
+                        $storage = $declaring_class_storage->properties[$property_name];
+                        return new PHPMarkdownContent(
+                            "{$storage->getInfo()} {$symbol_name}",
+                            $reference->symbol,
+                            $storage->description,
+                        );
+                    }
+                }
+
+                //Get Docblock properties
+                if (isset($class_storage->pseudo_property_set_types['$'.$property_name])) {
+                    return new PHPMarkdownContent(
+                        'public '.(string) $class_storage->pseudo_property_set_types['$'.$property_name].' $'.$property_name,
+                        $reference->symbol
+                    );
+                }
+
+                //Get Docblock properties
+                if (isset($class_storage->pseudo_property_get_types['$'.$property_name])) {
+                    return new PHPMarkdownContent(
+                        'public '.(string) $class_storage->pseudo_property_get_types['$'.$property_name].' $'.$property_name,
+                        $reference->symbol
+                    );
+                }
+
+                return null;
+
             }
 
-            [$fq_classlike_name, $const_name] = explode('::', $reference->symbol);
+            [$fq_classlike_name, $const_name] = explode(
+                '::',
+                $reference->symbol,
+            );
 
             $class_constants = $this->classlikes->getConstantsForClass(
                 $fq_classlike_name,
-                ReflectionProperty::IS_PRIVATE
+                ReflectionProperty::IS_PRIVATE,
             );
 
             if (!isset($class_constants[$const_name])) {
@@ -178,15 +229,17 @@ class Codebase extends PsalmCodebase
             //Class Constant
             return new PHPMarkdownContent(
                 $class_constants[$const_name]->getHoverMarkdown($const_name),
-                $fq_classlike_name.'::'.$const_name,
-                $class_constants[$const_name]->description
+                $fq_classlike_name . '::' . $const_name,
+                $class_constants[$const_name]->description,
             );
         }
 
         //Procedural Function
         if (strpos($reference->symbol, '()')) {
             $function_id = strtolower(substr($reference->symbol, 0, -2));
-            $file_storage = $this->file_storage_provider->get($reference->file_path);
+            $file_storage = $this->file_storage_provider->get(
+                $reference->file_path,
+            );
 
             if (isset($file_storage->functions[$function_id])) {
                 $function_storage = $file_storage->functions[$function_id];
@@ -194,7 +247,7 @@ class Codebase extends PsalmCodebase
                 return new PHPMarkdownContent(
                     $function_storage->getHoverMarkdown(),
                     $function_id,
-                    $function_storage->description
+                    $function_storage->description,
                 );
             }
 
@@ -207,7 +260,7 @@ class Codebase extends PsalmCodebase
             return new PHPMarkdownContent(
                 $function->getHoverMarkdown(),
                 $function_id,
-                $function->description
+                $function->description,
             );
         }
 
@@ -217,17 +270,21 @@ class Codebase extends PsalmCodebase
             if (!$type->isMixed()) {
                 return new PHPMarkdownContent(
                     (string) $type,
-                    $reference->symbol
+                    $reference->symbol,
                 );
             }
         }
 
         try {
-            $storage = $this->classlike_storage_provider->get($reference->symbol);
+            $storage = $this->classlike_storage_provider->get(
+                $reference->symbol,
+            );
             return new PHPMarkdownContent(
-                ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name,
+                ($storage->abstract ? 'abstract ' : '') .
+                    'class ' .
+                    $storage->name,
                 $storage->name,
-                $storage->description
+                $storage->description,
             );
         } catch (InvalidArgumentException $e) {
             //continue on as normal
@@ -240,40 +297,52 @@ class Codebase extends PsalmCodebase
 
             $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
                 $namespace_name,
-                ReflectionProperty::IS_PUBLIC
+                ReflectionProperty::IS_PUBLIC,
             );
             //Namespace Constant
             if (isset($namespace_constants[$const_name])) {
                 $type = $namespace_constants[$const_name];
                 return new PHPMarkdownContent(
                     $reference->symbol . ' ' . $type,
-                    $reference->symbol
+                    $reference->symbol,
                 );
             }
         } else {
-            $file_storage = $this->file_storage_provider->get($reference->file_path);
+            $file_storage = $this->file_storage_provider->get(
+                $reference->file_path,
+            );
             // ?
             if (isset($file_storage->constants[$reference->symbol])) {
                 return new PHPMarkdownContent(
-                    'const ' . $reference->symbol . ' ' . $file_storage->constants[$reference->symbol],
-                    $reference->symbol
+                    'const ' .
+                        $reference->symbol .
+                        ' ' .
+                        $file_storage->constants[$reference->symbol],
+                    $reference->symbol,
                 );
             }
-            $type = ConstFetchAnalyzer::getGlobalConstType($this, $reference->symbol, $reference->symbol);
+            $type = ConstFetchAnalyzer::getGlobalConstType(
+                $this,
+                $reference->symbol,
+                $reference->symbol,
+            );
 
             //Global Constant
             if ($type) {
                 return new PHPMarkdownContent(
                     'const ' . $reference->symbol . ' ' . $type,
-                    $reference->symbol
+                    $reference->symbol,
                 );
             }
         }
-        return null;
+
+        return new PHPMarkdownContent($reference->symbol);
     }
 
-    private static function getPositionFromOffset(int $offset, string $file_contents): Position
-    {
+    private static function getPositionFromOffset(
+        int $offset,
+        string $file_contents,
+    ): Position {
         $file_contents = substr($file_contents, 0, $offset);
 
         $offsetLength = $offset - strlen($file_contents);
@@ -287,15 +356,17 @@ class Codebase extends PsalmCodebase
 
         return new Position(
             substr_count($file_contents, "\n"),
-            $offset - (int)$before_newline_count - 1
+            $offset - (int) $before_newline_count - 1,
         );
     }
 
     /**
      * @return array{0: string, 1: '->'|'::'|'['|'symbol', 2: int}|null
      */
-    public function getCompletionDataAtPosition(string $file_path, Position $position): ?array
-    {
+    public function getCompletionDataAtPosition(
+        string $file_path,
+        Position $position,
+    ): ?array {
         $is_open = $this->file_provider->isOpen($file_path);
 
         if (!$is_open) {
@@ -306,7 +377,9 @@ class Codebase extends PsalmCodebase
 
         $offset = $position->toOffset($file_contents);
 
-        [$reference_map, $type_map] = $this->analyzer->getMapsForFile($file_path);
+        [$reference_map, $type_map] = $this->analyzer->getMapsForFile(
+            $file_path,
+        );
 
         if (!$reference_map && !$type_map) {
             return null;
@@ -314,13 +387,22 @@ class Codebase extends PsalmCodebase
 
         krsort($type_map);
 
-        foreach ($type_map as $start_pos => [$end_pos_excluding_whitespace, $possible_type]) {
+        foreach (
+            $type_map
+            as $start_pos => [$end_pos_excluding_whitespace, $possible_type]
+        ) {
             if ($offset < $start_pos) {
                 continue;
             }
 
             /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
-            $num_whitespace_bytes = preg_match('/\G\s+/', $file_contents, $matches, 0, $end_pos_excluding_whitespace)
+            $num_whitespace_bytes = preg_match(
+                '/\G\s+/',
+                $file_contents,
+                $matches,
+                0,
+                $end_pos_excluding_whitespace,
+            )
                 ? strlen($matches[0])
                 : 0;
             $end_pos = $end_pos_excluding_whitespace + $num_whitespace_bytes;
@@ -356,12 +438,18 @@ class Codebase extends PsalmCodebase
             }
         }
 
-        foreach ($reference_map as $start_pos => [$end_pos, $possible_reference]) {
+        foreach (
+            $reference_map
+            as $start_pos => [$end_pos, $possible_reference]
+        ) {
             if ($offset < $start_pos) {
                 continue;
             }
             // If the reference precedes a "::" then treat it as a class reference.
-            if ($offset - $end_pos === 2 && substr($file_contents, $end_pos, 2) === '::') {
+            if (
+                $offset - $end_pos === 2 &&
+                substr($file_contents, $end_pos, 2) === '::'
+            ) {
                 return [$possible_reference, '::', $offset];
             }
 
@@ -380,22 +468,38 @@ class Codebase extends PsalmCodebase
         return null;
     }
 
-    public function getTypeContextAtPosition(string $file_path, Position $position): ?Union
-    {
+    public function getTypeContextAtPosition(
+        string $file_path,
+        Position $position,
+    ): ?Union {
         $file_contents = $this->getFileContents($file_path);
         $offset = $position->toOffset($file_contents);
 
-        [$reference_map, $type_map, $argument_map] = $this->analyzer->getMapsForFile($file_path);
+        [
+            $reference_map,
+            $type_map,
+            $argument_map,
+        ] = $this->analyzer->getMapsForFile($file_path);
         if (!$reference_map && !$type_map && !$argument_map) {
             return null;
         }
-        foreach ($argument_map as $start_pos => [$end_pos, $function, $argument_num]) {
+        foreach (
+            $argument_map
+            as $start_pos => [$end_pos, $function, $argument_num]
+        ) {
             if ($offset < $start_pos || $offset > $end_pos) {
                 continue;
             }
             // First parameter to a function-like
-            $function_storage = $this->getFunctionStorageForSymbol($file_path, $function . '()');
-            if (!$function_storage || !$function_storage->params || !isset($function_storage->params[$argument_num])) {
+            $function_storage = $this->getFunctionStorageForSymbol(
+                $file_path,
+                $function . '()',
+            );
+            if (
+                !$function_storage ||
+                !$function_storage->params ||
+                !isset($function_storage->params[$argument_num])
+            ) {
                 return null;
             }
 
@@ -411,7 +515,7 @@ class Codebase extends PsalmCodebase
     public function getCompletionItemsForClassishThing(
         string $type_string,
         string $gap,
-        bool $snippets_supported = false
+        bool $snippets_supported = false,
     ): array {
         $completion_items = [];
 
@@ -420,57 +524,122 @@ class Codebase extends PsalmCodebase
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TNamedObject) {
                 try {
-                    $class_storage = $this->classlike_storage_provider->get($atomic_type->value);
+                    $class_storage = $this->classlike_storage_provider->get(
+                        $atomic_type->value,
+                    );
 
-                    foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
-                        $method_storage = $this->methods->getStorage($declaring_method_id);
-
-                        if ($method_storage->is_static || $gap === '->') {
-                            $completion_item = new CompletionItem(
-                                $method_storage->cased_name,
-                                CompletionItemKind::METHOD,
-                                $method_storage->getCompletionSignature(),
-                                $method_storage->description,
-                                (string)$method_storage->visibility,
-                                $method_storage->cased_name,
-                                $method_storage->cased_name,
-                                null,
-                                null,
-                                new Command('Trigger parameter hints', 'editor.action.triggerParameterHints'),
-                                null,
-                                2
+                    foreach (
+                        $class_storage->appearing_method_ids
+                        as $declaring_method_id
+                    ) {
+                        try {
+                            $method_storage = $this->methods->getStorage(
+                                $declaring_method_id,
                             );
 
-                            if ($snippets_supported && count($method_storage->params) > 0) {
-                                $completion_item->insertText .= '($0)';
-                                $completion_item->insertTextFormat = InsertTextFormat::SNIPPET;
-                            } else {
-                                $completion_item->insertText .= '()';
+                            if ($method_storage->is_static || $gap === '->') {
+                                $completion_item = new CompletionItem(
+                                    $method_storage->cased_name,
+                                    CompletionItemKind::METHOD,
+                                    $method_storage->getCompletionSignature(),
+                                    $method_storage->description,
+                                    (string) $method_storage->visibility,
+                                    $method_storage->cased_name,
+                                    $method_storage->cased_name,
+                                    null,
+                                    null,
+                                    new Command(
+                                        'Trigger parameter hints',
+                                        'editor.action.triggerParameterHints',
+                                    ),
+                                    null,
+                                    2,
+                                );
+
+                                if (
+                                    $snippets_supported &&
+                                    count($method_storage->params) > 0
+                                ) {
+                                    $completion_item->insertText .= '($0)';
+                                    $completion_item->insertTextFormat =
+                                        InsertTextFormat::SNIPPET;
+                                } else {
+                                    $completion_item->insertText .= '()';
+                                }
+
+                                $completion_items[] = $completion_item;
                             }
-
-                            $completion_items[] = $completion_item;
+                        } catch (Exception $e) {
+                            error_log($e->getMessage());
+                            continue;
                         }
                     }
 
-                    foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
-                        $property_storage = $this->properties->getStorage(
-                            $declaring_class . '::$' . $property_name
+                    $pseudo_property_types = [];
+                    foreach (
+                        $class_storage->pseudo_property_get_types
+                        as $property_name => $type
+                    ) {
+                        $pseudo_property_types[$property_name] = new CompletionItem(
+                            str_replace('$', '', $property_name),
+                            CompletionItemKind::PROPERTY,
+                            $type->__toString(),
+                            null,
+                            '1', //sort text
+                            str_replace('$', '', $property_name),
+                            ($gap === '::' ? '$' : '') .
+                                str_replace('$', '', $property_name),
                         );
+                    }
 
-                        if ($property_storage->is_static || $gap === '->') {
-                            $completion_items[] = new CompletionItem(
-                                '$' . $property_name,
-                                CompletionItemKind::PROPERTY,
-                                $property_storage->getInfo(),
-                                $property_storage->description,
-                                (string)$property_storage->visibility,
-                                $property_name,
-                                ($gap === '::' ? '$' : '') . $property_name
+                    foreach (
+                        $class_storage->pseudo_property_set_types
+                        as $property_name => $type
+                    ) {
+                        $pseudo_property_types[$property_name] = new CompletionItem(
+                            str_replace('$', '', $property_name),
+                            CompletionItemKind::PROPERTY,
+                            $type->__toString(),
+                            null,
+                            '1',
+                            str_replace('$', '', $property_name),
+                            ($gap === '::' ? '$' : '') .
+                                str_replace('$', '', $property_name),
+                        );
+                    }
+
+                    $completion_items = array_merge($completion_items, array_values($pseudo_property_types));
+
+                    foreach (
+                        $class_storage->declaring_property_ids
+                        as $property_name => $declaring_class
+                    ) {
+                        try {
+                            $property_storage = $this->properties->getStorage(
+                                $declaring_class . '::$' . $property_name,
                             );
+
+                            if ($property_storage->is_static || $gap === '->') {
+                                $completion_items[] = new CompletionItem(
+                                    $property_name,
+                                    CompletionItemKind::PROPERTY,
+                                    $property_storage->getInfo(),
+                                    $property_storage->description,
+                                    (string) $property_storage->visibility,
+                                    $property_name,
+                                    ($gap === '::' ? '$' : '') . $property_name,
+                                );
+                            }
+                        } catch (Exception $e) {
+                            error_log($e->getMessage());
+                            continue;
                         }
                     }
 
-                    foreach ($class_storage->constants as $const_name => $const) {
+                    foreach (
+                        $class_storage->constants
+                        as $const_name => $const
+                    ) {
                         $completion_items[] = new CompletionItem(
                             $const_name,
                             CompletionItemKind::VARIABLE,
@@ -478,7 +647,7 @@ class Codebase extends PsalmCodebase
                             $const->description,
                             null,
                             $const_name,
-                            $const_name
+                            $const_name,
                         );
                     }
                 } catch (Exception $e) {
@@ -494,14 +663,16 @@ class Codebase extends PsalmCodebase
     /**
      * @return list<CompletionItem>
      */
-    public function getCompletionItemsForArrayKeys(
-        string $type_string
-    ): array {
+    public function getCompletionItemsForArrayKeys(string $type_string): array
+    {
         $completion_items = [];
         $type = Type::parseString($type_string);
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TKeyedArray) {
-                foreach ($atomic_type->properties as $property_name => $property) {
+                foreach (
+                    $atomic_type->properties
+                    as $property_name => $property
+                ) {
                     $completion_items[] = new CompletionItem(
                         (string) $property_name,
                         CompletionItemKind::PROPERTY,
@@ -509,7 +680,7 @@ class Codebase extends PsalmCodebase
                         null,
                         null,
                         null,
-                        "'$property_name'"
+                        "'$property_name'",
                     );
                 }
             }
@@ -523,7 +694,7 @@ class Codebase extends PsalmCodebase
     public function getCompletionItemsForPartialSymbol(
         string $type_string,
         int $offset,
-        string $file_path
+        string $file_path,
     ): array {
         $fq_suggestion = false;
 
@@ -531,7 +702,9 @@ class Codebase extends PsalmCodebase
             $fq_suggestion = true;
         }
 
-        $matching_classlike_names = $this->classlikes->getMatchingClassLikeNames($type_string);
+        $matching_classlike_names = $this->classlikes->getMatchingClassLikeNames(
+            $type_string,
+        );
 
         $completion_items = [];
 
@@ -541,7 +714,9 @@ class Codebase extends PsalmCodebase
 
         foreach ($file_storage->classlikes_in_file as $fq_class_name => $_) {
             try {
-                $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+                $class_storage = $this->classlike_storage_provider->get(
+                    $fq_class_name,
+                );
             } catch (Exception $e) {
                 continue;
             }
@@ -550,8 +725,9 @@ class Codebase extends PsalmCodebase
                 continue;
             }
 
-            if ($offset > $class_storage->stmt_location->raw_file_start
-                && $offset < $class_storage->stmt_location->raw_file_end
+            if (
+                $offset > $class_storage->stmt_location->raw_file_start &&
+                $offset < $class_storage->stmt_location->raw_file_end
             ) {
                 $aliases = $class_storage->aliases;
                 break;
@@ -559,7 +735,10 @@ class Codebase extends PsalmCodebase
         }
 
         if (!$aliases) {
-            foreach ($file_storage->namespace_aliases as $namespace_start => $namespace_aliases) {
+            foreach (
+                $file_storage->namespace_aliases
+                as $namespace_start => $namespace_aliases
+            ) {
                 if ($namespace_start < $offset) {
                     $aliases = $namespace_aliases;
                     break;
@@ -578,36 +757,37 @@ class Codebase extends PsalmCodebase
                 $fq_class_name,
                 $aliases && $aliases->namespace ? $aliases->namespace : null,
                 $aliases->uses_flipped ?? [],
-                null
+                null,
             );
 
-            if ($aliases
-                && !$fq_suggestion
-                && $aliases->namespace
-                && $insertion_text === '\\' . $fq_class_name
-                && $aliases->namespace_first_stmt_start
+            if (
+                $aliases &&
+                !$fq_suggestion &&
+                $aliases->namespace &&
+                $insertion_text === '\\' . $fq_class_name &&
+                $aliases->namespace_first_stmt_start
             ) {
                 $file_contents = $this->getFileContents($file_path);
 
                 $class_name = preg_replace('/^.*\\\/', '', $fq_class_name);
 
                 if ($aliases->uses_end) {
-                    $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);
+                    $position = self::getPositionFromOffset(
+                        $aliases->uses_end,
+                        $file_contents,
+                    );
                     $extra_edits[] = new TextEdit(
-                        new Range(
-                            $position,
-                            $position
-                        ),
-                        "\n" . 'use ' . $fq_class_name . ';'
+                        new Range($position, $position),
+                        "\n" . 'use ' . $fq_class_name . ';',
                     );
                 } else {
-                    $position = self::getPositionFromOffset($aliases->namespace_first_stmt_start, $file_contents);
+                    $position = self::getPositionFromOffset(
+                        $aliases->namespace_first_stmt_start,
+                        $file_contents,
+                    );
                     $extra_edits[] = new TextEdit(
-                        new Range(
-                            $position,
-                            $position
-                        ),
-                        'use ' . $fq_class_name . ';' . "\n" . "\n"
+                        new Range($position, $position),
+                        'use ' . $fq_class_name . ';' . "\n" . "\n",
                     );
                 }
 
@@ -615,7 +795,9 @@ class Codebase extends PsalmCodebase
             }
 
             try {
-                $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+                $class_storage = $this->classlike_storage_provider->get(
+                    $fq_class_name,
+                );
                 $description = $class_storage->description;
             } catch (Exception $e) {
                 $description = null;
@@ -630,11 +812,16 @@ class Codebase extends PsalmCodebase
                 $fq_class_name,
                 $insertion_text,
                 null,
-                $extra_edits
+                $extra_edits,
             );
         }
 
-        $functions = $this->functions->getMatchingFunctionNames($type_string, $offset, $file_path, $this);
+        $functions = $this->functions->getMatchingFunctionNames(
+            $type_string,
+            $offset,
+            $file_path,
+            $this,
+        );
 
         $namespace_map = [];
         if ($aliases) {
@@ -658,7 +845,10 @@ class Codebase extends PsalmCodebase
             $in_namespace_map = false;
             foreach ($namespace_map as $namespace_name => $namespace_alias) {
                 if (strpos($function_lowercase, $namespace_name . '\\') === 0) {
-                    $function_name = $namespace_alias . '\\' . substr($function_name, strlen($namespace_name) + 1);
+                    $function_name =
+                        $namespace_alias .
+                        '\\' .
+                        substr($function_name, strlen($namespace_name) + 1);
                     $in_namespace_map = true;
                 }
             }
@@ -674,19 +864,23 @@ class Codebase extends PsalmCodebase
                 $function->description,
                 null,
                 $function_name,
-                $function_name . (count($function->params) !== 0 ? '($0)' : '()'),
+                $function_name .
+                    (count($function->params) !== 0 ? '($0)' : '()'),
                 null,
                 null,
-                new Command('Trigger parameter hints', 'editor.action.triggerParameterHints'),
+                new Command(
+                    'Trigger parameter hints',
+                    'editor.action.triggerParameterHints',
+                ),
                 null,
-                2
+                2,
             );
         }
 
         return $completion_items;
     }
 
-   /**
+    /**
      * @return list<CompletionItem>
      */
     public function getCompletionItemsForType(Union $type): array
@@ -694,7 +888,10 @@ class Codebase extends PsalmCodebase
         $completion_items = [];
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TBool) {
-                $bools = (string) $atomic_type === 'bool' ? ['true', 'false'] : [(string) $atomic_type];
+                $bools =
+                    (string) $atomic_type === 'bool'
+                        ? ['true', 'false']
+                        : [(string) $atomic_type];
                 foreach ($bools as $property_name) {
                     $completion_items[] = new CompletionItem(
                         $property_name,
@@ -703,7 +900,7 @@ class Codebase extends PsalmCodebase
                         null,
                         null,
                         null,
-                        $property_name
+                        $property_name,
                     );
                 }
             } elseif ($atomic_type instanceof TLiteralString) {
@@ -714,7 +911,7 @@ class Codebase extends PsalmCodebase
                     null,
                     null,
                     null,
-                    "'$atomic_type->value'"
+                    "'$atomic_type->value'",
                 );
             } elseif ($atomic_type instanceof TLiteralInt) {
                 $completion_items[] = new CompletionItem(
@@ -724,10 +921,13 @@ class Codebase extends PsalmCodebase
                     null,
                     null,
                     null,
-                    (string) $atomic_type->value
+                    (string) $atomic_type->value,
                 );
             } elseif ($atomic_type instanceof TClassConstant) {
-                $const = $atomic_type->fq_classlike_name . '::' . $atomic_type->const_name;
+                $const =
+                    $atomic_type->fq_classlike_name .
+                    '::' .
+                    $atomic_type->const_name;
                 $completion_items[] = new CompletionItem(
                     $const,
                     CompletionItemKind::VALUE,
@@ -735,7 +935,7 @@ class Codebase extends PsalmCodebase
                     null,
                     null,
                     null,
-                    $const
+                    $const,
                 );
             }
         }
@@ -745,8 +945,10 @@ class Codebase extends PsalmCodebase
     /**
      * @return array{0: non-empty-string, 1: int, 2: Range}|null
      */
-    public function getFunctionArgumentAtPosition(string $file_path, Position $position): ?array
-    {
+    public function getFunctionArgumentAtPosition(
+        string $file_path,
+        Position $position,
+    ): ?array {
         $is_open = $this->file_provider->isOpen($file_path);
 
         if (!$is_open) {
@@ -771,7 +973,11 @@ class Codebase extends PsalmCodebase
 
         ksort($argument_map);
 
-        foreach ($argument_map as $start_pos => [$end_pos, $possible_reference, $possible_argument_number]) {
+        foreach (
+            $argument_map
+            as $start_pos =>
+                [$end_pos, $possible_reference, $possible_argument_number]
+        ) {
             if ($offset < $start_pos) {
                 break;
             }
@@ -784,13 +990,18 @@ class Codebase extends PsalmCodebase
             $argument_number = $possible_argument_number;
         }
 
-        if ($reference === null || $start_pos === null || $end_pos === null || $argument_number === null) {
+        if (
+            $reference === null ||
+            $start_pos === null ||
+            $end_pos === null ||
+            $argument_number === null
+        ) {
             return null;
         }
 
         $range = new Range(
             self::getPositionFromOffset($start_pos, $file_contents),
-            self::getPositionFromOffset($end_pos, $file_contents)
+            self::getPositionFromOffset($end_pos, $file_contents),
         );
 
         return [$reference, $argument_number, $range];
@@ -801,15 +1012,19 @@ class Codebase extends PsalmCodebase
      */
     public function getSignatureInformation(
         string $function_symbol,
-        string $file_path = null
+        string $file_path = null,
     ): ?SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
         if (strpos($function_symbol, '::') !== false) {
             /** @psalm-suppress ArgumentTypeCoercion */
-            $method_id = new MethodIdentifier(...explode('::', $function_symbol));
+            $method_id = new MethodIdentifier(
+                ...explode('::', $function_symbol),
+            );
 
-            $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
+            $declaring_method_id = $this->methods->getDeclaringMethodId(
+                $method_id,
+            );
 
             if ($declaring_method_id === null) {
                 return null;
@@ -826,17 +1041,22 @@ class Codebase extends PsalmCodebase
                         null,
                         strtolower($function_symbol),
                         dirname($file_path),
-                        $file_path
+                        $file_path,
                     );
                 } else {
-                    $function_storage = $this->functions->getStorage(null, strtolower($function_symbol));
+                    $function_storage = $this->functions->getStorage(
+                        null,
+                        strtolower($function_symbol),
+                    );
                 }
                 $params = $function_storage->params;
                 $signature_label = $function_storage->cased_name;
                 $signature_documentation = $function_storage->description;
             } catch (Exception $exception) {
                 if (InternalCallMapHandler::inCallMap($function_symbol)) {
-                    $callables = InternalCallMapHandler::getCallablesFromCallMap($function_symbol);
+                    $callables = InternalCallMapHandler::getCallablesFromCallMap(
+                        $function_symbol,
+                    );
 
                     if (!$callables || !$callables[0]->params) {
                         throw $exception;
@@ -859,12 +1079,12 @@ class Codebase extends PsalmCodebase
                     strlen($signature_label),
                     strlen($signature_label) + strlen($parameter_label),
                 ],
-                $param->description ?? null
+                $param->description ?? null,
             );
 
             $signature_label .= $parameter_label;
 
-            if ($i < (count($params) - 1)) {
+            if ($i < count($params) - 1) {
                 $signature_label .= ', ';
             }
         }
@@ -874,7 +1094,7 @@ class Codebase extends PsalmCodebase
         return new SignatureInformation(
             $signature_label,
             $parameters,
-            $signature_documentation
+            $signature_documentation,
         );
     }
 
@@ -895,7 +1115,7 @@ class Codebase extends PsalmCodebase
                 $reference->file_path,
                 $this->config->shortenFileName($reference->file_path),
                 (int) $symbol_parts[0],
-                (int) $symbol_parts[1]
+                (int) $symbol_parts[1],
             );
         }
 
@@ -905,9 +1125,13 @@ class Codebase extends PsalmCodebase
                     $symbol = substr($reference->symbol, 0, -2);
 
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $method_id = new MethodIdentifier(...explode('::', $symbol));
+                    $method_id = new MethodIdentifier(
+                        ...explode('::', $symbol),
+                    );
 
-                    $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
+                    $declaring_method_id = $this->methods->getDeclaringMethodId(
+                        $method_id,
+                    );
 
                     if (!$declaring_method_id) {
                         return null;
@@ -919,16 +1143,21 @@ class Codebase extends PsalmCodebase
                 }
 
                 if (strpos($reference->symbol, '$') !== false) {
-                    $storage = $this->properties->getStorage($reference->symbol);
+                    $storage = $this->properties->getStorage(
+                        $reference->symbol,
+                    );
 
                     return $storage->location;
                 }
 
-                [$fq_classlike_name, $const_name] = explode('::', $reference->symbol);
+                [$fq_classlike_name, $const_name] = explode(
+                    '::',
+                    $reference->symbol,
+                );
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
-                    ReflectionProperty::IS_PRIVATE
+                    ReflectionProperty::IS_PRIVATE,
                 );
 
                 if (!isset($class_constants[$const_name])) {
@@ -939,7 +1168,9 @@ class Codebase extends PsalmCodebase
             }
 
             if (strpos($reference->symbol, '()')) {
-                $file_storage = $this->file_storage_provider->get($reference->file_path);
+                $file_storage = $this->file_storage_provider->get(
+                    $reference->file_path,
+                );
 
                 $function_id = strtolower(substr($reference->symbol, 0, -2));
 
@@ -951,10 +1182,13 @@ class Codebase extends PsalmCodebase
                     return null;
                 }
 
-                return $this->functions->getStorage(null, $function_id)->location;
+                return $this->functions->getStorage(null, $function_id)
+                    ->location;
             }
 
-            return $this->classlike_storage_provider->get($reference->symbol)->location;
+            return $this->classlike_storage_provider->get(
+                $reference->symbol,
+            )->location;
         } catch (UnexpectedValueException $e) {
             error_log($e->getMessage());
 
@@ -964,9 +1198,16 @@ class Codebase extends PsalmCodebase
         }
     }
 
-    public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
-    {
-        $this->file_provider->addTemporaryFileChanges($file_path, $new_content, $version);
+    public function addTemporaryFileChanges(
+        string $file_path,
+        string $new_content,
+        ?int $version = null,
+    ): void {
+        $this->file_provider->addTemporaryFileChanges(
+            $file_path,
+            $new_content,
+            $version,
+        );
     }
 
     public function removeTemporaryFileChanges(string $file_path): void
