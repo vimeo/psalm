@@ -146,7 +146,7 @@ class Codebase extends PsalmCodebase
                 $method_id = new MethodIdentifier(...explode('::', $symbol));
 
                 $declaring_method_id = $this->methods->getDeclaringMethodId(
-                    $method_id,
+                    $method_id
                 );
 
                 if (!$declaring_method_id) {
