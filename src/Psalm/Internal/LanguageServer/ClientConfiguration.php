@@ -140,7 +140,7 @@ class ClientConfiguration
         bool $findUnusedVariables = null,
         string $findUnusedCode = null,
         int $logLevel = null,
-        int $onchangeLineLimit = null,
+        int $onchangeLineLimit = null
     ) {
         $this->hideWarnings = $hideWarnings;
         $this->provideCompletion = $provideCompletion;

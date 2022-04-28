@@ -67,7 +67,7 @@ class Codebase extends PsalmCodebase
      */
     public function getReferenceAtPosition(
         string $file_path,
-        Position $position,
+        Position $position
     ): ?Reference {
         $is_open = $this->file_provider->isOpen($file_path);
 
@@ -127,7 +127,7 @@ class Codebase extends PsalmCodebase
      * @param Reference $reference
      */
     public function getMarkupContentForSymbol(
-        Reference $reference,
+        Reference $reference
     ): ?PHPMarkdownContent {
         //Direct Assignment
         if (is_numeric($reference->symbol[0])) {
@@ -335,7 +335,7 @@ class Codebase extends PsalmCodebase
 
     private static function getPositionFromOffset(
         int $offset,
-        string $file_contents,
+        string $file_contents
     ): Position {
         $file_contents = substr($file_contents, 0, $offset);
 
@@ -359,7 +359,7 @@ class Codebase extends PsalmCodebase
      */
     public function getCompletionDataAtPosition(
         string $file_path,
-        Position $position,
+        Position $position
     ): ?array {
         $is_open = $this->file_provider->isOpen($file_path);
 
@@ -455,7 +455,7 @@ class Codebase extends PsalmCodebase
 
     public function getTypeContextAtPosition(
         string $file_path,
-        Position $position,
+        Position $position
     ): ?Union {
         $file_contents = $this->getFileContents($file_path);
         $offset = $position->toOffset($file_contents);
@@ -493,7 +493,7 @@ class Codebase extends PsalmCodebase
     public function getCompletionItemsForClassishThing(
         string $type_string,
         string $gap,
-        bool $snippets_supported = false,
+        bool $snippets_supported = false
     ): array {
         $completion_items = [];
 
@@ -651,7 +651,7 @@ class Codebase extends PsalmCodebase
     public function getCompletionItemsForPartialSymbol(
         string $type_string,
         int $offset,
-        string $file_path,
+        string $file_path
     ): array {
         $fq_suggestion = false;
 
@@ -898,7 +898,7 @@ class Codebase extends PsalmCodebase
      */
     public function getFunctionArgumentAtPosition(
         string $file_path,
-        Position $position,
+        Position $position
     ): ?array {
         $is_open = $this->file_provider->isOpen($file_path);
 
@@ -954,7 +954,7 @@ class Codebase extends PsalmCodebase
      */
     public function getSignatureInformation(
         string $function_symbol,
-        string $file_path = null,
+        string $file_path = null
     ): ?SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
@@ -1143,7 +1143,7 @@ class Codebase extends PsalmCodebase
     public function addTemporaryFileChanges(
         string $file_path,
         string $new_content,
-        ?int $version = null,
+        ?int $version = null
     ): void {
         $this->file_provider->addTemporaryFileChanges(
             $file_path,

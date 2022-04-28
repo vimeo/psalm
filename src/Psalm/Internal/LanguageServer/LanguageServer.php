@@ -899,7 +899,7 @@ class LanguageServer extends Dispatcher
             $this->client->logMessage(
                 new LogMessage(
                     $type,
-                    $message,
+                    $message
                 )
             );
         } catch (Throwable $err) {
