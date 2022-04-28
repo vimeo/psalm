@@ -660,7 +660,7 @@ class Codebase extends PsalmCodebase
         }
 
         $matching_classlike_names = $this->classlikes->getMatchingClassLikeNames(
-            $type_string,
+            $type_string
         );
 
         $completion_items = [];
