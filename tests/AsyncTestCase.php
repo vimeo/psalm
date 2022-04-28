@@ -152,12 +152,18 @@ class AsyncTestCase extends BaseAsyncTestCase
         return $this->getName($withDataSet);
     }
 
+    /**
+     * @psalm-suppress UnusedMethod
+     */
     public static function assertArrayKeysAreStrings(array $array, string $message = ''): void
     {
         $validKeys = array_filter($array, 'is_string', ARRAY_FILTER_USE_KEY);
         self::assertTrue(count($array) === count($validKeys), $message);
     }
 
+    /**
+     * @psalm-suppress UnusedMethod
+     */
     public static function assertArrayKeysAreZeroOrString(array $array, string $message = ''): void
     {
         $isZeroOrString = /** @param mixed $key */ function ($key): bool {
@@ -167,18 +173,27 @@ class AsyncTestCase extends BaseAsyncTestCase
         self::assertTrue(count($array) === count($validKeys), $message);
     }
 
+    /**
+     * @psalm-suppress UnusedMethod
+     */
     public static function assertArrayValuesAreArrays(array $array, string $message = ''): void
     {
         $validValues = array_filter($array, 'is_array');
         self::assertTrue(count($array) === count($validValues), $message);
     }
 
+    /**
+     * @psalm-suppress UnusedMethod
+     */
     public static function assertArrayValuesAreStrings(array $array, string $message = ''): void
     {
         $validValues = array_filter($array, 'is_string');
         self::assertTrue(count($array) === count($validValues), $message);
     }
 
+    /**
+     * @psalm-suppress UnusedMethod
+     */
     public static function assertStringIsParsableType(string $type, string $message = ''): void
     {
         if ($type === '') {

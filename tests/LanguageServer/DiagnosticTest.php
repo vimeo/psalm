@@ -110,6 +110,9 @@ class DiagnosticTest extends AsyncTestCase
         wait($deferred->promise());
     }
 
+    /**
+     * @psalm-suppress UnusedMethod
+     */
     public function jestRun(): void
     {
         $config = $this->codebase->config;
