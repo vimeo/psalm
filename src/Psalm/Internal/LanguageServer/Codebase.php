@@ -525,7 +525,7 @@ class Codebase extends PsalmCodebase
                                     null,
                                     new Command(
                                         'Trigger parameter hints',
-                                        'editor.action.triggerParameterHints',
+                                        'editor.action.triggerParameterHints'
                                     ),
                                     null,
                                     2
@@ -709,7 +709,7 @@ class Codebase extends PsalmCodebase
                 $fq_class_name,
                 $aliases && $aliases->namespace ? $aliases->namespace : null,
                 $aliases->uses_flipped ?? [],
-                null,
+                null
             );
 
             if ($aliases &&
@@ -1021,7 +1021,7 @@ class Codebase extends PsalmCodebase
                     strlen($signature_label),
                     strlen($signature_label) + strlen($parameter_label),
                 ],
-                $param->description ?? null,
+                $param->description ?? null
             );
 
             $signature_label .= $parameter_label;
@@ -1036,7 +1036,7 @@ class Codebase extends PsalmCodebase
         return new SignatureInformation(
             $signature_label,
             $parameters,
-            $signature_documentation,
+            $signature_documentation
         );
     }
 
@@ -1094,7 +1094,7 @@ class Codebase extends PsalmCodebase
 
                 [$fq_classlike_name, $const_name] = explode(
                     '::',
-                    $reference->symbol,
+                    $reference->symbol
                 );
 
                 $class_constants = $this->classlikes->getConstantsForClass(
