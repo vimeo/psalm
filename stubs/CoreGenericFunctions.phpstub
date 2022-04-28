@@ -186,9 +186,10 @@ function array_search($needle, array $haystack, bool $strict = false)
 
 /**
  * @psalm-template T
+ * @psalm-template TArray as array<T>
  *
- * @param T[] $array
- * @param-out list<T> $array
+ * @param TArray $array
+ * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $array
  */
 function shuffle(array &$array): bool
 {
