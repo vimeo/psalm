@@ -666,15 +666,23 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'uasort' => [
                 '<?php
+                    function foo (int $a, int $b): int {
+                        return $a > $b ? 1 : -1;
+                    }
                     $manifest = ["a" => 1, "b" => 2];
                     uasort(
                         $manifest,
-                        function (int $a, int $b) {
-                            return $a > $b ? 1 : -1;
-                        }
-                    );',
+                        "foo"
+                    );
+                    $emptyManifest = [];
+                    uasort(
+                        $emptyManifest,
+                        "foo"
+                    );
+                    ',
                 'assertions' => [
-                    '$manifest' => 'array<string, int>'
+                    '$manifest' => 'non-empty-array<string, int>',
+                    '$emptyManifest' => 'array<empty, empty>',
                 ],
             ],
             'uksort' => [
