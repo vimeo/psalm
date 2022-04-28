@@ -700,7 +700,7 @@ class LanguageServer extends Dispatcher
         if ($this->client->clientConfiguration->onChangeDebounceMs === null) {
             $this->doVersionedAnalysis($files, $version);
         } else {
-            /** @psalm-suppress MixedAssignment */
+            /** @psalm-suppress MixedAssignment,UnusedPsalmSuppress */
             $this->versionedAnalysisDelayToken = Loop::delay(
                 $this->client->clientConfiguration->onChangeDebounceMs,
                 function () use ($files, $version) {
@@ -912,7 +912,6 @@ class LanguageServer extends Dispatcher
      * Log Throwable Error
      *
      * @param Throwable $throwable
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logThrowable(Throwable $throwable): void
     {
@@ -924,7 +923,6 @@ class LanguageServer extends Dispatcher
      *
      * @param string $message
      * @param array $context
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logError(string $message, array $context = []): void
     {
@@ -948,7 +946,6 @@ class LanguageServer extends Dispatcher
      *
      * @param string $message
      * @param array $context
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logInfo(string $message, array $context = []): void
     {
@@ -960,7 +957,6 @@ class LanguageServer extends Dispatcher
      *
      * @param string $message
      * @param array $context
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logDebug(string $message, array $context = []): void
     {
