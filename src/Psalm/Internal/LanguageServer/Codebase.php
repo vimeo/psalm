@@ -997,7 +997,7 @@ class Codebase extends PsalmCodebase
             } catch (Exception $exception) {
                 if (InternalCallMapHandler::inCallMap($function_symbol)) {
                     $callables = InternalCallMapHandler::getCallablesFromCallMap(
-                        $function_symbol,
+                        $function_symbol
                     );
 
                     if (!$callables || !$callables[0]->params) {
