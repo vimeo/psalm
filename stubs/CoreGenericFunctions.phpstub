@@ -231,10 +231,11 @@ function usort(array &$array, callable $callback): bool
 /**
  * @psalm-template TKey
  * @psalm-template T
+ * @psalm-template TArray as array<TKey,T>
  *
- * @param array<TKey,T> $array
+ * @param TArray $array
  * @param callable(T,T):int $callback
- * @param-out array<TKey,T> $array
+ * @param-out (TArray is non-empty-array ? non-empty-array<TKey,T> : array<TKey,T>) $array
  */
 function uasort(array &$array, callable $callback): bool
 {
