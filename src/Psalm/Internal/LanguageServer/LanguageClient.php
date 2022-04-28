@@ -52,13 +52,6 @@ class LanguageClient
      */
     public $clientConfiguration;
 
-    /**
-     * The JsonMapper
-     *
-     * @var JsonMapper
-     */
-    private $mapper;
-
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -66,11 +59,10 @@ class LanguageClient
         ClientConfiguration $clientConfiguration
     ) {
         $this->handler = new ClientHandler($reader, $writer);
-        $this->mapper = new JsonMapper;
         $this->server = $server;
 
         $this->textDocument = new ClientTextDocument($this->handler, $this->server);
-        $this->workspace = new ClientWorkspace($this->handler, $this->mapper, $this->server);
+        $this->workspace = new ClientWorkspace($this->handler, new JsonMapper, $this->server);
         $this->clientConfiguration = $clientConfiguration;
     }
 

@@ -105,7 +105,7 @@ class AsyncTestCase extends BaseAsyncTestCase
 
     /**
      * @param  string         $file_path
-     *
+     * @psalm-suppress UnusedMethod
      */
     public function analyzeFile($file_path, Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
     {
@@ -145,7 +145,7 @@ class AsyncTestCase extends BaseAsyncTestCase
 
     /**
      * @param  bool $withDataSet
-     *
+     * @psalm-suppress UnusedMethod
      */
     protected function getTestName($withDataSet = true): string
     {

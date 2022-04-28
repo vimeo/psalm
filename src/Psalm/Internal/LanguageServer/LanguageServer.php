@@ -148,12 +148,6 @@ class LanguageServer extends Dispatcher
      */
     protected $versionedAnalysisDelayToken = '';
 
-    /**
-     * Whether analysis is queued/processing
-     * @var bool
-     */
-    public $analyzing = false;
-
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -702,14 +696,16 @@ class LanguageServer extends Dispatcher
      */
     public function doVersionedAnalysisDebounce(array $files, ?int $version = null): void
     {
-        $this->analyzing = true;
         Loop::cancel($this->versionedAnalysisDelayToken);
         if ($this->client->clientConfiguration->onChangeDebounceMs === null) {
             $this->doVersionedAnalysis($files, $version);
         } else {
+            /** @psalm-suppress MixedAssignment */
             $this->versionedAnalysisDelayToken = Loop::delay(
                 $this->client->clientConfiguration->onChangeDebounceMs,
-                fn() => $this->doVersionedAnalysis($files, $version)
+                function () use ($files, $version) {
+                    return $this->doVersionedAnalysis($files, $version);
+                }
             );
         }
     }
@@ -741,7 +737,6 @@ class LanguageServer extends Dispatcher
         } catch (Throwable $e) {
             $this->logError((string) $e);
         }
-        $this->analyzing = false;
     }
 
     /**
@@ -917,6 +912,7 @@ class LanguageServer extends Dispatcher
      * Log Throwable Error
      *
      * @param Throwable $throwable
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logThrowable(Throwable $throwable): void
     {
@@ -928,6 +924,7 @@ class LanguageServer extends Dispatcher
      *
      * @param string $message
      * @param array $context
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logError(string $message, array $context = []): void
     {
@@ -939,6 +936,7 @@ class LanguageServer extends Dispatcher
      *
      * @param string $message
      * @param array $context
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logWarning(string $message, array $context = []): void
     {
@@ -950,6 +948,7 @@ class LanguageServer extends Dispatcher
      *
      * @param string $message
      * @param array $context
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logInfo(string $message, array $context = []): void
     {
@@ -961,6 +960,7 @@ class LanguageServer extends Dispatcher
      *
      * @param string $message
      * @param array $context
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logDebug(string $message, array $context = []): void
     {

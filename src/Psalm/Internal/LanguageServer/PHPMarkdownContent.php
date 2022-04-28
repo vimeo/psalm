@@ -52,6 +52,7 @@ class PHPMarkdownContent extends MarkupContent implements JsonSerializable
      * meaning if a null is sent then this will not compute
      *
      * @return mixed
+     * @psalm-suppress UnusedMethod
      */
     #[ReturnTypeWillChange]
     public function jsonSerialize()

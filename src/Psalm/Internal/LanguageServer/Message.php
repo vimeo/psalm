@@ -27,9 +27,6 @@ class Message
 
     /**
      * Parses a message
-     *
-     *
-     * @psalm-suppress UnusedMethod
      */
     public static function parse(string $msg): Message
     {
