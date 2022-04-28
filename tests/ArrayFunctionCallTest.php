@@ -1762,9 +1762,12 @@ class ArrayFunctionCallTest extends TestCase
             'shuffle' => [
                 '<?php
                     $array = ["foo" => 123, "bar" => 456];
-                    shuffle($array);',
+                    shuffle($array);
+                    $emptyArray = [];
+                    shuffle($emptyArray);',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<empty>',
                 ],
             ],
             'sort' => [
