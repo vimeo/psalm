@@ -219,10 +219,11 @@ function rsort(array &$array, int $flags = SORT_REGULAR): bool
 
 /**
  * @psalm-template T
+ * @psalm-template TArray as array<T>
  *
- * @param T[] $array
+ * @param TArray $array
  * @param callable(T,T):int $callback
- * @param-out list<T> $array
+ * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $array
  */
 function usort(array &$array, callable $callback): bool
 {
