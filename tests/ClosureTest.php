@@ -418,7 +418,7 @@ class ClosureTest extends TestCase
                     $closure = Closure::fromCallable("strlen");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):int<0, max>',
+                    '$closure' => 'pure-Closure(TGeneratedFromParam0:fn-strlen as string):(TGeneratedFromParam0 is string ? int : (TGeneratedFromParam0 is string ? int<1, max> : int<0, max>))',
                 ]
             ],
             'allowClosureWithNarrowerReturn' => [
@@ -583,8 +583,8 @@ class ClosureTest extends TestCase
                     $result = $closure("test");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):int<0, max>',
-                    '$result' => 'int<0, max>',
+                    '$closure' => 'pure-Closure(TGeneratedFromParam0:fn-strlen as string):(TGeneratedFromParam0 is string ? int : (TGeneratedFromParam0 is string ? int<1, max> : int<0, max>))',
+                    '$result' => 'int<1, max>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'
@@ -836,6 +836,169 @@ class ClosureTest extends TestCase
                 'code' => '<?php
                     /** @psalm-suppress UndefinedFunction */
                     unknown(...);',
+            ],
+            'templatedFirstClassCallableNamedFunctionLookup' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $param
+                     * @return T
+                     */
+                    function debug($param)
+                    {
+                        return $param;
+                    }
+
+                    $firstClass = debug(...);
+                    $actualResult = $firstClass("x");',
+                'assertions' => [
+                    '$firstClass' => 'impure-Closure(T:fn-debug as mixed):T',
+                    '$actualResult' => 'string',
+                ],
+            ],
+            'templatedFirstClassCallableClassMethodLookup' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @template T
+                         * @param T $param
+                         * @return T
+                         */
+                        public function debug($param)
+                        {
+                            return $param;
+                        }
+                    }
+
+                    $firstClass = (new X)->debug(...);
+                    $actualResult = $firstClass("x");',
+                'assertions' => [
+                    '$firstClass' => 'impure-Closure(T:fn-x::debug as mixed):T',
+                    '$actualResult' => 'string',
+                ],
+            ],
+            'templatedFirstClassCallableClassStaticMethodLookup' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @template T
+                         * @param T $param
+                         * @return T
+                         */
+                        public static function debug($param)
+                        {
+                            return $param;
+                        }
+                    }
+
+                    $firstClass = X::debug(...);
+                    $actualResult = $firstClass("x");',
+                'assertions' => [
+                    '$firstClass' => 'impure-Closure(T:fn-x::debug as mixed):T',
+                    '$actualResult' => 'string',
+                ],
+            ],
+            'templatedFirstClassCallableNamedFunctionStringLookup' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $param
+                     * @return T
+                     */
+                    function debug($param)
+                    {
+                        return $param;
+                    }
+
+                    $callable = "debug";
+                    $actualResult = $callable("x");',
+                'assertions' => [
+                    '$firstClass' => 'impure-Closure(T:fn-debug as mixed):T',
+                    '$actualResult' => 'string',
+                ],
+            ],
+            'templatedFirstClassCallableInvokableLookup' => [
+                'code' => '<?php
+                    class Debug {
+                        /**
+                         * @template T
+                         * @param T $param
+                         * @return T
+                         */
+                        function __invoke($param)
+                        {
+                            return $param;
+                        }
+                    }
+
+
+                    $firstClass = (new Debug())(...);
+                    $actualResult = $firstClass("x");',
+                'assertions' => [
+                    '$firstClass' => 'impure-Closure(T:fn-debug as mixed):T',
+                    '$actualResult' => 'string',
+                ],
+            ],
+            'templatedClosureFromCallableNamedFunctionLookup' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $param
+                     * @return T
+                     */
+                    function debug($param)
+                    {
+                        return $param;
+                    }
+
+                    $firstClass = Closure::fromCallable("debug");
+                    $actualResult = $firstClass("x");',
+                'assertions' => [
+                    '$firstClass' => 'impure-Closure(T:fn-debug as mixed):T',
+                    '$actualResult' => 'string',
+                ],
+            ],
+            'templatedClosureFromCallableClassMethodLookup' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @template T
+                         * @param T $param
+                         * @return T
+                         */
+                        public function debug($param)
+                        {
+                            return $param;
+                        }
+                    }
+
+                    $firstClass = Closure::fromCallable([new X, "debug"]);
+                    $actualResult = $firstClass("x");',
+                'assertions' => [
+                    '$firstClass' => 'impure-Closure(T:fn-debug as mixed):T',
+                    '$actualResult' => 'string',
+                ],
+            ],
+            'templatedClosureFromCallableClassStaticMethodLookup' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @template T
+                         * @param T $param
+                         * @return T
+                         */
+                        public static function debug($param)
+                        {
+                            return $param;
+                        }
+                    }
+
+                    $firstClass = Closure::fromCallable(["X", "debug"]);
+                    $actualResult = $firstClass("x");',
+                'assertions' => [
+                    '$firstClass' => 'impure-Closure(T:fn-debug as mixed):T',
+                    '$actualResult' => 'string',
+                ],
             ],
         ];
     }

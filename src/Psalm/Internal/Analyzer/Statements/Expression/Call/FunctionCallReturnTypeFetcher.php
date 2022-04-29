@@ -19,6 +19,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeStorage;
@@ -66,7 +67,7 @@ class FunctionCallReturnTypeFetcher
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
-        PhpParser\Node\Name $function_name,
+        PhpParser\Node $function_name,
         string $function_id,
         bool $in_call_map,
         bool $is_stubbed,
@@ -84,19 +85,21 @@ class FunctionCallReturnTypeFetcher
                 new TLiteralString($function_id),
                 null,
                 $statements_analyzer,
-                true
+                false
             );
 
-            if ($candidate_callable) {
-                $stmt_type = new Union([new TClosure(
-                    'Closure',
-                    $candidate_callable->params,
-                    $candidate_callable->return_type,
-                    $candidate_callable->is_pure
-                )]);
-            } else {
-                $stmt_type = Type::getClosure();
-            }
+            $stmt_type = new Union([
+                TClosure::forwardingTo(
+                    static fn ($args) => new VirtualFuncCall($stmt->name, $args),
+                    new TClosure(
+                        'Closure',
+                        $candidate_callable->params ?? null,
+                        $candidate_callable->return_type ?? null,
+                        $candidate_callable->is_pure ?? null
+                    )
+                )
+            ]);
+
         } elseif ($codebase->functions->return_type_provider->has($function_id)) {
             $stmt_type = $codebase->functions->return_type_provider->getReturnType(
                 $statements_analyzer,

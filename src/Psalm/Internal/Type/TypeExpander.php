@@ -125,6 +125,22 @@ class TypeExpander
         return $fleshed_out_type;
     }
 
+    public static function expandUnionWithoutTemplates(Codebase $codebase, Union $type): Union
+    {
+        return self::expandUnion(
+            $codebase,
+            $type,
+            null,
+            null,
+            null,
+            true,
+            true,
+            false,
+            false,
+            true
+        );
+    }
+
     /**
      * @param  string|TNamedObject|TTemplateParam|null $static_class_type
      *

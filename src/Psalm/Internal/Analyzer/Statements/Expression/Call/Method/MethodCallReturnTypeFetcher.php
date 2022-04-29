@@ -21,6 +21,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -72,11 +73,14 @@ class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
-                return new Union([new TClosure(
-                    'Closure',
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->pure
+                return new Union([TClosure::forwardingTo(
+                    static fn ($args) => new VirtualMethodCall($stmt->var, $stmt->name, $args),
+                    new TClosure(
+                        'Closure',
+                        $method_storage->params,
+                        $method_storage->return_type,
+                        $method_storage->pure
+                    )
                 )]);
             }
 

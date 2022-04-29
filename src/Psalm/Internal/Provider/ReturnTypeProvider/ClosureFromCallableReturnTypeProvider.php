@@ -5,6 +5,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
@@ -39,29 +40,38 @@ class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderI
             if (isset($call_args[0])
                 && ($input_type = $type_provider->getType($call_args[0]->value))
             ) {
+                $forwardTo = static fn ($args) => new VirtualFuncCall($call_args[0]->value, $args);
+
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
                     $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                         $codebase,
                         $atomic_type,
                         null,
                         $source,
-                        true
+                        false
                     );
 
                     if ($candidate_callable) {
-                        $closure_types[] = new TClosure(
-                            'Closure',
-                            $candidate_callable->params,
-                            $candidate_callable->return_type,
-                            $candidate_callable->is_pure
+                        $closure_types[] = TClosure::forwardingTo(
+                            $forwardTo,
+                            new TClosure(
+                                'Closure',
+                                $candidate_callable->params,
+                                $candidate_callable->return_type,
+                                $candidate_callable->is_pure
+                            )
                         );
                     } else {
-                        return Type::getClosure();
+                        return new Union([TClosure::forwardingTo($forwardTo, new TClosure('Closure'))]);
                     }
                 }
             }
 
             if ($closure_types) {
+                if (\count($closure_types) === 1) {
+                    return new Union($closure_types);
+                }
+
                 return TypeCombiner::combine($closure_types, $codebase);
             }
 

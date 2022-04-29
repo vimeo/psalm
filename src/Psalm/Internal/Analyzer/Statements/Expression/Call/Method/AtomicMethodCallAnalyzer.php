@@ -23,6 +23,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
@@ -212,11 +213,14 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     )) {
                         $method_storage = $codebase->methods->getStorage($method_identifier);
 
-                        $return_type_candidate = new Union([new TClosure(
-                            'Closure',
-                            $method_storage->params,
-                            $method_storage->return_type,
-                            $method_storage->pure
+                        $return_type_candidate = new Union([TClosure::forwardingTo(
+                            static fn ($args) => new VirtualMethodCall($stmt->var, $stmt->name, $args),
+                            new TClosure(
+                                'Closure',
+                                $method_storage->params,
+                                $method_storage->return_type,
+                                $method_storage->pure
+                            )
                         )]);
                     }
                 }

@@ -847,7 +847,7 @@ class ArgumentAnalyzer
                     $atomic_type,
                     null,
                     $statements_analyzer,
-                    true
+                    false // TODO : what would be the impact here ? Probably not ok to set it to false
                 );
 
                 if ($candidate_callable) {

@@ -34,6 +34,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\Expr\VirtualStaticCall;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
@@ -393,11 +394,14 @@ class AtomicStaticCallAnalyzer
                 ($class_storage->pseudo_static_methods[$method_name_lc] ?? null));
 
             if ($method_storage) {
-                $return_type_candidate = new Union([new TClosure(
-                    'Closure',
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->pure
+                $return_type_candidate = new Union([TClosure::forwardingTo(
+                    static fn ($args) => new VirtualStaticCall($stmt->class, $stmt->name, $args),
+                    new TClosure(
+                        'Closure',
+                        $method_storage->params,
+                        $method_storage->return_type,
+                        $method_storage->pure
+                    )
                 )]);
             } else {
                 $return_type_candidate = Type::getClosure();

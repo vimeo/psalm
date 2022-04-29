@@ -19,8 +19,11 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidFunctionCall;
@@ -32,9 +35,11 @@ use Psalm\Issue\UnusedFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
+use Psalm\Node\VirtualName;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
@@ -97,6 +102,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $real_stmt = $stmt;
 
+        if (!$template_result) {
+            $template_result = new TemplateResult([], []);
+        }
+
         if ($function_name instanceof PhpParser\Node\Name
             && !$is_first_class_callable
             && isset($stmt->getArgs()[0])
@@ -125,6 +134,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $stmt->getAttributes()
                 );
             }
+
+
         }
 
         if ($function_name instanceof PhpParser\Node\Expr) {
@@ -133,7 +144,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $real_stmt,
                 $function_name,
-                $context
+                $context,
+                $template_result
             );
 
             if ($function_call_info->function_exists === false) {
@@ -165,10 +177,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
         ) {
             $context->inside_conditional = true;
             $set_inside_conditional = true;
-        }
-
-        if (!$template_result) {
-            $template_result = new TemplateResult([], []);
         }
 
         if (!$is_first_class_callable) {
@@ -608,7 +616,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Expr $function_name,
-        Context $context
+        Context $context,
+        TemplateResult $template_result
     ): FunctionCallInfo {
         $function_call_info = new FunctionCallInfo();
 
@@ -664,6 +673,49 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
+                    // Based on the forwarding_to prop on closures, the types can be enhanced by running a different function with the same parameters.
+                    // The closure is in fact a proxy for an underlying function (that accepts the same arguments)
+                    // Useful for: Closure::fromCallable or higher class callables function(...)
+                    // If no templates are available, this additional analysis can be skipped - since all the info is already in the closure type.
+                    if ($var_type_part instanceof TClosure
+                        && $var_type_part->forwarding_to
+                        && $var_type_part->makesSenseToForwardCall()
+                    ) {
+                        $forwardedCall = ($var_type_part->forwarding_to)($real_stmt->args);
+                        //$forwardedCall->setAttributes($real_stmt->getAttributes());
+
+                        ExpressionAnalyzer::analyze(
+                            $statements_analyzer,
+                            $forwardedCall,
+                            $context,
+                            false,
+                            null,
+                            false,
+                            $template_result
+                        );
+
+                        // Make sure to strip out template placeholders in the parameters.
+                        // Otherwise psalm won't accept templated input arguments
+                        $function_call_info->function_params = [];
+                        foreach ($var_type_part->params as $param) {
+                            $param = clone $param;
+                            if ($param->type) {
+                                $param->type = TypeExpander::expandUnionWithoutTemplates($codebase, $param->type);
+                            }
+                            $function_call_info->function_params[] = $param;
+                        }
+
+                        // Save the result for further usage
+                        // If no result could be determined - continue with regular callable / closure logic
+                        if (($stmt_type = $statements_analyzer->node_data->getType($forwardedCall))) {
+                            $statements_analyzer->node_data->setType(
+                                $real_stmt,
+                                $stmt_type
+                            );
+                            continue;
+                        }
+                    }
+
                     if (!$var_type_part->is_pure) {
                         if ($context->pure || $context->mutation_free) {
                             IssueBuffer::maybeAdd(
