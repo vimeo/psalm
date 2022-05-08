@@ -741,6 +741,7 @@ class Reconciler
                                 if ($existing_key_type_part->previous_value_type) {
                                     $new_base_type_candidate = clone $existing_key_type_part->previous_value_type;
                                     $new_base_type_candidate->different = true;
+                                    $new_base_type_candidate->possibly_undefined = true;
                                 } else {
                                     return null;
                                 }
