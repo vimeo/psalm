@@ -59,7 +59,7 @@ final class PrettyDetectArray
         }
         $posEnd = $this->getPositionOfEndArray($payload);
 
-        $payloadArray = substr($payload, $posStart,$posEnd);
+        $payloadArray = substr($payload, $posStart, $posEnd);
         $nextPayload = substr($payload, $posStart+$posEnd);
 
         return [

@@ -24,6 +24,4 @@ final class PrettyGeneric
     {
         return str_replace('psalm-key', 'array-key', $payload);
     }
-
-
 }
