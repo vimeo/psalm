@@ -2,6 +2,13 @@
 
 namespace Psalm\Report\PrettyPrintArray;
 
+use function count;
+use function explode;
+use function join;
+use function sprintf;
+
+use const PHP_EOL;
+
 final class PrettyCompare
 {
     public function compare(array $arrays): string
@@ -15,8 +22,7 @@ final class PrettyCompare
         $indexOne = 0;
         $paired = [];
 
-        for ($indexTwo = 0; $indexTwo <= $maxOf; $indexTwo++)
-        {
+        for ($indexTwo = 0; $indexTwo <= $maxOf; $indexTwo++) {
             $rowProvided = $provided[$indexTwo] ?? '';
 
             if (isset($requested[$indexOne]) && $requested[$indexOne] !== '') {
@@ -41,5 +47,4 @@ final class PrettyCompare
 
         return join(PHP_EOL, $pairedFormattedResult);
     }
-
 }
