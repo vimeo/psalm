@@ -6,13 +6,24 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
+use Psalm\Report\PrettyPrintArray\PrettyDetectArray;
+use Psalm\Report\PrettyPrintArray\PrettyFormat;
+use Psalm\Report\PrettyPrintArray\PrettyGeneric;
+use Psalm\Report\PrettyPrintArray\PrettyCompare;
+use Throwable;
 
 use function basename;
+use function count;
+use function explode;
 use function get_cfg_var;
 use function ini_get;
+use function join;
+use function sprintf;
 use function strlen;
 use function strtr;
 use function substr;
+
+use const PHP_EOL;
 
 final class ConsoleReport extends Report
 {
@@ -65,6 +76,10 @@ final class ConsoleReport extends Report
             }
         }
 
+        if ($this->pretty_print_array === true) {
+            $issue_string .= $this->prettyPrintArray($issue_data);
+        }
+
         if ($issue_data->other_references) {
             if ($this->show_snippet) {
                 $issue_string .= "\n";
@@ -74,6 +89,43 @@ final class ConsoleReport extends Report
         }
 
         return $issue_string;
+    }
+
+    private function prettyPrintArray(IssueData $issue_data): string
+    {
+        $prettyDetectArray = new PrettyDetectArray();
+        $prettyFormat = new PrettyFormat();
+        $prettyPaired = new PrettyCompare();
+        $arrays = [];
+        $toIssue = '';
+        $maxArray = 2;
+
+        $workingPayload = PrettyGeneric::normalizeBracket($issue_data->message);
+        $workingPayload = PrettyGeneric::normalizeTokens($workingPayload);
+
+        try {
+            foreach ($prettyDetectArray->detect($workingPayload) as $array) {
+                $arrays[] = $array;
+            }
+
+            if (count($arrays) === $maxArray) {
+                $separator = '----';
+                $arrayPrettyPrinted0 = $prettyFormat->format($arrays[0]);
+                $arrayPrettyPrinted1 = $prettyFormat->format($arrays[1]);
+
+                $listOfArrays = [];
+                $listOfArrays[] = $arrayPrettyPrinted0;
+                $listOfArrays[] = $separator;
+                $listOfArrays[] = $arrayPrettyPrinted1;
+
+                $toIssue = PHP_EOL.$prettyPaired->compare($listOfArrays);
+            }
+
+            return PrettyGeneric::revertNormalizedTokens($toIssue);
+        } catch (Throwable $throwable) {
+            //todo: log ?
+            return 'Pretty Print Array failed for unexpected error. Error: ' . $throwable->getMessage();
+        }
     }
 
     /**
