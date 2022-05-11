@@ -27,7 +27,6 @@ use function preg_replace;
 use function unlink;
 
 use const JSON_THROW_ON_ERROR;
-
 use const PHP_EOL;
 
 class ReportOutputTest extends TestCase
@@ -1331,24 +1330,15 @@ EOF;
     /**
      * @dataProvider outputProvider()
      */
-    public function testConsoleReportWithPrettyPrint(string $file_contents, $expected_output): void
+    public function testConsoleReportWithPrettyPrintFromAnalyzer(string $file_contents, $expected_output): void
     {
-        $this->addFile(
-            'somefile.php',
-            $file_contents
-        );
-
+        $this->addFile('somefile.php', $file_contents);
         $this->analyzeFile('somefile.php', new Context());
 
-        $console_report_options = new ReportOptions();
-        $console_report_options->use_color = false;
-        $console_report_options->show_info = false;
-        $console_report_options->pretty_print_array = true;
-
+        $console_report_options = $this->prepareConsoleOptionsForPrettyPrint();
         $output = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
-        foreach (explode(PHP_EOL, $expected_output) as $line) {
-            $this->assertStringContainsString($line, $output);
-        }
+
+        $this->assertOutputPrettyPrintEquals($expected_output, $output);
     }
 
     /**
@@ -1357,66 +1347,143 @@ EOF;
     public function outputProvider(): Generator
     {
         $file_contents = <<<'EOT'
-<?php
-/**
- * @return array<int>
- */
-function request(): array
-{
- return [ "aa" => "bar"];
-}
+        <?php
+        /**
+         * @return array<int>
+         */
+        function request(): array
+        {
+         return [ "aa" => "bar"];
+        }
 
-function accept(array $input): void
-{
-    $v = $input["foo"];
-}
+        function accept(array $input): void
+        {
+            $v = $input["foo"];
+        }
 
-accept(request());
-';
-EOT;
+        accept(request());
+        ;
+        EOT;
 
-        $exp = <<<"EOT"
-| Expected                                           | Provided
-| ---                                                | ---
-| array {                                            | array {
-|  array-key,                                        |  aa: 'bar'
-|  int                                               | }
-| }                                                  |
-|                                                    |
-EOT;
+        $expected_output = <<<'EOT'
+        | Expected                                           | Provided
+        | ---                                                | ---
+        | array {                                            | array {
+        |  array-key,                                        |  aa: 'bar'
+        |  int                                               | }
+        | }                                                  |
+        |                                                    |
+        EOT;
 
-        yield 'C1' => [$file_contents, $exp];
-
+        yield [$file_contents, $expected_output];
 
         $file_contents = <<<'EOT'
-<?php
-/**
- * @return array<string>
- */
-function request(): array
-{
- return [ "aa" => 111];
-}
+        <?php
+        /**
+         * @return array<string>
+         */
+        function request(): array
+        {
+         return [ "aa" => 111];
+        }
 
-function accept(array $input): void
-{
-    $v = $input["foo"];
-}
+        function accept(array $input): void
+        {
+            $v = $input["foo"];
+        }
 
-accept(request());
-';
-EOT;
+        accept(request());
+        ;
+        EOT;
 
         $exp = <<<"EOT"
-| Expected                                           | Provided
-| ---                                                | ---
-| array {                                            | array {
-|  array-key,                                        |  aa: 111
-|  string                                            | }
-| }                                                  |
-|                                                    |
-EOT;
+        | Expected                                           | Provided
+        | ---                                                | ---
+        | array {                                            | array {
+        |  array-key,                                        |  aa: 111
+        |  string                                            | }
+        | }                                                  |
+        |                                                    |
+        EOT;
 
-        yield 'C2' => [$file_contents, $exp];
+        yield [$file_contents, $exp];
+    }
+
+    /**
+     * @dataProvider payloadProvider()
+     */
+    public function testConsoleReportWithPrettyPrintFromPayload(string $payload, $expected_output): void
+    {
+        $console_report_options = $this->prepareConsoleOptionsForPrettyPrint();
+        $issues_data = [
+            1 => new IssueData(
+                'error',
+                15,
+                15,
+                'InvalidReturnStatement',
+                $payload,
+                'somefile.php',
+                'somefile.php',
+                '',
+                '$a',
+                201,
+                203,
+                196,
+                203,
+                6,
+                8
+            ),
+        ];
+
+        $consoleReport = new Report\ConsoleReport($issues_data, [], $console_report_options);
+        $output = $consoleReport->create();
+        $this->assertOutputPrettyPrintEquals($expected_output, $output);
+    }
+
+    /**
+     * @return Generator<array<string>>
+     */
+    public function payloadProvider(): Generator
+    {
+        $paylaod = <<<'EOT'
+        'ERROR: InvalidReturnStatement - XXXX.php:66:16 -
+        The inferred type 'array{code_xxx: null|string, datetime: null|string, money: float|null, id_yyyy: null|string, tid_ccccc: null|string, tid_bbbbb: null|string}' does not match the declared return type 'array{code_xxx: null|string, datetime: null|string, money: float|null, id_yyyy: null|string, tid_aaaaaa: null|string, tid_bbbbb: null|string}' for YYYYY() (see https://psalm.dev/128)
+        EOT;
+
+        $expected = <<<"EOT"
+        |
+        | Expected                                           | Provided
+        | ---                                                | ---
+        | array {                                            | array {
+        |  code_xxx: null|string,                            |  code_xxx: null|string,
+        |  datetime: null|string,                            |  datetime: null|string,
+        |  money: float|null,                                |  money: float|null,
+        |  id_yyyy: null|string,                             |  id_yyyy: null|string,
+        |  tid_ccccc: null|string,                           |  tid_aaaaaa: null|string,
+        |  tid_bbbbb: null|string                            |  tid_bbbbb: null|string
+        | }                                                  | }
+        |
+        EOT;
+
+
+        yield  [$paylaod, $expected];
+    }
+
+    private function prepareConsoleOptionsForPrettyPrint(): ReportOptions
+    {
+        $console_report_options = new ReportOptions();
+        $console_report_options->use_color = false;
+        $console_report_options->show_info = false;
+        $console_report_options->pretty_print_array = true;
+        return $console_report_options;
+    }
+
+    private function assertOutputPrettyPrintEquals($expected_output, string $output): void
+    {
+        $lines = explode(PHP_EOL, $expected_output);
+
+        foreach ($lines as $line) {
+            $this->assertStringContainsString($line, $output);
+        }
     }
 }
