@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - directory: /
+    package-ecosystem: composer
+    versioning-strategy: widen
+    schedule:
+      interval: weekly
+      day: friday
+      timezone: UTC
+      time: "22:00"
