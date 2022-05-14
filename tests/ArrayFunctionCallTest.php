@@ -1055,6 +1055,31 @@ class ArrayFunctionCallTest extends TestCase
                     '$b===' => 'non-empty-literal-string',
                 ]
             ],
+            'implodeArrayOfNonEmptyStringAndEmptyString' => [
+                '<?php
+                    class Foo {
+                        const DIR = __DIR__;
+                    }
+                    $l = ["a", "b"];
+                    $k = [Foo::DIR];
+                    $a = implode("", $l);
+                    $b = implode("", $k);',
+                [
+                    '$a===' => 'non-empty-literal-string',
+                    '$b===' => 'non-empty-string',
+                ]
+            ],
+            'implodeEmptyArrayAndString' => [
+                '<?php
+                    $l = [""];
+                    $k = [];
+                    $a = implode("", $l);
+                    $b = implode("", $k);',
+                [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
+                ]
+            ],
             'key' => [
                 '<?php
                     $a = ["one" => 1, "two" => 3];
