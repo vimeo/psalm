@@ -609,7 +609,12 @@ function implode($separator, array $array = []) : string {}
  *             : non-empty-string
  *         )
  *         : string)
- *     : string
+ *     : ($array is non-empty-array
+ *         ? ($array is array<non-empty-literal-string|non-empty-string>
+ *             ? ($array is array<non-empty-literal-string> ? non-empty-literal-string : non-empty-string)
+ *             : string
+ *         )
+ *         : string)
  * )
  *
  * @psalm-flow ($separator) -> return
