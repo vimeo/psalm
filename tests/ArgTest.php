@@ -702,6 +702,19 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'objectRedundantCast' => [
+                '<?php
+
+                    function makeObj(): object {
+                        return (object)["a" => 42];
+                    }
+
+                    function takesObject(object $_o): void {}
+
+                    takesObject((object)makeObj()); // expected: RedundantCast
+                ',
+                'error_message' => 'RedundantCast',
+            ],
             'MissingMandatoryParamWithNamedParams' => [
                 '<?php
                 class User
