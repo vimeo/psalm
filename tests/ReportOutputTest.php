@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Issue\InvolvedTypes;
 use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\JsonReport;
@@ -1412,7 +1413,7 @@ EOF;
     /**
      * @dataProvider payloadProvider()
      */
-    public function testConsoleReportWithPrettyPrintFromPayload(string $payload, $expected_output): void
+    public function testConsoleReportWithPrettyPrintFromPayload(string $payload, string $infered, string $declared, $expected_output): void
     {
         $console_report_options = $this->prepareConsoleOptionsForPrettyPrint();
         $issues_data = [
@@ -1431,7 +1432,13 @@ EOF;
                 196,
                 203,
                 6,
-                8
+                8,
+                0,
+                -1,
+                null,
+                null,
+                null,
+                new InvolvedTypes($infered, $declared)
             ),
         ];
 
@@ -1445,9 +1452,12 @@ EOF;
      */
     public function payloadProvider(): Generator
     {
+        $infered = 'array{code_xxx: null|string, datetime: null|string, money: float|null, id_yyyy: null|string, tid_ccccc: null|string, tid_bbbbb: null|string}';
+        $declared = 'array{code_xxx: null|string, datetime: null|string, money: float|null, id_yyyy: null|string, tid_aaaaaa: null|string, tid_bbbbb: null|string}';
+
         $paylaod = <<<'EOT'
         'ERROR: InvalidReturnStatement - XXXX.php:66:16 -
-        The inferred type 'array{code_xxx: null|string, datetime: null|string, money: float|null, id_yyyy: null|string, tid_ccccc: null|string, tid_bbbbb: null|string}' does not match the declared return type 'array{code_xxx: null|string, datetime: null|string, money: float|null, id_yyyy: null|string, tid_aaaaaa: null|string, tid_bbbbb: null|string}' for YYYYY() (see https://psalm.dev/128)
+        The inferred type '$infered' does not match the declared return type '$declared' for YYYYY() (see https://psalm.dev/128)
         EOT;
 
         $expected = <<<"EOT"
@@ -1459,14 +1469,13 @@ EOF;
         |  datetime: null|string,                            |  datetime: null|string,
         |  money: float|null,                                |  money: float|null,
         |  id_yyyy: null|string,                             |  id_yyyy: null|string,
-        |  tid_ccccc: null|string,                           |  tid_aaaaaa: null|string,
+        |  tid_aaaaaa: null|string,                          |  tid_ccccc: null|string,
         |  tid_bbbbb: null|string                            |  tid_bbbbb: null|string
         | }                                                  | }
         |
         EOT;
 
-
-        yield  [$paylaod, $expected];
+        yield  [$paylaod, $infered, $declared, $expected];
     }
 
     private function prepareConsoleOptionsForPrettyPrint(): ReportOptions

@@ -90,25 +90,24 @@ final class ConsoleReport extends Report
 
     private function prettyPrintArray(IssueData $issue_data): string
     {
-        $prettyDetectArray = new PrettyDetectArray();
         $prettyFormat = new PrettyFormat();
         $prettyPaired = new PrettyCompare();
-        $arrays = [];
-        $toIssue = '';
-        $maxArray = 2;
-
-        $workingPayload = PrettyGeneric::normalizeBracket($issue_data->message);
-        $workingPayload = PrettyGeneric::normalizeTokens($workingPayload);
 
         try {
-            foreach ($prettyDetectArray->detect($workingPayload) as $array) {
-                $arrays[] = $array;
-            }
+                if (!$issue_data->involvedTypes) {
+                    return '';
+                }
 
-            if (count($arrays) === $maxArray) {
                 $separator = '----';
-                $arrayPrettyPrinted0 = $prettyFormat->format($arrays[0]);
-                $arrayPrettyPrinted1 = $prettyFormat->format($arrays[1]);
+                $declaredType = $issue_data->involvedTypes->getDeclaredType();
+                $declaredType = PrettyGeneric::normalizeBracket($declaredType);
+                $declaredType = PrettyGeneric::normalizeTokens($declaredType);
+                $arrayPrettyPrinted0 = $prettyFormat->format($declaredType);
+
+                $inferedType = $issue_data->involvedTypes->getInferedType();
+                $inferedType = PrettyGeneric::normalizeBracket($inferedType);
+                $inferedType = PrettyGeneric::normalizeTokens($inferedType);
+                $arrayPrettyPrinted1 = $prettyFormat->format($inferedType);
 
                 $listOfArrays = [];
                 $listOfArrays[] = $arrayPrettyPrinted0;
@@ -116,7 +115,6 @@ final class ConsoleReport extends Report
                 $listOfArrays[] = $arrayPrettyPrinted1;
 
                 $toIssue = PHP_EOL.$prettyPaired->compare($listOfArrays);
-            }
 
             return PrettyGeneric::revertNormalizedTokens($toIssue);
         } catch (Throwable $throwable) {

@@ -32,12 +32,16 @@ abstract class CodeIssue
      */
     public $dupe_key;
 
+    public ?InvolvedTypes $involvedTypes;
+
     public function __construct(
         string $message,
-        CodeLocation $code_location
+        CodeLocation $code_location,
+        ?InvolvedTypes $involvedTypes = null
     ) {
         $this->code_location = $code_location;
         $this->message = $message;
+        $this->involvedTypes = $involvedTypes;
     }
 
     public function getShortLocationWithPrevious(): string
@@ -103,7 +107,8 @@ abstract class CodeIssue
                     )
                 ]
                 : null,
-            $this->dupe_key
+            $this->dupe_key,
+            $this->involvedTypes ?? null
         );
     }
 }

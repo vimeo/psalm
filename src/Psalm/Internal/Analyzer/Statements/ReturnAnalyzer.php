@@ -28,6 +28,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
+use Psalm\Issue\InvolvedTypes;
 use Psalm\Issue\LessSpecificReturnStatement;
 use Psalm\Issue\MixedReturnStatement;
 use Psalm\Issue\MixedReturnTypeCoercion;
@@ -483,7 +484,10 @@ class ReturnAnalyzer
                                     'The inferred type \'' . $inferred_type->getId()
                                         . '\' does not match the declared return '
                                         . 'type \'' . $local_return_type->getId() . '\' for ' . $cased_method_id,
-                                    new CodeLocation($source, $stmt->expr)
+                                    new CodeLocation($source, $stmt->expr),
+                                    new InvolvedTypes(
+                                        $inferred_type->getId(),
+                                        $local_return_type->getId())
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             );
