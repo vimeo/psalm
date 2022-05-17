@@ -80,6 +80,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         }
 
         $value_column_name = null;
+        $value_column_name_is_null = false;
         // calculate value column name
         if (($second_arg_type = $statements_source->node_data->getType($call_args[1]->value))) {
             if ($second_arg_type->isSingleIntLiteral()) {
@@ -87,6 +88,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             } elseif ($second_arg_type->isSingleStringLiteral()) {
                 $value_column_name = $second_arg_type->getSingleStringLiteral()->value;
             }
+            $value_column_name_is_null = $second_arg_type->isNull();
         }
 
         $key_column_name = null;
@@ -117,6 +119,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 }
                 //array_column skips undefined elements so resulting type is necessarily defined
                 $result_element_type->possibly_undefined = false;
+            } elseif ($value_column_name_is_null) {
+                $result_element_type = new Union([$row_shape]);
             } else {
                 $result_element_type = Type::getMixed();
             }

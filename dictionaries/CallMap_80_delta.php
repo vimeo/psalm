@@ -91,7 +91,7 @@ return [
     ],
     'PDOStatement::fetchAll' => [
       'old' => ['array|false', 'how='=>'int', 'fetch_argument='=>'int|string|callable', 'ctor_args='=>'?array'],
-      'new' => ['array|false', 'mode='=>'int', '...args='=>'mixed'],
+      'new' => ['array', 'mode='=>'int', '...args='=>'mixed'],
     ],
     'PDOStatement::fetchColumn' => [
       'old' => ['string|int|float|bool|null', 'column_number='=>'int'],
@@ -983,7 +983,7 @@ return [
     ],
     'openssl_csr_export' => [
       'old' => ['bool', 'csr'=>'string|resource', '&w_output'=>'string', 'no_text='=>'bool'],
-      'new' => ['bool', 'csr'=>'OpenSSLCertificateSigningRequest|string', '&w_output'=>'OpenSSLAsymmetricKey', 'no_text='=>'bool'],
+      'new' => ['bool', 'csr'=>'OpenSSLCertificateSigningRequest|string', '&w_output'=>'string', 'no_text='=>'bool'],
     ],
     'openssl_csr_export_to_file' => [
       'old' => ['bool', 'csr'=>'string|resource', 'output_filename'=>'string', 'no_text='=>'bool'],

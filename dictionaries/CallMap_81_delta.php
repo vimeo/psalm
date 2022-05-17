@@ -135,11 +135,11 @@ return [
     ],
     'ftp_fget' => [
       'old' => ['bool', 'ftp' => 'resource', 'stream' => 'resource', 'remote_filename' => 'string', 'mode=' => 'int', 'offset=' => 'int'],
-      'new' => ['bool', 'ftp' => 'FTP\Connection', 'stream' => 'FTP\Connection', 'remote_filename' => 'string', 'mode=' => 'int', 'offset=' => 'int'],
+      'new' => ['bool', 'ftp' => 'FTP\Connection', 'stream' => 'resource', 'remote_filename' => 'string', 'mode=' => 'int', 'offset=' => 'int'],
     ],
     'ftp_nb_fget' => [
       'old' => ['int', 'ftp' => 'resource', 'stream' => 'resource', 'remote_filename' => 'string', 'mode=' => 'int', 'offset=' => 'int'],
-      'new' => ['int', 'ftp' => 'FTP\Connection', 'stream' => 'FTP\Connection', 'remote_filename' => 'string', 'mode=' => 'int', 'offset=' => 'int'],
+      'new' => ['int', 'ftp' => 'FTP\Connection', 'stream' => 'resource', 'remote_filename' => 'string', 'mode=' => 'int', 'offset=' => 'int'],
     ],
     'ftp_pasv' => [
       'old' => ['bool', 'ftp' => 'resource', 'enable' => 'bool'],
@@ -159,11 +159,11 @@ return [
     ],
     'ftp_fput' => [
       'old' => ['bool', 'ftp' => 'resource', 'remote_filename' => 'string', 'stream' => 'resource', 'mode=' => 'int', 'offset=' => 'int'],
-      'new' => ['bool', 'ftp' => 'FTP\Connection', 'remote_filename' => 'string', 'stream' => 'FTP\Connection', 'mode=' => 'int', 'offset=' => 'int'],
+      'new' => ['bool', 'ftp' => 'FTP\Connection', 'remote_filename' => 'string', 'stream' => 'resource', 'mode=' => 'int', 'offset=' => 'int'],
     ],
     'ftp_nb_fput' => [
       'old' => ['int', 'ftp' => 'resource', 'remote_filename' => 'string', 'stream' => 'resource', 'mode=' => 'int', 'offset=' => 'int'],
-      'new' => ['int', 'ftp' => 'FTP\Connection', 'remote_filename' => 'string', 'stream' => 'FTP\Connection', 'mode=' => 'int', 'offset=' => 'int'],
+      'new' => ['int', 'ftp' => 'FTP\Connection', 'remote_filename' => 'string', 'stream' => 'resource', 'mode=' => 'int', 'offset=' => 'int'],
     ],
     'ftp_put' => [
       'old' => ['bool', 'ftp' => 'resource', 'remote_filename' => 'string', 'local_filename' => 'string', 'mode=' => 'int', 'offset=' => 'int'],
@@ -627,7 +627,7 @@ return [
     ],
     'ldap_search' => [
       'old' => ['resource|false', 'ldap'=>'resource|resource[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int'],
-      'new' => ['LDAP\Connection|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int'],
+      'new' => ['LDAP\Result|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int'],
     ],
     'ldap_set_option' => [
       'old' => ['bool', 'ldap'=>'resource|null', 'option'=>'int', 'value'=>'mixed'],

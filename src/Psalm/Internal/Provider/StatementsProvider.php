@@ -57,6 +57,11 @@ class StatementsProvider
     private $file_storage_cache_provider;
 
     /**
+     * @var StatementsVolatileCache
+     */
+    private $statements_volatile_cache;
+
+    /**
      * @var array<string, array<string, bool>>
      */
     private $unchanged_members = [];
@@ -105,6 +110,7 @@ class StatementsProvider
         $this->parser_cache_provider = $parser_cache_provider;
         $this->this_modified_time = filemtime(__FILE__);
         $this->file_storage_cache_provider = $file_storage_cache_provider;
+        $this->statements_volatile_cache = StatementsVolatileCache::getInstance();
     }
 
     /**
@@ -130,19 +136,26 @@ class StatementsProvider
 
         $config = Config::getInstance();
 
+        $file_content_hash = md5($version . $file_contents);
+
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
+            $cache_key = "${file_content_hash}:${analysis_php_version_id}";
+            if ($this->statements_volatile_cache->has($cache_key)) {
+                return $this->statements_volatile_cache->get($cache_key);
+            }
+
             $progress->debug('Parsing ' . $file_path . "\n");
 
             $has_errors = false;
 
             $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
 
-            return $stmts ?: [];
-        }
+            $this->statements_volatile_cache->set($cache_key, $stmts);
 
-        $file_content_hash = md5($version . $file_contents);
+            return $stmts;
+        }
 
         $stmts = $this->parser_cache_provider->loadStatementsFromCache(
             $file_path,

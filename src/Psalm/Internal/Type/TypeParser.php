@@ -77,6 +77,7 @@ use function array_shift;
 use function array_unique;
 use function array_unshift;
 use function array_values;
+use function assert;
 use function constant;
 use function count;
 use function defined;
@@ -862,36 +863,36 @@ class TypeParser
             if (count($generic_params) !== 2) {
                 throw new TypeParseTreeException('int range must have 2 params');
             }
+            assert(count($parse_tree->children) === 2);
 
-            $param0_union_types = array_values($generic_params[0]->getAtomicTypes());
-            $param1_union_types = array_values($generic_params[1]->getAtomicTypes());
+            $get_int_range_bound = function (ParseTree $parse_tree, Union $generic_param, string $bound_name): ?int {
+                if (!$parse_tree instanceof Value
+                    || count($generic_param->getAtomicTypes()) > 1
+                    || (!$generic_param->getSingleAtomic() instanceof TLiteralInt
+                        && $parse_tree->value !== $bound_name
+                        && $parse_tree->text !== $bound_name
+                    )
+                ) {
+                    throw new TypeParseTreeException(
+                        "Invalid type \"{$generic_param->getId()}\" as int $bound_name boundary"
+                    );
+                }
 
-            if (count($param0_union_types) > 1 || count($param1_union_types) > 1) {
-                throw new TypeParseTreeException('Union types are not allowed in int range type');
-            }
+                $generic_param_atomic = $generic_param->getSingleAtomic();
+                return $generic_param_atomic instanceof TLiteralInt ? $generic_param_atomic->value : null;
+            };
 
-            if ($param0_union_types[0] instanceof TNamedObject &&
-                $param0_union_types[0]->value === TIntRange::BOUND_MAX
-            ) {
-                throw new TypeParseTreeException("min bound for int range param can't be 'max'");
-            }
-            if ($param1_union_types[0] instanceof TNamedObject &&
-                $param1_union_types[0]->value === TIntRange::BOUND_MIN
-            ) {
-                throw new TypeParseTreeException("max bound for int range param can't be 'min'");
-            }
-
-            $min_bound = null;
-            $max_bound = null;
-            if ($param0_union_types[0] instanceof TLiteralInt) {
-                $min_bound = $param0_union_types[0]->value;
-            }
-            if ($param1_union_types[0] instanceof TLiteralInt) {
-                $max_bound = $param1_union_types[0]->value;
-            }
+            $min_bound = $get_int_range_bound($parse_tree->children[0], $generic_params[0], TIntRange::BOUND_MIN);
+            $max_bound = $get_int_range_bound($parse_tree->children[1], $generic_params[1], TIntRange::BOUND_MAX);
 
             if ($min_bound === null && $max_bound === null) {
                 return new TInt();
+            }
+
+            if (is_int($min_bound) && is_int($max_bound) && $min_bound > $max_bound) {
+                throw new TypeParseTreeException(
+                    "Min bound can't be greater than max bound, int<$min_bound, $max_bound> given"
+                );
             }
 
             return new TIntRange($min_bound, $max_bound);

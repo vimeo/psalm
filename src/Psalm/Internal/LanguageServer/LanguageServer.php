@@ -142,11 +142,6 @@ class LanguageServer extends Dispatcher
                         return;
                     }
 
-                    /** @psalm-suppress UndefinedPropertyFetch */
-                    if ($msg->body->method === 'textDocument/signatureHelp') {
-                        $this->doAnalysis();
-                    }
-
                     $result = null;
                     $error = null;
                     try {
