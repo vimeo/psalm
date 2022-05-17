@@ -20,7 +20,7 @@ define('APC_ITER_TTL', 16384);
 define('APC_ITER_NONE', 0);
 define('APC_ITER_ALL', -1);
 
-class APCUIterator
+class APCUIterator implements Iterator
 {
     /**
      * @param array<string>|null|string $search
