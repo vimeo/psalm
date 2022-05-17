@@ -7,19 +7,15 @@ use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 use Psalm\Report\PrettyPrintArray\PrettyCompare;
-use Psalm\Report\PrettyPrintArray\PrettyDetectArray;
 use Psalm\Report\PrettyPrintArray\PrettyFormat;
 use Psalm\Report\PrettyPrintArray\PrettyGeneric;
 use Throwable;
-
 use function basename;
-use function count;
 use function get_cfg_var;
 use function ini_get;
 use function strlen;
 use function strtr;
 use function substr;
-
 use const PHP_EOL;
 
 final class ConsoleReport extends Report
@@ -98,23 +94,9 @@ final class ConsoleReport extends Report
                     return '';
                 }
 
-                $separator = '----';
-                $declaredType = $issue_data->involvedTypes->getDeclaredType();
-                $declaredType = PrettyGeneric::normalizeBracket($declaredType);
-                $declaredType = PrettyGeneric::normalizeTokens($declaredType);
-                $arrayPrettyPrinted0 = $prettyFormat->format($declaredType);
-
-                $inferedType = $issue_data->involvedTypes->getInferedType();
-                $inferedType = PrettyGeneric::normalizeBracket($inferedType);
-                $inferedType = PrettyGeneric::normalizeTokens($inferedType);
-                $arrayPrettyPrinted1 = $prettyFormat->format($inferedType);
-
-                $listOfArrays = [];
-                $listOfArrays[] = $arrayPrettyPrinted0;
-                $listOfArrays[] = $separator;
-                $listOfArrays[] = $arrayPrettyPrinted1;
-
-                $toIssue = PHP_EOL.$prettyPaired->compare($listOfArrays);
+                $arrayPrettyPrinted0 = $prettyFormat->format($issue_data->involvedTypes->getDeclaredType());
+                $arrayPrettyPrinted1 = $prettyFormat->format($issue_data->involvedTypes->getInferedType());
+                $toIssue = PHP_EOL.$prettyPaired->compare($arrayPrettyPrinted0,$arrayPrettyPrinted1);
 
             return PrettyGeneric::revertNormalizedTokens($toIssue);
         } catch (Throwable $throwable) {
