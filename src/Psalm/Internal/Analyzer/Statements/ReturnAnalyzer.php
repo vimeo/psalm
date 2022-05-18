@@ -487,7 +487,8 @@ class ReturnAnalyzer
                                     new CodeLocation($source, $stmt->expr),
                                     new InvolvedTypes(
                                         $inferred_type->getId(),
-                                        $local_return_type->getId())
+                                        $local_return_type->getId()
+                                    )
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             );

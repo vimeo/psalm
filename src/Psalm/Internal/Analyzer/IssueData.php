@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Analyzer;
 
 use Psalm\Issue\InvolvedTypes;
+
 use function str_pad;
 
 use const STR_PAD_LEFT;

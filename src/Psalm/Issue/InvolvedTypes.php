@@ -22,5 +22,4 @@ final class InvolvedTypes
     {
         return $this->declaredType;
     }
-
 }

@@ -10,12 +10,14 @@ use Psalm\Report\PrettyPrintArray\PrettyCompare;
 use Psalm\Report\PrettyPrintArray\PrettyFormat;
 use Psalm\Report\PrettyPrintArray\PrettyGeneric;
 use Throwable;
+
 use function basename;
 use function get_cfg_var;
 use function ini_get;
 use function strlen;
 use function strtr;
 use function substr;
+
 use const PHP_EOL;
 
 final class ConsoleReport extends Report
@@ -90,13 +92,13 @@ final class ConsoleReport extends Report
         $prettyPaired = new PrettyCompare();
 
         try {
-                if (!$issue_data->involvedTypes) {
-                    return '';
-                }
+            if (!$issue_data->involvedTypes) {
+                return '';
+            }
 
                 $arrayPrettyPrinted0 = $prettyFormat->format($issue_data->involvedTypes->getDeclaredType());
                 $arrayPrettyPrinted1 = $prettyFormat->format($issue_data->involvedTypes->getInferedType());
-                $toIssue = PHP_EOL.$prettyPaired->compare($arrayPrettyPrinted0,$arrayPrettyPrinted1);
+                $toIssue = PHP_EOL.$prettyPaired->compare($arrayPrettyPrinted0, $arrayPrettyPrinted1);
 
             return PrettyGeneric::revertNormalizedTokens($toIssue);
         } catch (Throwable $throwable) {
