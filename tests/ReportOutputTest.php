@@ -11,7 +11,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Issue\InvolvedTypes;
+use Psalm\Internal\InvolvedTypes;
 use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\JsonReport;
@@ -730,6 +730,7 @@ echo $a;';
                 'link' => 'https://psalm.dev/024',
                 'taint_trace' => null,
                 'other_references' => null,
+                'involvedTypes' => null
             ],
             [
                 'severity' => 'error',
@@ -752,6 +753,7 @@ echo $a;';
                 'link' => 'https://psalm.dev/138',
                 'taint_trace' => null,
                 'other_references' => null,
+                'involvedTypes' => null
             ],
             [
                 'severity' => 'error',
@@ -774,6 +776,7 @@ echo $a;';
                 'link' => 'https://psalm.dev/047',
                 'taint_trace' => null,
                 'other_references' => null,
+                'involvedTypes' => null
             ],
             [
                 'severity' => 'error',
@@ -796,6 +799,7 @@ echo $a;';
                 'link' => 'https://psalm.dev/020',
                 'taint_trace' => null,
                 'other_references' => null,
+                'involvedTypes' => null
             ],
             [
                 'severity' => 'info',
@@ -818,6 +822,7 @@ echo $a;';
                 'link' => 'https://psalm.dev/126',
                 'taint_trace' => null,
                 'other_references' => null,
+                'involvedTypes' => null
             ],
         ];
 
