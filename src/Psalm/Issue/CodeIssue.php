@@ -4,8 +4,8 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\IssueData;
-
 use Psalm\Internal\InvolvedTypes;
+
 use function array_pop;
 use function explode;
 

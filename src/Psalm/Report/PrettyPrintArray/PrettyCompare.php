@@ -37,11 +37,12 @@ final class PrettyCompare
             return '';
         }
 
+        $pairedFormattedResult = [];
         $pairedFormattedResult[] = '|';
         $pairedFormattedResult[] = sprintf($formatTable, 'Expected', 'Provided');
         $pairedFormattedResult[] = sprintf($formatTable, '---', '---');
 
-        foreach ($paired as $k => $rows) {
+        foreach ($paired as $rows) {
             $pairedFormattedResult[] = sprintf($formatTable, ...$rows);
         }
 
