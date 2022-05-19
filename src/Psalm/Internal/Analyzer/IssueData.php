@@ -2,7 +2,7 @@
 
 namespace Psalm\Internal\Analyzer;
 
-use Psalm\Internal\InvolvedTypes;
+use Psalm\InvolvedTypes;
 
 use function str_pad;
 

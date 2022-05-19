@@ -4,7 +4,7 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Internal\InvolvedTypes;
+use Psalm\InvolvedTypes;
 
 use function array_pop;
 use function explode;
@@ -33,7 +33,10 @@ abstract class CodeIssue
      */
     public $dupe_key;
 
-    public ?InvolvedTypes $involvedTypes;
+    /**
+     * @var ?InvolvedTypes
+     */
+    public $involvedTypes;
 
     public function __construct(
         string $message,

@@ -8,10 +8,10 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\InvolvedTypes;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\InvolvedTypes;
 use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\JsonReport;
@@ -1498,7 +1498,6 @@ EOF;
         $asUnixOutput = $this->toUnixLineEndings($output);
 
         foreach ($asUnixLinesOutput as $line) {
-
             $this->assertStringContainsString(
                 $line,
                 $asUnixOutput

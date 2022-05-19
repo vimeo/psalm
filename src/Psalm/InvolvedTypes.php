@@ -1,6 +1,6 @@
 <?php
 
-namespace Psalm\Internal;
+namespace Psalm;
 
 final class InvolvedTypes
 {

@@ -92,13 +92,14 @@ final class ConsoleReport extends Report
         $prettyPaired = new PrettyCompare();
 
         try {
-            if (!$issue_data->involvedTypes) {
+            $involvedTypes = $issue_data->involvedTypes;
+            if (!$involvedTypes) {
                 return '';
             }
 
-                $arrayPrettyPrinted0 = $prettyFormat->format($issue_data->involvedTypes->getDeclaredType());
-                $arrayPrettyPrinted1 = $prettyFormat->format($issue_data->involvedTypes->getInferredType());
-                $toIssue = PHP_EOL.$prettyPaired->compare($arrayPrettyPrinted0, $arrayPrettyPrinted1);
+            $arrayPrettyPrinted0 = $prettyFormat->format($involvedTypes->getDeclaredType());
+            $arrayPrettyPrinted1 = $prettyFormat->format($involvedTypes->getInferredType());
+            $toIssue = PHP_EOL.$prettyPaired->compare($arrayPrettyPrinted0, $arrayPrettyPrinted1);
 
             return PrettyGeneric::revertNormalizedTokens($toIssue);
         } catch (Throwable $throwable) {
