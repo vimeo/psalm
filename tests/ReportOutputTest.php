@@ -1497,7 +1497,10 @@ EOF;
         $lines = explode(PHP_EOL, $expected_output);
 
         foreach ($lines as $line) {
-            $this->assertStringContainsString($line, $output);
+            $this->assertStringContainsString(
+                $this->toUnixLineEndings($line),
+                $this->toUnixLineEndings($output)
+            );
         }
     }
 }
