@@ -11,11 +11,11 @@ use const PHP_EOL;
 
 final class PrettyCompare
 {
-    public function compare(string $infered, string $declared): string
+    public function compare(string $inferred, string $declared): string
     {
         $formatTable = '| %-50s | %-50s ';
 
-        $requested = explode(PHP_EOL, $infered);
+        $requested = explode(PHP_EOL, $inferred);
         $provided = explode(PHP_EOL, $declared);
 
         $maxOf = count($requested) > count($provided) ? count($requested) : count($provided);

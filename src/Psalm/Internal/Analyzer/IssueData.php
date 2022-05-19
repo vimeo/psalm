@@ -129,9 +129,10 @@ class IssueData
     public $dupe_key;
 
     /**
+     * @var ?InvolvedTypes
      * @readonly
      */
-    public ?InvolvedTypes $involvedTypes;
+    public $involvedTypes;
 
     /**
      * @param ?list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace

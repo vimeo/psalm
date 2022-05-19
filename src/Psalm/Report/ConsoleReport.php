@@ -97,7 +97,7 @@ final class ConsoleReport extends Report
             }
 
                 $arrayPrettyPrinted0 = $prettyFormat->format($issue_data->involvedTypes->getDeclaredType());
-                $arrayPrettyPrinted1 = $prettyFormat->format($issue_data->involvedTypes->getInferedType());
+                $arrayPrettyPrinted1 = $prettyFormat->format($issue_data->involvedTypes->getInferredType());
                 $toIssue = PHP_EOL.$prettyPaired->compare($arrayPrettyPrinted0, $arrayPrettyPrinted1);
 
             return PrettyGeneric::revertNormalizedTokens($toIssue);

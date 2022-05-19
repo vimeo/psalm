@@ -1418,7 +1418,7 @@ EOF;
     /**
      * @dataProvider payloadProvider()
      */
-    public function testConsoleReportWithPrettyPrintFromPayload(string $payload, string $infered, string $declared, $expected_output): void
+    public function testConsoleReportWithPrettyPrintFromPayload(string $payload, string $inferred, string $declared, $expected_output): void
     {
         $console_report_options = $this->prepareConsoleOptionsForPrettyPrint();
         $issues_data = [
@@ -1443,7 +1443,7 @@ EOF;
                 null,
                 null,
                 null,
-                new InvolvedTypes($infered, $declared)
+                new InvolvedTypes($inferred, $declared)
             ),
         ];
 
@@ -1457,12 +1457,12 @@ EOF;
      */
     public function payloadProvider(): Generator
     {
-        $infered = 'array{code_xxx: null|string, datetime: null|string, money: float|null, id_yyyy: null|string, tid_ccccc: null|string, tid_bbbbb: null|string}';
+        $inferred = 'array{code_xxx: null|string, datetime: null|string, money: float|null, id_yyyy: null|string, tid_ccccc: null|string, tid_bbbbb: null|string}';
         $declared = 'array{code_xxx: null|string, datetime: null|string, money: float|null, id_yyyy: null|string, tid_aaaaaa: null|string, tid_bbbbb: null|string}';
 
         $paylaod = <<<'EOT'
         'ERROR: InvalidReturnStatement - XXXX.php:66:16 -
-        The inferred type '$infered' does not match the declared return type '$declared' for YYYYY() (see https://psalm.dev/128)
+        The inferred type '$inferred' does not match the declared return type '$declared' for YYYYY() (see https://psalm.dev/128)
         EOT;
 
         $expected = <<<"EOT"
@@ -1480,7 +1480,7 @@ EOF;
         |
         EOT;
 
-        yield  [$paylaod, $infered, $declared, $expected];
+        yield  [$paylaod, $inferred, $declared, $expected];
     }
 
     private function prepareConsoleOptionsForPrettyPrint(): ReportOptions

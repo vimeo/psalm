@@ -4,18 +4,18 @@ namespace Psalm\Internal;
 
 final class InvolvedTypes
 {
-    private string $inferedType;
+    private string $inferredType;
     private string $declaredType;
 
-    public function __construct(string $inferedType, string $declaredType)
+    public function __construct(string $inferredType, string $declaredType)
     {
-        $this->inferedType = $inferedType;
+        $this->inferredType = $inferredType;
         $this->declaredType = $declaredType;
     }
 
-    public function getInferedType(): string
+    public function getInferredType(): string
     {
-        return $this->inferedType;
+        return $this->inferredType;
     }
 
     public function getDeclaredType(): string
