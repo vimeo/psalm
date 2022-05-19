@@ -1336,7 +1336,7 @@ EOF;
     /**
      * @dataProvider outputProvider()
      */
-    public function testConsoleReportWithPrettyPrintFromAnalyzer(string $file_contents, $expected_output): void
+    public function testConsoleReportWithPrettyPrintFromAnalyzer(string $file_contents, string $expected_output): void
     {
         $this->addFile('somefile.php', $file_contents);
         $this->analyzeFile('somefile.php', new Context());
@@ -1418,7 +1418,7 @@ EOF;
     /**
      * @dataProvider payloadProvider()
      */
-    public function testConsoleReportWithPrettyPrintFromPayload(string $payload, string $inferred, string $declared, $expected_output): void
+    public function testConsoleReportWithPrettyPrintFromPayload(string $payload, string $inferred, string $declared, string $expected_output): void
     {
         $console_report_options = $this->prepareConsoleOptionsForPrettyPrint();
         $issues_data = [
@@ -1492,14 +1492,16 @@ EOF;
         return $console_report_options;
     }
 
-    private function assertOutputPrettyPrintEquals($expected_output, string $output): void
+    private function assertOutputPrettyPrintEquals(string $expected_output, string $output): void
     {
-        $lines = explode(PHP_EOL, $expected_output);
+        $asUnixLinesOutput = explode(PHP_EOL, $this->toUnixLineEndings($expected_output));
+        $asUnixOutput = $this->toUnixLineEndings($output);
 
-        foreach ($lines as $line) {
+        foreach ($asUnixLinesOutput as $line) {
+
             $this->assertStringContainsString(
-                $this->toUnixLineEndings($line),
-                $this->toUnixLineEndings($output)
+                $line,
+                $asUnixOutput
             );
         }
     }
