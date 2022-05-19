@@ -1350,7 +1350,7 @@ EOF;
     /**
      * Because bug I think: https://psalm.dev/r/ccb7da7a53
      * @psalm-suppress InvalidReturnType
-     * @return Generator<string, array{string,string}>
+     * @return Generator<string, string[]>
      */
     public function outputProvider(): Generator
     {
@@ -1455,7 +1455,9 @@ EOF;
     }
 
     /**
-     * @return Generator<array<string>>
+     * Because bug I think: https://psalm.dev/r/ccb7da7a53
+     * @psalm-suppress InvalidReturnType
+     * @return Generator<string,string[]>
      */
     public function payloadProvider(): Generator
     {
