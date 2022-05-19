@@ -1348,7 +1348,9 @@ EOF;
     }
 
     /**
-     * @return Generator<string, array<string>>
+     * Because bug I think: https://psalm.dev/r/ccb7da7a53
+     * @psalm-suppress InvalidReturnType
+     * @return Generator<string, array{string,string}>
      */
     public function outputProvider(): Generator
     {
