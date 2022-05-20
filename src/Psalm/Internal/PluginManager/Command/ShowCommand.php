@@ -5,6 +5,7 @@ namespace Psalm\Internal\PluginManager\Command;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use UnexpectedValueException;
@@ -37,6 +38,7 @@ class ShowCommand extends Command
         $this
             ->setName('show')
             ->setDescription('Lists enabled and available plugins')
+            ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file')
             ->addUsage('[-c path/to/psalm.xml]');
     }
 
