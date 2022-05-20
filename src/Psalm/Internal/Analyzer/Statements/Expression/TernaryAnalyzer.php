@@ -129,7 +129,12 @@ class TernaryAnalyzer
 
         $if_clauses = Algebra::simplifyCNF($if_clauses);
 
-        $ternary_context_clauses = array_merge($entry_clauses, $if_clauses);
+        $ternary_context_clauses = $entry_clauses
+            ? Algebra::simplifyCNF(array_merge(
+                $entry_clauses,
+                $if_clauses
+            ))
+            : $if_clauses;
 
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
