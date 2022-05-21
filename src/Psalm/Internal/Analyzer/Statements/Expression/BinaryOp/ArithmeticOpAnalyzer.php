@@ -47,6 +47,7 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
+use function get_class;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -309,8 +310,8 @@ class ArithmeticOpAnalyzer
         bool &$has_string_increment,
         Union &$result_type = null
     ): ?Union {
-        if ($left_type_part instanceof TLiteralInt
-            && $right_type_part instanceof TLiteralInt
+        if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
+            && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (
                 //we don't try to do arithmetics on variables in loops
                 $context === null
@@ -318,6 +319,21 @@ class ArithmeticOpAnalyzer
                 || (!$left instanceof PhpParser\Node\Expr\Variable && !$right instanceof PhpParser\Node\Expr\Variable)
             )
         ) {
+            // get_class is fine here because both classes are final.
+            if ($statements_source !== null
+                && $config->strict_binary_operands
+                && get_class($left_type_part) !== get_class($right_type_part)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidOperand(
+                        'Cannot process numeric types together in strict operands mode, '.
+                        'please cast explicitly',
+                        new CodeLocation($statements_source, $parent)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                );
+            }
+
             // time for some arithmetic!
             $calculated_type = self::arithmeticOperation(
                 $parent,
