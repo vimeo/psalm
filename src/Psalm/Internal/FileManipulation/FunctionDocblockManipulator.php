@@ -96,6 +96,9 @@ class FunctionDocblockManipulator
     /** @var bool */
     private $is_pure = false;
 
+    /** @var list<class-string> */
+    private $throwsExceptions = [];
+
     /**
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
      */
@@ -395,6 +398,16 @@ class FunctionDocblockManipulator
             $modified_docblock = true;
             $parsed_docblock->tags['psalm-pure'] = [''];
         }
+        if (\count($this->throwsExceptions) > 0) {
+            $modified_docblock = true;
+            $parsed_docblock->tags['throws'] = [
+                \array_reduce(
+                    $this->throwsExceptions,
+                    fn(string $throwsClause, string $exception) => $throwsClause === '' ? $exception : $throwsClause.'|'.$exception,
+                    ''
+                )
+            ];
+        }
 
 
         if ($this->new_phpdoc_return_type && $this->new_phpdoc_return_type !== $old_phpdoc_return_type) {
@@ -526,6 +539,14 @@ class FunctionDocblockManipulator
     public function makePure(): void
     {
         $this->is_pure = true;
+    }
+
+    /**
+     * @param list<class-string> $exceptions
+     */
+    public function addThrowsDocblock(array $exceptions): void
+    {
+        $this->throwsExceptions = $exceptions;
     }
 
     public static function clearCache(): void

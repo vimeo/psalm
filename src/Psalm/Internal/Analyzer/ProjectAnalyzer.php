@@ -1322,6 +1322,7 @@ class ProjectAnalyzer
 
         $supported_issues_to_fix[] = 'MissingImmutableAnnotation';
         $supported_issues_to_fix[] = 'MissingPureAnnotation';
+        $supported_issues_to_fix[] = 'MissingThrowsDocblock';
 
         $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
 
