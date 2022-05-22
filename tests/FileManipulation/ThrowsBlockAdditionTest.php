@@ -86,6 +86,38 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 ['MissingThrowsDocblock'],
                 true,
             ],
+            'doesNotAddDuplicateThrows' => [
+                '<?php
+                    /**
+                     * @throws InvalidArgumentException
+                     */
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \InvalidArgumentException();
+                        }
+                        if("" === \trim($s)) {
+                            throw new \DomainException();
+                        }
+                        return $s;
+                    }',
+                '<?php
+                    /**
+                     * @throws InvalidArgumentException
+                     * @throws DomainException
+                     */
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \InvalidArgumentException();
+                        }
+                        if("" === \trim($s)) {
+                            throw new \DomainException();
+                        }
+                        return $s;
+                    }',
+                '7.4',
+                ['MissingThrowsDocblock'],
+                true,
+            ],
         ];
     }
 }
