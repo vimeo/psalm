@@ -8,9 +8,11 @@ use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
+use function hash;
 use function mkdir;
-use function sha1;
+use function phpversion;
 use function touch;
+use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -91,11 +93,15 @@ class ProjectCacheProvider
             return true;
         }
 
-        $sha1 = sha1($lockfile_contents);
+        if (version_compare(phpversion(), '8.1', '>=')) {
+            $hash = hash('xxh128', $lockfile_contents);
+        } else {
+            $hash = hash('md4', $lockfile_contents);
+        }
 
-        $changed = $sha1 !== $this->getComposerLockHash();
+        $changed = $hash !== $this->getComposerLockHash();
 
-        $this->composer_lock_hash = $sha1;
+        $this->composer_lock_hash = $hash;
 
         return $changed;
     }
