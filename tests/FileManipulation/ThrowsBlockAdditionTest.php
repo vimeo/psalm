@@ -32,6 +32,60 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 ['MissingThrowsDocblock'],
                 true,
             ],
+            'addMultipleThrowsAnnotationToFunction' => [
+                '<?php
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \InvalidArgumentException();
+                        }
+                        if("" === \trim($s)) {
+                            throw new \DomainException();
+                        }
+                        return $s;
+                    }',
+                '<?php
+                    /**
+                     * @throws InvalidArgumentException|DomainException
+                     */
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \InvalidArgumentException();
+                        }
+                        if("" === \trim($s)) {
+                            throw new \DomainException();
+                        }
+                        return $s;
+                    }',
+                '7.4',
+                ['MissingThrowsDocblock'],
+                true,
+            ],
+            'preservesExistingThrowsAnnotationToFunction' => [
+                '<?php
+                    /**
+                     * @throws InvalidArgumentException|DomainException
+                     */
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \Exception();
+                        }
+                        return $s;
+                    }',
+                '<?php
+                    /**
+                     * @throws InvalidArgumentException|DomainException
+                     * @throws Exception
+                     */
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \Exception();
+                        }
+                        return $s;
+                    }',
+                '7.4',
+                ['MissingThrowsDocblock'],
+                true,
+            ],
         ];
     }
 }

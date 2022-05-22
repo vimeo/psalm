@@ -14,7 +14,9 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
+use function array_key_exists;
 use function array_merge;
+use function array_reduce;
 use function count;
 use function is_string;
 use function ltrim;
@@ -398,15 +400,20 @@ class FunctionDocblockManipulator
             $modified_docblock = true;
             $parsed_docblock->tags['psalm-pure'] = [''];
         }
-        if (\count($this->throwsExceptions) > 0) {
+        if (count($this->throwsExceptions) > 0) {
             $modified_docblock = true;
-            $parsed_docblock->tags['throws'] = [
-                \array_reduce(
-                    $this->throwsExceptions,
-                    fn(string $throwsClause, string $exception) => $throwsClause === '' ? $exception : $throwsClause.'|'.$exception,
-                    ''
-                )
-            ];
+            $inferredThrowsClause = array_reduce(
+                $this->throwsExceptions,
+                function (string $throwsClause, string $exception) {
+                    return $throwsClause === '' ? $exception : $throwsClause.'|'.$exception;
+                },
+                ''
+            );
+            if (array_key_exists('throws', $parsed_docblock->tags)) {
+                $parsed_docblock->tags['throws'][] = $inferredThrowsClause;
+            } else {
+                $parsed_docblock->tags['throws'] = [$inferredThrowsClause];
+            }
         }
 
 

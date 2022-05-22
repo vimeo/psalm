@@ -65,6 +65,8 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function array_values;
+use function assert;
+use function class_exists;
 use function count;
 use function end;
 use function in_array;
@@ -723,6 +725,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!$is_expected) {
+                assert(class_exists($possibly_thrown_exception));
                 $missingThrowsDocblockErrors[] = $possibly_thrown_exception;
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
@@ -737,8 +740,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if (
-            $codebase->alter_code
+        if ($codebase->alter_code
             && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
