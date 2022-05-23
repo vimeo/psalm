@@ -28,225 +28,223 @@ namespace Psalm\Internal;
  */
 
 return [
-    'arrayobject' => [
-        'name' => 'string',
-    ],
-    'limititerator' => [
-        'name' => 'string',
-    ],
-    'solrdocumentfield' => [
-        'name' => 'string',
-        'boost' => 'float',
-        'values' => 'array',
-    ],
-    'domprocessinginstruction' => [
-        'target' => 'string',
-        'data' => 'string',
-    ],
-    'recursivearrayiterator' => [
-        'name' => 'string',
-    ],
-    'eventbuffer' => [
-        'length' => 'int',
-        'contiguous-space' => 'int',
-    ],
-    'mongocursor' => [
-        'slaveokay' => 'boolean',
-        'timeout' => 'integer',
-    ],
-    'domxpath' => [
-        'document' => 'DOMDocument',
-    ],
-    'domentity' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-        'notationName' => 'string',
-        'actualEncoding' => 'string',
-        'encoding' => 'string',
-        'version' => 'string',
-    ],
-    'splminheap' => [
-        'name' => 'string',
-    ],
-    'mongodb-driver-exception-writeexception' => [
-        'writeresult' => 'MongoDBDriverWriteResult',
-    ],
-    'ziparchive' => [
-        'status' => 'int',
-        'statusSys' => 'int',
-        'numFiles' => 'int',
-        'filename' => 'string',
-        'comment' => 'string',
-    ],
-    'solrexception' => [
-        'sourceline' => 'integer',
-        'sourcefile' => 'string',
-        'zif-name' => 'string',
-    ],
     'arrayiterator' => [
         'name' => 'string',
     ],
-    'mongoid' => [
-        'id' => 'string',
-    ],
-    'dateinterval' => [
-        'y' => 'integer',
-        'm' => 'integer',
-        'd' => 'integer',
-        'h' => 'integer',
-        'i' => 'integer',
-        's' => 'integer',
-        'f' => 'float', // only present from 7.1 onwards
-        'invert' => 'integer',
-        'days' => 'false|int',
-    ],
-    'tokyotyrantexception' => [
-        'code' => 'int',
-    ],
-    'tidy' => [
-        'errorbuffer' => 'string',
-    ],
-    'filteriterator' => [
-        'name' => 'string',
-    ],
-    'parentiterator' => [
-        'name' => 'string',
-    ],
-    'recursiveregexiterator' => [
-        'name' => 'string',
-    ],
-    'error' => [
-        'message' => 'string',
-        'code' => 'int',
-        'file' => 'string',
-        'line' => 'int',
-    ],
-    'domexception' => [
-        'code' => 'int',
-    ],
-    'domentityreference' => [
-        'name' => 'string',
-    ],
-    'spldoublylinkedlist' => [
-        'name' => 'string',
-    ],
-    'domdocumentfragment' => [
+    'arrayobject' => [
         'name' => 'string',
     ],
     'collator' => [
         'name' => 'string',
     ],
-    'streamwrapper' => [
-        'context' => 'resource',
+    'dateinterval' => [
+        'd' => 'integer',
+        'days' => 'false|int',
+        'f' => 'float',
+        'h' => 'integer',
+        'i' => 'integer',
+        'invert' => 'integer',
+        'm' => 'integer',
+        's' => 'integer',
+        'y' => 'integer',
     ],
-    'pdostatement' => [
-        'querystring' => 'string',
-    ],
-    'domnotation' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-    ],
-    'snmpexception' => [
-        'code' => 'string',
+    'directory' => [
+        'handle' => 'resource',
+        'path' => 'string',
     ],
     'directoryiterator' => [
         'name' => 'string',
     ],
-    'splqueue' => [
+    'domattr' => [
+        'name' => 'string',
+        'ownerelement' => 'DOMElement',
+        'schematypeinfo' => 'bool',
+        'specified' => 'bool',
+        'value' => 'string',
+    ],
+    'domcharacterdata' => [
+        'data' => 'string',
+        'length' => 'int',
+    ],
+    'domdocument' => [
+        'actualencoding' => 'string',
+        'childelementcount' => 'int',
+        'config' => 'null',
+        'doctype' => 'DOMDocumentType',
+        'documentelement' => 'DOMElement',
+        'documenturi' => 'string',
+        'encoding' => 'string',
+        'firstelementchild' => 'DOMElement|null',
+        'formatoutput' => 'bool',
+        'implementation' => 'DOMImplementation',
+        'lastelementchild' => 'DOMElement|null',
+        'ownerdocument' => 'null',
+        'parentnode' => 'null',
+        'preservewhitespace' => 'bool',
+        'recover' => 'bool',
+        'resolveexternals' => 'bool',
+        'standalone' => 'bool',
+        'stricterrorchecking' => 'bool',
+        'substituteentities' => 'bool',
+        'validateonparse' => 'bool',
+        'version' => 'string',
+        'xmlencoding' => 'string',
+        'xmlstandalone' => 'bool',
+        'xmlversion' => 'string',
+    ],
+    'domdocumentfragment' => [
         'name' => 'string',
     ],
-    'locale' => [
+    'domdocumenttype' => [
+        'entities' => 'DOMNamedNodeMap',
+        'internalsubset' => 'string',
+        'name' => 'string',
+        'notations' => 'DOMNamedNodeMap',
+        'publicid' => 'string',
+        'systemid' => 'string',
+    ],
+    'domelement' => [
+        'attributes' => 'DOMNamedNodeMap<DOMAttr>',
+        'childelementcount' => 'int',
+        'firstelementchild' => 'DOMElement|null',
+        'lastelementchild' => 'DOMElement|null',
+        'nextelementsibling' => 'DOMElement|null',
+        'previouselementsibling' => 'DOMElement|null',
+        'schematypeinfo' => 'bool',
+        'tagname' => 'string',
+    ],
+    'domentity' => [
+        'actualencoding' => 'string',
+        'encoding' => 'string',
+        'notationname' => 'string',
+        'publicid' => 'string',
+        'systemid' => 'string',
+        'version' => 'string',
+    ],
+    'domentityreference' => [
         'name' => 'string',
     ],
-    'directory' => [
-        'path' => 'string',
-        'handle' => 'resource',
+    'domexception' => [
+        'code' => 'int',
     ],
-    'splheap' => [
+    'domimplementation' => [
         'name' => 'string',
+    ],
+    'domnamednodemap' => [
+        'length' => 'int',
+    ],
+    'domnode' => [
+        'attributes' => 'null',
+        'baseuri' => 'string|null',
+        'childnodes' => 'DomNodeList<DomNode>',
+        'firstchild' => 'DOMNode|null',
+        'lastchild' => 'DOMNode|null',
+        'localname' => 'string',
+        'namespaceuri' => 'string|null',
+        'nextsibling' => 'DOMNode|null',
+        'nodename' => 'string',
+        'nodetype' => 'int',
+        'nodevalue' => 'string|null',
+        'ownerdocument' => 'DOMDocument|null',
+        'parentnode' => 'DOMNode|null',
+        'prefix' => 'string',
+        'previoussibling' => 'DOMNode|null',
+        'textcontent' => 'string',
     ],
     'domnodelist' => [
         'length' => 'int',
     ],
-    'mongodb' => [
-        'w' => 'integer',
-        'wtimeout' => 'integer',
+    'domnotation' => [
+        'publicid' => 'string',
+        'systemid' => 'string',
     ],
-    'splpriorityqueue' => [
+    'domprocessinginstruction' => [
+        'data' => 'string',
+        'target' => 'string',
+    ],
+    'domtext' => [
+        'wholetext' => 'string',
+    ],
+    'domxpath' => [
+        'document' => 'DOMDocument',
+    ],
+    'error' => [
+        'code' => 'int',
+        'file' => 'string',
+        'line' => 'int',
+        'message' => 'string',
+    ],
+    'errorexception' => [
+        'severity' => 'int',
+    ],
+    'event' => [
+        'pending' => 'bool',
+    ],
+    'eventbuffer' => [
+        'contiguous-space' => 'int',
+        'length' => 'int',
+    ],
+    'eventbufferevent' => [
+        'fd' => 'integer',
+        'input' => 'EventBuffer',
+        'output' => 'EventBuffer',
+        'priority' => 'integer',
+    ],
+    'eventlistener' => [
+        'fd' => 'int',
+    ],
+    'eventsslcontext' => [
+        'local-cert' => 'string',
+        'local-pk' => 'string',
+    ],
+    'exception' => [
+        'code' => 'int',
+        'file' => 'string',
+        'line' => 'int',
+        'message' => 'string',
+    ],
+    'filteriterator' => [
+        'name' => 'string',
+    ],
+    'libxmlerror' => [
+        'code' => 'int',
+        'column' => 'int',
+        'file' => 'string',
+        'level' => 'int',
+        'line' => 'int',
+        'message' => 'string',
+    ],
+    'limititerator' => [
+        'name' => 'string',
+    ],
+    'locale' => [
         'name' => 'string',
     ],
     'mongoclient' => [
         'connected' => 'boolean',
         'status' => 'string',
     ],
-    'domdocument' => [
-        'actualEncoding' => 'string',
-        'config' => 'null',
-        'doctype' => 'DOMDocumentType',
-        'documentElement' => 'DOMElement',
-        'documentURI' => 'string',
-        'encoding' => 'string',
-        'firstElementChild' => 'DOMElement|null',
-        'formatOutput' => 'bool',
-        'childElementCount' => 'int',
-        'implementation' => 'DOMImplementation',
-        'lastElementChild' => 'DOMElement|null',
-        'preserveWhiteSpace' => 'bool',
-        'recover' => 'bool',
-        'resolveExternals' => 'bool',
-        'standalone' => 'bool',
-        'strictErrorChecking' => 'bool',
-        'substituteEntities' => 'bool',
-        'validateOnParse' => 'bool',
-        'version' => 'string',
-        'xmlEncoding' => 'string',
-        'xmlStandalone' => 'bool',
-        'xmlVersion' => 'string',
-        'ownerDocument' => 'null',
-        'parentNode' => 'null',
-    ],
-    'libxmlerror' => [
-        'level' => 'int',
-        'code' => 'int',
-        'column' => 'int',
-        'message' => 'string',
-        'file' => 'string',
-        'line' => 'int',
-    ],
-    'domimplementation' => [
-        'name' => 'string',
-    ],
-    'normalizer' => [
-        'name' => 'string',
-    ],
-    'norewinditerator' => [
-        'name' => 'string',
-    ],
-    'event' => [
-        'pending' => 'bool',
-    ],
-    'domdocumenttype' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-        'name' => 'string',
-        'entities' => 'DOMNamedNodeMap',
-        'notations' => 'DOMNamedNodeMap',
-        'internalSubset' => 'string',
-    ],
-    'errorexception' => [
-        'severity' => 'int',
-    ],
-    'recursivedirectoryiterator' => [
-        'name' => 'string',
-    ],
-    'domcharacterdata' => [
-        'data' => 'string',
-        'length' => 'int',
-    ],
     'mongocollection' => [
         'db' => 'MongoDB',
         'w' => 'integer',
         'wtimeout' => 'integer',
+    ],
+    'mongocursor' => [
+        'slaveokay' => 'boolean',
+        'timeout' => 'integer',
+    ],
+    'mongodb' => [
+        'w' => 'integer',
+        'wtimeout' => 'integer',
+    ],
+    'mongodb-driver-exception-writeexception' => [
+        'writeresult' => 'MongoDBDriverWriteResult',
+    ],
+    'mongoid' => [
+        'id' => 'string',
+    ],
+    'mongoint32' => [
+        'value' => 'string',
     ],
     'mongoint64' => [
         'value' => 'string',
@@ -277,17 +275,17 @@ return [
         'driver_version' => 'string',
         'embedded' => 'string',
         'reconnect' => 'bool',
-        'report_mode' => 'int'
+        'report_mode' => 'int',
     ],
     'mysqli_result' => [
-        'current_field'  => 'int',
+        'current_field' => 'int',
         'field_count' => 'int',
         'lengths' => 'array|null',
         'num_rows' => 'int',
         'type' => 'mixed',
     ],
     'mysqli_sql_exception' => [
-        'sqlstate' => 'string'
+        'sqlstate' => 'string',
     ],
     'mysqli_stmt' => [
         'affected_rows' => 'int',
@@ -306,139 +304,112 @@ return [
         'message' => 'string',
         'sqlstate' => 'string',
     ],
-    'eventlistener' => [
-        'fd' => 'int',
-    ],
-    'splmaxheap' => [
+    'norewinditerator' => [
         'name' => 'string',
     ],
-    'regexiterator' => [
-        'name' => 'string',
-    ],
-    'domelement' => [
-        'schemaTypeInfo' => 'bool',
-        'tagName' => 'string',
-        'attributes' => 'DOMNamedNodeMap<DOMAttr>',
-        'childElementCount' => 'int',
-        'firstElementChild' => 'DOMElement|null',
-        'lastElementChild' => 'DOMElement|null',
-        'nextElementSibling' => 'DOMElement|null',
-        'previousElementSibling' => 'DOMElement|null',
-    ],
-    'tidynode' => [
-        'value' => 'string',
-        'name' => 'string',
-        'type' => 'int',
-        'line' => 'int',
-        'column' => 'int',
-        'proprietary' => 'bool',
-        'id' => 'int',
-        'attribute' => 'array',
-        'child' => '?array',
-    ],
-    'recursivecachingiterator' => [
-        'name' => 'string',
-    ],
-    'solrresponse' => [
-        'http-status' => 'integer',
-        'parser-mode' => 'integer',
-        'success' => 'bool',
-        'http-status-message' => 'string',
-        'http-request-url' => 'string',
-        'http-raw-request-headers' => 'string',
-        'http-raw-request' => 'string',
-        'http-raw-response-headers' => 'string',
-        'http-raw-response' => 'string',
-        'http-digested-response' => 'string',
-    ],
-    'domnamednodemap' => [
-        'length' => 'int',
-    ],
-    'splstack' => [
+    'normalizer' => [
         'name' => 'string',
     ],
     'numberformatter' => [
         'name' => 'string',
     ],
-    'eventsslcontext' => [
-        'local-cert' => 'string',
-        'local-pk' => 'string',
+    'parentiterator' => [
+        'name' => 'string',
     ],
     'pdoexception' => [
-        'errorinfo' => 'array',
         'code' => 'int|string',
+        'errorinfo' => 'array',
     ],
-    'domnode' => [
-        'nodeName' => 'string',
-        'nodeValue' => 'string|null',
-        'nodeType' => 'int',
-        'parentNode' => 'DOMNode|null',
-        'childNodes' => 'DomNodeList<DomNode>',
-        'firstChild' => 'DOMNode|null',
-        'lastChild' => 'DOMNode|null',
-        'previousSibling' => 'DOMNode|null',
-        'nextSibling' => 'DOMNode|null',
-        'attributes' => 'null',
-        'ownerDocument' => 'DOMDocument|null',
-        'namespaceURI' => 'string|null',
-        'prefix' => 'string',
-        'localName' => 'string',
-        'baseURI' => 'string|null',
-        'textContent' => 'string',
+    'pdostatement' => [
+        'querystring' => 'string',
     ],
-    'domattr' => [
+    'phpparser\\node\\expr\\array_' => [
+        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
+    ],
+    'phpparser\\node\\expr\\arrowfunction' => [
+        'params' => 'list<PhpParser\\Node\\Param>',
+    ],
+    'phpparser\\node\\expr\\closure' => [
+        'params' => 'list<PhpParser\\Node\\Param>',
+    ],
+    'phpparser\\node\\expr\\list_' => [
+        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
+    ],
+    'phpparser\\node\\expr\\shellexec' => [
+        'parts' => 'list<PhpParser\\Node>',
+    ],
+    'phpparser\\node\\matcharm' => [
+        'conds' => 'null|non-empty-list<PhpParser\\Node\\Expr>',
+    ],
+    'phpparser\\node\\name' => [
+        'parts' => 'non-empty-list<non-empty-string>',
+    ],
+    'phpparser\\node\\stmt\\case_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\catch_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\class_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\do_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\else_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\elseif_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\finally_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\for_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\foreach_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\if_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\interface_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\namespace_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\trait_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\trycatch' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\while_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'rdkafka\\message' => [
+        'err' => 'int',
+        'headers' => 'array<string, string>|null',
+        'key' => 'string|null',
+        'offset' => 'int',
+        'partition' => 'int',
+        'payload' => 'string',
+        'timestamp' => 'int',
+        'topic_name' => 'string',
+    ],
+    'recursivearrayiterator' => [
         'name' => 'string',
-        'ownerElement' => 'DOMElement',
-        'schemaTypeInfo' => 'bool',
-        'specified' => 'bool',
-        'value' => 'string',
     ],
-    'simplexmliterator' => [
+    'recursivecachingiterator' => [
         'name' => 'string',
     ],
-    'snmp' => [
-        'max-oids' => 'int',
-        'valueretrieval' => 'int',
-        'quick-print' => 'bool',
-        'enum-print' => 'bool',
-        'oid-output-format' => 'int',
-        'oid-increasing-check' => 'bool',
-        'exceptions-enabled' => 'int',
-        'info' => 'array',
-    ],
-    'mongoint32' => [
-        'value' => 'string',
-    ],
-    'xmlreader' => [
-        'attributeCount' => 'int',
-        'baseURI' => 'string',
-        'depth' => 'int',
-        'hasAttributes' => 'bool',
-        'hasValue' => 'bool',
-        'isDefault' => 'bool',
-        'isEmptyElement' => 'bool',
-        'localName' => 'string',
+    'recursivedirectoryiterator' => [
         'name' => 'string',
-        'namespaceURI' => 'string',
-        'nodeType' => 'int',
-        'prefix' => 'string',
-        'value' => 'string',
-        'xmlLang' => 'string',
     ],
-    'eventbufferevent' => [
-        'fd' => 'integer',
-        'priority' => 'integer',
-        'input' => 'EventBuffer',
-        'output' => 'EventBuffer',
-    ],
-    'domtext' => [
-        'wholeText' => 'string',
-    ],
-    'exception' => [
-        'message' => 'string',
-        'code' => 'int',
-        'file' => 'string',
-        'line' => 'int',
+    'recursiveregexiterator' => [
+        'name' => 'string',
     ],
     'reflectionclass' => [
         'name' => 'string',
@@ -450,89 +421,118 @@ return [
     'reflectionparameter' => [
         'name' => 'string',
     ],
-    'phpparser\\node\\expr\\array_' => [
-        'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
+    'regexiterator' => [
+        'name' => 'string',
     ],
-    'phpparser\\node\\expr\\list_' => [
-        'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
+    'simplexmliterator' => [
+        'name' => 'string',
     ],
-    'phpparser\\node\\expr\\arrowfunction' => [
-        'params' => 'list<PhpParser\Node\Param>',
+    'snmp' => [
+        'enum-print' => 'bool',
+        'exceptions-enabled' => 'int',
+        'info' => 'array',
+        'max-oids' => 'int',
+        'oid-increasing-check' => 'bool',
+        'oid-output-format' => 'int',
+        'quick-print' => 'bool',
+        'valueretrieval' => 'int',
     ],
-    'phpparser\\node\\expr\\closure' => [
-        'params' => 'list<PhpParser\Node\Param>',
-    ],
-    'phpparser\\node\\name' => [
-        'parts' => 'non-empty-list<non-empty-string>',
-    ],
-    'phpparser\\node\\stmt\\namespace_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\if_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\elseif_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\else_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\for_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\foreach_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\trycatch' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\catch_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\finally_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\case_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\while_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\do_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\class_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\trait_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\interface_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\matcharm' => [
-        'conds' => 'null|non-empty-list<PhpParser\Node\Expr>',
-    ],
-    'phpparser\\node\\expr\\shellexec' => [
-        'parts' => 'list<PhpParser\Node>',
-    ],
-    'rdkafka\\message' => [
-        'err' => 'int',
-        'topic_name' => 'string',
-        'partition' => 'int',
-        'payload' => 'string',
-        'key' => 'string|null',
-        'offset' => 'int',
-        'timestamp' => 'int',
-        'headers' => 'array<string, string>|null',
+    'snmpexception' => [
+        'code' => 'string',
     ],
     'soapfault' => [
+        '_name' => 'string',
+        'detail' => 'mixed|null',
+        'faultactor' => 'string|null',
         'faultcode' => 'string|null',
         'faultcodens' => 'string|null',
         'faultstring' => 'string',
-        'faultactor' => 'string|null',
-        'detail' => 'mixed|null',
-        '_name' => 'string',
         'headerfault' => 'mixed|null',
+    ],
+    'solrdocumentfield' => [
+        'boost' => 'float',
+        'name' => 'string',
+        'values' => 'array',
+    ],
+    'solrexception' => [
+        'sourcefile' => 'string',
+        'sourceline' => 'integer',
+        'zif-name' => 'string',
+    ],
+    'solrresponse' => [
+        'http-digested-response' => 'string',
+        'http-raw-request' => 'string',
+        'http-raw-request-headers' => 'string',
+        'http-raw-response' => 'string',
+        'http-raw-response-headers' => 'string',
+        'http-request-url' => 'string',
+        'http-status' => 'integer',
+        'http-status-message' => 'string',
+        'parser-mode' => 'integer',
+        'success' => 'bool',
+    ],
+    'spldoublylinkedlist' => [
+        'name' => 'string',
+    ],
+    'splheap' => [
+        'name' => 'string',
+    ],
+    'splmaxheap' => [
+        'name' => 'string',
+    ],
+    'splminheap' => [
+        'name' => 'string',
+    ],
+    'splpriorityqueue' => [
+        'name' => 'string',
+    ],
+    'splqueue' => [
+        'name' => 'string',
+    ],
+    'splstack' => [
+        'name' => 'string',
+    ],
+    'streamwrapper' => [
+        'context' => 'resource',
+    ],
+    'tidy' => [
+        'errorbuffer' => 'string',
+    ],
+    'tidynode' => [
+        'attribute' => 'array',
+        'child' => '?array',
+        'column' => 'int',
+        'id' => 'int',
+        'line' => 'int',
+        'name' => 'string',
+        'proprietary' => 'bool',
+        'type' => 'int',
+        'value' => 'string',
+    ],
+    'tokyotyrantexception' => [
+        'code' => 'int',
+    ],
+    'xmlreader' => [
+        'attributecount' => 'int',
+        'baseuri' => 'string',
+        'depth' => 'int',
+        'hasattributes' => 'bool',
+        'hasvalue' => 'bool',
+        'isdefault' => 'bool',
+        'isemptyelement' => 'bool',
+        'localname' => 'string',
+        'name' => 'string',
+        'namespaceuri' => 'string',
+        'nodetype' => 'int',
+        'prefix' => 'string',
+        'value' => 'string',
+        'xmllang' => 'string',
+    ],
+    'ziparchive' => [
+        'comment' => 'string',
+        'filename' => 'string',
+        'numfiles' => 'int',
+        'status' => 'int',
+        'statussys' => 'int',
     ],
 ];
