@@ -2,84 +2,115 @@
 namespace Psalm\Internal;
 
 /**
- * Stolen from https://github.com/etsy/phan/blob/master/src/Phan/Language/Internal/PropertyMap.php
+ * Automatically created by bin/update-property-map.php
  *
- * The MIT License (MIT)
- * Copyright (c) 2015 Rasmus Lerdorf
- * Copyright (c) 2015 Andrew Morrison
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Please do not modify - adapt the override constants in above file instead.
  */
 
 return [
-    'arrayiterator' => [
-        'name' => 'string',
+    'commonmark\\node' => [
+        'endcolumn' => 'int',
+        'endline' => 'int',
+        'firstchild' => 'Node|null',
+        'lastchild' => 'Node|null',
+        'next' => 'Node|null',
+        'parent' => 'Node|null',
+        'previous' => 'Node|null',
+        'startcolumn' => 'int',
+        'startline' => 'int',
     ],
-    'arrayobject' => [
-        'name' => 'string',
+    'commonmark\\node\\bulletlist' => [
+        'delimiter' => 'int',
+        'tight' => 'bool',
     ],
-    'collator' => [
+    'commonmark\\node\\codeblock' => [
+        'fence' => 'string|null',
+    ],
+    'commonmark\\node\\customblock' => [
+        'onenter' => 'string|null',
+        'onleave' => 'string|null',
+    ],
+    'commonmark\\node\\custominline' => [
+        'onenter' => 'string|null',
+        'onleave' => 'string|null',
+    ],
+    'commonmark\\node\\heading' => [
+        'level' => 'int',
+    ],
+    'commonmark\\node\\image' => [
+        'title' => 'string|null',
+        'url' => 'string|null',
+    ],
+    'commonmark\\node\\link' => [
+        'title' => 'string|null',
+        'url' => 'string|null',
+    ],
+    'commonmark\\node\\orderedlist' => [
+        'delimiter' => 'int',
+        'start' => 'int',
+        'tight' => 'bool',
+    ],
+    'commonmark\\node\\text' => [
+        'literal' => 'string|null',
+    ],
+    'curlfile' => [
+        'mime' => 'string',
         'name' => 'string',
+        'postname' => 'string',
+    ],
+    'curlstringfile' => [
+        'data' => 'string',
+        'mime' => 'string',
+        'postname' => 'string',
     ],
     'dateinterval' => [
-        'd' => 'integer',
+        'd' => 'int',
         'days' => 'false|int',
         'f' => 'float',
-        'h' => 'integer',
-        'i' => 'integer',
-        'invert' => 'integer',
-        'm' => 'integer',
-        's' => 'integer',
-        'y' => 'integer',
+        'h' => 'int',
+        'i' => 'int',
+        'invert' => 'int',
+        'm' => 'int',
+        's' => 'int',
+        'y' => 'int',
+    ],
+    'dateperiod' => [
+        'current' => 'DateTimeInterface',
+        'end' => 'DateTimeInterface',
+        'include_start_date' => 'bool',
+        'interval' => 'DateInterval',
+        'recurrences' => 'int',
+        'start' => 'DateTimeInterface',
     ],
     'directory' => [
         'handle' => 'resource',
         'path' => 'string',
     ],
-    'directoryiterator' => [
-        'name' => 'string',
-    ],
     'domattr' => [
         'name' => 'string',
-        'ownerelement' => 'DOMElement',
-        'schematypeinfo' => 'bool',
+        'ownerelement' => 'DOMElement|null',
+        'schematypeinfo' => 'mixed',
         'specified' => 'bool',
         'value' => 'string',
     ],
     'domcharacterdata' => [
         'data' => 'string',
         'length' => 'int',
+        'nextelementsibling' => 'DOMElement|null',
+        'previouselementsibling' => 'DOMElement|null',
     ],
     'domdocument' => [
-        'actualencoding' => 'string',
+        'actualencoding' => 'string|null',
         'childelementcount' => 'int',
-        'config' => 'null',
-        'doctype' => 'DOMDocumentType',
-        'documentelement' => 'DOMElement',
-        'documenturi' => 'string',
-        'encoding' => 'string',
+        'config' => 'mixed',
+        'doctype' => 'DOMDocumentType|null',
+        'documentelement' => 'DOMElement|null',
+        'documenturi' => 'string|null',
+        'encoding' => 'string|null',
         'firstelementchild' => 'DOMElement|null',
         'formatoutput' => 'bool',
         'implementation' => 'DOMImplementation',
         'lastelementchild' => 'DOMElement|null',
-        'ownerdocument' => 'null',
-        'parentnode' => 'null',
         'preservewhitespace' => 'bool',
         'recover' => 'bool',
         'resolveexternals' => 'bool',
@@ -87,59 +118,54 @@ return [
         'stricterrorchecking' => 'bool',
         'substituteentities' => 'bool',
         'validateonparse' => 'bool',
-        'version' => 'string',
-        'xmlencoding' => 'string',
+        'version' => 'string|null',
+        'xmlencoding' => 'string|null',
         'xmlstandalone' => 'bool',
-        'xmlversion' => 'string',
+        'xmlversion' => 'string|null',
     ],
     'domdocumentfragment' => [
-        'name' => 'string',
+        'childelementcount' => 'int',
+        'firstelementchild' => 'DOMElement|null',
+        'lastelementchild' => 'DOMElement|null',
     ],
     'domdocumenttype' => [
         'entities' => 'DOMNamedNodeMap',
-        'internalsubset' => 'string',
+        'internalsubset' => 'string|null',
         'name' => 'string',
         'notations' => 'DOMNamedNodeMap',
         'publicid' => 'string',
         'systemid' => 'string',
     ],
     'domelement' => [
-        'attributes' => 'DOMNamedNodeMap<DOMAttr>',
         'childelementcount' => 'int',
         'firstelementchild' => 'DOMElement|null',
         'lastelementchild' => 'DOMElement|null',
         'nextelementsibling' => 'DOMElement|null',
         'previouselementsibling' => 'DOMElement|null',
-        'schematypeinfo' => 'bool',
+        'schematypeinfo' => 'mixed',
         'tagname' => 'string',
     ],
     'domentity' => [
-        'actualencoding' => 'string',
-        'encoding' => 'string',
-        'notationname' => 'string',
-        'publicid' => 'string',
-        'systemid' => 'string',
-        'version' => 'string',
-    ],
-    'domentityreference' => [
-        'name' => 'string',
+        'actualencoding' => 'string|null',
+        'encoding' => 'string|null',
+        'notationname' => 'string|null',
+        'publicid' => 'string|null',
+        'systemid' => 'string|null',
+        'version' => 'string|null',
     ],
     'domexception' => [
         'code' => 'int',
-    ],
-    'domimplementation' => [
-        'name' => 'string',
     ],
     'domnamednodemap' => [
         'length' => 'int',
     ],
     'domnode' => [
-        'attributes' => 'null',
+        'attributes' => 'DOMNamedNodeMap|null',
         'baseuri' => 'string|null',
         'childnodes' => 'DomNodeList<DomNode>',
         'firstchild' => 'DOMNode|null',
         'lastchild' => 'DOMNode|null',
-        'localname' => 'string',
+        'localname' => 'string|null',
         'namespaceuri' => 'string|null',
         'nextsibling' => 'DOMNode|null',
         'nodename' => 'string',
@@ -167,12 +193,16 @@ return [
     ],
     'domxpath' => [
         'document' => 'DOMDocument',
+        'registernodenamespaces' => 'bool',
     ],
     'error' => [
         'code' => 'int',
         'file' => 'string',
         'line' => 'int',
         'message' => 'string',
+        'previous' => 'Throwable|null',
+        'string' => 'string',
+        'trace' => 'array',
     ],
     'errorexception' => [
         'severity' => 'int',
@@ -181,30 +211,30 @@ return [
         'pending' => 'bool',
     ],
     'eventbuffer' => [
-        'contiguous-space' => 'int',
+        'contiguous_space' => 'int',
         'length' => 'int',
     ],
     'eventbufferevent' => [
-        'fd' => 'integer',
+        'fd' => 'int',
         'input' => 'EventBuffer',
         'output' => 'EventBuffer',
-        'priority' => 'integer',
+        'priority' => 'int',
     ],
     'eventlistener' => [
         'fd' => 'int',
     ],
     'eventsslcontext' => [
-        'local-cert' => 'string',
-        'local-pk' => 'string',
+        'local_cert' => 'string',
+        'local_pk' => 'string',
     ],
     'exception' => [
         'code' => 'int',
         'file' => 'string',
         'line' => 'int',
         'message' => 'string',
-    ],
-    'filteriterator' => [
-        'name' => 'string',
+        'previous' => 'Throwable|null',
+        'string' => 'string',
+        'trace' => 'array',
     ],
     'libxmlerror' => [
         'code' => 'int',
@@ -213,12 +243,6 @@ return [
         'level' => 'int',
         'line' => 'int',
         'message' => 'string',
-    ],
-    'limititerator' => [
-        'name' => 'string',
-    ],
-    'locale' => [
-        'name' => 'string',
     ],
     'mongoclient' => [
         'connected' => 'boolean',
@@ -240,6 +264,15 @@ return [
     'mongodb-driver-exception-writeexception' => [
         'writeresult' => 'MongoDBDriverWriteResult',
     ],
+    'mongodb\\driver\\exception\\commandexception' => [
+        'resultdocument' => 'object',
+    ],
+    'mongodb\\driver\\exception\\runtimeexception' => [
+        'errorlabels' => 'array|null',
+    ],
+    'mongodb\\driver\\exception\\writeexception' => [
+        'writeresult' => 'MongoDB\\Driver\\WriteResult',
+    ],
     'mongoid' => [
         'id' => 'string',
     ],
@@ -250,19 +283,19 @@ return [
         'value' => 'string',
     ],
     'mysqli' => [
-        'affected_rows' => 'int',
+        'affected_rows' => 'int|string',
         'client_info' => 'string',
         'client_version' => 'int',
         'connect_errno' => 'int',
-        'connect_error' => '?string',
+        'connect_error' => 'string|null',
         'errno' => 'int',
         'error' => 'string',
         'error_list' => 'array',
         'field_count' => 'int',
         'host_info' => 'string',
-        'info' => 'string',
+        'info' => 'string|null',
         'insert_id' => 'int|string',
-        'protocol_version' => 'string',
+        'protocol_version' => 'int',
         'server_info' => 'string',
         'server_version' => 'int',
         'sqlstate' => 'string',
@@ -271,9 +304,9 @@ return [
     ],
     'mysqli_driver' => [
         'client_info' => 'string',
-        'client_version' => 'string',
-        'driver_version' => 'string',
-        'embedded' => 'string',
+        'client_version' => 'int',
+        'driver_version' => 'int',
+        'embedded' => 'bool',
         'reconnect' => 'bool',
         'report_mode' => 'int',
     ],
@@ -281,21 +314,21 @@ return [
         'current_field' => 'int',
         'field_count' => 'int',
         'lengths' => 'array|null',
-        'num_rows' => 'int',
-        'type' => 'mixed',
+        'num_rows' => 'int|string',
+        'type' => 'int',
     ],
     'mysqli_sql_exception' => [
         'sqlstate' => 'string',
     ],
     'mysqli_stmt' => [
-        'affected_rows' => 'int',
+        'affected_rows' => 'int|string',
         'errno' => 'int',
         'error' => 'string',
         'error_list' => 'array',
         'field_count' => 'int',
-        'id' => 'mixed',
-        'insert_id' => 'int',
-        'num_rows' => 'int',
+        'id' => 'int',
+        'insert_id' => 'int|string',
+        'num_rows' => 'int|string',
         'param_count' => 'int',
         'sqlstate' => 'string',
     ],
@@ -304,24 +337,58 @@ return [
         'message' => 'string',
         'sqlstate' => 'string',
     ],
-    'norewinditerator' => [
-        'name' => 'string',
+    'parallel\\events\\event' => [
+        'object' => 'object',
+        'source' => 'string',
+        'type' => 'int',
     ],
-    'normalizer' => [
-        'name' => 'string',
+    'parle\\errorinfo' => [
+        'id' => 'int',
+        'position' => 'int',
+        'token' => 'mixed',
     ],
-    'numberformatter' => [
-        'name' => 'string',
+    'parle\\lexer' => [
+        'bol' => 'bool',
+        'cursor' => 'int',
+        'flags' => 'int',
+        'marker' => 'int',
+        'state' => 'int',
     ],
-    'parentiterator' => [
-        'name' => 'string',
+    'parle\\parser' => [
+        'action' => 'int',
+        'reduceid' => 'int',
+    ],
+    'parle\\rlexer' => [
+        'bol' => 'bool',
+        'cursor' => 'int',
+        'flags' => 'int',
+        'marker' => 'int',
+        'state' => 'int',
+    ],
+    'parle\\rparser' => [
+        'action' => 'int',
+        'reduceid' => 'int',
+    ],
+    'parle\\stack' => [
+        'empty' => 'bool',
+        'size' => 'int',
+        'top' => 'mixed',
+    ],
+    'parle\\token' => [
+        'id' => 'int',
+        'value' => 'string',
     ],
     'pdoexception' => [
         'code' => 'int|string',
-        'errorinfo' => 'array',
+        'errorinfo' => 'array|null',
     ],
     'pdostatement' => [
         'querystring' => 'string',
+    ],
+    'php_user_filter' => [
+        'filtername' => 'string',
+        'params' => 'mixed',
+        'stream' => 'resource|null',
     ],
     'phpparser\\node\\expr\\array_' => [
         'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
@@ -389,6 +456,12 @@ return [
     'phpparser\\node\\stmt\\while_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
+    'phptoken' => [
+        'id' => 'int',
+        'line' => 'int',
+        'pos' => 'int',
+        'text' => 'string',
+    ],
     'rdkafka\\message' => [
         'err' => 'int',
         'headers' => 'array<string, string>|null',
@@ -399,55 +472,117 @@ return [
         'timestamp' => 'int',
         'topic_name' => 'string',
     ],
-    'recursivearrayiterator' => [
-        'name' => 'string',
-    ],
-    'recursivecachingiterator' => [
-        'name' => 'string',
-    ],
-    'recursivedirectoryiterator' => [
-        'name' => 'string',
-    ],
-    'recursiveregexiterator' => [
-        'name' => 'string',
-    ],
     'reflectionclass' => [
+        'name' => 'string',
+    ],
+    'reflectionclassconstant' => [
+        'class' => 'string',
+        'name' => 'string',
+    ],
+    'reflectionextension' => [
+        'name' => 'string',
+    ],
+    'reflectionfunctionabstract' => [
         'name' => 'string',
     ],
     'reflectionmethod' => [
         'class' => 'string',
-        'name' => 'string',
     ],
     'reflectionparameter' => [
         'name' => 'string',
     ],
-    'regexiterator' => [
+    'reflectionproperty' => [
+        'class' => 'string',
         'name' => 'string',
     ],
-    'simplexmliterator' => [
+    'reflectionzendextension' => [
         'name' => 'string',
+    ],
+    'regexiterator' => [
+        'replacement' => 'string|null',
     ],
     'snmp' => [
-        'enum-print' => 'bool',
-        'exceptions-enabled' => 'int',
+        'enum_print' => 'bool',
+        'exceptions_enabled' => 'int',
         'info' => 'array',
-        'max-oids' => 'int',
-        'oid-increasing-check' => 'bool',
-        'oid-output-format' => 'int',
-        'quick-print' => 'bool',
+        'max_oids' => 'int|null',
+        'oid_increasing_check' => 'bool',
+        'oid_output_format' => 'int',
+        'quick_print' => 'bool',
         'valueretrieval' => 'int',
     ],
     'snmpexception' => [
         'code' => 'string',
     ],
+    'soapclient' => [
+        '__default_headers' => 'array|null',
+        '__last_request' => 'string|null',
+        '__last_request_headers' => 'string|null',
+        '__last_response' => 'string|null',
+        '__last_response_headers' => 'string|null',
+        '__soap_fault' => 'SoapFault|null',
+        '_classmap' => 'array|null',
+        '_connection_timeout' => 'int',
+        '_cookies' => 'array',
+        '_digest' => 'string|null',
+        '_encoding' => 'string|null',
+        '_exceptions' => 'bool',
+        '_features' => 'int|null',
+        '_keep_alive' => 'bool',
+        '_login' => 'string|null',
+        '_password' => 'string|null',
+        '_proxy_host' => 'string|null',
+        '_proxy_login' => 'string|null',
+        '_proxy_password' => 'string|null',
+        '_proxy_port' => 'int|null',
+        '_soap_version' => 'int',
+        '_ssl_method' => 'int|null',
+        '_stream_context' => 'resource|null',
+        '_use_digest' => 'bool',
+        '_use_proxy' => 'int|null',
+        '_user_agent' => 'string|null',
+        'compression' => 'int|null',
+        'httpsocket' => 'resource|null',
+        'httpurl' => 'resource|null',
+        'location' => 'string|null',
+        'sdl' => 'resource|null',
+        'style' => 'int|null',
+        'trace' => 'bool',
+        'typemap' => 'resource|null',
+        'uri' => 'string|null',
+        'use' => 'int|null',
+    ],
     'soapfault' => [
-        '_name' => 'string',
-        'detail' => 'mixed|null',
+        '_name' => 'string|null',
+        'detail' => 'mixed',
         'faultactor' => 'string|null',
         'faultcode' => 'string|null',
         'faultcodens' => 'string|null',
         'faultstring' => 'string',
-        'headerfault' => 'mixed|null',
+        'headerfault' => 'mixed',
+    ],
+    'soapheader' => [
+        'actor' => 'string|int|null',
+        'data' => 'mixed',
+        'mustunderstand' => 'bool',
+        'name' => 'string',
+        'namespace' => 'string',
+    ],
+    'soapparam' => [
+        'param_data' => 'mixed',
+        'param_name' => 'string',
+    ],
+    'soapserver' => [
+        '__soap_fault' => 'SoapFault|null',
+        'service' => 'resource',
+    ],
+    'soapvar' => [
+        'enc_name' => 'string|null',
+        'enc_namens' => 'string|null',
+        'enc_ns' => 'string|null',
+        'enc_stype' => 'string|null',
+        'enc_type' => 'int',
+        'enc_value' => 'mixed',
     ],
     'solrdocumentfield' => [
         'boost' => 'float',
@@ -456,41 +591,20 @@ return [
     ],
     'solrexception' => [
         'sourcefile' => 'string',
-        'sourceline' => 'integer',
-        'zif-name' => 'string',
+        'sourceline' => 'int',
+        'zif_name' => 'string',
     ],
     'solrresponse' => [
-        'http-digested-response' => 'string',
-        'http-raw-request' => 'string',
-        'http-raw-request-headers' => 'string',
-        'http-raw-response' => 'string',
-        'http-raw-response-headers' => 'string',
-        'http-request-url' => 'string',
-        'http-status' => 'integer',
-        'http-status-message' => 'string',
-        'parser-mode' => 'integer',
+        'http_digested_response' => 'string',
+        'http_raw_request' => 'string',
+        'http_raw_request_headers' => 'string',
+        'http_raw_response' => 'string',
+        'http_raw_response_headers' => 'string',
+        'http_request_url' => 'string',
+        'http_status' => 'int',
+        'http_status_message' => 'string',
+        'parser_mode' => 'int',
         'success' => 'bool',
-    ],
-    'spldoublylinkedlist' => [
-        'name' => 'string',
-    ],
-    'splheap' => [
-        'name' => 'string',
-    ],
-    'splmaxheap' => [
-        'name' => 'string',
-    ],
-    'splminheap' => [
-        'name' => 'string',
-    ],
-    'splpriorityqueue' => [
-        'name' => 'string',
-    ],
-    'splqueue' => [
-        'name' => 'string',
-    ],
-    'splstack' => [
-        'name' => 'string',
     ],
     'streamwrapper' => [
         'context' => 'resource',
@@ -500,7 +614,7 @@ return [
     ],
     'tidynode' => [
         'attribute' => 'array',
-        'child' => '?array',
+        'child' => 'array',
         'column' => 'int',
         'id' => 'int',
         'line' => 'int',
@@ -511,6 +625,9 @@ return [
     ],
     'tokyotyrantexception' => [
         'code' => 'int',
+    ],
+    'transliterator' => [
+        'id' => 'string',
     ],
     'xmlreader' => [
         'attributecount' => 'int',
@@ -531,6 +648,7 @@ return [
     'ziparchive' => [
         'comment' => 'string',
         'filename' => 'string',
+        'lastid' => 'int',
         'numfiles' => 'int',
         'status' => 'int',
         'statussys' => 'int',
