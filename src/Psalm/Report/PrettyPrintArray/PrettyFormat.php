@@ -35,21 +35,22 @@ final class PrettyFormat
                 $charAfter = self::CHAR_SPACE;
             }
 
+            $numChars = $prettyCursorBracket->getNumberBrackets();
             if (',' === $char) {
                 $charAfter = PHP_EOL;
             } elseif (',' === $previousChar) {
-                $charBefore = $this->addIdentChar($prettyCursorBracket);
+                $charBefore = $this->addIdentChar($numChars);
             }
 
             if ('{' === $previousChar) {
-                $charBefore =  $this->addIdentChar($prettyCursorBracket);
+                $charBefore =  $this->addIdentChar($numChars);
             } elseif ('{' === $char) {
                 $charBefore = self::CHAR_SPACE;
                 $charAfter = PHP_EOL;
             }
 
             if ('}' === $char) {
-                $charBefore = PHP_EOL .$this->addIdentChar($prettyCursorBracket);
+                $charBefore = PHP_EOL .$this->addIdentChar($numChars);
             }
 
             $buffer .= $charBefore
@@ -64,8 +65,8 @@ final class PrettyFormat
         return $buffer;
     }
 
-    private function addIdentChar(PrettyCursorBracket $prettyCursorBracket): string
+    private function addIdentChar(int $numChars): string
     {
-        return str_repeat(self::CHAR_SPACE, $prettyCursorBracket->getNumberBrackets());
+        return str_repeat(self::CHAR_SPACE, $numChars);
     }
 }
