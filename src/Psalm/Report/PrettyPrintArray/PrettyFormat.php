@@ -18,8 +18,8 @@ final class PrettyFormat
         $prettyCursorBracket = new PrettyCursorBracket();
         $payload = $inputPayload;
 
-        $payload = PrettyGeneric::normalizeBracket($payload);
-        $payload = PrettyGeneric::normalizeTokens($payload);
+        $payload = PrettyHelper::normalizeBracket($payload);
+        $payload = PrettyHelper::normalizeTokens($payload);
 
         foreach (str_split($payload) as $char) {
             $prettyCursorBracket->accept($char);

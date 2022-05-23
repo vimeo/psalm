@@ -4,7 +4,7 @@ namespace Psalm\Report\PrettyPrintArray;
 
 use function str_replace;
 
-final class PrettyGeneric
+final class PrettyHelper
 {
     public static function normalizeBracket(string $payload): string
     {

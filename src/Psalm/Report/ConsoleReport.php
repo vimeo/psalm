@@ -8,7 +8,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 use Psalm\Report\PrettyPrintArray\PrettyCompare;
 use Psalm\Report\PrettyPrintArray\PrettyFormat;
-use Psalm\Report\PrettyPrintArray\PrettyGeneric;
+use Psalm\Report\PrettyPrintArray\PrettyHelper;
 use Throwable;
 
 use function basename;
@@ -101,7 +101,7 @@ final class ConsoleReport extends Report
             $arrayPrettyPrinted1 = $prettyFormat->format($involvedTypes->getInferredType());
             $toIssue = PHP_EOL.$prettyPaired->compare($arrayPrettyPrinted0, $arrayPrettyPrinted1);
 
-            return PrettyGeneric::revertNormalizedTokens($toIssue);
+            return PrettyHelper::revertNormalizedTokens($toIssue);
         } catch (Throwable $throwable) {
             //todo: log ?
             return 'Pretty Print Array failed for unexpected error. Error: ' . $throwable->getMessage();
