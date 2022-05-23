@@ -98,7 +98,7 @@ class FunctionDocblockManipulator
     /** @var bool */
     private $is_pure = false;
 
-    /** @var list<class-string> */
+    /** @var list<string> */
     private $throwsExceptions = [];
 
     /**
@@ -549,7 +549,7 @@ class FunctionDocblockManipulator
     }
 
     /**
-     * @param list<class-string> $exceptions
+     * @param list<string> $exceptions
      */
     public function addThrowsDocblock(array $exceptions): void
     {

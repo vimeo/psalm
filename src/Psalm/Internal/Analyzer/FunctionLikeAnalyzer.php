@@ -708,9 +708,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        /**
-         * @var list<class-string>
-         */
         $missingThrowsDocblockErrors = [];
         foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
             $is_expected = false;
@@ -725,7 +722,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!$is_expected) {
-                assert(class_exists($possibly_thrown_exception));
                 $missingThrowsDocblockErrors[] = $possibly_thrown_exception;
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
