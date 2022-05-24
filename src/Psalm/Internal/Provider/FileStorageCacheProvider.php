@@ -168,9 +168,15 @@ class FileStorageCacheProvider
             mkdir($parser_cache_directory, 0777, true);
         }
 
+        if (version_compare(phpversion(), '8.1', '>=')) {
+            $hash = hash('xxh128', $file_path);
+        } else {
+            $hash = hash('md4', $file_path);
+        }
+
         return $parser_cache_directory
             . DIRECTORY_SEPARATOR
-            . version_compare(phpversion(), '8.1', '>=') ? hash('xxh128', $file_path) : hash('md4', $file_path)
+            . $hash
             . ($this->config->use_igbinary ? '-igbinary' : '');
     }
 }
