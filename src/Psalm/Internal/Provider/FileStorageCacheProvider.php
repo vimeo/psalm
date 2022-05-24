@@ -13,15 +13,17 @@ use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function get_class;
+use function hash;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_dir;
 use function mkdir;
+use function phpversion;
 use function serialize;
-use function sha1;
 use function strtolower;
 use function unlink;
 use function unserialize;
+use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -118,7 +120,8 @@ class FileStorageCacheProvider
 
     private function getCacheHash(string $file_path, string $file_contents): string
     {
-        return sha1(strtolower($file_path) . ' ' . $file_contents . $this->modified_timestamps);
+        $data = ($file_path ? $file_contents : '') . $this->modified_timestamps;
+        return version_compare(phpversion(), '8.1', '>=') ? hash('xxh128', $data) : hash('md4', $data);
     }
 
     /**
@@ -165,9 +168,15 @@ class FileStorageCacheProvider
             mkdir($parser_cache_directory, 0777, true);
         }
 
+        if (version_compare(phpversion(), '8.1', '>=')) {
+            $hash = hash('xxh128', $file_path);
+        } else {
+            $hash = hash('md4', $file_path);
+        }
+
         return $parser_cache_directory
             . DIRECTORY_SEPARATOR
-            . sha1($file_path)
+            . $hash
             . ($this->config->use_igbinary ? '-igbinary' : '');
     }
 }
