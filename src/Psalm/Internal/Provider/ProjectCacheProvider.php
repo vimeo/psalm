@@ -10,11 +10,10 @@ use function file_put_contents;
 use function filemtime;
 use function hash;
 use function mkdir;
-use function phpversion;
 use function touch;
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_VERSION_ID;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff
@@ -93,7 +92,7 @@ class ProjectCacheProvider
             return true;
         }
 
-        if (version_compare(phpversion(), '8.1', '>=')) {
+        if (PHP_VERSION_ID >= 80100) {
             $hash = hash('xxh128', $lockfile_contents);
         } else {
             $hash = hash('md4', $lockfile_contents);

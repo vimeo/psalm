@@ -18,14 +18,13 @@ use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_dir;
 use function mkdir;
-use function phpversion;
 use function serialize;
 use function strtolower;
 use function unlink;
 use function unserialize;
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -121,7 +120,7 @@ class FileStorageCacheProvider
     private function getCacheHash(string $file_path, string $file_contents): string
     {
         $data = ($file_path ? $file_contents : '') . $this->modified_timestamps;
-        return version_compare(phpversion(), '8.1', '>=') ? hash('xxh128', $data) : hash('md4', $data);
+        return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
     /**
@@ -168,7 +167,7 @@ class FileStorageCacheProvider
             mkdir($parser_cache_directory, 0777, true);
         }
 
-        if (version_compare(phpversion(), '8.1', '>=')) {
+        if (PHP_VERSION_ID >= 80100) {
             $hash = hash('xxh128', $file_path);
         } else {
             $hash = hash('md4', $file_path);
