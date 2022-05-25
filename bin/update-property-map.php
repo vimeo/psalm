@@ -22,17 +22,15 @@ if (false === $docDir) {
     echo 'Please execute: git clone git@github.com:php/doc-en.git ' . dirname(__DIR__) . '/build/doc-en';
 }
 
-$files = iterator_to_array(
-    new RegexIterator(
-        new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator(
-                $docDir,
-                FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS
-            ),
-            RecursiveIteratorIterator::LEAVES_ONLY
+$files = new RegexIterator(
+    new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(
+            $docDir,
+            FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS
         ),
-        '/.*.xml$/'
-    )
+        RecursiveIteratorIterator::LEAVES_ONLY
+    ),
+    '/.*.xml$/'
 );
 
 $classes = require_once dirname(__DIR__) . '/dictionaries/ManualPropertyMap.php';
