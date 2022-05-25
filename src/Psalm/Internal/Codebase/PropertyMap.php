@@ -29,12 +29,7 @@ class PropertyMap
         /** @var array<string, array<string, string>> */
         $property_map = require(dirname(__DIR__, 4) . '/dictionaries/PropertyMap.php');
 
-        self::$property_map = [];
-
-        foreach ($property_map as $key => $value) {
-            $cased_key = strtolower($key);
-            self::$property_map[$cased_key] = $value;
-        }
+        self::$property_map = $property_map;
 
         return self::$property_map;
     }
