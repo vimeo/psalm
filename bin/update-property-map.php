@@ -15,6 +15,49 @@ set_error_handler(function ($num, $str, $file, $line, $context = null): void {
     throw new ErrorException($str, 0, $num, $file, $line);
 });
 
+foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $file) {
+    if (file_exists($file)) {
+        require $file;
+        break;
+    }
+}
+
+$lexer = new PhpParser\Lexer\Emulative();
+$parser = (new PhpParser\ParserFactory)->create(
+    PhpParser\ParserFactory::PREFER_PHP7,
+    $lexer
+);
+$traverser = new PhpParser\NodeTraverser();
+$traverser->addVisitor(new PhpParser\NodeVisitor\NameResolver);
+
+function extractClassesFromStatements(array $statements): array
+{
+    $classes = [];
+    foreach ($statements as $statement) {
+        if ($statement instanceof PhpParser\Node\Stmt\Class_) {
+            $classes[strtolower($statement->namespacedName->toString())] = true;
+        }
+        if ($statement instanceof PhpParser\Node\Stmt\Namespace_) {
+            $classes += extractClassesFromStatements($statement->stmts);
+        }
+    }
+
+    return $classes;
+}
+
+$stubbedClasses = [];
+foreach (new RecursiveDirectoryIterator(
+    __DIR__ . '/../stubs',
+    FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS
+) as $file) {
+    $contents = file_get_contents($file);
+    $stmts = $parser->parse($contents);
+    $stmts = $traverser->traverse($stmts);
+
+    $stubbedClasses += extractClassesFromStatements($stmts);
+}
+unset($file, $contents, $stmts);
+
 $docDir = realpath(__DIR__ . '/../build/doc-en');
 
 if (false === $docDir) {
@@ -34,6 +77,8 @@ $files = new RegexIterator(
 );
 
 $classes = require_once dirname(__DIR__) . '/dictionaries/ManualPropertyMap.php';
+
+
 libxml_use_internal_errors(true);
 foreach ($files as $file) {
     $contents = file_get_contents($file);
@@ -65,6 +110,9 @@ foreach ($files as $file) {
     foreach ($simple->xpath('//docbook:classsynopsis') as $classSynopsis) {
         $classSynopsis->registerXPathNamespace('docbook', 'http://docbook.org/ns/docbook');
         $class = strtolower((string) $classSynopsis->xpath('./docbook:ooclass/docbook:classname')[0]);
+        if (isset($stubbedClasses[$class])) {
+            continue;
+        }
         foreach ($classSynopsis->xpath('//docbook:fieldsynopsis') as $item) {
             assert($item instanceof SimpleXMLElement);
             $property = strtolower((string) $item->varname);
