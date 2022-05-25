@@ -29,7 +29,7 @@ class FileProvider
     /**
      * @var array<lowercase-string, string>
      */
-    protected $open_files = [];
+    protected static $open_files = [];
 
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
@@ -38,8 +38,8 @@ class FileProvider
             return $this->temp_files[$file_path_lc];
         }
 
-        if (isset($this->open_files[$file_path_lc])) {
-            return $this->open_files[$file_path_lc];
+        if (isset(self::$open_files[$file_path_lc])) {
+            return self::$open_files[$file_path_lc];
         }
 
         if (!file_exists($file_path)) {
@@ -50,14 +50,18 @@ class FileProvider
             throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
-        return (string)file_get_contents($file_path);
+        $file_contents = (string) file_get_contents($file_path);
+
+        self::$open_files[$file_path_lc] = $file_contents;
+
+        return $file_contents;
     }
 
     public function setContents(string $file_path, string $file_contents): void
     {
         $file_path_lc = strtolower($file_path);
-        if (isset($this->open_files[$file_path_lc])) {
-            $this->open_files[$file_path_lc] = $file_contents;
+        if (isset(self::$open_files[$file_path_lc])) {
+            self::$open_files[$file_path_lc] = $file_contents;
         }
 
         if (isset($this->temp_files[$file_path_lc])) {
@@ -70,8 +74,8 @@ class FileProvider
     public function setOpenContents(string $file_path, string $file_contents): void
     {
         $file_path_lc = strtolower($file_path);
-        if (isset($this->open_files[$file_path_lc])) {
-            $this->open_files[$file_path_lc] = $file_contents;
+        if (isset(self::$open_files[$file_path_lc])) {
+            self::$open_files[$file_path_lc] = $file_contents;
         }
     }
 
@@ -81,7 +85,7 @@ class FileProvider
             throw new UnexpectedValueException('File should exist to get modified time');
         }
 
-        return (int)filemtime($file_path);
+        return (int) filemtime($file_path);
     }
 
     public function addTemporaryFileChanges(string $file_path, string $new_content): void
@@ -96,19 +100,19 @@ class FileProvider
 
     public function openFile(string $file_path): void
     {
-        $this->open_files[strtolower($file_path)] = $this->getContents($file_path, true);
+        self::$open_files[strtolower($file_path)] = $this->getContents($file_path, true);
     }
 
     public function isOpen(string $file_path): bool
     {
         $file_path_lc = strtolower($file_path);
-        return isset($this->temp_files[$file_path_lc]) || isset($this->open_files[$file_path_lc]);
+        return isset($this->temp_files[$file_path_lc]) || isset(self::$open_files[$file_path_lc]);
     }
 
     public function closeFile(string $file_path): void
     {
         $file_path_lc = strtolower($file_path);
-        unset($this->temp_files[$file_path_lc], $this->open_files[$file_path_lc]);
+        unset($this->temp_files[$file_path_lc], self::$open_files[$file_path_lc]);
     }
 
     public function fileExists(string $file_path): bool
