@@ -18,14 +18,13 @@ use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_dir;
 use function mkdir;
-use function phpversion;
 use function serialize;
 use function strtolower;
 use function unlink;
 use function unserialize;
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -114,7 +113,7 @@ class ClassLikeStorageCacheProvider
     private function getCacheHash(?string $file_path, ?string $file_contents): string
     {
         $data = ($file_path ? $file_contents : '') . $this->modified_timestamps;
-        return version_compare(phpversion(), '8.1', '>=') ? hash('xxh128', $data) : hash('md4', $data);
+        return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
     /**
@@ -166,7 +165,7 @@ class ClassLikeStorageCacheProvider
 
         $data = $file_path ? strtolower($file_path) . ' ' : '';
         $data .= $fq_classlike_name_lc;
-        $file_path_sha = version_compare(phpversion(), '8.1', '>=') ? hash('xxh128', $data) : hash('md4', $data);
+        $file_path_sha = PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
 
         return $parser_cache_directory
             . DIRECTORY_SEPARATOR
