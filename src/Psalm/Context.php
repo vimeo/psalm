@@ -2,6 +2,7 @@
 
 namespace Psalm;
 
+use InvalidArgumentException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\ReferenceConstraint;
@@ -608,11 +609,7 @@ final class Context
             }
         }
         if (isset($this->references_in_scope[$remove_var_id])) {
-            $reference_count = &$this->referenced_counts[$this->references_in_scope[$remove_var_id]];
-            if ($reference_count < 1) {
-                throw new RuntimeException("Incorrect referenced count found");
-            }
-            --$reference_count;
+            $this->decrementReferenceCount($remove_var_id);
         }
         unset(
             $this->vars_in_scope[$remove_var_id],
@@ -621,6 +618,24 @@ final class Context
             $this->references_in_scope[$remove_var_id],
             $this->references_to_external_scope[$remove_var_id],
         );
+    }
+
+    /**
+     * Decrement the reference count of the variable that $ref_id is referring to. This needs to
+     * be done before $ref_id is changed to no longer reference its currently referenced variable,
+     * for example by unsetting, reassigning to another reference, or being shadowed by a global.
+     */
+    public function decrementReferenceCount(string $ref_id): void
+    {
+        if (!isset($this->referenced_counts[$this->references_in_scope[$ref_id]])) {
+            throw new InvalidArgumentException("$ref_id is not a reference");
+        }
+        $reference_count = $this->referenced_counts[$this->references_in_scope[$ref_id]];
+        if ($reference_count < 1) {
+            throw new RuntimeException("Incorrect referenced count found");
+        }
+        --$reference_count;
+        $this->referenced_counts[$this->references_in_scope[$ref_id]] = $reference_count;
     }
 
     /**

@@ -278,6 +278,7 @@
  - [UnresolvableInclude](issues/UnresolvableInclude.md)
  - [UnsafeGenericInstantiation](issues/UnsafeGenericInstantiation.md)
  - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
+ - [UnsupportedReferenceUsage](issues/UnsupportedReferenceUsage.md)
  - [UnusedClass](issues/UnusedClass.md)
  - [UnusedClosureParam](issues/UnusedClosureParam.md)
  - [UnusedConstructor](issues/UnusedConstructor.md)
