@@ -160,6 +160,12 @@ class FunctionLikeDocblockParser
             }
         }
 
+        if (isset($parsed_docblock->tags['require-param-validation'])
+            || isset($parsed_docblock->tags['psalm-require-param-validation'])
+        ) {
+            $info->require_param_validation = true;
+        }
+
         foreach (['psalm-self-out', 'psalm-this-out'] as $alias) {
             if (isset($parsed_docblock->tags[$alias])) {
                 foreach ($parsed_docblock->tags[$alias] as $offset => $param) {

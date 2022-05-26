@@ -53,6 +53,13 @@ class FunctionDocblockComment
     public $params_out = [];
 
     /**
+     * Whether to force docblock param validation when analyzing the functionlike.
+     *
+     * @var bool
+     */
+    public $require_param_validation = false;
+
+    /**
      * @var array{type:string, line_number: int}|null
      */
     public $self_out;

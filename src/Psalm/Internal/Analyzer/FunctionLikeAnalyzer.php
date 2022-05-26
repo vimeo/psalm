@@ -1014,7 +1014,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
-            if ($function_param->type) {
+            if ($storage->require_param_validation || $function_param->type === null) {
+                $param_type = $function_param->signature_type !== null
+                    ? clone $function_param->signature_type
+                    : Type::getMixed();
+            } else {
                 $param_type = clone $function_param->type;
 
                 try {
@@ -1059,8 +1063,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $check_stmts = false;
                     }
                 }
-            } else {
-                $param_type = Type::getMixed();
             }
 
             $var_type = $param_type;
