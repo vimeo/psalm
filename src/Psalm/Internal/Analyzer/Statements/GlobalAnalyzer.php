@@ -12,7 +12,6 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
-use RuntimeException;
 
 use function is_string;
 
@@ -74,11 +73,7 @@ class GlobalAnalyzer
 
                     if (isset($context->references_in_scope[$var_id])) {
                         // Global shadows existing reference
-                        $reference_count = &$context->referenced_counts[$context->references_in_scope[$var_id]];
-                        if ($reference_count < 1) {
-                            throw new RuntimeException("Incorrect referenced count found");
-                        }
-                        --$reference_count;
+                        $context->decrementReferenceCount($var_id);
                         unset($context->references_in_scope[$var_id]);
                     }
                     $statements_analyzer->registerVariable(
