@@ -10,7 +10,7 @@ Doing that allows it to report missing initializations as well as [RedundantProp
 
 This issue is emitted when non-null properties without default values are defined in a class without a `__construct` method
 
-If your project rely on having uninitialized properties, it is advised to suppress this issue, as well as [PropertyNotSetInConstructor](./PropertyNotSetInConstructor.md) and [RedundantPropertyInitializationCheck](./RedundantPropertyInitializationCheck.md).
+If your project relies on having uninitialized properties, it is advised to suppress this issue, as well as [PropertyNotSetInConstructor](./PropertyNotSetInConstructor.md) and [RedundantPropertyInitializationCheck](./RedundantPropertyInitializationCheck.md).
 
 ```php
 <?php
