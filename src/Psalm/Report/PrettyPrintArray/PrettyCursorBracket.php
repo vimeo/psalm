@@ -26,6 +26,11 @@ final class PrettyCursorBracket
         }
 
         if (self::BRACKET_CLOSE === $char) {
+            if ($this->getNumberBrackets() === 0) {
+                $this->nBrackets = 1;
+                return;
+            }
+
             $this->nBrackets--;
         }
     }
@@ -33,7 +38,6 @@ final class PrettyCursorBracket
     public function closed(): bool
     {
         if ($this->openedBracket === true && self::BRACKET_CLOSE === $this->char) {
-            $this->nBrackets--;
             if ($this->nBrackets <= 0) {
                 return true;
             }
