@@ -1498,13 +1498,13 @@ EOF;
 
     private function assertOutputPrettyPrintEquals(string $expected_output, string $output): void
     {
-        $asUnixLinesOutput = explode(PHP_EOL, $this->toUnixLineEndings($expected_output));
-        $asUnixOutput = $this->toUnixLineEndings($output);
+        $asExpectedOutput = explode(PHP_EOL, $expected_output);
+        $asActualOutput = $output;
 
-        foreach ($asUnixLinesOutput as $line) {
+        foreach ($asExpectedOutput as $line) {
             $this->assertStringContainsString(
-                $this->toUnixLineEndings($line),
-                $asUnixOutput
+                str_replace('\n', '', $line),
+                $asActualOutput
             );
         }
     }
