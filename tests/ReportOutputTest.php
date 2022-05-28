@@ -1504,8 +1504,8 @@ EOF;
 
         foreach ($asExpectedOutput as $line) {
             $this->assertStringContainsString(
-                str_replace('\n', '', $line),
-                $asActualOutput
+                str_replace(PHP_EOL, '', $line),
+                str_replace(PHP_EOL, '', $asActualOutput),
             );
         }
     }
