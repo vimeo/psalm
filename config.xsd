@@ -23,6 +23,7 @@
             <xs:element name="universalObjectCrates" type="UniversalObjectCratesType" minOccurs="0" maxOccurs="1" />
             <xs:element name="enableExtensions" type="ExtensionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="disableExtensions" type="ExtensionsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="lsp" type="LspType" minOccurs="0" maxOccurs="1"></xs:element>
         </xs:choice>
 
         <xs:attribute name="autoloader" type="xs:string" />
@@ -735,5 +736,22 @@
 
     <xs:complexType name="ExtensionAttributeType">
         <xs:attribute name="name" type="ExtensionType" use="required" />
+    </xs:complexType>
+
+    <xs:complexType name="LspType">
+        <xs:sequence>
+            <xs:element name="pathMapping" maxOccurs="1" minOccurs="0" type="LspPathMappingType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="LspPathMappingType">
+        <xs:sequence>
+            <xs:element name="prefix" maxOccurs="unbounded" minOccurs="0" type="LspPathMappingPrefixType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="LspPathMappingPrefixType">
+        <xs:attribute name="client" type="xs:string" use="required"/>
+        <xs:attribute name="server" type="xs:string" use="required"/>
     </xs:complexType>
 </xs:schema>
