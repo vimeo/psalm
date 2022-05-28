@@ -25,6 +25,7 @@ use function json_decode;
 use function ob_end_clean;
 use function ob_start;
 use function preg_replace;
+use function str_replace;
 use function unlink;
 
 use const JSON_THROW_ON_ERROR;
