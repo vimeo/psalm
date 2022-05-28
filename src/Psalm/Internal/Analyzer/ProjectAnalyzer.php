@@ -15,6 +15,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\LanguageServer\LanguageServer;
+use Psalm\Internal\LanguageServer\PathMapper\NullMapper;
 use Psalm\Internal\LanguageServer\ProtocolStreamReader;
 use Psalm\Internal\LanguageServer\ProtocolStreamWriter;
 use Psalm\Internal\MethodIdentifier;
@@ -438,6 +439,7 @@ class ProjectAnalyzer
                 new ProtocolStreamReader($socket),
                 new ProtocolStreamWriter($socket),
                 $this,
+                new NullMapper(),
             );
             Loop::run();
         } elseif ($socket_server_mode && $address) {
@@ -490,6 +492,7 @@ class ProjectAnalyzer
                             $reader,
                             new ProtocolStreamWriter($socket),
                             $this,
+                            new NullMapper(),
                         );
                         // Just for safety
                         exit(0);
@@ -501,6 +504,7 @@ class ProjectAnalyzer
                         new ProtocolStreamReader($socket),
                         new ProtocolStreamWriter($socket),
                         $this,
+                        new NullMapper(),
                     );
                     Loop::run();
                 }
@@ -512,6 +516,7 @@ class ProjectAnalyzer
                 new ProtocolStreamReader(STDIN),
                 new ProtocolStreamWriter(STDOUT),
                 $this,
+                new NullMapper(),
             );
             Loop::run();
         }
@@ -803,7 +808,7 @@ class ProjectAnalyzer
                         );
                     }
 
-                    $this->codebase->methods_to_move[$source_lc]= $destination;
+                    $this->codebase->methods_to_move[$source_lc] = $destination;
                 } else {
                     $this->codebase->methods_to_rename[$source_lc] = $destination_parts[1];
                 }

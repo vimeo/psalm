@@ -31,6 +31,7 @@ use LanguageServerProtocol\TextDocumentSyncOptions;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\LanguageServer\PathMapper\PathMapperInterface;
 use Psalm\Internal\LanguageServer\Server\TextDocument as ServerTextDocument;
 use Psalm\Internal\LanguageServer\Server\Workspace as ServerWorkspace;
 use Psalm\IssueBuffer;
@@ -100,10 +101,16 @@ class LanguageServer extends Dispatcher
      */
     protected JsonMapper $mapper;
 
+    /**
+     * @var PathMapperInterface
+     */
+    private $path_mapper;
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
-        ProjectAnalyzer $project_analyzer
+        ProjectAnalyzer $project_analyzer,
+        PathMapperInterface $path_mapper
     ) {
         parent::__construct($this, '/');
         $this->project_analyzer = $project_analyzer;
@@ -111,6 +118,7 @@ class LanguageServer extends Dispatcher
         $this->protocolWriter = $writer;
 
         $this->protocolReader = $reader;
+        $this->path_mapper = $path_mapper;
         $this->protocolReader->on(
             'close',
             function (): void {
@@ -499,11 +507,11 @@ class LanguageServer extends Dispatcher
 
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
-     *
-     * @psalm-pure
      */
     public function pathToUri(string $filepath): string
     {
+        $filepath = $this->path_mapper->mapToClient($filepath);
+
         $filepath = trim(str_replace('\\', '/', $filepath), '/');
         $parts = explode('/', $filepath);
         // Don't %-encode the colon after a Windows drive letter
@@ -540,6 +548,8 @@ class LanguageServer extends Dispatcher
             }
             $filepath = str_replace('/', '\\', $filepath);
         }
+
+        $filepath = $this->path_mapper->mapFromClient($filepath);
 
         $realpath = realpath($filepath);
         if ($realpath !== false) {
