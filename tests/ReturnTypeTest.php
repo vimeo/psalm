@@ -856,7 +856,7 @@ class ReturnTypeTest extends TestCase
                 ],
             ],
             'infersObjectShapeOfCastScalar' => [
-                '<?php
+                'code' => '<?php
                     function returnsInt(): int {
                         return 1;
                     }
@@ -868,7 +868,7 @@ class ReturnTypeTest extends TestCase
                 ],
             ],
             'infersObjectShapeOfCastArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array{a:1}
                      */
@@ -1570,7 +1570,7 @@ class ReturnTypeTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
             'objectCastFromArrayWithMissingKey' => [
-                '<?php
+                'code' => '<?php
                     /** @return object{status: string} */
                     function foo(): object {
                         return (object) [

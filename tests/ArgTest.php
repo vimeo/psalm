@@ -694,7 +694,7 @@ class ArgTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'objectRedundantCast' => [
-                '<?php
+                'code' => '<?php
 
                     function makeObj(): object {
                         return (object)["a" => 42];
