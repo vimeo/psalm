@@ -122,7 +122,7 @@ class ArgTest extends TestCase
                 'assertions' => [
                     '$a' => 'array{a: int, b: int}',
                     '$b' => 'non-empty-list<int>',
-                    '$c' => 'list<empty>',
+                    '$c' => 'list<never>',
                 ],
             ],
             'arrayModificationFunctions' => [

@@ -682,7 +682,7 @@ class ArrayFunctionCallTest extends TestCase
                     ',
                 'assertions' => [
                     '$manifest' => 'non-empty-array<string, int>',
-                    '$emptyManifest' => 'array<empty, empty>',
+                    '$emptyManifest' => 'array<never, never>',
                 ],
             ],
             'uksort' => [
@@ -703,7 +703,7 @@ class ArrayFunctionCallTest extends TestCase
                     );',
                 'assertions' => [
                     '$array' => 'non-empty-array<string, int>',
-                    '$emptyArray' => 'array<empty, empty>',
+                    '$emptyArray' => 'array<never, never>',
                 ],
             ],
             'arrayMergeTKeyedArray' => [
@@ -1808,7 +1808,7 @@ class ArrayFunctionCallTest extends TestCase
                     shuffle($emptyArray);',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<empty>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'sort' => [
@@ -1819,7 +1819,7 @@ class ArrayFunctionCallTest extends TestCase
                     sort($emptyArray);',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<empty>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'rsort' => [
@@ -1830,7 +1830,7 @@ class ArrayFunctionCallTest extends TestCase
                     rsort($emptyArray);',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<empty>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'usort' => [
@@ -1842,7 +1842,7 @@ class ArrayFunctionCallTest extends TestCase
                     usort($emptyArray, "baz");',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<empty>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'closureParamConstraintsMet' => [
