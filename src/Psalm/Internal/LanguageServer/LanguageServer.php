@@ -502,7 +502,7 @@ class LanguageServer extends Dispatcher
      *
      * @psalm-pure
      */
-    public static function pathToUri(string $filepath): string
+    public function pathToUri(string $filepath): string
     {
         $filepath = trim(str_replace('\\', '/', $filepath), '/');
         $parts = explode('/', $filepath);
@@ -521,7 +521,7 @@ class LanguageServer extends Dispatcher
     /**
      * Transforms URI into file path
      */
-    public static function uriToPath(string $uri): string
+    public function uriToPath(string $uri): string
     {
         $fragments = parse_url($uri);
         if ($fragments === false

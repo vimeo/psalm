@@ -47,7 +47,7 @@ class Workspace
     public function didChangeWatchedFiles(array $changes): void
     {
         foreach ($changes as $change) {
-            $file_path = LanguageServer::uriToPath($change->uri);
+            $file_path = $this->server->uriToPath($change->uri);
 
             if ($change->type === FileChangeType::DELETED) {
                 $this->codebase->invalidateInformationForFile($file_path);

@@ -68,7 +68,7 @@ class TextDocument
      */
     public function didOpen(TextDocumentItem $textDocument): void
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
             return;
@@ -87,7 +87,7 @@ class TextDocument
      */
     public function didSave(TextDocumentItem $textDocument, ?string $text): void
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
             return;
@@ -107,7 +107,7 @@ class TextDocument
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges): void
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
             return;
@@ -141,7 +141,7 @@ class TextDocument
      */
     public function didClose(TextDocumentIdentifier $textDocument): void
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         $this->codebase->file_provider->closeFile($file_path);
         $this->server->client->textDocument->publishDiagnostics($textDocument->uri, []);
@@ -157,7 +157,7 @@ class TextDocument
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         try {
             $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
@@ -182,7 +182,7 @@ class TextDocument
 
         return new Success(
             new Location(
-                LanguageServer::pathToUri($code_location->file_path),
+                $this->server->pathToUri($code_location->file_path),
                 new Range(
                     new Position($code_location->getLineNumber() - 1, $code_location->getColumn() - 1),
                     new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1),
@@ -201,7 +201,7 @@ class TextDocument
      */
     public function hover(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         try {
             $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
@@ -252,7 +252,7 @@ class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
             return new Success([]);
         }
@@ -306,7 +306,7 @@ class TextDocument
      */
     public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         try {
             $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
@@ -339,7 +339,7 @@ class TextDocument
      */
     public function codeAction(TextDocumentIdentifier $textDocument, Range $range): Promise
     {
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
         if (!$this->codebase->file_provider->isOpen($file_path)) {
             return new Success(null);
         }
