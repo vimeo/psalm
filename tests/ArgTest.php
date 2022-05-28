@@ -116,10 +116,13 @@ class ArgTest extends TestCase
                     ksort($a);
                     $b = ["b" => 5, "a" => 8];
                     sort($b);
+                    $c = [];
+                    sort($c);
                 ',
                 'assertions' => [
                     '$a' => 'array{a: int, b: int}',
-                    '$b' => 'list<int>',
+                    '$b' => 'non-empty-list<int>',
+                    '$c' => 'list<empty>',
                 ],
             ],
             'arrayModificationFunctions' => [
@@ -689,6 +692,19 @@ class ArgTest extends TestCase
                     takesObject(makeObj()); // expected: ArgumentTypeCoercion
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'objectRedundantCast' => [
+                '<?php
+
+                    function makeObj(): object {
+                        return (object)["a" => 42];
+                    }
+
+                    function takesObject(object $_o): void {}
+
+                    takesObject((object)makeObj()); // expected: RedundantCast
+                ',
+                'error_message' => 'RedundantCast',
             ],
             'MissingMandatoryParamWithNamedParams' => [
                 'code' => '<?php
