@@ -1503,7 +1503,7 @@ EOF;
 
         foreach ($asUnixLinesOutput as $line) {
             $this->assertStringContainsString(
-                $line,
+                $this->toUnixLineEndings($line),
                 $asUnixOutput
             );
         }
