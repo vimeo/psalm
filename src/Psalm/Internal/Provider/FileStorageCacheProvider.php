@@ -120,7 +120,7 @@ class FileStorageCacheProvider
     private function getCacheHash(string $file_path, string $file_contents): string
     {
         $data = ($file_path ? $file_contents : '') . $this->modified_timestamps;
-        return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
+        return PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
     /**
@@ -167,7 +167,7 @@ class FileStorageCacheProvider
             mkdir($parser_cache_directory, 0777, true);
         }
 
-        if (PHP_VERSION_ID >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00) {
             $hash = hash('xxh128', $file_path);
         } else {
             $hash = hash('md4', $file_path);
