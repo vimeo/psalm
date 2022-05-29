@@ -705,6 +705,9 @@ class Config
     /** @var list<string> */
     public array $config_warnings = [];
 
+    /** @var array<string, string> */
+    private $lsp_path_mapping = [];
+
     /** @internal */
     protected function __construct()
     {
@@ -1410,6 +1413,13 @@ class Config
 
         if (isset($config_xml['threads'])) {
             $config->threads = (int)$config_xml['threads'];
+        }
+
+        if (isset($config_xml->lsp->pathMapping->prefix)) {
+            /** @var SimpleXMLElement $prefix_mapping */
+            foreach ($config_xml->lsp->pathMapping->prefix as $prefix_mapping) {
+                $config->lsp_path_mapping[(string) $prefix_mapping['client']] = (string) $prefix_mapping['server'];
+            }
         }
 
         return $config;
@@ -2659,5 +2669,16 @@ class Config
     {
         /** @psalm-suppress UnresolvableInclude */
         require $this->autoloader;
+    }
+
+    public function hasLspPathMapping(): bool
+    {
+        return (bool) count($this->lsp_path_mapping);
+    }
+
+    /** @return array<string, string> */
+    public function getLspPathMapping(): array
+    {
+        return $this->lsp_path_mapping;
     }
 }

@@ -35,6 +35,7 @@ use Psalm\Internal\LanguageServer\PathMapper\PathMapperInterface;
 use Psalm\Internal\LanguageServer\Server\TextDocument as ServerTextDocument;
 use Psalm\Internal\LanguageServer\Server\Workspace as ServerWorkspace;
 use Psalm\IssueBuffer;
+use RuntimeException;
 use Throwable;
 
 use function Amp\asyncCoroutine;
@@ -105,6 +106,9 @@ class LanguageServer extends Dispatcher
      * @var PathMapperInterface
      */
     private $path_mapper;
+
+    /** @var ?string */
+    private $root_path = null;
 
     public function __construct(
         ProtocolReader $reader,
@@ -209,6 +213,7 @@ class LanguageServer extends Dispatcher
         ?string $rootPath = null,
         ?int $processId = null
     ): Promise {
+        $this->root_path = $rootPath;
         return call(
             /** @return Generator<int, true, mixed, InitializeResult> */
             function (): Generator {
@@ -510,7 +515,10 @@ class LanguageServer extends Dispatcher
      */
     public function pathToUri(string $filepath): string
     {
-        $filepath = $this->path_mapper->mapToClient($filepath);
+        if ($this->root_path === null) {
+            throw new RuntimeException('Expected root_path to be set');
+        }
+        $filepath = $this->path_mapper->mapToClient($filepath, $this->root_path);
 
         $filepath = trim(str_replace('\\', '/', $filepath), '/');
         $parts = explode('/', $filepath);
@@ -549,7 +557,10 @@ class LanguageServer extends Dispatcher
             $filepath = str_replace('/', '\\', $filepath);
         }
 
-        $filepath = $this->path_mapper->mapFromClient($filepath);
+        if ($this->root_path === null) {
+            throw new RuntimeException('Expected root_path to be set');
+        }
+        $filepath = $this->path_mapper->mapFromClient($filepath, $this->root_path);
 
         $realpath = realpath($filepath);
         if ($realpath !== false) {

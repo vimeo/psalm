@@ -16,6 +16,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\LanguageServer\PathMapper\NullMapper;
+use Psalm\Internal\LanguageServer\PathMapper\PrefixMapper;
 use Psalm\Internal\LanguageServer\ProtocolStreamReader;
 use Psalm\Internal\LanguageServer\ProtocolStreamWriter;
 use Psalm\Internal\MethodIdentifier;
@@ -427,6 +428,11 @@ class ProjectAnalyzer
 
         @cli_set_process_title('Psalm ' . PSALM_VERSION . ' - PHP Language Server');
 
+        $path_mapper = new NullMapper();
+        if ($this->config->hasLspPathMapping()) {
+            $path_mapper = new PrefixMapper($this->config->getLspPathMapping());
+        }
+
         if (!$socket_server_mode && $address) {
             // Connect to a TCP server
             $socket = stream_socket_client('tcp://' . $address, $errno, $errstr);
@@ -439,7 +445,7 @@ class ProjectAnalyzer
                 new ProtocolStreamReader($socket),
                 new ProtocolStreamWriter($socket),
                 $this,
-                new NullMapper(),
+                $path_mapper,
             );
             Loop::run();
         } elseif ($socket_server_mode && $address) {
@@ -492,7 +498,7 @@ class ProjectAnalyzer
                             $reader,
                             new ProtocolStreamWriter($socket),
                             $this,
-                            new NullMapper(),
+                            $path_mapper,
                         );
                         // Just for safety
                         exit(0);
@@ -504,7 +510,7 @@ class ProjectAnalyzer
                         new ProtocolStreamReader($socket),
                         new ProtocolStreamWriter($socket),
                         $this,
-                        new NullMapper(),
+                        $path_mapper,
                     );
                     Loop::run();
                 }
@@ -516,7 +522,7 @@ class ProjectAnalyzer
                 new ProtocolStreamReader(STDIN),
                 new ProtocolStreamWriter(STDOUT),
                 $this,
-                new NullMapper(),
+                $path_mapper,
             );
             Loop::run();
         }

@@ -746,7 +746,7 @@
 
     <xs:complexType name="LspPathMappingType">
         <xs:sequence>
-            <xs:element name="prefix" maxOccurs="unbounded" minOccurs="0" type="LspPathMappingPrefixType" />
+            <xs:element name="prefix" maxOccurs="unbounded" minOccurs="1" type="LspPathMappingPrefixType" />
         </xs:sequence>
     </xs:complexType>
 
