@@ -666,28 +666,44 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'uasort' => [
                 'code' => '<?php
+                    function foo (int $a, int $b): int {
+                        return $a > $b ? 1 : -1;
+                    }
                     $manifest = ["a" => 1, "b" => 2];
                     uasort(
                         $manifest,
-                        function (int $a, int $b) {
-                            return $a > $b ? 1 : -1;
-                        }
-                    );',
+                        "foo"
+                    );
+                    $emptyManifest = [];
+                    uasort(
+                        $emptyManifest,
+                        "foo"
+                    );
+                    ',
                 'assertions' => [
-                    '$manifest' => 'array<string, int>'
+                    '$manifest' => 'non-empty-array<string, int>',
+                    '$emptyManifest' => 'array<never, never>',
                 ],
             ],
             'uksort' => [
                 'code' => '<?php
+                    function foo (string $a, string $b): int {
+                        return $a <=> $b;
+                    }
+
                     $array = ["b" => 1, "a" => 2];
                     uksort(
                         $array,
-                        function (string $a, string $b) {
-                            return $a <=> $b;
-                        }
+                        "foo"
+                    );
+                    $emptyArray = [];
+                    uksort(
+                        $emptyArray,
+                        "foo"
                     );',
                 'assertions' => [
-                    '$array' => 'array<string, int>',
+                    '$array' => 'non-empty-array<string, int>',
+                    '$emptyArray' => 'array<never, never>',
                 ],
             ],
             'arrayMergeTKeyedArray' => [
@@ -1038,6 +1054,31 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$a===' => 'non-empty-literal-string',
                     '$b===' => 'non-empty-literal-string',
+                ]
+            ],
+            'implodeArrayOfNonEmptyStringAndEmptyString' => [
+                'code' => '<?php
+                    class Foo {
+                        const DIR = __DIR__;
+                    }
+                    $l = ["a", "b"];
+                    $k = [Foo::DIR];
+                    $a = implode("", $l);
+                    $b = implode("", $k);',
+                'assertions' => [
+                    '$a===' => 'non-empty-literal-string',
+                    '$b===' => 'non-empty-string',
+                ]
+            ],
+            'implodeEmptyArrayAndString' => [
+                'code' => '<?php
+                    $l = [""];
+                    $k = [];
+                    $a = implode("", $l);
+                    $b = implode("", $k);',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
                 ]
             ],
             'key' => [
@@ -1762,33 +1803,46 @@ class ArrayFunctionCallTest extends TestCase
             'shuffle' => [
                 'code' => '<?php
                     $array = ["foo" => 123, "bar" => 456];
-                    shuffle($array);',
+                    shuffle($array);
+                    $emptyArray = [];
+                    shuffle($emptyArray);',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'sort' => [
                 'code' => '<?php
                     $array = ["foo" => 123, "bar" => 456];
-                    sort($array);',
+                    sort($array);
+                    $emptyArray = [];
+                    sort($emptyArray);',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'rsort' => [
                 'code' => '<?php
                     $array = ["foo" => 123, "bar" => 456];
-                    sort($array);',
+                    rsort($array);
+                    $emptyArray = [];
+                    rsort($emptyArray);',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'usort' => [
                 'code' => '<?php
+                    function baz (int $a, int $b): int { return $a <=> $b; }
                     $array = ["foo" => 123, "bar" => 456];
-                    usort($array, function (int $a, int $b) { return $a <=> $b; });',
+                    usort($array, "baz");
+                    $emptyArray = [];
+                    usort($emptyArray, "baz");',
                 'assertions' => [
-                    '$array' => 'list<int>',
+                    '$array' => 'non-empty-list<int>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'closureParamConstraintsMet' => [

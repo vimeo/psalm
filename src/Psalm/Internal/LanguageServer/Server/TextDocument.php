@@ -380,7 +380,6 @@ class TextDocument
                     $indentation = $matches[1] ?? '';
                 }
 
-
                 /**
                  * Suppress Psalm because ther are bugs in how
                  * LanguageServer's signature of WorkspaceEdit is declared:
