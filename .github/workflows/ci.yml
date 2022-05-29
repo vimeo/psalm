@@ -31,8 +31,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
+      - name: Drop incompatible packages
+        run: composer remove --no-interaction --dev phpunit/phpunit brianium/paratest psalm/plugin-phpunit weirdan/prophecy-shim
+
       - name: Run composer install
-        run: composer install -o --ignore-platform-reqs
+        run: composer install -o
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
