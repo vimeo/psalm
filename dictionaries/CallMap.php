@@ -13653,7 +13653,7 @@ return [
 'ssh2_sftp_realpath' => ['string|false', 'sftp'=>'resource', 'filename'=>'string'],
 'ssh2_sftp_rename' => ['bool', 'sftp'=>'resource', 'from'=>'string', 'to'=>'string'],
 'ssh2_sftp_rmdir' => ['bool', 'sftp'=>'resource', 'dirname'=>'string'],
-'ssh2_sftp_stat' => ['array|false', 'sftp'=>'resource', 'path'=>'string'],
+'ssh2_sftp_stat' => ['array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int, 9: int, 10: int, 11: int, 12: int, dev: int, ino: int, mode: int, nlink: int, uid: int, gid: int, rdev: int, size: int, atime: int, mtime: int, ctime: int, blksize: int, blocks: int}|false', 'sftp'=>'resource', 'path'=>'string'],
 'ssh2_sftp_symlink' => ['bool', 'sftp'=>'resource', 'target'=>'string', 'link'=>'string'],
 'ssh2_sftp_unlink' => ['bool', 'sftp'=>'resource', 'filename'=>'string'],
 'ssh2_shell' => ['resource|false', 'session'=>'resource', 'term_type='=>'string', 'env='=>'array', 'width='=>'int', 'height='=>'int', 'width_height_type='=>'int'],
