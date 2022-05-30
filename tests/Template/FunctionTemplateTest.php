@@ -1608,7 +1608,6 @@ class FunctionTemplateTest extends TestCase
             ],
             'dontScreamForArithmeticsOnFloatTemplates' => [
                 'code' => '<?php
-
                     /**
                      * @template T of ?float
                      * @param T $p

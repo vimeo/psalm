@@ -90,10 +90,14 @@ class GetObjectVarsTest extends TestCase
             'assertions' => [],
         ];
 
+        yield 'propertiesOfCastScalar' => [
+            'code' => '<?php $ret = get_object_vars((object)true);',
+            'assertions' => ['$ret' => 'array{scalar: true}'],
+        ];
+
         yield 'propertiesOfPOPO' => [
-            // todo: fix object cast so that it results in `object{a:1}` instead
             'code' => '<?php $ret = get_object_vars((object)["a" => 1]);',
-            'assertions' => ['$ret' => 'array<string, mixed>'],
+            'assertions' => ['$ret' => 'array{a: int}'],
         ];
     }
 }

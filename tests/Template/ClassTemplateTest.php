@@ -531,7 +531,7 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template TKey
                      * @template TValue
-                     * 
+                     *
                      * @extends \IteratorAggregate<TKey, TValue>
                      */
                     interface ICollection extends \IteratorAggregate {
@@ -542,7 +542,7 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template TKey as array-key
                      * @template TValue
-                     * 
+                     *
                      * @implements ICollection<TKey, TValue>
                      */
                     class Collection implements ICollection {
@@ -940,7 +940,7 @@ class ClassTemplateTest extends TestCase
                     /**
                      * @template TKey
                      * @template Tv
-                     * 
+                     *
                      * @psalm-suppress MissingTemplateParam
                      */
                     class KeyValueContainer extends ValueContainer
@@ -1786,7 +1786,7 @@ class ClassTemplateTest extends TestCase
                      * @psalm-param class-string<T> $className
                      *
                      * @psalm-return T&I<T>
-                     * 
+                     *
                      * @psalm-suppress MissingTemplateParam
                      */
                     function makeConcrete(string $className) : object
