@@ -32,7 +32,7 @@ class ArrayAssignmentTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -1514,14 +1514,36 @@ class ArrayAssignmentTest extends TestCase
                     return [...$data];
                 }'
             ],
-            'unpackCanBeEmpty' => [
+            'unpackEmptyArrayIsEmpty' => [
                 'code' => '<?php
                     $x = [];
                     $y = [];
 
                     $x = [...$x, ...$y];
                 ',
-                'assertions' => ['$x' => 'array<never, never>']
+                'assertions' => ['$x===' => 'array<never, never>'],
+            ],
+            'unpackListCanBeEmpty' => [
+                'code' => '<?php
+                    /** @var list<int> */
+                    $x = [];
+                    /** @var list<int> */
+                    $y = [];
+
+                    $x = [...$x, ...$y];
+                ',
+                'assertions' => ['$x===' => 'list<int>'],
+            ],
+            'unpackNonEmptyListIsNotEmpty' => [
+                'code' => '<?php
+                    /** @var non-empty-list<int> */
+                    $x = [];
+                    /** @var non-empty-list<int> */
+                    $y = [];
+
+                    $x = [...$x, ...$y];
+                ',
+                'assertions' => ['$x===' => 'non-empty-list<int>'],
             ],
             'unpackEmptyKeepsCorrectKeys' => [
                 'code' => '<?php
@@ -1532,9 +1554,92 @@ class ArrayAssignmentTest extends TestCase
 
                     $e = [...$a, ...$b, ...$c, ...$d, 3];
                 ',
-                'assertions' => ['$e' => 'array{int, int, int}']
+                'assertions' => ['$e===' => 'array{1, 2, 3}'],
             ],
-            'unpackNonObjectlikePreventsObjectlikeArray' => [
+            'unpackArrayCanBeEmpty' => [
+                'code' => '<?php
+                    /** @var array<array-key, int> */
+                    $x = [];
+                    /** @var array<array-key, int> */
+                    $y = [];
+
+                    $x = [...$x, ...$y];
+                ',
+                'assertions' => ['$x===' => 'array<array-key, int>'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackNonEmptyArrayIsNotEmpty' => [
+                'code' => '<?php
+                    /** @var non-empty-array<array-key, int> */
+                    $x = [];
+                    /** @var non-empty-array<array-key, int> */
+                    $y = [];
+
+                    $x = [...$x, ...$y];
+                ',
+                'assertions' => ['$x===' => 'non-empty-array<array-key, int>'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackIntKeyedArrayResultsInList' => [
+                'code' => '<?php
+                    /** @var array<int, int> */
+                    $x = [];
+                    /** @var array<int, int> */
+                    $y = [];
+
+                    $x = [...$x, ...$y];
+                ',
+                'assertions' => ['$x===' => 'list<int>'],
+            ],
+            'unpackStringKeyedArrayPhp8.1' => [
+                'code' => '<?php
+                    /** @var array<string, int> */
+                    $x = [];
+                    /** @var array<array-key, int> */
+                    $y = [];
+
+                    $x = [...$x, ...$y];
+                ',
+                'assertions' => ['$x===' => 'array<array-key, int>'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackLiteralStringKeyedArrayPhp8.1' => [
+                'code' => '<?php
+                    /** @var array<"foo"|"bar", int> */
+                    $x = [];
+                    /** @var array<"baz", int> */
+                    $y = [];
+
+                    $x = [...$x, ...$y];
+                ',
+                'assertions' => ['$x===' => "array<'bar'|'baz'|'foo', int>"],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackArrayShapesUnionsLaterUnpacks' => [
+                'code' => '<?php
+                    $shape = ["foo" => 1, "bar" => 2, 10 => 3];
+                    /** @var array<int, 4> */
+                    $a = [];
+                    /** @var list<5> */
+                    $b = [];
+                    /** @var array<array-key, 6> */
+                    $c = [];
+
+                    $x = [...$a, ...$b, ...$c, ...$shape]; // Shape is last so it overrides previous
+                    $y = [...$shape, ...$a, ...$b, ...$c]; // Shape is first, but only possibly matching keys union their values
+                ',
+                'assertions' => [
+                    '$x===' => 'array{0: 3, bar: 2, foo: 1}<array-key, 4|5|6>',
+                    '$y===' => 'array{0: 3|4|5|6, bar: 2|6, foo: 1|6}<array-key, 4|5|6>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackNonObjectlike' => [
                 'code' => '<?php
                     /** @return list<mixed> */
                     function test(): array {
@@ -1543,8 +1648,113 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...test(), "a" => "b"];
                 ',
-                'assertions' => ['$x' => 'non-empty-array<int|string, mixed|string>']
+                'assertions' => ['$x===' => "array{a: 'b'}<int<0, max>, mixed>"],
             ],
+            'checkTraversableUnpackTemplatesCorrectly' => [
+                'code' => '<?php
+                    /**
+                     * @template T1
+                     * @template T2
+                     * @template TKey
+                     * @template TValue
+                     * @extends Traversable<TKey, TValue>
+                     */
+                    interface Foo extends Traversable {}
+
+                    /**
+                     * @param Foo<"a"|"b", "c"|"d", "e"|"f", "g"|"h"> $foo
+                     * @return array<"e"|"f", "g"|"h">
+                     */
+                    function foobar(Foo $foo): array
+                    {
+                        return [...$foo];
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackIncorrectlyExtendedTraversable' => [
+                'code' => '<?php
+                    /** @extends Traversable<int> */
+                    interface Foo extends Traversable {}
+
+                    /**
+                     * @return array<int, mixed>
+                     */
+                    function foobar(Foo $foo): array
+                    {
+                        return [...$foo];
+                    }
+                ',
+            ],
+            'unpackGrandchildOfTraversable' => [
+                'code' => '<?php
+                    /**
+                     * @template T1
+                     * @template T2
+                     * @template TKey
+                     * @template TValue
+                     * @extends Traversable<TKey, TValue>
+                     */
+                    interface Foo extends Traversable {}
+
+                    /** @extends Foo<"a", "b", "c", "d"> */
+                    interface Bar extends Foo {}
+
+                    /**
+                     * @return array<"c", "d">
+                     */
+                    function foobar(Bar $bar): array
+                    {
+                        return [...$bar];
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackNonGenericGrandchildOfTraversable' => [
+                'code' => '<?php
+                    /** @extends Traversable<string, string> */
+                    interface Foo extends Traversable {}
+
+                    interface Bar extends Foo {}
+
+                    /**
+                     * @return array<string, string>
+                     */
+                    function foobar(Bar $bar): array
+                    {
+                        return [...$bar];
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackTNamedObjectShouldUseTemplateConstraints' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of "a"|"b"
+                     * @template TValue of "c"|"d"
+                     * @extends Traversable<TKey, TValue>
+                     */
+                    interface Foo extends Traversable {}
+
+                    /**
+                     * @return array<"a"|"b", "c"|"d">
+                     */
+                    function foobar(Foo $foo): array
+                    {
+                        return [...$foo];
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+
             'ArrayOffsetNumericSupPHPINTMAX' => [
                 'code' => '<?php
                     $_a = [
@@ -1659,7 +1869,7 @@ class ArrayAssignmentTest extends TestCase
 
                 /**
                  * @param iterable<string, string> $data
-                 * @return list<string>
+                 * @return array<string, string>
                  */
                 function unpackIterable(iterable $data): array
                 {
@@ -1674,7 +1884,7 @@ class ArrayAssignmentTest extends TestCase
 
                     /**
                      * @param Traversable<string, string> $data
-                     * @return list<string>
+                     * @return array<string, string>
                      */
                     function unpackIterable(Traversable $data): array
                     {
@@ -1689,7 +1899,7 @@ class ArrayAssignmentTest extends TestCase
 
                 /**
                  * @param array<array-key, mixed> $data
-                 * @return list<mixed>
+                 * @return array<array-key, mixed>
                  */
                 function unpackArray(array $data): array
                 {
@@ -1714,12 +1924,9 @@ class ArrayAssignmentTest extends TestCase
                         return [1];
                     }
 
-                    $_a = [...posiviteIntegers(), int()];',
-                'assertions' => [
-                    '$_a' => 'non-empty-list<int>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.1'
+                    $_a = [...posiviteIntegers(), int()];
+                    /** @psalm-check-type $_a = non-empty-list<int> */
+                ',
             ],
             'nullableDestructuring' => [
                 'code' => '<?php
@@ -1796,7 +2003,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = 5;
                     "hello"[0] = $a;',
                 'error_message' => 'MixedStringOffsetAssignment',
-                'error_level' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'mixedArrayArgument' => [
                 'code' => '<?php
@@ -1809,7 +2016,7 @@ class ArrayAssignmentTest extends TestCase
 
                     barBar([1, "2"]);',
                 'error_message' => 'MixedArgumentTypeCoercion',
-                'error_level' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'arrayPropertyAssignment' => [
                 'code' => '<?php
@@ -2138,6 +2345,67 @@ class ArrayAssignmentTest extends TestCase
                     }
                 }',
                 'error_message' => 'InvalidArrayOffset'
+            ],
+            'unpackTypedIterableWithStringKeysIntoArray' => [
+                'code' => '<?php
+                    /**
+                     * @param iterable<string, string> $data
+                     * @return list<string>
+                     */
+                    function unpackIterable(iterable $data): array
+                    {
+                        return [...$data];
+                    }
+                ',
+                'error_message' => 'DuplicateArrayKey',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackTypedTraversableWithStringKeysIntoArray' => [
+                'code' => '<?php
+                    /**
+                     * @param Traversable<string, string> $data
+                     * @return list<string>
+                     */
+                    function unpackIterable(Traversable $data): array
+                    {
+                        return [...$data];
+                    }
+                ',
+                'error_message' => 'DuplicateArrayKey',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackArrayWithArrayKeyIntoArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<array-key, mixed> $data
+                     * @return list<mixed>
+                     */
+                    function unpackArray(array $data): array
+                    {
+                        return [...$data];
+                    }
+                ',
+                'error_message' => 'DuplicateArrayKey',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackNonIterable' => [
+                'code' => '<?php
+                    class Foo {}
+                    $foo = new Foo();
+                    $arr = [...$foo];
+                ',
+                'error_message' => 'InvalidOperand',
+            ],
+            'cantUnpackWhenKeyIsntArrayKey' => [
+                'code' => '<?php
+                    /** @var Traversable<object, object> */
+                    $foo = [];
+                    $bar = [...$foo];
+                ',
+                'error_message' => 'InvalidOperand',
             ],
         ];
     }
