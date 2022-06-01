@@ -133,6 +133,22 @@ return [
       'old' => ['bool', 'name'=>'string', 'content'=>'string', 'isParam'=>'bool', 'publicId'=>'string', 'systemId'=>'string', 'notationData'=>'string'],
       'new' => ['bool', 'name'=>'string', 'content'=>'string', 'isParam='=>'bool', 'publicId='=>'?string', 'systemId='=>'?string', 'notationData='=>'?string'],
     ],
+    'SplFileObject::fgetcsv' => [
+      'old' => ['list<string>|array{0: null}|false|null', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+      'new' => ['list<string>|array{0: null}|false|null', 'seperator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+    ],
+    'SplFileObject::fputcsv' => [
+      'old' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+      'new' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'seperator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+    ],
+    'SplTempFileObject::fgetcsv' => [
+        'old' => ['list<string>|array{0: null}|false|null', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+        'new' => ['list<string>|array{0: null}|false|null', 'seperator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+    ],
+    'SplTempFileObject::fputcsv' => [
+      'old' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+      'new' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'seperator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+    ],
     'array_combine' => [
       'old' => ['associative-array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
       'new' => ['associative-array', 'keys'=>'string[]|int[]', 'values'=>'array'],
