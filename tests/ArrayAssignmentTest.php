@@ -1674,17 +1674,30 @@ class ArrayAssignmentTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'unpackIncorrectlyExtendedTraversable' => [
+            'unpackIncorrectlyExtendedInterface' => [
                 'code' => '<?php
-                    /** @extends Traversable<int> */
+                    /**
+                     * @template TKey
+                     * @template TValue of scalar
+                     * @extends Traversable<TKey, TValue>
+                     */
                     interface Foo extends Traversable {}
 
                     /**
-                     * @return array<int, mixed>
+                     * @psalm-suppress MissingTemplateParam
+                     * @template TKey
+                     * @extends Foo<TKey>
                      */
-                    function foobar(Foo $foo): array
+                    interface Bar extends Foo {}
+
+                    /**
+                     * @param Bar<int> $bar
+                     * @return list<scalar>
+                     */
+                    function foobar(Bar $bar): array
                     {
-                        return [...$foo];
+                        $unpacked = [...$bar];
+                        return $unpacked;
                     }
                 ',
             ],
@@ -2404,6 +2417,21 @@ class ArrayAssignmentTest extends TestCase
                     /** @var Traversable<object, object> */
                     $foo = [];
                     $bar = [...$foo];
+                ',
+                'error_message' => 'InvalidOperand',
+            ],
+            'unpackTraversableWithKeyOmitted' => [
+                'code' => '<?php
+                    /** @extends Traversable<int> */
+                    interface Foo extends Traversable {}
+
+                    /**
+                     * @return array<int, mixed>
+                     */
+                    function foobar(Foo $foo): array
+                    {
+                        return [...$foo];
+                    }
                 ',
                 'error_message' => 'InvalidOperand',
             ],
