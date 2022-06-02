@@ -63,7 +63,7 @@ class ArrayAnalyzer
         Context $context
     ): bool {
         // if the array is empty, this special type allows us to match any other array type against it
-        if (empty($stmt->items)) {
+        if (count($stmt->items) === 0) {
             $statements_analyzer->node_data->setType($stmt, Type::getEmptyArray());
 
             return true;
@@ -94,7 +94,7 @@ class ArrayAnalyzer
             );
         }
 
-        if (!empty($array_creation_info->item_key_atomic_types)) {
+        if (count($array_creation_info->item_key_atomic_types) !== 0) {
             $item_key_type = TypeCombiner::combine(
                 $array_creation_info->item_key_atomic_types,
                 $codebase,
@@ -106,7 +106,7 @@ class ArrayAnalyzer
             $item_key_type = null;
         }
 
-        if (!empty($array_creation_info->item_value_atomic_types)) {
+        if (count($array_creation_info->item_value_atomic_types) !== 0) {
             $item_value_type = TypeCombiner::combine(
                 $array_creation_info->item_value_atomic_types,
                 $codebase,
@@ -119,7 +119,7 @@ class ArrayAnalyzer
         }
 
         // if this array looks like an object-like array, let's return that instead
-        if (!empty($array_creation_info->property_types)) {
+        if (count($array_creation_info->property_types) !== 0) {
             $atomic_type = new TKeyedArray($array_creation_info->property_types, $array_creation_info->class_strings);
             if ($array_creation_info->can_create_objectlike) {
                 $atomic_type->sealed = true;
