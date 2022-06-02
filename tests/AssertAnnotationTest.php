@@ -2055,6 +2055,27 @@ class AssertAnnotationTest extends TestCase
                         return $input;
                     }',
             ],
+            'assertListKeepsArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arr
+                     * @psalm-assert-if-true list $arr
+                     */
+                    function is_list($arr): bool
+                    {
+                        return is_array($arr) && array_is_list($arr);
+                    }
+
+                    /** @var array{0: int, 1: bool, 2: string} */
+                    $list = [1, true, "string"];
+                    assert(is_list($list));
+
+                    function takesString(string $_str): void {}
+
+                    takesString($list[2]);
+                ',
+                'assertions' => ['$list===' => "array{0: int, 1: bool, 2: string}<int<3, max>, mixed>"],
+            ],
         ];
     }
 

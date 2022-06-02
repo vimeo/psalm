@@ -78,6 +78,8 @@ use function assert;
 use function count;
 use function explode;
 use function get_class;
+use function is_int;
+use function ksort;
 use function min;
 use function strpos;
 
@@ -358,6 +360,7 @@ class SimpleAssertionReconciler extends Reconciler
         ) {
             return self::reconcileList(
                 $assertion,
+                $codebase,
                 $existing_var_type,
                 $key,
                 $negated,
@@ -2000,6 +2003,7 @@ class SimpleAssertionReconciler extends Reconciler
      */
     private static function reconcileList(
         Assertion $assertion,
+        Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
         bool $negated,
@@ -2021,20 +2025,53 @@ class SimpleAssertionReconciler extends Reconciler
         $did_remove_type = false;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TList
-                || ($type instanceof TKeyedArray && $type->is_list)
-            ) {
-                if ($is_non_empty && $type instanceof TList && !$type instanceof TNonEmptyList) {
+            if ($type instanceof TList) {
+                if ($is_non_empty && !$type instanceof TNonEmptyList) {
                     $array_types[] = new TNonEmptyList($type->type_param);
                     $did_remove_type = true;
                 } else {
                     $array_types[] = $type;
                 }
-            } elseif ($type instanceof TArray || $type instanceof TKeyedArray) {
-                if ($type instanceof TKeyedArray) {
-                    $type = $type->getGenericArrayType();
-                }
+            } elseif ($type instanceof TKeyedArray) {
+                if ($type->is_list) {
+                    $array_types[] = $type;
+                } else {
+                    $did_remove_type = true;
+                    $type = clone $type;
+                    $min_unset_list_key = 0; // Minimum list key not explicitly set
+                    ksort($type->properties);
+                    foreach ($type->properties as $prop_key => $prop_value) {
+                        if (!is_int($prop_key)) {
+                            if ($prop_value->possibly_undefined) {
+                                unset($type->properties[$prop_key]);
+                            } else {
+                                // Can't reconcile, type is removed
+                                continue 2;
+                            }
+                        } elseif ($prop_key === $min_unset_list_key) {
+                            ++$min_unset_list_key;
+                        }
+                    }
 
+                    // Update the key type for non-explicit properties
+                    if ($type->previous_key_type === null) {
+                        $type->previous_key_type = Type::getArrayKey();
+                    }
+                    $type->previous_key_type = Type::intersectUnionTypes(
+                        $type->previous_key_type,
+                        new Union([new TIntRange($min_unset_list_key, null)]),
+                        $codebase,
+                    );
+
+                    // If there's no value type for non-explicit properties it's defaulted to mixed
+                    if ($type->previous_value_type === null) {
+                        $type->previous_value_type = Type::getMixed();
+                    }
+
+                    $type->is_list = true;
+                    $array_types[] = $type;
+                }
+            } elseif ($type instanceof TArray) {
                 if ($type->type_params[0]->hasArrayKey()
                     || $type->type_params[0]->hasInt()
                 ) {
