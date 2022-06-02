@@ -7,6 +7,7 @@ use Psalm\Report\PrettyPrintArray\PrettyCompare;
 use Psalm\Tests\TestCase;
 
 use function explode;
+use function str_replace;
 
 use const PHP_EOL;
 
@@ -17,8 +18,6 @@ class PrettyCompareTest extends TestCase
      */
     public function testCompare(string $inferred, string $declared, string $expected): void
     {
-        $this->markTestSkipped('Needs to fix');
-
         $sut = new PrettyCompare();
         $actual = $sut->compare($inferred, $declared);
 
@@ -27,12 +26,14 @@ class PrettyCompareTest extends TestCase
 
     private function assertOutputPrettyPrintEquals(string $expected_output, string $output): void
     {
-        $linesOutput = explode(PHP_EOL, ($expected_output));
+        $tokens = ["\r\n","\r","\n"];
+        $asExpectedOutput = explode(PHP_EOL, $expected_output);
+        $asActualOutput = $output;
 
-        foreach ($linesOutput as $line) {
+        foreach ($asExpectedOutput as $line) {
             $this->assertStringContainsString(
-                $line,
-                $output
+                str_replace($tokens, '\n', $line),
+                str_replace($tokens, '\n', $asActualOutput),
             );
         }
     }
