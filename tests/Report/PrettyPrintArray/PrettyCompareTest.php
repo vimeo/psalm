@@ -4,15 +4,13 @@ namespace Psalm\Tests\Report\PrettyPrintArray;
 
 use Generator;
 use Psalm\Report\PrettyPrintArray\PrettyCompare;
+use Psalm\Tests\HelperTest\HelperAssert;
 use Psalm\Tests\TestCase;
-
-use function explode;
-use function str_replace;
-
-use const PHP_EOL;
 
 class PrettyCompareTest extends TestCase
 {
+    use HelperAssert;
+
     /**
      * @dataProvider providerValidPayload
      */
@@ -22,20 +20,6 @@ class PrettyCompareTest extends TestCase
         $actual = $sut->compare($inferred, $declared);
 
         $this->assertOutputPrettyPrintEquals($expected, $actual);
-    }
-
-    private function assertOutputPrettyPrintEquals(string $expected_output, string $output): void
-    {
-        $tokens = ["\r\n","\r","\n"];
-        $asExpectedOutput = explode(PHP_EOL, $expected_output);
-        $asActualOutput = $output;
-
-        foreach ($asExpectedOutput as $line) {
-            $this->assertStringContainsString(
-                str_replace($tokens, '\n', $line),
-                str_replace($tokens, '\n', $asActualOutput),
-            );
-        }
     }
 
 
