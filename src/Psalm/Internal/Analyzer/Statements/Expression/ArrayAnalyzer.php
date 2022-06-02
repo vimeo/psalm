@@ -588,7 +588,7 @@ class ArrayAnalyzer
 
                 $array_creation_info->can_create_objectlike = false;
 
-                if (!UnionTypeComparator::canBeContainedBy(
+                if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $iterable_type->type_params[0],
                     Type::getArrayKey(),
