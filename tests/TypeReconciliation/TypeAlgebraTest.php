@@ -1420,6 +1420,17 @@ class TypeAlgebraTest extends TestCase
                 false,
                 '8.1',
             ],
+            'arrayShapeListCanBeEmpty' => [
+                '<?php
+                    /** @param non-empty-list<mixed> $_list */
+                    function foobar(array $_list): void {}
+
+                    $list = random_int(0, 1) ? [] : ["foobar"];
+
+                    foobar($list);
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }

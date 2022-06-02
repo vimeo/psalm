@@ -214,6 +214,15 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         $inner_value_type = null;
 
         if ($inner_key_types) {
+            /**
+             * @psalm-suppress InvalidScalarArgument
+             * $inner_key_types is incorrectly inferred to be array{
+             *     0?: Psalm\Type\Atomic|Psalm\Type\Atomic\TInt,
+             *     1?: Psalm\Type\Atomic|Psalm\Type\Atomic\TInt,
+             *     ...
+             *     11?: Psalm\Type\Atomic|Psalm\Type\Atomic\TInt,
+             * }
+             */
             $inner_key_type = TypeCombiner::combine($inner_key_types, $codebase, true);
         }
 
