@@ -1499,14 +1499,14 @@ EOF;
 
     private function assertOutputPrettyPrintEquals(string $expected_output, string $output): void
     {
-        $token = ['\r\n','\r','\n'];
+        $tokens = ["\r\n","\r","\n"];
         $asExpectedOutput = explode(PHP_EOL, $expected_output);
         $asActualOutput = $output;
 
         foreach ($asExpectedOutput as $line) {
             $this->assertStringContainsString(
-                str_replace($token, '', $line),
-                str_replace($token, '', $asActualOutput),
+                str_replace($tokens, '', $line),
+                str_replace($tokens, '', $asActualOutput),
             );
         }
     }
