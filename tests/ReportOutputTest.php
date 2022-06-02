@@ -1339,7 +1339,6 @@ EOF;
      */
     public function testConsoleReportWithPrettyPrintFromAnalyzer(string $file_contents, string $expected_output): void
     {
-        $this->markTestSkipped('Needs to fix');
         $this->addFile('somefile.php', $file_contents);
         $this->analyzeFile('somefile.php', new Context());
 
