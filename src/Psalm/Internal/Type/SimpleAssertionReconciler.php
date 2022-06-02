@@ -2039,17 +2039,29 @@ class SimpleAssertionReconciler extends Reconciler
                     $did_remove_type = true;
                     $type = clone $type;
                     $min_unset_list_key = 0; // Minimum list key not explicitly set
+                    $min_non_optional_list_key = 0; // Minimum list key that isn't optional
                     ksort($type->properties);
                     foreach ($type->properties as $prop_key => $prop_value) {
                         if (!is_int($prop_key)) {
                             if ($prop_value->possibly_undefined) {
                                 unset($type->properties[$prop_key]);
+                                continue;
                             } else {
                                 // Can't reconcile, type is removed
                                 continue 2;
                             }
                         } elseif ($prop_key === $min_unset_list_key) {
                             ++$min_unset_list_key;
+                        }
+                        if (!$prop_value->possibly_undefined) {
+                            $min_non_optional_list_key = $prop_key;
+                        }
+                    }
+
+                    // If there is a non-optional key after an optional key, previous optional keys become non-optional
+                    foreach ($type->properties as $prop_key => $prop_value) {
+                        if (is_int($prop_key) && $prop_key < $min_non_optional_list_key) {
+                            $prop_value->possibly_undefined = false;
                         }
                     }
 

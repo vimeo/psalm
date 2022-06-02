@@ -2076,6 +2076,23 @@ class AssertAnnotationTest extends TestCase
                 ',
                 'assertions' => ['$list===' => "array{0: int, 1: bool, 2: string}<int<3, max>, mixed>"],
             ],
+            'assertListMarksKeysAsNonOptional' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arr
+                     * @psalm-assert-if-true list $arr
+                     */
+                    function is_list($arr): bool
+                    {
+                        return is_array($arr) && array_is_list($arr);
+                    }
+
+                    /** @var array{0: int, 5?: bool, 6?: string, 7: object, 8?: float} */
+                    $list = [];
+                    assert(is_list($list));
+                ',
+                'assertions' => ['$list===' => "array{0: int, 5: bool, 6: string, 7: object, 8?: float}<int<1, max>, mixed>"],
+            ],
         ];
     }
 
