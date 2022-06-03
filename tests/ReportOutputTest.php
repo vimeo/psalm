@@ -16,23 +16,23 @@ use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\JsonReport;
 use Psalm\Report\ReportOptions;
-use Psalm\Tests\HelperTest\HelperAssert;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
+use function explode;
 use function file_get_contents;
 use function json_decode;
 use function ob_end_clean;
 use function ob_start;
 use function preg_replace;
+use function str_replace;
 use function unlink;
 
 use const JSON_THROW_ON_ERROR;
+use const PHP_EOL;
 
 class ReportOutputTest extends TestCase
 {
-    use HelperAssert;
-
     public function setUp(): void
     {
         // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
@@ -1495,5 +1495,19 @@ EOF;
         $console_report_options->show_info = false;
         $console_report_options->pretty_print_array = true;
         return $console_report_options;
+    }
+
+    private function assertOutputPrettyPrintEquals(string $expected_output, string $output): void
+    {
+        $tokens = ["\r\n","\r","\n"];
+        $asExpectedOutput = explode(PHP_EOL, $expected_output);
+        $asActualOutput = $output;
+
+        foreach ($asExpectedOutput as $line) {
+            $this->assertStringContainsString(
+                str_replace($tokens, '\n', $line),
+                str_replace($tokens, '\n', $asActualOutput),
+            );
+        }
     }
 }
