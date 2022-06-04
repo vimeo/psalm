@@ -18,6 +18,9 @@ class VariableUseGraph extends DataFlowGraph
     /** @var array<string, DataFlowNode> */
     private $nodes = [];
 
+    /** @var array<string, list<CodeLocation>> */
+    private $origin_locations_by_id = [];
+
     public function addNode(DataFlowNode $node): void
     {
         $this->nodes[$node->id] = $node;
@@ -94,6 +97,10 @@ class VariableUseGraph extends DataFlowGraph
      */
     public function getOriginLocations(DataFlowNode $assignment_node): array
     {
+        if (isset($this->origin_locations_by_id[$assignment_node->id])) {
+            return $this->origin_locations_by_id[$assignment_node->id];
+        }
+
         $visited_child_ids = [];
 
         $origin_locations = [];
@@ -127,6 +134,8 @@ class VariableUseGraph extends DataFlowGraph
 
             $child_nodes = $new_parent_nodes;
         }
+
+        $this->origin_locations_by_id[$assignment_node->id] = $origin_locations;
 
         return $origin_locations;
     }
