@@ -2063,7 +2063,16 @@ class AssertAnnotationTest extends TestCase
                      */
                     function is_list($arr): bool
                     {
-                        return is_array($arr) && array_is_list($arr);
+                        if (!is_array($arr)) {
+                            return false;
+                        }
+                        $listKey = -1;
+                        foreach ($arr as $key => $_) {
+                            if ($key !== ++$listKey) {
+                                return false;
+                            }
+                        }
+                        return true;
                     }
 
                     /** @var array{0: int, 1: bool, 2: string} */
@@ -2084,7 +2093,16 @@ class AssertAnnotationTest extends TestCase
                      */
                     function is_list($arr): bool
                     {
-                        return is_array($arr) && array_is_list($arr);
+                        if (!is_array($arr)) {
+                            return false;
+                        }
+                        $listKey = -1;
+                        foreach ($arr as $key => $_) {
+                            if ($key !== ++$listKey) {
+                                return false;
+                            }
+                        }
+                        return true;
                     }
 
                     /** @var array{0: int, 5?: bool, 6?: string, 7: object, 8?: float} */
