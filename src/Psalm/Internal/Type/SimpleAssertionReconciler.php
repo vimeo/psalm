@@ -2493,6 +2493,12 @@ class SimpleAssertionReconciler extends Reconciler
                         $array_atomic_type->type_param
                     )
                 );
+            } elseif ($array_atomic_type instanceof TKeyedArray && $array_atomic_type->is_list) {
+                if (isset($array_atomic_type->properties[0])) {
+                    $array_atomic_type->properties[0]->possibly_undefined = false;
+                } else {
+                    $array_atomic_type->properties[0] = Type::getMixed();
+                }
             }
         }
 

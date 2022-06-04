@@ -2093,6 +2093,17 @@ class AssertAnnotationTest extends TestCase
                 ',
                 'assertions' => ['$list===' => "array{0: int, 5: bool, 6: string, 7: object, 8?: float}<int<1, max>, mixed>"],
             ],
+            'truthyArrayShapeListHas0Key' => [
+                'code' => '<?php
+                    $list = random_int(0, 1) ? [] : ["foobar"];
+
+                    function takesString(string $_str): void {}
+
+                    if ($list) {
+                        takesString($list[0]);
+                    }
+                ',
+            ],
         ];
     }
 
