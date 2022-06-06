@@ -501,8 +501,6 @@ class ArrayAnalyzer
                 );
             }
         } else {
-            $array_creation_info->item_value_atomic_types[] = new TMixed();
-
             if ($item_key_value !== null
                 && count($array_creation_info->property_types) <= $config->max_shaped_array_size
             ) {
