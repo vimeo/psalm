@@ -12,7 +12,7 @@ The type `scalar` is the supertype of all scalar types.
 
 ### positive-int
 
-`positive-int` allows only positive integers (equivalent to int<1, max>)
+`positive-int` allows only positive integers (equivalent to `int<1, max>`)
 
 ### numeric
 
