@@ -701,7 +701,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     interface Bar {}'
             ],
             'classStringSatisfiesTemplateWithConstraint' => [
-                'code' => '<?php
+                '<?php
                     /** @template T of string */
                     class Foo {}
 
@@ -712,7 +712,7 @@ class FunctionClassStringTemplateTest extends TestCase
                 ',
             ],
             'classStringWithGenericChildSatisfiesGenericParentWithDifferentConstraint' => [
-                'code' => '<?php
+                '<?php
                     /** @template T of string */
                     class Foo {}
                     /**
