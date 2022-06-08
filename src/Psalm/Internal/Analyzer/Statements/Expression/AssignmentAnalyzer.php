@@ -776,24 +776,11 @@ class AssignmentAnalyzer
     ): void {
         $parent_nodes = $type->parent_nodes;
 
-        $unspecialized_parent_nodes = array_filter(
-            $parent_nodes,
-            static fn($parent_node): bool => !$parent_node->specialization_key
-        );
+        $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
+        $data_flow_graph->addNode($new_parent_node);
+        $new_parent_nodes = [$new_parent_node->id => $new_parent_node];
 
-        $specialized_parent_nodes = array_filter(
-            $parent_nodes,
-            static fn($parent_node): bool => (bool) $parent_node->specialization_key
-        );
-
-        $new_parent_nodes = [];
-
-        foreach ($specialized_parent_nodes as $parent_node) {
-            $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
-            $new_parent_node->specialization_key = $parent_node->specialization_key;
-
-            $data_flow_graph->addNode($new_parent_node);
-            $new_parent_nodes += [$new_parent_node->id => $new_parent_node];
+        foreach ($parent_nodes as $parent_node) {
             $data_flow_graph->addPath(
                 $parent_node,
                 $new_parent_node,
@@ -801,22 +788,6 @@ class AssignmentAnalyzer
                 $added_taints,
                 $removed_taints
             );
-        }
-
-        if ($unspecialized_parent_nodes) {
-            $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
-            $data_flow_graph->addNode($new_parent_node);
-            $new_parent_nodes += [$new_parent_node->id => $new_parent_node];
-
-            foreach ($unspecialized_parent_nodes as $parent_node) {
-                $data_flow_graph->addPath(
-                    $parent_node,
-                    $new_parent_node,
-                    '=',
-                    $added_taints,
-                    $removed_taints
-                );
-            }
         }
 
         $type->parent_nodes = $new_parent_nodes;
