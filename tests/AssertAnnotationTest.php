@@ -2055,6 +2055,34 @@ class AssertAnnotationTest extends TestCase
                         return $input;
                     }',
             ],
+            'assertOneOfValuesWithinArray' => [
+                'code' => '<?php
+
+                    /**
+                     * @template T
+                     * @param mixed $input
+                     * @param array<array-key,T> $values
+                     * @psalm-assert T $input
+                     */
+                    function assertOneOf($input, array $values): void {}
+
+                    /** @param literal-string $value */
+                    function consumeLiteralStringValue(string $value): void {}
+
+                    function consumeAnyIntegerValue(int $value): void {}
+
+                    /** @var string $string */
+                    $string;
+                    /** @var mixed $mixed */
+                    $mixed;
+
+                    assertOneOf($string, ["a"]);
+                    consumeLiteralStringValue($string);
+
+                    assertOneOf($mixed, [1, 2, 3]);
+                    consumeAnyIntegerValue($mixed);
+                '
+            ],
         ];
     }
 
