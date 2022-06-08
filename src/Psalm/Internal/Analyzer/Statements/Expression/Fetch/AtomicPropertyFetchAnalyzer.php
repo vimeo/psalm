@@ -63,7 +63,7 @@ use Psalm\Type\Union;
 
 use function array_keys;
 use function array_search;
-use function array_values;
+use function count;
 use function in_array;
 use function is_int;
 use function is_string;
@@ -570,15 +570,9 @@ class AtomicPropertyFetchAnalyzer
                     $class_storage->parent_class
                 );
 
-                if ($class_storage->template_types) {
+                if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
                     if (!$lhs_type_part instanceof TGenericObject) {
-                        $type_params = [];
-
-                        foreach ($class_storage->template_types as $type_map) {
-                            $type_params[] = clone array_values($type_map)[0];
-                        }
-
-                        $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
+                        $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
                     }
 
                     $stmt_type = self::localizePropertyType(
@@ -1100,15 +1094,9 @@ class AtomicPropertyFetchAnalyzer
         ) {
             $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
 
-            if ($class_storage->template_types) {
+            if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
                 if (!$lhs_type_part instanceof TGenericObject) {
-                    $type_params = [];
-
-                    foreach ($class_storage->template_types as $type_map) {
-                        $type_params[] = clone array_values($type_map)[0];
-                    }
-
-                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
+                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
                 }
 
                 $stmt_type = self::localizePropertyType(
@@ -1200,15 +1188,9 @@ class AtomicPropertyFetchAnalyzer
                 $declaring_class_storage->parent_class
             );
 
-            if ($declaring_class_storage->template_types) {
+            if (count($template_types = $declaring_class_storage->getClassTemplateTypes()) !== 0) {
                 if (!$lhs_type_part instanceof TGenericObject) {
-                    $type_params = [];
-
-                    foreach ($declaring_class_storage->template_types as $type_map) {
-                        $type_params[] = clone array_values($type_map)[0];
-                    }
-
-                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $type_params);
+                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
                 }
 
                 $class_property_type = self::localizePropertyType(

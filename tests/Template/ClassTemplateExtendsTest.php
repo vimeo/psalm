@@ -5342,7 +5342,7 @@ class ClassTemplateExtendsTest extends TestCase
                     }
 
                     new Foo(new DoStuffX());',
-                'error_message' => 'MixedArgumentTypeCoercion'
+                'error_message' => 'TooManyTemplateParams'
             ],
             'concreteDefinesSignatureTypesDifferent' => [
                 '<?php
