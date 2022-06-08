@@ -83,7 +83,6 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_merge;
 use function count;
 use function in_array;
