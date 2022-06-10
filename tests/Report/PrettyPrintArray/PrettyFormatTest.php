@@ -26,6 +26,20 @@ class PrettyFormatTest extends TestCase
      */
     public function providerValidPayload(): Generator
     {
+        $expected = <<<"EOT"
+        array {
+         array {
+          _id: string,
+          activeFrom: string
+         }
+        }
+        EOT;
+
+        yield [
+            'array<array-key, array{_id: string, activeFrom: string}>',
+            $expected
+        ];
+
         yield [
                 'field:',
                 'field: '

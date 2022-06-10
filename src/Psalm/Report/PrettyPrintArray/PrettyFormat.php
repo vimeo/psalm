@@ -2,62 +2,60 @@
 
 namespace Psalm\Report\PrettyPrintArray;
 
+use function count;
 use function str_repeat;
-use function str_split;
 
 use const PHP_EOL;
 
 final class PrettyFormat
 {
-    private const CHAR_SPACE = ' ';
-
     public function format(string $inputPayload): string
     {
-        $buffer = '';
-        $previousChar = '';
+        $buffer = $previousToken = '';
         $prettyCursorBracket = new PrettyCursorBracket();
-        $payload = $inputPayload;
+        $prettyMatchTokens = new PrettyMatchTokens();
 
-        $payload = PrettyHelper::normalizeBracket($payload);
+        $payload = PrettyHelper::normalizeBracket($inputPayload);
         $payload = PrettyHelper::normalizeTokens($payload);
 
-        foreach (str_split($payload) as $char) {
-            $prettyCursorBracket->accept($char);
+        $prettyMatchTokens->tokenize($payload);
+        $tokens = $prettyMatchTokens->getMatchedTokens();
 
-            if (self::CHAR_SPACE === $char) {
+        for ($i=0; $i<count($tokens); $i++) {
+            $token = $tokens[$i];
+            $nextToken = $tokens[$i+1];
+
+            $prettyCursorBracket->accept($token);
+
+            if (PrettyMatchTokens::T_SPACE === $token) {
                 continue;
             }
 
-            $charAfter = '';
-            $charBefore = '';
-
-            if (':' === $char) {
-                $charAfter = self::CHAR_SPACE;
+            if ($token === PrettyMatchTokens::T_PSALM_KEY &&
+                $nextToken === PrettyMatchTokens::T_COMMA) {
+                $i++;
+                continue;
             }
 
-            $numChars = $prettyCursorBracket->getNumberBrackets();
-            if (',' === $char) {
-                $charAfter = PHP_EOL;
-            } elseif (',' === $previousChar) {
-                $charBefore = $this->addIdentChar($numChars);
-            }
+            $tokenAfter = $tokenBefore = '';
+            $numBrackets = $prettyCursorBracket->getNumberBrackets();
 
-            if ('{' === $previousChar) {
-                $charBefore =  $this->addIdentChar($numChars);
-            } elseif ('{' === $char) {
-                $charBefore = self::CHAR_SPACE;
-                $charAfter = PHP_EOL;
-            }
+            [$tokenAfter, $tokenBefore] = $this->processByCurrentToken(
+                $token,
+                $tokenBefore,
+                $tokenAfter,
+                $numBrackets
+            );
 
-            if ('}' === $char) {
-                $charBefore = PHP_EOL .$this->addIdentChar($numChars);
-            }
+            $tokenBefore = $this->processByPreviousToken(
+                $previousToken,
+                $numBrackets,
+                $tokenBefore
+            );
 
-            $buffer .= $charBefore
-                    . $char
-                    . $charAfter;
+            $buffer .= $tokenBefore . $token . $tokenAfter;
 
-            $previousChar = $char;
+            $previousToken = $token;
             if ($prettyCursorBracket->closed()) {
                 break;
             }
@@ -65,8 +63,45 @@ final class PrettyFormat
         return $buffer;
     }
 
-    private function addIdentChar(int $numChars): string
+    private function indentOf(int $numBrackets): string
     {
-        return str_repeat(self::CHAR_SPACE, $numChars);
+        return str_repeat(PrettyMatchTokens::T_SPACE, $numBrackets);
+    }
+
+    private function processByPreviousToken(string $previousToken, int $numBrackets, string $tokenBefore): string
+    {
+        if ($previousToken === PrettyMatchTokens::T_COMMA) {
+            return $this->indentOf($numBrackets);
+        }
+
+        if ($previousToken === PrettyMatchTokens::T_CURLY_BRACKET_OPEN) {
+            return $this->indentOf($numBrackets);
+        }
+
+        return $tokenBefore;
+    }
+
+    /**
+     * @return array{string,string}
+     */
+    private function processByCurrentToken(string $token, string $tokenBefore, string $tokenAfter, int $numBrackets): array
+    {
+        if ($token === PrettyMatchTokens::T_COLON) {
+            return [PrettyMatchTokens::T_SPACE,$tokenAfter];
+        }
+
+        if ($token === PrettyMatchTokens::T_COMMA) {
+            return [PHP_EOL,$tokenAfter];
+        }
+
+        if ($token === PrettyMatchTokens::T_CURLY_BRACKET_OPEN) {
+            return [PHP_EOL,PrettyMatchTokens::T_SPACE];
+        }
+
+        if ($token === PrettyMatchTokens::T_CURLY_BRACKET_CLOSE) {
+            return [$tokenAfter,PHP_EOL . $this->indentOf($numBrackets)];
+        }
+
+        return [$tokenAfter, $tokenBefore];
     }
 }
