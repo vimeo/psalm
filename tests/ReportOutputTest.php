@@ -1337,15 +1337,15 @@ EOF;
     /**
      * @dataProvider outputProvider()
      */
-    public function testConsoleReportWithPrettyPrintFromAnalyzer(string $file_contents, string $expected_output): void
+    public function testConsoleReportWithPrettyPrintFromAnalyzer(string $file_contents, string $expectedOutput): void
     {
         $this->addFile('somefile.php', $file_contents);
         $this->analyzeFile('somefile.php', new Context());
 
         $console_report_options = $this->prepareConsoleOptionsForPrettyPrint();
-        $output = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
+        $actualOutput = IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $console_report_options);
 
-        $this->assertOutputPrettyPrintEquals($expected_output, $output);
+        $this->assertOutputPrettyPrintEquals($expectedOutput, $actualOutput);
     }
 
     /**
@@ -1378,9 +1378,8 @@ EOF;
         | Expected                                           | Provided
         | ---                                                | ---
         | array {                                            | array {
-        |  array-key,                                        |  aa: 'bar'
-        |  int                                               | }
-        | }                                                  |
+        |  int                                               |  aa: 'bar'
+        | }                                                  | }
         |                                                    |
         EOT;
 
@@ -1409,9 +1408,8 @@ EOF;
         | Expected                                           | Provided
         | ---                                                | ---
         | array {                                            | array {
-        |  array-key,                                        |  aa: 111
-        |  string                                            | }
-        | }                                                  |
+        |  string                                            |  aa: 111
+        | }                                                  | }
         |                                                    |
         EOT;
 
@@ -1421,7 +1419,7 @@ EOF;
     /**
      * @dataProvider payloadProvider()
      */
-    public function testConsoleReportWithPrettyPrintFromPayload(string $payload, string $inferred, string $declared, string $expected_output): void
+    public function testConsoleReportWithPrettyPrintFromPayload(string $payload, string $inferred, string $declared, string $expectedOutput): void
     {
         $console_report_options = $this->prepareConsoleOptionsForPrettyPrint();
         $issues_data = [
@@ -1451,8 +1449,8 @@ EOF;
         ];
 
         $consoleReport = new Report\ConsoleReport($issues_data, [], $console_report_options);
-        $output = $consoleReport->create();
-        $this->assertOutputPrettyPrintEquals($expected_output, $output);
+        $actualOutput = $consoleReport->create();
+        $this->assertOutputPrettyPrintEquals($expectedOutput, $actualOutput);
     }
 
     /**
@@ -1483,6 +1481,62 @@ EOF;
         |  tid_bbbbb: null|string                            |  tid_bbbbb: null|string
         | }                                                  | }
         |
+        EOT;
+
+        yield  [$paylaod, $inferred, $declared, $expected];
+
+        $inferred = "array{array{_id: '6259381a37d1f57503ca646f', activeFrom: '2022-04-16T00:00:00.000+02:00', actualCity: 'Aachen', address: 'elefantenstrasse 12', annualSalaryFrom: 55000, annualSalaryTo: 70000, candidateContactWay: 'Email', cityCategory: 'Aachen', company: 'bkip ebus solutions GmbH', companyId: '623b3be0c421b2d41d3778db', companySize: '<50', companyType: 'Startup', expLevel: 'Senior', expiresOn: null, hasVisaSponsorship: 'No', isFullRemote: false, jobType: 'Full-Time', jobUrl: 'bippokippo-solutions-Architekten-mwd-fr-Elektromobilitt', language: 'English', latitude: float(50.76881525), logoImg: 'bkip-ebus-solutions-gmbh-logo.jpg', longitude: float(6.08364339), name: 'Software-Architekten (m/w/d) für Elektromobilität', offerStockOrBonus: false, postalCode: '52064', techCategory: 'Architect', technologies: array{'Angular', 'CI/CD', 'DevOps', 'Docker', 'ElasticSearch', 'Git', 'JBoss', 'Java', 'Jenkins', 'Quarkus'}}}";
+        $declared = "array<array-key, array{_id: string, activeFrom: string, actualCity: string, address: string, annualSalaryFrom: int, annualSalaryTo: int, candidateContactWay: string, cityCategory: string, company: string, companyId: string, companySize: string, companyType: string, country: 'ch'|'de', expLevel: string, expiresOn: null|string, hasVisaSponsorship: string, isFullRemote: bool, jobType: string, jobUrl: string, language: string, latitude: float, logoImg: string, longitude: float, name: string, offerStockOrBonus: bool, postalCode: string, techCategory: string, technologies: array<int, string>}>";
+
+        $paylaod = <<<'EOT'
+        ERROR: InvalidReturnStatement - 40:12 - The inferred type 'array{array{_id: '6259381a37d1f57503ca646f', activeFrom: '2022-04-16T00:00:00.000+02:00', actualCity: 'Aachen', address: 'elefantenstrasse 12', annualSalaryFrom: 55000, annualSalaryTo: 70000, candidateContactWay: 'Email', cityCategory: 'Aachen', company: 'bkip ebus solutions GmbH', companyId: '623b3be0c421b2d41d3778db', companySize: '<50', companyType: 'Startup', expLevel: 'Senior', expiresOn: null, hasVisaSponsorship: 'No', isFullRemote: false, jobType: 'Full-Time', jobUrl: 'bippokippo-solutions-Architekten-mwd-fr-Elektromobilitt', language: 'English', latitude: float(50.76881525), logoImg: 'bkip-ebus-solutions-gmbh-logo.jpg', longitude: float(6.08364339), name: 'Software-Architekten (m/w/d) für Elektromobilität', offerStockOrBonus: false, postalCode: '52064', techCategory: 'Architect', technologies: array{'Angular', 'CI/CD', 'DevOps', 'Docker', 'ElasticSearch', 'Git', 'JBoss', 'Java', 'Jenkins', 'Quarkus'}}}' does not match the declared return type 'array<array-key, array{_id: string, activeFrom: string, actualCity: string, address: string, annualSalaryFrom: int, annualSalaryTo: int, candidateContactWay: string, cityCategory: string, company: string, companyId: string, companySize: string, companyType: string, country: 'ch'|'de', expLevel: string, expiresOn: null|string, hasVisaSponsorship: string, isFullRemote: bool, jobType: string, jobUrl: string, language: string, latitude: float, logoImg: string, longitude: float, name: string, offerStockOrBonus: bool, postalCode: string, techCategory: string, technologies: array<int, string>}>' for Test::getApiJobs
+        EOT;
+
+        $expected = <<<"EOT"
+        |
+        | Expected                                           | Provided
+        | ---                                                | ---
+        | array {                                            | array {
+        |  array {                                           |  array {
+        |   _id: string,                                     |   _id: '6259381a37d1f57503ca646f',
+        |   activeFrom: string,                              |   activeFrom: '2022-04-16T00: 00: 00.000+02: 00',
+        |   actualCity: string,                              |   actualCity: 'Aachen',
+        |   address: string,                                 |   address: 'elefantenstrasse12',
+        |   annualSalaryFrom: int,                           |   annualSalaryFrom: 55000,
+        |   annualSalaryTo: int,                             |   annualSalaryTo: 70000,
+        |   candidateContactWay: string,                     |   candidateContactWay: 'Email',
+        |   cityCategory: string,                            |   cityCategory: 'Aachen',
+        |   company: string,                                 |   company: 'bkipebussolutionsGmbH',
+        |   companyId: string,                               |   companyId: '623b3be0c421b2d41d3778db',
+        |   companySize: string,                             |   companySize: ' {
+        |   companyType: string,                             |    50',
+        |   country: 'ch'|'de',                              |    companyType: 'Startup',
+        |   expLevel: string,                                |    expLevel: 'Senior',
+        |   expiresOn: null|string,                          |    expiresOn: null,
+        |   hasVisaSponsorship: string,                      |    hasVisaSponsorship: 'No',
+        |   isFullRemote: bool,                              |    isFullRemote: false,
+        |   jobType: string,                                 |    jobType: 'Full-Time',
+        |   jobUrl: string,                                  |    jobUrl: 'bippokippo-solutions-Architekten-mwd-fr-Elektromobilitt',
+        |   language: string,                                |    language: 'English',
+        |   latitude: float,                                 |    latitude: float(50.76881525),
+        |   logoImg: string,                                 |    logoImg: 'bkip-ebus-solutions-gmbh-logo.jpg',
+        |   longitude: float,                                |    longitude: float(6.08364339),
+        |   name: string,                                    |    name: 'Software-Architekten(m/w/d)fürElektromobilität',
+        |   offerStockOrBonus: bool,                         |    offerStockOrBonus: false,
+        |   postalCode: string,                              |    postalCode: '52064',
+        |   techCategory: string,                            |    techCategory: 'Architect',
+        |   technologies: array {                            |    technologies: array {
+        |    int,                                            |     'Angular',
+        |    string                                          |     'CI/CD',
+        |   }                                                |     'DevOps',
+        |  }                                                 |     'Docker',
+        | }                                                  |     'ElasticSearch',
+        |                                                    |     'Git',
+        |                                                    |     'JBoss',
+        |                                                    |     'Java',
+        |                                                    |     'Jenkins',
+        |                                                    |     'Quarkus'
+        |                                                    |    }
         EOT;
 
         yield  [$paylaod, $inferred, $declared, $expected];
