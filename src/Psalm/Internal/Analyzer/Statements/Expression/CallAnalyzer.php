@@ -763,7 +763,7 @@ class CallAnalyzer
                             $codebase
                         );
 
-                        if (!$union->hasMixed()) {
+                        if ($union->isSingle() || $union->allLiterals()) {
                             foreach ($union->getAtomicTypes() as $atomic_type) {
                                 if ($assertion_type instanceof TTemplateParam
                                     && $assertion_type->as->getId() === $atomic_type->getId()
