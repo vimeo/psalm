@@ -4,15 +4,47 @@ namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
+use PhpParser\Node\Scalar\String_;
+use Psalm\CodeLocation;
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockParser;
+use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 class FunctionLikeDocblockParserTest extends BaseTestCase
 {
+    /** @var string */
+    public $test_cased_function_id = 'hello_world';
+
+    /** @var CodeLocation */
+    public $test_code_location;
+
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
+
+        $file_provider = new FakeFileProvider();
+
+        $providers = new Providers(
+            $file_provider,
+            new FakeParserCacheProvider()
+        );
+
+        $test_config = new TestConfig();
+
+        $project_analyzer = new ProjectAnalyzer(
+            $test_config,
+            $providers
+        );
+
+        $file_analyzer = new FileAnalyzer($project_analyzer, 'none/none.php', 'none.php');
+
+        $stmt = new String_('randomString');
+        $this->test_code_location = new CodeLocation($file_analyzer, $stmt);
     }
 
     public function testDocblockDescription(): void
@@ -29,7 +61,11 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
  */
 ';
         $php_parser_doc = new Doc($doc);
-        $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
+        $function_docblock = FunctionLikeDocblockParser::parse(
+            $php_parser_doc,
+            $this->test_code_location,
+            $this->test_cased_function_id
+        );
 
         $this->assertSame('Some Description', $function_docblock->description);
     }
@@ -49,7 +85,11 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
  */
 ';
         $php_parser_doc = new Doc($doc);
-        $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
+        $function_docblock = FunctionLikeDocblockParser::parse(
+            $php_parser_doc,
+            $this->test_code_location,
+            $this->test_cased_function_id
+        );
 
         $this->assertTrue(isset($function_docblock->params[0]['description']));
         $this->assertSame('The BLI tag to iterate over.', $function_docblock->params[0]['description']);
@@ -67,7 +107,11 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
         $php_parser_doc = new Doc($doc);
         $this->expectException(IncorrectDocblockException::class);
         $this->expectExceptionMessage('Misplaced variable');
-        FunctionLikeDocblockParser::parse($php_parser_doc);
+        FunctionLikeDocblockParser::parse(
+            $php_parser_doc,
+            $this->test_code_location,
+            $this->test_cased_function_id
+        );
     }
 
     public function testPreferPsalmPrefixedAnnotationsOverPhpstanOnes(): void
@@ -78,7 +122,11 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
  */
 ';
         $php_parser_doc = new Doc($doc);
-        $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
+        $function_docblock = FunctionLikeDocblockParser::parse(
+            $php_parser_doc,
+            $this->test_code_location,
+            $this->test_cased_function_id
+        );
         $this->assertSame([['T', 'of', 'string', false]], $function_docblock->templates);
     }
 
@@ -90,7 +138,11 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
  */
 ';
         $php_parser_doc = new Doc($doc, 0);
-        $function_docblock = FunctionLikeDocblockParser::parse($php_parser_doc);
+        $function_docblock = FunctionLikeDocblockParser::parse(
+            $php_parser_doc,
+            $this->test_code_location,
+            $this->test_cased_function_id
+        );
         $this->assertEquals(
             [
                 'psalm-import-type' => ['lines' => [1]],
