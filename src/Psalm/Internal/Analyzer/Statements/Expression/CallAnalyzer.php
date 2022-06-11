@@ -763,7 +763,9 @@ class CallAnalyzer
                             $codebase
                         );
 
-                        if ($union->isSingle() || $union->allLiterals()) {
+                        $arg_var_type = $context->vars_in_scope[$assertion_var_id];
+
+                        if (self::isNewTypeNarrowingDownOldType($arg_var_type, $union)) {
                             foreach ($union->getAtomicTypes() as $atomic_type) {
                                 if ($assertion_type instanceof TTemplateParam
                                     && $assertion_type->as->getId() === $atomic_type->getId()
@@ -1116,5 +1118,25 @@ class CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * This method should detect if the new type narrows down the old type.
+     */
+    private static function isNewTypeNarrowingDownOldType(Union $old_type, Union $new_type): bool
+    {
+        if ($new_type->isSingle()) {
+            return true;
+        }
+
+        if ($old_type->hasMixed() && !$new_type->hasMixed()) {
+            return true;
+        }
+
+        if ($old_type->isSingleAndMaybeNullable() && !$new_type->isNullable()) {
+            return true;
+        }
+
+        return false;
     }
 }
