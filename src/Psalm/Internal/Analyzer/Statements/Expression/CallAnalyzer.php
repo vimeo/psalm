@@ -763,16 +763,11 @@ class CallAnalyzer
                             $codebase
                         );
 
-                        $arg_var_type = $context->vars_in_scope[$assertion_var_id];
-
-                        if (self::isNewTypeNarrowingDownOldType($arg_var_type, $union)) {
-                            foreach ($union->getAtomicTypes() as $atomic_type) {
-                                if ($assertion_type instanceof TTemplateParam
-                                    && $assertion_type->as->getId() === $atomic_type->getId()
-                                ) {
-                                    continue;
-                                }
-
+                        if ($union->isSingle()) {
+                            $atomic_type = $union->getSingleAtomic();
+                            if (!$assertion_type instanceof TTemplateParam
+                                || $assertion_type->as->getId() !== $atomic_type->getId()
+                            ) {
                                 $assertion_rule = clone $assertion_rule;
                                 $assertion_rule->setAtomicType($atomic_type);
                                 $orred_rules[] = $assertion_rule;
@@ -796,6 +791,21 @@ class CallAnalyzer
                                         ),
                                         $statements_analyzer->getSuppressedIssues()
                                     );
+                                }
+                            }
+                        } else if (isset($arg_var_id, $context->vars_in_scope[$arg_var_id])) {
+                            $other_type = $context->vars_in_scope[$arg_var_id];
+                            if (self::isNewTypeNarrowingDownOldType($other_type, $union)) {
+                                foreach($union->getAtomicTypes() as $atomic_type) {
+                                    if ($assertion_type instanceof TTemplateParam
+                                        && $assertion_type->as->getId() === $atomic_type->getId()
+                                    ) {
+                                        continue;
+                                    }
+
+                                    $assertion_rule = clone $assertion_rule;
+                                    $assertion_rule->setAtomicType($atomic_type);
+                                    $orred_rules[] = $assertion_rule;
                                 }
                             }
                         }
@@ -1125,18 +1135,10 @@ class CallAnalyzer
      */
     private static function isNewTypeNarrowingDownOldType(Union $old_type, Union $new_type): bool
     {
-        if ($new_type->isSingle()) {
+        if ($old_type->isMixed() && !$new_type->hasMixed()) {
             return true;
         }
 
-        if ($old_type->hasMixed() && !$new_type->hasMixed()) {
-            return true;
-        }
-
-        if ($old_type->isSingleAndMaybeNullable() && !$new_type->isNullable()) {
-            return true;
-        }
-
-        return false;
+        return $new_type->allLiterals();
     }
 }
