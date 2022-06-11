@@ -1139,6 +1139,6 @@ class CallAnalyzer
             return true;
         }
 
-        return $new_type->allLiterals();
+        return !$old_type->isSingle();
     }
 }
