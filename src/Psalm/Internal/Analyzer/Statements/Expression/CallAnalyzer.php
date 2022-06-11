@@ -793,8 +793,8 @@ class CallAnalyzer
                                     );
                                 }
                             }
-                        } elseif (isset($arg_var_id) && isset($context->vars_in_scope[$arg_var_id])) {
-                            $other_type = $context->vars_in_scope[$arg_var_id];
+                        } elseif (isset($context->vars_in_scope[$assertion_var_id])) {
+                            $other_type = $context->vars_in_scope[$assertion_var_id];
                             if (self::isNewTypeNarrowingDownOldType($other_type, $union)) {
                                 foreach ($union->getAtomicTypes() as $atomic_type) {
                                     if ($assertion_type instanceof TTemplateParam
