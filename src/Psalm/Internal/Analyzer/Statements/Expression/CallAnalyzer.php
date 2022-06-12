@@ -1135,10 +1135,23 @@ class CallAnalyzer
      */
     private static function isNewTypeNarrowingDownOldType(Union $old_type, Union $new_type): bool
     {
+        // non-mixed is always better than mixed
         if ($old_type->isMixed() && !$new_type->hasMixed()) {
             return true;
         }
 
-        return !$old_type->isSingle();
+        // non-nullable is always better than nullable
+        if ($old_type->isNullable() && !$new_type->isNullable()) {
+            return true;
+        }
+
+        // Literals might always replace non-literals (even tho the old type could already contain a literal)
+        if (($old_type->isString() && $new_type->allStringLiterals())
+            || ($old_type->isInt() && $new_type->allIntLiterals())
+            || ($old_type->isFloat() && $new_type->allFloatLiterals())) {
+            return true;
+        }
+
+        return false;
     }
 }
