@@ -2066,6 +2066,9 @@ class AssertAnnotationTest extends TestCase
                      */
                     function assertOneOf($input, array $values): void {}
 
+                    /** @param "a" $value */
+                    function consumeSpecificStringValue(string $value): void {}
+
                     /** @param literal-string $value */
                     function consumeLiteralStringValue(string $value): void {}
 
@@ -2077,6 +2080,9 @@ class AssertAnnotationTest extends TestCase
                     $mixed;
 
                     assertOneOf($string, ["a"]);
+                    consumeSpecificStringValue($string);
+
+                    assertOneOf($string, ["a", "b", "c"]);
                     consumeLiteralStringValue($string);
 
                     assertOneOf($mixed, [1, 2, 3]);
