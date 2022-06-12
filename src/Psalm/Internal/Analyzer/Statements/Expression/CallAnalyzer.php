@@ -764,10 +764,13 @@ class CallAnalyzer
                         );
 
                         if ($union->isSingle()) {
-                            $atomic_type = $union->getSingleAtomic();
-                            if (!$assertion_type instanceof TTemplateParam
-                                || $assertion_type->as->getId() !== $atomic_type->getId()
-                            ) {
+                            foreach ($union->getAtomicTypes() as $atomic_type) {
+                                if ($assertion_type instanceof TTemplateParam
+                                    && $assertion_type->as->getId() === $atomic_type->getId()
+                                ) {
+                                    continue;
+                                }
+
                                 $assertion_rule = clone $assertion_rule;
                                 $assertion_rule->setAtomicType($atomic_type);
                                 $orred_rules[] = $assertion_rule;
