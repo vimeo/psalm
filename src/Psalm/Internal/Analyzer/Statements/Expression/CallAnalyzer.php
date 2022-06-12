@@ -1135,6 +1135,10 @@ class CallAnalyzer
      */
     private static function isNewTypeNarrowingDownOldType(Union $old_type, Union $new_type): bool
     {
+        if ($new_type->isSingle()) {
+            return true;
+        }
+
         // non-mixed is always better than mixed
         if ($old_type->isMixed() && !$new_type->hasMixed()) {
             return true;
@@ -1145,10 +1149,27 @@ class CallAnalyzer
             return true;
         }
 
-        // Literals might always replace non-literals (even tho the old type could already contain a literal)
-        if (($old_type->isString() && $new_type->allStringLiterals())
-            || ($old_type->isInt() && $new_type->allIntLiterals())
-            || ($old_type->isFloat() && $new_type->allFloatLiterals())) {
+        // Do not hassle around with non-single old types if they are not nullable
+        if (!$old_type->isSingle()) {
+            return false;
+        }
+
+        $old_atomic_type = $old_type->getSingleAtomic();
+        foreach ($new_type->getAtomicTypes() as $new_atomic_type) {
+            if ($new_atomic_type->equals($old_atomic_type, false)) {
+                // Old type is one of the new types and thus, the old type must not be modified
+                return false;
+            }
+        }
+
+        // Literals should always replace non-literals
+        if (!$old_type->containsAnyLiteral() &&
+            (
+                ($old_type->isString() && $new_type->allStringLiterals())
+                || ($old_type->isInt() && $new_type->allIntLiterals())
+                || ($old_type->isFloat() && $new_type->allFloatLiterals())
+            )
+        ) {
             return true;
         }
 
