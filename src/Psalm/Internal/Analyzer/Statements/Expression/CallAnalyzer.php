@@ -795,8 +795,9 @@ class CallAnalyzer
                             }
                         } elseif (isset($context->vars_in_scope[$assertion_var_id])) {
                             $other_type = $context->vars_in_scope[$assertion_var_id];
-                            if (self::isNewTypeNarrowingDownOldType($other_type, $union)) {
-                                $union = self::createUnionIntersectionFromOldType($union, $other_type);
+                            $union = self::createUnionIntersectionFromOldType($union, $other_type);
+
+                            if ($union !== null) {
                                 foreach ($union->getAtomicTypes() as $atomic_type) {
                                     if ($assertion_type instanceof TTemplateParam
                                         && $assertion_type->as->getId() === $atomic_type->getId()
@@ -1180,8 +1181,12 @@ class CallAnalyzer
      * If another assertion takes place to determine if the value is either "a", "c" or "d", we can kick "d" as that
      * won't be possible.
      */
-    private static function createUnionIntersectionFromOldType(Union $new_type, Union $old_type): Union
+    private static function createUnionIntersectionFromOldType(Union $new_type, Union $old_type): ?Union
     {
+        if (!self::isNewTypeNarrowingDownOldType($old_type, $new_type)) {
+            return null;
+        }
+
         if (!$new_type->allLiterals() || !$old_type->allLiterals()) {
             return $new_type;
         }
@@ -1196,6 +1201,10 @@ class CallAnalyzer
 
                 $equal_atomic_types[] = $new_atomic_type;
             }
+        }
+
+        if ($equal_atomic_types === []) {
+            return null;
         }
 
         return new Union($equal_atomic_types);
