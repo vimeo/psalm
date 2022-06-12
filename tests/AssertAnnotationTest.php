@@ -90,7 +90,6 @@ class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-
     /**
      * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
@@ -2082,6 +2081,9 @@ class AssertAnnotationTest extends TestCase
                     /** @var string $anotherString */
                     $anotherString;
 
+                    /** @var null|string $nullableString */
+                    $nullableString;
+
                     /** @var mixed $maybeInt */
                     $maybeInt;
                     /** @var mixed $maybeFloat */
@@ -2093,11 +2095,22 @@ class AssertAnnotationTest extends TestCase
                     assertOneOf($anotherString, ["a", "b", "c"]);
                     consumeLiteralStringValue($anotherString);
 
+                    assertOneOf($nullableString, ["a", "b", "c"]);
+                    assertOneOf($nullableString, ["a", "c"]);
+
                     assertOneOf($maybeInt, [1, 2, 3]);
                     consumeAnyIntegerValue($maybeInt);
 
                     assertOneOf($maybeFloat, [1.5, 2.5, 3.5]);
                     consumeAnyFloatValue($maybeFloat);
+
+                    /** @var "a"|"b"|"c" $abc */
+                    $abc;
+
+                    /** @param "a"|"b" $aOrB */
+                    function consumeAOrB(string $aOrB): void {}
+                    assertOneOf($abc, ["a", "b"]);
+                    consumeAOrB($abc);
                 '
             ],
         ];

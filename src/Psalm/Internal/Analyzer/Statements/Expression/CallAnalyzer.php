@@ -796,6 +796,7 @@ class CallAnalyzer
                         } elseif (isset($context->vars_in_scope[$assertion_var_id])) {
                             $other_type = $context->vars_in_scope[$assertion_var_id];
                             if (self::isNewTypeNarrowingDownOldType($other_type, $union)) {
+                                $union = self::createUnionIntersectionFromOldType($union, $other_type);
                                 foreach ($union->getAtomicTypes() as $atomic_type) {
                                     if ($assertion_type instanceof TTemplateParam
                                         && $assertion_type->as->getId() === $atomic_type->getId()
@@ -1154,25 +1155,49 @@ class CallAnalyzer
             return false;
         }
 
-        $old_atomic_type = $old_type->getSingleAtomic();
-        foreach ($new_type->getAtomicTypes() as $new_atomic_type) {
-            if ($new_atomic_type->equals($old_atomic_type, false)) {
-                // Old type is one of the new types and thus, the old type must not be modified
-                return false;
-            }
+        // Do not hassle around with single literals as they supposed to be more accurate than any new type assertion
+        if ($old_type->isSingleFloatLiteral()
+            || $old_type->isSingleIntLiteral()
+            || $old_type->isSingleStringLiteral()
+        ) {
+            return false;
         }
 
         // Literals should always replace non-literals
-        if (!$old_type->containsAnyLiteral() &&
-            (
-                ($old_type->isString() && $new_type->allStringLiterals())
-                || ($old_type->isInt() && $new_type->allIntLiterals())
-                || ($old_type->isFloat() && $new_type->allFloatLiterals())
-            )
+        if (($old_type->isString() && $new_type->allStringLiterals())
+            || ($old_type->isInt() && $new_type->allIntLiterals())
+            || ($old_type->isFloat() && $new_type->allFloatLiterals())
         ) {
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * This method should kick all literals within `new_type` which are not part of the already known `old_type`.
+     * So lets say we already know that the old type is one of "a", "b" or "c".
+     * If another assertion takes place to determine if the value is either "a", "c" or "d", we can kick "d" as that
+     * won't be possible.
+     */
+    private static function createUnionIntersectionFromOldType(Union $new_type, Union $old_type): Union
+    {
+        if (!$new_type->allLiterals() || !$old_type->allLiterals()) {
+            return $new_type;
+        }
+
+        $equal_atomic_types = [];
+
+        foreach ($new_type->getAtomicTypes() as $new_atomic_type) {
+            foreach ($old_type->getAtomicTypes() as $old_atomic_type) {
+                if (!$new_atomic_type->equals($old_atomic_type, false)) {
+                    continue;
+                }
+
+                $equal_atomic_types[] = $new_atomic_type;
+            }
+        }
+
+        return new Union($equal_atomic_types);
     }
 }
