@@ -2074,19 +2074,30 @@ class AssertAnnotationTest extends TestCase
 
                     function consumeAnyIntegerValue(int $value): void {}
 
+                    function consumeAnyFloatValue(float $value): void {}
+
                     /** @var string $string */
                     $string;
-                    /** @var mixed $mixed */
-                    $mixed;
+
+                    /** @var string $anotherString */
+                    $anotherString;
+
+                    /** @var mixed $maybeInt */
+                    $maybeInt;
+                    /** @var mixed $maybeFloat */
+                    $maybeFloat;
 
                     assertOneOf($string, ["a"]);
                     consumeSpecificStringValue($string);
 
-                    assertOneOf($string, ["a", "b", "c"]);
-                    consumeLiteralStringValue($string);
+                    assertOneOf($anotherString, ["a", "b", "c"]);
+                    consumeLiteralStringValue($anotherString);
 
-                    assertOneOf($mixed, [1, 2, 3]);
-                    consumeAnyIntegerValue($mixed);
+                    assertOneOf($maybeInt, [1, 2, 3]);
+                    consumeAnyIntegerValue($maybeInt);
+
+                    assertOneOf($maybeFloat, [1.5, 2.5, 3.5]);
+                    consumeAnyFloatValue($maybeFloat);
                 '
             ],
         ];
