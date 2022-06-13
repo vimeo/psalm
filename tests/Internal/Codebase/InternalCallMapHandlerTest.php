@@ -68,8 +68,8 @@ class InternalCallMapHandlerTest extends TestCase
             if (strpos($function, '::') !== false) {
                 continue;
             }
-            // Skip alternate signatures
-            if (preg_match("/\'\d$/", $function)) {
+            // Skip functions with alternate signatures
+            if (isset($callMap["$function\'1"]) || preg_match("/\'\d$/", $function)) {
                 continue;
             }
             if ($this->skipUndefinedFunctions && !function_exists($function)) {
@@ -181,10 +181,26 @@ class InternalCallMapHandlerTest extends TestCase
     {
         // Trim leading namespace separator
         $specified = ltrim($specified, "\\");
-        if ($reflected->getName() === 'array' && preg_match('/^array<.*>$/', $specified)) {
+        if ($reflected->getName() === 'array' && preg_match('/^(array|list)<.*>$/', $specified)) {
             return;
         }
         if ($reflected->getName() === 'float' && $specified === 'int|float') {
+            return;
+        }
+        if ($reflected->getName() === 'bool' && in_array($specified, ['true', 'false'])) {
+            return;
+        }
+        if ($reflected->getName() === 'callable' && preg_match('/^callable\(/', $specified)) {
+            return;
+        }
+
+        if ($reflected->getName() === 'string' && $specified === '?string' && $reflected->allowsNull()) {
+            return;
+        }
+        if ($reflected->getName() === 'string' && in_array($specified , ['class-string', 'numeric-string', 'string'])) {
+            return;
+        }
+        if ($reflected->getName() === 'int' && in_array($specified , ['positive-int', 'int'])) {
             return;
         }
 
@@ -193,6 +209,6 @@ class InternalCallMapHandlerTest extends TestCase
             return;
         }
 
-        $this->assertSame($reflected->getName(), $specified, $message);
+        $this->assertEqualsIgnoringCase($reflected->getName(), $specified, $message);
     }
 }
