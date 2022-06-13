@@ -969,6 +969,10 @@ return [
       'old' => ['string', 'num'=>'float|int', 'decimals='=>'int'],
       'new' => ['string', 'num'=>'float|int', 'decimals='=>'int', 'decimal_separator='=>'string', 'thousands_separator='=>'string'],
     ],
+    'ob_implicit_flush' => [
+      'old' => ['void', 'enable='=>'int'],
+      'new' => ['void', 'enable='=>'bool'],
+    ],
     'openssl_csr_export' => [
       'old' => ['bool', 'csr'=>'string|resource', '&w_output'=>'string', 'no_text='=>'bool'],
       'new' => ['bool', 'csr'=>'OpenSSLCertificateSigningRequest|string', '&w_output'=>'string', 'no_text='=>'bool'],
