@@ -1795,7 +1795,7 @@ class ArgumentsAnalyzer
                     }
 
                     TemplateStandinTypeReplacer::replace(
-                        $param->type,
+                        clone $param->type,
                         $template_result,
                         $codebase,
                         $statements_analyzer,
