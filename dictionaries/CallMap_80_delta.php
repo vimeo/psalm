@@ -16,8 +16,8 @@
  */
 return [
   'added' => [
-    'DateTime::createFromInterface' => ['self', 'object'=>'DateTimeInterface'],
-    'DateTimeImmutable::createFromInterface' => ['self', 'object'=>'DateTimeInterface'],
+    'DateTime::createFromInterface' => ['static', 'object'=>'DateTimeInterface'],
+    'DateTimeImmutable::createFromInterface' => ['static', 'object'=>'DateTimeInterface'],
     'PhpToken::getTokenName' => ['string'],
     'PhpToken::is' => ['bool', 'kind'=>'string|int|string[]|int[]'],
     'PhpToken::isIgnorable' => ['bool'],
