@@ -20,7 +20,8 @@ class InternalCallMapHandlerTest extends TestCase
         'ctype_digit', 'ctype_lower', 'ctype_alnum', 'ctype_alpha', 'ctype_cntrl',
         'ctype_graph', 'ctype_lower', 'ctype_print', 'ctype_punct', 'ctype_space', 'ctype_upper',
         'ctype_xdigit', 'file_put_contents', 'sodium_crypto_generichash', 'sodium_crypto_generichash_final',
-        'dom_import_simplexml', 'imagegd', 'imagegd2', 'pg_exec', 'mysqli_execute', 'array_multisort'
+        'dom_import_simplexml', 'imagegd', 'imagegd2', 'pg_exec', 'mysqli_execute', 'array_multisort',
+
     ];
 
     /**
