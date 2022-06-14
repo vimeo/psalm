@@ -22,11 +22,7 @@ class InternalCallMapHandlerTest extends TestCase
         'ctype_xdigit', 'file_put_contents', 'sodium_crypto_generichash', 'sodium_crypto_generichash_final',
         'dom_import_simplexml', 'imagegd', 'imagegd2', 'pg_exec', 'mysqli_execute', 'array_multisort'
     ];
-    /**
-     * Ideally these should all be false, we have them here to reduce noise while we improve the tests or the callmap.
-     * @var bool whether to skip functions that are not currently defined in the PHP environment
-     */
-    private $skipUndefinedFunctions = true;
+
     /**
      *
      * @var bool whether to skip params for which no definition can be found in the callMap
@@ -80,9 +76,6 @@ class InternalCallMapHandlerTest extends TestCase
 //             }
             // Skip functions with alternate signatures
             if (isset($callMap["$function'1"]) || preg_match("/\'\d$/", $function)) {
-                continue;
-            }
-            if ($this->skipUndefinedFunctions && !function_exists($function)) {
                 continue;
             }
             yield "$function: " . json_encode($entry) => [$function, $entry];
