@@ -183,8 +183,11 @@ class InternalCallMapHandlerTest extends TestCase
      */
     public function callMapEntryProvider(): iterable
     {
-
-        $project_analyzer = new ProjectAnalyzer(
+        /**
+         * This call is needed since InternalCallMapHandler uses the singleton that is initialized by it.
+         * @psalm-suppress all
+         **/
+        new ProjectAnalyzer(
             new TestConfig(),
             new Providers(
                 new FakeFileProvider(),
@@ -226,6 +229,10 @@ class InternalCallMapHandlerTest extends TestCase
         $this->assertEntryIsCorrect($callMapEntry, $functionName);
     }
 
+    /**
+     *
+     * @param array<string, array> $callMapEntry
+     */
     private function assertEntryIsCorrect(array $callMapEntry, string $functionName): void
     {
         $rF = new ReflectionFunction($functionName);
