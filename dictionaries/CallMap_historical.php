@@ -13897,7 +13897,7 @@ return [
     'nsapi_virtual' => ['bool', 'uri'=>'string'],
     'nthmac' => ['string', 'clent'=>'string', 'data'=>'string'],
     'number_format' => ['string', 'num'=>'float|int', 'decimals='=>'int'],
-    'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'string', 'thousands_separator'=>'string'],
+    'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'?string', 'thousands_separator'=>'?string'],
     'numfmt_create' => ['NumberFormatter|false', 'locale'=>'string', 'style'=>'int', 'pattern='=>'string'],
     'numfmt_format' => ['string|false', 'formatter'=>'NumberFormatter', 'num'=>'int|float', 'type='=>'int'],
     'numfmt_format_currency' => ['string|false', 'formatter'=>'NumberFormatter', 'amount'=>'float', 'currency'=>'string'],
