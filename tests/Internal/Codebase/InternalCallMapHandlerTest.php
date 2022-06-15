@@ -9,15 +9,26 @@ use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Type\TypeParser;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
 use ReflectionFunction;
-use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionType;
+use Throwable;
+
+use function count;
+use function explode;
+use function function_exists;
+use function implode;
+use function in_array;
+use function json_encode;
+use function preg_match;
+use function print_r;
+use function strncmp;
+use function strpos;
+use function substr;
 
 class InternalCallMapHandlerTest extends TestCase
 {
@@ -147,7 +158,6 @@ class InternalCallMapHandlerTest extends TestCase
     public static function tearDownAfterClass(): void
     {
         self::$codebase = null;
-
     }
 
     /**
@@ -182,7 +192,7 @@ class InternalCallMapHandlerTest extends TestCase
             )
         );
         $callMap = InternalCallMapHandler::getCallMap();
-        foreach($callMap as $function => $entry) {
+        foreach ($callMap as $function => $entry) {
             // Skip class methods
             if (strpos($function, '::') !== false || !function_exists($function)) {
                 continue;
@@ -194,13 +204,10 @@ class InternalCallMapHandlerTest extends TestCase
             // if ($function != 'fprintf') continue;
             yield "$function: " . json_encode($entry) => [$function, $entry];
         }
-
-
     }
 
     /**
      * This function will test functions that are in the callmap AND currently defined
-     * @return void
      * @coversNothing
      * @depends testGetcallmapReturnsAValidCallmap
      * @dataProvider callMapEntryProvider
@@ -217,7 +224,6 @@ class InternalCallMapHandlerTest extends TestCase
             $this->markTestSkipped("Function $functionName has ignored prefix");
         }
         $this->assertEntryIsCorrect($callMapEntry, $functionName);
-
     }
 
     private function assertEntryIsCorrect(array $callMapEntry, string $functionName): void
@@ -233,7 +239,7 @@ class InternalCallMapHandlerTest extends TestCase
          */
         $normalizedEntries = [];
 
-        foreach($callMapEntry as $key => $entry) {
+        foreach ($callMapEntry as $key => $entry) {
             $normalizedKey = $key;
             $normalizedEntry = [
                 'variadic' => false,
@@ -270,9 +276,8 @@ class InternalCallMapHandlerTest extends TestCase
 
             $normalizedEntry['name'] = $normalizedKey;
             $normalizedEntries[$normalizedKey] = $normalizedEntry;
-
         }
-        foreach($rF->getParameters() as $parameter) {
+        foreach ($rF->getParameters() as $parameter) {
             if ($this->skipUndefinedParams && !isset($normalizedEntries[$parameter->getName()])) {
                 continue;
             } else {
@@ -280,7 +285,6 @@ class InternalCallMapHandlerTest extends TestCase
             }
             $this->assertParameter($normalizedEntries[$parameter->getName()], $parameter, $functionName);
         }
-
     }
 
     /**
@@ -292,10 +296,10 @@ class InternalCallMapHandlerTest extends TestCase
         $name = $param->getName();
         // $identifier = "Param $functionName - $name";
         try {
-        $this->assertSame($param->isOptional(), $normalizedEntry['optional'], "Expected param '{$name}' to " . ($param->isOptional() ? "be" : "not be") . " optional");
-        $this->assertSame($param->isVariadic(), $normalizedEntry['variadic'], "Expected param '{$name}' to " . ($param->isVariadic() ? "be" : "not be") . " variadic");
-        $this->assertSame($param->isPassedByReference(), $normalizedEntry['byRef'], "Expected param '{$name}' to " . ($param->isPassedByReference() ? "be" : "not be") . " by reference");
-        } catch(\Throwable $t) {
+            $this->assertSame($param->isOptional(), $normalizedEntry['optional'], "Expected param '{$name}' to " . ($param->isOptional() ? "be" : "not be") . " optional");
+            $this->assertSame($param->isVariadic(), $normalizedEntry['variadic'], "Expected param '{$name}' to " . ($param->isVariadic() ? "be" : "not be") . " variadic");
+            $this->assertSame($param->isPassedByReference(), $normalizedEntry['byRef'], "Expected param '{$name}' to " . ($param->isPassedByReference() ? "be" : "not be") . " by reference");
+        } catch (Throwable $t) {
             $this->markTestSkipped("Exception: " . $t->getMessage());
         }
 
@@ -304,8 +308,6 @@ class InternalCallMapHandlerTest extends TestCase
         if (isset($expectedType)) {
             $this->assertTypeValidity($expectedType, $normalizedEntry['type'], "Param '{$name}' has incorrect type");
         }
-
-
     }
 
     /**
