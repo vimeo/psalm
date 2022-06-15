@@ -73,7 +73,7 @@ class InternalCallMapHandlerTest extends TestCase
         'array_key_exists',
         'sapi_windows_cp_get',
         'stream_select',
-
+        'hash_hmac_file'
 
 
     ];
