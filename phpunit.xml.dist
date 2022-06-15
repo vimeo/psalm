@@ -8,7 +8,7 @@
          beStrictAboutTestsThatDoNotTestAnything="false"
          beStrictAboutTodoAnnotatedTests="true"
          colors="true"
-         verbose="true"
+         verbose="false"
          executionOrder="random"
 >
     <coverage processUncoveredFiles="true">
