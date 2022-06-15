@@ -4,11 +4,15 @@ namespace Psalm\Tests\Internal\Codebase;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
+use Psalm\Type;
 use ReflectionFunction;
 use ReflectionNamedType;
 use ReflectionParameter;
@@ -21,6 +25,9 @@ class InternalCallMapHandlerTest extends TestCase
         'ctype_graph', 'ctype_lower', 'ctype_print', 'ctype_punct', 'ctype_space', 'ctype_upper',
         'ctype_xdigit', 'file_put_contents', 'sodium_crypto_generichash', 'sodium_crypto_generichash_final',
         'dom_import_simplexml', 'imagegd', 'imagegd2', 'pg_exec', 'mysqli_execute', 'array_multisort',
+        'memcache_add_server', 'memcache_cas', 'memcache_pconnect', 'memcache_connect', 'memcache_delete',
+        'memcache_replace', 'memcache_append', 'memcache_increment', 'memcache_set_failure_callback', 'memcache_decrement',
+        'memcache_set_server_params', 'memcache_get_server_status', 'memcache_prepend', 'memcache_flush'
 
     ];
 
@@ -192,6 +199,13 @@ class InternalCallMapHandlerTest extends TestCase
      */
     private function assertTypeValidity(ReflectionNamedType $reflected, string $specified, string $message): void
     {
+        $expectedType = Reflection::getPsalmTypeFromReflectionType($reflected);
+        $parsedType = Type::parseString($specified);
+
+        if (UnionTypeComparator::isContainedByInPhp($parsedType, $expectedType)) {
+            return;
+        }
+
         // In case reflection returns mixed we assume any type specified in the callmap is more specific and correct
         if ($reflected->getName() === 'mixed') {
             return;
