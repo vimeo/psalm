@@ -969,6 +969,10 @@ return [
       'old' => ['string', 'num'=>'float|int', 'decimals='=>'int'],
       'new' => ['string', 'num'=>'float|int', 'decimals='=>'int', 'decimal_separator='=>'string', 'thousands_separator='=>'string'],
     ],
+    'ob_implicit_flush' => [
+      'old' => ['void', 'enable='=>'int'],
+      'new' => ['void', 'enable='=>'bool'],
+    ],
     'openssl_csr_export' => [
       'old' => ['bool', 'csr'=>'string|resource', '&w_output'=>'string', 'no_text='=>'bool'],
       'new' => ['bool', 'csr'=>'OpenSSLCertificateSigningRequest|string', '&w_output'=>'string', 'no_text='=>'bool'],
@@ -1599,7 +1603,6 @@ return [
     ],
   ],
   'removed' => [
-    'fgetss' => ['string|false', 'fp'=>'resource', 'length='=>'int', 'allowable_tags='=>'string'],
     'PDOStatement::setFetchMode\'1' => ['bool', 'fetch_column'=>'int', 'colno'=>'int'],
     'PDOStatement::setFetchMode\'2' => ['bool', 'fetch_class'=>'int', 'classname'=>'string', 'ctorargs'=>'array'],
     'PDOStatement::setFetchMode\'3' => ['bool', 'fetch_into'=>'int', 'object'=>'object'],
