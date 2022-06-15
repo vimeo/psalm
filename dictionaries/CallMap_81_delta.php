@@ -37,6 +37,7 @@ return [
     'Fiber::getCurrent' => ['?self'],
     'Fiber::suspend' => ['mixed', 'value='=>'null|mixed'],
     'FiberError::__construct' => ['void'],
+    'ReflectionClass::isEnum' => ['bool'],
     'ReflectionEnum::getBackingType' => ['?ReflectionType'],
     'ReflectionEnum::getCase' => ['ReflectionEnumUnitCase', 'name' => 'string'],
     'ReflectionEnum::getCases' => ['list<ReflectionEnumUnitCase>'],
@@ -46,6 +47,7 @@ return [
     'ReflectionEnumUnitCase::getValue' => ['UnitEnum'],
     'ReflectionEnumBackedCase::getBackingValue' => ['string|int'],
     'ReflectionFunctionAbstract::isStatic' => ['bool'],
+    'ReflectionObject::isEnum' => ['bool'],
   ],
 
   'changed' => [
