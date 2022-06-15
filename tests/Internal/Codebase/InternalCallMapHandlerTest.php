@@ -21,6 +21,9 @@ use ReflectionType;
 
 class InternalCallMapHandlerTest extends TestCase
 {
+    /**
+     * @var string[]
+     */
     private static $ignoredFunctions = [
         'sprintf', 'printf', 'ctype_print', 'date_sunrise' /** deprecated in 8.1 */,
         'file_put_contents',
@@ -61,6 +64,9 @@ class InternalCallMapHandlerTest extends TestCase
 
     ];
 
+    /**
+     * @var string[]
+     */
     private static $ignoredPrefixes = [
         'apcu_',
         'bc',
@@ -112,6 +118,10 @@ class InternalCallMapHandlerTest extends TestCase
      */
     private $skipUndefinedParams = false;
 
+    /**
+     *
+     * @var Codebase
+     */
     private static $codebase;
 
 
