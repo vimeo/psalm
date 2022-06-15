@@ -967,7 +967,7 @@ return [
     ],
     'number_format' => [
       'old' => ['string', 'num'=>'float|int', 'decimals='=>'int'],
-      'new' => ['string', 'num'=>'float|int', 'decimals='=>'int', 'decimal_separator='=>'string', 'thousands_separator='=>'string'],
+      'new' => ['string', 'num'=>'float|int', 'decimals='=>'int', 'decimal_separator='=>'?string', 'thousands_separator='=>'?string'],
     ],
     'ob_implicit_flush' => [
       'old' => ['void', 'enable='=>'int'],
@@ -1615,7 +1615,7 @@ return [
     'image2wbmp' => ['bool', 'im'=>'resource', 'filename='=>'?string', 'threshold='=>'int'],
     'jpeg2wbmp' => ['bool', 'jpegname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
     'ldap_sort' => ['bool', 'link_identifier'=>'resource', 'result_identifier'=>'resource', 'sortfilter'=>'string'],
-    'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'string', 'thousands_separator'=>'string'],
+    'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'?string', 'thousands_separator'=>'?string'],
     'png2wbmp' => ['bool', 'pngname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
     'read_exif_data' => ['array', 'filename'=>'string', 'sections_needed='=>'string', 'sub_arrays='=>'bool', 'read_thumbnail='=>'bool'],
     'SimpleXMLIterator::rewind' => ['void'],
