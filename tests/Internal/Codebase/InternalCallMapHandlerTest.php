@@ -113,7 +113,7 @@ class InternalCallMapHandlerTest extends TestCase
     private $skipUndefinedParams = false;
 
     private static $codebase;
-    private static $callMap;
+
 
 
 
