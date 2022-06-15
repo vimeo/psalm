@@ -179,13 +179,12 @@ class InternalCallMapHandlerTest extends TestCase
 
     /**
      *
-     * @return iterable<string, list>
+     * @return iterable<string, array{0: string, 1: array<int|string>}>
      */
     public function callMapEntryProvider(): iterable
     {
         /**
          * This call is needed since InternalCallMapHandler uses the singleton that is initialized by it.
-         * @psalm-suppress all
          **/
         new ProjectAnalyzer(
             new TestConfig(),
@@ -214,9 +213,11 @@ class InternalCallMapHandlerTest extends TestCase
      * @coversNothing
      * @depends testGetcallmapReturnsAValidCallmap
      * @dataProvider callMapEntryProvider
+     * @param array $callMapEntry
      */
     public function testCallMapCompliesWithReflection(string $functionName, array $callMapEntry): void
     {
+        /** @psalm-assert callable-string $functionName */
         if (!function_exists($functionName)) {
             $this->markTestSkipped("Function $functionName does not exist");
         }
@@ -226,28 +227,33 @@ class InternalCallMapHandlerTest extends TestCase
         if (preg_match(self::$prefixRegex, $functionName)) {
             $this->markTestSkipped("Function $functionName has ignored prefix");
         }
+
+        unset($callMapEntry[0]);
+        /** @var array<string, string> $callMapEntry */
         $this->assertEntryIsCorrect($callMapEntry, $functionName);
     }
 
     /**
      *
-     * @param array<string, array> $callMapEntry
+     * @param array<string, string> $callMapEntryWithoutReturn
+     * @psalm-param callable-string $functionName
      */
-    private function assertEntryIsCorrect(array $callMapEntry, string $functionName): void
+    private function assertEntryIsCorrect(array $callMapEntryWithoutReturn, string $functionName): void
     {
         $rF = new ReflectionFunction($functionName);
 
-        // For now, ignore return types.
-        unset($callMapEntry[0]);
-
         /**
          * Parse the parameter names from the map.
-         * @var array<string, array{byRef: bool, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string}
+         * @var array<string, array{byRef: bool, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string}>
          */
         $normalizedEntries = [];
 
-        foreach ($callMapEntry as $key => $entry) {
+        foreach ($callMapEntryWithoutReturn as $key => $entry) {
             $normalizedKey = $key;
+            /**
+             *
+             * @var array{byRef: bool, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string} $normalizedEntry
+             */
             $normalizedEntry = [
                 'variadic' => false,
                 'byRef' => false,
@@ -290,7 +296,7 @@ class InternalCallMapHandlerTest extends TestCase
             } else {
                 $this->assertArrayHasKey($parameter->getName(), $normalizedEntries, "Callmap is missing entry for param {$parameter->getName()} in $functionName: " . print_r($normalizedEntries, true));
             }
-            $this->assertParameter($normalizedEntries[$parameter->getName()], $parameter, $functionName);
+            $this->assertParameter($normalizedEntries[$parameter->getName()], $parameter);
         }
     }
 
@@ -298,7 +304,7 @@ class InternalCallMapHandlerTest extends TestCase
      *
      * @param array{byRef: bool, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string} $normalizedEntry
      */
-    private function assertParameter(array $normalizedEntry, ReflectionParameter $param, string $functionName): void
+    private function assertParameter(array $normalizedEntry, ReflectionParameter $param): void
     {
         $name = $param->getName();
         // $identifier = "Param $functionName - $name";
