@@ -15,7 +15,7 @@ use ReflectionParameter;
 
 class InternalCallMapHandlerTest extends TestCase
 {
-    private array $ignoredFunctions = [
+    private $ignoredFunctions = [
         'sprintf', 'printf', 'ctype_print', 'date_sunrise' /** deprecated in 8.1 */,
         'ctype_digit', 'ctype_lower', 'ctype_alnum', 'ctype_alpha', 'ctype_cntrl',
         'ctype_graph', 'ctype_lower', 'ctype_print', 'ctype_punct', 'ctype_space', 'ctype_upper',
@@ -28,7 +28,7 @@ class InternalCallMapHandlerTest extends TestCase
      *
      * @var bool whether to skip params for which no definition can be found in the callMap
      */
-    private $skipUndefinedParams = true;
+    private $skipUndefinedParams = false;
 
     /**
      * These are items that very likely need updating to PHP8.1
@@ -69,12 +69,12 @@ class InternalCallMapHandlerTest extends TestCase
 
         foreach($callMap as $function => $entry) {
             // Skip class methods
-            if (strpos($function, '::') !== false) {
+            if (strpos($function, '::') !== false || !function_exists($function)) {
                 continue;
             }
-//             if (!str_starts_with($function, 'array_')) {
-// continue;
-//             }
+            if (!str_starts_with($function, 'memcache_')) {
+                continue;
+            }
             // Skip functions with alternate signatures
             if (isset($callMap["$function'1"]) || preg_match("/\'\d$/", $function)) {
                 continue;
@@ -148,6 +148,8 @@ class InternalCallMapHandlerTest extends TestCase
         foreach($rF->getParameters() as $parameter) {
             if ($this->skipUndefinedParams && !isset($normalizedEntries[$parameter->getName()])) {
                 continue;
+            } else {
+                $this->assertArrayHasKey($parameter->getName(), $normalizedEntries);
             }
             $this->assertParameter($normalizedEntries[$parameter->getName()], $parameter, $functionName);
         }
