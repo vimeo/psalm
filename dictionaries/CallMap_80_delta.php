@@ -1599,6 +1599,7 @@ return [
     ],
   ],
   'removed' => [
+    'fgetss' => ['string|false', 'fp'=>'resource', 'length='=>'int', 'allowable_tags='=>'string'],
     'PDOStatement::setFetchMode\'1' => ['bool', 'fetch_column'=>'int', 'colno'=>'int'],
     'PDOStatement::setFetchMode\'2' => ['bool', 'fetch_class'=>'int', 'classname'=>'string', 'ctorargs'=>'array'],
     'PDOStatement::setFetchMode\'3' => ['bool', 'fetch_into'=>'int', 'object'=>'object'],
