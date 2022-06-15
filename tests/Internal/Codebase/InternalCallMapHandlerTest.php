@@ -60,6 +60,9 @@ class InternalCallMapHandlerTest extends TestCase
         'get_parent_class',
         'filter_var',
         'array_key_exists',
+        'sapi_windows_cp_get',
+        'stream_select',
+
 
 
     ];
@@ -164,6 +167,10 @@ class InternalCallMapHandlerTest extends TestCase
         }
     }
 
+    /**
+     *
+     * @return iterable<string, list>
+     */
     public function callMapEntryProvider(): iterable
     {
 
