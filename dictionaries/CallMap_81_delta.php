@@ -46,7 +46,14 @@ return [
     'ReflectionEnumUnitCase::getValue' => ['UnitEnum'],
     'ReflectionEnumBackedCase::getBackingValue' => ['string|int'],
     'ReflectionFunctionAbstract::isStatic' => ['bool'],
+    'imagefilter\'1' => ['bool', 'image' => 'GdImage', 'filter' => '2', 'args' => 'int<-255,255>'],
+    'imagefilter\'2' => ['bool', 'image' => 'GdImage', 'filter' => '3|10', 'args' => 'int'],
+    'imagefilter\'3' => ['bool', 'image' => 'GdImage', 'filter' => '4', 'args' => 'int<0,255>', 'args2' => 'int<0,255>', 'args3' => 'int<0,255>', 'args4' => 'int<0,127>'],
+    'imagefilter\'4' => ['bool', 'image' => 'GdImage', 'filter' => '11', 'args' => 'int', 'args2=' => 'bool'],
+    'imagefilter\'5' => ['bool', 'image' => 'GdImage', 'filter' => '12', 'args' => 'int', 'args2=' => 'int', 'args3=' => 'array'],
+
   ],
+
 
   'changed' => [
     'finfo_buffer' => [
