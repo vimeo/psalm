@@ -191,7 +191,7 @@ class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testDifferingNumericTypesAdditionInStrictMode(): void
+    public function testDifferingNumericLiteralTypesAdditionInStrictMode(): void
     {
         $config = Config::getInstance();
         $config->strict_binary_operands = true;
@@ -200,6 +200,25 @@ class BinaryOperationTest extends TestCase
             'somefile.php',
             '<?php
                     $a = 5 + 4.1;'
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDifferingNumericTypesAdditionInStrictMode(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @var float */
+                $b = 4.1;
+                $a = 5 + $b;'
         );
 
         $this->expectException(CodeException::class);
@@ -851,6 +870,12 @@ class BinaryOperationTest extends TestCase
                         }
                         return 1;
                     }',
+            ],
+            'calculateLiteralResultForFloats' => [
+                'code' => '<?php
+                    $foo = 1.0 + 2.0;
+                ',
+                'assertions' => ['$foo===' => 'float(3)'],
             ],
         ];
     }

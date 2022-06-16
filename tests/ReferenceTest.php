@@ -407,6 +407,33 @@ class ReferenceTest extends TestCase
                 ',
                 'error_message' => 'ReferenceReusedFromConfusingScope',
             ],
+            'unsupportedReferenceUsageWithReferenceToArrayOffsetOfArrayOffset' => [
+                'code' => '<?php
+                    /** @var array<string, string> */
+                    $arr = [];
+
+                    /** @var non-empty-list<string> */
+                    $foo = ["foo"];
+
+                    $bar = &$arr[$foo[0]];
+                ',
+                'error_message' => 'UnsupportedReferenceUsage',
+            ],
+            'unsupportedReferenceUsageContinuesAnalysis' => [
+                'code' => '<?php
+                    /** @var array<string, string> */
+                    $arr = [];
+
+                    /** @var non-empty-list<string> */
+                    $foo = ["foo"];
+
+                    /** @psalm-suppress UnsupportedReferenceUsage */
+                    $bar = &$arr[$foo[0]];
+
+                    /** @psalm-trace $bar */;
+                ',
+                'error_message' => ' - $bar: string',
+            ],
         ];
     }
 }

@@ -104,6 +104,16 @@ class TestCase extends BaseTestCase
     }
 
     /**
+     * @param string $file_path
+     * @param string $contents
+     */
+    public function addStubFile($file_path, $contents): void
+    {
+        $this->file_provider->registerFile($file_path, $contents);
+        $this->project_analyzer->getConfig()->addStubFile($file_path);
+    }
+
+    /**
      * @param  string         $file_path
      *
      */

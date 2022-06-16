@@ -50,6 +50,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UnrecognizedExpression;
+use Psalm\Issue\UnsupportedReferenceUsage;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
@@ -174,26 +175,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
-            $assignment_type = AssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->var,
-                $stmt->expr,
-                null,
-                $context,
-                $stmt->getDocComment(),
-                [],
-                !$from_stmt ? $stmt : null
-            );
-
-            if ($assignment_type === false) {
-                return false;
-            }
-
-            if (!$from_stmt) {
-                $statements_analyzer->node_data->setType($stmt, $assignment_type);
-            }
-
-            return true;
+            return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignOp) {
@@ -372,7 +354,20 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
-            return AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context);
+            if (!AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context)) {
+                IssueBuffer::maybeAdd(
+                    new UnsupportedReferenceUsage(
+                        "This reference cannot be analyzed by Psalm",
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
+                // Analyze as if it were a normal assignent and just pretend the reference doesn't exist
+                return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
+            }
+
+            return true;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ErrorSuppress) {
@@ -529,5 +524,36 @@ class ExpressionAnalyzer
     public static function isMock(string $fq_class_name): bool
     {
         return in_array(strtolower($fq_class_name), Config::getInstance()->getMockClasses(), true);
+    }
+
+    /**
+     * @param PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignRef $stmt
+     */
+    private static function analyzeAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        Context $context,
+        bool $from_stmt
+    ): bool {
+        $assignment_type = AssignmentAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt->var,
+            $stmt->expr,
+            null,
+            $context,
+            $stmt->getDocComment(),
+            [],
+            !$from_stmt ? $stmt : null
+        );
+
+        if ($assignment_type === false) {
+            return false;
+        }
+
+        if (!$from_stmt) {
+            $statements_analyzer->node_data->setType($stmt, $assignment_type);
+        }
+
+        return true;
     }
 }

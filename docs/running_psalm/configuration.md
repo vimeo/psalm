@@ -405,6 +405,28 @@ Allows you to hard-code a serializer for Psalm to use when caching data. By defa
 ```
 Allows you to hard-code the number of threads Psalm will use (similar to `--threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--threads` or `--debug` (which sets threads to 1) on the command line
 
+#### maxStringLength
+```xml
+<psalm
+  maxStringLength="1000"
+>
+```
+This setting controls the maximum length of literal strings that will be transformed into a literal string type during Psalm analysis.  
+Strings longer than this value (by default 1000 bytes) will be transformed in a generic `non-empty-string` type, instead.  
+
+Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.  
+
+#### maxShapedArraySize
+```xml
+<psalm
+  maxShapedArraySize="100"
+>
+```
+This setting controls the maximum size of shaped arrays that will be transformed into a shaped `array{key1: "value", key2: T}` type during Psalm analysis.  
+Arrays bigger than this value (100 by default) will be transformed in a generic `non-empty-array` type, instead.  
+
+Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.  
+
 ## Project settings
 
 #### &lt;projectFiles&gt;

@@ -27,7 +27,7 @@ Psalm has a few different ways to represent arrays in its type system:
 
 ## Generic arrays
 
-Psalm uses a syntax [borrowed from Java](https://en.wikipedia.org/wiki/Generics_in_Java) that allows you denote the types of both keys *and* values:
+Psalm uses a syntax [borrowed from Java](https://en.wikipedia.org/wiki/Generics_in_Java) that allows you to denote the types of both keys *and* values:
 ```php
 /** @return array<TKey, TValue> */
 ```

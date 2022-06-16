@@ -1085,18 +1085,30 @@ class CallAnalyzer
                     } else {
                         foreach ($lower_bounds as $lower_bound) {
                             if ($lower_bound->equality_bound_classlike === null) {
-                                if (!in_array($lower_bound->type->getId(), $equality_types, true)) {
-                                    IssueBuffer::maybeAdd(
-                                        new InvalidArgument(
-                                            'Incompatible types found for ' . $template_name . ' (' .
-                                            $lower_bound->type->getId() . ' is not in ' .
-                                            implode(', ', $equality_types) . ')',
-                                            $code_location,
-                                            $function_id
-                                        ),
-                                        $statements_analyzer->getSuppressedIssues()
-                                    );
+                                foreach ($bounds_with_equality as $bound_with_equality) {
+                                    if (UnionTypeComparator::isContainedBy(
+                                        $statements_analyzer->getCodebase(),
+                                        $lower_bound->type,
+                                        $bound_with_equality->type
+                                    ) && UnionTypeComparator::isContainedBy(
+                                        $statements_analyzer->getCodebase(),
+                                        $bound_with_equality->type,
+                                        $lower_bound->type
+                                    )) {
+                                        continue 2;
+                                    }
                                 }
+
+                                IssueBuffer::maybeAdd(
+                                    new InvalidArgument(
+                                        'Incompatible types found for ' . $template_name . ' (' .
+                                        $lower_bound->type->getId() . ' is not in ' .
+                                        implode(', ', $equality_types) . ')',
+                                        $code_location,
+                                        $function_id
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                );
                             }
                         }
                     }

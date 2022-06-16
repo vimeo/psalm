@@ -9,6 +9,8 @@ use UnexpectedValueException;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
+use function igbinary_serialize;
+use function igbinary_unserialize;
 use function is_array;
 use function is_readable;
 use function mkdir;
@@ -83,7 +85,11 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+        if ($this->config->use_igbinary) {
+            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+        } else {
+            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+        }
 
         if (!is_array($reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -109,7 +115,11 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+        if ($this->config->use_igbinary) {
+            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+        } else {
+            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+        }
 
         if (!is_array($reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -135,7 +145,11 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+        if ($this->config->use_igbinary) {
+            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+        } else {
+            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+        }
 
         if (!is_array($reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -155,13 +169,17 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_CLASS_REFERENCE_CACHE_NAME;
+        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_CLASS_REFERENCE_CACHE_NAME;
 
-        if (!is_readable($cache_location)) {
+        if (!is_readable($reference_cache_location)) {
             return null;
         }
 
-        $reference_cache = unserialize((string) file_get_contents($cache_location));
+        if ($this->config->use_igbinary) {
+            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+        } else {
+            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+        }
 
         if (!is_array($reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -187,7 +205,12 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $class_member_reference_cache = unserialize((string) file_get_contents($class_member_cache_location));
+        $class_member_reference_cache = (string) file_get_contents($class_member_cache_location);
+        if ($this->config->use_igbinary) {
+            $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
+        } else {
+            $class_member_reference_cache = unserialize($class_member_reference_cache);
+        }
 
         if (!is_array($class_member_reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -214,7 +237,12 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $method_dependencies_cache = unserialize((string) file_get_contents($method_dependencies_cache_location));
+        $method_dependencies_cache = (string) file_get_contents($method_dependencies_cache_location);
+        if ($this->config->use_igbinary) {
+            $method_dependencies_cache = igbinary_unserialize($method_dependencies_cache);
+        } else {
+            $method_dependencies_cache = unserialize($method_dependencies_cache);
+        }
 
         if (!is_array($method_dependencies_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -240,7 +268,12 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $class_member_reference_cache = unserialize((string) file_get_contents($class_member_cache_location));
+        $class_member_reference_cache = (string) file_get_contents($class_member_cache_location);
+        if ($this->config->use_igbinary) {
+            $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
+        } else {
+            $class_member_reference_cache = unserialize($class_member_reference_cache);
+        }
 
         if (!is_array($class_member_reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -266,7 +299,12 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $class_member_reference_cache = unserialize((string) file_get_contents($class_member_cache_location));
+        $class_member_reference_cache = (string) file_get_contents($class_member_cache_location);
+        if ($this->config->use_igbinary) {
+            $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
+        } else {
+            $class_member_reference_cache = unserialize($class_member_reference_cache);
+        }
 
         if (!is_array($class_member_reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -292,7 +330,12 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $class_member_reference_cache = unserialize((string) file_get_contents($class_member_cache_location));
+        $class_member_reference_cache = (string) file_get_contents($class_member_cache_location);
+        if ($this->config->use_igbinary) {
+            $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
+        } else {
+            $class_member_reference_cache = unserialize($class_member_reference_cache);
+        }
 
         if (!is_array($class_member_reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -318,7 +361,12 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $file_class_member_reference_cache = unserialize((string) file_get_contents($file_class_member_cache_location));
+        $file_class_member_reference_cache = (string) file_get_contents($file_class_member_cache_location);
+        if ($this->config->use_igbinary) {
+            $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
+        } else {
+            $file_class_member_reference_cache = unserialize($file_class_member_reference_cache);
+        }
 
         if (!is_array($file_class_member_reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -346,7 +394,12 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $file_class_member_reference_cache = unserialize((string) file_get_contents($file_class_member_cache_location));
+        $file_class_member_reference_cache = (string) file_get_contents($file_class_member_cache_location);
+        if ($this->config->use_igbinary) {
+            $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
+        } else {
+            $file_class_member_reference_cache = unserialize($file_class_member_reference_cache);
+        }
 
         if (!is_array($file_class_member_reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -374,7 +427,12 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $file_class_member_reference_cache = unserialize((string) file_get_contents($file_class_member_cache_location));
+        $file_class_member_reference_cache = (string) file_get_contents($file_class_member_cache_location);
+        if ($this->config->use_igbinary) {
+            $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
+        } else {
+            $file_class_member_reference_cache = unserialize($file_class_member_reference_cache);
+        }
 
         if (!is_array($file_class_member_reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -401,7 +459,12 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $file_class_member_reference_cache = unserialize((string) file_get_contents($file_class_member_cache_location));
+        $file_class_member_reference_cache = (string) file_get_contents($file_class_member_cache_location);
+        if ($this->config->use_igbinary) {
+            $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
+        } else {
+            $file_class_member_reference_cache = unserialize($file_class_member_reference_cache);
+        }
 
         if (!is_array($file_class_member_reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -421,19 +484,23 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
+        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
 
-        if (!is_readable($cache_location)) {
+        if (!is_readable($reference_cache_location)) {
             return null;
         }
 
-        $cache = unserialize((string) file_get_contents($cache_location));
+        if ($this->config->use_igbinary) {
+            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+        } else {
+            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+        }
 
-        if (!is_array($cache)) {
+        if (!is_array($reference_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
         }
 
-        return $cache;
+        return $reference_cache;
     }
 
     /**
@@ -447,19 +514,23 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
+        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
 
-        if (!is_readable($cache_location)) {
+        if (!is_readable($reference_cache_location)) {
             return null;
         }
 
-        $cache = unserialize((string) file_get_contents($cache_location));
+        if ($this->config->use_igbinary) {
+            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+        } else {
+            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+        }
 
-        if (!is_array($cache)) {
+        if (!is_array($reference_cache)) {
             throw new UnexpectedValueException('The method param use cache must be an array');
         }
 
-        return $cache;
+        return $reference_cache;
     }
 
     /**
@@ -479,7 +550,11 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $issues_cache = unserialize((string) file_get_contents($issues_cache_location));
+        if ($this->config->use_igbinary) {
+            $issues_cache = igbinary_unserialize((string) file_get_contents($issues_cache_location));
+        } else {
+            $issues_cache = unserialize((string) file_get_contents($issues_cache_location));
+        }
 
         if (!is_array($issues_cache)) {
             throw new UnexpectedValueException('The reference cache must be an array');
@@ -498,7 +573,11 @@ class FileReferenceCacheProvider
 
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
-        file_put_contents($reference_cache_location, serialize($file_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($reference_cache_location, igbinary_serialize($file_references));
+        } else {
+            file_put_contents($reference_cache_location, serialize($file_references));
+        }
     }
 
     public function setCachedClassLikeFiles(array $file_references): void
@@ -511,7 +590,11 @@ class FileReferenceCacheProvider
 
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASSLIKE_FILE_CACHE_NAME;
 
-        file_put_contents($reference_cache_location, serialize($file_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($reference_cache_location, igbinary_serialize($file_references));
+        } else {
+            file_put_contents($reference_cache_location, serialize($file_references));
+        }
     }
 
     public function setCachedNonMethodClassReferences(array $file_class_references): void
@@ -524,7 +607,11 @@ class FileReferenceCacheProvider
 
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::NONMETHOD_CLASS_REFERENCE_CACHE_NAME;
 
-        file_put_contents($reference_cache_location, serialize($file_class_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($reference_cache_location, igbinary_serialize($file_class_references));
+        } else {
+            file_put_contents($reference_cache_location, serialize($file_class_references));
+        }
     }
 
     public function setCachedMethodClassReferences(array $method_class_references): void
@@ -537,7 +624,11 @@ class FileReferenceCacheProvider
 
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_CLASS_REFERENCE_CACHE_NAME;
 
-        file_put_contents($reference_cache_location, serialize($method_class_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($reference_cache_location, igbinary_serialize($method_class_references));
+        } else {
+            file_put_contents($reference_cache_location, serialize($method_class_references));
+        }
     }
 
     public function setCachedMethodMemberReferences(array $member_references): void
@@ -550,7 +641,11 @@ class FileReferenceCacheProvider
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
 
-        file_put_contents($member_cache_location, serialize($member_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+        } else {
+            file_put_contents($member_cache_location, serialize($member_references));
+        }
     }
 
     public function setCachedMethodDependencies(array $member_references): void
@@ -563,7 +658,11 @@ class FileReferenceCacheProvider
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_DEPENDENCIES_CACHE_NAME;
 
-        file_put_contents($member_cache_location, serialize($member_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+        } else {
+            file_put_contents($member_cache_location, serialize($member_references));
+        }
     }
 
     public function setCachedMethodPropertyReferences(array $property_references): void
@@ -576,7 +675,11 @@ class FileReferenceCacheProvider
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_PROPERTY_CACHE_NAME;
 
-        file_put_contents($member_cache_location, serialize($property_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($member_cache_location, igbinary_serialize($property_references));
+        } else {
+            file_put_contents($member_cache_location, serialize($property_references));
+        }
     }
 
     public function setCachedMethodMethodReturnReferences(array $method_return_references): void
@@ -589,7 +692,11 @@ class FileReferenceCacheProvider
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_RETURN_CACHE_NAME;
 
-        file_put_contents($member_cache_location, serialize($method_return_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($member_cache_location, igbinary_serialize($method_return_references));
+        } else {
+            file_put_contents($member_cache_location, serialize($method_return_references));
+        }
     }
 
     public function setCachedMethodMissingMemberReferences(array $member_references): void
@@ -602,7 +709,11 @@ class FileReferenceCacheProvider
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_MISSING_MEMBER_CACHE_NAME;
 
-        file_put_contents($member_cache_location, serialize($member_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+        } else {
+            file_put_contents($member_cache_location, serialize($member_references));
+        }
     }
 
     public function setCachedFileMemberReferences(array $member_references): void
@@ -615,7 +726,11 @@ class FileReferenceCacheProvider
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_MEMBER_CACHE_NAME;
 
-        file_put_contents($member_cache_location, serialize($member_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+        } else {
+            file_put_contents($member_cache_location, serialize($member_references));
+        }
     }
 
     public function setCachedFilePropertyReferences(array $property_references): void
@@ -628,7 +743,11 @@ class FileReferenceCacheProvider
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_PROPERTY_CACHE_NAME;
 
-        file_put_contents($member_cache_location, serialize($property_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($member_cache_location, igbinary_serialize($property_references));
+        } else {
+            file_put_contents($member_cache_location, serialize($property_references));
+        }
     }
 
     public function setCachedFileMethodReturnReferences(array $method_return_references): void
@@ -641,7 +760,11 @@ class FileReferenceCacheProvider
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_METHOD_RETURN_CACHE_NAME;
 
-        file_put_contents($member_cache_location, serialize($method_return_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($member_cache_location, igbinary_serialize($method_return_references));
+        } else {
+            file_put_contents($member_cache_location, serialize($method_return_references));
+        }
     }
 
     public function setCachedFileMissingMemberReferences(array $member_references): void
@@ -654,7 +777,11 @@ class FileReferenceCacheProvider
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MISSING_MEMBER_CACHE_NAME;
 
-        file_put_contents($member_cache_location, serialize($member_references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+        } else {
+            file_put_contents($member_cache_location, serialize($member_references));
+        }
     }
 
     public function setCachedMixedMemberNameReferences(array $references): void
@@ -665,9 +792,13 @@ class FileReferenceCacheProvider
             return;
         }
 
-        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
+        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
 
-        file_put_contents($cache_location, serialize($references));
+        if ($this->config->use_igbinary) {
+            file_put_contents($reference_cache_location, igbinary_serialize($references));
+        } else {
+            file_put_contents($reference_cache_location, serialize($references));
+        }
     }
 
     public function setCachedMethodParamUses(array $uses): void
@@ -678,9 +809,13 @@ class FileReferenceCacheProvider
             return;
         }
 
-        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
+        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
 
-        file_put_contents($cache_location, serialize($uses));
+        if ($this->config->use_igbinary) {
+            file_put_contents($reference_cache_location, igbinary_serialize($uses));
+        } else {
+            file_put_contents($reference_cache_location, serialize($uses));
+        }
     }
 
     public function setCachedIssues(array $issues): void
@@ -693,7 +828,11 @@ class FileReferenceCacheProvider
 
         $issues_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ISSUES_CACHE_NAME;
 
-        file_put_contents($issues_cache_location, serialize($issues));
+        if ($this->config->use_igbinary) {
+            file_put_contents($issues_cache_location, igbinary_serialize($issues));
+        } else {
+            file_put_contents($issues_cache_location, serialize($issues));
+        }
     }
 
     /**
@@ -708,8 +847,13 @@ class FileReferenceCacheProvider
         if ($cache_directory
             && file_exists($analyzed_methods_cache_location)
         ) {
-            /** @var array<string, array<string, int>> */
-            return unserialize(file_get_contents($analyzed_methods_cache_location));
+            if ($this->config->use_igbinary) {
+                /** @var array<string, array<string, int>> */
+                return igbinary_unserialize(file_get_contents($analyzed_methods_cache_location));
+            } else {
+                /** @var array<string, array<string, int>> */
+                return unserialize(file_get_contents($analyzed_methods_cache_location));
+            }
         }
 
         return false;
@@ -727,10 +871,11 @@ class FileReferenceCacheProvider
                 . DIRECTORY_SEPARATOR
                 . self::ANALYZED_METHODS_CACHE_NAME;
 
-            file_put_contents(
-                $analyzed_methods_cache_location,
-                serialize($analyzed_methods)
-            );
+            if ($this->config->use_igbinary) {
+                file_put_contents($analyzed_methods_cache_location, igbinary_serialize($analyzed_methods));
+            } else {
+                file_put_contents($analyzed_methods_cache_location, serialize($analyzed_methods));
+            }
         }
     }
 
@@ -746,10 +891,17 @@ class FileReferenceCacheProvider
         if ($cache_directory
             && file_exists($file_maps_cache_location)
         ) {
-            /**
-             * @var array<string, FileMapType>
-             */
-            $file_maps_cache = unserialize(file_get_contents($file_maps_cache_location));
+            if ($this->config->use_igbinary) {
+                /**
+                 * @var array<string, FileMapType>
+                 */
+                $file_maps_cache = igbinary_unserialize(file_get_contents($file_maps_cache_location));
+            } else {
+                /**
+                 * @var array<string, FileMapType>
+                 */
+                $file_maps_cache = unserialize(file_get_contents($file_maps_cache_location));
+            }
 
             return $file_maps_cache;
         }
@@ -767,10 +919,11 @@ class FileReferenceCacheProvider
         if ($cache_directory) {
             $file_maps_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MAPS_CACHE_NAME;
 
-            file_put_contents(
-                $file_maps_cache_location,
-                serialize($file_maps)
-            );
+            if ($this->config->use_igbinary) {
+                file_put_contents($file_maps_cache_location, igbinary_serialize($file_maps));
+            } else {
+                file_put_contents($file_maps_cache_location, serialize($file_maps));
+            }
         }
     }
 
@@ -786,8 +939,13 @@ class FileReferenceCacheProvider
         if ($cache_directory
             && file_exists($type_coverage_cache_location)
         ) {
-            /** @var array<string, array{int, int}> */
-            $type_coverage_cache = unserialize(file_get_contents($type_coverage_cache_location));
+            if ($this->config->use_igbinary) {
+                /** @var array<string, array{int, int}> */
+                $type_coverage_cache = igbinary_unserialize(file_get_contents($type_coverage_cache_location));
+            } else {
+                /** @var array<string, array{int, int}> */
+                $type_coverage_cache = unserialize(file_get_contents($type_coverage_cache_location));
+            }
 
             return $type_coverage_cache;
         }
@@ -805,10 +963,11 @@ class FileReferenceCacheProvider
         if ($cache_directory) {
             $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
 
-            file_put_contents(
-                $type_coverage_cache_location,
-                serialize($mixed_counts)
-            );
+            if ($this->config->use_igbinary) {
+                file_put_contents($type_coverage_cache_location, igbinary_serialize($mixed_counts));
+            } else {
+                file_put_contents($type_coverage_cache_location, serialize($mixed_counts));
+            }
         }
     }
 

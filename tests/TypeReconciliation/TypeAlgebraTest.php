@@ -1202,6 +1202,18 @@ class TypeAlgebraTest extends TestCase
                         if ($foo === null) {}
                     }'
             ],
+            'ternaryAssertionOnBool' => [
+                'code' => '<?php
+                    function test(string|object $s, bool $b) : string {
+                        if (!$b || is_string($s)) {
+                            return $b ? $s : "";
+                        }
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ]
         ];
     }
 

@@ -646,13 +646,17 @@ class SimpleTypeInferer
             return false;
         }
 
+        $config = $codebase->config;
+
         $array_creation_info->all_list = $array_creation_info->all_list && $item_is_list_item;
 
         if ($item->key instanceof PhpParser\Node\Scalar\String_
             || $item->key instanceof PhpParser\Node\Scalar\LNumber
             || !$item->key
         ) {
-            if ($item_key_value !== null && count($array_creation_info->property_types) <= 50) {
+            if ($item_key_value !== null
+                && count($array_creation_info->property_types) <= $config->max_shaped_array_size
+            ) {
                 $array_creation_info->property_types[$item_key_value] = $single_item_value_type;
             } else {
                 $array_creation_info->can_create_objectlike = false;
@@ -666,7 +670,7 @@ class SimpleTypeInferer
 
             if (count($dim_type->getAtomicTypes()) > 1
                 || $dim_type->hasMixed()
-                || count($array_creation_info->property_types) > 50
+                || count($array_creation_info->property_types) > $config->max_shaped_array_size
             ) {
                 $array_creation_info->can_create_objectlike = false;
             } else {

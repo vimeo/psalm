@@ -74,17 +74,13 @@ class DocumentationTest extends TestCase
      */
     private const WALL_OF_SHAME = [
         '@psalm-assert-untainted',
-        '@psalm-consistent-constructor',
         '@psalm-flow',
-        '@psalm-ignore-variable-method',
-        '@psalm-ignore-variable-property',
+        '@psalm-generator-return',
         '@psalm-override-method-visibility',
         '@psalm-override-property-visibility',
         '@psalm-scope-this',
         '@psalm-seal-methods',
         '@psalm-stub-override',
-        '@psalm-taint-unescape',
-        '@psalm-yield',
     ];
 
     /** @var ProjectAnalyzer */

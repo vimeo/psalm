@@ -399,7 +399,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $class_context,
             $storage,
             $class->attrGroups,
-            1,
+            AttributesAnalyzer::TARGET_CLASS,
             $storage->suppressed_issues + $this->getSuppressedIssues()
         );
 
@@ -1521,7 +1521,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $context,
             $property_storage,
             $stmt->attrGroups,
-            8,
+            AttributesAnalyzer::TARGET_PROPERTY,
             $property_storage->suppressed_issues + $this->getSuppressedIssues()
         );
 

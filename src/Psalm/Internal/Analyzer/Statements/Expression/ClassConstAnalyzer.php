@@ -712,7 +712,6 @@ class ClassConstAnalyzer
                             "{$class_storage->name}::{$const->name->name}"
                         ),
                         $const_storage->suppressed_issues,
-                        true
                     );
                 }
             }

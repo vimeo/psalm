@@ -1029,10 +1029,6 @@ final class Psalm
             $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
         }
 
-        if (isset($options['update-baseline'])) {
-            $issue_baseline = self::updateBaseline($options, $config);
-        }
-
         if (isset($options['use-baseline'])) {
             if (!is_string($options['use-baseline'])) {
                 fwrite(STDERR, '--use-baseline must be a string' . PHP_EOL);
@@ -1040,8 +1036,13 @@ final class Psalm
             }
 
             $baseline_file_path = $options['use-baseline'];
+            $config->error_baseline = $baseline_file_path;
         } else {
             $baseline_file_path = $config->error_baseline;
+        }
+
+        if (isset($options['update-baseline'])) {
+            $issue_baseline = self::updateBaseline($options, $config);
         }
 
         if (!$issue_baseline && $baseline_file_path && !isset($options['ignore-baseline'])) {

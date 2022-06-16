@@ -101,7 +101,7 @@ interface ArrayAccess {
      * Offset to set
      * @link http://php.net/manual/en/arrayaccess.offsetset.php
      *
-     * @param TKey $offset The offset to assign the value to.
+     * @param TKey|null $offset The offset to assign the value to.
      * @param TValue $value The value to set.
      * @return void
      *

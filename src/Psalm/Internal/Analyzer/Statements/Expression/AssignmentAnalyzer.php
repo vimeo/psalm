@@ -5,7 +5,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\PropertyFetch;
-use PhpParser\Node\Expr\Variable;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
@@ -82,10 +81,8 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
-use RuntimeException;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_merge;
 use function count;
 use function in_array;
@@ -778,24 +775,11 @@ class AssignmentAnalyzer
     ): void {
         $parent_nodes = $type->parent_nodes;
 
-        $unspecialized_parent_nodes = array_filter(
-            $parent_nodes,
-            static fn($parent_node): bool => !$parent_node->specialization_key
-        );
+        $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
+        $data_flow_graph->addNode($new_parent_node);
+        $new_parent_nodes = [$new_parent_node->id => $new_parent_node];
 
-        $specialized_parent_nodes = array_filter(
-            $parent_nodes,
-            static fn($parent_node): bool => (bool) $parent_node->specialization_key
-        );
-
-        $new_parent_nodes = [];
-
-        foreach ($specialized_parent_nodes as $parent_node) {
-            $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
-            $new_parent_node->specialization_key = $parent_node->specialization_key;
-
-            $data_flow_graph->addNode($new_parent_node);
-            $new_parent_nodes += [$new_parent_node->id => $new_parent_node];
+        foreach ($parent_nodes as $parent_node) {
             $data_flow_graph->addPath(
                 $parent_node,
                 $new_parent_node,
@@ -803,22 +787,6 @@ class AssignmentAnalyzer
                 $added_taints,
                 $removed_taints
             );
-        }
-
-        if ($unspecialized_parent_nodes) {
-            $new_parent_node = DataFlowNode::getForAssignment($var_id, $var_location);
-            $data_flow_graph->addNode($new_parent_node);
-            $new_parent_nodes += [$new_parent_node->id => $new_parent_node];
-
-            foreach ($unspecialized_parent_nodes as $parent_node) {
-                $data_flow_graph->addPath(
-                    $parent_node,
-                    $new_parent_node,
-                    '=',
-                    $added_taints,
-                    $removed_taints
-                );
-            }
         }
 
         $type->parent_nodes = $new_parent_nodes;
@@ -947,11 +915,7 @@ class AssignmentAnalyzer
 
         if (isset($context->references_in_scope[$lhs_var_id])) {
             // Decrement old referenced variable's reference count
-            $reference_count = &$context->referenced_counts[$context->references_in_scope[$lhs_var_id]];
-            if ($reference_count < 1) {
-                throw new RuntimeException("Incorrect referenced count found");
-            }
-            --$reference_count;
+            $context->decrementReferenceCount($lhs_var_id);
 
             // Remove old reference parent node so previously referenced variable usage doesn't count as reference usage
             $old_type = $context->vars_in_scope[$lhs_var_id];
@@ -981,44 +945,20 @@ class AssignmentAnalyzer
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-        $statements_analyzer->registerVariableAssignment(
-            $lhs_var_id,
-            $lhs_location
-        );
+        if (!$stmt->var instanceof ArrayDimFetch && !$stmt->var instanceof PropertyFetch) {
+            // If left-hand-side is an array offset or object property, usage is too difficult to track,
+            // so it's not registered as an unused variable (this mirrors behavior for non-references).
+            $statements_analyzer->registerVariableAssignment(
+                $lhs_var_id,
+                $lhs_location
+            );
+        }
 
         $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
 
         $context->vars_in_scope[$lhs_var_id]->parent_nodes[$lhs_node->id] = $lhs_node;
 
-        if ($statements_analyzer->data_flow_graph !== null
-            && ($stmt->var instanceof ArrayDimFetch || $stmt->var instanceof PropertyFetch)
-            && $stmt->var->var instanceof Variable
-            && is_string($stmt->var->var->name)
-        ) {
-            // If left-hand-side is an array offset or object property, add an edge to the root
-            // variable, so if the root variable is used, the offset/property is also marked as used.
-            $root_var_id = "$" . $stmt->var->var->name;
-            foreach ($context->vars_in_scope[$root_var_id]->parent_nodes as $root_parent) {
-                $statements_analyzer->data_flow_graph->addPath(
-                    $lhs_node,
-                    $root_parent,
-                    $stmt->var instanceof ArrayDimFetch
-                        ? "offset-assignment-as-reference"
-                        : "property-assignment-as-reference"
-                );
-            }
-
-            if ($root_var_id === '$this') {
-                // Variables on `$this` are always used
-                $statements_analyzer->data_flow_graph->addPath(
-                    $lhs_node,
-                    new DataFlowNode('variable-use', 'variable use', null),
-                    'variable-use',
-                );
-            }
-        }
-
-        if ($stmt->var instanceof ArrayDimFetch) {
+        if ($stmt->var instanceof ArrayDimFetch && $stmt->var->dim !== null) {
             // Analyze offset so that variables in the offset get marked as used
             $was_inside_general_use = $context->inside_general_use;
             $context->inside_general_use = true;

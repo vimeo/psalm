@@ -69,7 +69,7 @@ class TraitAnalyzer extends ClassLikeAnalyzer
             $context,
             $storage,
             $stmt->attrGroups,
-            1,
+            AttributesAnalyzer::TARGET_CLASS,
             $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues()
         );
     }

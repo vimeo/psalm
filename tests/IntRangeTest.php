@@ -834,6 +834,17 @@ class IntRangeTest extends TestCase
                     foo(...[$a, $b]);
                 ',
             ],
+            'minMaxInNamespace' => [
+                'code' => '<?php
+                    namespace Foo {
+                        /**
+                         * @param int<0, max> $_a
+                         * @param int<min, 0> $_b
+                         */
+                        function bar(int $_a, int $_b): void {}
+                    }
+                ',
+            ]
         ];
     }
 
@@ -884,6 +895,66 @@ class IntRangeTest extends TestCase
                         assert($a < 4);
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'maxSpecifiedAsFirst' => [
+                'code' => '<?php
+                    /**
+                     * @param int<max, 0> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'minSpecifiedAsSecond' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, min> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'unknownConstant' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, FOO> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'floatAsABoundary' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 5.5> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'stringAsABoundary' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, "bar"> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'minGreaterThanMax' => [
+                'code' => '<?php
+                    /**
+                     * @param int<4, 3> $a
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
