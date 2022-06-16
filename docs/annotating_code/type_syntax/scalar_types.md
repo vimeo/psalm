@@ -14,6 +14,10 @@ The type `scalar` is the supertype of all scalar types.
 
 `positive-int` allows only positive integers
 
+### non-negative-int
+
+`non-negative-int` allows only positive integers non negative
+
 ### numeric
 
 `numeric` is a supertype of `int` or `float` and [`numeric-string`](#numeric-string).
