@@ -25,6 +25,7 @@ use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\UnserializeFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\ClassConstantIssue;
@@ -1504,9 +1505,11 @@ class Config
             }
         }
 
-        new HtmlFunctionTainter();
-
+        // `class_exists` triggers class autoloader
+        class_exists(HtmlFunctionTainter::class);
+        class_exists(UnserializeFunctionTainter::class);
         $socket->registerHooksFromClass(HtmlFunctionTainter::class);
+        $socket->registerHooksFromClass(UnserializeFunctionTainter::class);
     }
 
     private function loadPlugin(ProjectAnalyzer $projectAnalyzer, string $pluginClassName): PluginInterface
