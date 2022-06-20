@@ -639,6 +639,10 @@ return [
       'old' => ['bool', 'ldap'=>'resource', 'callback'=>'?callable'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'callback'=>'?callable'],
     ],
+    'ldap_unbind' => [
+      'old' => ['bool', 'ldap'=>'resource'],
+      'new' => ['bool', 'ldap'=>'LDAP\Connection'],
+    ],
     'mysqli::connect' => [
       'old' => ['null|false', 'hostname='=>'string|null', 'username='=>'string|null', 'password='=>'string|null', 'database='=>'string|null', 'port='=>'int|null', 'socket='=>'string|null'],
       'new' => ['bool', 'hostname='=>'string|null', 'username='=>'string|null', 'password='=>'string|null', 'database='=>'string|null', 'port='=>'int|null', 'socket='=>'string|null'],

@@ -6829,7 +6829,7 @@ return [
 'ldap_set_rebind_proc' => ['bool', 'ldap'=>'LDAP\Connection', 'callback'=>'?callable'],
 'ldap_start_tls' => ['bool', 'ldap'=>'resource'],
 'ldap_t61_to_8859' => ['string', 'value'=>'string'],
-'ldap_unbind' => ['bool', 'ldap'=>'resource'],
+'ldap_unbind' => ['bool', 'ldap'=>'LDAP\Connection'],
 'leak' => ['', 'num_bytes'=>'int'],
 'leak_variable' => ['', 'variable'=>'', 'leak_data'=>'bool'],
 'legendObj::convertToString' => ['string'],
