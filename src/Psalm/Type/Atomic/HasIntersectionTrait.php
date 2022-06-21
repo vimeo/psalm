@@ -98,7 +98,7 @@ trait HasIntersectionTrait
         $this->extra_types = $new_types;
     }
 
-    public function __clone()
+    private function cloneIntersection(): void
     {
         if ($this->extra_types) {
             foreach ($this->extra_types as &$type) {

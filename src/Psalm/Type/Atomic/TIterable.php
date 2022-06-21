@@ -16,9 +16,7 @@ use function substr;
  */
 final class TIterable extends Atomic
 {
-    use HasIntersectionTrait {
-        HasIntersectionTrait::__clone as private cloneIntersection;
-    }
+    use HasIntersectionTrait;
     use GenericTrait;
 
     /**

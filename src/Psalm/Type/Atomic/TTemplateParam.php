@@ -15,9 +15,7 @@ use function implode;
  */
 final class TTemplateParam extends Atomic
 {
-    use HasIntersectionTrait {
-        HasIntersectionTrait::__clone as private cloneIntersection;
-    }
+    use HasIntersectionTrait;
 
     /**
      * @var string

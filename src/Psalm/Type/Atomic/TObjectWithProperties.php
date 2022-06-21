@@ -22,9 +22,7 @@ use function implode;
  */
 final class TObjectWithProperties extends TObject
 {
-    use HasIntersectionTrait {
-        HasIntersectionTrait::__clone as private cloneIntersection;
-    }
+    use HasIntersectionTrait;
 
     /**
      * @var array<string|int, Union>
