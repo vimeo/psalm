@@ -15,7 +15,9 @@ use function implode;
  */
 final class TTemplateParam extends Atomic
 {
-    use HasIntersectionTrait;
+    use HasIntersectionTrait {
+        HasIntersectionTrait::__clone as private cloneIntersection;
+    }
 
     /**
      * @var string
@@ -37,6 +39,12 @@ final class TTemplateParam extends Atomic
         $this->param_name = $param_name;
         $this->as = $extends;
         $this->defining_class = $defining_class;
+    }
+
+    public function __clone()
+    {
+        $this->cloneIntersection();
+        $this->as = clone $this->as;
     }
 
     public function getKey(bool $include_extra = true): string

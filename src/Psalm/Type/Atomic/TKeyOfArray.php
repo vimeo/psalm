@@ -21,6 +21,11 @@ final class TKeyOfArray extends TArrayKey
         $this->type = $type;
     }
 
+    public function __clone()
+    {
+        $this->type = clone $this->type;
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         return 'key-of<' . $this->type . '>';

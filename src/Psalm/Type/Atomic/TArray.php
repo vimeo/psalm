@@ -35,6 +35,12 @@ class TArray extends Atomic
         $this->type_params = $type_params;
     }
 
+    public function __clone()
+    {
+        $this->type_params[0] = clone $this->type_params[0];
+        $this->type_params[1] = clone $this->type_params[1];
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         return 'array';

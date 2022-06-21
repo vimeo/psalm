@@ -16,7 +16,9 @@ use function substr;
  */
 final class TIterable extends Atomic
 {
-    use HasIntersectionTrait;
+    use HasIntersectionTrait {
+        HasIntersectionTrait::__clone as private cloneIntersection;
+    }
     use GenericTrait;
 
     /**
@@ -45,6 +47,13 @@ final class TIterable extends Atomic
         } else {
             $this->type_params = [Type::getMixed(), Type::getMixed()];
         }
+    }
+
+    public function __clone()
+    {
+        $this->cloneIntersection();
+        $this->type_params[0] = clone $this->type_params[0];
+        $this->type_params[1] = clone $this->type_params[1];
     }
 
     public function getKey(bool $include_extra = true): string

@@ -44,4 +44,11 @@ final class AttributeStorage
         $this->location = $location;
         $this->name_location = $name_location;
     }
+
+    public function __clone()
+    {
+        foreach ($this->args as &$arg) {
+            $arg = clone $arg;
+        }
+    }
 }

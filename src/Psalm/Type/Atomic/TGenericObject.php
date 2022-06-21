@@ -40,6 +40,13 @@ final class TGenericObject extends TNamedObject
         $this->type_params = $type_params;
     }
 
+    public function __clone()
+    {
+        foreach ($this->type_params as &$union) {
+            $union = clone $union;
+        }
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         $s = '';

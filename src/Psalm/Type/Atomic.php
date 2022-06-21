@@ -555,25 +555,6 @@ abstract class Atomic implements TypeNode
         return $this->getId();
     }
 
-    public function __clone()
-    {
-        if ($this instanceof TNamedObject
-            || $this instanceof TTemplateParam
-            || $this instanceof TIterable
-            || $this instanceof TObjectWithProperties
-        ) {
-            if ($this->extra_types) {
-                foreach ($this->extra_types as &$type) {
-                    $type = clone $type;
-                }
-            }
-        }
-
-        if ($this instanceof TTemplateParam) {
-            $this->as = clone $this->as;
-        }
-    }
-
     /**
      * This is the true identifier for the type. It defaults to self::getKey() but can be overrided to be more precise
      */

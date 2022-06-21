@@ -22,7 +22,9 @@ use function implode;
  */
 final class TObjectWithProperties extends TObject
 {
-    use HasIntersectionTrait;
+    use HasIntersectionTrait {
+        HasIntersectionTrait::__clone as private cloneIntersection;
+    }
 
     /**
      * @var array<string|int, Union>
@@ -138,6 +140,7 @@ final class TObjectWithProperties extends TObject
 
     public function __clone()
     {
+        $this->cloneIntersection();
         foreach ($this->properties as &$property) {
             $property = clone $property;
         }

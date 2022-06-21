@@ -146,8 +146,20 @@ final class FunctionLikeParameter implements HasAttributesInterface
 
     public function __clone()
     {
+        foreach ($this->attributes as &$attribute) {
+            $attribute = clone $attribute;
+        }
         if ($this->type) {
             $this->type = clone $this->type;
+        }
+        if ($this->signature_type) {
+            $this->signature_type = clone $this->signature_type;
+        }
+        if ($this->out_type) {
+            $this->out_type = clone $this->out_type;
+        }
+        if ($this->default_type) {
+            $this->default_type = clone $this->default_type;
         }
     }
 
