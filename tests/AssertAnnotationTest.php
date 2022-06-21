@@ -2055,6 +2055,73 @@ class AssertAnnotationTest extends TestCase
                         return $input;
                     }',
             ],
+            'assertListKeepsArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arr
+                     * @psalm-assert-if-true list $arr
+                     */
+                    function is_list($arr): bool
+                    {
+                        if (!is_array($arr)) {
+                            return false;
+                        }
+                        $listKey = -1;
+                        foreach ($arr as $key => $_) {
+                            if ($key !== ++$listKey) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+
+                    /** @var array{0: int, 1: bool, 2: string} */
+                    $list = [1, true, "string"];
+                    assert(is_list($list));
+
+                    function takesString(string $_str): void {}
+
+                    takesString($list[2]);
+                ',
+                'assertions' => ['$list===' => "array{0: int, 1: bool, 2: string}<int<3, max>, mixed>"],
+            ],
+            'assertListMarksKeysAsNonOptional' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arr
+                     * @psalm-assert-if-true list $arr
+                     */
+                    function is_list($arr): bool
+                    {
+                        if (!is_array($arr)) {
+                            return false;
+                        }
+                        $listKey = -1;
+                        foreach ($arr as $key => $_) {
+                            if ($key !== ++$listKey) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+
+                    /** @var array{0: int, 5?: bool, 6?: string, 7: object, 8?: float} */
+                    $list = [];
+                    assert(is_list($list));
+                ',
+                'assertions' => ['$list===' => "array{0: int, 5: bool, 6: string, 7: object, 8?: float}<int<1, max>, mixed>"],
+            ],
+            'truthyArrayShapeListHas0Key' => [
+                'code' => '<?php
+                    $list = random_int(0, 1) ? [] : ["foobar"];
+
+                    function takesString(string $_str): void {}
+
+                    if ($list) {
+                        takesString($list[0]);
+                    }
+                ',
+            ],
         ];
     }
 
