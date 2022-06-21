@@ -28,7 +28,7 @@ This fails since it's not guaranteed that subsequent calls to `$cat->getName()` 
     }
     unset($catName);
     ```
-* Add [`@psalm-mutation-free`](https://psalm.dev/docs/annotating_code/supported_annotations/#psalm-mutation-free) to the declaration of the function
+* Add [`@psalm-mutation-free`](../../annotating_code/supported_annotations.md#psalm-mutation-free) to the declaration of the function
 
 ### Calling Another Function After `if`
 
