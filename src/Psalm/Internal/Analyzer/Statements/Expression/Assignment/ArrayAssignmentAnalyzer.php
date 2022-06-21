@@ -850,30 +850,7 @@ class ArrayAssignmentAnalyzer
                 throw new InvalidArgumentException('Should never get here');
             }
 
-            $key_values = [];
-
-            if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
-                $key_values[] = new TLiteralString($current_dim->value);
-            } elseif ($current_dim instanceof PhpParser\Node\Scalar\LNumber) {
-                $key_values[] = new TLiteralInt($current_dim->value);
-            } elseif ($current_dim
-                && ($key_type = $statements_analyzer->node_data->getType($current_dim))
-            ) {
-                $string_literals = $key_type->getLiteralStrings();
-                $int_literals = $key_type->getLiteralInts();
-
-                $all_atomic_types = $key_type->getAtomicTypes();
-
-                if (count($string_literals) + count($int_literals) === count($all_atomic_types)) {
-                    foreach ($string_literals as $string_literal) {
-                        $key_values[] = clone $string_literal;
-                    }
-
-                    foreach ($int_literals as $int_literal) {
-                        $key_values[] = clone $int_literal;
-                    }
-                }
-            }
+            $key_values = $current_dim ? self::getDimKeyValues($statements_analyzer, $current_dim) : [];
 
             if ($key_values) {
                 $new_child_type = self::updateTypeWithKeyValues(
@@ -938,10 +915,47 @@ class ArrayAssignmentAnalyzer
                     $statements_analyzer->node_data->getType($child_stmt->var) ?? Type::getMixed(),
                     $new_child_type,
                     $parent_array_var_id,
-                    $key_values
+                    $child_stmt->dim ? self::getDimKeyValues($statements_analyzer, $child_stmt->dim) : [],
                 );
             }
         }
+    }
+
+    /**
+     * @return list<TLiteralInt|TLiteralString>
+     */
+    private static function getDimKeyValues(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $dim,
+    ): array {
+        $key_values = [];
+
+        if ($dim instanceof PhpParser\Node\Scalar\String_) {
+            $key_values[] = new TLiteralString($dim->value);
+        } elseif ($dim instanceof PhpParser\Node\Scalar\LNumber) {
+            $key_values[] = new TLiteralInt($dim->value);
+        } else {
+            $key_type = $statements_analyzer->node_data->getType($dim);
+
+            if ($key_type) {
+                $string_literals = $key_type->getLiteralStrings();
+                $int_literals = $key_type->getLiteralInts();
+
+                $all_atomic_types = $key_type->getAtomicTypes();
+
+                if (count($string_literals) + count($int_literals) === count($all_atomic_types)) {
+                    foreach ($string_literals as $string_literal) {
+                        $key_values[] = clone $string_literal;
+                    }
+
+                    foreach ($int_literals as $int_literal) {
+                        $key_values[] = clone $int_literal;
+                    }
+                }
+            }
+        }
+
+        return $key_values;
     }
 
     /**

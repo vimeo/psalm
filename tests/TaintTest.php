@@ -708,6 +708,27 @@ class TaintTest extends TestCase
                     $value = $_GET["value"];
                     $result = fetch($value);'
             ],
+            'dontTaintArrayWithDifferentOffsetUpdated' => [
+                'code' => '<?php
+                    function foo() {
+                        $foo = [
+                            "a" => [["c" => "hello"]],
+                            "b" => [],
+                        ];
+
+                        $foo["b"][] = [
+                            "c" => $_GET["bad"],
+                        ];
+
+                        bar($foo["a"]);
+                    }
+
+                    function bar(array $arr): void {
+                        foreach ($arr as $s) {
+                            echo $s["c"];
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -2304,6 +2325,28 @@ class TaintTest extends TestCase
 
                     echo $tainted;
                 ',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayWithOffsetUpdated' => [
+                'code' => '<?php
+                    function foo() {
+                        $foo = [
+                            "a" => [["c" => "hello"]],
+                            "b" => [],
+                        ];
+
+                        $foo["b"][] = [
+                            "c" => $_GET["bad"],
+                        ];
+
+                        bar($foo["b"]);
+                    }
+
+                    function bar(array $arr): void {
+                        foreach ($arr as $s) {
+                            echo $s["c"];
+                        }
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
         ];
