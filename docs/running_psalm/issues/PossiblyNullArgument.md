@@ -42,5 +42,5 @@ This fails since psalm cannot know if `changeCat()` does actually modify `$cat`.
 
 #### Possible Solutions
 
-* Add [`@psalm-mutation-free`](https://psalm.dev/docs/annotating_code/supported_annotations/#psalm-mutation-free) to the declaration of the other function (here: `changeCat()`) too
+* Add [`@psalm-mutation-free`](../../annotating_code/supported_annotations.md#psalm-mutation-free) to the declaration of the other function (here: `changeCat()`) too
 * Use a variable: See above
