@@ -926,7 +926,7 @@ class ArrayAssignmentAnalyzer
      */
     private static function getDimKeyValues(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $dim,
+        PhpParser\Node\Expr $dim
     ): array {
         $key_values = [];
 
