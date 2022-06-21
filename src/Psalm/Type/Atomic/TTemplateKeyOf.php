@@ -2,7 +2,6 @@
 
 namespace Psalm\Type\Atomic;
 
-use PhpParser\Lexer\TokenEmulator\FnTokenEmulator;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
