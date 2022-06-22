@@ -113,6 +113,7 @@
         "lint": "parallel-lint ./src ./tests",
         "phpunit": "paratest --runner=WrapperRunner",
         "phpunit-std": "phpunit",
+        "verify-callmap": "phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm --find-dead-code",
         "tests": [
             "@lint",
