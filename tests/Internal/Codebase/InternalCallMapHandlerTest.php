@@ -608,11 +608,7 @@ class InternalCallMapHandlerTest extends TestCase
     {
         $expectedType = Reflection::getPsalmTypeFromReflectionType($reflected);
 
-        try {
-            $parsedType = Type::parseString($specified);
-        } catch (Throwable $t) {
-            die("Failed to parse type: $specified -- $message");
-        }
+        $parsedType = Type::parseString($specified);
 
         try {
             $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $parsedType, $expectedType), $message);
