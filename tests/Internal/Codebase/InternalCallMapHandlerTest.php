@@ -26,7 +26,6 @@ use function Amp\call;
 use function count;
 use function explode;
 use function function_exists;
-use function implode;
 use function in_array;
 use function json_encode;
 use function preg_match;
@@ -41,6 +40,7 @@ class InternalCallMapHandlerTest extends TestCase
      * @var string[]
      */
     private static $ignoredFunctions = [
+        'apcu_entry',
         'array_column',
         'array_diff',
         'array_diff_assoc',
@@ -72,6 +72,26 @@ class InternalCallMapHandlerTest extends TestCase
         'deflate_add',
         'dns_get_mx',
         'easter_date',
+        'enchant_broker_describe',
+        'enchant_broker_dict_exists',
+        'enchant_broker_free',
+        'enchant_broker_free_dict',
+        'enchant_broker_get_dict_path',
+        'enchant_broker_get_error',
+        'enchant_broker_list_dicts',
+        'enchant_broker_request_dict',
+        'enchant_broker_request_pwl_dict',
+        'enchant_broker_set_dict_path',
+        'enchant_broker_set_ordering',
+        'enchant_dict_add_to_personal',
+        'enchant_dict_add_to_session',
+        'enchant_dict_check',
+        'enchant_dict_describe',
+        'enchant_dict_get_error',
+        'enchant_dict_is_in_session',
+        'enchant_dict_quick_check',
+        'enchant_dict_store_replacement',
+        'enchant_dict_suggest',
         'enum_exists',
         'extract',
         'filter_var',
@@ -80,8 +100,33 @@ class InternalCallMapHandlerTest extends TestCase
         'get_class_methods',
         'get_headers',
         'get_parent_class',
+        'gmp_clrbit',
+        'gmp_div',
+        'gmp_setbit',
+        'gnupg_adddecryptkey',
+        'gnupg_addencryptkey',
+        'gnupg_addsignkey',
+        'gnupg_cleardecryptkeys',
+        'gnupg_clearencryptkeys',
+        'gnupg_clearsignkeys',
+        'gnupg_decrypt',
+        'gnupg_decryptverify',
+        'gnupg_encrypt',
+        'gnupg_encryptsign',
+        'gnupg_export',
+        'gnupg_geterror',
+        'gnupg_getprotocol',
+        'gnupg_import',
+        'gnupg_init',
+        'gnupg_keyinfo',
+        'gnupg_setarmor',
+        'gnupg_seterrormode',
+        'gnupg_setsignmode',
+        'gnupg_sign',
+        'gnupg_verify',
         'hash_hmac_file',
         'igbinary_unserialize',
+        'imagefilledpolygon',
         'imagefilter',
         'imagegd',
         'imagegd2',
@@ -102,17 +147,65 @@ class InternalCallMapHandlerTest extends TestCase
         'inflate_get_read_len',
         'inflate_get_status',
         'inotify_rm_watch',
-        'intlcal_from_date_time', 'imagefilledpolygon',
+        'intlcal_from_date_time',
         'intlcal_get_weekend_transition',
         'intlgregcal_create_instance',
         'intlgregcal_is_leap_year',
         'intltz_create_enumeration',
         'intltz_get_canonical_id',
         'intltz_get_display_name',
+        'ldap_compare',
+        'ldap_delete',
+        'ldap_exop',
+        'ldap_free_result',
+        'ldap_get_option',
+        'ldap_list',
+        'ldap_mod_add',
+        'ldap_mod_del',
+        'ldap_mod_replace',
+        'ldap_modify',
+        'ldap_modify_batch',
+        'ldap_next_entry',
+        'ldap_parse_reference',
+        'ldap_read',
+        'ldap_rename',
+        'ldap_search',
+        'ldap_start_tls',
         'long2ip',
         'lzf_compress',
         'lzf_decompress',
         'mail',
+        'mailparse_msg_extract_part',
+        'mailparse_msg_extract_part_file',
+        'mailparse_msg_extract_whole_part_file',
+        'mailparse_msg_free',
+        'mailparse_msg_get_part',
+        'mailparse_msg_get_part_data',
+        'mailparse_msg_get_structure',
+        'mailparse_msg_parse',
+        'mailparse_stream_encode',
+        'memcache_add',
+        'memcache_add_server',
+        'memcache_append',
+        'memcache_cas',
+        'memcache_close',
+        'memcache_connect',
+        'memcache_decrement',
+        'memcache_delete',
+        'memcache_flush',
+        'memcache_get_extended_stats',
+        'memcache_get_server_status',
+        'memcache_get_stats',
+        'memcache_get_version',
+        'memcache_increment',
+        'memcache_pconnect',
+        'memcache_pconnect',
+        'memcache_prepend',
+        'memcache_replace',
+        'memcache_set',
+        'memcache_set_compress_threshold',
+        'memcache_set_failure_callback',
+        'memcache_set_server_params',
         'mongodb\bson\tophp',
         'msg_receive',
         'msg_remove_queue',
@@ -124,6 +217,46 @@ class InternalCallMapHandlerTest extends TestCase
         'mysqli_real_connect',
         'mysqli_stmt_bind_param',
         'normalizer_get_raw_decomposition',
+        'oauth_get_sbs',
+        'oci_collection_append',
+        'oci_collection_assign',
+        'oci_collection_element_assign',
+        'oci_collection_element_get',
+        'oci_collection_max',
+        'oci_collection_size',
+        'oci_collection_trim',
+        'oci_fetch_object',
+        'oci_field_is_null',
+        'oci_field_name',
+        'oci_field_precision',
+        'oci_field_scale',
+        'oci_field_size',
+        'oci_field_type',
+        'oci_field_type_raw',
+        'oci_free_collection',
+        'oci_free_descriptor',
+        'oci_lob_append',
+        'oci_lob_eof',
+        'oci_lob_erase',
+        'oci_lob_export',
+        'oci_lob_flush',
+        'oci_lob_import',
+        'oci_lob_load',
+        'oci_lob_read',
+        'oci_lob_rewind',
+        'oci_lob_save',
+        'oci_lob_seek',
+        'oci_lob_size',
+        'oci_lob_tell',
+        'oci_lob_truncate',
+        'oci_lob_write',
+        'oci_register_taf_callback',
+        'oci_result',
+        'ocigetbufferinglob',
+        'ocisetbufferinglob',
+        'odbc_procedurecolumns',
+        'odbc_procedures',
+        'odbc_result',
         'openssl_pkcs7_read',
         'pg_exec',
         'pg_exec',
@@ -144,7 +277,6 @@ class InternalCallMapHandlerTest extends TestCase
         'shm_get_var',
         'shm_has_var',
         'shm_put_var',
-        'shm_put_var',
         'shm_remove',
         'shm_remove_var',
         'shmop_close',
@@ -152,6 +284,8 @@ class InternalCallMapHandlerTest extends TestCase
         'shmop_read',
         'shmop_size',
         'shmop_write',
+        'snmp_set_enum_print',
+        'snmp_set_valueretrieval',
         'snmpset',
         'socket_addrinfo_lookup',
         'socket_bind',
@@ -181,67 +315,60 @@ class InternalCallMapHandlerTest extends TestCase
         'sodium_crypto_generichash_update',
         'sodium_crypto_kx_client_session_keys',
         'sodium_crypto_secretstream_xchacha20poly1305_rekey',
+        'sqlsrv_connect',
+        'sqlsrv_errors',
+        'sqlsrv_fetch_array',
+        'sqlsrv_fetch_object',
+        'sqlsrv_get_field',
+        'sqlsrv_prepare',
+        'sqlsrv_query',
+        'sqlsrv_server_info',
+        'stomp_abort',
+        'stomp_ack',
+        'stomp_begin',
+        'stomp_commit',
+        'stomp_read_frame',
+        'stomp_send',
+        'stomp_set_read_timeout',
+        'stomp_subscribe',
+        'stomp_unsubscribe',
         'substr_replace',
+        'tidy_getopt',
+        'uopz_allow_exit',
+        'uopz_get_mock',
+        'uopz_get_property',
+        'uopz_get_return',
+        'uopz_get_static',
+        'uopz_set_mock',
+        'uopz_set_property',
+        'uopz_set_static',
+        'uopz_unset_mock',
+        'xdiff_file_bdiff',
+        'xdiff_file_bdiff_size',
+        'xdiff_file_diff',
+        'xdiff_file_diff_binary',
+        'xdiff_file_merge3',
+        'xdiff_file_rabdiff',
+        'xdiff_string_bdiff',
+        'xdiff_string_bdiff_size',
+        'xdiff_string_bpatch',
+        'xdiff_string_diff',
+        'xdiff_string_diff_binary',
+        'xdiff_string_merge3',
+        'xdiff_string_patch',
+        'xdiff_string_patch_binary',
+        'xdiff_string_rabdiff',
+        'xmlrpc_server_add_introspection_data',
+        'xmlrpc_server_call_method',
+        'xmlrpc_server_destroy',
+        'xmlrpc_server_register_introspection_callback',
+        'xmlrpc_server_register_method',
+        'yaml_emit',
+        'yaml_emit_file',
         'zip_entry_close',
         'zlib_encode',
 
-
-
     ];
-
-    /**
-     * @var string[]
-     */
-    private static $ignoredPrefixes = [
-        'apcu_',
-        'bc',
-        'collator_',
-        'ctype_',
-        'datefmt_',
-        'enchant_',
-        'gmp_',
-        'gnupg_',
-        'image',
-        'imap_',
-        'inflate_',
-        'intl',
-        'ldap_',
-        'mailparse_',
-        'memcache_',
-        'msg_',
-        'mysqli_',
-        'normalizer_',
-        'oauth_',
-        'oci',
-        'odbc_',
-        'openssl_',
-        'pg_',
-        'sem_',
-        'shm_',
-        'shmop_',
-        'snmp_',
-        'socket_',
-        'sodium_',
-        'sqlsrv_',
-        'tidy_',
-        'transliterator_',
-        'uopz_',
-        'xdiff_',
-        'xmlrpc_server',
-        'yaml_',
-    ];
-
-    /**
-     * Initialized in setup
-     * @var string Regex
-     */
-    private static $prefixRegex = '//';
-
-    /**
-     *
-     * @var bool whether to skip params for which no definition can be found in the callMap
-     */
-    private $skipUndefinedParams = false;
 
     /**
      *
@@ -249,13 +376,8 @@ class InternalCallMapHandlerTest extends TestCase
      */
     private static $codebase;
 
-
-
-
-
     public static function setUpBeforeClass(): void
     {
-        self::$prefixRegex = '/^(' . implode('|', self::$ignoredPrefixes) . ')/';
         $project_analyzer = new ProjectAnalyzer(
             new TestConfig(),
             new Providers(
@@ -264,6 +386,14 @@ class InternalCallMapHandlerTest extends TestCase
             )
         );
         self::$codebase = $project_analyzer->getCodebase();
+    }
+
+
+    public function testIgnoresAreSorted(): void
+    {
+        $ignoredFunctions = self::$ignoredFunctions;
+        sort($ignoredFunctions);
+        $this->assertSame($ignoredFunctions, self::$ignoredFunctions);
     }
 
     public static function tearDownAfterClass(): void
@@ -306,6 +436,7 @@ class InternalCallMapHandlerTest extends TestCase
         );
         $callMap = InternalCallMapHandler::getCallMap();
         foreach ($callMap as $function => $entry) {
+            if ($function !== 'hash_hmac_file') continue;
             // Skip class methods
             if (strpos($function, '::') !== false || !function_exists($function)) {
                 continue;
@@ -329,14 +460,11 @@ class InternalCallMapHandlerTest extends TestCase
             return true;
 
         }
-        // if (preg_match(self::$prefixRegex, $functionName)) {
-        //     return true;
-        //     $this->markTestSkipped("Function $functionName has ignored prefix");
-        // }
         return false;
     }
 
     /**
+     * @depends testIgnoresAreSorted
      * @depends testGetcallmapReturnsAValidCallmap
      * @dataProvider callMapEntryProvider
      * @coversNothing
@@ -377,13 +505,13 @@ class InternalCallMapHandlerTest extends TestCase
         }
 
         $this->markTestIncomplete("Remove function '{$functionName}' from your ignores");
-        // die("Function $functionName did not show error incallmap") ;
     }
 
     /**
      * This function will test functions that are in the callmap AND currently defined
      * @coversNothing
      * @depends testGetcallmapReturnsAValidCallmap
+     * @depends testIgnoresAreSorted
      * @dataProvider callMapEntryProvider
      * @psalm-param callable-string $functionName
      * @param array $callMapEntry
@@ -457,11 +585,7 @@ class InternalCallMapHandlerTest extends TestCase
             $normalizedEntries[$normalizedKey] = $normalizedEntry;
         }
         foreach ($rF->getParameters() as $parameter) {
-            if ($this->skipUndefinedParams && !isset($normalizedEntries[$parameter->getName()])) {
-                continue;
-            } else {
-                $this->assertArrayHasKey($parameter->getName(), $normalizedEntries, "Callmap is missing entry for param {$parameter->getName()} in $functionName: " . print_r($normalizedEntries, true));
-            }
+            $this->assertArrayHasKey($parameter->getName(), $normalizedEntries, "Callmap is missing entry for param {$parameter->getName()} in $functionName: " . print_r($normalizedEntries, true));
             $this->assertParameter($normalizedEntries[$parameter->getName()], $parameter);
         }
     }
