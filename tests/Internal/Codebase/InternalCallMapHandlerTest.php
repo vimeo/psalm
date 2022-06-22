@@ -3,9 +3,8 @@
 namespace Psalm\Tests\Internal\Codebase;
 
 use InvalidArgumentException;
-use phpDocumentor\Reflection\DocBlock\Tags\Var_;
-use PHPUnit\Framework\Error\Warning;
 use PHPUnit\Framework\ExpectationFailedException;
+use PHPUnit\Framework\SkippedTestError;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -20,9 +19,8 @@ use Psalm\Type;
 use ReflectionFunction;
 use ReflectionParameter;
 use ReflectionType;
-use Throwable;
 
-use function Amp\call;
+use function class_exists;
 use function count;
 use function explode;
 use function function_exists;
@@ -30,6 +28,7 @@ use function in_array;
 use function json_encode;
 use function preg_match;
 use function print_r;
+use function sort;
 use function strncmp;
 use function strpos;
 use function substr;
@@ -436,7 +435,6 @@ class InternalCallMapHandlerTest extends TestCase
         );
         $callMap = InternalCallMapHandler::getCallMap();
         foreach ($callMap as $function => $entry) {
-            if ($function !== 'hash_hmac_file') continue;
             // Skip class methods
             if (strpos($function, '::') !== false || !function_exists($function)) {
                 continue;
@@ -451,14 +449,12 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     * @return bool
      */
-    private function isIgnored(string $functionName)
+    private function isIgnored(string $functionName): bool
     {
         /** @psalm-assert callable-string $functionName */
         if (in_array($functionName, self::$ignoredFunctions)) {
             return true;
-
         }
         return false;
     }
@@ -484,24 +480,21 @@ class InternalCallMapHandlerTest extends TestCase
             unset($callMapEntry[0]);
             /** @var array<string, string> $callMapEntry */
             $this->assertEntryIsCorrect($callMapEntry, $functionName);
-
-
-        } catch(\InvalidArgumentException $t) {
+        } catch (InvalidArgumentException $t) {
             // Silence this one for now.
             $this->markTestSkipped('IA');
-        } catch(\PHPUnit\Framework\SkippedTestError $t) {
+        } catch (SkippedTestError $t) {
             die('this should not happen');
-        } catch(ExpectationFailedException $e) {
+        } catch (ExpectationFailedException $e) {
             // This is good!
             throw $e;
-        } catch(InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             // This can happen if a class does not exist, we handle the message to check for this case.
             if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
                 && !class_exists($matches[1])
             ) {
                 die("Class mentioned in callmap does not exist: " . $matches[1]);
             }
-
         }
 
         $this->markTestIncomplete("Remove function '{$functionName}' from your ignores");
@@ -616,14 +609,14 @@ class InternalCallMapHandlerTest extends TestCase
         $expectedType = Reflection::getPsalmTypeFromReflectionType($reflected);
 
         try {
-        $parsedType = Type::parseString($specified);
-        } catch(\Throwable $t) {
+            $parsedType = Type::parseString($specified);
+        } catch (Throwable $t) {
             die("Failed to parse type: $specified -- $message");
         }
 
         try {
-        $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $parsedType, $expectedType), $message);
-        } catch(InvalidArgumentException $e) {
+            $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $parsedType, $expectedType), $message);
+        } catch (InvalidArgumentException $e) {
             if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
                 && !class_exists($matches[1])
             ) {
