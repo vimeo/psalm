@@ -25,18 +25,24 @@ use function count;
 use function explode;
 use function function_exists;
 use function in_array;
+use function is_int;
 use function json_encode;
 use function preg_match;
 use function print_r;
-use function sort;
+use function strcmp;
 use function strncmp;
 use function strpos;
 use function substr;
 
+use const PHP_MAJOR_VERSION;
+use const PHP_MINOR_VERSION;
+
 class InternalCallMapHandlerTest extends TestCase
 {
     /**
-     * @var string[]
+     * Specify a function name as value, or a function name as key and
+     * an array containing the PHP versions in which to ignore this function as values.
+     * @var array<int|string, string|list<string>>
      */
     private static $ignoredFunctions = [
         'apcu_entry',
@@ -95,7 +101,8 @@ class InternalCallMapHandlerTest extends TestCase
         'extract',
         'filter_var',
         'filter_var_array',
-        'fputcsv',
+        // https://www.php.net/manual/en/function.fputcsv.php
+        'fputcsv' => ['8.1'],
         'get_class_methods',
         'get_headers',
         'get_parent_class',
@@ -198,7 +205,6 @@ class InternalCallMapHandlerTest extends TestCase
         'memcache_get_version',
         'memcache_increment',
         'memcache_pconnect',
-        'memcache_pconnect',
         'memcache_prepend',
         'memcache_replace',
         'memcache_set',
@@ -210,7 +216,6 @@ class InternalCallMapHandlerTest extends TestCase
         'msg_remove_queue',
         'msg_send',
         'msg_set_queue',
-        'msg_stat_queue',
         'msg_stat_queue',
         'mysqli_poll',
         'mysqli_real_connect',
@@ -257,7 +262,6 @@ class InternalCallMapHandlerTest extends TestCase
         'odbc_procedures',
         'odbc_result',
         'openssl_pkcs7_read',
-        'pg_exec',
         'pg_exec',
         'pg_fetch_all',
         'pg_get_notify',
@@ -331,6 +335,7 @@ class InternalCallMapHandlerTest extends TestCase
         'stomp_set_read_timeout',
         'stomp_subscribe',
         'stomp_unsubscribe',
+        'stream_select' => ['8.0'],
         'substr_replace',
         'tidy_getopt',
         'uopz_allow_exit',
@@ -388,11 +393,15 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
 
-    public function testIgnoresAreSorted(): void
+    public function testIgnoresAreSortedAndUnique(): void
     {
-        $ignoredFunctions = self::$ignoredFunctions;
-        sort($ignoredFunctions);
-        $this->assertSame($ignoredFunctions, self::$ignoredFunctions);
+        $previousFunction = "";
+        foreach (self::$ignoredFunctions as $key => $value) {
+            $function = is_int($key) ? $value : $key;
+
+            $this->assertGreaterThan(0, strcmp($function, $previousFunction));
+            $previousFunction = $function;
+        }
     }
 
     public static function tearDownAfterClass(): void
@@ -456,11 +465,16 @@ class InternalCallMapHandlerTest extends TestCase
         if (in_array($functionName, self::$ignoredFunctions)) {
             return true;
         }
+
+        if (isset(self::$ignoredFunctions[$functionName]) && in_array(PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, self::$ignoredFunctions[$functionName])) {
+            return true;
+        }
+
         return false;
     }
 
     /**
-     * @depends testIgnoresAreSorted
+     * @depends testIgnoresAreSortedAndUnique
      * @depends testGetcallmapReturnsAValidCallmap
      * @dataProvider callMapEntryProvider
      * @coversNothing
@@ -504,7 +518,7 @@ class InternalCallMapHandlerTest extends TestCase
      * This function will test functions that are in the callmap AND currently defined
      * @coversNothing
      * @depends testGetcallmapReturnsAValidCallmap
-     * @depends testIgnoresAreSorted
+     * @depends testIgnoresAreSortedAndUnique
      * @dataProvider callMapEntryProvider
      * @psalm-param callable-string $functionName
      * @param array $callMapEntry
