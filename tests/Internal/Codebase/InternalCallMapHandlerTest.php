@@ -25,6 +25,7 @@ use function count;
 use function explode;
 use function function_exists;
 use function in_array;
+use function is_array;
 use function is_int;
 use function json_encode;
 use function preg_match;
@@ -397,6 +398,7 @@ class InternalCallMapHandlerTest extends TestCase
     {
         $previousFunction = "";
         foreach (self::$ignoredFunctions as $key => $value) {
+            /** @var string */
             $function = is_int($key) ? $value : $key;
 
             $this->assertGreaterThan(0, strcmp($function, $previousFunction));
@@ -466,7 +468,9 @@ class InternalCallMapHandlerTest extends TestCase
             return true;
         }
 
-        if (isset(self::$ignoredFunctions[$functionName]) && in_array(PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, self::$ignoredFunctions[$functionName])) {
+        if (isset(self::$ignoredFunctions[$functionName])
+            && is_array(self::$ignoredFunctions[$functionName])
+            && in_array(PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, self::$ignoredFunctions[$functionName])) {
             return true;
         }
 
