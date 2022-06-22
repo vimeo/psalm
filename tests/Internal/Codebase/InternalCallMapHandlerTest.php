@@ -463,7 +463,6 @@ class InternalCallMapHandlerTest extends TestCase
      */
     private function isIgnored(string $functionName): bool
     {
-        /** @psalm-assert callable-string $functionName */
         if (in_array($functionName, self::$ignoredFunctions)) {
             return true;
         }
