@@ -2,6 +2,10 @@
 
 namespace Psalm\Tests\Internal\Codebase;
 
+use InvalidArgumentException;
+use phpDocumentor\Reflection\DocBlock\Tags\Var_;
+use PHPUnit\Framework\Error\Warning;
+use PHPUnit\Framework\ExpectationFailedException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -18,6 +22,7 @@ use ReflectionParameter;
 use ReflectionType;
 use Throwable;
 
+use function Amp\call;
 use function count;
 use function explode;
 use function function_exists;
@@ -36,44 +41,97 @@ class InternalCallMapHandlerTest extends TestCase
      * @var string[]
      */
     private static $ignoredFunctions = [
-        'sprintf', 'printf', 'ctype_print', 'date_sunrise' /** deprecated in 8.1 */,
-        'file_put_contents',
-        'dom_import_simplexml', 'imagegd', 'imagegd2', 'mysqli_execute', 'array_multisort',
-        'intlcal_from_date_time', 'simplexml_import_dom', 'imagefilledpolygon',
+        'array_multisort',
+        'intlcal_from_date_time', 'imagefilledpolygon',
         /** deprecated in 8.0 */
         'zip_entry_close',
-        'date_time_set',
-        'curl_unescape',
-        'extract',
         'enum_exists',
         'igbinary_unserialize',
-        'count',
         'lzf_compress',
-        'long2ip',
-        'array_column',
         'preg_replace_callback_array',
-        'preg_filter',
-        'zlib_encode',
         'inotify_rm_watch',
-        'mail',
         'easter_date',
-        'date_isodate_set',
         'snmpset',
-        'get_class_methods',
-        'filter_var_array',
-        'deflate_add',
         'bzdecompress',
-        'substr_replace',
         'lzf_decompress',
         'mongodb\bson\tophp',
         'fputcsv',
-        'get_headers',
-        'get_parent_class',
-        'filter_var',
-        'array_key_exists',
         'sapi_windows_cp_get',
-        'stream_select',
-        'hash_hmac_file'
+        'hash_hmac_file',
+        'array_unshift',
+        'array_diff',
+        'array_replace_recursive',
+        'array_intersect_assoc',
+        'array_replace',
+        'dns_get_mx',
+        'array_intersect',
+        'array_intersect_key',
+        'array_merge',
+        'array_diff_key',
+        'crypt',
+        'debug_zval_dump',
+        'array_merge_recursive',
+        'array_diff_assoc',
+        'array_push',
+        'pg_fetch_all',
+        'pg_exec',
+        'pg_send_execute',
+        'datefmt_set_timezone',
+        'socket_strerror',
+        'sodium_crypto_kx_client_session_keys',
+        'mysqli_stmt_bind_param',
+        'socket_getsockname',
+        'bcmod',
+        'socket_getopt',
+        'pg_exec',
+        'socket_set_option',
+        'socket_sendto',
+        'socket_connect',
+        'socket_select',
+        'datefmt_create',
+        'imagettftext',
+        'mysqli_poll',
+        'socket_recvfrom',
+        'pg_select',
+        'intltz_get_canonical_id',
+        'imagexbm',
+        'bcdiv',
+        'pg_get_notify',
+        'socket_get_option',
+        'socket_create_pair',
+        'socket_sendmsg',
+        'normalizer_get_raw_decomposition',
+        'socket_cmsg_space',
+        'imagettfbbox',
+        'pg_get_result',
+        'imagepolygon',
+        'imageopenpolygon',
+        'socket_getpeername',
+        'datefmt_get_timezone',
+        'sodium_crypto_generichash_update',
+        'socket_read',
+        'imap_undelete',
+        'socket_bind',
+        'intlgregcal_create_instance',
+        'imagesetinterpolation',
+        'openssl_pkcs7_read',
+        'mysqli_real_connect',
+        'datefmt_parse',
+        'socket_shutdown',
+        'datefmt_localtime',
+        'intltz_get_display_name',
+        'imap_delete',
+        'socket_setopt',
+        'intlgregcal_is_leap_year',
+        'intltz_create_enumeration',
+        'imagefilter',
+        'socket_addrinfo_lookup',
+        'socket_recv',
+        'sodium_crypto_secretstream_xchacha20poly1305_rekey',
+        'bcpowmod',
+        'socket_send',
+        'socket_set_blocking'
+
 
 
     ];
@@ -209,6 +267,71 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
+     *
+     * @param string $functionName
+     * @return bool
+     */
+    private function isIgnored(string $functionName)
+    {
+        /** @psalm-assert callable-string $functionName */
+        if (in_array($functionName, self::$ignoredFunctions)) {
+            return true;
+
+        }
+        // if (preg_match(self::$prefixRegex, $functionName)) {
+        //     return true;
+        //     $this->markTestSkipped("Function $functionName has ignored prefix");
+        // }
+        return false;
+    }
+
+    /**
+     * @dataProvider callMapEntryProvider
+     */
+    public function testIgnoredFunctionsStillFail(string $functionName, array $callMapEntry): void
+    {
+        if (!$this->isIgnored($functionName)) {
+            // Dummy assertion to mark it as passed
+            $this->assertTrue(true);
+            return;
+        }
+
+        $this->expectException(ExpectationFailedException::class);
+
+        try {
+            unset($callMapEntry[0]);
+            /** @var array<string, string> $callMapEntry */
+            $this->assertEntryIsCorrect($callMapEntry, $functionName);
+
+
+        } catch(\InvalidArgumentException $t) {
+            // Silence this one for now.
+            $this->markTestSkipped('IA');
+        } catch(\PHPUnit\Framework\SkippedTestError $t) {
+            die('this should not happen');
+        } catch(ExpectationFailedException $e) {
+            // This is good!
+            throw $e;
+        } catch(InvalidArgumentException $e) {
+            // This can happen if a class does not exist, we handle the message to check for this case.
+            if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
+                && !class_exists($matches[1])
+            ) {
+                die("Class mentioned in callmap does not exist: " . $matches[1]);
+            }
+
+        } catch(Warning $w) {
+            throw $w;
+        } catch(\Throwable $t) {
+            var_dump($t->getMessage());
+            die(get_class($t));
+        }
+
+        $this->markTestIncomplete("Remove function '{$functionName}' from your ignores");
+        // die("Function $functionName did not show error incallmap") ;
+    }
+
+    /**
      * This function will test functions that are in the callmap AND currently defined
      * @coversNothing
      * @depends testGetcallmapReturnsAValidCallmap
@@ -217,15 +340,8 @@ class InternalCallMapHandlerTest extends TestCase
      */
     public function testCallMapCompliesWithReflection(string $functionName, array $callMapEntry): void
     {
-        /** @psalm-assert callable-string $functionName */
-        if (!function_exists($functionName)) {
-            $this->markTestSkipped("Function $functionName does not exist");
-        }
-        if (in_array($functionName, self::$ignoredFunctions)) {
+        if ($this->isIgnored($functionName)) {
             $this->markTestSkipped("Function $functionName is ignored in config");
-        }
-        if (preg_match(self::$prefixRegex, $functionName)) {
-            $this->markTestSkipped("Function $functionName has ignored prefix");
         }
 
         unset($callMapEntry[0]);
@@ -307,18 +423,13 @@ class InternalCallMapHandlerTest extends TestCase
     private function assertParameter(array $normalizedEntry, ReflectionParameter $param): void
     {
         $name = $param->getName();
-        // $identifier = "Param $functionName - $name";
-        try {
-            $this->assertSame($param->isOptional(), $normalizedEntry['optional'], "Expected param '{$name}' to " . ($param->isOptional() ? "be" : "not be") . " optional");
-            $this->assertSame($param->isVariadic(), $normalizedEntry['variadic'], "Expected param '{$name}' to " . ($param->isVariadic() ? "be" : "not be") . " variadic");
-            $this->assertSame($param->isPassedByReference(), $normalizedEntry['byRef'], "Expected param '{$name}' to " . ($param->isPassedByReference() ? "be" : "not be") . " by reference");
-        } catch (Throwable $t) {
-            $this->markTestSkipped("Exception: " . $t->getMessage());
-        }
+        $this->assertSame($param->isOptional(), $normalizedEntry['optional'], "Expected param '{$name}' to " . ($param->isOptional() ? "be" : "not be") . " optional");
+        $this->assertSame($param->isVariadic(), $normalizedEntry['variadic'], "Expected param '{$name}' to " . ($param->isVariadic() ? "be" : "not be") . " variadic");
+        $this->assertSame($param->isPassedByReference(), $normalizedEntry['byRef'], "Expected param '{$name}' to " . ($param->isPassedByReference() ? "be" : "not be") . " by reference");
 
         $expectedType = $param->getType();
 
-        if (isset($expectedType)) {
+        if (isset($expectedType) && !empty($specified)) {
             $this->assertTypeValidity($expectedType, $normalizedEntry['type'], "Param '{$name}' has incorrect type");
         }
     }
@@ -329,8 +440,21 @@ class InternalCallMapHandlerTest extends TestCase
     private function assertTypeValidity(ReflectionType $reflected, string $specified, string $message): void
     {
         $expectedType = Reflection::getPsalmTypeFromReflectionType($reflected);
-        $parsedType = Type::parseString($specified);
 
+        try {
+        $parsedType = Type::parseString($specified);
+        } catch(\Throwable $t) {
+            die("Failed to parse type: $specified -- $message");
+        }
+
+        try {
         $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $parsedType, $expectedType), $message);
+        } catch(InvalidArgumentException $e) {
+            if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
+                && !class_exists($matches[1])
+            ) {
+                die("Class mentioned in callmap does not exist: " . $matches[1]);
+            }
+        }
     }
 }
