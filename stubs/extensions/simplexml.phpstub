@@ -75,7 +75,7 @@ class SimpleXMLIterator extends SimpleXMLElement implements RecursiveIterator, C
 
     public function valid(): bool {}
 
-    public function current(): ?SimpleXMLIterator {}
+    public function current(): SimpleXMLIterator {}
 
     public function key(): ?string {}
 
