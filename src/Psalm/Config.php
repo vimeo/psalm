@@ -585,6 +585,7 @@ class Config
      *     mongodb: bool,
      *     mysqli: bool,
      *     pdo: bool,
+     *     simplexml: bool,
      *     soap: bool,
      *     xdebug: bool,
      * }
@@ -598,6 +599,7 @@ class Config
         "mongodb" => false,
         "mysqli" => false,
         "pdo" => false,
+        "simplexml" => false,
         "soap" => false,
         "xdebug" => false,
     ];

@@ -1,0 +1,118 @@
+<?php
+
+/**
+ * @param class-string<SimpleXMLElement> $class_name
+ * @return SimpleXMLElement|false
+ */
+function simplexml_load_file(string $filename, ?string $class_name = SimpleXMLElement::class, int $options = 0, string $namespace_or_prefix = '', bool $is_prefix = false) {}
+
+/**
+ * @param class-string<SimpleXMLElement> $class_name
+ * @return SimpleXMLElement|false
+ */
+function simplexml_load_string(string $data, ?string $class_name = 'SimpleXMLElement', int $options = 0, string $namespace_or_prefix = '', bool $is_prefix = false) {}
+
+/**
+ * @param class-string<SimpleXMLElement> $class_name
+ */
+function simplexml_import_dom(DOMNode $node, ?string $class_name = 'SimpleXMLElement'): ?SimpleXMLElement {}
+
+/**
+ * @param class-string<SimpleXMLElement> $class_name
+ * @php-from 8.1
+ */
+function simplexml_import_dom(SimpleXMLElement|DOMNode $node, ?string $class_name = 'SimpleXMLElement'): ?SimpleXMLElement {}
+
+/**
+ * @implements Traversable<string, SimpleXMLElement>
+ */
+class SimpleXMLElement implements Traversable, Countable
+{
+    /** @return array<array-key, SimpleXMLElement>|null|false */
+    public function xpath(string $expression) {}
+
+    public function registerXPathNamespace(string $prefix, string $namespace): bool {}
+
+    /** @return ($filename is null ? string|false : bool) */
+    public function asXML(?string $filename = null) {}
+
+    /**
+     * @return ($filename is null ? string|false : bool)
+     * @alias SimpleXMLElement::asXML
+     */
+    public function saveXML(?string $filename = null) {}
+
+    public function getNamespaces(bool $recursive = false): array {}
+
+    /** @return array|false */
+    public function getDocNamespaces(bool $recursive = false, bool $fromRoot = true) {}
+
+    public function children(?string $namespaceOrPrefix = null, bool $isPrefix = false): ?SimpleXMLElement {}
+
+    public function attributes(?string $namespaceOrPrefix = null, bool $isPrefix = false): ?SimpleXMLElement {}
+
+    final public function __construct(string $data, int $options = 0, bool $dataIsURL = false, string $namespaceOrPrefix = '', bool $isPrefix = false) {}
+
+    public function addChild(string $qualifiedName, ?string $value = null, ?string $namespace = null): ?SimpleXMLElement {}
+
+    public function addAttribute(string $qualifiedName, string $value, ?string $namespace = null): void {}
+
+    public function getName(): string {}
+
+    public function __toString(): string {}
+
+    public function count(): int {}
+}
+
+/**
+ * @implements RecursiveIterator<string, SimpleXMLElement>
+ */
+class SimpleXMLIterator extends SimpleXMLElement implements RecursiveIterator, Countable
+{
+    public function count(): int {}
+
+    public function rewind(): void {}
+
+    public function valid(): bool {}
+
+    public function current(): SimpleXMLIterator {}
+
+    public function key(): ?string {}
+
+    public function next(): void {}
+
+    public function hasChildren(): bool {}
+
+    public function getChildren(): SimpleXMLIterator {}
+}
+
+/**
+ * @implements RecursiveIterator<string, SimpleXMLElement>
+ * @php-from 8.0
+ */
+class SimpleXMLElement implements Stringable, Countable, RecursiveIterator
+{
+    public function count(): int {}
+
+    public function rewind(): void {}
+
+    public function valid(): bool {}
+
+    public function current(): SimpleXMLElement {}
+
+    public function key(): ?string {}
+
+    public function next(): void {}
+
+    public function hasChildren(): bool {}
+
+    public function getChildren(): ?SimpleXMLElement {}
+}
+
+/** @php-from 8.0 */
+class SimpleXMLIterator extends SimpleXMLElement
+{
+    public function current(): SimpleXMLElement {}
+
+    public function getChildren(): ?SimpleXMLElement {}
+}
