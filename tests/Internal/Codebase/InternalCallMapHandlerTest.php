@@ -41,96 +41,149 @@ class InternalCallMapHandlerTest extends TestCase
      * @var string[]
      */
     private static $ignoredFunctions = [
-        'array_multisort',
-        'intlcal_from_date_time', 'imagefilledpolygon',
-        /** deprecated in 8.0 */
-        'zip_entry_close',
-        'enum_exists',
-        'igbinary_unserialize',
-        'lzf_compress',
-        'preg_replace_callback_array',
-        'inotify_rm_watch',
-        'easter_date',
-        'snmpset',
-        'bzdecompress',
-        'lzf_decompress',
-        'mongodb\bson\tophp',
-        'fputcsv',
-        'sapi_windows_cp_get',
-        'hash_hmac_file',
-        'array_unshift',
+        'array_column',
         'array_diff',
-        'array_replace_recursive',
-        'array_intersect_assoc',
-        'array_replace',
-        'dns_get_mx',
-        'array_intersect',
-        'array_intersect_key',
-        'array_merge',
-        'array_diff_key',
-        'crypt',
-        'debug_zval_dump',
-        'array_merge_recursive',
         'array_diff_assoc',
+        'array_diff_key',
+        'array_intersect',
+        'array_intersect_assoc',
+        'array_intersect_key',
+        'array_key_exists',
+        'array_merge',
+        'array_merge_recursive',
+        'array_multisort',
         'array_push',
-        'pg_fetch_all',
-        'pg_exec',
-        'pg_send_execute',
-        'datefmt_set_timezone',
-        'socket_strerror',
-        'sodium_crypto_kx_client_session_keys',
-        'mysqli_stmt_bind_param',
-        'socket_getsockname',
-        'bcmod',
-        'socket_getopt',
-        'pg_exec',
-        'socket_set_option',
-        'socket_sendto',
-        'socket_connect',
-        'socket_select',
-        'datefmt_create',
-        'imagettftext',
-        'mysqli_poll',
-        'socket_recvfrom',
-        'pg_select',
-        'intltz_get_canonical_id',
-        'imagexbm',
+        'array_replace',
+        'array_replace_recursive',
+        'array_unshift',
         'bcdiv',
-        'pg_get_notify',
-        'socket_get_option',
-        'socket_create_pair',
-        'socket_sendmsg',
-        'normalizer_get_raw_decomposition',
-        'socket_cmsg_space',
-        'imagettfbbox',
-        'pg_get_result',
-        'imagepolygon',
-        'imageopenpolygon',
-        'socket_getpeername',
+        'bcmod',
+        'bcpowmod',
+        'bzdecompress',
+        'count',
+        'crypt',
+        'date_isodate_set',
+        'datefmt_create',
         'datefmt_get_timezone',
-        'sodium_crypto_generichash_update',
-        'socket_read',
-        'imap_undelete',
-        'socket_bind',
-        'intlgregcal_create_instance',
-        'imagesetinterpolation',
-        'openssl_pkcs7_read',
-        'mysqli_real_connect',
-        'datefmt_parse',
-        'socket_shutdown',
         'datefmt_localtime',
-        'intltz_get_display_name',
+        'datefmt_parse',
+        'datefmt_set_timezone',
+        'debug_zval_dump',
+        'deflate_add',
+        'dns_get_mx',
+        'easter_date',
+        'enum_exists',
+        'extract',
+        'filter_var',
+        'filter_var_array',
+        'fputcsv',
+        'get_class_methods',
+        'get_headers',
+        'get_parent_class',
+        'hash_hmac_file',
+        'igbinary_unserialize',
+        'imagefilter',
+        'imagegd',
+        'imagegd2',
+        'imageinterlace',
+        'imageopenpolygon',
+        'imagepolygon',
+        'imagerotate',
+        'imagesetinterpolation',
+        'imagettfbbox',
+        'imagettftext',
+        'imagexbm',
         'imap_delete',
-        'socket_setopt',
+        'imap_open',
+        'imap_rfc822_write_address',
+        'imap_sort',
+        'imap_undelete',
+        'inflate_add',
+        'inflate_get_read_len',
+        'inflate_get_status',
+        'inotify_rm_watch',
+        'intlcal_from_date_time', 'imagefilledpolygon',
+        'intlcal_get_weekend_transition',
+        'intlgregcal_create_instance',
         'intlgregcal_is_leap_year',
         'intltz_create_enumeration',
-        'imagefilter',
+        'intltz_get_canonical_id',
+        'intltz_get_display_name',
+        'long2ip',
+        'lzf_compress',
+        'lzf_decompress',
+        'mail',
+        'mongodb\bson\tophp',
+        'msg_receive',
+        'msg_remove_queue',
+        'msg_send',
+        'msg_set_queue',
+        'msg_stat_queue',
+        'msg_stat_queue',
+        'mysqli_poll',
+        'mysqli_real_connect',
+        'mysqli_stmt_bind_param',
+        'normalizer_get_raw_decomposition',
+        'openssl_pkcs7_read',
+        'pg_exec',
+        'pg_exec',
+        'pg_fetch_all',
+        'pg_get_notify',
+        'pg_get_result',
+        'pg_pconnect',
+        'pg_select',
+        'pg_send_execute',
+        'preg_filter',
+        'preg_replace_callback_array',
+        'sapi_windows_cp_get',
+        'sem_acquire',
+        'sem_get',
+        'sem_release',
+        'sem_remove',
+        'shm_detach',
+        'shm_get_var',
+        'shm_has_var',
+        'shm_put_var',
+        'shm_put_var',
+        'shm_remove',
+        'shm_remove_var',
+        'shmop_close',
+        'shmop_delete',
+        'shmop_read',
+        'shmop_size',
+        'shmop_write',
+        'snmpset',
         'socket_addrinfo_lookup',
+        'socket_bind',
+        'socket_cmsg_space',
+        'socket_connect',
+        'socket_create_pair',
+        'socket_get_option',
+        'socket_getopt',
+        'socket_getpeername',
+        'socket_getsockname',
+        'socket_read',
         'socket_recv',
-        'sodium_crypto_secretstream_xchacha20poly1305_rekey',
-        'bcpowmod',
+        'socket_recvfrom',
+        'socket_recvmsg',
+        'socket_select',
         'socket_send',
-        'socket_set_blocking'
+        'socket_sendmsg',
+        'socket_sendto',
+        'socket_set_blocking',
+        'socket_set_option',
+        'socket_setopt',
+        'socket_shutdown',
+        'socket_strerror',
+        'sodium_crypto_generichash',
+        'sodium_crypto_generichash_final',
+        'sodium_crypto_generichash_init',
+        'sodium_crypto_generichash_update',
+        'sodium_crypto_kx_client_session_keys',
+        'sodium_crypto_secretstream_xchacha20poly1305_rekey',
+        'substr_replace',
+        'zip_entry_close',
+        'zlib_encode',
 
 
 
@@ -237,7 +290,7 @@ class InternalCallMapHandlerTest extends TestCase
 
     /**
      *
-     * @return iterable<string, array{0: string, 1: array<int|string>}>
+     * @return iterable<string, array{0: callable-string, 1: array<int|string>}>
      */
     public function callMapEntryProvider(): iterable
     {
@@ -267,8 +320,6 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
-     * @param string $functionName
      * @return bool
      */
     private function isIgnored(string $functionName)
@@ -286,7 +337,10 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
+     * @depends testGetcallmapReturnsAValidCallmap
      * @dataProvider callMapEntryProvider
+     * @coversNothing
+     * @psalm-param callable-string $functionName
      */
     public function testIgnoredFunctionsStillFail(string $functionName, array $callMapEntry): void
     {
@@ -320,11 +374,6 @@ class InternalCallMapHandlerTest extends TestCase
                 die("Class mentioned in callmap does not exist: " . $matches[1]);
             }
 
-        } catch(Warning $w) {
-            throw $w;
-        } catch(\Throwable $t) {
-            var_dump($t->getMessage());
-            die(get_class($t));
         }
 
         $this->markTestIncomplete("Remove function '{$functionName}' from your ignores");
@@ -336,6 +385,7 @@ class InternalCallMapHandlerTest extends TestCase
      * @coversNothing
      * @depends testGetcallmapReturnsAValidCallmap
      * @dataProvider callMapEntryProvider
+     * @psalm-param callable-string $functionName
      * @param array $callMapEntry
      */
     public function testCallMapCompliesWithReflection(string $functionName, array $callMapEntry): void
@@ -429,7 +479,7 @@ class InternalCallMapHandlerTest extends TestCase
 
         $expectedType = $param->getType();
 
-        if (isset($expectedType) && !empty($specified)) {
+        if (isset($expectedType) && !empty($normalizedEntry['type'])) {
             $this->assertTypeValidity($expectedType, $normalizedEntry['type'], "Param '{$name}' has incorrect type");
         }
     }
