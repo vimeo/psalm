@@ -936,7 +936,9 @@ class ArrayAccessTest extends TestCase
             'simpleXmlArrayFetchChildren' => [
                 'code' => '<?php
                     function iterator(SimpleXMLElement $xml): iterable {
-                        foreach ($xml->children() as $img) {
+                        $children = $xml->children();
+                        assert($children !== null);
+                        foreach ($children as $img) {
                             yield $img["src"] ?? "";
                         }
                     }',
