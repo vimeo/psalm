@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Codebase;
 
+use Exception;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
@@ -41,6 +42,10 @@ abstract class DataFlowGraph
 
         if ($from_id === $to_id) {
             return;
+        }
+
+        if ($from_id === 'A::$last-src/somefile.php:255-src/somefile.php:255-265') {
+            throw new Exception('bad');
         }
 
         $length = 0;

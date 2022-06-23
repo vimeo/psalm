@@ -463,9 +463,6 @@ class InstancePropertyAssignmentAnalyzer
 
         $data_flow_graph = $statements_analyzer->data_flow_graph;
 
-        $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
         if ($class_storage->specialize_instance) {
             $var_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt->var,
@@ -487,12 +484,16 @@ class InstancePropertyAssignmentAnalyzer
                     return;
                 }
 
+                $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+
                 $var_node = DataFlowNode::getForAssignment(
                     $var_id,
                     $var_location
                 );
 
                 $data_flow_graph->addNode($var_node);
+
+                $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $property_node = DataFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
@@ -547,76 +548,107 @@ class InstancePropertyAssignmentAnalyzer
                 $statements_analyzer
             );
 
-            $localized_property_node = DataFlowNode::getForAssignment(
+            self::taintUnspecializedProperty(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $class_storage,
+                $assignment_value_type,
+                $context,
                 $var_property_id
-                    ?: $property_id . '-' . $property_location->file_name . ':' . $property_location->raw_file_start,
-                $property_location
             );
+        }
+    }
 
-            $data_flow_graph->addNode($localized_property_node);
+    public static function taintUnspecializedProperty(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        string $property_id,
+        ClassLikeStorage $class_storage,
+        Union $assignment_value_type,
+        Context $context,
+        ?string $var_property_id
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
 
-            $property_node = new DataFlowNode(
-                $property_id,
-                $property_id,
-                null,
-                null
-            );
+        $data_flow_graph = $statements_analyzer->data_flow_graph;
 
-            $data_flow_graph->addNode($property_node);
+        if (!$data_flow_graph) {
+            return;
+        }
 
-            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-            $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+        $localized_property_node = DataFlowNode::getForAssignment(
+            $var_property_id ?: $property_id,
+            $property_location
+        );
 
-            $data_flow_graph->addPath(
-                $localized_property_node,
-                $property_node,
-                'property-assignment',
-                $added_taints,
-                $removed_taints
-            );
+        $data_flow_graph->addNode($localized_property_node);
 
-            if ($assignment_value_type->parent_nodes) {
-                foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                    $data_flow_graph->addPath(
-                        $parent_node,
-                        $localized_property_node,
-                        '=',
-                        $added_taints,
-                        $removed_taints
-                    );
-                }
-            }
+        $property_node = new DataFlowNode(
+            $property_id,
+            $property_id,
+            null,
+            null
+        );
 
-            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                $property_id,
-                false,
-                $statements_analyzer
-            );
+        $data_flow_graph->addNode($property_node);
 
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && $declaring_property_class
-                && $declaring_property_class !== $class_storage->name
-                && $stmt->name instanceof PhpParser\Node\Identifier
-            ) {
-                $declaring_property_node = new DataFlowNode(
-                    $declaring_property_class . '::$' . $stmt->name,
-                    $declaring_property_class . '::$' . $stmt->name,
-                    null,
-                    null
-                );
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
-                $data_flow_graph->addNode($declaring_property_node);
+        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+        $data_flow_graph->addPath(
+            $localized_property_node,
+            $property_node,
+            'property-assignment',
+            $added_taints,
+            $removed_taints
+        );
+
+        if ($assignment_value_type->parent_nodes) {
+            foreach ($assignment_value_type->parent_nodes as $parent_node) {
                 $data_flow_graph->addPath(
-                    $property_node,
-                    $declaring_property_node,
-                    'property-assignment',
+                    $parent_node,
+                    $localized_property_node,
+                    '=',
                     $added_taints,
                     $removed_taints
                 );
             }
+        }
+
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+            $property_id,
+            false,
+            $statements_analyzer
+        );
+
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $declaring_property_class
+            && $declaring_property_class !== $class_storage->name
+            && ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
+                || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch)
+            && $stmt->name instanceof PhpParser\Node\Identifier
+        ) {
+            $declaring_property_node = new DataFlowNode(
+                $declaring_property_class . '::$' . $stmt->name,
+                $declaring_property_class . '::$' . $stmt->name,
+                null,
+                null
+            );
+
+            $data_flow_graph->addNode($declaring_property_node);
+
+            $data_flow_graph->addPath(
+                $property_node,
+                $declaring_property_node,
+                'property-assignment',
+                $added_taints,
+                $removed_taints
+            );
         }
     }
 

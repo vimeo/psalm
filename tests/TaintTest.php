@@ -2349,6 +2349,22 @@ class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'checkMemoizedStaticMethodCallTaints' => [
+                'code' => '<?php
+                    class A {
+                        private static string $last = "";
+
+                        public static function getInputOrLast(string $s): string {
+                            $last = self::$last;
+                            self::$last = $s;
+                            return $last;
+                        }
+                    }
+
+                    A::getInputOrLast($_GET["a"]);
+                    echo A::getInputOrLast("foo");',
+                'error_message' => 'TaintedHtml',
+            ],
         ];
     }
 
