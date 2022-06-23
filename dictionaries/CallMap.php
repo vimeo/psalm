@@ -6780,8 +6780,6 @@ return [
 'ldap_close' => ['bool', 'ldap'=>'LDAP\Connection'],
 'ldap_compare' => ['bool|int', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string', 'controls='=>'?array'],
 'ldap_connect' => ['LDAP\Connection|false', 'uri='=>'string', 'port='=>'int', 'wallet='=>'string', 'password='=>'string', 'auth_mode='=>'int'],
-'ldap_control_paged_result' => ['bool', 'link_identifier'=>'resource', 'pagesize'=>'int', 'iscritical='=>'bool', 'cookie='=>'string'],
-'ldap_control_paged_result_response' => ['bool', 'link_identifier'=>'resource', 'result_identifier'=>'resource', '&w_cookie'=>'string', '&w_estimated'=>'int'],
 'ldap_count_entries' => ['int|false', 'ldap'=>'LDAP\Connection', 'result'=>'LDAP\Result'],
 'ldap_delete' => ['bool', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'controls='=>'?array'],
 'ldap_delete_ext' => ['LDAP\Result|false', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'controls='=>'?array'],
