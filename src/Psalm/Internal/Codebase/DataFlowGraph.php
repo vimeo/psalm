@@ -44,10 +44,6 @@ abstract class DataFlowGraph
             return;
         }
 
-        if ($from_id === 'A::$last-src/somefile.php:255-src/somefile.php:255-265') {
-            throw new Exception('bad');
-        }
-
         $length = 0;
 
         if ($from->code_location

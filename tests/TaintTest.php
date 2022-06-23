@@ -2352,17 +2352,17 @@ class TaintTest extends TestCase
             'checkMemoizedStaticMethodCallTaints' => [
                 'code' => '<?php
                     class A {
-                        private static string $last = "";
+                        private static string $prev = "";
 
-                        public static function getInputOrLast(string $s): string {
-                            $last = self::$last;
-                            self::$last = $s;
-                            return $last;
+                        public static function getPrevious(string $s): string {
+                            $prev = self::$prev;
+                            self::$prev = $s;
+                            return $prev;
                         }
                     }
 
-                    A::getInputOrLast($_GET["a"]);
-                    echo A::getInputOrLast("foo");',
+                    A::getPrevious($_GET["a"]);
+                    echo A::getPrevious("foo");',
                 'error_message' => 'TaintedHtml',
             ],
         ];
