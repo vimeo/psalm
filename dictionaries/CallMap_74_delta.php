@@ -20,6 +20,14 @@ return [
     'mb_str_split' => ['list<string>|false', 'string'=>'string', 'length='=>'positive-int', 'encoding='=>'string'],
   ],
   'changed' => [
+    'array_merge' => [
+        'old' => ['array', '...arrays'=>'array'],
+        'new' => ['array', '...arrays='=>'array'],
+    ],
+    'array_merge_recursive' => [
+        'old' => ['array', '...arrays'=>'array'],
+        'new' => ['array', '...arrays='=>'array'],
+    ],
     'gzread' => [
       'old' => ['string|0', 'stream'=>'resource', 'length'=>'int'],
       'new' => ['string|false', 'stream'=>'resource', 'length'=>'int'],

@@ -50,6 +50,14 @@ return [
     'socket_wsaprotocol_info_release' => ['bool', 'info_id'=>'string'],
   ],
   'changed' => [
+    'array_push' => [
+        'old' => ['int', '&rw_array'=>'array', '...values'=>'mixed'],
+        'new' => ['int', '&rw_array'=>'array', '...values='=>'mixed'],
+    ],
+    'array_unshift' => [
+        'old' => ['int', '&rw_array'=>'array', '...values'=>'mixed'],
+        'new' => ['int', '&rw_array'=>'array', '...values='=>'mixed'],
+    ],
     'bcscale' => [
       'old' => ['int', 'scale'=>'int'],
       'new' => ['int', 'scale='=>'int'],
