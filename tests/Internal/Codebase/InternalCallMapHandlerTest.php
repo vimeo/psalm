@@ -47,21 +47,7 @@ class InternalCallMapHandlerTest extends TestCase
      */
     private static $ignoredFunctions = [
         'apcu_entry',
-        'array_column',
-        'array_diff',
-        'array_diff_assoc',
-        'array_diff_key',
-        'array_intersect',
-        'array_intersect_assoc',
-        'array_intersect_key',
-        'array_key_exists',
-        'array_merge',
-        'array_merge_recursive',
         'array_multisort',
-        'array_push',
-        'array_replace',
-        'array_replace_recursive',
-        'array_unshift',
         'bcdiv',
         'bcmod',
         'bcpowmod',
@@ -348,7 +334,6 @@ class InternalCallMapHandlerTest extends TestCase
         'yaml_emit_file',
         'zip_entry_close',
         'zlib_encode',
-
     ];
 
     /**
