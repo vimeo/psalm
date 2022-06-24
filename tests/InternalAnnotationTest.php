@@ -586,6 +586,28 @@ class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'The method A\Foo::barBar is internal to A but called from B\Bat',
             ],
+            'internalCloneMethodWithCall' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             */
+                            public function __clone() {
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        class Bat {
+                            public function batBat(): void {
+                                $a = new \A\Foo;
+                                $aa = clone $a;
+                            }
+                        }
+                    }',
+                'error_message' => 'The method A\Foo::__clone is internal to A but called from B\Bat',
+            ],
             'internalMethodWithCallFromRootNamespace' => [
                 'code' => '<?php
                     namespace A {
