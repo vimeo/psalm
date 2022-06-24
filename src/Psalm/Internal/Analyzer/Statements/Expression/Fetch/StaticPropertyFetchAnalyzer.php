@@ -231,6 +231,16 @@ class StaticPropertyFetchAnalyzer
                 );
             }
 
+            AtomicPropertyFetchAnalyzer::processUnspecialTaints(
+                $statements_analyzer,
+                $stmt,
+                $stmt_type,
+                $property_id,
+                false,
+                [],
+                []
+            );
+
             return true;
         }
 
@@ -389,6 +399,16 @@ class StaticPropertyFetchAnalyzer
                     $stmt_type->getId()
                 );
             }
+
+            AtomicPropertyFetchAnalyzer::processUnspecialTaints(
+                $statements_analyzer,
+                $stmt,
+                $stmt_type,
+                $property_id,
+                false,
+                [],
+                []
+            );
         } else {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         }
