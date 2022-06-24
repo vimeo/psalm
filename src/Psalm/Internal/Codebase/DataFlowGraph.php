@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Codebase;
 
-use Exception;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
