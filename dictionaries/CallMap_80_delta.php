@@ -309,6 +309,10 @@ return [
       'old' => ['string|false', 'object'=>'DateTimeInterface', 'format'=>'string'],
       'new' => ['string', 'object'=>'DateTimeInterface', 'format'=>'string'],
     ],
+    'datefmt_create' => [
+        'old' => ['?IntlDateFormatter', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'DateTimeZone|IntlTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'string'],
+        'new' => ['?IntlDateFormatter', 'locale'=>'?string', 'dateType='=>'int', 'timeType='=>'int', 'timezone='=>'DateTimeZone|IntlTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
+    ],
     'dom_import_simplexml' => [
         'old' => ['DOMElement|null', 'node'=>'SimpleXMLElement'],
         'new' => ['DOMElement', 'node'=>'SimpleXMLElement'],
