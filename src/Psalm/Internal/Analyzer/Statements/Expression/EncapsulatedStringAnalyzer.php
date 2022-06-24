@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Node\Scalar\EncapsedStringPart;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -29,6 +30,8 @@ class EncapsulatedStringAnalyzer
 
         $all_literals = true;
 
+        $literal_string = "";
+
         foreach ($stmt->parts as $part) {
             if ($part instanceof PhpParser\Node\Scalar\EncapsedStringPart
                 && $part->value
@@ -42,7 +45,7 @@ class EncapsulatedStringAnalyzer
 
             $part_type = $statements_analyzer->node_data->getType($part);
 
-            if ($part_type) {
+            if ($part_type !== null) {
                 $casted_part_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
@@ -52,6 +55,14 @@ class EncapsulatedStringAnalyzer
 
                 if (!$casted_part_type->allLiterals()) {
                     $all_literals = false;
+                }
+
+                if ($literal_string !== null) {
+                    if ($casted_part_type->isSingleLiteral()) {
+                        $literal_string .= $casted_part_type->getSingleLiteral();
+                    } else {
+                        $literal_string = null;
+                    }
                 }
 
                 if ($statements_analyzer->data_flow_graph
@@ -82,11 +93,20 @@ class EncapsulatedStringAnalyzer
                         }
                     }
                 }
+            } elseif ($part instanceof EncapsedStringPart) {
+                if ($literal_string !== null) {
+                    $literal_string .= $part->value;
+                }
+            } else {
+                $all_literals = false;
+                $literal_string = null;
             }
         }
 
         if ($non_empty) {
-            if ($all_literals) {
+            if ($literal_string !== null) {
+                $new_type = Type::getString($literal_string);
+            } elseif ($all_literals) {
                 $new_type = new Union([new TNonEmptyNonspecificLiteralString()]);
             } else {
                 $new_type = new Union([new TNonEmptyString()]);

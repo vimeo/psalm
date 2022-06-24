@@ -1329,6 +1329,32 @@ class Union implements TypeNode
             || isset($this->types['true']);
     }
 
+    public function isSingleLiteral(): bool
+    {
+        return count($this->types) === 1
+            && count($this->literal_int_types)
+                + count($this->literal_string_types)
+                + count($this->literal_float_types) === 1
+        ;
+    }
+
+    /**
+     * @return TLiteralInt|TLiteralString|TLiteralFloat
+     */
+    public function getSingleLiteral()
+    {
+        if (!$this->isSingleLiteral()) {
+            throw new InvalidArgumentException("Not a single literal");
+        }
+
+        return ($literal = reset($this->literal_int_types)) !== false
+            ? $literal
+            : (($literal = reset($this->literal_string_types)) !== false
+                ? $literal
+                : reset($this->literal_float_types))
+        ;
+    }
+
     public function hasLiteralString(): bool
     {
         return count($this->literal_string_types) > 0;
