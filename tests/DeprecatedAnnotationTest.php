@@ -26,6 +26,16 @@ class DeprecatedAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'deprecatedCloneMethod' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @deprecated
+                         */
+                        public function __clone() {
+                        }
+                    }',
+            ],
             'deprecatedClassUsedInsideClass' => [
                 'code' => '<?php
                     /**
@@ -112,6 +122,20 @@ class DeprecatedAnnotationTest extends TestCase
                     }
 
                     Foo::barBar();',
+                'error_message' => 'DeprecatedMethod',
+            ],
+            'deprecatedCloneMethodWithCall' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @deprecated
+                         */
+                        public function __clone() {
+                        }
+                    }
+
+                    $a = new Foo;
+                    $aa = clone $a;',
                 'error_message' => 'DeprecatedMethod',
             ],
             'deprecatedClassWithStaticCall' => [
