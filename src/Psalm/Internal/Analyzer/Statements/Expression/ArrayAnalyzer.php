@@ -74,7 +74,7 @@ class ArrayAnalyzer
 
         foreach ($stmt->items as $item) {
             if ($item === null) {
-                IssueBuffer::add(
+                IssueBuffer::maybeAdd(
                     new ParseError(
                         'Array element cannot be empty',
                         new CodeLocation($statements_analyzer, $stmt)

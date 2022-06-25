@@ -133,7 +133,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
-                IssueBuffer::add(
+                IssueBuffer::maybeAdd(
                     new ParseError(
                         'Interfaces cannot have properties',
                         new CodeLocation($this, $stmt)

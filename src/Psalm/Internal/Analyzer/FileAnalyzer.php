@@ -196,7 +196,7 @@ class FileAnalyzer extends SourceAnalyzer
         $statements_analyzer = new StatementsAnalyzer($this, $this->node_data);
 
         foreach ($file_storage->docblock_issues as $docblock_issue) {
-            IssueBuffer::add($docblock_issue);
+            IssueBuffer::maybeAdd($docblock_issue);
         }
 
         // if there are any leftover statements, evaluate them,

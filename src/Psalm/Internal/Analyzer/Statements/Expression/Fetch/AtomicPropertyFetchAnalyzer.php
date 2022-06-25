@@ -29,6 +29,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyFetch;
+use Psalm\Issue\InternalClass;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\NoInterfaceProperties;
@@ -405,10 +406,10 @@ class AtomicPropertyFetchAnalyzer
 
             $property_storage = $declaring_class_storage->properties[$prop_name];
 
-            if ($context->self && !NamespaceAnalyzer::isWithin($context->self, $property_storage->internal)) {
+            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
-                        $property_id . ' is internal to ' . $property_storage->internal
+                        $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
                             . ' but called from ' . $context->self,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id

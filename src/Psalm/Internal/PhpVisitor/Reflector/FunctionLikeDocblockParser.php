@@ -8,6 +8,7 @@ use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\InvalidDocblock;
@@ -381,14 +382,7 @@ class FunctionLikeDocblockParser
             $info->internal = true;
         }
 
-        if (isset($parsed_docblock->tags['psalm-internal'])) {
-            $psalm_internal = trim(reset($parsed_docblock->tags['psalm-internal']));
-
-            if (!$psalm_internal) {
-                throw new DocblockParseException('@psalm-internal annotation used without specifying namespace');
-            }
-
-            $info->psalm_internal = $psalm_internal;
+        if (count($info->psalm_internal = DocblockParser::handlePsalmInternal($parsed_docblock)) !== 0) {
             $info->internal = true;
         }
 
