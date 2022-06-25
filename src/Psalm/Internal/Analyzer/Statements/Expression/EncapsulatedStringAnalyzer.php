@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Union;
 
+use function assert;
 use function in_array;
 
 class EncapsulatedStringAnalyzer
