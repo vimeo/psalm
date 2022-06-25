@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Union;
 
 use function in_array;
@@ -55,20 +56,23 @@ class EncapsulatedStringAnalyzer
                     $all_literals = false;
                 } elseif (!$non_empty) {
                     // Check if all literals are nonempty
+                    $non_empty = true;
                     foreach ($casted_part_type->getAtomicTypes() as $atomic_literal) {
-                        $non_empty = $atomic_literal instanceof TLiteralInt
-                            || $atomic_literal instanceof TNonspecificLiteralInt
-                            || $atomic_literal instanceof TLiteralFloat
-                            || $atomic_literal instanceof TNonEmptyNonspecificLiteralString
-                            || ($atomic_literal instanceof TLiteralString && $atomic_literal->value !== "")
-                        ;
+                        if (!$atomic_literal instanceof TLiteralInt
+                            && !$atomic_literal instanceof TNonspecificLiteralInt
+                            && !$atomic_literal instanceof TLiteralFloat
+                            && !$atomic_literal instanceof TNonEmptyNonspecificLiteralString
+                            && !($atomic_literal instanceof TLiteralString && $atomic_literal->value !== "")
+                        ) {
+                            $non_empty = false;
+                            break;
+                        }
                     }
                 }
 
                 if ($literal_string !== null) {
                     if ($casted_part_type->isSingleLiteral()) {
                         $literal_string .= $casted_part_type->getSingleLiteral()->value;
-                        if (!$non_empty && $literal_string !== "") {}
                     } else {
                         $literal_string = null;
                     }
@@ -121,7 +125,11 @@ class EncapsulatedStringAnalyzer
             } else {
                 $new_type = new Union([new TNonEmptyString()]);
             }
-
+        } elseif ($all_literals) {
+            $new_type = new Union([new TNonspecificLiteralString()]);
+        }
+        if (isset($new_type)) {
+            assert($new_type instanceof Union);
             $new_type->parent_nodes = $stmt_type->parent_nodes;
             $stmt_type = $new_type;
         }

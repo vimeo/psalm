@@ -720,6 +720,16 @@ class BinaryOperationTest extends TestCase
                 ',
                 'assertions' => ['$concatenated===' => 'non-empty-literal-string'],
             ],
+            'encapsedPossiblyEmptyLiteralString' => [
+                '<?php
+                    /** @var "foo"|"" */
+                    $foo = "";
+                    /** @var "bar"|"" */
+                    $bar = "";
+                    $interpolated = "{$foo}{$bar}";
+                ',
+                'assertions' => ['$interpolated===' => 'literal-string'],
+            ],
             'literalIntConcatCreatesLiteral' => [
                 '<?php
                     /**
