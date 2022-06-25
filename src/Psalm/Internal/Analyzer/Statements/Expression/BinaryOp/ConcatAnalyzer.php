@@ -28,12 +28,14 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
@@ -52,6 +54,8 @@ use function strlen;
  */
 class ConcatAnalyzer
 {
+    private const MAX_LITERALS = 64;
+
     /**
      * @param Union|null $result_type
      */
@@ -155,39 +159,35 @@ class ConcatAnalyzer
             self::analyzeOperand($statements_analyzer, $left, $left_type, 'Left', $context);
             self::analyzeOperand($statements_analyzer, $right, $right_type, 'Right', $context);
 
-            // If one of the types is a single int or string literal, and the other
-            // type is all string or int literals, combine them into new literal(s).
+            // If both types are specific literals, combine them into new literals
             $literal_concat = false;
 
-            if (($left_type->allStringLiterals() || $left_type->allIntLiterals())
-                && ($right_type->allStringLiterals() || $right_type->allIntLiterals())
-            ) {
-                $literal_concat = true;
-                $result_type_parts = [];
+            if ($left_type->allSpecificLiterals() && $right_type->allSpecificLiterals()) {
+                $left_type_parts = $left_type->getAtomicTypes();
+                $right_type_parts = $right_type->getAtomicTypes();
+                $combinations = count($left_type_parts) * count($right_type_parts);
+                if ($combinations < self::MAX_LITERALS) {
+                    $literal_concat = true;
+                    $result_type_parts = [];
 
-                foreach ($left_type->getAtomicTypes() as $left_type_part) {
-                    assert($left_type_part instanceof TLiteralString || $left_type_part instanceof TLiteralInt);
-                    foreach ($right_type->getAtomicTypes() as $right_type_part) {
-                        assert($right_type_part instanceof TLiteralString || $right_type_part instanceof TLiteralInt);
-                        $literal = $left_type_part->value . $right_type_part->value;
-                        if (strlen($literal) >= $config->max_string_length) {
-                            // Literal too long, use non-literal type instead
-                            $literal_concat = false;
-                            break 2;
+                    foreach ($left_type->getAtomicTypes() as $left_type_part) {
+                        foreach ($right_type->getAtomicTypes() as $right_type_part) {
+                            $literal = $left_type_part->value . $right_type_part->value;
+                            if (strlen($literal) >= $config->max_string_length) {
+                                // Literal too long, use non-literal type instead
+                                $literal_concat = false;
+                                break 2;
+                            }
+
+                            $result_type_parts[] = new TLiteralString($literal);
                         }
-
-                        $result_type_parts[] = new TLiteralString($literal);
                     }
-                }
 
-                if (!empty($result_type_parts)) {
-                    if ($literal_concat && count($result_type_parts) < 64) {
+                    if ($literal_concat) {
+                        assert(count($result_type_parts) === $combinations);
+                        assert(count($result_type_parts) !== 0); // #8163
                         $result_type = new Union($result_type_parts);
-                    } else {
-                        $result_type = new Union([new TNonEmptyNonspecificLiteralString]);
                     }
-
-                    return;
                 }
             }
 

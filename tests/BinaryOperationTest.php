@@ -686,6 +686,40 @@ class BinaryOperationTest extends TestCase
                         return "Hello $s1 $s2";
                     }',
             ],
+            'encapsedStringIsInferredAsLiteral' => [
+                '<?php
+                    $int = 1;
+                    $float = 2.3;
+                    $string = "foobar";
+                    $interpolated = "{$int}{$float}{$string}";
+                ',
+                'assertions' => ['$interpolated===' => '"12.3foobar"'],
+            ],
+            'concatenatedStringIsInferredAsLiteral' => [
+                '<?php
+                    $int = 1;
+                    $float = 2.3;
+                    $string = "foobar";
+                    $concatenated = $int . $float . $string;
+                ',
+                'assertions' => ['$concatenated===' => '"12.3foobar"'],
+            ],
+            'encapsedNonEmptyNonSpecificLiteralString' => [
+                '<?php
+                    /** @var non-empty-literal-string */
+                    $string = "foobar";
+                    $interpolated = "$string";
+                ',
+                'assertions' => ['$interpolated===' => 'non-empty-literal-string'],
+            ],
+            'concatenatedNonEmptyNonSpecificLiteralString' => [
+                '<?php
+                    /** @var non-empty-literal-string */
+                    $string = "foobar";
+                    $concatenated = $string . "";
+                ',
+                'assertions' => ['$concatenated===' => 'non-empty-literal-string'],
+            ],
             'literalIntConcatCreatesLiteral' => [
                 '<?php
                     /**

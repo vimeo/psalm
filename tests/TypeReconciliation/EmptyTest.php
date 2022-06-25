@@ -418,6 +418,35 @@ class EmptyTest extends TestCase
                         if (empty($arr["a"])) {}
                     }'
             ],
+            'SKIPPED-countWithLiteralIntVariable' => [ // #8163
+                '<?php
+                    $c = 1;
+                    /** @var list<int> */
+                    $arr = [1];
+                    assert(count($arr) === $c);
+                ',
+                'assertions' => ['$arr===' => 'non-empty-list<int>'],
+            ],
+            'SKIPPED-countWithIntRange' => [ // #8163
+                '<?php
+                    /** @var int<1, max> */
+                    $c = 1;
+                    /** @var list<int> */
+                    $arr = [1];
+                    assert(count($arr) === $c);
+                ',
+                'assertions' => ['$arr===' => 'non-empty-list<int>'],
+            ],
+            'SKIPPED-countEmptyWithIntRange' => [ // #8163
+                '<?php
+                    /** @var int<0, max> */
+                    $c = 1;
+                    /** @var list<int> */
+                    $arr = [1];
+                    assert(count($arr) === $c);
+                ',
+                'assertions' => ['$arr===' => 'list<int>'],
+            ],
         ];
     }
 

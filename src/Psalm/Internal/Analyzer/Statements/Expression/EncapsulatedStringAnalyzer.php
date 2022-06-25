@@ -11,8 +11,12 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Union;
 
 use function in_array;
@@ -33,12 +37,6 @@ class EncapsulatedStringAnalyzer
         $literal_string = "";
 
         foreach ($stmt->parts as $part) {
-            if ($part instanceof PhpParser\Node\Scalar\EncapsedStringPart
-                && $part->value
-            ) {
-                $non_empty = true;
-            }
-
             if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
                 return false;
             }
@@ -55,11 +53,22 @@ class EncapsulatedStringAnalyzer
 
                 if (!$casted_part_type->allLiterals()) {
                     $all_literals = false;
+                } elseif (!$non_empty) {
+                    // Check if all literals are nonempty
+                    foreach ($casted_part_type->getAtomicTypes() as $atomic_literal) {
+                        $non_empty = $atomic_literal instanceof TLiteralInt
+                            || $atomic_literal instanceof TNonspecificLiteralInt
+                            || $atomic_literal instanceof TLiteralFloat
+                            || $atomic_literal instanceof TNonEmptyNonspecificLiteralString
+                            || ($atomic_literal instanceof TLiteralString && $atomic_literal->value !== "")
+                        ;
+                    }
                 }
 
                 if ($literal_string !== null) {
                     if ($casted_part_type->isSingleLiteral()) {
-                        $literal_string .= $casted_part_type->getSingleLiteral();
+                        $literal_string .= $casted_part_type->getSingleLiteral()->value;
+                        if (!$non_empty && $literal_string !== "") {}
                     } else {
                         $literal_string = null;
                     }
@@ -97,6 +106,7 @@ class EncapsulatedStringAnalyzer
                 if ($literal_string !== null) {
                     $literal_string .= $part->value;
                 }
+                $non_empty = $non_empty || $part->value !== "";
             } else {
                 $all_literals = false;
                 $literal_string = null;
