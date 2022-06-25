@@ -7,7 +7,8 @@ namespace Psalm\Type\Atomic;
  */
 class TFalse extends TBool
 {
-    public bool $value = false;
+    /** @var false */
+    public $value = false;
 
     public function __toString(): string
     {
