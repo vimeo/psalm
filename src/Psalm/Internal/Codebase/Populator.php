@@ -29,7 +29,6 @@ use function array_merge;
 use function count;
 use function in_array;
 use function reset;
-use function strlen;
 use function strpos;
 use function strtolower;
 
@@ -258,16 +257,11 @@ class Populator
 
         if (!$storage->is_interface && !$storage->is_trait) {
             foreach ($storage->methods as $method) {
-                if (strlen($storage->internal) > strlen($method->internal)) {
-                    $method->internal = $storage->internal;
-                }
+                $method->internal = array_merge($storage->internal, $method->internal);
             }
 
-
             foreach ($storage->properties as $property) {
-                if (strlen($storage->internal) > strlen($property->internal)) {
-                    $property->internal = $storage->internal;
-                }
+                $property->internal = array_merge($storage->internal, $property->internal);
             }
         }
 

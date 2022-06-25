@@ -792,10 +792,10 @@ class AtomicStaticCallAnalyzer
             );
         }
 
-        if ($context->self && ! NamespaceAnalyzer::isWithin($context->self, $class_storage->internal)) {
+        if ($context->self && ! NamespaceAnalyzer::isWithinAny($context->self, $class_storage->internal)) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
-                    $fq_class_name . ' is internal to ' . $class_storage->internal
+                    $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($class_storage->internal)
                         . ' but called from ' . $context->self,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name

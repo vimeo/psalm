@@ -209,7 +209,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         foreach ($storage->docblock_issues as $docblock_issue) {
-            IssueBuffer::add($docblock_issue);
+            IssueBuffer::maybeAdd($docblock_issue);
         }
 
         $function_information = $this->getFunctionInformation(

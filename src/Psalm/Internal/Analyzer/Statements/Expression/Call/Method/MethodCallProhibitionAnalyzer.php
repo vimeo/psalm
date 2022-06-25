@@ -8,6 +8,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DeprecatedMethod;
+use Psalm\Issue\InternalClass;
 use Psalm\Issue\InternalMethod;
 use Psalm\IssueBuffer;
 
@@ -22,7 +23,7 @@ class MethodCallProhibitionAnalyzer
         Codebase $codebase,
         Context $context,
         MethodIdentifier $method_id,
-        ?string $namespace,
+        ?string $caller_identifier,
         CodeLocation $code_location,
         array $suppressed_issues
     ): ?bool {
@@ -51,12 +52,12 @@ class MethodCallProhibitionAnalyzer
         if (!$context->collect_initializations
             && !$context->collect_mutations
         ) {
-            if (!NamespaceAnalyzer::isWithin($namespace ?: '', $storage->internal)) {
+            if (!NamespaceAnalyzer::isWithinAny($caller_identifier ?? "", $storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id)
-                            . ' is internal to ' . $storage->internal
-                            . ' but called from ' . ($context->self ?: 'root namespace'),
+                            . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         $code_location,
                         (string) $method_id
                     ),

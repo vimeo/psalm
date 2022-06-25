@@ -498,7 +498,7 @@ class StatementsProvider
 
             foreach ($error_handler->getErrors() as $error) {
                 if ($error->hasColumnInfo()) {
-                    IssueBuffer::add(
+                    IssueBuffer::maybeAdd(
                         new ParseError(
                             $error->getMessage(),
                             new ParseErrorLocation(

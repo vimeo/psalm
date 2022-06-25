@@ -45,9 +45,9 @@ class ClassLikeStorage implements HasAttributesInterface
     public $deprecated = false;
 
     /**
-     * @var string
+     * @var list<non-empty-string>
      */
-    public $internal = '';
+    public $internal = [];
 
     /**
      * @var TTemplateParam[]

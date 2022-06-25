@@ -244,7 +244,11 @@ class IssueBuffer
     }
 
     /**
-     * Add an issue to be emitted
+     * Add an issue to be emitted. This method should normally not be used! Use IssueBuffer::maybeAdd instead.
+     *
+     * @psalm-internal Psalm\IssueBuffer
+     * @psalm-internal Psalm\Type\Reconciler::getValueForKey
+     *
      * @throws  CodeException
      */
     public static function add(CodeIssue $e, bool $is_fixable = false): bool

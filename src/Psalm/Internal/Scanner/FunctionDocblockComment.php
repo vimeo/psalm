@@ -77,9 +77,9 @@ class FunctionDocblockComment
     /**
      * If set, the function is internal to the given namespace.
      *
-     * @var null|string
+     * @var list<non-empty-string>
      */
-    public $psalm_internal;
+    public $psalm_internal = [];
 
     /**
      * Whether or not the function is internal
