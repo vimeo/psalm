@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
@@ -60,11 +61,8 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_keys;
-use function array_map;
 use function array_merge;
-use function array_search;
-use function array_values;
+use function count;
 use function in_array;
 use function is_string;
 use function reset;
@@ -971,73 +969,17 @@ class ForeachAnalyzer
         ?Union &$key_type,
         ?Union &$value_type
     ): void {
-        if ($iterator_atomic_type instanceof TIterable
-            || ($iterator_atomic_type instanceof TGenericObject
-                && strtolower($iterator_atomic_type->value) === 'traversable')
-        ) {
-            $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
-            $key_type = Type::combineUnionTypes($key_type, $iterator_atomic_type->type_params[0]);
-
-            return;
-        }
-
-        if ($iterator_atomic_type instanceof TNamedObject
-            && (
-                $codebase->classImplements(
-                    $iterator_atomic_type->value,
-                    'Traversable'
-                )
-                || $codebase->interfaceExtends(
-                    $iterator_atomic_type->value,
-                    'Traversable'
-                )
-            )
-        ) {
-            $generic_storage = $codebase->classlike_storage_provider->get(
-                $iterator_atomic_type->value
+        if ($iterator_atomic_type instanceof TIterable) {
+            [$key_type, $value_type] = $iterator_atomic_type->type_params;
+        } elseif ($iterator_atomic_type instanceof TNamedObject) {
+            $implemented_traversable_templates = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
+                $codebase,
+                $iterator_atomic_type,
+                new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
             );
-
-            if (!isset($generic_storage->template_extended_params['Traversable'])) {
-                return;
+            if (count($implemented_traversable_templates) === 2) {
+                [$key_type, $value_type] = $implemented_traversable_templates;
             }
-
-            if ($generic_storage->template_types
-                || $iterator_atomic_type instanceof TGenericObject
-            ) {
-                // if we're just being passed the non-generic class itself, assume
-                // that it's inside the calling class
-                $passed_type_params = $iterator_atomic_type instanceof TGenericObject
-                    ? $iterator_atomic_type->type_params
-                    : array_values(
-                        array_map(
-                            /** @param array<string, Union> $arr */
-                            static fn(array $arr): Union => $arr[$iterator_atomic_type->value] ?? Type::getMixed(),
-                            $generic_storage->template_types
-                        )
-                    );
-            } else {
-                $passed_type_params = null;
-            }
-
-            $key_type = self::getExtendedType(
-                'TKey',
-                'Traversable',
-                $generic_storage->name,
-                $generic_storage->template_extended_params,
-                $generic_storage->template_types,
-                $passed_type_params
-            );
-
-            $value_type = self::getExtendedType(
-                'TValue',
-                'Traversable',
-                $generic_storage->name,
-                $generic_storage->template_extended_params,
-                $generic_storage->template_types,
-                $passed_type_params
-            );
-
-            return;
         }
     }
 
@@ -1091,70 +1033,5 @@ class ForeachAnalyzer
         $statements_analyzer->node_data = $old_data_provider;
 
         return $iterator_class_type;
-    }
-
-    /**
-     * @param  array<string, array<string, Union>>  $template_extended_params
-     * @param  array<string, array<string, Union>>  $class_template_types
-     * @param  array<int, Union> $calling_type_params
-     */
-    private static function getExtendedType(
-        string $template_name,
-        string $template_class,
-        string $calling_class,
-        array $template_extended_params,
-        ?array $class_template_types = null,
-        ?array $calling_type_params = null
-    ): ?Union {
-        if ($calling_class === $template_class) {
-            if (isset($class_template_types[$template_name]) && $calling_type_params) {
-                $offset = array_search($template_name, array_keys($class_template_types));
-
-                if ($offset !== false && isset($calling_type_params[$offset])) {
-                    return $calling_type_params[$offset];
-                }
-            }
-
-            return null;
-        }
-
-        if (isset($template_extended_params[$template_class][$template_name])) {
-            $extended_type = $template_extended_params[$template_class][$template_name];
-
-            $return_type = null;
-
-            foreach ($extended_type->getAtomicTypes() as $extended_atomic_type) {
-                if (!$extended_atomic_type instanceof TTemplateParam) {
-                    $return_type = Type::combineUnionTypes(
-                        $return_type,
-                        $extended_type
-                    );
-
-                    continue;
-                }
-
-                $candidate_type = self::getExtendedType(
-                    $extended_atomic_type->param_name,
-                    $extended_atomic_type->defining_class,
-                    $calling_class,
-                    $template_extended_params,
-                    $class_template_types,
-                    $calling_type_params
-                );
-
-                if ($candidate_type) {
-                    $return_type = Type::combineUnionTypes(
-                        $return_type,
-                        $candidate_type
-                    );
-                }
-            }
-
-            if ($return_type) {
-                return $return_type;
-            }
-        }
-
-        return null;
     }
 }

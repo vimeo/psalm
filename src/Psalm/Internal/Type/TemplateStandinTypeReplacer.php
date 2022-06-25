@@ -1154,7 +1154,7 @@ class TemplateStandinTypeReplacer
     }
 
     /**
-     * @param TGenericObject|TIterable $input_type_part
+     * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TIterable $container_type_part
      * @return list<Union>
      */
@@ -1164,7 +1164,11 @@ class TemplateStandinTypeReplacer
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null
     ): array {
-        $input_type_params = $input_type_part->type_params;
+        if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
+            $input_type_params = $input_type_part->type_params;
+        } else {
+            $input_type_params = [];
+        }
 
         try {
             $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
