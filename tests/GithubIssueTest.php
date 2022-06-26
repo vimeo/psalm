@@ -296,7 +296,7 @@ class GithubIssueTest extends TestCase
                         $this->bazBarFoo();
                     }
                 }
-            ',
+            '
         );
 
         // NOTE: remove the exception and message check when moving to PluginTest
@@ -304,7 +304,7 @@ class GithubIssueTest extends TestCase
         $this->expectExceptionMessage(
             "IncorrectFunctionCasing - src"
                 . DIRECTORY_SEPARATOR
-                . "somefile.php:15:32 - Function is incorrectly cased, expecting fooBarBaz",
+                . "somefile.php:15:32 - Function is incorrectly cased, expecting fooBarBaz"
         );
 
         $this->analyzeFile($file_path, new Context());
