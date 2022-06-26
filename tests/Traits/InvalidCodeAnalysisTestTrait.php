@@ -80,12 +80,17 @@ trait InvalidCodeAnalysisTestTrait
 
         $this->expectException(CodeException::class);
 
-        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageMatches(self::convertErrorMessageToRegex($error_message));
 
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->config->visitPreloadedStubFiles($codebase);
 
         $this->addFile($file_path, $code);
         $this->analyzeFile($file_path, new Context());
+    }
+
+    protected static function convertErrorMessageToRegex(string $error_message): string
+    {
+        return '/\b' . preg_quote($error_message, '/') . '\b/';
     }
 }

@@ -14,6 +14,7 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
@@ -71,13 +72,13 @@ class PluginTest extends TestCase
         $this->file_provider = new FakeFileProvider();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
+    public static function getProjectAnalyzerWithConfig(FileProvider $file_provider, Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
         return new ProjectAnalyzer(
             $config,
             new Providers(
-                $this->file_provider,
+                $file_provider,
                 new FakeParserCacheProvider()
             ),
             new ReportOptions()
@@ -88,7 +89,8 @@ class PluginTest extends TestCase
     {
         $this->expectExceptionMessage('InvalidClass');
         $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -122,7 +124,8 @@ class PluginTest extends TestCase
     {
         $this->expectExceptionMessage('InvalidClass');
         $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -160,7 +163,8 @@ class PluginTest extends TestCase
     {
         $this->expectExceptionMessage('UndefinedMethod');
         $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -198,7 +202,8 @@ class PluginTest extends TestCase
 
     public function testEchoAnalyzerPluginWithJustHtml(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -231,7 +236,8 @@ class PluginTest extends TestCase
     {
         $this->expectExceptionMessage('TypeCoercion');
         $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -269,7 +275,8 @@ class PluginTest extends TestCase
     {
         $this->expectExceptionMessage('TypeCoercion');
         $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -304,7 +311,8 @@ class PluginTest extends TestCase
 
     public function testEchoAnalyzerPluginWithEscapedString(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -355,7 +363,8 @@ class PluginTest extends TestCase
     {
         require_once __DIR__ . '/Plugin/FilePlugin.php';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -403,7 +412,8 @@ class PluginTest extends TestCase
     {
         $this->expectExceptionMessage('NoFloatAssignment');
         $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -436,7 +446,8 @@ class PluginTest extends TestCase
 
     public function testFloatCheckerPluginIssueSuppressionByConfig(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -474,7 +485,8 @@ class PluginTest extends TestCase
 
     public function testFloatCheckerPluginIssueSuppressionByDocblock(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -510,7 +522,8 @@ class PluginTest extends TestCase
     {
         require_once dirname(__DIR__) . '/fixtures/stubs/extending_plugin_entrypoint.phpstub';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -536,7 +549,8 @@ class PluginTest extends TestCase
 
     public function testAfterCodebasePopulatedHookIsLoaded(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -574,7 +588,8 @@ class PluginTest extends TestCase
 
     public function testAfterMethodCallAnalysisLegacyHookIsLoaded(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -614,7 +629,8 @@ class PluginTest extends TestCase
 
     public function testAfterClassLikeAnalysisLegacyHookIsLoaded(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -656,7 +672,8 @@ class PluginTest extends TestCase
     {
         require_once __DIR__ . '/Plugin/PropertyPlugin.php';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -695,7 +712,8 @@ class PluginTest extends TestCase
     {
         require_once __DIR__ . '/Plugin/MethodPlugin.php';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -756,7 +774,8 @@ class PluginTest extends TestCase
     {
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -790,7 +809,8 @@ class PluginTest extends TestCase
     {
         require_once __DIR__ . '/Plugin/SqlStringProviderPlugin.php';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -833,7 +853,8 @@ class PluginTest extends TestCase
         $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/PropertyPlugin.php';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -874,7 +895,8 @@ class PluginTest extends TestCase
         $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/MethodPlugin.php';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -917,7 +939,8 @@ class PluginTest extends TestCase
         $this->expectException(CodeException::class);
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -951,7 +974,8 @@ class PluginTest extends TestCase
     {
         require_once __DIR__ . '/Plugin/AfterAnalysisPlugin.php';
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -997,7 +1021,8 @@ class PluginTest extends TestCase
             </psalm>',
             __DIR__ . '/../..'
         );
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR, $xml)
         );
 
@@ -1024,7 +1049,8 @@ class PluginTest extends TestCase
             </psalm>',
             __DIR__ . '/..'
         );
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR, $xml)
         );
 
@@ -1033,7 +1059,8 @@ class PluginTest extends TestCase
 
     public function testAfterEveryFunctionPluginIsCalledInAllCases(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -1092,7 +1119,8 @@ class PluginTest extends TestCase
 
     public function testRemoveTaints(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = self::getProjectAnalyzerWithConfig(
+            $this->file_provider,
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>

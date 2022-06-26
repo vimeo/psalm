@@ -8,6 +8,7 @@ use PhpParser\Node\Expr\StaticCall;
 use Psalm\Checker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
+use Psalm\Exception\CodeException;
 use Psalm\FileManipulation;
 use Psalm\Issue\PluginIssue;
 use Psalm\IssueBuffer;
@@ -62,6 +63,9 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                     // fall through
                 }
             }
+        } catch (CodeException $e) {
+            // If IssueBuffer is configured to throw, we want to pass that through
+            throw $e;
         } catch (Exception $e) {
             // can throw if storage is missing
         }
