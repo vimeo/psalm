@@ -91,6 +91,6 @@ trait InvalidCodeAnalysisTestTrait
 
     protected static function convertErrorMessageToRegex(string $error_message): string
     {
-        return '/\b' . preg_quote($error_message, '/') . '\b/';
+        return '/(?:^|\b)' . preg_quote($error_message, '/') . '(?:$|\b)/';
     }
 }

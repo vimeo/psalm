@@ -150,6 +150,201 @@ class GithubIssueTest extends TestCase
      */
     public function providerGithubReproducers(): iterable
     {
+        yield 1111 => [
+            "valid" => [
+                "varTagOnGlobal" => [
+                    "code" => '<?php
+                        /**
+                         * @psalm-suppress InvalidGlobal
+                         * @var array<string, array> $global
+                         */
+                        global $global;
+
+                        $filter = $global["name"];
+                    ',
+                ],
+            ],
+            "invalid" => [],
+            "test_is_complete" => true,
+        ];
+        yield 1450 => [
+            "valid" => [],
+            "invalid" => [
+                "limitExtenders1" => [
+                    "code" => '<?php
+                        /**
+                         * @psalm-inheritors FooClass|BarClass
+                         */
+                        class BaseClass {}
+
+                        class FooClass extends BaseClass {
+                            public function thing(string $s): string { return $s . "hello"; }
+                        }
+
+                        class BarClass extends BaseClass {
+                            public function thing(int $i): string { return $i . "hello"; }
+                        }
+
+                        class BazClass extends BaseClass {} // this is an error
+                    ',
+                    "error_message" => "TODO",
+                ],
+                "limitExtenders2" => [
+                    "code" => '<?php
+                        /**
+                         * @psalm-inheritors FooClass|BarClass
+                         */
+                        class BaseClass {}
+
+                        class FooClass extends BaseClass {
+                            public function thing(string $s): string { return $s . "hello"; }
+                        }
+
+                        class BarClass extends BaseClass {
+                            public function thing(int $i): string { return $i . "hello"; }
+                        }
+
+                        function f2(BaseClass $c) : string { // this is an error as not all paths are met
+                            switch (get_class($c)) {
+                                case FooClass::class:
+                                return $c->thing("me");
+                            }
+                        }
+                    ',
+                    "error_message" => "TODO",
+                ],
+            ],
+            "test_is_complete" => true,
+        ];
+        yield 1776 => [
+            "valid" => [
+                "intersectClassAndObjectWithProperties" => [
+                    "code" => '<?php
+                        class A {
+                            public string $foo = "";
+                        }
+
+                        /** @var A&object{bar: string} */
+                        $a = new A;
+                        $_ = strlen($a->foo);
+                        $_ = strlen($a->bar);
+                    ',
+                ],
+            ],
+            "invalid" => [],
+            "test_is_complete" => true,
+        ];
+        yield 2185 => [
+            "valid" => [],
+            "invalid" => [
+                "cantUseStringAsClassWithConstant" => [
+                    "code" => '<?php
+                        $class = "A";
+                        /** @psalm-suppress MixedAssignment */
+                        $name = $class::NAME;
+                    ',
+                    "error_message" => "InvalidStringClass",
+                ],
+            ],
+            "test_is_complete" => true,
+        ];
+        yield 2975 => [
+            "valid" => [],
+            "invalid" => [
+                "disallowDirectConstructorCall" => [
+                    "code" => '<?php
+                        class Foo
+                        {
+                            public function __construct() {}
+                        }
+
+                        $foo = new Foo();
+                        $foo->__construct();
+                    ',
+                    "error_message" => "", // Add message when fixed
+                ],
+            ],
+            "test_is_complete" => true,
+        ];
+        yield 3143 => [
+            "valid" => [
+                "boundClosureKeepsReturnType1" => [
+                    "code" => '<?php
+                        class Foo {
+                        }
+
+                        function testOne(): bool
+                        {
+                            $foo = new Foo();
+
+                            $func = function (): bool {
+                                return true;
+                            };
+
+                            return $func->call($foo);
+                        }
+                    ',
+                ],
+                "boundClosureKeepsReturnType2" => [
+                    "code" => '<?php
+                        class Foo {
+                        }
+
+                        function testTwo(): bool
+                        {
+                            $foo = new Foo();
+
+                            $func = function (): bool {
+                                return true;
+                            };
+
+                            $bound = Closure::bind($func, $foo, Foo::class);
+                            if (!$bound) {     // Closure::bind can return false
+                                return false;
+                            }
+
+                            return $bound($foo);
+                        }
+                    ',
+                ],
+                "boundClosureKeepsReturnType3" => [
+                    "code" => '<?php
+                        class Foo {
+                        }
+
+                        function testThree(): bool
+                        {
+                            $foo = new Foo();
+
+                            $func = function (): bool {
+                                return true;
+                            };
+
+                            $bound = $func->bindTo($foo, Foo::class);
+                            if (!$bound) {     // Closure::bindTo can return false
+                                return false;
+                            }
+
+                            return $bound($foo);
+                        }
+                    ',
+                ],
+            ],
+            "invalid" => [],
+            "test_is_complete" => true,
+        ];
+        yield 3284 => [
+            "valid" => [],
+            "invalid" => [
+                "callableParamDefaultCanOnlyBeNull" => [
+                    "code" => '<?php
+                        function foo(callable $bar = "trim"): void {}
+                    ',
+                    "error_message" => "", // Add message when fixed
+                ],
+            ],
+            "test_is_complete" => true,
+        ];
         yield 5886 => [
             "valid" => [
                 "nonThrowableInterfaceCanBeCaught" => [
@@ -167,7 +362,7 @@ class GithubIssueTest extends TestCase
                         /** @throws ExampleNotThrowable */
                         function foo(): void {}
                     ',
-                ]
+                ],
             ],
             "invalid" => [],
             "test_is_complete" => true,
