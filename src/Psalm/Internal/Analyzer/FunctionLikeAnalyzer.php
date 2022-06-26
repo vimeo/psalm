@@ -1267,15 +1267,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->hasVariable('$' . $function_param->name);
             }
 
-            AttributesAnalyzer::analyze(
-                $this,
-                $context,
-                $function_param,
-                $param_stmts[$offset]->attrGroups,
-                AttributesAnalyzer::TARGET_PARAMETER
-                    | ($function_param->promoted_property ? AttributesAnalyzer::TARGET_PROPERTY : 0),
-                $storage->suppressed_issues + $this->getSuppressedIssues()
-            );
+            if (count($param_stmts) === count($params)) {
+                AttributesAnalyzer::analyze(
+                    $this,
+                    $context,
+                    $function_param,
+                    $param_stmts[$offset]->attrGroups,
+                    AttributesAnalyzer::TARGET_PARAMETER
+                        | ($function_param->promoted_property ? AttributesAnalyzer::TARGET_PROPERTY : 0),
+                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                );
+            }
         }
 
         return $check_stmts;
