@@ -2,6 +2,8 @@
 
 namespace Psalm\Tests\ReturnTypeProvider;
 
+use Iterator;
+use NoRewindIterator;
 use PHPUnit\Framework\Constraint\ExceptionMessageRegularExpression;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -133,7 +135,7 @@ class GithubIssueTest extends TestCase
      * GitHub issue is fixed, if it's set to false then the tests may be incomplete and fixing all of them won't
      * necessarily mean the GitHub issue can be closed.
      *
-     * @return iterable<
+     * @return Iterator<
      *     int,
      *     array{
      *         valid: iterable<
@@ -400,6 +402,26 @@ class GithubIssueTest extends TestCase
             ],
             "test_is_complete" => true,
         ];
+        yield 8125 => [
+            "valid" => [
+                "compareLowercaseAndNonEmpty" => [
+                    "code" => '<?php
+                        /**
+                         * @var non-empty-string $a
+                         * @var lowercase-string $b
+                         */
+
+                        if ($b == $a) {
+                        }
+
+                        if ($a == $b) {
+                        }
+                    ',
+                ],
+            ],
+            "invalid" => [],
+            "test_is_complete" => true,
+        ];
         yield 8169 => [
             "valid" => [],
             "invalid" => [
@@ -443,6 +465,57 @@ class GithubIssueTest extends TestCase
             "invalid" => [],
             "test_is_complete" => true,
         ];
+        yield 8176 => [
+            "valid" => [
+                "implicitTemplateInParamOutConditional" => [
+                    "code" => '<?php
+                        /**
+                         * @param-out ($bar is true ? true : false) $foo
+                         */
+                        function funcOut(?bool &$foo, bool $bar): void
+                        {
+                            $foo = $bar;
+                        }
+                    ',
+                ],
+            ],
+            "invalid" => [],
+            "test_is_complete" => true,
+        ];
+        yield 8177 => [
+            "valid" => [
+                "conditionalTypeWorkInParamOut" => [
+                    "code" => '<?php
+                        /**
+                         * @template T
+                         * @param T $bar
+                         * @param-out (T is true ? true : false) $foo
+                         */
+                        function funcOut(?bool &$foo, bool $bar): void
+                        {
+                            $foo = $bar;
+                        }
+                    ',
+                ],
+            ],
+            "invalid" => [],
+            "test_is_complete" => true,
+        ];
+    }
+
+    public function testGithubProvidersAreOrderedAndUnique(): void
+    {
+        $issues = new NoRewindIterator($this->providerGithubReproducers());
+        $previous_issue_number = $issues->key();
+        $issues->next();
+        foreach ($issues as $issue_number => $_) {
+            $this->assertGreaterThan(
+                $previous_issue_number,
+                $issue_number,
+                "GitHub issues duplicated or out of order (did you copy/paste and forget to update the issue number?)"
+            );
+            $previous_issue_number = $issue_number;
+        }
     }
 
     /**
