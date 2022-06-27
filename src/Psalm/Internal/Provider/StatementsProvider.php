@@ -137,7 +137,7 @@ class StatementsProvider
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
-            $cache_key = "${file_content_hash}:${php_version}";
+            $cache_key = "{$file_content_hash}:{$php_version}";
             if ($this->statements_volatile_cache->has($cache_key)) {
                 return $this->statements_volatile_cache->get($cache_key);
             }
