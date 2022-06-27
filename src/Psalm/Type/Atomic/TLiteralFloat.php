@@ -52,12 +52,6 @@ final class TLiteralFloat extends TFloat
             return false;
         }
 
-        if (($this->from_docblock && $ensure_source_equality)
-            || ($other_type->from_docblock && $ensure_source_equality)
-        ) {
-            return false;
-        }
-
         return $this->value === $other_type->value;
     }
 }
