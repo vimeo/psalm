@@ -17,6 +17,7 @@ use function hash;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_dir;
+use function is_null;
 use function mkdir;
 use function serialize;
 use function strtolower;
@@ -75,9 +76,15 @@ class ClassLikeStorageCacheProvider
     {
         $fq_classlike_name_lc = strtolower($storage->name);
 
-        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path, true);
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
+        // check if we have it in cache already
+        $cached_value = $this->loadFromCache($fq_classlike_name_lc, $file_path);
+        if (!is_null($cached_value) && $cached_value->hash === $storage->hash) {
+            return;
+        }
+
+        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path, true);
         if ($this->config->use_igbinary) {
             file_put_contents($cache_location, igbinary_serialize($storage));
         } else {
