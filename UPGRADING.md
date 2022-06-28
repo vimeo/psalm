@@ -782,6 +782,13 @@
  - [BC] Property `Psalm\Config::$universal_object_crates` changed default value
    from `array{'stdClass','SimpleXMLElement','SimpleXMLIterator'}` to `null`
 
+ - Changed a way how to specify a custom Shepherd host/endpoint:
+    - [BC] `--shepherd` CLI option now accepts absolute URLs. Previously it accepted domain names only.
+      Example: `--shepherd=https://your.domain/your-endpoint`.
+    - [BC] `PSALM_SHEPHERD_HOST` environment variable is not used anymore.
+      Instead, please use `PSALM_SHEPHERD_ENDPOINT` and specify an absolute URL
+      to your custom Shepherd endpoint.
+
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
    `Psalm\Codebase::$analysis_php_version_id`.

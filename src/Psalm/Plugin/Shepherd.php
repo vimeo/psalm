@@ -48,7 +48,7 @@ final class Shepherd implements AfterAnalysisInterface
         $source_control_info = $event->getSourceControlInfo();
 
         if (!function_exists('curl_init')) {
-            fwrite(STDERR, 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL);
+            fwrite(STDERR, 'No curl found, cannot send data to ' . $codebase->config->shepherd_endpoint . PHP_EOL);
 
             return;
         }
@@ -77,14 +77,14 @@ final class Shepherd implements AfterAnalysisInterface
 
             $payload = json_encode($data, JSON_THROW_ON_ERROR);
 
-            $base_address = $codebase->config->shepherd_host;
+            $url = $codebase->config->shepherd_endpoint;
 
-            if (parse_url($base_address, PHP_URL_SCHEME) === null) {
-                $base_address = 'https://' . $base_address;
+            if (parse_url($url, PHP_URL_SCHEME) === null) {
+                $url = 'https://' . $url;
             }
 
             // Prepare new cURL resource
-            $ch = curl_init($base_address . '/hooks/psalm');
+            $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLINFO_HEADER_OUT, true);
             curl_setopt($ch, CURLOPT_POST, true);
@@ -118,7 +118,7 @@ final class Shepherd implements AfterAnalysisInterface
                         . PHP_EOL;
                 }
             } else {
-                $short_address = str_replace('https://', '', $base_address);
+                $short_address = str_replace('https://', '', $url);
 
                 fwrite(STDERR, "🐑 results sent to $short_address 🐑" . PHP_EOL);
             }

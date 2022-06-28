@@ -523,7 +523,7 @@ class Config
     public $include_php_versions_in_error_baseline = false;
 
     /** @var string */
-    public $shepherd_host = 'shepherd.dev';
+    public $shepherd_endpoint = 'https://shepherd.dev/hooks/psalm';
 
     /**
      * @var array<string, string>

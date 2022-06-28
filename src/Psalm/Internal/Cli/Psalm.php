@@ -300,11 +300,11 @@ final class Psalm
         if (isset($options['shepherd']) || getenv('PSALM_SHEPHERD')) {
             if (isset($options['shepherd'])) {
                 if (is_string($options['shepherd'])) {
-                    $config->shepherd_host = $options['shepherd'];
+                    $config->shepherd_endpoint = $options['shepherd'];
                 }
             } elseif (getenv('PSALM_SHEPHERD')) {
-                if (false !== ($shepherd_host = getenv('PSALM_SHEPHERD_HOST'))) {
-                    $config->shepherd_host = $shepherd_host;
+                if (false !== ($shepherd_endpoint = getenv('PSALM_SHEPHERD_ENDPOINT'))) {
+                    $config->shepherd_endpoint = $shepherd_endpoint;
                 }
             }
             $shepherd_plugin = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
