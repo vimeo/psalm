@@ -120,8 +120,14 @@ class Clause
             return false;
         }
 
+        foreach ($other_clause->possibilities as $var => $_) {
+            if (!isset($this->possibilities[$var])) {
+                return false;
+            }
+        }
+
         foreach ($other_clause->possibilities as $var => $possible_types) {
-            if (!isset($this->possibilities[$var]) || count(array_diff($possible_types, $this->possibilities[$var]))) {
+            if (count(array_diff($possible_types, $this->possibilities[$var]))) {
                 return false;
             }
         }
