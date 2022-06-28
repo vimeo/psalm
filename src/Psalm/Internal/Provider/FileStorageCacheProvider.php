@@ -117,9 +117,12 @@ class FileStorageCacheProvider
         }
     }
 
-    private function getCacheHash(string $file_path, string $file_contents): string
+    private function getCacheHash(string $_unused_file_path, string $file_contents): string
     {
-        $data = ($file_path ? $file_contents : '') . $this->modified_timestamps;
+        // do not concatenate, as $file_contents can be big and performance will be bad
+        // the timestamp is only needed if we don't have file contents
+        // as same contents should give same results, independent of when file was modified
+        $data = $file_contents ? $file_contents : $this->modified_timestamps;
         return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
     }
 

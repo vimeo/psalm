@@ -110,9 +110,9 @@ class ClassLikeStorageCacheProvider
         return $cached_value;
     }
 
-    private function getCacheHash(?string $file_path, ?string $file_contents): string
+    private function getCacheHash(?string $_unused_file_path, ?string $file_contents): string
     {
-        $data = ($file_path ? $file_contents : '') . $this->modified_timestamps;
+        $data = $file_contents ? $file_contents : $this->modified_timestamps;
         return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
