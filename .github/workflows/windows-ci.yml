@@ -2,8 +2,13 @@ name: Run unit tests on Windows
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   chunk-matrix:
+    permissions:
+      contents: none
     name: Generate Chunk Matrix
 
     runs-on: ubuntu-latest

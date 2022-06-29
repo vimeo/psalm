@@ -1,6 +1,9 @@
 name: Run unit tests
 
 on: [push, pull_request]
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Check PHP syntax
@@ -42,6 +45,8 @@ jobs:
       - run: |
           git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
   chunk-matrix:
+    permissions:
+      contents: none
     name: Generate Chunk Matrix
 
     runs-on: ubuntu-latest
