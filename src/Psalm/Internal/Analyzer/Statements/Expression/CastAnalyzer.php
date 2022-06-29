@@ -200,10 +200,13 @@ class CastAnalyzer
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])]);
+                        $objWithProps = new TNamedObject('stdClass');
+                        $objWithProps->addIntersectionType(new TObjectWithProperties(['scalar' => new Union([$type])]));
                         $permissible_atomic_types[] = $objWithProps;
                     } elseif ($type instanceof TKeyedArray) {
-                        $permissible_atomic_types[] = new TObjectWithProperties($type->properties);
+                        $objWithProps = new TNamedObject('stdClass');
+                        $objWithProps->addIntersectionType(new TObjectWithProperties($type->properties));
+                        $permissible_atomic_types[] = $objWithProps;
                     } else {
                         $all_permissible = false;
                         break;

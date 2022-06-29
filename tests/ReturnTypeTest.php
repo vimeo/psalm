@@ -864,7 +864,7 @@ class ReturnTypeTest extends TestCase
                     $obj = (object)returnsInt();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{scalar:int}',
+                    '$obj' => 'stdClass&object{scalar:int}',
                 ],
             ],
             'infersObjectShapeOfCastArray' => [
@@ -879,7 +879,7 @@ class ReturnTypeTest extends TestCase
                     $obj = (object)returnsArray();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{a:int}',
+                    '$obj' => 'stdClass&object{a:int}',
                 ],
             ],
             'mixedAssignmentWithUnderscore' => [
