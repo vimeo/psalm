@@ -882,6 +882,14 @@ class ReturnTypeTest extends TestCase
                     '$obj' => 'stdClass&object{a:int}',
                 ],
             ],
+            'acceptsCastArrayForStdClass' => [
+                '<?php
+                    function acceptsStdClass(stdClass $_o): void {
+                    }
+
+                    $obj = (object)["a" => 1];
+                ',
+            ],
             'mixedAssignmentWithUnderscore' => [
                 '<?php
                     $gen = (function (): Generator {

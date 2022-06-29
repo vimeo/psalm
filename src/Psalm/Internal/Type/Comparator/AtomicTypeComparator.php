@@ -39,6 +39,7 @@ use function array_merge;
 use function array_values;
 use function count;
 use function get_class;
+use function reset;
 use function strtolower;
 
 /**
@@ -580,9 +581,13 @@ class AtomicTypeComparator
         if ($container_type_part instanceof TObject
             && $input_type_part instanceof TNamedObject
         ) {
-            if ($container_type_part instanceof TObjectWithProperties
-                && $input_type_part->value !== 'stdClass'
-            ) {
+            if ($container_type_part instanceof TObjectWithProperties && (
+                $input_type_part->value !== 'stdClass'
+                || (
+                    count($intersection_types = $input_type_part->getIntersectionTypes() ?: []) === 1
+                    && reset($intersection_types) instanceof TObjectWithProperties
+                )
+            )) {
                 return KeyedArrayComparator::isContainedByObjectWithProperties(
                     $codebase,
                     $input_type_part,

@@ -16,6 +16,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use stdClass;
 
+use function count;
 use function reset;
 use function strtolower;
 
@@ -40,6 +41,14 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
         if ($first_arg_type->isSingle()) {
             $atomics = $first_arg_type->getAtomicTypes();
             $object_type = reset($atomics);
+
+            if ($object_type instanceof TNamedObject
+                && strtolower($object_type->value) === strtolower(stdClass::class)
+                && count($intersection_types = $object_type->getIntersectionTypes() ?: []) === 1
+                && ($inner_object_type = reset($intersection_types)) instanceof TObjectWithProperties
+            ) {
+                $object_type = $inner_object_type;
+            }
 
             if ($object_type instanceof TObjectWithProperties) {
                 if ([] === $object_type->properties) {
