@@ -65,8 +65,10 @@ return [
     ],
     'dateinterval' => [
         'd' => 'int',
+        'date_string' => 'string',
         'days' => 'false|int',
         'f' => 'float',
+        'from_string' => 'bool',
         'h' => 'int',
         'i' => 'int',
         'invert' => 'int',
@@ -195,15 +197,6 @@ return [
         'document' => 'DOMDocument',
         'registernodenamespaces' => 'bool',
     ],
-    'error' => [
-        'code' => 'int',
-        'file' => 'string',
-        'line' => 'int',
-        'message' => 'string',
-        'previous' => 'Throwable|null',
-        'string' => 'string',
-        'trace' => 'array',
-    ],
     'errorexception' => [
         'severity' => 'int',
     ],
@@ -226,15 +219,6 @@ return [
     'eventsslcontext' => [
         'local_cert' => 'string',
         'local_pk' => 'string',
-    ],
-    'exception' => [
-        'code' => 'int',
-        'file' => 'string',
-        'line' => 'int',
-        'message' => 'string',
-        'previous' => 'Throwable|null',
-        'string' => 'string',
-        'trace' => 'array',
     ],
     'libxmlerror' => [
         'code' => 'int',
@@ -472,34 +456,14 @@ return [
         'timestamp' => 'int',
         'topic_name' => 'string',
     ],
-    'reflectionclass' => [
-        'name' => 'string',
-    ],
-    'reflectionclassconstant' => [
-        'class' => 'string',
-        'name' => 'string',
-    ],
     'reflectionextension' => [
         'name' => 'string',
     ],
     'reflectionfunctionabstract' => [
         'name' => 'string',
     ],
-    'reflectionmethod' => [
-        'class' => 'string',
-    ],
-    'reflectionparameter' => [
-        'name' => 'string',
-    ],
-    'reflectionproperty' => [
-        'class' => 'string',
-        'name' => 'string',
-    ],
     'reflectionzendextension' => [
         'name' => 'string',
-    ],
-    'regexiterator' => [
-        'replacement' => 'string|null',
     ],
     'snmp' => [
         'enum_print' => 'bool',
@@ -611,12 +575,13 @@ return [
     ],
     'tidy' => [
         'errorbuffer' => 'string',
+        'value' => 'string|null',
     ],
     'tidynode' => [
-        'attribute' => 'array',
-        'child' => 'array',
+        'attribute' => 'array|null',
+        'child' => 'array|null',
         'column' => 'int',
-        'id' => 'int',
+        'id' => 'int|null',
         'line' => 'int',
         'name' => 'string',
         'proprietary' => 'bool',
