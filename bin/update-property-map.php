@@ -50,6 +50,9 @@ foreach (new RecursiveDirectoryIterator(
     __DIR__ . '/../stubs',
     FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS
 ) as $file) {
+    if (is_dir($file)) {
+        continue;
+    }
     $contents = file_get_contents($file);
     $stmts = $parser->parse($contents);
     $stmts = $traverser->traverse($stmts);
