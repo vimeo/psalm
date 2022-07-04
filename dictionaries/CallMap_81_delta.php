@@ -46,6 +46,8 @@ return [
     'ReflectionEnumUnitCase::getEnum' => ['ReflectionEnum'],
     'ReflectionEnumUnitCase::getValue' => ['UnitEnum'],
     'ReflectionEnumBackedCase::getBackingValue' => ['string|int'],
+    'ReflectionFunctionAbstract::getTentativeReturnType' => ['?ReflectionType'],
+    'ReflectionFunctionAbstract::hasTentativeReturnType' => ['bool'],
     'ReflectionFunctionAbstract::isStatic' => ['bool'],
     'ReflectionObject::isEnum' => ['bool'],
   ],
