@@ -71,6 +71,10 @@ return [
         'old' => ['bool', 'finfo'=>'resource', 'flags'=>'int'],
         'new' => ['bool', 'finfo'=>'finfo', 'flags'=>'int'],
     ],
+    'fputcsv' => [
+        'old' => ['int|false', 'stream'=>'resource', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+        'new' => ['int|false', 'stream'=>'resource', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
+    ],
     'ftp_connect' => [
       'old' => ['resource|false', 'hostname' => 'string', 'port=' => 'int', 'timeout=' => 'int'],
       'new' => ['FTP\Connection|false', 'hostname' => 'string', 'port=' => 'int', 'timeout=' => 'int'],

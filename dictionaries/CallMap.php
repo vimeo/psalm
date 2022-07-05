@@ -3323,7 +3323,7 @@ return [
 'fpassthru' => ['int|false', 'stream'=>'resource'],
 'fpm_get_status' => ['array|false'],
 'fprintf' => ['int', 'stream'=>'resource', 'format'=>'string', '...values='=>'string|int|float'],
-'fputcsv' => ['int|false', 'stream'=>'resource', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+'fputcsv' => ['int|false', 'stream'=>'resource', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
 'fputs' => ['int|false', 'stream'=>'resource', 'data'=>'string', 'length='=>'int'],
 'fread' => ['string|false', 'stream'=>'resource', 'length'=>'int'],
 'frenchtojd' => ['int', 'month'=>'int', 'day'=>'int', 'year'=>'int'],

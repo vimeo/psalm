@@ -80,8 +80,6 @@ class InternalCallMapHandlerTest extends TestCase
         'enchant_dict_suggest',
         'enum_exists',
         'extract',
-        // https://www.php.net/manual/en/function.fputcsv.php
-        'fputcsv' => ['8.1'],
         'get_class_methods',
         'get_headers',
         'get_parent_class',
