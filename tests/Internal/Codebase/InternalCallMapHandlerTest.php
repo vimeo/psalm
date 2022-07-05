@@ -52,7 +52,6 @@ class InternalCallMapHandlerTest extends TestCase
         'bcmod',
         'bcpowmod',
         'bzdecompress',
-        'count',
         'crypt',
         'date_isodate_set',
         'debug_zval_dump',

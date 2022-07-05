@@ -213,6 +213,10 @@ return [
       'old' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'bool'],
       'new' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'true'],
     ],
+    'count' => [
+        'old' => ['int', 'value'=>'Countable|array|SimpleXMLElement|ResourceBundle', 'mode='=>'int'],
+        'new' => ['int', 'value'=>'Countable|array', 'mode='=>'int'],
+    ],
     'count_chars' => [
       'old' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'0|1|2'],
       'new' => ['array<int,int>', 'input'=>'string', 'mode='=>'0|1|2'],
