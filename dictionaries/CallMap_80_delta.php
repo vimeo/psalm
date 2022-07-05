@@ -357,6 +357,14 @@ return [
       'old' => ['list<string>|false', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
       'new' => ['list<string>', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
     ],
+    'get_class_methods' => [
+        'old' => ['list<string>|null', 'object_or_class'=>'mixed'],
+        'new' => ['list<string>', 'object_or_class'=>'object|class-string'],
+    ],
+    'get_parent_class' => [
+        'old' => ['class-string|false', 'object_or_class='=>'mixed'],
+        'new' => ['class-string|false', 'object_or_class='=>'object|class-string'],
+    ],
     'gmdate' => [
       'old' => ['string', 'format'=>'string', 'timestamp='=>'int'],
       'new' => ['string', 'format'=>'string', 'timestamp='=>'int|null'],
