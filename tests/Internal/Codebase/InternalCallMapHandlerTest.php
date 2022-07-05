@@ -79,7 +79,6 @@ class InternalCallMapHandlerTest extends TestCase
         'enchant_dict_store_replacement',
         'enchant_dict_suggest',
         'enum_exists',
-        'extract',
         'get_class_methods',
         'get_headers',
         'get_parent_class',

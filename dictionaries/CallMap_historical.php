@@ -10544,7 +10544,7 @@ return [
     'explode' => ['list<string>|false', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
     'expm1' => ['float', 'num'=>'float'],
     'extension_loaded' => ['bool', 'extension'=>'string'],
-    'extract' => ['int', '&rw_array'=>'array', 'flags='=>'int', 'prefix='=>'?string'],
+    'extract' => ['int', '&rw_array'=>'array', 'flags='=>'int', 'prefix='=>'string'],
     'ezmlm_hash' => ['int', 'addr'=>'string'],
     'fam_cancel_monitor' => ['bool', 'fam'=>'resource', 'fam_monitor'=>'resource'],
     'fam_close' => ['void', 'fam'=>'resource'],
