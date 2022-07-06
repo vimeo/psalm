@@ -17,7 +17,7 @@
 return [
   'added' => [
     'array_is_list' => ['bool', 'array' => 'array'],
-    'enum_exists' => ['bool', 'class' => 'class-string', 'autoload=' => 'bool'],
+    'enum_exists' => ['bool', 'enum' => 'class-string', 'autoload=' => 'bool'],
     'fsync' => ['bool', 'stream' => 'resource'],
     'fdatasync' => ['bool', 'stream' => 'resource'],
     'imageavif' => ['bool', 'image'=>'GdImage', 'file='=>'resource|string|null', 'quality='=>'int', 'speed='=>'int'],
@@ -72,6 +72,10 @@ return [
     'finfo_set_flags' => [
         'old' => ['bool', 'finfo'=>'resource', 'flags'=>'int'],
         'new' => ['bool', 'finfo'=>'finfo', 'flags'=>'int'],
+    ],
+    'fputcsv' => [
+        'old' => ['int|false', 'stream'=>'resource', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+        'new' => ['int|false', 'stream'=>'resource', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
     ],
     'ftp_connect' => [
       'old' => ['resource|false', 'hostname' => 'string', 'port=' => 'int', 'timeout=' => 'int'],

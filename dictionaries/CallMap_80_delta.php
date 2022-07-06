@@ -213,6 +213,10 @@ return [
       'old' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'bool'],
       'new' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'true'],
     ],
+    'count' => [
+        'old' => ['int', 'value'=>'Countable|array|SimpleXMLElement|ResourceBundle', 'mode='=>'int'],
+        'new' => ['int', 'value'=>'Countable|array', 'mode='=>'int'],
+    ],
     'count_chars' => [
       'old' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'0|1|2'],
       'new' => ['array<int,int>', 'input'=>'string', 'mode='=>'0|1|2'],
@@ -352,6 +356,14 @@ return [
     'explode' => [
       'old' => ['list<string>|false', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
       'new' => ['list<string>', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
+    ],
+    'get_class_methods' => [
+        'old' => ['list<string>|null', 'object_or_class'=>'mixed'],
+        'new' => ['list<string>', 'object_or_class'=>'object|class-string'],
+    ],
+    'get_parent_class' => [
+        'old' => ['class-string|false', 'object_or_class='=>'mixed'],
+        'new' => ['class-string|false', 'object_or_class='=>'object|class-string'],
     ],
     'gmdate' => [
       'old' => ['string', 'format'=>'string', 'timestamp='=>'int'],
