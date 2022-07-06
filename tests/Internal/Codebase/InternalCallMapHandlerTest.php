@@ -2,11 +2,9 @@
 
 namespace Psalm\Tests\Internal\Codebase;
 
-use Exception;
 use InvalidArgumentException;
 use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\ExpectationFailedException;
-use PHPUnit\Framework\SkippedTestError;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -18,11 +16,11 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
-use ReflectionException;
 use ReflectionFunction;
 use ReflectionParameter;
 use ReflectionType;
 
+use function array_shift;
 use function class_exists;
 use function count;
 use function explode;
@@ -37,9 +35,11 @@ use function strcmp;
 use function strncmp;
 use function strpos;
 use function substr;
+use function version_compare;
 
 use const PHP_MAJOR_VERSION;
 use const PHP_MINOR_VERSION;
+use const PHP_VERSION;
 
 class InternalCallMapHandlerTest extends TestCase
 {
@@ -761,7 +761,7 @@ class InternalCallMapHandlerTest extends TestCase
     public function assertEntryReturnType(ReflectionFunction $function, string $entryReturnType): void
     {
         if (version_compare(PHP_VERSION, '8.1.0', '>=')) {
-            /** @var \ReflectionType|null $expectedType */
+            /** @var ReflectionType|null $expectedType */
             $expectedType = $function->hasTentativeReturnType() ? $function->getTentativeReturnType() : $function->getReturnType();
         } else {
             $expectedType = $function->getReturnType();
