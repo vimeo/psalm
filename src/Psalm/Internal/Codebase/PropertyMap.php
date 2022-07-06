@@ -26,7 +26,7 @@ class PropertyMap
             return self::$property_map;
         }
 
-        /** @var array<string, array<string, string>> */
+        /** @var array<lowercase-string, array<string, string>> */
         $property_map = require(dirname(__DIR__, 4) . '/dictionaries/PropertyMap.php');
 
         self::$property_map = $property_map;
