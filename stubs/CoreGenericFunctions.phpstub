@@ -557,6 +557,8 @@ function trim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 /**
  * @psalm-pure
  *
+ * @return ($string is class-string ? ($characters is '\\' ? class-string : string) : string)
+ *
  * @psalm-flow ($string) -> return
  */
 function ltrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
