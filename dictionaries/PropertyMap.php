@@ -2,269 +2,284 @@
 namespace Psalm\Internal;
 
 /**
- * Stolen from https://github.com/etsy/phan/blob/master/src/Phan/Language/Internal/PropertyMap.php
+ * Automatically created by bin/update-property-map.php
  *
- * The MIT License (MIT)
- * Copyright (c) 2015 Rasmus Lerdorf
- * Copyright (c) 2015 Andrew Morrison
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Please do not modify - adapt the override constants in above file instead.
  */
 
 return [
-    'arrayobject' => [
-        'name' => 'string',
+    'commonmark\\node' => [
+        'endcolumn' => 'int',
+        'endline' => 'int',
+        'firstchild' => 'Node|null',
+        'lastchild' => 'Node|null',
+        'next' => 'Node|null',
+        'parent' => 'Node|null',
+        'previous' => 'Node|null',
+        'startcolumn' => 'int',
+        'startline' => 'int',
     ],
-    'limititerator' => [
-        'name' => 'string',
+    'commonmark\\node\\bulletlist' => [
+        'delimiter' => 'int',
+        'tight' => 'bool',
     ],
-    'solrdocumentfield' => [
-        'name' => 'string',
-        'boost' => 'float',
-        'values' => 'array',
+    'commonmark\\node\\codeblock' => [
+        'fence' => 'string|null',
     ],
-    'domprocessinginstruction' => [
-        'target' => 'string',
+    'commonmark\\node\\customblock' => [
+        'onenter' => 'string|null',
+        'onleave' => 'string|null',
+    ],
+    'commonmark\\node\\custominline' => [
+        'onenter' => 'string|null',
+        'onleave' => 'string|null',
+    ],
+    'commonmark\\node\\heading' => [
+        'level' => 'int',
+    ],
+    'commonmark\\node\\image' => [
+        'title' => 'string|null',
+        'url' => 'string|null',
+    ],
+    'commonmark\\node\\link' => [
+        'title' => 'string|null',
+        'url' => 'string|null',
+    ],
+    'commonmark\\node\\orderedlist' => [
+        'delimiter' => 'int',
+        'start' => 'int',
+        'tight' => 'bool',
+    ],
+    'commonmark\\node\\text' => [
+        'literal' => 'string|null',
+    ],
+    'curlfile' => [
+        'mime' => 'string',
+        'name' => 'string',
+        'postname' => 'string',
+    ],
+    'curlstringfile' => [
         'data' => 'string',
-    ],
-    'recursivearrayiterator' => [
-        'name' => 'string',
-    ],
-    'eventbuffer' => [
-        'length' => 'int',
-        'contiguous-space' => 'int',
-    ],
-    'mongocursor' => [
-        'slaveokay' => 'boolean',
-        'timeout' => 'integer',
-    ],
-    'domxpath' => [
-        'document' => 'DOMDocument',
-    ],
-    'domentity' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-        'notationName' => 'string',
-        'actualEncoding' => 'string',
-        'encoding' => 'string',
-        'version' => 'string',
-    ],
-    'splminheap' => [
-        'name' => 'string',
-    ],
-    'mongodb-driver-exception-writeexception' => [
-        'writeresult' => 'MongoDBDriverWriteResult',
-    ],
-    'ziparchive' => [
-        'status' => 'int',
-        'statusSys' => 'int',
-        'numFiles' => 'int',
-        'filename' => 'string',
-        'comment' => 'string',
-    ],
-    'solrexception' => [
-        'sourceline' => 'integer',
-        'sourcefile' => 'string',
-        'zif-name' => 'string',
-    ],
-    'arrayiterator' => [
-        'name' => 'string',
-    ],
-    'mongoid' => [
-        'id' => 'string',
+        'mime' => 'string',
+        'postname' => 'string',
     ],
     'dateinterval' => [
-        'y' => 'integer',
-        'm' => 'integer',
-        'd' => 'integer',
-        'h' => 'integer',
-        'i' => 'integer',
-        's' => 'integer',
-        'f' => 'float', // only present from 7.1 onwards
-        'invert' => 'integer',
+        'd' => 'int',
+        'date_string' => 'string',
         'days' => 'false|int',
+        'f' => 'float',
+        'from_string' => 'bool',
+        'h' => 'int',
+        'i' => 'int',
+        'invert' => 'int',
+        'm' => 'int',
+        's' => 'int',
+        'y' => 'int',
     ],
-    'tokyotyrantexception' => [
-        'code' => 'int',
-    ],
-    'tidy' => [
-        'errorbuffer' => 'string',
-    ],
-    'filteriterator' => [
-        'name' => 'string',
-    ],
-    'parentiterator' => [
-        'name' => 'string',
-    ],
-    'recursiveregexiterator' => [
-        'name' => 'string',
-    ],
-    'error' => [
-        'message' => 'string',
-        'code' => 'int',
-        'file' => 'string',
-        'line' => 'int',
-    ],
-    'domexception' => [
-        'code' => 'int',
-    ],
-    'domentityreference' => [
-        'name' => 'string',
-    ],
-    'spldoublylinkedlist' => [
-        'name' => 'string',
-    ],
-    'domdocumentfragment' => [
-        'name' => 'string',
-    ],
-    'collator' => [
-        'name' => 'string',
-    ],
-    'streamwrapper' => [
-        'context' => 'resource',
-    ],
-    'pdostatement' => [
-        'querystring' => 'string',
-    ],
-    'domnotation' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-    ],
-    'snmpexception' => [
-        'code' => 'string',
-    ],
-    'directoryiterator' => [
-        'name' => 'string',
-    ],
-    'splqueue' => [
-        'name' => 'string',
-    ],
-    'locale' => [
-        'name' => 'string',
+    'dateperiod' => [
+        'current' => 'DateTimeInterface',
+        'end' => 'DateTimeInterface',
+        'include_start_date' => 'bool',
+        'interval' => 'DateInterval',
+        'recurrences' => 'int',
+        'start' => 'DateTimeInterface',
     ],
     'directory' => [
-        'path' => 'string',
         'handle' => 'resource',
+        'path' => 'string',
     ],
-    'splheap' => [
+    'domattr' => [
         'name' => 'string',
-    ],
-    'domnodelist' => [
-        'length' => 'int',
-    ],
-    'mongodb' => [
-        'w' => 'integer',
-        'wtimeout' => 'integer',
-    ],
-    'splpriorityqueue' => [
-        'name' => 'string',
-    ],
-    'mongoclient' => [
-        'connected' => 'boolean',
-        'status' => 'string',
-    ],
-    'domdocument' => [
-        'actualEncoding' => 'string',
-        'config' => 'null',
-        'doctype' => 'DOMDocumentType',
-        'documentElement' => 'DOMElement',
-        'documentURI' => 'string',
-        'encoding' => 'string',
-        'firstElementChild' => 'DOMElement|null',
-        'formatOutput' => 'bool',
-        'childElementCount' => 'int',
-        'implementation' => 'DOMImplementation',
-        'lastElementChild' => 'DOMElement|null',
-        'preserveWhiteSpace' => 'bool',
-        'recover' => 'bool',
-        'resolveExternals' => 'bool',
-        'standalone' => 'bool',
-        'strictErrorChecking' => 'bool',
-        'substituteEntities' => 'bool',
-        'validateOnParse' => 'bool',
-        'version' => 'string',
-        'xmlEncoding' => 'string',
-        'xmlStandalone' => 'bool',
-        'xmlVersion' => 'string',
-        'ownerDocument' => 'null',
-        'parentNode' => 'null',
-    ],
-    'libxmlerror' => [
-        'level' => 'int',
-        'code' => 'int',
-        'column' => 'int',
-        'message' => 'string',
-        'file' => 'string',
-        'line' => 'int',
-    ],
-    'domimplementation' => [
-        'name' => 'string',
-    ],
-    'normalizer' => [
-        'name' => 'string',
-    ],
-    'norewinditerator' => [
-        'name' => 'string',
-    ],
-    'event' => [
-        'pending' => 'bool',
-    ],
-    'domdocumenttype' => [
-        'publicId' => 'string',
-        'systemId' => 'string',
-        'name' => 'string',
-        'entities' => 'DOMNamedNodeMap',
-        'notations' => 'DOMNamedNodeMap',
-        'internalSubset' => 'string',
-    ],
-    'errorexception' => [
-        'severity' => 'int',
-    ],
-    'recursivedirectoryiterator' => [
-        'name' => 'string',
+        'ownerelement' => 'DOMElement|null',
+        'schematypeinfo' => 'mixed',
+        'specified' => 'bool',
+        'value' => 'string',
     ],
     'domcharacterdata' => [
         'data' => 'string',
         'length' => 'int',
+        'nextelementsibling' => 'DOMElement|null',
+        'previouselementsibling' => 'DOMElement|null',
+    ],
+    'domdocument' => [
+        'actualencoding' => 'string|null',
+        'childelementcount' => 'int',
+        'config' => 'mixed',
+        'doctype' => 'DOMDocumentType|null',
+        'documentelement' => 'DOMElement|null',
+        'documenturi' => 'string|null',
+        'encoding' => 'string|null',
+        'firstelementchild' => 'DOMElement|null',
+        'formatoutput' => 'bool',
+        'implementation' => 'DOMImplementation',
+        'lastelementchild' => 'DOMElement|null',
+        'preservewhitespace' => 'bool',
+        'recover' => 'bool',
+        'resolveexternals' => 'bool',
+        'standalone' => 'bool',
+        'stricterrorchecking' => 'bool',
+        'substituteentities' => 'bool',
+        'validateonparse' => 'bool',
+        'version' => 'string|null',
+        'xmlencoding' => 'string|null',
+        'xmlstandalone' => 'bool',
+        'xmlversion' => 'string|null',
+    ],
+    'domdocumentfragment' => [
+        'childelementcount' => 'int',
+        'firstelementchild' => 'DOMElement|null',
+        'lastelementchild' => 'DOMElement|null',
+    ],
+    'domdocumenttype' => [
+        'entities' => 'DOMNamedNodeMap',
+        'internalsubset' => 'string|null',
+        'name' => 'string',
+        'notations' => 'DOMNamedNodeMap',
+        'publicid' => 'string',
+        'systemid' => 'string',
+    ],
+    'domelement' => [
+        'childelementcount' => 'int',
+        'firstelementchild' => 'DOMElement|null',
+        'lastelementchild' => 'DOMElement|null',
+        'nextelementsibling' => 'DOMElement|null',
+        'previouselementsibling' => 'DOMElement|null',
+        'schematypeinfo' => 'mixed',
+        'tagname' => 'string',
+    ],
+    'domentity' => [
+        'actualencoding' => 'string|null',
+        'encoding' => 'string|null',
+        'notationname' => 'string|null',
+        'publicid' => 'string|null',
+        'systemid' => 'string|null',
+        'version' => 'string|null',
+    ],
+    'domexception' => [
+        'code' => 'int',
+    ],
+    'domnamednodemap' => [
+        'length' => 'int',
+    ],
+    'domnode' => [
+        'attributes' => 'DOMNamedNodeMap|null',
+        'baseuri' => 'string|null',
+        'childnodes' => 'DomNodeList<DomNode>',
+        'firstchild' => 'DOMNode|null',
+        'lastchild' => 'DOMNode|null',
+        'localname' => 'string|null',
+        'namespaceuri' => 'string|null',
+        'nextsibling' => 'DOMNode|null',
+        'nodename' => 'string',
+        'nodetype' => 'int',
+        'nodevalue' => 'string|null',
+        'ownerdocument' => 'DOMDocument|null',
+        'parentnode' => 'DOMNode|null',
+        'prefix' => 'string',
+        'previoussibling' => 'DOMNode|null',
+        'textcontent' => 'string',
+    ],
+    'domnodelist' => [
+        'length' => 'int',
+    ],
+    'domnotation' => [
+        'publicid' => 'string',
+        'systemid' => 'string',
+    ],
+    'domprocessinginstruction' => [
+        'data' => 'string',
+        'target' => 'string',
+    ],
+    'domtext' => [
+        'wholetext' => 'string',
+    ],
+    'domxpath' => [
+        'document' => 'DOMDocument',
+        'registernodenamespaces' => 'bool',
+    ],
+    'errorexception' => [
+        'severity' => 'int',
+    ],
+    'event' => [
+        'pending' => 'bool',
+    ],
+    'eventbuffer' => [
+        'contiguous_space' => 'int',
+        'length' => 'int',
+    ],
+    'eventbufferevent' => [
+        'fd' => 'int',
+        'input' => 'EventBuffer',
+        'output' => 'EventBuffer',
+        'priority' => 'int',
+    ],
+    'eventlistener' => [
+        'fd' => 'int',
+    ],
+    'eventsslcontext' => [
+        'local_cert' => 'string',
+        'local_pk' => 'string',
+    ],
+    'libxmlerror' => [
+        'code' => 'int',
+        'column' => 'int',
+        'file' => 'string',
+        'level' => 'int',
+        'line' => 'int',
+        'message' => 'string',
+    ],
+    'mongoclient' => [
+        'connected' => 'boolean',
+        'status' => 'string',
     ],
     'mongocollection' => [
         'db' => 'MongoDB',
         'w' => 'integer',
         'wtimeout' => 'integer',
     ],
+    'mongocursor' => [
+        'slaveokay' => 'boolean',
+        'timeout' => 'integer',
+    ],
+    'mongodb' => [
+        'w' => 'integer',
+        'wtimeout' => 'integer',
+    ],
+    'mongodb-driver-exception-writeexception' => [
+        'writeresult' => 'MongoDBDriverWriteResult',
+    ],
+    'mongodb\\driver\\exception\\commandexception' => [
+        'resultdocument' => 'object',
+    ],
+    'mongodb\\driver\\exception\\runtimeexception' => [
+        'errorlabels' => 'array|null',
+    ],
+    'mongodb\\driver\\exception\\writeexception' => [
+        'writeresult' => 'MongoDB\\Driver\\WriteResult',
+    ],
+    'mongoid' => [
+        'id' => 'string',
+    ],
+    'mongoint32' => [
+        'value' => 'string',
+    ],
     'mongoint64' => [
         'value' => 'string',
     ],
     'mysqli' => [
-        'affected_rows' => 'int',
+        'affected_rows' => 'int|string',
         'client_info' => 'string',
         'client_version' => 'int',
         'connect_errno' => 'int',
-        'connect_error' => '?string',
+        'connect_error' => 'string|null',
         'errno' => 'int',
         'error' => 'string',
         'error_list' => 'array',
         'field_count' => 'int',
         'host_info' => 'string',
-        'info' => 'string',
+        'info' => 'string|null',
         'insert_id' => 'int|string',
-        'protocol_version' => 'string',
+        'protocol_version' => 'int',
         'server_info' => 'string',
         'server_version' => 'int',
         'sqlstate' => 'string',
@@ -273,31 +288,31 @@ return [
     ],
     'mysqli_driver' => [
         'client_info' => 'string',
-        'client_version' => 'string',
-        'driver_version' => 'string',
-        'embedded' => 'string',
+        'client_version' => 'int',
+        'driver_version' => 'int',
+        'embedded' => 'bool',
         'reconnect' => 'bool',
-        'report_mode' => 'int'
+        'report_mode' => 'int',
     ],
     'mysqli_result' => [
-        'current_field'  => 'int',
+        'current_field' => 'int',
         'field_count' => 'int',
         'lengths' => 'array|null',
-        'num_rows' => 'int',
-        'type' => 'mixed',
+        'num_rows' => 'int|string',
+        'type' => 'int',
     ],
     'mysqli_sql_exception' => [
-        'sqlstate' => 'string'
+        'sqlstate' => 'string',
     ],
     'mysqli_stmt' => [
-        'affected_rows' => 'int',
+        'affected_rows' => 'int|string',
         'errno' => 'int',
         'error' => 'string',
         'error_list' => 'array',
         'field_count' => 'int',
-        'id' => 'mixed',
-        'insert_id' => 'int',
-        'num_rows' => 'int',
+        'id' => 'int',
+        'insert_id' => 'int|string',
+        'num_rows' => 'int|string',
         'param_count' => 'int',
         'sqlstate' => 'string',
     ],
@@ -306,233 +321,301 @@ return [
         'message' => 'string',
         'sqlstate' => 'string',
     ],
-    'eventlistener' => [
-        'fd' => 'int',
-    ],
-    'splmaxheap' => [
-        'name' => 'string',
-    ],
-    'regexiterator' => [
-        'name' => 'string',
-    ],
-    'domelement' => [
-        'schemaTypeInfo' => 'bool',
-        'tagName' => 'string',
-        'attributes' => 'DOMNamedNodeMap<DOMAttr>',
-        'childElementCount' => 'int',
-        'firstElementChild' => 'DOMElement|null',
-        'lastElementChild' => 'DOMElement|null',
-        'nextElementSibling' => 'DOMElement|null',
-        'previousElementSibling' => 'DOMElement|null',
-    ],
-    'tidynode' => [
-        'value' => 'string',
-        'name' => 'string',
+    'parallel\\events\\event' => [
+        'object' => 'object',
+        'source' => 'string',
         'type' => 'int',
-        'line' => 'int',
-        'column' => 'int',
-        'proprietary' => 'bool',
+    ],
+    'parle\\errorinfo' => [
         'id' => 'int',
-        'attribute' => 'array',
-        'child' => '?array',
+        'position' => 'int',
+        'token' => 'mixed',
     ],
-    'recursivecachingiterator' => [
-        'name' => 'string',
+    'parle\\lexer' => [
+        'bol' => 'bool',
+        'cursor' => 'int',
+        'flags' => 'int',
+        'marker' => 'int',
+        'state' => 'int',
     ],
-    'solrresponse' => [
-        'http-status' => 'integer',
-        'parser-mode' => 'integer',
-        'success' => 'bool',
-        'http-status-message' => 'string',
-        'http-request-url' => 'string',
-        'http-raw-request-headers' => 'string',
-        'http-raw-request' => 'string',
-        'http-raw-response-headers' => 'string',
-        'http-raw-response' => 'string',
-        'http-digested-response' => 'string',
+    'parle\\parser' => [
+        'action' => 'int',
+        'reduceid' => 'int',
     ],
-    'domnamednodemap' => [
-        'length' => 'int',
+    'parle\\rlexer' => [
+        'bol' => 'bool',
+        'cursor' => 'int',
+        'flags' => 'int',
+        'marker' => 'int',
+        'state' => 'int',
     ],
-    'splstack' => [
-        'name' => 'string',
+    'parle\\rparser' => [
+        'action' => 'int',
+        'reduceid' => 'int',
     ],
-    'numberformatter' => [
-        'name' => 'string',
+    'parle\\stack' => [
+        'empty' => 'bool',
+        'size' => 'int',
+        'top' => 'mixed',
     ],
-    'eventsslcontext' => [
-        'local-cert' => 'string',
-        'local-pk' => 'string',
+    'parle\\token' => [
+        'id' => 'int',
+        'value' => 'string',
     ],
     'pdoexception' => [
-        'errorinfo' => 'array',
         'code' => 'int|string',
+        'errorinfo' => 'array|null',
     ],
-    'domnode' => [
-        'nodeName' => 'string',
-        'nodeValue' => 'string|null',
-        'nodeType' => 'int',
-        'parentNode' => 'DOMNode|null',
-        'childNodes' => 'DomNodeList<DomNode>',
-        'firstChild' => 'DOMNode|null',
-        'lastChild' => 'DOMNode|null',
-        'previousSibling' => 'DOMNode|null',
-        'nextSibling' => 'DOMNode|null',
-        'attributes' => 'null',
-        'ownerDocument' => 'DOMDocument|null',
-        'namespaceURI' => 'string|null',
-        'prefix' => 'string',
-        'localName' => 'string',
-        'baseURI' => 'string|null',
-        'textContent' => 'string',
+    'pdostatement' => [
+        'querystring' => 'string',
     ],
-    'domattr' => [
-        'name' => 'string',
-        'ownerElement' => 'DOMElement',
-        'schemaTypeInfo' => 'bool',
-        'specified' => 'bool',
-        'value' => 'string',
-    ],
-    'simplexmliterator' => [
-        'name' => 'string',
-    ],
-    'snmp' => [
-        'max-oids' => 'int',
-        'valueretrieval' => 'int',
-        'quick-print' => 'bool',
-        'enum-print' => 'bool',
-        'oid-output-format' => 'int',
-        'oid-increasing-check' => 'bool',
-        'exceptions-enabled' => 'int',
-        'info' => 'array',
-    ],
-    'mongoint32' => [
-        'value' => 'string',
-    ],
-    'xmlreader' => [
-        'attributeCount' => 'int',
-        'baseURI' => 'string',
-        'depth' => 'int',
-        'hasAttributes' => 'bool',
-        'hasValue' => 'bool',
-        'isDefault' => 'bool',
-        'isEmptyElement' => 'bool',
-        'localName' => 'string',
-        'name' => 'string',
-        'namespaceURI' => 'string',
-        'nodeType' => 'int',
-        'prefix' => 'string',
-        'value' => 'string',
-        'xmlLang' => 'string',
-    ],
-    'eventbufferevent' => [
-        'fd' => 'integer',
-        'priority' => 'integer',
-        'input' => 'EventBuffer',
-        'output' => 'EventBuffer',
-    ],
-    'domtext' => [
-        'wholeText' => 'string',
-    ],
-    'exception' => [
-        'message' => 'string',
-        'code' => 'int',
-        'file' => 'string',
-        'line' => 'int',
-    ],
-    'reflectionclass' => [
-        'name' => 'string',
-    ],
-    'reflectionmethod' => [
-        'class' => 'string',
-        'name' => 'string',
-    ],
-    'reflectionparameter' => [
-        'name' => 'string',
+    'php_user_filter' => [
+        'filtername' => 'string',
+        'params' => 'mixed',
+        'stream' => 'resource|null',
     ],
     'phpparser\\node\\expr\\array_' => [
-        'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
-    ],
-    'phpparser\\node\\expr\\list_' => [
-        'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
+        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
     ],
     'phpparser\\node\\expr\\arrowfunction' => [
-        'params' => 'list<PhpParser\Node\Param>',
+        'params' => 'list<PhpParser\\Node\\Param>',
     ],
     'phpparser\\node\\expr\\closure' => [
-        'params' => 'list<PhpParser\Node\Param>',
+        'params' => 'list<PhpParser\\Node\\Param>',
+    ],
+    'phpparser\\node\\expr\\list_' => [
+        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
+    ],
+    'phpparser\\node\\expr\\shellexec' => [
+        'parts' => 'list<PhpParser\\Node>',
+    ],
+    'phpparser\\node\\matcharm' => [
+        'conds' => 'null|non-empty-list<PhpParser\\Node\\Expr>',
     ],
     'phpparser\\node\\name' => [
         'parts' => 'non-empty-list<non-empty-string>',
     ],
-    'phpparser\\node\\stmt\\namespace_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\if_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\elseif_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\else_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\for_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\foreach_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\trycatch' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
+    'phpparser\\node\\stmt\\case_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
     'phpparser\\node\\stmt\\catch_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\finally_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\case_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\while_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
-    ],
-    'phpparser\\node\\stmt\\do_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
     'phpparser\\node\\stmt\\class_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\trait_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
+    'phpparser\\node\\stmt\\do_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\else_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\elseif_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\finally_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\for_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\foreach_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\if_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
     'phpparser\\node\\stmt\\interface_' => [
-        'stmts' => 'list<PhpParser\Node\Stmt>',
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\matcharm' => [
-        'conds' => 'null|non-empty-list<PhpParser\Node\Expr>',
+    'phpparser\\node\\stmt\\namespace_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\expr\\shellexec' => [
-        'parts' => 'list<PhpParser\Node>',
+    'phpparser\\node\\stmt\\trait_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\trycatch' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\while_' => [
+        'stmts' => 'list<PhpParser\\Node\\Stmt>',
+    ],
+    'phptoken' => [
+        'id' => 'int',
+        'line' => 'int',
+        'pos' => 'int',
+        'text' => 'string',
     ],
     'rdkafka\\message' => [
         'err' => 'int',
-        'topic_name' => 'string',
-        'partition' => 'int',
-        'payload' => 'string',
+        'headers' => 'array<string, string>|null',
         'key' => 'string|null',
         'offset' => 'int',
+        'partition' => 'int',
+        'payload' => 'string',
         'timestamp' => 'int',
-        'headers' => 'array<string, string>|null',
+        'topic_name' => 'string',
+    ],
+    'reflectionextension' => [
+        'name' => 'string',
+    ],
+    'reflectionfunctionabstract' => [
+        'name' => 'string',
+    ],
+    'reflectionzendextension' => [
+        'name' => 'string',
+    ],
+    'snmp' => [
+        'enum_print' => 'bool',
+        'exceptions_enabled' => 'int',
+        'info' => 'array',
+        'max_oids' => 'int|null',
+        'oid_increasing_check' => 'bool',
+        'oid_output_format' => 'int',
+        'quick_print' => 'bool',
+        'valueretrieval' => 'int',
+    ],
+    'snmpexception' => [
+        'code' => 'string',
+    ],
+    'soapclient' => [
+        '__default_headers' => 'array|null',
+        '__last_request' => 'string|null',
+        '__last_request_headers' => 'string|null',
+        '__last_response' => 'string|null',
+        '__last_response_headers' => 'string|null',
+        '__soap_fault' => 'SoapFault|null',
+        '_classmap' => 'array|null',
+        '_connection_timeout' => 'int',
+        '_cookies' => 'array',
+        '_digest' => 'string|null',
+        '_encoding' => 'string|null',
+        '_exceptions' => 'bool',
+        '_features' => 'int|null',
+        '_keep_alive' => 'bool',
+        '_login' => 'string|null',
+        '_password' => 'string|null',
+        '_proxy_host' => 'string|null',
+        '_proxy_login' => 'string|null',
+        '_proxy_password' => 'string|null',
+        '_proxy_port' => 'int|null',
+        '_soap_version' => 'int',
+        '_ssl_method' => 'int|null',
+        '_stream_context' => 'resource|null',
+        '_use_digest' => 'bool',
+        '_use_proxy' => 'int|null',
+        '_user_agent' => 'string|null',
+        'compression' => 'int|null',
+        'httpsocket' => 'resource|null',
+        'httpurl' => 'resource|null',
+        'location' => 'string|null',
+        'sdl' => 'resource|null',
+        'style' => 'int|null',
+        'trace' => 'bool',
+        'typemap' => 'resource|null',
+        'uri' => 'string|null',
+        'use' => 'int|null',
     ],
     'soapfault' => [
+        '_name' => 'string|null',
+        'detail' => 'mixed',
+        'faultactor' => 'string|null',
         'faultcode' => 'string|null',
         'faultcodens' => 'string|null',
         'faultstring' => 'string',
-        'faultactor' => 'string|null',
-        'detail' => 'mixed|null',
-        '_name' => 'string',
-        'headerfault' => 'mixed|null',
+        'headerfault' => 'mixed',
+    ],
+    'soapheader' => [
+        'actor' => 'string|int|null',
+        'data' => 'mixed',
+        'mustunderstand' => 'bool',
+        'name' => 'string',
+        'namespace' => 'string',
+    ],
+    'soapparam' => [
+        'param_data' => 'mixed',
+        'param_name' => 'string',
+    ],
+    'soapserver' => [
+        '__soap_fault' => 'SoapFault|null',
+        'service' => 'resource',
+    ],
+    'soapvar' => [
+        'enc_name' => 'string|null',
+        'enc_namens' => 'string|null',
+        'enc_ns' => 'string|null',
+        'enc_stype' => 'string|null',
+        'enc_type' => 'int',
+        'enc_value' => 'mixed',
+    ],
+    'solrdocumentfield' => [
+        'boost' => 'float',
+        'name' => 'string',
+        'values' => 'array',
+    ],
+    'solrexception' => [
+        'sourcefile' => 'string',
+        'sourceline' => 'int',
+        'zif_name' => 'string',
+    ],
+    'solrresponse' => [
+        'http_digested_response' => 'string',
+        'http_raw_request' => 'string',
+        'http_raw_request_headers' => 'string',
+        'http_raw_response' => 'string',
+        'http_raw_response_headers' => 'string',
+        'http_request_url' => 'string',
+        'http_status' => 'int',
+        'http_status_message' => 'string',
+        'parser_mode' => 'int',
+        'success' => 'bool',
+    ],
+    'streamwrapper' => [
+        'context' => 'resource',
+    ],
+    'tidy' => [
+        'errorbuffer' => 'string',
+        'value' => 'string|null',
+    ],
+    'tidynode' => [
+        'attribute' => 'array|null',
+        'child' => 'array|null',
+        'column' => 'int',
+        'id' => 'int|null',
+        'line' => 'int',
+        'name' => 'string',
+        'proprietary' => 'bool',
+        'type' => 'int',
+        'value' => 'string',
+    ],
+    'tokyotyrantexception' => [
+        'code' => 'int',
+    ],
+    'transliterator' => [
+        'id' => 'string',
+    ],
+    'xmlreader' => [
+        'attributecount' => 'int',
+        'baseuri' => 'string',
+        'depth' => 'int',
+        'hasattributes' => 'bool',
+        'hasvalue' => 'bool',
+        'isdefault' => 'bool',
+        'isemptyelement' => 'bool',
+        'localname' => 'string',
+        'name' => 'string',
+        'namespaceuri' => 'string',
+        'nodetype' => 'int',
+        'prefix' => 'string',
+        'value' => 'string',
+        'xmllang' => 'string',
+    ],
+    'ziparchive' => [
+        'comment' => 'string',
+        'filename' => 'string',
+        'lastid' => 'int',
+        'numfiles' => 'int',
+        'status' => 'int',
+        'statussys' => 'int',
     ],
 ];
