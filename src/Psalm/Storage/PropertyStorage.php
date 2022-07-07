@@ -78,9 +78,9 @@ final class PropertyStorage implements HasAttributesInterface
     public $allow_private_mutation = false;
 
     /**
-     * @var string
+     * @var list<non-empty-string>
      */
-    public $internal = '';
+    public $internal = [];
 
     /**
      * @var ?string

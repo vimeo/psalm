@@ -33,9 +33,9 @@ class ClassLikeDocblockComment
     /**
      * If set, the class is internal to the given namespace.
      *
-     * @var null|string
+     * @var list<non-empty-string>
      */
-    public $psalm_internal;
+    public $psalm_internal = [];
 
     /**
      * @var string[]

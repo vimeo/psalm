@@ -141,7 +141,7 @@ class StatementsProvider
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
-            $cache_key = "${file_content_hash}:${analysis_php_version_id}";
+            $cache_key = "{$file_content_hash}:{$analysis_php_version_id}";
             if ($this->statements_volatile_cache->has($cache_key)) {
                 return $this->statements_volatile_cache->get($cache_key);
             }
@@ -479,7 +479,7 @@ class StatementsProvider
 
             foreach ($error_handler->getErrors() as $error) {
                 if ($error->hasColumnInfo()) {
-                    IssueBuffer::add(
+                    IssueBuffer::maybeAdd(
                         new ParseError(
                             $error->getMessage(),
                             new ParseErrorLocation(

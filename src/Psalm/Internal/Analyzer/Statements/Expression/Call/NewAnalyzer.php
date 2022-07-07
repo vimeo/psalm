@@ -350,12 +350,12 @@ class NewAnalyzer extends CallAnalyzer
         if ($context->self
             && !$context->collect_initializations
             && !$context->collect_mutations
-            && !NamespaceAnalyzer::isWithin($context->self, $storage->internal)
+            && !NamespaceAnalyzer::isWithinAny($context->self, $storage->internal)
         ) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
-                    $fq_class_name . ' is internal to ' . $storage->internal
-                    . ' but called from ' . $context->self,
+                    $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
+                        . ' but called from ' . $context->self,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name
                 ),
@@ -412,16 +412,13 @@ class NewAnalyzer extends CallAnalyzer
             if ($declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                $namespace = $statements_analyzer->getNamespace() ?: '';
-                if (!NamespaceAnalyzer::isWithin(
-                    $namespace,
-                    $method_storage->internal
-                )) {
+                $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?: '';
+                if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $method_storage->internal)) {
                     IssueBuffer::maybeAdd(
                         new InternalMethod(
                             'Constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id)
-                            . ' is internal to ' . $method_storage->internal
-                            . ' but called from ' . ($namespace ?: 'root namespace'),
+                                . ' is internal to ' . InternalClass::listToPhrase($method_storage->internal)
+                                . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                             new CodeLocation($statements_analyzer, $stmt),
                             (string) $method_id
                         ),

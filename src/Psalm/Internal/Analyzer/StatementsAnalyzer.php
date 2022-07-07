@@ -70,6 +70,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_search;
+use function assert;
 use function count;
 use function explode;
 use function fwrite;
@@ -1161,5 +1162,27 @@ class StatementsAnalyzer extends SourceAnalyzer
     public function getNodeTypeProvider(): NodeTypeProvider
     {
         return $this->node_data;
+    }
+
+    public function getFullyQualifiedFunctionMethodOrNamespaceName(): ?string
+    {
+        if ($this->source instanceof MethodAnalyzer) {
+            $fqcn = $this->getFQCLN();
+            $method_name = $this->source->getFunctionLikeStorage($this)->cased_name;
+            assert($fqcn !== null && $method_name !== null);
+
+            return "$fqcn::$method_name";
+        }
+
+        if ($this->source instanceof FunctionAnalyzer) {
+            $namespace = $this->getNamespace();
+            $namespace = $namespace === "" ? "" : "$namespace\\";
+            $function_name = $this->source->getFunctionLikeStorage($this)->cased_name;
+            assert($function_name !== null);
+
+            return "{$namespace}{$function_name}";
+        }
+
+        return $this->getNamespace();
     }
 }

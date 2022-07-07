@@ -280,6 +280,7 @@ final class Union implements TypeNode
     }
 
     /**
+     * @psalm-mutation-free
      * @return non-empty-array<string, Atomic>
      */
     public function getAtomicTypes(): array
@@ -1278,6 +1279,34 @@ final class Union implements TypeNode
         return true;
     }
 
+    /**
+     * @psalm-assert-if-true array<
+     *     array-key,
+     *     TLiteralString|TLiteralInt|TLiteralFloat|TFalse|TTrue
+     * > $this->getAtomicTypes()
+     */
+    public function allSpecificLiterals(): bool
+    {
+        foreach ($this->types as $atomic_key_type) {
+            if (!$atomic_key_type instanceof TLiteralString
+                && !$atomic_key_type instanceof TLiteralInt
+                && !$atomic_key_type instanceof TLiteralFloat
+                && !$atomic_key_type instanceof TFalse
+                && !$atomic_key_type instanceof TTrue
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @psalm-assert-if-true array<
+     *     array-key,
+     *     TLiteralString|TLiteralInt|TLiteralFloat|TNonspecificLiteralString|TNonSpecificLiteralInt|TFalse|TTrue
+     * > $this->getAtomicTypes()
+     */
     public function allLiterals(): bool
     {
         foreach ($this->types as $atomic_key_type) {
@@ -1303,6 +1332,32 @@ final class Union implements TypeNode
             || $this->literal_float_types
             || isset($this->types['false'])
             || isset($this->types['true']);
+    }
+
+    public function isSingleLiteral(): bool
+    {
+        return count($this->types) === 1
+            && count($this->literal_int_types)
+                + count($this->literal_string_types)
+                + count($this->literal_float_types) === 1
+        ;
+    }
+
+    /**
+     * @return TLiteralInt|TLiteralString|TLiteralFloat
+     */
+    public function getSingleLiteral()
+    {
+        if (!$this->isSingleLiteral()) {
+            throw new InvalidArgumentException("Not a single literal");
+        }
+
+        return ($literal = reset($this->literal_int_types)) !== false
+            ? $literal
+            : (($literal = reset($this->literal_string_types)) !== false
+                ? $literal
+                : reset($this->literal_float_types))
+        ;
     }
 
     public function hasLiteralString(): bool

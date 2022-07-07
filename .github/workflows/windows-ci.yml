@@ -2,8 +2,13 @@ name: Run unit tests on Windows
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   chunk-matrix:
+    permissions:
+      contents: none
     name: Generate Chunk Matrix
 
     runs-on: ubuntu-latest
@@ -54,7 +59,7 @@ jobs:
           coverage: none
           extensions: none, curl, dom, filter, json, libxml, mbstring, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -63,7 +68,7 @@ jobs:
           echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
 
       - name: Cache composer cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

@@ -145,9 +145,41 @@ return [
       'old' => ['bool', 'name'=>'string', 'content'=>'string', 'isParam'=>'bool', 'publicId'=>'string', 'systemId'=>'string', 'notationData'=>'string'],
       'new' => ['bool', 'name'=>'string', 'content'=>'string', 'isParam='=>'bool', 'publicId='=>'?string', 'systemId='=>'?string', 'notationData='=>'?string'],
     ],
+    'array_column' => [
+        'old' => ['array', 'array'=>'array', 'column_key'=>'mixed', 'index_key='=>'mixed'],
+        'new' => ['array', 'array'=>'array', 'column_key'=>'int|string|null', 'index_key='=>'int|string|null'],
+    ],
     'array_combine' => [
       'old' => ['associative-array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
       'new' => ['associative-array', 'keys'=>'string[]|int[]', 'values'=>'array'],
+    ],
+    'array_diff' => [
+        'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
+        'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+    ],
+    'array_diff_assoc' => [
+        'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
+        'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+    ],
+    'array_diff_key' => [
+        'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
+        'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+    ],
+    'array_key_exists' => [
+        'old' => ['bool', 'key'=>'string|int', 'array'=>'array|object'],
+        'new' => ['bool', 'key'=>'string|int', 'array'=>'array'],
+    ],
+    'array_intersect' => [
+        'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
+        'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+    ],
+    'array_intersect_assoc' => [
+        'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
+        'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+    ],
+    'array_intersect_key' => [
+        'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
+        'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'bcadd' => [
       'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
@@ -192,6 +224,10 @@ return [
     'com_load_typelib' => [
       'old' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'bool'],
       'new' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'true'],
+    ],
+    'count' => [
+        'old' => ['int', 'value'=>'Countable|array|SimpleXMLElement|ResourceBundle', 'mode='=>'int'],
+        'new' => ['int', 'value'=>'Countable|array', 'mode='=>'int'],
     ],
     'count_chars' => [
       'old' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'0|1|2'],
@@ -321,6 +357,10 @@ return [
       'old' => ['string|false', 'object'=>'DateTimeInterface', 'format'=>'string'],
       'new' => ['string', 'object'=>'DateTimeInterface', 'format'=>'string'],
     ],
+    'datefmt_create' => [
+        'old' => ['?IntlDateFormatter', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'DateTimeZone|IntlTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'string'],
+        'new' => ['?IntlDateFormatter', 'locale'=>'?string', 'dateType='=>'int', 'timeType='=>'int', 'timezone='=>'DateTimeZone|IntlTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
+    ],
     'dom_import_simplexml' => [
         'old' => ['DOMElement|null', 'node'=>'SimpleXMLElement'],
         'new' => ['DOMElement', 'node'=>'SimpleXMLElement'],
@@ -328,6 +368,14 @@ return [
     'explode' => [
       'old' => ['list<string>|false', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
       'new' => ['list<string>', 'separator'=>'string', 'string'=>'string', 'limit='=>'int'],
+    ],
+    'get_class_methods' => [
+        'old' => ['list<string>|null', 'object_or_class'=>'mixed'],
+        'new' => ['list<string>', 'object_or_class'=>'object|class-string'],
+    ],
+    'get_parent_class' => [
+        'old' => ['class-string|false', 'object_or_class='=>'mixed'],
+        'new' => ['class-string|false', 'object_or_class='=>'object|class-string'],
     ],
     'gmdate' => [
       'old' => ['string', 'format'=>'string', 'timestamp='=>'int'],
@@ -979,7 +1027,11 @@ return [
     ],
     'number_format' => [
       'old' => ['string', 'num'=>'float|int', 'decimals='=>'int'],
-      'new' => ['string', 'num'=>'float|int', 'decimals='=>'int', 'decimal_separator='=>'string', 'thousands_separator='=>'string'],
+      'new' => ['string', 'num'=>'float|int', 'decimals='=>'int', 'decimal_separator='=>'?string', 'thousands_separator='=>'?string'],
+    ],
+    'ob_implicit_flush' => [
+      'old' => ['void', 'enable='=>'int'],
+      'new' => ['void', 'enable='=>'bool'],
     ],
     'openssl_csr_export' => [
       'old' => ['bool', 'csr'=>'string|resource', '&w_output'=>'string', 'no_text='=>'bool'],
@@ -1622,8 +1674,10 @@ return [
     'gzgetss' => ['string|false', 'zp'=>'resource', 'length'=>'int', 'allowable_tags='=>'string'],
     'image2wbmp' => ['bool', 'im'=>'resource', 'filename='=>'?string', 'threshold='=>'int'],
     'jpeg2wbmp' => ['bool', 'jpegname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
+    'ldap_control_paged_result' => ['bool', 'link_identifier'=>'resource', 'pagesize'=>'int', 'iscritical='=>'bool', 'cookie='=>'string'],
+    'ldap_control_paged_result_response' => ['bool', 'link_identifier'=>'resource', 'result_identifier'=>'resource', '&w_cookie'=>'string', '&w_estimated'=>'int'],
     'ldap_sort' => ['bool', 'link_identifier'=>'resource', 'result_identifier'=>'resource', 'sortfilter'=>'string'],
-    'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'string', 'thousands_separator'=>'string'],
+    'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'?string', 'thousands_separator'=>'?string'],
     'png2wbmp' => ['bool', 'pngname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
     'read_exif_data' => ['array', 'filename'=>'string', 'sections_needed='=>'string', 'sub_arrays='=>'bool', 'read_thumbnail='=>'bool'],
     'SimpleXMLIterator::rewind' => ['void'],

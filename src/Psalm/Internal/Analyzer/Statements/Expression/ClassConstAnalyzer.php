@@ -357,12 +357,12 @@ class ClassConstAnalyzer
             if ($context->self
                 && !$context->collect_initializations
                 && !$context->collect_mutations
-                && $const_class_storage->internal
-                && !NamespaceAnalyzer::isWithin($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
-                        $fq_class_name . ' is internal to ' . $const_class_storage->internal
+                        $fq_class_name . ' is internal to '
+                            . InternalClass::listToPhrase($const_class_storage->internal)
                             . ' but called from ' . $context->self,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name
@@ -633,13 +633,13 @@ class ClassConstAnalyzer
             if ($context->self
                 && !$context->collect_initializations
                 && !$context->collect_mutations
-                && $const_class_storage->internal
-                && !NamespaceAnalyzer::isWithin($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
-                        $fq_class_name . ' is internal to ' . $const_class_storage->internal
-                        . ' but called from ' . $context->self,
+                        $fq_class_name . ' is internal to '
+                            . InternalClass::listToPhrase($const_class_storage->internal)
+                            . ' but called from ' . $context->self,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name
                     ),
