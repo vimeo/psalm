@@ -26,7 +26,7 @@ return [
     'openssl_get_curve_names' => ['list<string>'],
     'pcntl_async_signals' => ['bool', 'enable='=>'bool'],
     'pcntl_signal_get_handler' => ['int|string', 'signal'=>'int'],
-    'sapi_windows_cp_conv' => ['string', 'in_codepage'=>'int|string', 'out_codepage'=>'int|string', 'subject'=>'string'],
+    'sapi_windows_cp_conv' => ['?string', 'in_codepage'=>'int|string', 'out_codepage'=>'int|string', 'subject'=>'string'],
     'sapi_windows_cp_get' => ['int'],
     'sapi_windows_cp_is_utf8' => ['bool'],
     'sapi_windows_cp_set' => ['bool', 'codepage'=>'int'],

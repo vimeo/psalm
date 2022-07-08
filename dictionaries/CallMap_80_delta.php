@@ -278,8 +278,8 @@ return [
       'new' => ['int', 'multi_handle'=>'CurlMultiHandle', '&w_still_running'=>'int'],
     ],
     'curl_multi_getcontent' => [
-      'old' => ['string', 'ch'=>'resource'],
-      'new' => ['string', 'handle'=>'CurlHandle'],
+      'old' => ['?string', 'ch'=>'resource'],
+      'new' => ['?string', 'handle'=>'CurlHandle'],
     ],
     'curl_multi_info_read' => [
       'old' => ['array|false', 'mh'=>'resource', '&w_msgs_in_queue='=>'int'],
@@ -834,8 +834,8 @@ return [
       'new' => ['string|false|null', 'pattern'=>'string', 'replacement'=>'string', 'string'=>'string', 'options='=>'string|null'],
     ],
     'mb_ereg_replace_callback' => [
-      'old' => ['string|false', 'pattern'=>'string', 'callback'=>'callable', 'string'=>'string', 'options='=>'string'],
-      'new' => ['string|false', 'pattern'=>'string', 'callback'=>'callable', 'string'=>'string', 'options='=>'string|null'],
+      'old' => ['string|false|null', 'pattern'=>'string', 'callback'=>'callable', 'string'=>'string', 'options='=>'string'],
+      'new' => ['string|false|null', 'pattern'=>'string', 'callback'=>'callable', 'string'=>'string', 'options='=>'string|null'],
     ],
     'mb_ereg_search' => [
       'old' => ['bool', 'pattern='=>'string', 'options='=>'string'],
