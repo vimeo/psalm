@@ -54,6 +54,7 @@ use function chdir;
 use function class_exists;
 use function count;
 use function dirname;
+use function error_log;
 use function explode;
 use function extension_loaded;
 use function file_exists;
@@ -94,12 +95,10 @@ use function strtolower;
 use function substr;
 use function substr_count;
 use function sys_get_temp_dir;
-use function trigger_error;
 use function unlink;
 use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
-use const E_USER_ERROR;
 use const GLOB_NOSORT;
 use const LIBXML_ERR_ERROR;
 use const LIBXML_ERR_FATAL;
@@ -1016,7 +1015,7 @@ class Config
         }
 
         if (is_dir($config->cache_directory) === false && @mkdir($config->cache_directory, 0777, true) === false) {
-            trigger_error('Could not create cache directory: ' . $config->cache_directory, E_USER_ERROR);
+            error_log('Could not create cache directory: ' . $config->cache_directory);
         }
 
         if ($cwd) {
