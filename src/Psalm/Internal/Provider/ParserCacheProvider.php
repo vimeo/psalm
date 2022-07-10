@@ -30,13 +30,11 @@ use function mkdir;
 use function scandir;
 use function serialize;
 use function touch;
-use function trigger_error;
 use function unlink;
 use function unserialize;
 use function usleep;
 
 use const DIRECTORY_SEPARATOR;
-use const E_USER_ERROR;
 use const LOCK_EX;
 use const LOCK_SH;
 use const SCANDIR_SORT_NONE;
@@ -385,7 +383,7 @@ class ParserCacheProvider
             } catch (RuntimeException $e) {
                 // Race condition (#4483)
                 if (!is_dir($parser_cache_directory)) {
-                    trigger_error('Could not create parser cache directory: ' . $parser_cache_directory, E_USER_ERROR);
+                    error_log('Could not create parser cache directory: ' . $parser_cache_directory);
                 }
             }
         }
