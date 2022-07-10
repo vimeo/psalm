@@ -28,24 +28,7 @@ abstract class Report
     public const TYPE_PHP_STORM = 'phpstorm';
     public const TYPE_SARIF = 'sarif';
     public const TYPE_CODECLIMATE = 'codeclimate';
-
-    public const SUPPORTED_OUTPUT_TYPES = [
-        self::TYPE_COMPACT,
-        self::TYPE_CONSOLE,
-        self::TYPE_PYLINT,
-        self::TYPE_JSON,
-        self::TYPE_JSON_SUMMARY,
-        self::TYPE_SONARQUBE,
-        self::TYPE_EMACS,
-        self::TYPE_XML,
-        self::TYPE_JUNIT,
-        self::TYPE_CHECKSTYLE,
-        self::TYPE_TEXT,
-        self::TYPE_GITHUB_ACTIONS,
-        self::TYPE_PHP_STORM,
-        self::TYPE_SARIF,
-        self::TYPE_CODECLIMATE,
-    ];
+    public const TYPE_COUNT = 'count';
 
     /**
      * @var array<int, IssueData>
