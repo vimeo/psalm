@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -43,7 +44,9 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 
+use function array_diff;
 use function array_filter;
+use function array_keys;
 use function array_merge;
 use function array_unique;
 use function count;
@@ -1597,5 +1600,48 @@ final class Union implements TypeNode
     public function isUnionEmpty(): bool
     {
         return $this->types === [];
+    }
+
+    public function getExtendedComparisonDescription(Union $other_type): ?string
+    {
+        $this_single = $other_single = null;
+        if ($this->isSingle()) {
+            $this_single = $this->getSingleAtomic();
+        }
+        if ($other_type->isSingle()) {
+            $other_single = $other_type->getSingleAtomic();
+        }
+
+        if (!$this_single instanceof TKeyedArray || !$other_single instanceof TKeyedArray) {
+            return null;
+        }
+
+        // There's many ways to illustrate this but this is the simplest and provides info
+        // without being too opinionated
+        $text_diff = 'The differences are in the following keys: ';
+        $param_keys = array_keys(self::rekeyPropertiesArray($this_single->properties));
+        $input_keys = array_keys(self::rekeyPropertiesArray($other_single->properties));
+        $key_comparison = array_diff($param_keys, $input_keys);
+
+        $text_diff .= implode(', ', $key_comparison);
+
+        return $text_diff;
+    }
+
+    /**
+     * @param non-empty-array<int|string, Union> $properties
+     * @return non-empty-array<int|string, Union> $properties
+     */
+    private static function rekeyPropertiesArray(array $properties): array
+    {
+        $rekeyed = [];
+        foreach ($properties as $key => $property) {
+            if ($property->possibly_undefined) {
+                $key = "?$key";
+            }
+            $rekeyed[$key] = $property;
+        }
+
+        return $rekeyed;
     }
 }

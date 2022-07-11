@@ -983,10 +983,13 @@ class ArgumentAnalyzer
                     $statements_analyzer->getSuppressedIssues()
                 );
             } elseif ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
+                $extension = $param_type->getExtendedComparisonDescription($input_type);
+                $extension = $extension ? '. '.$extension : '';
+
                 IssueBuffer::maybeAdd(
                     new ArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', parent type ' . $input_type->getId() . ' provided',
+                            ', parent type ' . $input_type->getId() . ' provided'.$extension,
                         $arg_location,
                         $cased_method_id
                     ),
@@ -1028,26 +1031,31 @@ class ArgumentAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     );
                 }
-            } elseif ($types_can_be_identical) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyInvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', possibly different type ' . $type . ' provided',
-                        $arg_location,
-                        $cased_method_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
             } else {
-                IssueBuffer::maybeAdd(
-                    new InvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', ' . $type . ' provided',
-                        $arg_location,
-                        $cased_method_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
+                $extension = $param_type->getExtendedComparisonDescription($input_type);
+                $extension = $extension ? '. '.$extension : '';
+
+                if ($types_can_be_identical) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyInvalidArgument(
+                            'Argument '.($argument_offset+1).$method_identifier.' expects '.$param_type->getId().
+                            ', possibly different type '.$type.' provided'.$extension,
+                            $arg_location,
+                            $cased_method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'Argument '.($argument_offset+1).$method_identifier.' expects '.$param_type->getId().
+                            ', '.$type.' provided'.$extension,
+                            $arg_location,
+                            $cased_method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+                }
             }
 
             return null;
