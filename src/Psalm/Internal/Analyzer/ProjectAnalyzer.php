@@ -397,6 +397,7 @@ class ProjectAnalyzer
             '.pylint' => Report::TYPE_PYLINT,
             '.console' => Report::TYPE_CONSOLE,
             '.sarif' => Report::TYPE_SARIF,
+            'count.txt' => Report::TYPE_COUNT,
         ];
 
         foreach ($report_file_paths as $report_file_path) {
