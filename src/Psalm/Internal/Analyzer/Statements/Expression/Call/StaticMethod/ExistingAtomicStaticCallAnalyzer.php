@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 
 use function array_map;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
@@ -629,17 +630,20 @@ class ExistingAtomicStaticCallAnalyzer
     /**
      * Dumb way to determine whether a type contains "static" somewhere inside.
      */
-    private static function hasStaticInType(Union $union_type): bool
+    private static function hasStaticInType(Type\TypeNode $type): bool
     {
-        foreach ($union_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof Atomic\TGenericObject) {
-                foreach ($atomic_type->type_params as $type_param) {
-                    if (self::hasStaticInType($type_param)) {
-                        return true;
-                    }
-                }
-            } elseif ($atomic_type instanceof TNamedObject) {
-                if ($atomic_type->value === 'static') {
+        assert($type instanceof Atomic || $type instanceof Union);
+        $union_parts = $type instanceof Union
+            ? $type->getAtomicTypes()
+            : [ $type ];
+
+        foreach ($union_parts as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject && $atomic_type->value === 'static') {
+                return true;
+            }
+
+            foreach ($atomic_type->getChildNodes() as $child_type) {
+                if (self::hasStaticInType($child_type)) {
                     return true;
                 }
             }
