@@ -65,6 +65,8 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function array_values;
+use function assert;
+use function class_exists;
 use function count;
 use function end;
 use function in_array;
@@ -706,6 +708,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        $missingThrowsDocblockErrors = [];
         foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
             $is_expected = false;
 
@@ -719,6 +722,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!$is_expected) {
+                $missingThrowsDocblockErrors[] = $possibly_thrown_exception;
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
                     IssueBuffer::maybeAdd(
@@ -730,6 +734,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
             }
+        }
+
+        if ($codebase->alter_code
+            && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
+        ) {
+            $manipulator = FunctionDocblockManipulator::getForFunction(
+                $project_analyzer,
+                $this->source->getFilePath(),
+                $this->function
+            );
+            $manipulator->addThrowsDocblock($missingThrowsDocblockErrors);
         }
 
         if ($codebase->taint_flow_graph
