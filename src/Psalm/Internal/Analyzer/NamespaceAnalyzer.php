@@ -12,11 +12,13 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 use UnexpectedValueException;
 
+use function assert;
+use function count;
 use function implode;
 use function preg_replace;
 use function strpos;
 use function strtolower;
-use function trim;
+use function substr;
 
 /**
  * @internal
@@ -152,33 +154,127 @@ class NamespaceAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Returns true if $className is the same as, or starts with $namespace, in a case-insensitive comparison.
-     *
+     * Returns true if $calling_identifier is the same as, or is within with $identifier, in a
+     * case-insensitive comparison. Identifiers can be namespaces, classlikes, functions, or methods.
      *
      * @psalm-pure
+     *
+     * @throws InvalidArgumentException if $identifier is not a valid identifier
      */
-    public static function isWithin(string $calling_namespace, string $namespace): bool
+    public static function isWithin(string $calling_identifier, string $identifier): bool
     {
-        if ($namespace === '') {
-            return true; // required to prevent a warning from strpos with empty needle in PHP < 8
+        $normalized_calling_ident = self::normalizeIdentifier($calling_identifier);
+        $normalized_ident = self::normalizeIdentifier($identifier);
+
+        if ($normalized_calling_ident === $normalized_ident) {
+            return true;
         }
 
-        $calling_namespace = strtolower(trim($calling_namespace, '\\') . '\\');
-        $namespace = strtolower(trim($namespace, '\\') . '\\');
+        $normalized_calling_ident_parts = self::getIdentifierParts($normalized_calling_ident);
+        $normalized_ident_parts = self::getIdentifierParts($normalized_ident);
 
-        return $calling_namespace === $namespace
-            || strpos($calling_namespace, $namespace) === 0;
+        if (count($normalized_calling_ident_parts) < count($normalized_ident_parts)) {
+            return false;
+        }
+
+        for ($i = 0; $i < count($normalized_ident_parts); ++$i) {
+            if ($normalized_ident_parts[$i] !== $normalized_calling_ident_parts[$i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
-     * @param string $fullyQualifiedClassName, e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
+     * Returns true if $calling_identifier is the same as or is within any identifier
+     * in $identifiers in a case-insensitive comparison, or if $identifiers is empty.
+     * Identifiers can be namespaces, classlikes, functions, or methods.
      *
-     * @return string , e.g. 'Psalm'
+     * @psalm-pure
+     *
+     * @psalm-assert-if-false !empty $identifiers
+     *
+     * @param list<string> $identifiers
+     */
+    public static function isWithinAny(string $calling_identifier, array $identifiers): bool
+    {
+        if (count($identifiers) === 0) {
+            return true;
+        }
+
+        foreach ($identifiers as $identifier) {
+            if (self::isWithin($calling_identifier, $identifier)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param non-empty-string $fullyQualifiedClassName, e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
+     *
+     * @return non-empty-string , e.g. 'Psalm'
      *
      * @psalm-pure
      */
     public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
     {
-        return preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName);
+        $root_namespace = preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName);
+        if ($root_namespace === "") {
+            throw new InvalidArgumentException("Invalid classname \"$fullyQualifiedClassName\"");
+        }
+        return $root_namespace;
+    }
+
+    /**
+     * @return ($lowercase is true ? lowercase-string : string)
+     *
+     * @psalm-pure
+     */
+    public static function normalizeIdentifier(string $identifier, bool $lowercase = true): string
+    {
+        if ($identifier === "") {
+            return "";
+        }
+
+        $identifier = $identifier[0] === "\\" ? substr($identifier, 1) : $identifier;
+        return $lowercase ? strtolower($identifier) : $identifier;
+    }
+
+    /**
+     * Splits an identifier into parts, eg `Foo\Bar::baz` becomes ["Foo", "\\", "Bar", "::", "baz"].
+     *
+     * @return list<non-empty-string>
+     *
+     * @psalm-pure
+     */
+    public static function getIdentifierParts(string $identifier): array
+    {
+        $parts = [];
+        while (($pos = strpos($identifier, "\\")) !== false) {
+            if ($pos > 0) {
+                $part = substr($identifier, 0, $pos);
+                assert($part !== "");
+                $parts[] = $part;
+            }
+            $parts[] = "\\";
+            $identifier = substr($identifier, $pos + 1);
+        }
+        if (($pos = strpos($identifier, "::")) !== false) {
+            if ($pos > 0) {
+                $part = substr($identifier, 0, $pos);
+                assert($part !== "");
+                $parts[] = $part;
+            }
+            $parts[] = "::";
+            $identifier = substr($identifier, $pos + 2);
+        }
+        if ($identifier !== "") {
+            $parts[] = $identifier;
+        }
+
+        return $parts;
     }
 }

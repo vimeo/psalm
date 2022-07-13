@@ -2,8 +2,16 @@
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Exception\DocblockParseException;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function assert;
+use function count;
 use function explode;
 use function implode;
+use function is_string;
 use function min;
 use function preg_match;
 use function preg_replace;
@@ -257,5 +265,38 @@ class DocblockParser
                 = ($docblock->tags['param-out'] ?? [])
                 + ($docblock->tags['psalm-param-out'] ?? []);
         }
+    }
+
+    /**
+     * @return list<non-empty-string>
+     * @throws DocblockParseException when a @psalm-internal tag doesn't include a namespace
+     */
+    public static function handlePsalmInternal(ParsedDocblock $parsed_docblock): array
+    {
+        if (isset($parsed_docblock->tags['psalm-internal'])) {
+            $psalm_internal = array_map("trim", $parsed_docblock->tags['psalm-internal']);
+
+            if (count($psalm_internal) !== count(array_filter($psalm_internal))) {
+                throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
+            }
+            // assert($psalm_internal === array_filter($psalm_internal)); // TODO get this to work
+            assert(self::assertArrayOfNonEmptyString($psalm_internal));
+
+            return array_values($psalm_internal);
+        }
+
+        return [];
+    }
+
+    /** @psalm-assert-if-true array<array-key, non-empty-string> $arr */
+    private static function assertArrayOfNonEmptyString(array $arr): bool
+    {
+        foreach ($arr as $val) {
+            if (!is_string($val) || $val === "") {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

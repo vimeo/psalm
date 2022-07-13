@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Union;
 use Throwable;
 
+use function array_fill;
 use function array_keys;
 use function array_merge;
 use function array_search;
@@ -44,6 +45,7 @@ use function count;
 use function in_array;
 use function reset;
 use function strpos;
+use function strtolower;
 use function substr;
 use function usort;
 
@@ -1154,7 +1156,7 @@ class TemplateStandinTypeReplacer
     }
 
     /**
-     * @param TGenericObject|TIterable $input_type_part
+     * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TIterable $container_type_part
      * @return list<Union>
      */
@@ -1164,7 +1166,21 @@ class TemplateStandinTypeReplacer
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null
     ): array {
-        $input_type_params = $input_type_part->type_params;
+        if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
+            $input_type_params = $input_type_part->type_params;
+        } else {
+            $class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
+
+            $container_class = $container_type_part->value;
+
+            if (strtolower($input_type_part->value) === strtolower($container_type_part->value)) {
+                $input_type_params = $class_storage->getClassTemplateTypes();
+            } elseif (!empty($class_storage->template_extended_params[$container_class])) {
+                $input_type_params = array_values($class_storage->template_extended_params[$container_class]);
+            } else {
+                $input_type_params = array_fill(0, count($class_storage->template_types ?? []), Type::getMixed());
+            }
+        }
 
         try {
             $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);

@@ -690,7 +690,7 @@ class CallAnalyzer
                 $exploded = explode('->', $var_possibilities->var_id);
 
                 if (count($exploded) < 2) {
-                    IssueBuffer::add(
+                    IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Assert notation is malformed',
                             new CodeLocation($statements_analyzer, $expr)
@@ -704,7 +704,7 @@ class CallAnalyzer
                 $var_id = is_numeric($var_id) ? (int) $var_id : $var_id;
 
                 if (!is_int($var_id) || !isset($args[$var_id])) {
-                    IssueBuffer::add(
+                    IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Variable ' . $var_id . ' is not an argument so cannot be asserted',
                             new CodeLocation($statements_analyzer, $expr)
@@ -719,7 +719,7 @@ class CallAnalyzer
                 $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $statements_analyzer);
 
                 if (!$arg_var_id) {
-                    IssueBuffer::add(
+                    IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found in local scope',
                             new CodeLocation($statements_analyzer, $expr)
@@ -737,7 +737,7 @@ class CallAnalyzer
                     );
 
                     if (null !== $failedMessage) {
-                        IssueBuffer::add(
+                        IssueBuffer::maybeAdd(
                             new InvalidDocblock($failedMessage, new CodeLocation($statements_analyzer, $expr))
                         );
                         continue;

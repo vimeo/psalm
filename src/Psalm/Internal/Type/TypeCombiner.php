@@ -1214,6 +1214,7 @@ class TypeCombiner
                     $combination->value_types['int'] = new TInt();
                 }
             } elseif ($type instanceof TIntRange) {
+                $type = clone $type;
                 if ($combination->ints) {
                     foreach ($combination->ints as $int) {
                         if (!$type->contains($int->value)) {

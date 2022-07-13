@@ -556,6 +556,59 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'psalmInternalMultipleNamespaces' => [
+                'code' => '<?php
+                    namespace A
+                    {
+                        class Foo
+                        {
+                            /**
+                             * @psalm-internal \B
+                             * @psalm-internal \C
+                             */
+                            public static function foobar(): void {}
+                        }
+                    }
+
+                    namespace B
+                    {
+                        \A\Foo::foobar();
+                    }
+
+                    namespace C
+                    {
+                        \A\Foo::foobar();
+                    }
+                ',
+            ],
+            'psalmInternalToClass' => [
+                'code' => '<?php
+                    namespace A
+                    {
+                        class Foo
+                        {
+                            /** @psalm-internal B\Bar */
+                            public static function foo(): void {}
+
+                            /** @psalm-internal B\Bar */
+                            public function bar(): void {}
+                        }
+                    }
+
+                    namespace B
+                    {
+                        class Bar
+                        {
+                            public function baz(): void
+                            {
+                                \A\Foo::foo();
+                                $foo = new \A\Foo();
+                                $foo->bar();
+                            }
+                        }
+                    }
+                '
+            ],
         ];
     }
 
@@ -606,7 +659,7 @@ class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'The method A\Foo::__clone is internal to A but called from B\Bat',
+                'error_message' => 'The method A\Foo::__clone is internal to A but called from B',
             ],
             'internalMethodWithCallFromRootNamespace' => [
                 'code' => '<?php

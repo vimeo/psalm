@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -106,17 +107,10 @@ class FunctionLikeDocblockScanner
             $storage->deprecated = true;
         }
 
-        if ($docblock_info->internal
-            && !$docblock_info->psalm_internal
-            && $aliases->namespace
-        ) {
-            $storage->internal = explode('\\', $aliases->namespace)[0];
-        } elseif (!$classlike_storage
-            || ($docblock_info->psalm_internal
-                && strlen($docblock_info->psalm_internal) > strlen($classlike_storage->internal)
-            )
-        ) {
-            $storage->internal = $docblock_info->psalm_internal ?? '';
+        if (count($docblock_info->psalm_internal) !== 0) {
+            $storage->internal = $docblock_info->psalm_internal;
+        } elseif ($docblock_info->internal && $aliases->namespace) {
+            $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($aliases->namespace)];
         }
 
         if (($storage->internal || ($classlike_storage && $classlike_storage->internal))

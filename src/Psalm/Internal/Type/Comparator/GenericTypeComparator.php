@@ -4,15 +4,10 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
-
-use function array_fill;
-use function array_values;
-use function count;
 
 /**
  * @internal
@@ -44,38 +39,13 @@ class GenericTypeComparator
             $container_was_iterable = true;
         }
 
-        if (!$input_type_part instanceof TGenericObject && !$input_type_part instanceof TIterable) {
-            if ($input_type_part instanceof TNamedObject
-                && $codebase->classExists($input_type_part->value)
-            ) {
-                $class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
-
-                $container_class = $container_type_part->value;
-
-                // attempt to transform it
-                if (!empty($class_storage->template_extended_params[$container_class])) {
-                    $input_type_part = new TGenericObject(
-                        $input_type_part->value,
-                        array_values($class_storage->template_extended_params[$container_class])
-                    );
-                }
+        if (!$input_type_part instanceof TNamedObject && !$input_type_part instanceof TIterable) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+                $atomic_comparison_result->type_coerced_from_mixed = true;
             }
 
-            if (!$input_type_part instanceof TGenericObject) {
-                if ($input_type_part instanceof TNamedObject) {
-                    $input_type_part = new TGenericObject(
-                        $input_type_part->value,
-                        array_fill(0, count($container_type_part->type_params), Type::getMixed())
-                    );
-                } else {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced = true;
-                        $atomic_comparison_result->type_coerced_from_mixed = true;
-                    }
-
-                    return false;
-                }
-            }
+            return false;
         }
 
         $container_type_params_covariant = [];

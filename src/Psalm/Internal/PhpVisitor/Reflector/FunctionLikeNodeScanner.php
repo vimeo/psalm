@@ -52,6 +52,7 @@ use ReflectionFunction;
 use UnexpectedValueException;
 
 use function array_keys;
+use function array_merge;
 use function array_pop;
 use function array_search;
 use function count;
@@ -61,7 +62,6 @@ use function implode;
 use function in_array;
 use function is_string;
 use function spl_object_id;
-use function strlen;
 use function strpos;
 use function strtolower;
 
@@ -462,16 +462,14 @@ class FunctionLikeNodeScanner
         $doc_comment = $stmt->getDocComment();
 
 
-        if ($classlike_storage
-            && !$classlike_storage->is_trait
-            && strlen($classlike_storage->internal) > strlen($storage->internal)
-        ) {
-            $storage->internal = $classlike_storage->internal;
+        if ($classlike_storage && !$classlike_storage->is_trait) {
+            $storage->internal = array_merge($classlike_storage->internal, $storage->internal);
         }
 
         if ($doc_comment) {
             try {
-                $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
+                $code_location = new CodeLocation($this->file_scanner, $stmt, null, true);
+                $docblock_info = FunctionLikeDocblockParser::parse($doc_comment, $code_location, $cased_function_id);
             } catch (IncorrectDocblockException $e) {
                 $storage->docblock_issues[] = new MissingDocblockType(
                     $e->getMessage() . ' in docblock for ' . $cased_function_id,
@@ -599,7 +597,7 @@ class FunctionLikeNodeScanner
                 }
 
                 if (isset($classlike_storage->properties[$param_storage->name]) && $param_storage->location) {
-                    IssueBuffer::add(
+                    IssueBuffer::maybeAdd(
                         new ParseError(
                             'Promoted property ' . $param_storage->name . ' clashes with an existing property',
                             $param_storage->location
@@ -727,7 +725,7 @@ class FunctionLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal && $fq_classlike_name) {
-                    $storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
+                    $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree'
@@ -1047,7 +1045,12 @@ class FunctionLikeNodeScanner
                 if ($doc_comment) {
                     $docblock_info = null;
                     try {
-                        $docblock_info = FunctionLikeDocblockParser::parse($doc_comment);
+                        $code_location = new CodeLocation($this->file_scanner, $stmt, null, true);
+                        $docblock_info = FunctionLikeDocblockParser::parse(
+                            $doc_comment,
+                            $code_location,
+                            $cased_function_id
+                        );
                     } catch (IncorrectDocblockException|DocblockParseException $e) {
                     }
                     if ($docblock_info) {

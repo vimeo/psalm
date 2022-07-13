@@ -2,13 +2,25 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TLiteralInt;
 
 class IntRangeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testCombineIntRangeDoesntAffectOriginal(): void
+    {
+        $range = new TIntRange(5, 10);
+        TypeCombiner::combine([new TLiteralInt(1), new TLiteralInt(50), $range]);
+
+        $this->assertEquals(5, $range->min_bound);
+        $this->assertEquals(10, $range->max_bound);
+    }
 
     /**
      * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>

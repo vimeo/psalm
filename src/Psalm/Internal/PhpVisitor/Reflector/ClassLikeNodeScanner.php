@@ -68,8 +68,8 @@ use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_values;
+use function assert;
 use function count;
-use function explode;
 use function get_class;
 use function implode;
 use function preg_match;
@@ -184,6 +184,7 @@ class ClassLikeNodeScanner
 
             $fq_classlike_name =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name;
+            assert($fq_classlike_name !== "");
 
             $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
@@ -253,7 +254,7 @@ class ClassLikeNodeScanner
             && isset($this->aliases->uses[strtolower($class_name)])
             && $this->aliases->uses[strtolower($class_name)] !== $fq_classlike_name
         ) {
-            IssueBuffer::add(
+            IssueBuffer::maybeAdd(
                 new ParseError(
                     'Class name ' . $class_name . ' clashes with a use statement alias',
                     $name_location ?? $class_location
@@ -616,13 +617,10 @@ class ClassLikeNodeScanner
 
             $storage->deprecated = $docblock_info->deprecated;
 
-            if ($docblock_info->internal
-                && !$docblock_info->psalm_internal
-                && $this->aliases->namespace
-            ) {
-                $storage->internal = explode('\\', $this->aliases->namespace)[0];
-            } else {
-                $storage->internal = $docblock_info->psalm_internal ?? '';
+            if (count($docblock_info->psalm_internal) !== 0) {
+                $storage->internal = $docblock_info->psalm_internal;
+            } elseif ($docblock_info->internal && $this->aliases->namespace) {
+                $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($this->aliases->namespace)];
             }
 
             if ($docblock_info->final && !$storage->final) {
@@ -738,7 +736,7 @@ class ClassLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal) {
-                    $storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
+                    $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
@@ -1464,6 +1462,9 @@ class ClassLikeNodeScanner
         return $storages;
     }
 
+    /**
+     * @param non-empty-string $fq_classlike_name
+     */
     private function visitPropertyDeclaration(
         PhpParser\Node\Stmt\Property $stmt,
         Config $config,
@@ -1559,9 +1560,9 @@ class ClassLikeNodeScanner
             $property_storage->has_default = (bool)$property->default;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
-            $property_storage->internal = $var_comment ? $var_comment->psalm_internal ?? '' : '';
-            if (! $property_storage->internal && $var_comment && $var_comment->internal) {
-                $property_storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
+            $property_storage->internal = $var_comment ? $var_comment->psalm_internal : [];
+            if (count($property_storage->internal) === 0 && $var_comment && $var_comment->internal) {
+                $property_storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
             }
             $property_storage->readonly = $stmt->isReadonly() || ($var_comment && $var_comment->readonly);
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;
@@ -1673,7 +1674,7 @@ class ClassLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$property_storage->internal) {
-                    $property_storage->internal = NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name);
+                    $property_storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Readonly') {

@@ -37,6 +37,7 @@ use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InaccessibleProperty;
+use Psalm\Issue\InternalClass;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
@@ -420,7 +421,7 @@ class InstancePropertyAssignmentAnalyzer
         foreach ($stmt->props as $prop) {
             if ($prop->default) {
                 if ($stmt->isReadonly()) {
-                    IssueBuffer::add(
+                    IssueBuffer::maybeAdd(
                         new InvalidPropertyAssignment(
                             'Readonly property ' . $context->self . '::$' . $prop->name->name
                                 . ' cannot have a default',
@@ -1290,11 +1291,11 @@ class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            if ($context->self && !NamespaceAnalyzer::isWithin($context->self, $property_storage->internal)) {
+            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
-                        $property_id . ' is internal to ' . $property_storage->internal
-                        . ' but called from ' . $context->self,
+                        $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
+                            . ' but called from ' . $context->self,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),

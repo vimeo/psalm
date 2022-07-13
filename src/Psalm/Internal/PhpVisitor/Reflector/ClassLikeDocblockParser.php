@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
+use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Type\ParseTree\MethodParamTree;
 use Psalm\Internal\Type\ParseTree\MethodTree;
 use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
@@ -212,14 +213,7 @@ class ClassLikeDocblockParser
             $info->consistent_templates = true;
         }
 
-        if (isset($parsed_docblock->tags['psalm-internal'])) {
-            $psalm_internal = trim(reset($parsed_docblock->tags['psalm-internal']));
-
-            if (!$psalm_internal) {
-                throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
-            }
-
-            $info->psalm_internal = $psalm_internal;
+        if (count($info->psalm_internal = DocblockParser::handlePsalmInternal($parsed_docblock)) !== 0) {
             $info->internal = true;
         }
 

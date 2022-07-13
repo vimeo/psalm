@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -336,7 +337,7 @@ class CastAnalyzer
                 || $atomic_type instanceof TInt
                 || $atomic_type instanceof TNumeric
             ) {
-                if ($atomic_type instanceof TLiteralInt) {
+                if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
                     $castable_types[] = new TLiteralString((string) $atomic_type->value);
                 } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
                     $castable_types[] = new TNonspecificLiteralString();

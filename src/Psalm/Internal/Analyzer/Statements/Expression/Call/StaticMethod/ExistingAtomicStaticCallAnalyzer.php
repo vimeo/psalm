@@ -75,7 +75,7 @@ class ExistingAtomicStaticCallAnalyzer
             $codebase,
             $context,
             $method_id,
-            $statements_analyzer->getNamespace(),
+            $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer->getSuppressedIssues()
         ) === false) {

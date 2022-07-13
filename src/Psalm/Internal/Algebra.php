@@ -124,6 +124,7 @@ class Algebra
             if (!$clause_a->reconcilable || $clause_a->wedge) {
                 continue;
             }
+            $clause_a_keys = array_keys($clause_a->possibilities);
 
             if (count($clause_a->possibilities) !== 1 || count(array_values($clause_a->possibilities)[0]) !== 1) {
                 foreach ($cloned_clauses as $clause_b) {
@@ -131,7 +132,7 @@ class Algebra
                         continue;
                     }
 
-                    if (array_keys($clause_a->possibilities) === array_keys($clause_b->possibilities)) {
+                    if ($clause_a_keys === array_keys($clause_b->possibilities)) {
                         $opposing_keys = [];
 
                         foreach ($clause_a->possibilities as $key => $a_possibilities) {

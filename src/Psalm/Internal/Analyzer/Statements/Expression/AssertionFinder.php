@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\Equal;
 use PhpParser\Node\Expr\BinaryOp\Greater;
 use PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
@@ -995,7 +996,7 @@ class AssertionFinder
                     }
                 } elseif ($assertion->var_id === '$this') {
                     if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
-                        IssueBuffer::add(
+                        IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 'Assertion of $this can be done only on method of a class',
                                 new CodeLocation($source, $expr)
@@ -1533,50 +1534,35 @@ class AssertionFinder
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$min_count
     ) {
-        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
+        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
             && strtolower($conditional->left->name->parts[0]) === 'count'
-            && $conditional->left->getArgs();
-
-        $operator_greater_than_or_equal =
-            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
-
-        if ($left_count
-            && $conditional->right instanceof PhpParser\Node\Scalar\LNumber
-            && $operator_greater_than_or_equal
-            && $conditional->right->value >= (
-                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
-                ? 0
-                : 1
-            )
+            && $conditional->left->getArgs()
+            && ($conditional instanceof BinaryOp\Greater || $conditional instanceof BinaryOp\GreaterOrEqual)
         ) {
-            $min_count = $conditional->right->value +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
-
-            return self::ASSIGNMENT_TO_RIGHT;
-        }
-
-        $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
+            $assignment_to = self::ASSIGNMENT_TO_RIGHT;
+            $compare_to = $conditional->right;
+            $comparison_adjustment = $conditional instanceof BinaryOp\Greater ? 1 : 0;
+        } elseif ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
             && strtolower($conditional->right->name->parts[0]) === 'count'
-            && $conditional->right->getArgs();
-
-        $operator_less_than_or_equal =
-            $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
-            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
-
-        if ($right_count
-            && $conditional->left instanceof PhpParser\Node\Scalar\LNumber
-            && $operator_less_than_or_equal
-            && $conditional->left->value >= (
-                $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 0 : 1
-            )
+            && $conditional->right->getArgs()
+            && ($conditional instanceof BinaryOp\Smaller || $conditional instanceof BinaryOp\SmallerOrEqual)
         ) {
-            $min_count = $conditional->left->value +
-                ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
+            $assignment_to = self::ASSIGNMENT_TO_LEFT;
+            $compare_to = $conditional->left;
+            $comparison_adjustment = $conditional instanceof BinaryOp\Smaller ? 1 : 0;
+        } else {
+            return false;
+        }
 
-            return self::ASSIGNMENT_TO_LEFT;
+        // TODO get node type provider here somehow and check literal ints and int ranges
+        if ($compare_to instanceof PhpParser\Node\Scalar\LNumber
+            && $compare_to->value > (-1 * $comparison_adjustment)
+        ) {
+            $min_count = $compare_to->value + $comparison_adjustment;
+
+            return $assignment_to;
         }
 
         return false;

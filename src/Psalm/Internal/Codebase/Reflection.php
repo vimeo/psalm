@@ -419,7 +419,7 @@ class Reflection
         return null;
     }
 
-    /** @psalm-suppress UndefinedClass,TypeDoesNotContainType 7.4 has no ReflectionUnionType */
+    /** @psalm-suppress UnusedPsalmSuppress,UndefinedClass,TypeDoesNotContainType 7.4 has no ReflectionUnionType */
     public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Union
     {
         if (!$reflection_type) {

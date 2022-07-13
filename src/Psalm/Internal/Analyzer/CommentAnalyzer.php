@@ -9,6 +9,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
+use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\TypeAlias;
@@ -21,7 +22,6 @@ use function count;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
-use function reset;
 use function rtrim;
 use function str_replace;
 use function strlen;
@@ -236,14 +236,7 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-internal'])) {
-            $psalm_internal = trim(reset($parsed_docblock->tags['psalm-internal']));
-
-            if (!$psalm_internal) {
-                throw new DocblockParseException('psalm-internal annotation used without specifying namespace');
-            }
-
-            $var_comment->psalm_internal = $psalm_internal;
+        if (count($var_comment->psalm_internal = DocblockParser::handlePsalmInternal($parsed_docblock)) !== 0) {
             $var_comment->internal = true;
         }
 

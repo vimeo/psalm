@@ -132,6 +132,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
+    /** @return non-empty-string */
     public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, string $file_path): string
     {
         return preg_replace('/[^A-Za-z0-9]/', '_', $file_path)
@@ -248,7 +249,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         foreach ($storage->docblock_issues as $docblock_issue) {
-            IssueBuffer::add($docblock_issue);
+            IssueBuffer::maybeAdd($docblock_issue);
         }
 
         $classlike_storage_provider = $codebase->classlike_storage_provider;
@@ -1640,7 +1641,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $config = Config::getInstance();
 
         if ($stmt->stmts === null && !$stmt->isAbstract()) {
-            IssueBuffer::add(
+            IssueBuffer::maybeAdd(
                 new ParseError(
                     'Non-abstract class method must have statements',
                     new CodeLocation($this, $stmt)
@@ -1653,7 +1654,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         try {
             $method_analyzer = new MethodAnalyzer($stmt, $source);
         } catch (UnexpectedValueException $e) {
-            IssueBuffer::add(
+            IssueBuffer::maybeAdd(
                 new ParseError(
                     'Problem loading method: ' . $e->getMessage(),
                     new CodeLocation($this, $stmt)
@@ -2323,11 +2324,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if (!NamespaceAnalyzer::isWithin($fq_class_name, $parent_class_storage->internal)) {
+            if (!NamespaceAnalyzer::isWithinAny($fq_class_name, $parent_class_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
-                        $parent_fq_class_name . ' is internal to ' . $parent_class_storage->internal
-                        . ' but called from ' . $fq_class_name,
+                        $parent_fq_class_name . ' is internal to '
+                            . InternalClass::listToPhrase($parent_class_storage->internal)
+                            . ' but called from ' . $fq_class_name,
                         $code_location,
                         $parent_fq_class_name
                     ),

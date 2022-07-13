@@ -368,13 +368,15 @@ class TKeyedArray extends Atomic
         return $this->getKey();
     }
 
-    public function getList(): TNonEmptyList
+    public function getList(): TList
     {
         if (!$this->is_list) {
             throw new UnexpectedValueException('Object-like array must be a list for conversion');
         }
 
-        return new TNonEmptyList($this->getGenericValueType());
+        return $this->isNonEmpty()
+            ? new TNonEmptyList($this->getGenericValueType())
+            : new TList($this->getGenericValueType());
     }
 
     /**

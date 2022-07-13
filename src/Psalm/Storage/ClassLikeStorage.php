@@ -11,6 +11,8 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_values;
+
 final class ClassLikeStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
@@ -43,9 +45,9 @@ final class ClassLikeStorage implements HasAttributesInterface
     public $deprecated = false;
 
     /**
-     * @var string
+     * @var list<non-empty-string>
      */
-    public $internal = '';
+    public $internal = [];
 
     /**
      * @var TTemplateParam[]
@@ -469,5 +471,21 @@ final class ClassLikeStorage implements HasAttributesInterface
     public function getAttributeStorages(): array
     {
         return $this->attributes;
+    }
+
+    /**
+     * Get the template constraint types for the class.
+     *
+     * @return list<Union>
+     */
+    public function getClassTemplateTypes(): array
+    {
+        $type_params = [];
+
+        foreach ($this->template_types ?? [] as $type_map) {
+            $type_params[] = clone array_values($type_map)[0];
+        }
+
+        return $type_params;
     }
 }

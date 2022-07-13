@@ -12,12 +12,14 @@ use Psalm\Type\Atomic\TLiteralString;
 use function array_diff;
 use function array_keys;
 use function count;
+use function hash;
 use function implode;
 use function ksort;
-use function md5;
 use function reset;
 use function serialize;
 use function substr;
+
+use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -100,12 +102,15 @@ class Clause
 
             $possibility_strings = [];
 
-            foreach ($possibilities as $i => $_) {
-                ksort($possibilities[$i]);
-                $possibility_strings[$i] = array_keys($possibilities[$i]);
+            foreach ($possibilities as $i => $v) {
+                if (count($v) > 1) {
+                    ksort($v);
+                }
+                $possibility_strings[$i] = array_keys($v);
             }
 
-            $this->hash = md5(serialize($possibility_strings));
+            $data = serialize($possibility_strings);
+            $this->hash = PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
         }
 
         $this->possibilities = $possibilities;
@@ -123,8 +128,14 @@ class Clause
             return false;
         }
 
+        foreach ($other_clause->possibilities as $var => $_) {
+            if (!isset($this->possibilities[$var])) {
+                return false;
+            }
+        }
+
         foreach ($other_clause->possibilities as $var => $possible_types) {
-            if (!isset($this->possibilities[$var]) || count(array_diff($possible_types, $this->possibilities[$var]))) {
+            if (count(array_diff($possible_types, $this->possibilities[$var]))) {
                 return false;
             }
         }
