@@ -750,7 +750,7 @@ class InternalCallMapHandlerTest extends TestCase
         $expectedType = $param->getType();
 
         if (isset($expectedType) && !empty($normalizedEntry['type'])) {
-            $this->assertTypeValidity($expectedType, $normalizedEntry['type'], "Param '{$name}' has incorrect type");
+            $this->assertTypeValidity($expectedType, $normalizedEntry['type'], false, "Param '{$name}' has incorrect type");
         }
     }
 
@@ -771,26 +771,30 @@ class InternalCallMapHandlerTest extends TestCase
             return;
         }
 
-        $this->assertTypeValidity($expectedType, $entryReturnType, 'CallMap entry has incorrect return type');
+        $this->assertTypeValidity($expectedType, $entryReturnType, true, 'CallMap entry has incorrect return type');
     }
 
     /**
      * Since string equality is too strict, we do some extra checking here
      */
-    private function assertTypeValidity(ReflectionType $reflected, string $specified, string $message): void
+    private function assertTypeValidity(ReflectionType $reflected, string $specified, bool $checkNullable, string $message): void
     {
         $expectedType = Reflection::getPsalmTypeFromReflectionType($reflected);
-
-        $parsedType = Type::parseString($specified);
+        $callMapType = Type::parseString($specified);
 
         try {
-            $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $parsedType, $expectedType), $message);
+            $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $callMapType, $expectedType), $message);
         } catch (InvalidArgumentException $e) {
             if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
                 && !class_exists($matches[1])
             ) {
                 $this->fail("Class used in CallMap does not exist: {$matches[1]}");
             }
+        }
+
+        // Reflection::getPsalmTypeFromReflectionType adds |null to mixed types so skip comparison
+        if ($checkNullable && !$expectedType->hasMixed()) {
+            $this->assertSame($expectedType->isNullable(), $callMapType->isNullable(), $message);
         }
     }
 }

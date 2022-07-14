@@ -106,8 +106,8 @@ return [
       'new' => ['bool', 'ftp' => 'FTP\Connection', 'command' => 'string'],
     ],
     'ftp_raw' => [
-      'old' => ['array', 'ftp' => 'resource', 'command' => 'string'],
-      'new' => ['array', 'ftp' => 'FTP\Connection', 'command' => 'string'],
+      'old' => ['?array', 'ftp' => 'resource', 'command' => 'string'],
+      'new' => ['?array', 'ftp' => 'FTP\Connection', 'command' => 'string'],
     ],
     'ftp_mkdir' => [
       'old' => ['string|false', 'ftp' => 'resource', 'directory' => 'string'],

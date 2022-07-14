@@ -1275,7 +1275,7 @@ function pack(string $format, mixed ...$values) {}
  * @param string|int $out_codepage
  * @psalm-flow ($subject) -> return
  */
-function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : string {}
+function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : ?string {}
 
 /**
  * @psalm-pure
