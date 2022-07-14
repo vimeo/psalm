@@ -3694,6 +3694,111 @@ class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
+            'return TemplatedClass<static>' => [
+                '<?php
+
+                    /**
+                     * @template-covariant A
+                     * @psalm-immutable
+                     */
+                    final class Maybe
+                    {
+                        /**
+                         * @param null|A $value
+                         */
+                        public function __construct(private $value = null) {}
+
+                        /**
+                         * @template B
+                         * @param B $value
+                         * @return Maybe<B>
+                         *
+                         * @psalm-pure
+                         */
+                        public static function just($value): self
+                        {
+                            return new self($value);
+                        }
+                    }
+
+                    abstract class Test
+                    {
+                        final private function __construct() {}
+
+                        /** @return Maybe<static> */
+                        final public static function create(): Maybe
+                        {
+                            return Maybe::just(new static());
+                        }
+                    }',
+            ],
+            'return list<static> created in a static method of another class' => [
+                '<?php
+
+                    final class Lister
+                    {
+                        /**
+                         * @template B
+                         * @param B $value
+                         * @return list<B>
+                         *
+                         * @psalm-pure
+                         */
+                        public static function mklist($value): array
+                        {
+                            return [ $value ];
+                        }
+                    }
+
+                    abstract class Test
+                    {
+                        final private function __construct() {}
+
+                        /** @return list<static> */
+                        final public static function create(): array
+                        {
+                            return Lister::mklist(new static());
+                        }
+                    }',
+            ],
+            'use TemplatedClass<static> as an intermediate variable inside a method' => [
+                '<?php
+
+                    /**
+                     * @template-covariant A
+                     * @psalm-immutable
+                     */
+                    final class Maybe
+                    {
+                        /**
+                         * @param A $value
+                         */
+                        public function __construct(public $value) {}
+
+                        /**
+                         * @template B
+                         * @param B $value
+                         * @return Maybe<B>
+                         *
+                         * @psalm-pure
+                         */
+                        public static function just($value): self
+                        {
+                            return new self($value);
+                        }
+                    }
+
+                    abstract class Test
+                    {
+                        final private function __construct() {}
+
+                        final public static function create(): static
+                        {
+                            $maybe = Maybe::just(new static());
+                            return $maybe->value;
+                        }
+                    }',
+            ],
         ];
     }
 
