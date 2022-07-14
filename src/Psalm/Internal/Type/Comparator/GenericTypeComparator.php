@@ -3,11 +3,15 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 /**
  * @internal
@@ -56,10 +60,28 @@ class GenericTypeComparator
             $container_type_part,
             $container_type_params_covariant
         );
+        $input_is_tnamedobject = get_class($input_type_part) === TNamedObject::class;
+        if ($input_is_tnamedobject) {
+            $template_result = new TemplateResult(
+                $codebase->classlike_storage_provider->get($input_type_part->value)->template_types ?? [],
+                [],
+            );
+        }
 
         foreach ($input_type_params as $i => $input_param) {
             if (!isset($container_type_part->type_params[$i])) {
                 break;
+            }
+
+            if ($input_is_tnamedobject) {
+                // Input is a TNamedObject, we want to use the template $as types instead of the templates themselves
+                $input_param = TemplateStandinTypeReplacer::replace(
+                    $input_param,
+                    $template_result,
+                    null,
+                    null,
+                    null,
+                );
             }
 
             $container_param = $container_type_part->type_params[$i];

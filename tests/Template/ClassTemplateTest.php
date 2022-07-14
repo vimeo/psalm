@@ -4474,6 +4474,82 @@ class ClassTemplateTest extends TestCase
                 ',
                 'error_message' => 'InvalidArgument',
             ],
+            'correctlyCompareNamedClassWithGenericParent' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class Foo
+                    {
+                        /** @param T $_ */
+                        final public function __construct(mixed $_) {}
+
+                        /**
+                         * @template T2
+                         * @param T2 $val
+                         * @return Foo<T2>
+                         */
+                        public static function foobar(mixed $val): Foo
+                        {
+                            return new Foo($val);
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends Foo<T>
+                     */
+                    class Bar extends Foo
+                    {
+                        public static function foobar(mixed $val): Bar
+                        {
+                            return new Bar($val);
+                        }
+                    }
+
+                    $bar = Bar::foobar(1);
+                    /** @psalm-trace $bar */;
+                ',
+                'error_message' => ' - $bar: Bar',
+            ],
+            'SKIPPED-correctlyCompareNamedClassWithGenericParentWithTemplateConstraint' => [ // AtomicTypeComparator has a special case for comparing `mixed` to `T of mixed` that should be removed, but the rest of the code needs fixed
+                '<?php
+                    /**
+                     * @template T of int
+                     */
+                    class Foo
+                    {
+                        /** @param T $_ */
+                        final public function __construct(mixed $_) {}
+
+                        /**
+                        * @template T2 of int
+                        * @param T2 $val
+                        * @return Foo<T2>
+                        */
+                        public static function foobar(int $val): Foo
+                        {
+                            return new Foo($val);
+                        }
+                    }
+
+                    /**
+                     * @template T of int
+                     * @extends Foo<T>
+                     */
+                    class Bar extends Foo
+                    {
+                        public static function foobar(int $val): Bar
+                        {
+                            return new Bar($val);
+                        }
+                    }
+
+                    $bar = Bar::foobar(1);
+                    /** @psalm-trace $bar */;
+                ',
+                'error_message' => ' - $bar: Bar',
+            ],
         ];
     }
 }
