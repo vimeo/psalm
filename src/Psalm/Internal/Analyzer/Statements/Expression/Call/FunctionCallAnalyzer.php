@@ -825,7 +825,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && $stmt_name_type->parent_nodes
-                && $stmt_name_type->hasString()
                 && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);

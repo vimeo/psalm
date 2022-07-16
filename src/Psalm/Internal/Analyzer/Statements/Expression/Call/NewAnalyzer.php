@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -33,6 +34,7 @@ use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -49,6 +51,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -641,6 +644,40 @@ class NewAnalyzer extends CallAnalyzer
         if ($has_single_class) {
             $fq_class_name = $stmt_class_type->getSingleStringLiteral()->value;
         } else {
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                && $stmt_class_type->parent_nodes
+                && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            ) {
+                $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt_class);
+
+                $custom_call_sink = TaintSink::getForMethodArgument(
+                    'variable-call',
+                    'variable-call',
+                    0,
+                    $arg_location,
+                    $arg_location
+                );
+
+                $custom_call_sink->taints = [TaintKind::INPUT_CALLABLE];
+
+                $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
+
+                $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                foreach ($stmt_class_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        $custom_call_sink,
+                        'call',
+                        $added_taints,
+                        $removed_taints
+                    );
+                }
+            }
+
             if (self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),

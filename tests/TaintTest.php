@@ -2365,6 +2365,13 @@ class TaintTest extends TestCase
                     echo A::getPrevious("foo");',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedNewCall' => [
+                'code' => '<?php
+                    $a = $_GET["a"];
+                    $b = $_GET["b"];
+                    new $a($b);',
+                'error_message' => 'TaintedCallable',
+            ],
         ];
     }
 
