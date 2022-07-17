@@ -485,8 +485,6 @@ final class Context
                 if ((!$new_type || !$old_type->equals($new_type))
                     && ($new_type || count($existing_type->getAtomicTypes()) > 1)
                 ) {
-                    $existing_type->substitute($old_type, $new_type);
-
                     if ($new_type && $new_type->from_docblock) {
                         $existing_type->setFromDocblock();
                     }
