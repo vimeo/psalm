@@ -72,7 +72,7 @@ final class TValueOf extends Atomic
     public static function getValueType(
         Union $type,
         Codebase $codebase,
-        bool $keep_template_params = false,
+        bool $keep_template_params = false
     ): ?Union {
         $value_types = [];
 
