@@ -355,7 +355,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     const TOSTRING_USE_CURRENT = 4 ;
     const TOSTRING_USE_INNER = 8 ;
     const FULL_CACHE = 256 ;
-    
+
     /**
      * @param TIterator $iterator
      * @param int-mask-of<self::*> $flags
@@ -376,6 +376,11 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
      * @psalm-ignore-nullable-return
      */
     public function key() {}
+
+    /**
+     * @return array<array-key, TValue>
+     */
+    public function getCache() {}
 }
 
 /**
