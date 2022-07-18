@@ -2,16 +2,21 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Storage\EnumCaseStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_merge;
+use function array_map;
 use function array_values;
+use function assert;
+use function count;
 
 /**
- * Represents a value of an array.
+ * Represents a value of an array or enum.
  */
-final class TValueOfArray extends Atomic
+final class TValueOf extends Atomic
 {
     /** @var Union */
     public $type;
@@ -56,6 +61,7 @@ final class TValueOfArray extends Atomic
                 && !$type instanceof TKeyedArray
                 && !$type instanceof TList
                 && !$type instanceof TPropertiesOf
+                && !$type instanceof TNamedObject
             ) {
                 return false;
             }
@@ -63,39 +69,58 @@ final class TValueOfArray extends Atomic
         return true;
     }
 
-    public static function getArrayValueType(
+    public static function getValueType(
         Union $type,
-        bool $keep_template_params = false
+        Codebase $codebase,
+        bool $keep_template_params = false,
     ): ?Union {
         $value_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TArray) {
-                $array_value_atomics = $atomic_type->type_params[1];
+                $value_atomics = $atomic_type->type_params[1];
             } elseif ($atomic_type instanceof TList) {
-                $array_value_atomics = $atomic_type->type_param;
+                $value_atomics = $atomic_type->type_param;
             } elseif ($atomic_type instanceof TKeyedArray) {
-                $array_value_atomics = $atomic_type->getGenericValueType();
+                $value_atomics = $atomic_type->getGenericValueType();
             } elseif ($atomic_type instanceof TTemplateParam) {
                 if ($keep_template_params) {
-                    $array_value_atomics = new Union([$atomic_type]);
+                    $value_atomics = new Union([$atomic_type]);
                 } else {
-                    $array_value_atomics = static::getArrayValueType(
+                    $value_atomics = static::getValueType(
                         $atomic_type->as,
+                        $codebase,
                         $keep_template_params
                     );
-                    if ($array_value_atomics === null) {
+                    if ($value_atomics === null) {
                         continue;
                     }
                 }
+            } elseif ($atomic_type instanceof TNamedObject
+                && $codebase->classlike_storage_provider->has($atomic_type->value)
+            ) {
+                $class_storage = $codebase->classlike_storage_provider->get($atomic_type->value);
+                $cases = $class_storage->enum_cases;
+                if (!$class_storage->is_enum
+                    || $class_storage->enum_type === null
+                    || count($cases) === 0
+                ) {
+                    // Invalid value-of, skip
+                    continue;
+                }
+
+                $value_atomics = new Union(array_map(
+                    function (EnumCaseStorage $case): Atomic {
+                        assert($case->value !== null); // Backed enum must have a value
+                        return ConstantTypeResolver::getLiteralTypeFromScalarValue($case->value);
+                    },
+                    array_values($cases),
+                ));
             } else {
                 continue;
             }
 
-            $value_types = array_merge(
-                $value_types,
-                array_values($array_value_atomics->getAtomicTypes())
-            );
+            $value_types = [...$value_types, ...array_values($value_atomics->getAtomicTypes())];
         }
 
         if ($value_types === []) {

@@ -7,7 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-class ValueOfArrayTest extends TestCase
+class ValueOfTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
@@ -141,6 +141,74 @@ class ValueOfArrayTest extends TestCase
                     }
                 ',
             ],
+            'valueOfStringEnum' => [
+                'code' => '<?php
+                    enum Foo: string
+                    {
+                        case Foo = "foo";
+                        case Bar = "bar";
+                    }
+
+                    /** @param value-of<Foo> $arg */
+                    function foobar(string $arg): void
+                    {
+                        /** @psalm-check-type-exact $arg = "foo"|"bar" */;
+                    }
+
+                    /** @var Foo */
+                    $foo = Foo::Foo;
+                    foobar($foo->value);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOfIntEnum' => [
+                'code' => '<?php
+                    enum Foo: int
+                    {
+                        case Foo = 2;
+                        case Bar = 3;
+                    }
+
+                    /** @param value-of<Foo> $arg */
+                    function foobar(int $arg): void
+                    {
+                        /** @psalm-check-type-exact $arg = 2|3 */;
+                    }
+
+                    /** @var Foo */
+                    $foo = Foo::Foo;
+                    foobar($foo->value);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOfEnumUnion' => [
+                'code' => '<?php
+                    enum Foo: int
+                    {
+                        case Foo = 2;
+                        case Bar = 3;
+                    }
+
+                    enum Bar: string
+                    {
+                        case Foo = "foo";
+                        case Bar = "bar";
+                    }
+
+                    /** @param value-of<Foo|Bar> $arg */
+                    function foobar(int|string $arg): void
+                    {
+                        /** @psalm-check-type-exact $arg = 2|3|"foo"|"bar" */;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -211,6 +279,23 @@ class ValueOfArrayTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement'
+            ],
+            'valueOfUnitEnum' => [
+                'code' => '<?php
+                    enum Foo
+                    {
+                        case Foo;
+                        case Bar;
+                    }
+
+                    /** @param value-of<Foo> $arg */
+                    function foobar(string $arg): void {}
+                ',
+                // TODO turn this into an InvalidDocblock with a better error message. This is difficult because it
+                // has to happen after scanning has finished, otherwise the class might not have been scanned yet.
+                'error_message' => 'MismatchingDocblockParamType',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

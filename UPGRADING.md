@@ -64,7 +64,7 @@
    - `Psalm\Type\Atomic\TTraitString`
    - `Psalm\Type\Atomic\TTrue`
    - `Psalm\Type\Atomic\TTypeAlias`
-   - `Psalm\Type\Atomic\TValueOfArray`
+   - `Psalm\Type\Atomic\TValueOf`
    - `Psalm\Type\Atomic\TVoid`
    - `Psalm\Type\Union`
 
@@ -109,7 +109,7 @@
    - `Psalm\Type\Atomic\TTemplateParam`
    - `Psalm\Type\Atomic\TTraitString`
    - `Psalm\Type\Atomic\TTypeAlias`
-   - `Psalm\Type\Atomic\TValueOfArray`
+   - `Psalm\Type\Atomic\TValueOf`
    - `Psalm\Type\Atomic\TVoid`
    - `Psalm\Type\Union`
 - While not a BC break per se, all classes / interfaces / traits / enums under
@@ -156,7 +156,7 @@
 - [BC] To remove a variable from the context, use `Context::remove()`. Calling
   `unset($context->vars_in_scope[$var_id])` can cause problems when using references.
 - [BC] `TKeyOfClassConstant` has been renamed to `TKeyOfArray`.
-- [BC] `TValueOfClassConstant` has been renamed to `TValueOfArray`.
+- [BC] `TValueOfClassConstant` has been renamed to `TValueOf`.
 - [BC] `TKeyOfTemplate` base class has been changed from `Scalar` to `Atomic`.
 - [BC] Class `Psalm\FileManipulation` became final
 - [BC] Class `Psalm\Context` became final
@@ -742,7 +742,7 @@
     - [BC] Class `Psalm\Type\Atomic\TLiteralInt` became final
     - [BC] Class `Psalm\Type\Atomic\TTrue` became final
     - [BC] Class `Psalm\Type\Atomic\TDependentGetClass` became final
-    - [BC] Class `Psalm\Type\Atomic\TValueOfArray` became final
+    - [BC] Class `Psalm\Type\Atomic\TValueOf` became final
     - [BC] Class `Psalm\Type\Atomic\TGenericObject` became final
     - [BC] Class `Psalm\Type\Atomic\TNonEmptyLowercaseString` became final
     - [BC] Class `Psalm\Type\Atomic\TEnumCase` became final

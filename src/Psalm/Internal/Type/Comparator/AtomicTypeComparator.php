@@ -36,7 +36,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
-use Psalm\Type\Atomic\TValueOfArray;
+use Psalm\Type\Atomic\TValueOf;
 
 use function array_merge;
 use function array_values;
@@ -375,7 +375,7 @@ class AtomicTypeComparator
         }
 
         if ($input_type_part instanceof TTemplateValueOf) {
-            $array_value_type = TValueOfArray::getArrayValueType($input_type_part->as);
+            $array_value_type = TValueOf::getValueType($input_type_part->as, $codebase);
             if ($array_value_type === null) {
                 return false;
             }

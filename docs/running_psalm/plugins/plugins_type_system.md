@@ -51,13 +51,13 @@ The classes are as follows:
 
 `TKeyOfArray` - Represents an offset of an array (e.g. `key-of<MyClass::CLASS_CONSTANT>`).
 
-`TValueOfArray` - Represents a value of an array (e.g. `value-of<MyClass::CLASS_CONSTANT>`).
+`TValueOf` - Represents a value of an array or enum (e.g. `value-of<MyClass::CLASS_CONSTANT>`).
 
 `TTemplateIndexedAccess` - To be documented
 
 `TTemplateKeyOf` - Represents the type used when using TKeyOfArray when the type of the array is a template
 
-`TTemplateValueOf` - Represents the type used when using TValueOfArray when the type of the array is a template
+`TTemplateValueOf` - Represents the type used when using TValueOf when the type of the array or enum is a template
 
 `TPropertiesOf` - Represents properties and their types of a class as a keyed array (e.g. `properties-of<MyClass>`)
 

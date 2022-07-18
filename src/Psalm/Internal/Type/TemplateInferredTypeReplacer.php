@@ -26,7 +26,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
-use Psalm\Type\Atomic\TValueOfArray;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -351,9 +351,9 @@ class TemplateInferredTypeReplacer
         }
 
         if ($atomic_type instanceof TTemplateValueOf
-            && TValueOfArray::isViableTemplateType($template_type)
+            && TValueOf::isViableTemplateType($template_type)
         ) {
-            return new TValueOfArray(clone $template_type);
+            return new TValueOf(clone $template_type);
         }
 
         return null;
