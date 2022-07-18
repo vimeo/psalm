@@ -9,7 +9,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
- * Represents the type used when using TKeyOfArray when the type of the array is a template
+ * Represents the type used when using TKeyOf when the type of the array is a template
  */
 final class TTemplateKeyOf extends Atomic
 {

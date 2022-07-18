@@ -42,7 +42,7 @@
    - `Psalm\Type\Atomic\TIntRange`
    - `Psalm\Type\Atomic\TIterable`
    - `Psalm\Type\Atomic\TKeyedArray`
-   - `Psalm\Type\Atomic\TKeyOfArray`
+   - `Psalm\Type\Atomic\TKeyOf`
    - `Psalm\Type\Atomic\TList`
    - `Psalm\Type\Atomic\TLiteralClassString`
    - `Psalm\Type\Atomic\TLowercaseString`
@@ -92,7 +92,7 @@
    - `Psalm\Type\Atomic\TInt`
    - `Psalm\Type\Atomic\TIterable`
    - `Psalm\Type\Atomic\TKeyedArray`
-   - `Psalm\Type\Atomic\TKeyOfArray`
+   - `Psalm\Type\Atomic\TKeyOf`
    - `Psalm\Type\Atomic\TList`
    - `Psalm\Type\Atomic\TLiteralClassString`
    - `Psalm\Type\Atomic\TMixed`
@@ -155,7 +155,7 @@
 - [BC] Atomic::getId() has now a first param $exact. Calling the method with false will return a less detailed version of the type in some cases (similarly to what `__toString` used to return)
 - [BC] To remove a variable from the context, use `Context::remove()`. Calling
   `unset($context->vars_in_scope[$var_id])` can cause problems when using references.
-- [BC] `TKeyOfClassConstant` has been renamed to `TKeyOfArray`.
+- [BC] `TKeyOfClassConstant` has been renamed to `TKeyOf`.
 - [BC] `TValueOfClassConstant` has been renamed to `TValueOf`.
 - [BC] `TKeyOfTemplate` base class has been changed from `Scalar` to `Atomic`.
 - [BC] Class `Psalm\FileManipulation` became final
@@ -748,7 +748,7 @@
     - [BC] Class `Psalm\Type\Atomic\TEnumCase` became final
     - [BC] Class `Psalm\Type\Atomic\TCallableKeyedArray` became final
     - [BC] Class `Psalm\Type\Atomic\TDependentGetDebugType` became final
-    - [BC] Class `Psalm\Type\Atomic\TKeyOfArray` became final
+    - [BC] Class `Psalm\Type\Atomic\TKeyOf` became final
     - [BC] Class `Psalm\Type\Atomic\TNonspecificLiteralInt` became final
     - [BC] Class `Psalm\Type\Atomic\TObjectWithProperties` became final
     - [BC] Class `Psalm\Type\Atomic\TTemplateValueOf` became final

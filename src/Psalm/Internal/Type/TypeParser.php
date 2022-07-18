@@ -41,7 +41,7 @@ use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyOfArray;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -743,13 +743,13 @@ class TypeParser
                 );
             }
 
-            if (!TKeyOfArray::isViableTemplateType($generic_params[0])) {
+            if (!TKeyOf::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
                     'Untemplated key-of param ' . $param_name . ' should be an array'
                 );
             }
 
-            return new TKeyOfArray($generic_params[0]);
+            return new TKeyOf($generic_params[0]);
         }
 
         if ($generic_type_value === 'value-of') {
@@ -843,7 +843,7 @@ class TypeParser
 
             if (!$param_type instanceof TClassConstant
                 && !$param_type instanceof TValueOf
-                && !$param_type instanceof TKeyOfArray
+                && !$param_type instanceof TKeyOf
             ) {
                 throw new TypeParseTreeException(
                     'Invalid reference passed to int-mask-of'

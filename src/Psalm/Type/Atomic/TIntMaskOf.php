@@ -11,11 +11,11 @@ use Psalm\Type\Atomic;
  */
 final class TIntMaskOf extends TInt
 {
-    /** @var TClassConstant|TKeyOfArray|TValueOf */
+    /** @var TClassConstant|TKeyOf|TValueOf */
     public $value;
 
     /**
-     * @param TClassConstant|TKeyOfArray|TValueOf $value
+     * @param TClassConstant|TKeyOf|TValueOf $value
      */
     public function __construct(Atomic $value)
     {
