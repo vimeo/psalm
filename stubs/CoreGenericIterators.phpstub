@@ -342,6 +342,7 @@ abstract class FilterIterator extends IteratorIterator {
  * @template-covariant TKey
  * @template-covariant TValue
  * @template-covariant TIterator as Iterator<TKey, TValue>
+ * @template TFlags of int-mask<1,2,4,8,16,256>
  *
  * @template-implements OuterIterator<TKey, TValue>
  * @template-implements ArrayAccess<TKey, TValue>
@@ -358,7 +359,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
 
     /**
      * @param TIterator $iterator
-     * @param int-mask-of<self::*> $flags
+     * @param TFlags $flags
      */
     public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {}
 
@@ -378,6 +379,8 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     public function key() {}
 
     /**
+     * @psalm-if-this-is self<mixed, mixed, 256>
+     *
      * @return array<array-key, TValue>
      */
     public function getCache() {}
