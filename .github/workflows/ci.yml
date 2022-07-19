@@ -111,6 +111,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
+      - name: Drop incompatible packages
+        run: composer remove --no-interaction --dev phpunit/phpunit brianium/paratest psalm/plugin-phpunit weirdan/prophecy-shim
+        if: ${{ matrix.php == '7.1' }}
+
       - name: Install composer dependencies (high deps)
         run: composer update --prefer-dist --no-interaction
         if: ${{ matrix.deps == 'high' }}
