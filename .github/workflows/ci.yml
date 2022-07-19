@@ -76,6 +76,8 @@ jobs:
       matrix:
         count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
         chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
+        php: ['7.1', '7.3', '7.4', '8.0', '8.1']
+        deps: ['high', 'low', 'stable']
 
     env:
       CHUNK_COUNT: "${{ matrix.count }}"
@@ -86,7 +88,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: ${{matrix.php}}
           tools: composer:v2
           coverage: none
           extensions: decimal
@@ -109,10 +111,23 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
-      - name: Run composer install
-        run: composer install -o
+      - name: Install composer dependencies (high deps)
+        run: composer update --prefer-dist --no-interaction
+        if: ${{ matrix.deps == 'high' }}
         env:
-          COMPOSER_ROOT_VERSION: dev-master
+            COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Install composer dependencies (low deps)
+        run: composer update --prefer-dist --no-interaction --prefer-stable --prefer-lowest
+        if: ${{ matrix.deps == 'low' }}
+        env:
+            COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Install composer dependencies (stable deps)
+        run: composer update --prefer-dist --no-interaction --prefer-stable
+        if: ${{ matrix.deps == 'stable' }}
+        env:
+            COMPOSER_ROOT_VERSION: dev-master
 
       - name: Run unit tests
         run: bin/tests-github-actions.sh
