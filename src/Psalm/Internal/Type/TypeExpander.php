@@ -22,7 +22,7 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyOfArray;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -34,7 +34,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
-use Psalm\Type\Atomic\TValueOfArray;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use ReflectionProperty;
@@ -363,10 +363,10 @@ class TypeExpander
             return [$return_type];
         }
 
-        if ($return_type instanceof TKeyOfArray
-            || $return_type instanceof TValueOfArray
+        if ($return_type instanceof TKeyOf
+            || $return_type instanceof TValueOf
         ) {
-            return self::expandKeyOfValueOfArray(
+            return self::expandKeyOfValueOf(
                 $codebase,
                 $return_type,
                 $self_class,
@@ -965,11 +965,11 @@ class TypeExpander
     }
 
     /**
-     * @param TKeyOfArray|TValueOfArray $return_type
+     * @param TKeyOf|TValueOf $return_type
      * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return non-empty-list<Atomic>
      */
-    private static function expandKeyOfValueOfArray(
+    private static function expandKeyOfValueOf(
         Codebase $codebase,
         Atomic &$return_type,
         ?string $self_class,
@@ -1025,12 +1025,12 @@ class TypeExpander
 
             if (!$constant_type
                 || (
-                    $return_type instanceof TKeyOfArray
-                    && !TKeyOfArray::isViableTemplateType($constant_type)
+                    $return_type instanceof TKeyOf
+                    && !TKeyOf::isViableTemplateType($constant_type)
                 )
                 || (
-                    $return_type instanceof TValueOfArray
-                    && !TValueOfArray::isViableTemplateType($constant_type)
+                    $return_type instanceof TValueOf
+                    && !TValueOf::isViableTemplateType($constant_type)
                 )
             ) {
                 if ($throw_on_unresolvable_constant) {
@@ -1049,10 +1049,10 @@ class TypeExpander
             return [$return_type];
         }
 
-        if ($return_type instanceof TKeyOfArray) {
-            $new_return_types = TKeyOfArray::getArrayKeyType(new Union($type_atomics));
+        if ($return_type instanceof TKeyOf) {
+            $new_return_types = TKeyOf::getArrayKeyType(new Union($type_atomics));
         } else {
-            $new_return_types = TValueOfArray::getArrayValueType(new Union($type_atomics));
+            $new_return_types = TValueOf::getValueType(new Union($type_atomics), $codebase);
         }
         if ($new_return_types === null) {
             return [$return_type];

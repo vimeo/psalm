@@ -41,7 +41,7 @@ use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyOfArray;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -63,7 +63,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
-use Psalm\Type\Atomic\TValueOfArray;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
@@ -743,13 +743,13 @@ class TypeParser
                 );
             }
 
-            if (!TKeyOfArray::isViableTemplateType($generic_params[0])) {
+            if (!TKeyOf::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
                     'Untemplated key-of param ' . $param_name . ' should be an array'
                 );
             }
 
-            return new TKeyOfArray($generic_params[0]);
+            return new TKeyOf($generic_params[0]);
         }
 
         if ($generic_type_value === 'value-of') {
@@ -765,13 +765,13 @@ class TypeParser
                 );
             }
 
-            if (!TValueOfArray::isViableTemplateType($generic_params[0])) {
+            if (!TValueOf::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
                     'Untemplated value-of param ' . $param_name . ' should be an array'
                 );
             }
 
-            return new TValueOfArray($generic_params[0]);
+            return new TValueOf($generic_params[0]);
         }
 
         if ($generic_type_value === 'int-mask') {
@@ -842,8 +842,8 @@ class TypeParser
             $param_type = $param_union_types[0];
 
             if (!$param_type instanceof TClassConstant
-                && !$param_type instanceof TValueOfArray
-                && !$param_type instanceof TKeyOfArray
+                && !$param_type instanceof TValueOf
+                && !$param_type instanceof TKeyOf
             ) {
                 throw new TypeParseTreeException(
                     'Invalid reference passed to int-mask-of'

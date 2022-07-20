@@ -2,16 +2,16 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
+use Psalm\Type;
 use Psalm\Type\Union;
 
 use function array_merge;
 use function array_values;
 
 /**
- * Represents a value of an array.
+ * Represents an offset of an array.
  */
-final class TValueOfArray extends Atomic
+final class TKeyOf extends TArrayKey
 {
     /** @var Union */
     public $type;
@@ -23,7 +23,7 @@ final class TValueOfArray extends Atomic
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'value-of<' . $this->type . '>';
+        return 'key-of<' . $this->type . '>';
     }
 
     /**
@@ -63,28 +63,28 @@ final class TValueOfArray extends Atomic
         return true;
     }
 
-    public static function getArrayValueType(
+    public static function getArrayKeyType(
         Union $type,
         bool $keep_template_params = false
     ): ?Union {
-        $value_types = [];
+        $key_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TArray) {
-                $array_value_atomics = $atomic_type->type_params[1];
+                $array_key_atomics = $atomic_type->type_params[0];
             } elseif ($atomic_type instanceof TList) {
-                $array_value_atomics = $atomic_type->type_param;
+                $array_key_atomics = Type::getInt();
             } elseif ($atomic_type instanceof TKeyedArray) {
-                $array_value_atomics = $atomic_type->getGenericValueType();
+                $array_key_atomics = $atomic_type->getGenericKeyType();
             } elseif ($atomic_type instanceof TTemplateParam) {
                 if ($keep_template_params) {
-                    $array_value_atomics = new Union([$atomic_type]);
+                    $array_key_atomics = new Union([$atomic_type]);
                 } else {
-                    $array_value_atomics = static::getArrayValueType(
+                    $array_key_atomics = static::getArrayKeyType(
                         $atomic_type->as,
                         $keep_template_params
                     );
-                    if ($array_value_atomics === null) {
+                    if ($array_key_atomics === null) {
                         continue;
                     }
                 }
@@ -92,15 +92,15 @@ final class TValueOfArray extends Atomic
                 continue;
             }
 
-            $value_types = array_merge(
-                $value_types,
-                array_values($array_value_atomics->getAtomicTypes())
+            $key_types = array_merge(
+                $key_types,
+                array_values($array_key_atomics->getAtomicTypes())
             );
         }
 
-        if ($value_types === []) {
+        if ($key_types === []) {
             return null;
         }
-        return new Union($value_types);
+        return new Union($key_types);
     }
 }

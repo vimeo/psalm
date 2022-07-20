@@ -11,7 +11,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyOfArray;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -26,7 +26,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
-use Psalm\Type\Atomic\TValueOfArray;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -345,15 +345,15 @@ class TemplateInferredTypeReplacer
         );
 
         if ($atomic_type instanceof TTemplateKeyOf
-            && TKeyOfArray::isViableTemplateType($template_type)
+            && TKeyOf::isViableTemplateType($template_type)
         ) {
-            return new TKeyOfArray(clone $template_type);
+            return new TKeyOf(clone $template_type);
         }
 
         if ($atomic_type instanceof TTemplateValueOf
-            && TValueOfArray::isViableTemplateType($template_type)
+            && TValueOf::isViableTemplateType($template_type)
         ) {
-            return new TValueOfArray(clone $template_type);
+            return new TValueOf(clone $template_type);
         }
 
         return null;

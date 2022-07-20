@@ -2,16 +2,21 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type;
+use Psalm\Codebase;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Storage\EnumCaseStorage;
+use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_merge;
+use function array_map;
 use function array_values;
+use function assert;
+use function count;
 
 /**
- * Represents an offset of an array.
+ * Represents a value of an array or enum.
  */
-final class TKeyOfArray extends TArrayKey
+final class TValueOf extends Atomic
 {
     /** @var Union */
     public $type;
@@ -23,7 +28,7 @@ final class TKeyOfArray extends TArrayKey
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'key-of<' . $this->type . '>';
+        return 'value-of<' . $this->type . '>';
     }
 
     /**
@@ -56,6 +61,7 @@ final class TKeyOfArray extends TArrayKey
                 && !$type instanceof TKeyedArray
                 && !$type instanceof TList
                 && !$type instanceof TPropertiesOf
+                && !$type instanceof TNamedObject
             ) {
                 return false;
             }
@@ -63,44 +69,63 @@ final class TKeyOfArray extends TArrayKey
         return true;
     }
 
-    public static function getArrayKeyType(
+    public static function getValueType(
         Union $type,
+        Codebase $codebase,
         bool $keep_template_params = false
     ): ?Union {
-        $key_types = [];
+        $value_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TArray) {
-                $array_key_atomics = $atomic_type->type_params[0];
+                $value_atomics = $atomic_type->type_params[1];
             } elseif ($atomic_type instanceof TList) {
-                $array_key_atomics = Type::getInt();
+                $value_atomics = $atomic_type->type_param;
             } elseif ($atomic_type instanceof TKeyedArray) {
-                $array_key_atomics = $atomic_type->getGenericKeyType();
+                $value_atomics = $atomic_type->getGenericValueType();
             } elseif ($atomic_type instanceof TTemplateParam) {
                 if ($keep_template_params) {
-                    $array_key_atomics = new Union([$atomic_type]);
+                    $value_atomics = new Union([$atomic_type]);
                 } else {
-                    $array_key_atomics = static::getArrayKeyType(
+                    $value_atomics = static::getValueType(
                         $atomic_type->as,
+                        $codebase,
                         $keep_template_params
                     );
-                    if ($array_key_atomics === null) {
+                    if ($value_atomics === null) {
                         continue;
                     }
                 }
+            } elseif ($atomic_type instanceof TNamedObject
+                && $codebase->classlike_storage_provider->has($atomic_type->value)
+            ) {
+                $class_storage = $codebase->classlike_storage_provider->get($atomic_type->value);
+                $cases = $class_storage->enum_cases;
+                if (!$class_storage->is_enum
+                    || $class_storage->enum_type === null
+                    || count($cases) === 0
+                ) {
+                    // Invalid value-of, skip
+                    continue;
+                }
+
+                $value_atomics = new Union(array_map(
+                    function (EnumCaseStorage $case): Atomic {
+                        assert($case->value !== null); // Backed enum must have a value
+                        return ConstantTypeResolver::getLiteralTypeFromScalarValue($case->value);
+                    },
+                    array_values($cases),
+                ));
             } else {
                 continue;
             }
 
-            $key_types = array_merge(
-                $key_types,
-                array_values($array_key_atomics->getAtomicTypes())
-            );
+            $value_types = [...$value_types, ...array_values($value_atomics->getAtomicTypes())];
         }
 
-        if ($key_types === []) {
+        if ($value_types === []) {
             return null;
         }
-        return new Union($key_types);
+        return new Union($value_types);
     }
 }

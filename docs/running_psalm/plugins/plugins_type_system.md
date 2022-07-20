@@ -49,15 +49,15 @@ The classes are as follows:
 
 `TIntMaskOf` - as above, but used with a reference to constants in code `int-mask-of<MyClass::CLASS_CONSTANT_*>` will corresponds to `1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
 
-`TKeyOfArray` - Represents an offset of an array (e.g. `key-of<MyClass::CLASS_CONSTANT>`).
+`TKeyOf` - Represents an offset of an array (e.g. `key-of<MyClass::CLASS_CONSTANT>`).
 
-`TValueOfArray` - Represents a value of an array (e.g. `value-of<MyClass::CLASS_CONSTANT>`).
+`TValueOf` - Represents a value of an array or enum (e.g. `value-of<MyClass::CLASS_CONSTANT>`).
 
 `TTemplateIndexedAccess` - To be documented
 
-`TTemplateKeyOf` - Represents the type used when using TKeyOfArray when the type of the array is a template
+`TTemplateKeyOf` - Represents the type used when using TKeyOf when the type of the array is a template
 
-`TTemplateValueOf` - Represents the type used when using TValueOfArray when the type of the array is a template
+`TTemplateValueOf` - Represents the type used when using TValueOf when the type of the array or enum is a template
 
 `TPropertiesOf` - Represents properties and their types of a class as a keyed array (e.g. `properties-of<MyClass>`)
 

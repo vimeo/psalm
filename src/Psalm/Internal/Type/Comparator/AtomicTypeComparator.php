@@ -19,7 +19,7 @@ use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyOfArray;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
@@ -36,7 +36,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
-use Psalm\Type\Atomic\TValueOfArray;
+use Psalm\Type\Atomic\TValueOf;
 
 use function array_merge;
 use function array_values;
@@ -341,7 +341,7 @@ class AtomicTypeComparator
         }
 
         if ($input_type_part instanceof TTemplateKeyOf) {
-            $array_key_type = TKeyOfArray::getArrayKeyType($input_type_part->as);
+            $array_key_type = TKeyOf::getArrayKeyType($input_type_part->as);
             if ($array_key_type === null) {
                 return false;
             }
@@ -375,7 +375,7 @@ class AtomicTypeComparator
         }
 
         if ($input_type_part instanceof TTemplateValueOf) {
-            $array_value_type = TValueOfArray::getArrayValueType($input_type_part->as);
+            $array_value_type = TValueOf::getValueType($input_type_part->as, $codebase);
             if ($array_value_type === null) {
                 return false;
             }
