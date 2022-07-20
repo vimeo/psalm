@@ -306,5 +306,7 @@ class ReconcilerTest extends TestCase
         $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
         $codebase->scanFiles();
         $this->file_analyzer->analyze($this->file_analyzer->context);
+        // just asserting this test reaches the end
+        self::assertTrue(true);
     }
 }
