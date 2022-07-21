@@ -961,7 +961,6 @@ class Config
             'reportInfo' => 'report_info',
             'restrictReturnTypes' => 'restrict_return_types',
             'limitMethodComplexity' => 'limit_method_complexity',
-            'triggerErrorExits' => 'trigger_error_exits',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -1094,6 +1093,13 @@ class Config
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
             $attribute_text = (string) $config_xml['inferPropertyTypesFromConstructor'];
             $config->infer_property_types_from_constructor = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['triggerErrorExits'])) {
+            $attribute_text = (string) $config_xml['triggerErrorExits'];
+            if ($attribute_text === 'always' || $attribute_text === 'never') {
+                $config->trigger_error_exits = $attribute_text;
+            }
         }
 
         if (isset($config_xml->projectFiles)) {
