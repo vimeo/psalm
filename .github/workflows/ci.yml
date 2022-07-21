@@ -35,7 +35,7 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Drop incompatible packages
-        run: composer remove --no-interaction --dev phpunit/phpunit brianium/paratest psalm/plugin-phpunit weirdan/prophecy-shim
+        run: composer remove --no-interaction --dev amphp/phpunit-util phpunit/phpunit brianium/paratest psalm/plugin-phpunit weirdan/prophecy-shim
 
       - name: Run composer install
         run: composer install -o
