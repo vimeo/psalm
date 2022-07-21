@@ -213,7 +213,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                             '$inner_type' => $assertions[$assertion_id],
                         ];
 
-                        $reconciled_types = Reconciler::reconcileKeyedTypes(
+                        [$reconciled_types, $_] = Reconciler::reconcileKeyedTypes(
                             $assertions,
                             $assertions,
                             ['$inner_type' => $inner_type],
@@ -293,7 +293,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                             $assertions = ['$inner_type' => $assertions['$' . $first_param->var->name]];
 
-                            $reconciled_types = Reconciler::reconcileKeyedTypes(
+                            [$reconciled_types, $_] = Reconciler::reconcileKeyedTypes(
                                 $assertions,
                                 $assertions,
                                 ['$inner_type' => $inner_type],

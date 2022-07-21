@@ -64,7 +64,7 @@ class ElseAnalyzer
         if ($else_types) {
             $changed_var_ids = [];
 
-            $else_vars_reconciled = Reconciler::reconcileKeyedTypes(
+            [$else_context->vars_in_scope, $else_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $else_types,
                 [],
                 $else_context->vars_in_scope,
@@ -78,8 +78,6 @@ class ElseAnalyzer
                     ? new CodeLocation($statements_analyzer->getSource(), $else, $outer_context->include_location)
                     : null
             );
-
-            $else_context->vars_in_scope = $else_vars_reconciled;
 
             $else_context->clauses = Context::removeReconciledClauses($else_context->clauses, $changed_var_ids)[0];
 

@@ -228,27 +228,26 @@ class IfElseAnalyzer
         $changed_var_ids = [];
 
         if ($if_scope->negated_types) {
-            $else_vars_reconciled = Reconciler::reconcileKeyedTypes(
-                $if_scope->negated_types,
-                [],
-                $temp_else_context->vars_in_scope,
-                $temp_else_context->references_in_scope,
-                $changed_var_ids,
-                [],
-                $statements_analyzer,
-                $statements_analyzer->getTemplateTypeMap() ?: [],
-                $context->inside_loop,
-                $context->check_variables
-                    ? new CodeLocation(
-                        $statements_analyzer->getSource(),
-                        $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
-                            ? $stmt->cond->expr
-                            : $stmt->cond,
-                        $context->include_location
-                    ) : null
-            );
-
-            $temp_else_context->vars_in_scope = $else_vars_reconciled;
+            [$temp_else_context->vars_in_scope, $temp_else_context->references_in_scope] =
+                Reconciler::reconcileKeyedTypes(
+                    $if_scope->negated_types,
+                    [],
+                    $temp_else_context->vars_in_scope,
+                    $temp_else_context->references_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_analyzer,
+                    $statements_analyzer->getTemplateTypeMap() ?: [],
+                    $context->inside_loop,
+                    $context->check_variables
+                        ? new CodeLocation(
+                            $statements_analyzer->getSource(),
+                            $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
+                                ? $stmt->cond->expr
+                                : $stmt->cond,
+                            $context->include_location
+                        ) : null
+                );
         }
 
         // we calculate the vars redefined in a hypothetical else statement to determine

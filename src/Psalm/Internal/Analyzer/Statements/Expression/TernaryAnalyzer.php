@@ -191,7 +191,7 @@ class TernaryAnalyzer
         $changed_var_ids = [];
 
         if ($reconcilable_if_types) {
-            $if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+            [$if_context->vars_in_scope, $if_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $reconcilable_if_types,
                 $active_if_types,
                 $if_context->vars_in_scope,
@@ -203,8 +203,6 @@ class TernaryAnalyzer
                 $if_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
             );
-
-            $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
         }
 
         $t_else_context = clone $context;
@@ -230,7 +228,7 @@ class TernaryAnalyzer
         $changed_var_ids = [];
 
         if ($if_scope->negated_types) {
-            $else_vars_reconciled = Reconciler::reconcileKeyedTypes(
+            [$t_else_context->vars_in_scope, $t_else_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $if_scope->negated_types,
                 $t_else_context->vars_in_scope,
@@ -242,8 +240,6 @@ class TernaryAnalyzer
                 $t_else_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->else)
             );
-
-            $t_else_context->vars_in_scope = $else_vars_reconciled;
 
             $t_else_context->clauses = Context::removeReconciledClauses($t_else_context->clauses, $changed_var_ids)[0];
         }

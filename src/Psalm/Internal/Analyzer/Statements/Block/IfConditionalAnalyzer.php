@@ -48,7 +48,7 @@ class IfConditionalAnalyzer
             $changed_var_ids = [];
 
             if ($if_scope->negated_types) {
-                $vars_reconciled = Reconciler::reconcileKeyedTypes(
+                [$vars_reconciled, $references_reconciled] = Reconciler::reconcileKeyedTypes(
                     $if_scope->negated_types,
                     [],
                     $outer_context->vars_in_scope,
@@ -71,6 +71,7 @@ class IfConditionalAnalyzer
                 if ($changed_var_ids) {
                     $outer_context = clone $outer_context;
                     $outer_context->vars_in_scope = $vars_reconciled;
+                    $outer_context->references_in_scope = $references_reconciled;
 
                     $entry_clauses = array_values(
                         array_filter(

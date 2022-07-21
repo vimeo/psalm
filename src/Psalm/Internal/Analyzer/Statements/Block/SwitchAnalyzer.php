@@ -154,7 +154,7 @@ class SwitchAnalyzer
             if ($reconcilable_if_types && isset($reconcilable_if_types[$switch_var_id])) {
                 $changed_var_ids = [];
 
-                $case_vars_in_scope_reconciled =
+                [$case_vars_in_scope_reconciled, $_] =
                     Reconciler::reconcileKeyedTypes(
                         $reconcilable_if_types,
                         [],

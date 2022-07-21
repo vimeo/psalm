@@ -257,6 +257,35 @@ class ReferenceTest extends TestCase
                     '$b' => 'string',
                 ],
             ],
+            'referenceToArrayVariableOffsetDoesntCrashWhenOffsetVariableChangesDueToReconciliation' => [
+                'code' => '<?php
+                    $a = "a";
+                    $b = false;
+                    $doesNotMatter = ["a" => ["id" => 1]];
+                    $reference = &$doesNotMatter[$a];
+                    /** @psalm-suppress TypeDoesNotContainType */
+                    $result = ($a === "not-a" && ($b || false));
+                ',
+                'assertions' => [
+                    '$reference===' => 'array{id: 1}',
+                ],
+            ],
+            'multipleReferencesToArrayVariableOffsetThatChangesDueToReconciliation' => [
+                'code' => '<?php
+                    $a = "a";
+                    $b = false;
+                    $doesNotMatter = ["a" => ["id" => 1]];
+                    $reference1 = &$doesNotMatter[$a];
+                    $reference2 = &$doesNotMatter[$a];
+                    /** @psalm-suppress TypeDoesNotContainType */
+                    $result = ($a === "not-a" && ($b || false));
+                    $reference1["id"] = 2;
+                ',
+                'assertions' => [
+                    '$reference1===' => 'array{id: 2}',
+                    '$reference2===' => 'array{id: 2}',
+                ],
+            ],
         ];
     }
 

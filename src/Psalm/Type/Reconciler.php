@@ -56,6 +56,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use ReflectionProperty;
 use UnexpectedValueException;
 
+use function array_keys;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -64,6 +65,7 @@ use function count;
 use function explode;
 use function implode;
 use function is_numeric;
+use function key;
 use function ksort;
 use function preg_match;
 use function preg_quote;
@@ -83,7 +85,8 @@ class Reconciler
     private static $broken_paths = [];
 
     /**
-     * Takes two arrays and consolidates them, removing null values from existing types where applicable
+     * Takes two arrays and consolidates them, removing null values from existing types where applicable.
+     * Returns a tuple of [new_types, new_references].
      *
      * @param  array<string, array<array<int, Assertion>>> $new_types
      * @param  array<string, array<array<int, Assertion>>> $active_new_types - types we can complain about
@@ -94,7 +97,9 @@ class Reconciler
      * @param  array<string, bool>       $referenced_var_ids
      * @param  array<string, array<string, Union>> $template_type_map
      *
-     * @return array<string, Union>
+     * @return array{array<string, Union>, array<string, string>}
+     *
+     * @psalm-suppress ComplexMethod
      */
     public static function reconcileKeyedTypes(
         array $new_types,
@@ -110,10 +115,10 @@ class Reconciler
         bool $negated = false
     ): array {
         if (!$new_types) {
-            return $existing_types;
+            return [$existing_types, $existing_references];
         }
 
-        $reference_map = [];
+        $reference_graph = [];
         if (!empty($existing_references)) {
             // PHP behaves oddly when passing an array containing references: https://bugs.php.net/bug.php?id=20993
             // To work around the issue, if there are any references, we have to recreate the array and fix the
@@ -134,8 +139,12 @@ class Reconciler
 
             // Build a map from reference/referenced variables to other variables with the same reference
             foreach ($existing_references as $reference => $referenced) {
-                $reference_map[$reference][] = $referenced;
-                $reference_map[$referenced][] = $reference;
+                $reference_graph[$reference][$referenced] = true;
+                foreach ($reference_graph[$referenced] ?? [] as $existing_referenced => $_) {
+                    $reference_graph[$existing_referenced][$reference] = true;
+                    $reference_graph[$reference][$existing_referenced] = true;
+                }
+                $reference_graph[$referenced][$reference] = true;
             }
         }
 
@@ -239,7 +248,7 @@ class Reconciler
                             $nested_negated = $negated;
                         }
 
-                        $existing_types = self::reconcileKeyedTypes(
+                        [$existing_types, $_] = self::reconcileKeyedTypes(
                             $data,
                             $data,
                             $existing_types,
@@ -336,7 +345,33 @@ class Reconciler
                             && preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', $new_key)
                             && $is_real
                         ) {
-                            unset($existing_types[$new_key]);
+                            // Fix any references to the type before removing it.
+                            $references_to_fix = array_keys($reference_graph[$new_key] ?? []);
+                            if (count($references_to_fix) > 1) {
+                                // Still multiple references, just remove $new_key
+                                foreach ($references_to_fix as $reference_to_fix) {
+                                    unset($reference_graph[$reference_to_fix][$new_key]);
+                                }
+                                // Set references pointing to $new_key to point
+                                // to the first other reference from the same group
+                                $new_primary_reference = key($reference_graph[$references_to_fix[0]]);
+                                unset($existing_references[$new_primary_reference]);
+                                foreach ($existing_references as $existing_reference => $existing_referenced) {
+                                    if ($existing_referenced === $new_key) {
+                                        $existing_references[$existing_reference] = $new_primary_reference;
+                                    }
+                                }
+                            } elseif (count($references_to_fix) === 1) {
+                                // Since reference target is going to be removed,
+                                // pretend the reference is just a normal variable
+                                $reference_to_fix = $references_to_fix[0];
+                                unset($reference_graph[$reference_to_fix], $existing_references[$reference_to_fix]);
+                            }
+                            unset(
+                                $existing_types[$new_key],
+                                $reference_graph[$new_key],
+                                $existing_references[$new_key],
+                            );
                         }
                     }
                 }
@@ -352,10 +387,10 @@ class Reconciler
                 $existing_types[$key] = $result_type;
             }
 
-            if (!$did_type_exist && isset($existing_types[$key]) && isset($reference_map[$key_parts[0]])) {
+            if (!$did_type_exist && isset($existing_types[$key]) && isset($reference_graph[$key_parts[0]])) {
                 // If key is new, create references for other variables that reference the root variable.
                 $reference_key_parts = $key_parts;
-                foreach ($reference_map[$key_parts[0]] as $reference) {
+                foreach ($reference_graph[$key_parts[0]] as $reference => $_) {
                     $reference_key_parts[0] = $reference;
                     $reference_key = implode("", $reference_key_parts);
                     $existing_types[$reference_key] = &$existing_types[$key];
@@ -363,7 +398,7 @@ class Reconciler
             }
         }
 
-        return $existing_types;
+        return [$existing_types, $existing_references];
     }
 
     /**

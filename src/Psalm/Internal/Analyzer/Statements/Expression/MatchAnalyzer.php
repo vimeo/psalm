@@ -251,7 +251,7 @@ class MatchAnalyzer
             if ($reconcilable_types) {
                 $changed_var_ids = [];
 
-                $vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+                [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $reconcilable_types,
                     [],
                     $context->vars_in_scope,
