@@ -37,8 +37,8 @@ class FileProvider
 
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
-        if (!$go_to_source && isset($this->temp_files[$file_path_lc])) {
-            return $this->temp_files[$file_path_lc]['content'];
+        if (!$go_to_source && isset($this->temp_files[$file_path])) {
+            return $this->temp_files[$file_path]['content'];
         }
 
         if (isset(self::$open_files[$file_path])) {
