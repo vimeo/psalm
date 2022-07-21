@@ -52,6 +52,7 @@ use function assert;
 use function basename;
 use function chdir;
 use function class_exists;
+use function clearstatcache;
 use function count;
 use function dirname;
 use function error_log;
@@ -2268,6 +2269,7 @@ class Config
 
     public static function removeCacheDirectory(string $dir): void
     {
+        clearstatcache(true, $dir);
         if (is_dir($dir)) {
             $objects = scandir($dir, SCANDIR_SORT_NONE);
 
@@ -2276,17 +2278,29 @@ class Config
             }
 
             foreach ($objects as $object) {
-                if ($object !== '.' && $object !== '..') {
-                    if (filetype($dir . '/' . $object) === 'dir') {
-                        self::removeCacheDirectory($dir . '/' . $object);
-                    } else {
-                        unlink($dir . '/' . $object);
-                    }
+                if ($object === '.' || $object === '..') {
+                    continue;
+                }
+
+                // if it was deleted in the meantime/race condition with other psalm process
+                if (!file_exists($dir . '/' . $object)) {
+                    continue;
+                }
+
+                if (filetype($dir . '/' . $object) === 'dir') {
+                    self::removeCacheDirectory($dir . '/' . $object);
+                } else {
+                    unlink($dir . '/' . $object);
                 }
             }
 
             reset($objects);
-            rmdir($dir);
+
+            // may have been removed in the meantime
+            clearstatcache(true, $dir);
+            if (is_dir($dir)) {
+                rmdir($dir);
+            }
         }
     }
 
