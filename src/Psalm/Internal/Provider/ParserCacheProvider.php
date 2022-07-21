@@ -8,9 +8,14 @@ use Psalm\Config;
 use RuntimeException;
 
 use function error_log;
+use function fclose;
 use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
+use function filesize;
+use function flock;
+use function fopen;
+use function fread;
 use function gettype;
 use function igbinary_serialize;
 use function igbinary_unserialize;
@@ -25,12 +30,13 @@ use function mkdir;
 use function scandir;
 use function serialize;
 use function touch;
-use function trigger_error;
 use function unlink;
 use function unserialize;
+use function usleep;
 
 use const DIRECTORY_SEPARATOR;
-use const E_USER_ERROR;
+use const LOCK_EX;
+use const LOCK_SH;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -184,7 +190,28 @@ class ParserCacheProvider
             $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
 
             if ($root_cache_directory && is_readable($file_hashes_path)) {
-                $hashes_encoded = (string) file_get_contents($file_hashes_path);
+                $fp = fopen($file_hashes_path, 'r');
+                $max_wait_cycles = 5;
+                $has_lock = false;
+                while ($max_wait_cycles > 0) {
+                    if (flock($fp, LOCK_SH)) {
+                        $has_lock = true;
+                        break;
+                    }
+                    $max_wait_cycles--;
+                    usleep(50000);
+                }
+
+                if (!$has_lock) {
+                    fclose($fp);
+                    error_log('Could not acquire lock for content hashes file');
+                    $this->existing_file_content_hashes = [];
+
+                    return [];
+                }
+
+                $hashes_encoded = fread($fp, filesize($file_hashes_path));
+                fclose($fp);
 
                 if (!$hashes_encoded) {
                     error_log('Unexpected value when loading from file content hashes');
@@ -281,7 +308,8 @@ class ParserCacheProvider
 
         file_put_contents(
             $file_hashes_path,
-            json_encode($file_content_hashes)
+            json_encode($file_content_hashes),
+            LOCK_EX
         );
     }
 
@@ -355,7 +383,7 @@ class ParserCacheProvider
             } catch (RuntimeException $e) {
                 // Race condition (#4483)
                 if (!is_dir($parser_cache_directory)) {
-                    trigger_error('Could not create parser cache directory: ' . $parser_cache_directory, E_USER_ERROR);
+                    error_log('Could not create parser cache directory: ' . $parser_cache_directory);
                 }
             }
         }

@@ -186,9 +186,10 @@ function array_search($needle, array $haystack, bool $strict = false)
 
 /**
  * @psalm-template T
+ * @psalm-template TArray as array<T>
  *
- * @param T[] $array
- * @param-out list<T> $array
+ * @param TArray $array
+ * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $array
  */
 function shuffle(array &$array): bool
 {
@@ -196,9 +197,10 @@ function shuffle(array &$array): bool
 
 /**
  * @psalm-template T
+ * @psalm-template TArray as array<T>
  *
- * @param T[] $array
- * @param-out list<T> $array
+ * @param TArray $array
+ * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $array
  */
 function sort(array &$array, int $flags = SORT_REGULAR): bool
 {
@@ -206,9 +208,10 @@ function sort(array &$array, int $flags = SORT_REGULAR): bool
 
 /**
  * @psalm-template T
+ * @psalm-template TArray as array<T>
  *
- * @param T[] $array
- * @param-out list<T> $array
+ * @param TArray $array
+ * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $array
  */
 function rsort(array &$array, int $flags = SORT_REGULAR): bool
 {
@@ -216,10 +219,11 @@ function rsort(array &$array, int $flags = SORT_REGULAR): bool
 
 /**
  * @psalm-template T
+ * @psalm-template TArray as array<T>
  *
- * @param T[] $array
+ * @param TArray $array
  * @param callable(T,T):int $callback
- * @param-out list<T> $array
+ * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $array
  */
 function usort(array &$array, callable $callback): bool
 {
@@ -228,10 +232,11 @@ function usort(array &$array, callable $callback): bool
 /**
  * @psalm-template TKey
  * @psalm-template T
+ * @psalm-template TArray as array<TKey,T>
  *
- * @param array<TKey,T> $array
+ * @param TArray $array
  * @param callable(T,T):int $callback
- * @param-out array<TKey,T> $array
+ * @param-out (TArray is non-empty-array ? non-empty-array<TKey,T> : array<TKey,T>) $array
  */
 function uasort(array &$array, callable $callback): bool
 {
@@ -240,10 +245,11 @@ function uasort(array &$array, callable $callback): bool
 /**
  * @psalm-template TKey
  * @psalm-template T
+ * @psalm-template TArray as array<TKey,T>
  *
- * @param array<TKey,T> $array
+ * @param TArray $array
  * @param callable(TKey,TKey):int $callback
- * @param-out array<TKey,T> $array
+ * @param-out (TArray is non-empty-array ? non-empty-array<TKey,T> : array<TKey,T>) $array
  */
 function uksort(array &$array, callable $callback): bool
 {
@@ -551,6 +557,8 @@ function trim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 /**
  * @psalm-pure
  *
+ * @return ($string is class-string ? ($characters is '\\' ? class-string : string) : string)
+ *
  * @psalm-flow ($string) -> return
  */
 function ltrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
@@ -576,7 +584,12 @@ function rtrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
  *             : non-empty-string
  *         )
  *         : string)
- *     : string
+ *     : ($array is non-empty-array
+ *         ? ($array is array<non-empty-literal-string|non-empty-string>
+ *             ? ($array is array<non-empty-literal-string> ? non-empty-literal-string : non-empty-string)
+ *             : string
+ *         )
+ *         : string)
  * )
  *
  * @psalm-flow ($separator) -> return
@@ -598,7 +611,12 @@ function implode($separator, array $array = []) : string {}
  *             : non-empty-string
  *         )
  *         : string)
- *     : string
+ *     : ($array is non-empty-array
+ *         ? ($array is array<non-empty-literal-string|non-empty-string>
+ *             ? ($array is array<non-empty-literal-string> ? non-empty-literal-string : non-empty-string)
+ *             : string
+ *         )
+ *         : string)
  * )
  *
  * @psalm-flow ($separator) -> return
@@ -1257,7 +1275,7 @@ function pack(string $format, mixed ...$values) {}
  * @param string|int $out_codepage
  * @psalm-flow ($subject) -> return
  */
-function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : string {}
+function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : ?string {}
 
 /**
  * @psalm-pure
@@ -1321,6 +1339,7 @@ function get_defined_constants(bool $categorize = false): array {}
 /**
  * @param mixed $object_or_class
  * @param class-string $class
+ * @param bool $allow_string
  * @return ($allow_string is false ? ($object_or_class is object ? bool : false) : bool)
  */
 function is_a($object_or_class, string $class, $allow_string = false): bool{}

@@ -3,12 +3,16 @@
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Issue\InvalidDocblock;
+use Psalm\IssueBuffer;
 
 use function array_shift;
 use function array_unique;
@@ -34,8 +38,11 @@ class FunctionLikeDocblockParser
     /**
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
-    public static function parse(PhpParser\Comment\Doc $comment): FunctionDocblockComment
-    {
+    public static function parse(
+        PhpParser\Comment\Doc $comment,
+        CodeLocation $code_location,
+        string $cased_function_id
+    ): FunctionDocblockComment {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
         $comment_text = $comment->getText();
@@ -49,7 +56,9 @@ class FunctionLikeDocblockParser
             self::extractReturnType(
                 $comment,
                 $parsed_docblock->combined_tags['return'],
-                $info
+                $info,
+                $code_location,
+                $cased_function_id
             );
         }
 
@@ -107,7 +116,12 @@ class FunctionLikeDocblockParser
                         $info->params[] = $info_param;
                     }
                 } else {
-                    throw new DocblockParseException('Badly-formatted @param');
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'Badly-formatted @param in docblock for ' . $cased_function_id,
+                            $code_location
+                        )
+                    );
                 }
             }
         }
@@ -152,7 +166,12 @@ class FunctionLikeDocblockParser
                         ];
                     }
                 } else {
-                    throw new DocblockParseException('Badly-formatted @param');
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'Badly-formatted @param in docblock for ' . $cased_function_id,
+                            $code_location
+                        )
+                    );
                 }
             }
         }
@@ -335,7 +354,12 @@ class FunctionLikeDocblockParser
                         ];
                     }
                 } else {
-                    throw new DocblockParseException('Badly-formatted @param');
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'Badly-formatted @param in docblock for ' . $cased_function_id,
+                            $code_location
+                        )
+                    );
                 }
             }
         }
@@ -358,14 +382,7 @@ class FunctionLikeDocblockParser
             $info->internal = true;
         }
 
-        if (isset($parsed_docblock->tags['psalm-internal'])) {
-            $psalm_internal = trim(reset($parsed_docblock->tags['psalm-internal']));
-
-            if (!$psalm_internal) {
-                throw new DocblockParseException('@psalm-internal annotation used without specifying namespace');
-            }
-
-            $info->psalm_internal = $psalm_internal;
+        if (count($info->psalm_internal = DocblockParser::handlePsalmInternal($parsed_docblock)) !== 0) {
             $info->internal = true;
         }
 
@@ -542,7 +559,9 @@ class FunctionLikeDocblockParser
     private static function extractReturnType(
         PhpParser\Comment\Doc $comment,
         array $return_specials,
-        FunctionDocblockComment $info
+        FunctionDocblockComment $info,
+        CodeLocation $code_location,
+        string $cased_function_id
     ): void {
         foreach ($return_specials as $offset => $return_block) {
             $return_lines = explode("\n", $return_block);
@@ -581,7 +600,12 @@ class FunctionLikeDocblockParser
                 $info->return_type_start = $offset;
                 $info->return_type_end = $end;
             } else {
-                throw new DocblockParseException('Badly-formatted @return type');
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        'Badly-formatted @param in docblock for ' . $cased_function_id,
+                        $code_location
+                    )
+                );
             }
 
             break;

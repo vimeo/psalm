@@ -296,7 +296,9 @@ class CodeLocation
         }
 
         $this->snippet = mb_strcut($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
-        $this->text = mb_strcut($file_contents, $this->selection_start, $this->selection_end - $this->selection_start);
+        // text is within snippet. It's 50% faster to cut it from the snippet than from the full text
+        $selection_length = $this->selection_end - $this->selection_start;
+        $this->text = mb_strcut($this->snippet, $this->selection_start - $this->preview_start, $selection_length);
 
         // reset preview start to beginning of line
         if ($file_contents !== '') {

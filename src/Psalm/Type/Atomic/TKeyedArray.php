@@ -10,13 +10,6 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralClassString;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -415,13 +408,15 @@ class TKeyedArray extends Atomic
         return $this->getKey();
     }
 
-    public function getList(): TNonEmptyList
+    public function getList(): TList
     {
         if (!$this->is_list) {
             throw new UnexpectedValueException('Object-like array must be a list for conversion');
         }
 
-        return new TNonEmptyList($this->getGenericValueType());
+        return $this->isNonEmpty()
+            ? new TNonEmptyList($this->getGenericValueType())
+            : new TList($this->getGenericValueType());
     }
 
     /**

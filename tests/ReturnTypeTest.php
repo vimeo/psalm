@@ -855,6 +855,33 @@ class ReturnTypeTest extends TestCase
                     '$res' => 'iterable<int, numeric-string>',
                 ],
             ],
+            'infersObjectShapeOfCastScalar' => [
+                '<?php
+                    function returnsInt(): int {
+                        return 1;
+                    }
+
+                    $obj = (object)returnsInt();
+                ',
+                'assertions' => [
+                    '$obj' => 'object{scalar:int}',
+                ],
+            ],
+            'infersObjectShapeOfCastArray' => [
+                '<?php
+                    /**
+                     * @return array{a:1}
+                     */
+                    function returnsArray(): array {
+                        return ["a" => 1];
+                    }
+
+                    $obj = (object)returnsArray();
+                ',
+                'assertions' => [
+                    '$obj' => 'object{a:int}',
+                ],
+            ],
             'mixedAssignmentWithUnderscore' => [
                 '<?php
                     $gen = (function (): Generator {
@@ -1541,6 +1568,17 @@ class ReturnTypeTest extends TestCase
                     }
                 ',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'objectCastFromArrayWithMissingKey' => [
+                '<?php
+                    /** @return object{status: string} */
+                    function foo(): object {
+                        return (object) [
+                            "notstatus" => "failed",
+                        ];
+                    }
+                ',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'lessSpecificImplementedReturnTypeFromTemplatedTraitMethod' => [
                 '<?php

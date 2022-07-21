@@ -271,7 +271,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $codebase,
                 $context,
                 $method_id,
-                $statements_analyzer->getNamespace(),
+                $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
                 $name_code_location,
                 $statements_analyzer->getSuppressedIssues()
             );

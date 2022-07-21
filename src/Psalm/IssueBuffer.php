@@ -16,11 +16,11 @@ use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
-use Psalm\Report;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CodeClimateReport;
 use Psalm\Report\CompactReport;
 use Psalm\Report\ConsoleReport;
+use Psalm\Report\CountReport;
 use Psalm\Report\EmacsReport;
 use Psalm\Report\GithubActionsReport;
 use Psalm\Report\JsonReport;
@@ -244,7 +244,11 @@ class IssueBuffer
     }
 
     /**
-     * Add an issue to be emitted
+     * Add an issue to be emitted. This method should normally not be used! Use IssueBuffer::maybeAdd instead.
+     *
+     * @psalm-internal Psalm\IssueBuffer
+     * @psalm-internal Psalm\Type\Reconciler::getValueForKey
+     *
      * @throws  CodeException
      */
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
@@ -904,6 +908,13 @@ class IssueBuffer
             case Report::TYPE_CODECLIMATE:
                 $output = new CodeClimateReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
+
+            case Report::TYPE_COUNT:
+                $output = new CountReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                break;
+
+            default:
+                throw new RuntimeException('Unexpected report format: ' . $report_options->format);
         }
 
         return $output->create();

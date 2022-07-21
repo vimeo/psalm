@@ -9,7 +9,6 @@ use Psalm\Internal\PluginManager\Command\EnableCommand;
 use Psalm\Internal\PluginManager\Command\ShowCommand;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Application;
-use Symfony\Component\Console\Input\InputOption;
 
 use function dirname;
 use function getcwd;
@@ -40,10 +39,6 @@ final class Plugin
             new EnableCommand($plugin_list_factory),
             new DisableCommand($plugin_list_factory),
         ]);
-
-        $app->getDefinition()->addOption(
-            new InputOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file')
-        );
 
         $app->setDefaultCommand('show');
         $app->run();

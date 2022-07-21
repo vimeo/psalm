@@ -214,6 +214,10 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         $inner_value_type = null;
 
         if ($inner_key_types) {
+            /**
+             * Truthy&array-shape-list doesn't reconcile correctly, will be fixed for 5.x by #8050.
+             * @psalm-suppress InvalidScalarArgument
+             */
             $inner_key_type = TypeCombiner::combine($inner_key_types, $codebase, true);
         }
 

@@ -450,6 +450,10 @@ return [
     'reflectionparameter' => [
         'name' => 'string',
     ],
+    'reflectionproperty' => [
+        'name' => 'string',
+        'class' => 'string',
+    ],
     'phpparser\\node\\expr\\array_' => [
         'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
     ],

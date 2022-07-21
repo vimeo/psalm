@@ -1,6 +1,9 @@
 name: Run unit tests
 
 on: [push, pull_request]
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Check PHP syntax
@@ -13,7 +16,7 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -22,7 +25,7 @@ jobs:
           echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
 
       - name: Cache composer cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}
@@ -31,14 +34,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
+      - name: Drop incompatible packages
+        run: composer remove --no-interaction --dev phpunit/phpunit brianium/paratest psalm/plugin-phpunit weirdan/prophecy-shim
+
       - name: Run composer install
-        run: composer install -o --ignore-platform-reqs
+        run: composer install -o
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
       - run: |
           git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
   chunk-matrix:
+    permissions:
+      contents: none
     name: Generate Chunk Matrix
 
     runs-on: ubuntu-latest
@@ -78,12 +86,12 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.0'
+          php-version: '8.1'
           tools: composer:v2
           coverage: none
           extensions: decimal
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -92,7 +100,7 @@ jobs:
           echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
 
       - name: Cache composer cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

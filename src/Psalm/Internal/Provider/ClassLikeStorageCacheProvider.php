@@ -13,17 +13,19 @@ use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function get_class;
+use function hash;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_dir;
+use function is_null;
 use function mkdir;
 use function serialize;
-use function sha1;
 use function strtolower;
 use function unlink;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -74,9 +76,15 @@ class ClassLikeStorageCacheProvider
     {
         $fq_classlike_name_lc = strtolower($storage->name);
 
-        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path, true);
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
+        // check if we have it in cache already
+        $cached_value = $this->loadFromCache($fq_classlike_name_lc, $file_path);
+        if (!is_null($cached_value) && $cached_value->hash === $storage->hash) {
+            return;
+        }
+
+        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path, true);
         if ($this->config->use_igbinary) {
             file_put_contents($cache_location, igbinary_serialize($storage));
         } else {
@@ -109,9 +117,10 @@ class ClassLikeStorageCacheProvider
         return $cached_value;
     }
 
-    private function getCacheHash(?string $file_path, ?string $file_contents): string
+    private function getCacheHash(?string $_unused_file_path, ?string $file_contents): string
     {
-        return sha1(($file_path ? $file_contents : '') . $this->modified_timestamps);
+        $data = $file_contents ? $file_contents : $this->modified_timestamps;
+        return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
     /**
@@ -161,9 +170,13 @@ class ClassLikeStorageCacheProvider
             mkdir($parser_cache_directory, 0777, true);
         }
 
+        $data = $file_path ? strtolower($file_path) . ' ' : '';
+        $data .= $fq_classlike_name_lc;
+        $file_path_sha = PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
+
         return $parser_cache_directory
             . DIRECTORY_SEPARATOR
-            . sha1(($file_path ? strtolower($file_path) . ' ' : '') . $fq_classlike_name_lc)
+            . $file_path_sha
             . ($this->config->use_igbinary ? '-igbinary' : '');
     }
 }

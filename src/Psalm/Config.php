@@ -54,6 +54,7 @@ use function chdir;
 use function class_exists;
 use function count;
 use function dirname;
+use function error_log;
 use function explode;
 use function extension_loaded;
 use function file_exists;
@@ -94,12 +95,10 @@ use function strtolower;
 use function substr;
 use function substr_count;
 use function sys_get_temp_dir;
-use function trigger_error;
 use function unlink;
 use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
-use const E_USER_ERROR;
 use const GLOB_NOSORT;
 use const LIBXML_ERR_ERROR;
 use const LIBXML_ERR_FATAL;
@@ -744,6 +743,10 @@ class Config
             throw new ConfigException('Cannot locate config schema');
         }
 
+        // Enable user error handling
+        $prev_xml_internal_errors = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+
         $dom_document = self::loadDomDocument($base_dir, $file_contents);
 
         $psalm_nodes = $dom_document->getElementsByTagName('psalm');
@@ -766,19 +769,17 @@ class Config
             $dom_document = self::loadDomDocument($base_dir, $old_file_contents);
         }
 
-        // Enable user error handling
-        libxml_use_internal_errors(true);
+        $dom_document->schemaValidate($schema_path); // If it returns false it will generate errors handled below
 
-        if (!$dom_document->schemaValidate($schema_path)) {
-            $errors = libxml_get_errors();
-            foreach ($errors as $error) {
-                if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
-                    throw new ConfigException(
-                        'Error on line ' . $error->line . ":\n" . '    ' . $error->message
-                    );
-                }
+        $errors = libxml_get_errors();
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev_xml_internal_errors);
+        foreach ($errors as $error) {
+            if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
+                throw new ConfigException(
+                    'Error on line ' . $error->line . ":\n" . '    ' . $error->message
+                );
             }
-            libxml_clear_errors();
         }
     }
 
@@ -960,7 +961,6 @@ class Config
             'reportInfo' => 'report_info',
             'restrictReturnTypes' => 'restrict_return_types',
             'limitMethodComplexity' => 'limit_method_complexity',
-            'triggerErrorExits' => 'trigger_error_exits',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {
@@ -1014,7 +1014,7 @@ class Config
         }
 
         if (is_dir($config->cache_directory) === false && @mkdir($config->cache_directory, 0777, true) === false) {
-            trigger_error('Could not create cache directory: ' . $config->cache_directory, E_USER_ERROR);
+            error_log('Could not create cache directory: ' . $config->cache_directory);
         }
 
         if ($cwd) {
@@ -1093,6 +1093,13 @@ class Config
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
             $attribute_text = (string) $config_xml['inferPropertyTypesFromConstructor'];
             $config->infer_property_types_from_constructor = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['triggerErrorExits'])) {
+            $attribute_text = (string) $config_xml['triggerErrorExits'];
+            if ($attribute_text === 'always' || $attribute_text === 'never') {
+                $config->trigger_error_exits = $attribute_text;
+            }
         }
 
         if (isset($config_xml->projectFiles)) {
@@ -2049,6 +2056,11 @@ class Config
         if (extension_loaded('redis')) {
             $ext_phpredis_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'phpredis.phpstub';
             $this->internal_stubs[] = $ext_phpredis_path;
+        }
+
+        if (extension_loaded('apcu')) {
+            $ext_apcu_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-apcu.phpstub';
+            $this->internal_stubs[] = $ext_apcu_path;
         }
 
         foreach ($this->internal_stubs as $stub_path) {

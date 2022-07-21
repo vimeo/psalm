@@ -133,9 +133,9 @@ class Reflection
                 $storage->properties[$property_name]->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
             }
 
-            $property_id = (string)$class_property->class . '::$' . $property_name;
+            $property_id = $class_property->class . '::$' . $property_name;
 
-            $storage->declaring_property_ids[$property_name] = (string)$class_property->class;
+            $storage->declaring_property_ids[$property_name] = $class_property->class;
             $storage->appearing_property_ids[$property_name] = $property_id;
 
             if (!$class_property->isPrivate()) {

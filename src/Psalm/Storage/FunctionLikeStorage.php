@@ -75,9 +75,9 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $deprecated;
 
     /**
-     * @var string
+     * @var list<non-empty-string>
      */
-    public $internal = '';
+    public $internal = [];
 
     /**
      * @var bool

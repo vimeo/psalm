@@ -377,6 +377,7 @@ class ProjectAnalyzer
             '.pylint' => Report::TYPE_PYLINT,
             '.console' => Report::TYPE_CONSOLE,
             '.sarif' => Report::TYPE_SARIF,
+            'count.txt' => Report::TYPE_COUNT,
         ];
 
         foreach ($report_file_paths as $report_file_path) {
@@ -1213,6 +1214,7 @@ class ProjectAnalyzer
 
         $supported_issues_to_fix[] = 'MissingImmutableAnnotation';
         $supported_issues_to_fix[] = 'MissingPureAnnotation';
+        $supported_issues_to_fix[] = 'MissingThrowsDocblock';
 
         $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
 

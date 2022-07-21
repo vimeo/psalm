@@ -65,6 +65,8 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function array_values;
+use function assert;
+use function class_exists;
 use function count;
 use function end;
 use function in_array;
@@ -209,7 +211,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         foreach ($storage->docblock_issues as $docblock_issue) {
-            IssueBuffer::add($docblock_issue);
+            IssueBuffer::maybeAdd($docblock_issue);
         }
 
         $function_information = $this->getFunctionInformation(
@@ -706,6 +708,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        $missingThrowsDocblockErrors = [];
         foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
             $is_expected = false;
 
@@ -719,6 +722,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!$is_expected) {
+                $missingThrowsDocblockErrors[] = $possibly_thrown_exception;
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
                     IssueBuffer::maybeAdd(
@@ -730,6 +734,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
             }
+        }
+
+        if ($codebase->alter_code
+            && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
+        ) {
+            $manipulator = FunctionDocblockManipulator::getForFunction(
+                $project_analyzer,
+                $this->source->getFilePath(),
+                $this->function
+            );
+            $manipulator->addThrowsDocblock($missingThrowsDocblockErrors);
         }
 
         if ($codebase->taint_flow_graph
@@ -1267,15 +1282,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->hasVariable('$' . $function_param->name);
             }
 
-            AttributesAnalyzer::analyze(
-                $this,
-                $context,
-                $function_param,
-                $param_stmts[$offset]->attrGroups,
-                AttributesAnalyzer::TARGET_PARAMETER
-                    | ($function_param->promoted_property ? AttributesAnalyzer::TARGET_PROPERTY : 0),
-                $storage->suppressed_issues + $this->getSuppressedIssues()
-            );
+            if (count($param_stmts) === count($params)) {
+                AttributesAnalyzer::analyze(
+                    $this,
+                    $context,
+                    $function_param,
+                    $param_stmts[$offset]->attrGroups,
+                    AttributesAnalyzer::TARGET_PARAMETER
+                        | ($function_param->promoted_property ? AttributesAnalyzer::TARGET_PROPERTY : 0),
+                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                );
+            }
         }
 
         return $check_stmts;

@@ -7,6 +7,9 @@ namespace Psalm\Type\Atomic;
  */
 class TTrue extends TBool
 {
+    /** @var true */
+    public $value = true;
+
     public function __toString(): string
     {
         return 'true';

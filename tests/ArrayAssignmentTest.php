@@ -1074,26 +1074,26 @@ class ArrayAssignmentTest extends TestCase
                         if (is_int($value["a"])) {}
                     }'
             ],
-            'coercePossiblyNullKeyToZero' => [
+            'coercePossiblyNullKeyToEmptyString' => [
                 '<?php
-                    function int_or_null(): ?int {
-                      return rand(0, 1) !== 0 ? 42 : null;
+                    function string_or_null(): ?string {
+                      return rand(0, 1) !== 0 ? "aaa" : null;
                     }
 
                     /**
-                     * @return array<array-key, null>
+                     * @return array<string, null>
                      */
                     function foo(): array {
                         $array = [];
                         /** @psalm-suppress PossiblyNullArrayOffset */
-                        $array[int_or_null()] = null;
+                        $array[string_or_null()] = null;
                         return $array;
                     }'
             ],
-            'coerceNullKeyToZero' => [
+            'coerceNullKeyToEmptyString' => [
                 '<?php
                     /**
-                     * @return array<int, null>
+                     * @return array<string, null>
                      */
                     function foo(): array {
                         $array = [];

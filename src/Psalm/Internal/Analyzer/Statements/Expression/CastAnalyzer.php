@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -183,22 +184,42 @@ class CastAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
-            $was_inside_general_use = $context->inside_general_use;
-            $context->inside_general_use = true;
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
-                $context->inside_general_use = $was_inside_general_use;
-
+            if (!self::checkExprGeneralUse($statements_analyzer, $stmt, $context)) {
                 return false;
             }
-            $context->inside_general_use = $was_inside_general_use;
 
-            $type = new Union([new TNamedObject('stdClass')]);
+            $permissible_atomic_types = [];
+            $all_permissible = false;
 
-            $maybe_type = $statements_analyzer->node_data->getType($stmt->expr);
+            if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+                if ($stmt_expr_type->isObjectType()) {
+                    self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
+                }
+
+                $all_permissible = true;
+
+                foreach ($stmt_expr_type->getAtomicTypes() as $type) {
+                    if ($type instanceof Scalar) {
+                        $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])]);
+                        $permissible_atomic_types[] = $objWithProps;
+                    } elseif ($type instanceof TKeyedArray) {
+                        $permissible_atomic_types[] = new TObjectWithProperties($type->properties);
+                    } else {
+                        $all_permissible = false;
+                        break;
+                    }
+                }
+            }
+
+            if ($permissible_atomic_types && $all_permissible) {
+                $type = TypeCombiner::combine($permissible_atomic_types);
+            } else {
+                $type = Type::getObject();
+            }
 
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
-                $type->parent_nodes = $maybe_type->parent_nodes ?? [];
+                $type->parent_nodes = $stmt_expr_type->parent_nodes ?? [];
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -207,14 +228,9 @@ class CastAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
-            $was_inside_general_use = $context->inside_general_use;
-            $context->inside_general_use = true;
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
-                $context->inside_general_use = $was_inside_general_use;
-
+            if (!self::checkExprGeneralUse($statements_analyzer, $stmt, $context)) {
                 return false;
             }
-            $context->inside_general_use = $was_inside_general_use;
 
             $permissible_atomic_types = [];
             $all_permissible = false;
@@ -312,7 +328,7 @@ class CastAnalyzer
                 || $atomic_type instanceof TInt
                 || $atomic_type instanceof TNumeric
             ) {
-                if ($atomic_type instanceof TLiteralInt) {
+                if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
                     $castable_types[] = new TLiteralString((string) $atomic_type->value);
                 } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
                     $castable_types[] = new TNonspecificLiteralString();
@@ -455,6 +471,18 @@ class CastAnalyzer
         }
 
         return $str_type;
+    }
+
+    private static function checkExprGeneralUse(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Cast $stmt,
+        Context $context
+    ): bool {
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
+        $retVal = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context);
+        $context->inside_general_use = $was_inside_general_use;
+        return $retVal;
     }
 
     private static function handleRedundantCast(
