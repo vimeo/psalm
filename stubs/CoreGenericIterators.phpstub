@@ -342,7 +342,6 @@ abstract class FilterIterator extends IteratorIterator {
  * @template-covariant TKey
  * @template-covariant TValue
  * @template-covariant TIterator as Iterator<TKey, TValue>
- * @template TFlags of int-mask<1,2,4,8,16,256>
  *
  * @template-implements OuterIterator<TKey, TValue>
  * @template-implements ArrayAccess<TKey, TValue>
@@ -359,7 +358,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
 
     /**
      * @param TIterator $iterator
-     * @param TFlags $flags
+     * @param int-mask<1,2,4,8,16,256> $flags
      */
     public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {}
 
@@ -379,8 +378,6 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     public function key() {}
 
     /**
-     * @psalm-if-this-is self<mixed, mixed, 256>
-     *
      * @return array<array-key, TValue>
      */
     public function getCache() {}
@@ -807,19 +804,6 @@ class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator 
  * @template-extends CachingIterator<TKey, TValue, TIterator>
  */
 class RecursiveCachingIterator extends CachingIterator implements RecursiveIterator {
-
-    const CALL_TOSTRING = 1 ;
-    const CATCH_GET_CHILD = 16 ;
-    const TOSTRING_USE_KEY = 2 ;
-    const TOSTRING_USE_CURRENT = 4 ;
-    const TOSTRING_USE_INNER = 8 ;
-    const FULL_CACHE = 256 ;
-
-    /**
-     * @param TIterator $iterator
-     * @param int-mask-of<self::*> $flags
-     */
-    public function __construct(Iterator $iterator, int $flags = 0) {}
     /**
      * @return RecursiveCachingIterator<TKey,TValue, TIterator>
      */
@@ -829,18 +813,6 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
      * @return bool
      */
     public function hasChildren() {}
-
-    /**
-     * @return TValue|null current value or null when iterator is drained
-     * @psalm-ignore-nullable-return
-     */
-    public function current() {}
-
-    /**
-     * @return TKey|null current key or null when iterator is drained
-     * @psalm-ignore-nullable-return
-     */
-    public function key() {}
 }
 
 /**
