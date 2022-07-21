@@ -18,7 +18,6 @@ use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Tests\TestCase;
-use Psalm\Tests\TestConfig;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassConstant;
@@ -281,32 +280,5 @@ class ReconcilerTest extends TestCase
                 "'bar'|'baz'",
             ],
         ];
-    }
-
-    /**
-     * @test
-     */
-    public function arrayReferencesAreHandled(): void
-    {
-        $this->addFile(
-            'somefile.php',
-            <<< 'EOT'
-            <?php
-            $a = 'a';
-            $b = false;
-            $doesNotMatter = ['a' => ['id' => 1]];
-            $reference = &$doesNotMatter[$a];
-            $result = ($a === 'not-a' && ($b || false));
-            EOT
-        );
-
-        TestConfig::getInstance()->throw_exception = false;
-        $codebase = $this->project_analyzer->getCodebase();
-        $codebase->scanner->addFileToDeepScan('somefile.php');
-        $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
-        $codebase->scanFiles();
-        $this->file_analyzer->analyze($this->file_analyzer->context);
-        // just asserting this test reaches the end
-        self::assertTrue(true);
     }
 }

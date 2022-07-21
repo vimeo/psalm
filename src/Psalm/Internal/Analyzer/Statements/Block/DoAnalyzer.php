@@ -123,7 +123,7 @@ class DoAnalyzer
         if ($negated_while_types) {
             $changed_var_ids = [];
 
-            $inner_loop_context->vars_in_scope =
+            [$inner_loop_context->vars_in_scope, $inner_loop_context->references_in_scope] =
                 Reconciler::reconcileKeyedTypes(
                     $negated_while_types,
                     [],

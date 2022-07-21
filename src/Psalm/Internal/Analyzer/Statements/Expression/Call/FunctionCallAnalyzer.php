@@ -957,7 +957,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         if ($assert_type_assertions) {
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
-            $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
+            [$op_vars_in_scope, $op_references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $assert_type_assertions,
                 $assert_type_assertions,
                 $context->vars_in_scope,
@@ -1003,6 +1003,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             $context->vars_in_scope = $op_vars_in_scope;
+            $context->references_in_scope = $op_references_in_scope;
         }
 
         if ($changed_var_ids) {

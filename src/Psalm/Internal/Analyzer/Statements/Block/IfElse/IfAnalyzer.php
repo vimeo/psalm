@@ -93,28 +93,25 @@ class IfAnalyzer
         if ($reconcilable_if_types) {
             $changed_var_ids = [];
 
-            $if_vars_in_scope_reconciled =
-                Reconciler::reconcileKeyedTypes(
-                    $reconcilable_if_types,
-                    $active_if_types,
-                    $if_context->vars_in_scope,
-                    $if_context->references_in_scope,
-                    $changed_var_ids,
-                    $cond_referenced_var_ids,
-                    $statements_analyzer,
-                    $statements_analyzer->getTemplateTypeMap() ?: [],
-                    $if_context->inside_loop,
-                    $outer_context->check_variables
-                        ? new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
-                                ? $stmt->cond->expr
-                                : $stmt->cond,
-                            $outer_context->include_location
-                        ) : null
-                );
-
-            $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
+            [$if_context->vars_in_scope, $if_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
+                $reconcilable_if_types,
+                $active_if_types,
+                $if_context->vars_in_scope,
+                $if_context->references_in_scope,
+                $changed_var_ids,
+                $cond_referenced_var_ids,
+                $statements_analyzer,
+                $statements_analyzer->getTemplateTypeMap() ?: [],
+                $if_context->inside_loop,
+                $outer_context->check_variables
+                    ? new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
+                            ? $stmt->cond->expr
+                            : $stmt->cond,
+                        $outer_context->include_location
+                    ) : null
+            );
 
             foreach ($reconcilable_if_types as $var_id => $_) {
                 $if_context->vars_possibly_in_scope[$var_id] = true;

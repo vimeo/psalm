@@ -899,7 +899,7 @@ class CallAnalyzer
 
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
-            $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
+            [$op_vars_in_scope, $op_references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $type_assertions,
                 $type_assertions,
                 $context->vars_in_scope,
@@ -954,6 +954,7 @@ class CallAnalyzer
             }
 
             $context->vars_in_scope = $op_vars_in_scope;
+            $context->references_in_scope = $op_references_in_scope;
         }
     }
 

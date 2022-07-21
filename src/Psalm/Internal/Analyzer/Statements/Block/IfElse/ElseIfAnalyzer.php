@@ -215,7 +215,7 @@ class ElseIfAnalyzer
 
         // if the elseif has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_elseif_types) {
-            $elseif_vars_reconciled = Reconciler::reconcileKeyedTypes(
+            [$elseif_context->vars_in_scope, $elseif_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $reconcilable_elseif_types,
                 $active_elseif_types,
                 $elseif_context->vars_in_scope,
@@ -233,8 +233,6 @@ class ElseIfAnalyzer
                     $outer_context->include_location
                 )
             );
-
-            $elseif_context->vars_in_scope = $elseif_vars_reconciled;
 
             if ($newly_reconciled_var_ids) {
                 $elseif_context->clauses = Context::removeReconciledClauses(
@@ -349,21 +347,20 @@ class ElseIfAnalyzer
             if ($has_leaving_statements) {
                 $newly_reconciled_var_ids = [];
 
-                $leaving_vars_reconciled = Reconciler::reconcileKeyedTypes(
-                    $negated_elseif_types,
-                    [],
-                    $pre_conditional_context->vars_in_scope,
-                    $pre_conditional_context->references_in_scope,
-                    $newly_reconciled_var_ids,
-                    [],
-                    $statements_analyzer,
-                    $statements_analyzer->getTemplateTypeMap() ?: [],
-                    $elseif_context->inside_loop,
-                    new CodeLocation($statements_analyzer->getSource(), $elseif, $outer_context->include_location)
-                );
-
                 $implied_outer_context = clone $elseif_context;
-                $implied_outer_context->vars_in_scope = $leaving_vars_reconciled;
+                [$implied_outer_context->vars_in_scope, $implied_outer_context->references_in_scope] =
+                    Reconciler::reconcileKeyedTypes(
+                        $negated_elseif_types,
+                        [],
+                        $pre_conditional_context->vars_in_scope,
+                        $pre_conditional_context->references_in_scope,
+                        $newly_reconciled_var_ids,
+                        [],
+                        $statements_analyzer,
+                        $statements_analyzer->getTemplateTypeMap() ?: [],
+                        $elseif_context->inside_loop,
+                        new CodeLocation($statements_analyzer->getSource(), $elseif, $outer_context->include_location)
+                    );
 
                 $updated_vars = [];
 

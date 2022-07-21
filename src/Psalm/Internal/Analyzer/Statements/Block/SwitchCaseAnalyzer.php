@@ -400,7 +400,7 @@ class SwitchCaseAnalyzer
                 $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
             }
 
-            $case_vars_in_scope_reconciled =
+            [$case_vars_in_scope_reconciled, $case_references_in_scope_reconciled] =
                 Reconciler::reconcileKeyedTypes(
                     $reconcilable_if_types,
                     [],
@@ -427,6 +427,7 @@ class SwitchCaseAnalyzer
             }
 
             $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
+            $case_context->references_in_scope = $case_references_in_scope_reconciled;
             foreach ($reconcilable_if_types as $var_id => $_) {
                 $case_context->vars_possibly_in_scope[$var_id] = true;
             }

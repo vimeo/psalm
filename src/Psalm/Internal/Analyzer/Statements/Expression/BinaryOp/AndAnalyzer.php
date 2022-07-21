@@ -134,7 +134,7 @@ class AndAnalyzer
             $right_context = clone $context;
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
-            $right_vars_in_scope = Reconciler::reconcileKeyedTypes(
+            [$right_context->vars_in_scope, $right_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $left_type_assertions,
                 $active_left_assertions,
                 $right_context->vars_in_scope,
@@ -147,8 +147,6 @@ class AndAnalyzer
                 new CodeLocation($statements_analyzer->getSource(), $stmt->left),
                 $context->inside_negation
             );
-
-            $right_context->vars_in_scope = $right_vars_in_scope;
         } else {
             $right_context = clone $left_context;
         }
