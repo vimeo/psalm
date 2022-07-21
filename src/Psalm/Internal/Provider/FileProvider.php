@@ -31,7 +31,7 @@ class FileProvider
     protected static $open_files = [];
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<string, string>
      */
     protected $open_files_paths = [];
 
@@ -78,8 +78,8 @@ class FileProvider
 
     public function setOpenContents(string $file_path, ?string $file_contents = null): void
     {
-        if (isset($this->open_files[$file_path])) {
-            $this->open_files[$file_path] = $file_contents ?? $this->getContents($file_path, true);
+        if (isset(self::$open_files[$file_path])) {
+            self::$open_files[$file_path] = $file_contents ?? $this->getContents($file_path, true);
         }
     }
 
@@ -119,7 +119,7 @@ class FileProvider
 
     public function openFile(string $file_path): void
     {
-        $this->open_files[$file_path] = $this->getContents($file_path, true);
+        self::$open_files[$file_path] = $this->getContents($file_path, true);
         $this->open_files_paths[$file_path] = $file_path;
     }
 
@@ -132,7 +132,7 @@ class FileProvider
     {
         unset(
             $this->temp_files[$file_path],
-            $this->open_files[$file_path],
+            self::$open_files[$file_path],
             $this->open_files_paths[$file_path]
         );
     }

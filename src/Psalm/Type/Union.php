@@ -1328,7 +1328,7 @@ class Union implements TypeNode
     /**
      * @psalm-assert-if-true array<
      *     array-key,
-     *     TLiteralString|TLiteralInt|TLiteralFloat|TNonspecificLiteralString|TNonSpecificLiteralInt|TFalse|TTrue
+     *     TLiteralString|TLiteralInt|TLiteralFloat|TNonspecificLiteralString|TNonspecificLiteralInt|TFalse|TTrue
      * > $this->getAtomicTypes()
      */
     public function allLiterals(): bool
