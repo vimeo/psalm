@@ -17,6 +17,27 @@ class DateTimeZone
 }
 
 /**
+ * @psalm-immutable
+ *
+ * @template-covariant From of string|DateTimeInterface
+ * @implements IteratorAggregate<int, DateTimeInterface>
+ */
+class DatePeriod implements IteratorAggregate
+{
+    const EXCLUDE_START_DATE = 1;
+    /**
+     * @param From $from
+     * @param (From is string ? 0|self::EXCLUDE_START_DATE : DateInterval) $interval_or_options
+     * @param (From is string ? never : DateTimeInterface|positive-int) $end_or_recurrences
+     * @param (From is string ? never : 0|self::EXCLUDE_START_DATE) $options
+     */
+    public function __construct($from, $interval_or_options = 0, $end_or_recurrences = 1, $options = 0) {}
+
+    /** @psalm-return (From is string ? (Traversable<int, DateTime>&Iterator) : (Traversable<int, From>&Iterator)) */
+    public function getIterator(): Iterator {}
+}
+
+/**
  * @psalm-taint-specialize
  */
 interface Throwable

@@ -33,5 +33,35 @@ class CoreStubsTest extends TestCase
             'error_levels' => [],
             'php_version' => '8.0',
         ];
+        yield 'Iterating over \DatePeriod (#5954)' => [
+            '<?php
+
+            $period = new DatePeriod(
+                new DateTimeImmutable("now"),
+                DateInterval::createFromDateString("1 day"),
+                new DateTime("+1 week")
+            );
+            $dt = null;
+            foreach ($period as $dt) {
+                echo $dt->format("Y-m-d");
+            }',
+            'assertions' => [
+                '$period' => 'DatePeriod<DateTimeImmutable>',
+                '$dt' => 'DateTimeImmutable|null'
+            ],
+        ];
+        yield 'Iterating over \DatePeriod (#5954), ISO string' => [
+            '<?php
+
+            $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
+            $dt = null;
+            foreach ($period as $dt) {
+                echo $dt->format("Y-m-d");
+            }',
+            'assertions' => [
+                '$period' => 'DatePeriod<string>',
+                '$dt' => 'DateTime|null'
+            ],
+        ];
     }
 }
