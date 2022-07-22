@@ -6153,7 +6153,7 @@ return [
 'ini_get' => ['string|false', 'option'=>'string'],
 'ini_get_all' => ['array|false', 'extension='=>'?string', 'details='=>'bool'],
 'ini_restore' => ['void', 'option'=>'string'],
-'ini_set' => ['string|false', 'option'=>'string', 'value'=>'string'],
+'ini_set' => ['string|false', 'option'=>'string', 'value'=>'string|int|float|bool|null'],
 'inotify_add_watch' => ['int', 'inotify_instance'=>'resource', 'pathname'=>'string', 'mask'=>'int'],
 'inotify_init' => ['resource|false'],
 'inotify_queue_len' => ['int', 'inotify_instance'=>'resource'],
