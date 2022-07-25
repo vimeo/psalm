@@ -65,8 +65,6 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function array_values;
-use function assert;
-use function class_exists;
 use function count;
 use function end;
 use function in_array;
