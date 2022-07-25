@@ -7,6 +7,7 @@ use PhpParser\Node\Stmt;
 use Psalm\Config;
 use RuntimeException;
 
+use function clearstatcache;
 use function error_log;
 use function fclose;
 use function file_get_contents;
@@ -299,6 +300,13 @@ class ParserCacheProvider
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
+            return;
+        }
+
+        // directory was removed
+        // most likely due to a race condition with other psalm instances that were manually started at the same time
+        clearstatcache(true, $root_cache_directory);
+        if (!is_dir($root_cache_directory)) {
             return;
         }
 
