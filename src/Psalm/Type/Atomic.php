@@ -2,10 +2,12 @@
 
 namespace Psalm\Type;
 
+use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Type;
@@ -379,6 +381,41 @@ abstract class Atomic implements TypeNode
             || $this instanceof TList;
     }
 
+    /**
+     * @throws InvalidArgumentException if $this is not an iterable type.
+     */
+    public function getIterable(Codebase $codebase): TIterable
+    {
+        if ($this instanceof TIterable) {
+            return $this;
+        }
+        if ($this instanceof TArray) {
+            return new TIterable($this->type_params);
+        }
+        if ($this instanceof TList) {
+            return new TIterable([new Union([new TIntRange(0, null)]), $this->type_param]);
+        }
+        if ($this instanceof TKeyedArray) {
+            return new TIterable([$this->getGenericKeyType(), $this->getGenericValueType()]);
+        }
+        if ($this->hasTraversableInterface($codebase)) {
+            if (strtolower($this->value) === "traversable") {
+                if ($this instanceof TGenericObject) {
+                    return new TIterable($this->type_params);
+                }
+                return new TIterable([Type::getMixed(), Type::getMixed()]);
+            }
+
+            $implemented_traversable_templates = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
+                $codebase,
+                $this,
+                new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
+            );
+            return new TIterable($implemented_traversable_templates);
+        }
+        throw new InvalidArgumentException("{$this->getId()} is not an iterable");
+    }
+
     public function isCountable(Codebase $codebase): bool
     {
         return $this->hasCountableInterface($codebase)
@@ -387,6 +424,9 @@ abstract class Atomic implements TypeNode
             || $this instanceof TList;
     }
 
+    /**
+     * @psalm-assert-if-true TNamedObject $this
+     */
     public function hasTraversableInterface(Codebase $codebase): bool
     {
         return $this instanceof TNamedObject

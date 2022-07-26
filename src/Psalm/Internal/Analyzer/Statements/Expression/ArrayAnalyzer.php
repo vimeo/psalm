@@ -8,12 +8,15 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\Issue\InvalidArrayOffset;
+use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedArrayOffset;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
@@ -24,9 +27,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -62,7 +63,7 @@ class ArrayAnalyzer
         Context $context
     ): bool {
         // if the array is empty, this special type allows us to match any other array type against it
-        if (empty($stmt->items)) {
+        if (count($stmt->items) === 0) {
             $statements_analyzer->node_data->setType($stmt, Type::getEmptyArray());
 
             return true;
@@ -93,29 +94,7 @@ class ArrayAnalyzer
             );
         }
 
-        // if this array looks like an object-like array, let's return that instead
-        if ($array_creation_info->can_create_objectlike
-            && $array_creation_info->property_types
-        ) {
-            $object_like = new TKeyedArray(
-                $array_creation_info->property_types,
-                $array_creation_info->class_strings
-            );
-            $object_like->sealed = true;
-            $object_like->is_list = $array_creation_info->all_list;
-
-            $stmt_type = new Union([$object_like]);
-
-            if ($array_creation_info->parent_taint_nodes) {
-                $stmt_type->parent_nodes = $array_creation_info->parent_taint_nodes;
-            }
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
-            return true;
-        }
-
-        if ($array_creation_info->item_key_atomic_types) {
+        if (count($array_creation_info->item_key_atomic_types) !== 0) {
             $item_key_type = TypeCombiner::combine(
                 $array_creation_info->item_key_atomic_types,
                 $codebase,
@@ -127,7 +106,7 @@ class ArrayAnalyzer
             $item_key_type = null;
         }
 
-        if ($array_creation_info->item_value_atomic_types) {
+        if (count($array_creation_info->item_value_atomic_types) !== 0) {
             $item_value_type = TypeCombiner::combine(
                 $array_creation_info->item_value_atomic_types,
                 $codebase,
@@ -139,6 +118,28 @@ class ArrayAnalyzer
             $item_value_type = null;
         }
 
+        // if this array looks like an object-like array, let's return that instead
+        if (count($array_creation_info->property_types) !== 0) {
+            $atomic_type = new TKeyedArray($array_creation_info->property_types, $array_creation_info->class_strings);
+            if ($array_creation_info->can_create_objectlike) {
+                $atomic_type->sealed = true;
+            } else {
+                $atomic_type->previous_key_type = $item_key_type ?? Type::getArrayKey();
+                $atomic_type->previous_value_type = $item_value_type ?? Type::getMixed();
+            }
+            $atomic_type->is_list = $array_creation_info->all_list;
+
+            $stmt_type = new Union([$atomic_type]);
+
+            if ($array_creation_info->parent_taint_nodes) {
+                $stmt_type->parent_nodes = $array_creation_info->parent_taint_nodes;
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+            return true;
+        }
+
         if ($item_key_type === null && $item_value_type === null) {
             $statements_analyzer->node_data->setType($stmt, Type::getEmptyArray());
 
@@ -146,12 +147,10 @@ class ArrayAnalyzer
         }
 
         if ($array_creation_info->all_list) {
-            if (empty($array_creation_info->item_key_atomic_types)) {
+            if ($array_creation_info->can_be_empty) {
                 $array_type = new TList($item_value_type ?? Type::getMixed());
             } else {
                 $array_type = new TNonEmptyList($item_value_type ?? Type::getMixed());
-                /** @psalm-suppress InvalidPropertyAssignmentValue */
-                $array_type->count = count($array_creation_info->property_types);
             }
 
             $stmt_type = new Union([
@@ -233,13 +232,11 @@ class ArrayAnalyzer
             }
         }
 
-        $array_type = new TNonEmptyArray([
+        $array_args = [
             $item_key_type && !$item_key_type->hasMixed() ? $item_key_type : Type::getArrayKey(),
             $item_value_type ?? Type::getMixed(),
-        ]);
-
-        /** @psalm-suppress InvalidPropertyAssignmentValue */
-        $array_type->count = count($array_creation_info->property_types);
+        ];
+        $array_type = $array_creation_info->can_be_empty ? new TArray($array_args) : new TNonEmptyArray($array_args);
 
         $stmt_type = new Union([
             $array_type,
@@ -311,6 +308,8 @@ class ArrayAnalyzer
         $item_key_type = null;
         $item_is_list_item = false;
 
+        $array_creation_info->can_be_empty = false;
+
         if ($item->key) {
             $was_inside_general_use = $context->inside_general_use;
             $context->inside_general_use = true;
@@ -338,11 +337,6 @@ class ArrayAnalyzer
                     $key_type = Type::getInt(false, (int) $item->key->value);
                 }
 
-                $array_creation_info->item_key_atomic_types = array_merge(
-                    $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes())
-                );
-
                 if ($key_type->isSingleStringLiteral()) {
                     $item_key_literal_type = $key_type->getSingleStringLiteral();
                     $item_key_value = $item_key_literal_type->value;
@@ -360,11 +354,15 @@ class ArrayAnalyzer
                         $array_creation_info->int_offset = $item_key_value + 1;
                     }
                 }
+            } else {
+                $key_type = Type::getArrayKey();
             }
         } else {
             $item_is_list_item = true;
             $item_key_value = $array_creation_info->int_offset++;
-            $array_creation_info->item_key_atomic_types[] = new TLiteralInt($item_key_value);
+            $key_atomic_type = new TLiteralInt($item_key_value);
+            $array_creation_info->item_key_atomic_types[] = $key_atomic_type;
+            $key_type = new Union([$key_atomic_type]);
         }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
@@ -493,21 +491,27 @@ class ArrayAnalyzer
                 $array_creation_info->property_types[$item_key_value] = $item_value_type;
             } else {
                 $array_creation_info->can_create_objectlike = false;
+                $array_creation_info->item_key_atomic_types = array_merge(
+                    $array_creation_info->item_key_atomic_types,
+                    array_values($key_type->getAtomicTypes())
+                );
+                $array_creation_info->item_value_atomic_types = array_merge(
+                    $array_creation_info->item_value_atomic_types,
+                    array_values($item_value_type->getAtomicTypes())
+                );
             }
-
-            $array_creation_info->item_value_atomic_types = array_merge(
-                $array_creation_info->item_value_atomic_types,
-                array_values($item_value_type->getAtomicTypes())
-            );
         } else {
-            $array_creation_info->item_value_atomic_types[] = new TMixed();
-
             if ($item_key_value !== null
                 && count($array_creation_info->property_types) <= $config->max_shaped_array_size
             ) {
                 $array_creation_info->property_types[$item_key_value] = Type::getMixed();
             } else {
                 $array_creation_info->can_create_objectlike = false;
+                $array_creation_info->item_key_atomic_types = array_merge(
+                    $array_creation_info->item_key_atomic_types,
+                    array_values($key_type->getAtomicTypes())
+                );
+                $array_creation_info->item_value_atomic_types[] = new TMixed();
             }
         }
     }
@@ -519,6 +523,8 @@ class ArrayAnalyzer
         Union $unpacked_array_type,
         Codebase $codebase
     ): void {
+        $all_non_empty = true;
+
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
@@ -532,79 +538,109 @@ class ArrayAnalyzer
                                 $statements_analyzer->getSuppressedIssues()
                             );
 
-                            return;
+                            continue 2;
                         }
                         $new_offset = $key;
                         $array_creation_info->item_key_atomic_types[] = new TLiteralString($new_offset);
+                        $array_creation_info->all_list = false;
                     } else {
                         $new_offset = $array_creation_info->int_offset++;
                         $array_creation_info->item_key_atomic_types[] = new TLiteralInt($new_offset);
                     }
 
-                    $array_creation_info->item_value_atomic_types = array_merge(
-                        $array_creation_info->item_value_atomic_types,
-                        array_values($property_value->getAtomicTypes())
-                    );
-
                     $array_creation_info->array_keys[$new_offset] = true;
                     $array_creation_info->property_types[$new_offset] = $property_value;
+                }
+
+                if (!$unpacked_atomic_type->isNonEmpty()) {
+                    $all_non_empty = false;
                 }
             } else {
                 $codebase = $statements_analyzer->getCodebase();
 
-                if ($unpacked_atomic_type instanceof TArray
-                    || $unpacked_atomic_type instanceof TIterable
-                    || (
-                        $unpacked_atomic_type instanceof TGenericObject
-                        && $unpacked_atomic_type->hasTraversableInterface($codebase)
-                        && count($unpacked_atomic_type->type_params) === 2
-                )) {
-                    /** @psalm-suppress PossiblyUndefinedArrayOffset provably true, but Psalm can’t see it */
-                    if ($unpacked_atomic_type->type_params[1]->isNever()) {
-                        continue;
-                    }
-                    $array_creation_info->can_create_objectlike = false;
-
-                    if ($unpacked_atomic_type->type_params[0]->hasString()) {
-                        if ($codebase->analysis_php_version_id <= 8_00_00) {
-                            IssueBuffer::maybeAdd(
-                                new DuplicateArrayKey(
-                                    'String keys are not supported in unpacked arrays',
-                                    new CodeLocation($statements_analyzer->getSource(), $item->value)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            );
-
-                            return;
-                        }
-
-                        $array_creation_info->item_key_atomic_types[] = new TString();
-                    } elseif ($unpacked_atomic_type->type_params[0]->hasInt()) {
-                        $array_creation_info->item_key_atomic_types[] = new TInt();
-                    }
-
-                    $array_creation_info->item_value_atomic_types = array_merge(
-                        $array_creation_info->item_value_atomic_types,
-                        array_values(
-                            isset($unpacked_atomic_type->type_params[1])
-                                ? $unpacked_atomic_type->type_params[1]->getAtomicTypes()
-                                : [new TMixed()]
-                        )
-                    );
-                } elseif ($unpacked_atomic_type instanceof TList) {
-                    if ($unpacked_atomic_type->type_param->isNever()) {
-                        continue;
-                    }
-                    $array_creation_info->can_create_objectlike = false;
-
-                    $array_creation_info->item_key_atomic_types[] = new TInt();
-
-                    $array_creation_info->item_value_atomic_types = array_merge(
-                        $array_creation_info->item_value_atomic_types,
-                        array_values($unpacked_atomic_type->type_param->getAtomicTypes())
-                    );
+                if (!$unpacked_atomic_type instanceof TNonEmptyList
+                    && !$unpacked_atomic_type instanceof TNonEmptyArray
+                ) {
+                    $all_non_empty = false;
                 }
+
+                if (!$unpacked_atomic_type->isIterable($codebase)) {
+                    $array_creation_info->can_create_objectlike = false;
+                    $array_creation_info->item_key_atomic_types[] = new TArrayKey();
+                    $array_creation_info->item_value_atomic_types[] = new TMixed();
+                    IssueBuffer::maybeAdd(
+                        new InvalidOperand(
+                            "Cannot use spread operator on non-iterable type {$unpacked_array_type->getId()}",
+                            new CodeLocation($statements_analyzer->getSource(), $item->value),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                    continue;
+                }
+
+                $iterable_type = $unpacked_atomic_type->getIterable($codebase);
+
+                if ($iterable_type->type_params[0]->isNever()) {
+                    continue;
+                }
+
+                $array_creation_info->can_create_objectlike = false;
+
+                if (!UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $iterable_type->type_params[0],
+                    Type::getArrayKey(),
+                )) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidOperand(
+                            "Cannot use spread operator on iterable with key type "
+                                . $iterable_type->type_params[0]->getId(),
+                            new CodeLocation($statements_analyzer->getSource(), $item->value),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                    continue;
+                }
+
+                if ($iterable_type->type_params[0]->hasString()) {
+                    if ($codebase->analysis_php_version_id <= 8_00_00) {
+                        IssueBuffer::maybeAdd(
+                            new DuplicateArrayKey(
+                                'String keys are not supported in unpacked arrays',
+                                new CodeLocation($statements_analyzer->getSource(), $item->value)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        );
+
+                        continue;
+                    }
+                    $array_creation_info->all_list = false;
+                }
+
+                // Unpacked array might overwrite known properties, so values are merged when the keys intersect.
+                foreach ($array_creation_info->property_types as $prop_key_val => $prop_val) {
+                    $prop_key = new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($prop_key_val)]);
+                    // Since $prop_key is a single literal type, the types intersect iff $prop_key is contained by the
+                    // template type (ie $prop_key cannot overlap with the template type without being contained by it).
+                    if (UnionTypeComparator::isContainedBy($codebase, $prop_key, $iterable_type->type_params[0])) {
+                        $new_prop_val = Type::combineUnionTypes($prop_val, $iterable_type->type_params[1]);
+                        $array_creation_info->property_types[$prop_key_val] = $new_prop_val;
+                    }
+                }
+
+                $array_creation_info->item_key_atomic_types = array_merge(
+                    $array_creation_info->item_key_atomic_types,
+                    array_values($iterable_type->type_params[0]->getAtomicTypes())
+                );
+                $array_creation_info->item_value_atomic_types = array_merge(
+                    $array_creation_info->item_value_atomic_types,
+                    array_values($iterable_type->type_params[1]->getAtomicTypes())
+                );
             }
+        }
+
+        if ($all_non_empty) {
+            $array_creation_info->can_be_empty = false;
         }
     }
 }
