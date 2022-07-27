@@ -1268,6 +1268,9 @@ final class Union implements TypeNode
         return true;
     }
 
+    /**
+     * @psalm-suppress PossiblyUnusedMethod Public API
+     */
     public function allFloatLiterals(): bool
     {
         foreach ($this->types as $atomic_key_type) {

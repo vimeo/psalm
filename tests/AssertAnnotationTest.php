@@ -2061,7 +2061,7 @@ class AssertAnnotationTest extends TestCase
                      * @template T
                      * @param mixed $input
                      * @param array<array-key,T> $values
-                     * @psalm-assert T $input
+                     * @psalm-assert =T $input
                      */
                     function assertOneOf($input, array $values): void {}
 
