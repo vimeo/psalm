@@ -213,6 +213,13 @@ class TypeParseTest extends TestCase
         $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a?: int}'));
     }
 
+
+    public function testIntersectionOfIntranges(): void
+    {
+        $this->assertSame('array{a: int<3, 4>}', (string) Type::parseString('array{a: int<2, 4>}&array{a: int<3, 6>}'));
+        $this->assertSame('array{a: 4}', Type::parseString('array{a: 4}&array{a: int<3, 6>}')->getId(true));
+    }
+
     public function testIntersectionOfTKeyedArrayWithConflictingProperties(): void
     {
         $this->expectException(TypeParseTreeException::class);

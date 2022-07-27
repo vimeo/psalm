@@ -697,8 +697,13 @@ abstract class Type
                 TIntRange::convertToIntRange($type_1_atomic),
                 TIntRange::convertToIntRange($type_2_atomic)
             );
-            if ($intersection_atomic) {
+            if ($intersection_atomic
+                && ($intersection_atomic->min_bound !== null || $intersection_atomic->max_bound !== null)
+            ) {
                 $intersection_performed = true;
+                if ($intersection_atomic->min_bound === $intersection_atomic->max_bound) {
+                    return new TLiteralInt($intersection_atomic->min_bound);
+                }
                 return $intersection_atomic;
             }
         }
