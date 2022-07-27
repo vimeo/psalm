@@ -692,13 +692,15 @@ abstract class Type
                 $intersection_performed = true;
             }
         }
-        if ($type_1_atomic instanceof TIntRange && $type_2_atomic instanceof TIntRange) {
+        if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt) {
             $intersection_atomic = TIntRange::intersectIntRanges(
-                $type_1_atomic,
-                $type_2_atomic
+                TIntRange::convertToIntRange($type_1_atomic),
+                TIntRange::convertToIntRange($type_2_atomic)
             );
-            $intersection_performed = true;
-            return $intersection_atomic;
+            if ($intersection_atomic) {
+                $intersection_performed = true;
+                return $intersection_atomic;
+            }
         }
 
         if (null === $intersection_atomic) {
@@ -731,6 +733,7 @@ abstract class Type
         if (self::mayHaveIntersection($type_1_atomic, $codebase)
             && self::mayHaveIntersection($type_2_atomic, $codebase)
         ) {
+            /** @psalm-suppress TypeDoesNotContainType */
             if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
                 $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
                 $second = $codebase->classlike_storage_provider->get($type_2_atomic->value);
