@@ -693,18 +693,18 @@ abstract class Type
             }
         }
         if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt) {
-            $intersection_atomic = TIntRange::intersectIntRanges(
+            $int_intersection = TIntRange::intersectIntRanges(
                 TIntRange::convertToIntRange($type_1_atomic),
                 TIntRange::convertToIntRange($type_2_atomic)
             );
-            if ($intersection_atomic
-                && ($intersection_atomic->min_bound !== null || $intersection_atomic->max_bound !== null)
+            if ($int_intersection
+                && ($int_intersection->min_bound !== null || $int_intersection->max_bound !== null)
             ) {
                 $intersection_performed = true;
-                if ($intersection_atomic->min_bound === $intersection_atomic->max_bound) {
-                    return new TLiteralInt($intersection_atomic->min_bound);
+                if ($int_intersection->min_bound === $int_intersection->max_bound) {
+                    return new TLiteralInt($int_intersection->min_bound);
                 }
-                return $intersection_atomic;
+                return $int_intersection;
             }
         }
 
