@@ -783,7 +783,8 @@ class CallAnalyzer
                                 if ($intersection === null) {
                                     IssueBuffer::maybeAdd(
                                         new TypeDoesNotContainType(
-                                            $asserted_type->getId() . ' is not contained by ' . $assertion_type->getId(),
+                                            $asserted_type->getId() . ' is not contained by '
+                                            . $assertion_type->getId(),
                                             new CodeLocation($statements_analyzer->getSource(), $expr),
                                             $asserted_type->getId() . ' ' . $assertion_type->getId()
                                         ),
@@ -812,7 +813,8 @@ class CallAnalyzer
                                 )) {
                                     IssueBuffer::maybeAdd(
                                         new TypeDoesNotContainType(
-                                            $asserted_type->getId() . ' is not contained by ' . $assertion_type->getId(),
+                                            $asserted_type->getId() . ' is not contained by '
+                                            . $assertion_type->getId(),
                                             new CodeLocation($statements_analyzer->getSource(), $expr),
                                             $asserted_type->getId() . ' ' . $assertion_type->getId()
                                         ),
