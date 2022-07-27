@@ -731,6 +731,15 @@ abstract class Type
         if (self::mayHaveIntersection($type_1_atomic, $codebase)
             && self::mayHaveIntersection($type_2_atomic, $codebase)
         ) {
+            if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
+                $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
+                $second = $codebase->classlike_storage_provider->get($type_2_atomic->value);
+                $first_is_class = !$first->is_interface && !$first->is_trait;
+                $second_is_class = !$second->is_interface && !$second->is_trait;
+                if ($first_is_class && $second_is_class) {
+                    return $intersection_atomic;
+                }
+            }
             if ($intersection_atomic === null && $wider_type === null) {
                 $intersection_atomic = clone $type_1_atomic;
                 $wider_type = $type_2_atomic;
