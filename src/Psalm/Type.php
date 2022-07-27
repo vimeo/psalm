@@ -787,7 +787,7 @@ abstract class Type
     /**
      * @psalm-assert-if-true TIterable|TNamedObject|TTemplateParam|TObjectWithProperties $type
      */
-    public static function mayHaveIntersection(Atomic $type, Codebase $codebase): bool
+    private static function mayHaveIntersection(Atomic $type, Codebase $codebase): bool
     {
         if ($type instanceof TIterable
             || $type instanceof TTemplateParam
