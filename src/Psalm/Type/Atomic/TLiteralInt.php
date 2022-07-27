@@ -2,10 +2,6 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-
-use function get_class;
-
 /**
  * Denotes an integer value where the exact numeric value is known.
  */

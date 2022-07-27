@@ -2,10 +2,7 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-
 use function addcslashes;
-use function get_class;
 use function mb_strlen;
 use function mb_substr;
 
