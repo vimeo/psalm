@@ -795,15 +795,7 @@ class CallAnalyzer
                                     continue;
                                 }
                                 foreach ($intersection->getAtomicTypes() as $atomic_type) {
-                                    if ($assertion_type_atomic instanceof TTemplateParam
-                                        && $assertion_type_atomic->as->getId() === $atomic_type->getId()
-                                    ) {
-                                        continue;
-                                    }
-
-                                    $assertion_rule = clone $assertion_rule;
-                                    $assertion_rule->setAtomicType($atomic_type);
-                                    $orred_rules[] = $assertion_rule;
+                                    $orred_rules[] = new IsIdentical($atomic_type);
                                 }
                             } elseif ($assertion_rule instanceof IsType) {
                                 if (!UnionTypeComparator::canExpressionTypesBeIdentical(
