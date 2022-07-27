@@ -45,13 +45,4 @@ final class TLiteralFloat extends TFloat
     ): string {
         return 'float';
     }
-
-    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
-    {
-        if (get_class($other_type) !== static::class) {
-            return false;
-        }
-
-        return $this->value === $other_type->value;
-    }
 }

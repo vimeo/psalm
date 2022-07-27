@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Node\Expr\BinaryOp\NotIdentical;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use Psalm\CodeLocation;
@@ -37,6 +38,7 @@ use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\VirtualName;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
@@ -56,6 +58,7 @@ use function array_merge;
 use function array_unique;
 use function count;
 use function explode;
+use function get_class;
 use function implode;
 use function in_array;
 use function is_int;
@@ -753,20 +756,20 @@ class CallAnalyzer
                 $orred_rules = [];
 
                 foreach ($var_possibilities->rule as $assertion_rule) {
-                    $assertion_type = $assertion_rule->getAtomicType();
+                    $assertion_type_atomic = $assertion_rule->getAtomicType();
 
-                    if ($assertion_type) {
-                        $union = new Union([clone $assertion_type]);
+                    if ($assertion_type_atomic) {
+                        $assertion_type = new Union([clone $assertion_type_atomic]);
                         TemplateInferredTypeReplacer::replace(
-                            $union,
+                            $assertion_type,
                             $template_result,
                             $codebase
                         );
 
-                        if ($union->isSingle()) {
-                            foreach ($union->getAtomicTypes() as $atomic_type) {
-                                if ($assertion_type instanceof TTemplateParam
-                                    && $assertion_type->as->getId() === $atomic_type->getId()
+                        if (count($assertion_type->getAtomicTypes()) === 1) {
+                            foreach ($assertion_type->getAtomicTypes() as $atomic_type) {
+                                if ($assertion_type_atomic instanceof TTemplateParam
+                                    && $assertion_type_atomic->as->getId() === $atomic_type->getId()
                                 ) {
                                     continue;
                                 }
@@ -775,35 +778,25 @@ class CallAnalyzer
                                 $assertion_rule->setAtomicType($atomic_type);
                                 $orred_rules[] = $assertion_rule;
                             }
-                        } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
-                            $other_type = $context->vars_in_scope[$var_possibilities->var_id];
+                        } elseif (isset($context->vars_in_scope[$assertion_var_id])) {
+                            if ($assertion_rule instanceof IsIdentical) {
+                                $asserted_type = $context->vars_in_scope[$assertion_var_id];
+                                $intersection = Type::intersectUnionTypes($assertion_type, $asserted_type, $codebase);
 
-                            if ($assertion_rule instanceof IsIdentical
-                                || $assertion_rule instanceof IsType
-                            ) {
-                                if (!UnionTypeComparator::canExpressionTypesBeIdentical(
-                                    $codebase,
-                                    $union,
-                                    $context->vars_in_scope[$var_possibilities->var_id]
-                                )) {
+                                if ($intersection === null) {
                                     IssueBuffer::maybeAdd(
                                         new TypeDoesNotContainType(
-                                            $union->getId() . ' cannot be identical to ' . $other_type->getId(),
+                                            $asserted_type->getId() . ' is not contained by ' . $assertion_type->getId(),
                                             new CodeLocation($statements_analyzer->getSource(), $expr),
-                                            $union->getId() . ' ' . $other_type->getId()
+                                            $asserted_type->getId() . ' ' . $assertion_type->getId()
                                         ),
                                         $statements_analyzer->getSuppressedIssues()
                                     );
+                                    $intersection = Type::getNever();
                                 }
-                            }
-                        } elseif (isset($context->vars_in_scope[$assertion_var_id])) {
-                            $other_type = $context->vars_in_scope[$assertion_var_id];
-                            $union = self::createUnionIntersectionFromOldType($union, $other_type);
-
-                            if ($union !== null) {
-                                foreach ($union->getAtomicTypes() as $atomic_type) {
-                                    if ($assertion_type instanceof TTemplateParam
-                                        && $assertion_type->as->getId() === $atomic_type->getId()
+                                foreach ($intersection->getAtomicTypes() as $atomic_type) {
+                                    if ($assertion_type_atomic instanceof TTemplateParam
+                                        && $assertion_type_atomic->as->getId() === $atomic_type->getId()
                                     ) {
                                         continue;
                                     }
@@ -812,6 +805,14 @@ class CallAnalyzer
                                     $assertion_rule->setAtomicType($atomic_type);
                                     $orred_rules[] = $assertion_rule;
                                 }
+                            } else {
+                                IssueBuffer::maybeAdd(
+                                    new InvalidArgument(
+                                        "Cannot use ".get_class($assertion_rule)." assertion with assertion union type ".$assertion_type->getId(true).", try inverting the assertion and asserted types",
+                                        new CodeLocation($statements_analyzer->getSource(), $expr),
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                );
                             }
                         }
                     } else {
