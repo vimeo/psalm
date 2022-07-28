@@ -21,6 +21,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     $dummy = ["test" => 123];
 
+                    /** @var array{test: ?string} */
                     $a = ["test" => null];
 
                     if ($a["test"] === null) {
