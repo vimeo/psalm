@@ -2,10 +2,6 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-
-use function get_class;
-
 /**
  * Denotes an integer value where the exact numeric value is known.
  */
@@ -49,20 +45,5 @@ final class TLiteralInt extends TInt
         bool $use_phpdoc_format
     ): string {
         return $use_phpdoc_format ? 'int' : (string) $this->value;
-    }
-
-    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
-    {
-        if (get_class($other_type) !== static::class) {
-            return false;
-        }
-
-        if (($this->from_docblock && $ensure_source_equality)
-            || ($other_type->from_docblock && $ensure_source_equality)
-        ) {
-            return false;
-        }
-
-        return $this->value === $other_type->value;
     }
 }

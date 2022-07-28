@@ -19,6 +19,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -691,6 +692,23 @@ abstract class Type
                 $intersection_performed = true;
             }
         }
+        if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt) {
+            $int_intersection = TIntRange::intersectIntRanges(
+                TIntRange::convertToIntRange($type_1_atomic),
+                TIntRange::convertToIntRange($type_2_atomic)
+            );
+            if ($int_intersection
+                && ($int_intersection->min_bound !== null || $int_intersection->max_bound !== null)
+            ) {
+                $intersection_performed = true;
+                if ($int_intersection->min_bound !== null
+                    && $int_intersection->min_bound === $int_intersection->max_bound
+                ) {
+                    return new TLiteralInt($int_intersection->min_bound);
+                }
+                return $int_intersection;
+            }
+        }
 
         if (null === $intersection_atomic) {
             if (AtomicTypeComparator::isContainedBy(
@@ -719,9 +737,19 @@ abstract class Type
             }
         }
 
-        if (static::mayHaveIntersection($type_1_atomic)
-            && static::mayHaveIntersection($type_2_atomic)
+        if (self::mayHaveIntersection($type_1_atomic, $codebase)
+            && self::mayHaveIntersection($type_2_atomic, $codebase)
         ) {
+            /** @psalm-suppress TypeDoesNotContainType */
+            if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
+                $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
+                $second = $codebase->classlike_storage_provider->get($type_2_atomic->value);
+                $first_is_class = !$first->is_interface && !$first->is_trait;
+                $second_is_class = !$second->is_interface && !$second->is_trait;
+                if ($first_is_class && $second_is_class) {
+                    return $intersection_atomic;
+                }
+            }
             if ($intersection_atomic === null && $wider_type === null) {
                 $intersection_atomic = clone $type_1_atomic;
                 $wider_type = $type_2_atomic;
@@ -733,8 +761,8 @@ abstract class Type
                     .' Did you forget to assign one of the variables?'
                 );
             }
-            if (!static::mayHaveIntersection($intersection_atomic)
-                || !static::mayHaveIntersection($wider_type)
+            if (!self::mayHaveIntersection($intersection_atomic, $codebase)
+                || !self::mayHaveIntersection($wider_type, $codebase)
             ) {
                 throw new LogicException(
                     '$intersection_atomic and $wider_type should be both support intersection.'
@@ -769,12 +797,19 @@ abstract class Type
     /**
      * @psalm-assert-if-true TIterable|TNamedObject|TTemplateParam|TObjectWithProperties $type
      */
-    private static function mayHaveIntersection(Atomic $type): bool
+    private static function mayHaveIntersection(Atomic $type, Codebase $codebase): bool
     {
-        return $type instanceof TIterable
-            || $type instanceof TNamedObject
+        if ($type instanceof TIterable
             || $type instanceof TTemplateParam
-            || $type instanceof TObjectWithProperties;
+            || $type instanceof TObjectWithProperties
+        ) {
+            return true;
+        }
+        if (!$type instanceof TNamedObject) {
+            return false;
+        }
+        $storage = $codebase->classlike_storage_provider->get($type->value);
+        return !$storage->final;
     }
 
     private static function hasIntersection(Atomic $type): bool

@@ -167,7 +167,7 @@ class FunctionTemplateAssertTest extends TestCase
                      *
                      * @param mixed $value
                      * @param class-string<T> $type
-                     * 
+                     *
                      * @psalm-assert T $value
                      */
                     function assertInstanceOf($value, string $type): void {
@@ -1089,6 +1089,23 @@ class FunctionTemplateAssertTest extends TestCase
                     assertEqual($c, $d);',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'assertTemplateUnionParadox' => [
+                'code' => '<?php
+                    /**
+                     * Asserts that two variables are not the same.
+                     *
+                     * @template T
+                     * @param T      $expected
+                     * @param mixed  $actual
+                     * @psalm-assert T $actual
+                     */
+                    function assertSame($expected, $actual) : void {}
+
+                    $expected = rand(0, 1) ? 4 : 5;
+                    $actual = 6;
+                    assertSame($expected, $actual);',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'assertNotSameDifferentTypes' => [
                 'code' => '<?php
                     /**
@@ -1105,6 +1122,27 @@ class FunctionTemplateAssertTest extends TestCase
                         assertNotSame($i, $j);
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'assertNotSameClasses' => [
+                'code' => '<?php
+                    /**
+                     * Asserts that two variables are the same.
+                     *
+                     * @template T
+                     * @param T      $expected
+                     * @param mixed  $actual
+                     * @psalm-assert =T $actual
+                     */
+                    function assertSame($expected, $actual) : void {}
+
+                    class a {}
+                    class b {}
+                    final class c {}
+
+                    $expected = rand(0, 1) ? new a : new b;
+                    $actual = new c;
+                    assertSame($expected, $actual);',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'assertNotSameDifferentTypesExplicitString' => [
                 'code' => '<?php

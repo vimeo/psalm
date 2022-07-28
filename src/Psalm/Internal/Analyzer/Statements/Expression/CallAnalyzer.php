@@ -753,20 +753,20 @@ class CallAnalyzer
                 $orred_rules = [];
 
                 foreach ($var_possibilities->rule as $assertion_rule) {
-                    $assertion_type = $assertion_rule->getAtomicType();
+                    $assertion_type_atomic = $assertion_rule->getAtomicType();
 
-                    if ($assertion_type) {
-                        $union = new Union([clone $assertion_type]);
+                    if ($assertion_type_atomic) {
+                        $assertion_type = new Union([clone $assertion_type_atomic]);
                         TemplateInferredTypeReplacer::replace(
-                            $union,
+                            $assertion_type,
                             $template_result,
                             $codebase
                         );
 
-                        if ($union->isSingle()) {
-                            foreach ($union->getAtomicTypes() as $atomic_type) {
-                                if ($assertion_type instanceof TTemplateParam
-                                    && $assertion_type->as->getId() === $atomic_type->getId()
+                        if (count($assertion_type->getAtomicTypes()) === 1) {
+                            foreach ($assertion_type->getAtomicTypes() as $atomic_type) {
+                                if ($assertion_type_atomic instanceof TTemplateParam
+                                    && $assertion_type_atomic->as->getId() === $atomic_type->getId()
                                 ) {
                                     continue;
                                 }
@@ -775,43 +775,46 @@ class CallAnalyzer
                                 $assertion_rule->setAtomicType($atomic_type);
                                 $orred_rules[] = $assertion_rule;
                             }
-                        } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
-                            $other_type = $context->vars_in_scope[$var_possibilities->var_id];
+                        } elseif (isset($context->vars_in_scope[$assertion_var_id])) {
+                            $asserted_type = $context->vars_in_scope[$assertion_var_id];
+                            if ($assertion_rule instanceof IsIdentical) {
+                                $intersection = Type::intersectUnionTypes($assertion_type, $asserted_type, $codebase);
 
-                            if ($assertion_rule instanceof IsIdentical
-                                || $assertion_rule instanceof IsType
-                            ) {
+                                if ($intersection === null) {
+                                    IssueBuffer::maybeAdd(
+                                        new TypeDoesNotContainType(
+                                            $asserted_type->getId() . ' is not contained by '
+                                            . $assertion_type->getId(),
+                                            new CodeLocation($statements_analyzer->getSource(), $expr),
+                                            $asserted_type->getId() . ' ' . $assertion_type->getId()
+                                        ),
+                                        $statements_analyzer->getSuppressedIssues()
+                                    );
+                                    $intersection = Type::getNever();
+                                } elseif ($intersection->getId(true) === $asserted_type->getId(true)) {
+                                    continue;
+                                }
+                                foreach ($intersection->getAtomicTypes() as $atomic_type) {
+                                    $orred_rules[] = new IsIdentical($atomic_type);
+                                }
+                            } elseif ($assertion_rule instanceof IsType) {
                                 if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                                     $codebase,
-                                    $union,
-                                    $context->vars_in_scope[$var_possibilities->var_id]
+                                    $assertion_type,
+                                    $asserted_type
                                 )) {
                                     IssueBuffer::maybeAdd(
                                         new TypeDoesNotContainType(
-                                            $union->getId() . ' cannot be identical to ' . $other_type->getId(),
+                                            $asserted_type->getId() . ' is not contained by '
+                                            . $assertion_type->getId(),
                                             new CodeLocation($statements_analyzer->getSource(), $expr),
-                                            $union->getId() . ' ' . $other_type->getId()
+                                            $asserted_type->getId() . ' ' . $assertion_type->getId()
                                         ),
                                         $statements_analyzer->getSuppressedIssues()
                                     );
                                 }
-                            }
-                        } elseif (isset($context->vars_in_scope[$assertion_var_id])) {
-                            $other_type = $context->vars_in_scope[$assertion_var_id];
-                            $union = self::createUnionIntersectionFromOldType($union, $other_type);
-
-                            if ($union !== null) {
-                                foreach ($union->getAtomicTypes() as $atomic_type) {
-                                    if ($assertion_type instanceof TTemplateParam
-                                        && $assertion_type->as->getId() === $atomic_type->getId()
-                                    ) {
-                                        continue;
-                                    }
-
-                                    $assertion_rule = clone $assertion_rule;
-                                    $assertion_rule->setAtomicType($atomic_type);
-                                    $orred_rules[] = $assertion_rule;
-                                }
+                            } else {
+                                // Ignore negations and loose assertions with union types
                             }
                         }
                     } else {
@@ -1134,83 +1137,5 @@ class CallAnalyzer
                 }
             }
         }
-    }
-
-    /**
-     * This method should detect if the new type narrows down the old type.
-     */
-    private static function isNewTypeNarrowingDownOldType(Union $old_type, Union $new_type): bool
-    {
-        if ($new_type->isSingle()) {
-            return true;
-        }
-
-        // non-mixed is always better than mixed
-        if ($old_type->isMixed() && !$new_type->hasMixed()) {
-            return true;
-        }
-
-        // non-nullable is always better than nullable
-        if ($old_type->isNullable() && !$new_type->isNullable()) {
-            return true;
-        }
-
-        // Do not hassle around with non-single old types if they are not nullable
-        if (!$old_type->isSingle()) {
-            return false;
-        }
-
-        // Do not hassle around with single literals as they supposed to be more accurate than any new type assertion
-        if ($old_type->isSingleFloatLiteral()
-            || $old_type->isSingleIntLiteral()
-            || $old_type->isSingleStringLiteral()
-        ) {
-            return false;
-        }
-
-        // Literals should always replace non-literals
-        if (($old_type->isString() && $new_type->allStringLiterals())
-            || ($old_type->isInt() && $new_type->allIntLiterals())
-            || ($old_type->isFloat() && $new_type->allFloatLiterals())
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * This method should kick all literals within `new_type` which are not part of the already known `old_type`.
-     * So lets say we already know that the old type is one of "a", "b" or "c".
-     * If another assertion takes place to determine if the value is either "a", "c" or "d", we can kick "d" as that
-     * won't be possible.
-     */
-    private static function createUnionIntersectionFromOldType(Union $new_type, Union $old_type): ?Union
-    {
-        if (!self::isNewTypeNarrowingDownOldType($old_type, $new_type)) {
-            return null;
-        }
-
-        if (!$new_type->allLiterals() || !$old_type->allLiterals()) {
-            return $new_type;
-        }
-
-        $equal_atomic_types = [];
-
-        foreach ($new_type->getAtomicTypes() as $new_atomic_type) {
-            foreach ($old_type->getAtomicTypes() as $old_atomic_type) {
-                if (!$new_atomic_type->equals($old_atomic_type, false)) {
-                    continue;
-                }
-
-                $equal_atomic_types[] = $new_atomic_type;
-            }
-        }
-
-        if ($equal_atomic_types === []) {
-            return null;
-        }
-
-        return new Union($equal_atomic_types);
     }
 }

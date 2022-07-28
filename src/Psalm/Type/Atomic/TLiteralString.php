@@ -2,10 +2,7 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-
 use function addcslashes;
-use function get_class;
 use function mb_strlen;
 use function mb_substr;
 
@@ -57,20 +54,5 @@ class TLiteralString extends TString
         bool $use_phpdoc_format
     ): string {
         return $use_phpdoc_format ? 'string' : "'" . $this->value . "'";
-    }
-
-    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
-    {
-        if (get_class($other_type) !== static::class) {
-            return false;
-        }
-
-        if (($this->from_docblock && $ensure_source_equality)
-            || ($other_type->from_docblock && $ensure_source_equality)
-        ) {
-            return false;
-        }
-
-        return $this->value === $other_type->value;
     }
 }
