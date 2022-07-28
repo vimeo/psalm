@@ -21,7 +21,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     $dummy = ["test" => 123];
 
-                    /** @var array{test: ?string} */
+                    /** @var array{test: ?int} */
                     $a = ["test" => null];
 
                     if ($a["test"] === null) {
@@ -29,7 +29,7 @@ class ConditionalTest extends TestCase
                     }
                     $var = $a["test"];',
                 'assertions' => [
-                    '$var===' => '123',
+                    '$var' => 'int',
                 ],
             ],
             'intIsMixed' => [
