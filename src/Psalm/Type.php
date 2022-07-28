@@ -701,7 +701,7 @@ abstract class Type
                 && ($int_intersection->min_bound !== null || $int_intersection->max_bound !== null)
             ) {
                 $intersection_performed = true;
-                if ($int_intersection->min_bound === $int_intersection->max_bound) {
+                if ($int_intersection->min_bound !== null && $int_intersection->min_bound === $int_intersection->max_bound) {
                     return new TLiteralInt($int_intersection->min_bound);
                 }
                 return $int_intersection;
