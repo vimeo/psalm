@@ -459,7 +459,7 @@ final class Context
         array $vars_to_update,
         array &$updated_vars
     ): void {
-        foreach ($start_context->vars_in_scope as $var_id => $_) {
+        foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
             if (in_array($var_id, $vars_to_update, true)) {
                 // if we're leaving, we're effectively deleting the possibility of the if types
@@ -469,10 +469,30 @@ final class Context
 
                 $existing_type = $this->vars_in_scope[$var_id] ?? null;
 
-                if (!$existing_type && $new_type) {
-                    $this->vars_in_scope[$var_id] = clone $new_type;
+                if (!$existing_type) {
+                    if ($new_type) {
+                        $this->vars_in_scope[$var_id] = clone $new_type;
+                        $updated_vars[$var_id] = true;
+                    }
+
+                    continue;
+                }
+
+                $existing_type = clone $existing_type;
+
+                // if the type changed within the block of statements, process the replacement
+                // also never allow ourselves to remove all types from a union
+                if ((!$new_type || !$old_type->equals($new_type))
+                    && ($new_type || count($existing_type->getAtomicTypes()) > 1)
+                ) {
+                    if ($new_type && $new_type->from_docblock) {
+                        $existing_type->setFromDocblock();
+                    }
+
                     $updated_vars[$var_id] = true;
                 }
+
+                $this->vars_in_scope[$var_id] = $existing_type;
             }
         }
     }
