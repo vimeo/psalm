@@ -212,7 +212,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
-            'SKIPPED-twoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf' => [
+            'twoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf' => [
                 'code' => '<?php
                     class A {}
                     class B extends A {}
