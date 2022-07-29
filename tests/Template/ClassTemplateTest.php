@@ -3799,6 +3799,33 @@ class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
+            'static is the return type of an analyzed static method' => [
+                '<?php
+
+                    abstract class A
+                    {
+                    }
+
+                    final class B extends A
+                    {
+                        public static function create(): static
+                        {
+                            return new self();
+                        }
+                    }
+
+                    final class Service
+                    {
+                        public function do(): void
+                        {
+                            $this->acceptA(B::create());
+                        }
+
+                        private function acceptA(A $_a): void
+                        {
+                        }
+                    }',
+            ],
         ];
     }
 
