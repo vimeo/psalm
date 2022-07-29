@@ -22,12 +22,22 @@ use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
 use function in_array;
 use function is_string;
+use function time;
 
 /**
  * @internal
@@ -162,7 +172,7 @@ class VariableFetchAnalyzer
                 return true;
             }
 
-            $type = self::getGlobalType($var_name);
+            $type = self::getGlobalType($var_name, $codebase->analysis_php_version_id);
 
             self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
 
@@ -522,7 +532,7 @@ class VariableFetchAnalyzer
         );
     }
 
-    public static function getGlobalType(string $var_id): Union
+    public static function getGlobalType(string $var_id, int $codebase_analysis_php_version_id): Union
     {
         $config = Config::getInstance();
 
@@ -531,26 +541,132 @@ class VariableFetchAnalyzer
         }
 
         if ($var_id === '$argv') {
+            // only in CLI, null otherwise
             return new Union([
-                new TArray([Type::getInt(), Type::getString()]),
+                new TNonEmptyList(Type::getString()),
+                new TNull()
             ]);
         }
 
         if ($var_id === '$argc') {
-            return Type::getInt();
+            // only in CLI, null otherwise
+            return new Union([
+                new TIntRange(1, null),
+                new TNull()
+            ]);
+        }
+
+        if (!self::isSuperGlobal($var_id)) {
+            return Type::getMixed();
         }
 
         if ($var_id === '$http_response_header') {
             return new Union([
-                new TList(Type::getString())
+                new TList(Type::getNonEmptyString())
             ]);
         }
 
-        if (self::isSuperGlobal($var_id)) {
-            $type = Type::getArray();
-            if ($var_id === '$_SESSION') {
-                $type->possibly_undefined = true;
+        if ($var_id === '$GLOBALS') {
+            return new Union([
+                new TNonEmptyArray([
+                    Type::getNonEmptyString(),
+                    Type::getMixed()
+                ])
+            ]);
+        }
+
+        if ($var_id === '$_COOKIE') {
+            $type = new TArray(
+                [
+                    Type::getNonEmptyString(),
+                    Type::getString(),
+                ]
+            );
+
+            return new Union([$type]);
+        }
+
+        if (in_array($var_id, array('$_GET', '$_POST', '$_REQUEST'), true)) {
+            $array_key = new Union([new TNonEmptyString(), new TInt()]);
+            $array = new TNonEmptyArray(
+                [
+                    $array_key,
+                    new Union([
+                        new TString(),
+                        new TArray([
+                            $array_key,
+                            Type::getMixed()
+                        ])
+                    ])
+                ]
+            );
+
+            $type = new TArray(
+                [
+                    $array_key,
+                    new Union([new TString(), $array]),
+                ]
+            );
+
+            return new Union([$type]);
+        }
+
+        if ($var_id === '$_SERVER' || $var_id === '$_ENV') {
+            $type = new TArray(
+                [
+                    Type::getNonEmptyString(),
+                    new Union([new TFloat(), new TIntRange(1, null), new TString(), new TNonEmptyList(Type::getString())]),
+                ]
+            );
+
+            return new Union([$type]);
+        }
+
+        if ($var_id === '$_FILES') {
+            $values = [
+                'name' => new Union([
+                    new TString(),
+                    new TNonEmptyList(Type::getString()),
+                ]),
+                'type' => new Union([
+                    new TString(),
+                    new TNonEmptyList(Type::getString()),
+                ]),
+                'size' => new Union([
+                    new TInt(),
+                    new TNonEmptyList(Type::getInt()),
+                ]),
+                'tmp_name' => new Union([
+                    new TString(),
+                    new TNonEmptyList(Type::getString()),
+                ]),
+                'error' => new Union([
+                    new TInt(),
+                    new TNonEmptyList(Type::getInt()),
+                ]),
+            ];
+
+            if ($codebase_analysis_php_version_id >= 81000) {
+                $values['full_path'] = new Union([
+                    new TString(),
+                    new TNonEmptyList(Type::getString()),
+                ]);
             }
+
+            $type = new TKeyedArray($values);
+
+            return new Union([$type]);
+        }
+
+        if ($var_id === '$_SESSION') {
+            // keys must be string
+            $type = new Union([
+                new TArray([
+                    Type::getNonEmptyString(),
+                    Type::getMixed(),
+                ])
+            ]);
+            $type->possibly_undefined = true;
             return $type;
         }
 
