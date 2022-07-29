@@ -52,7 +52,6 @@ use ReflectionFunction;
 use UnexpectedValueException;
 
 use function array_keys;
-use function array_merge;
 use function array_pop;
 use function array_search;
 use function count;
@@ -463,7 +462,7 @@ class FunctionLikeNodeScanner
 
 
         if ($classlike_storage && !$classlike_storage->is_trait) {
-            $storage->internal = array_merge($classlike_storage->internal, $storage->internal);
+            $storage->internal = [...$classlike_storage->internal, ...$storage->internal];
         }
 
         if ($doc_comment) {

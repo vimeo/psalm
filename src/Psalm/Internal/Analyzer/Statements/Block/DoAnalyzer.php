@@ -116,7 +116,7 @@ class DoAnalyzer
 
         $negated_while_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
-                array_merge($context->clauses, $negated_while_clauses)
+                [...$context->clauses, ...$negated_while_clauses]
             )
         );
 

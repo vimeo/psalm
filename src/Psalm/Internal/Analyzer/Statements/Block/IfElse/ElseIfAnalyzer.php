@@ -136,7 +136,7 @@ class ElseIfAnalyzer
             $assigned_in_conditional_var_ids
         );
 
-        $elseif_context_clauses = array_merge($entry_clauses, $elseif_clauses);
+        $elseif_context_clauses = [...$entry_clauses, ...$elseif_clauses];
 
         if ($elseif_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $elseif_context->reconciled_expression_clauses;
@@ -192,19 +192,16 @@ class ElseIfAnalyzer
         }
 
         $all_negated_vars = array_unique(
-            array_merge(
-                array_keys($negated_elseif_types),
-                array_keys($if_scope->negated_types)
-            )
+            [...array_keys($negated_elseif_types), ...array_keys($if_scope->negated_types)]
         );
 
         foreach ($all_negated_vars as $var_id) {
             if (isset($negated_elseif_types[$var_id])) {
                 if (isset($if_scope->negated_types[$var_id])) {
-                    $if_scope->negated_types[$var_id] = array_merge(
-                        $if_scope->negated_types[$var_id],
-                        $negated_elseif_types[$var_id]
-                    );
+                    $if_scope->negated_types[$var_id] = [
+                        ...$if_scope->negated_types[$var_id],
+                        ...$negated_elseif_types[$var_id]
+                    ];
                 } else {
                     $if_scope->negated_types[$var_id] = $negated_elseif_types[$var_id];
                 }
@@ -416,10 +413,7 @@ class ElseIfAnalyzer
 
         try {
             $if_scope->negated_clauses = Algebra::simplifyCNF(
-                array_merge(
-                    $if_scope->negated_clauses,
-                    Algebra::negateFormula($elseif_clauses)
-                )
+                [...$if_scope->negated_clauses, ...Algebra::negateFormula($elseif_clauses)]
             );
         } catch (ComplicatedExpressionException $e) {
             $if_scope->negated_clauses = [];

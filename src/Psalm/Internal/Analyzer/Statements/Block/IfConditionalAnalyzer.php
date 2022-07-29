@@ -43,7 +43,7 @@ class IfConditionalAnalyzer
 
         // used when evaluating elseifs
         if ($if_scope->negated_clauses) {
-            $entry_clauses = array_merge($outer_context->clauses, $if_scope->negated_clauses);
+            $entry_clauses = [...$outer_context->clauses, ...$if_scope->negated_clauses];
 
             $changed_var_ids = [];
 

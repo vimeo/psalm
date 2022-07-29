@@ -285,9 +285,9 @@ class CallMapTest extends TestCase
             );
 
             $newFunctions = array_diff($newFunctions, $removedFunctions);
-            $newFunctions = array_merge($newFunctions, $addedFunctions);
+            $newFunctions = [...$newFunctions, ...$addedFunctions];
             $deletedFunctions = array_diff($deletedFunctions, $addedFunctions);
-            $deletedFunctions = array_merge($deletedFunctions, $removedFunctions);
+            $deletedFunctions = [...$deletedFunctions, ...$removedFunctions];
         }
         return $deletedFunctions;
     }

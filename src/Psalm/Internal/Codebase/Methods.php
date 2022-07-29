@@ -40,7 +40,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function array_pop;
 use function array_values;
 use function assert;
@@ -639,13 +638,10 @@ class Methods
 
             foreach ($extended_param->getAtomicTypes() as $extended_atomic_type) {
                 if ($extended_atomic_type instanceof TTemplateParam) {
-                    $extra_added_types = array_merge(
-                        $extra_added_types,
-                        self::getExtendedTemplatedTypes(
-                            $extended_atomic_type,
-                            $extends
-                        )
-                    );
+                    $extra_added_types = [...$extra_added_types, ...self::getExtendedTemplatedTypes(
+                        $extended_atomic_type,
+                        $extends
+                    )];
                 } else {
                     $extra_added_types[] = $extended_atomic_type;
                 }

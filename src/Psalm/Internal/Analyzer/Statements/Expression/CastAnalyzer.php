@@ -464,7 +464,7 @@ class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_strings, $castable_types);
+        $valid_types = [...$valid_strings, ...$castable_types];
 
         if (!$valid_types) {
             $str_type = Type::getString();

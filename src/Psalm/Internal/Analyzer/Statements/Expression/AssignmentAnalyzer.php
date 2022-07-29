@@ -83,7 +83,6 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function count;
 use function in_array;
 use function is_string;
@@ -405,10 +404,10 @@ class AssignmentAnalyzer
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                     foreach ($assign_value_type->parent_nodes as $parent_node) {
-                        $origin_locations = array_merge(
-                            $origin_locations,
-                            $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                        );
+                        $origin_locations = [
+                            ...$origin_locations,
+                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                        ];
                     }
                 }
 
@@ -610,10 +609,10 @@ class AssignmentAnalyzer
                         $event = new AddRemoveTaintsEvent($assign_var, $context, $statements_analyzer, $codebase);
 
                         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                        $removed_taints = array_merge(
-                            $removed_taints,
-                            $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
-                        );
+                        $removed_taints = [
+                            ...$removed_taints,
+                            ...$codebase->config->eventDispatcher->dispatchRemoveTaints($event)
+                        ];
 
                         self::taintAssignment(
                             $context->vars_in_scope[$var_id],
@@ -1500,10 +1499,10 @@ class AssignmentAnalyzer
                                 $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
 
                                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                                $removed_taints = array_merge(
-                                    $removed_taints,
-                                    $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
-                                );
+                                $removed_taints = [
+                                    ...$removed_taints,
+                                    ...$codebase->config->eventDispatcher->dispatchRemoveTaints($event)
+                                ];
 
                                 self::taintAssignment(
                                     $context->vars_in_scope[$list_var_id],
@@ -1754,7 +1753,7 @@ class AssignmentAnalyzer
                         $cond_object_id
                     );
 
-                    $context->clauses = array_merge($context->clauses, $assignment_clauses);
+                    $context->clauses = [...$context->clauses, ...$assignment_clauses];
                 }
             }
         } else {

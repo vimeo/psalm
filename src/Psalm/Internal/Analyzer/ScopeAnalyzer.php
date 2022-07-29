@@ -9,7 +9,6 @@ use Psalm\NodeTypeProvider;
 use function array_diff;
 use function array_filter;
 use function array_intersect;
-use function array_merge;
 use function array_unique;
 use function array_values;
 use function count;
@@ -61,13 +60,13 @@ class ScopeAnalyzer
 
                     // don't consider a return if the expression never returns (e.g. a throw inside a short closure)
                     if ($stmt_return_type && $stmt_return_type->isNever()) {
-                        return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
+                        return array_values(array_unique([...$control_actions, ...[self::ACTION_END]]));
                     }
 
-                    return array_values(array_unique(array_merge($control_actions, [self::ACTION_RETURN])));
+                    return array_values(array_unique([...$control_actions, ...[self::ACTION_RETURN]]));
                 }
 
-                return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
+                return array_values(array_unique([...$control_actions, ...[self::ACTION_END]]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
@@ -76,7 +75,7 @@ class ScopeAnalyzer
                     && ($stmt_expr_type = $nodes->getType($stmt->expr))
                     && $stmt_expr_type->isNever()
                 ) {
-                    return array_values(array_unique(array_merge($control_actions, [self::ACTION_END])));
+                    return array_values(array_unique([...$control_actions, ...[self::ACTION_END]]));
                 }
 
                 continue;
@@ -89,13 +88,13 @@ class ScopeAnalyzer
 
                 if ($break_types && $count !== null && count($break_types) >= $count) {
                     if ($break_types[count($break_types) - $count] === 'switch') {
-                        return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
+                        return [...$control_actions, ...[self::ACTION_LEAVE_SWITCH]];
                     }
 
                     return array_values($control_actions);
                 }
 
-                return array_values(array_unique(array_merge($control_actions, [self::ACTION_CONTINUE])));
+                return array_values(array_unique([...$control_actions, ...[self::ACTION_CONTINUE]]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
@@ -105,13 +104,13 @@ class ScopeAnalyzer
 
                 if ($break_types && $count !== null && count($break_types) >= $count) {
                     if ($break_types[count($break_types) - $count] === 'switch') {
-                        return array_merge($control_actions, [self::ACTION_LEAVE_SWITCH]);
+                        return [...$control_actions, ...[self::ACTION_LEAVE_SWITCH]];
                     }
 
                     return array_values($control_actions);
                 }
 
-                return array_values(array_unique(array_merge($control_actions, [self::ACTION_BREAK])));
+                return array_values(array_unique([...$control_actions, ...[self::ACTION_BREAK]]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
@@ -159,30 +158,23 @@ class ScopeAnalyzer
                                 static fn(string $action): bool => $action === self::ACTION_NONE
                             );
 
-                        $all_elseif_actions = array_merge($elseif_control_actions, $all_elseif_actions);
+                        $all_elseif_actions = [...$elseif_control_actions, ...$all_elseif_actions];
                     }
                 }
 
                 if ($all_leave) {
                     return array_values(
-                        array_unique(
-                            array_merge(
-                                $control_actions,
-                                $if_statement_actions,
-                                $else_statement_actions,
-                                $all_elseif_actions
-                            )
-                        )
+                        array_unique([
+                            ...$control_actions,
+                            ...$if_statement_actions,
+                            ...$else_statement_actions,
+                            ...$all_elseif_actions
+                        ])
                     );
                 }
 
                 $control_actions = array_filter(
-                    array_merge(
-                        $control_actions,
-                        $if_statement_actions,
-                        $else_statement_actions,
-                        $all_elseif_actions
-                    ),
+                    [...$control_actions, ...$if_statement_actions, ...$else_statement_actions, ...$all_elseif_actions],
                     static fn(string $action): bool => $action !== self::ACTION_NONE
                 );
             }
@@ -201,7 +193,7 @@ class ScopeAnalyzer
                     $case_actions = self::getControlActions(
                         $case->stmts,
                         $nodes,
-                        array_merge($break_types, ['switch']),
+                        [...$break_types, ...['switch']],
                         $return_is_exit
                     );
 
@@ -227,10 +219,7 @@ class ScopeAnalyzer
                         $has_ended = true;
                     }
 
-                    $all_case_actions = array_merge(
-                        $all_case_actions,
-                        $case_actions
-                    );
+                    $all_case_actions = [...$all_case_actions, ...$case_actions];
 
                     if (!$case_does_end && !$has_ended) {
                         continue 2;
@@ -247,13 +236,10 @@ class ScopeAnalyzer
                 );
 
                 if ($has_default_terminator || $stmt->getAttribute('allMatched', false)) {
-                    return array_values(array_unique(array_merge($control_actions, $all_case_actions)));
+                    return array_values(array_unique([...$control_actions, ...$all_case_actions]));
                 }
 
-                $control_actions = array_merge(
-                    $control_actions,
-                    $all_case_actions
-                );
+                $control_actions = [...$control_actions, ...$all_case_actions];
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Do_
@@ -264,12 +250,12 @@ class ScopeAnalyzer
                 $loop_actions = self::getControlActions(
                     $stmt->stmts,
                     $nodes,
-                    array_merge($break_types, ['loop']),
+                    [...$break_types, ...['loop']],
                     $return_is_exit
                 );
 
                 $control_actions = array_filter(
-                    array_merge($control_actions, $loop_actions),
+                    [...$control_actions, ...$loop_actions],
                     static fn(string $action): bool => $action !== self::ACTION_NONE
                 );
 
@@ -349,25 +335,21 @@ class ScopeAnalyzer
                             );
 
                         if (!$all_leave) {
-                            $control_actions = array_merge($control_actions, $catch_actions);
+                            $control_actions = [...$control_actions, ...$catch_actions];
                         } else {
-                            $all_catch_actions = array_merge($all_catch_actions, $catch_actions);
+                            $all_catch_actions = [...$all_catch_actions, ...$catch_actions];
                         }
                     }
 
                     if ($all_leave && $try_statement_actions !== [self::ACTION_NONE]) {
                         return array_values(
                             array_unique(
-                                array_merge(
-                                    $control_actions,
-                                    $try_statement_actions,
-                                    $all_catch_actions
-                                )
+                                [...$control_actions, ...$try_statement_actions, ...$all_catch_actions]
                             )
                         );
                     }
                 } elseif ($try_leaves) {
-                    return array_values(array_unique(array_merge($control_actions, $try_statement_actions)));
+                    return array_values(array_unique([...$control_actions, ...$try_statement_actions]));
                 }
 
                 if ($stmt->finally && $stmt->finally->stmts) {
@@ -379,18 +361,15 @@ class ScopeAnalyzer
                     );
 
                     if (!in_array(self::ACTION_NONE, $finally_statement_actions, true)) {
-                        return array_merge(
-                            array_filter(
-                                $control_actions,
-                                static fn(string $action): bool => $action !== self::ACTION_NONE
-                            ),
-                            $finally_statement_actions
-                        );
+                        return [...array_filter(
+                            $control_actions,
+                            static fn(string $action): bool => $action !== self::ACTION_NONE
+                        ), ...$finally_statement_actions];
                     }
                 }
 
                 $control_actions = array_filter(
-                    array_merge($control_actions, $try_statement_actions),
+                    [...$control_actions, ...$try_statement_actions],
                     static fn(string $action): bool => $action !== self::ACTION_NONE
                 );
             }

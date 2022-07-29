@@ -26,7 +26,6 @@ use Psalm\Report\ReportOptions;
 use function array_filter;
 use function array_key_exists;
 use function array_map;
-use function array_merge;
 use function array_shift;
 use function array_slice;
 use function chdir;
@@ -304,7 +303,7 @@ final class Psalter
 
             $files_for_codeowners = self::loadCodeownersFiles($desired_codeowners, $codeowner_files);
             $paths_to_check = is_array($paths_to_check) ?
-                array_merge($paths_to_check, $files_for_codeowners) :
+                [...$paths_to_check, ...$files_for_codeowners] :
                 $files_for_codeowners;
         }
 

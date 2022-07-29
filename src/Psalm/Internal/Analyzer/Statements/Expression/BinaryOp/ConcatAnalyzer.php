@@ -41,7 +41,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function assert;
 use function count;
 use function reset;
@@ -91,10 +90,10 @@ class ConcatAnalyzer
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         foreach ($left_type->parent_nodes as $parent_node) {
-                            $origin_locations = array_merge(
-                                $origin_locations,
-                                $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                            );
+                            $origin_locations = [
+                                ...$origin_locations,
+                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                            ];
                         }
                     }
 
@@ -118,10 +117,10 @@ class ConcatAnalyzer
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         foreach ($right_type->parent_nodes as $parent_node) {
-                            $origin_locations = array_merge(
-                                $origin_locations,
-                                $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                            );
+                            $origin_locations = [
+                                ...$origin_locations,
+                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                            ];
                         }
                     }
 

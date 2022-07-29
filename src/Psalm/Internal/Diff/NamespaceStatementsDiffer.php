@@ -4,7 +4,6 @@ namespace Psalm\Internal\Diff;
 
 use PhpParser;
 
-use function array_merge;
 use function end;
 use function get_class;
 use function substr;
@@ -101,11 +100,11 @@ class NamespaceStatementsDiffer extends AstDiffer
                         $b_code
                     );
 
-                    $keep = array_merge($keep, $class_keep[0]);
-                    $keep_signature = array_merge($keep_signature, $class_keep[1]);
-                    $add_or_delete = array_merge($add_or_delete, $class_keep[2]);
-                    $diff_map = array_merge($diff_map, $class_keep[3]);
-                    $deletion_ranges = array_merge($deletion_ranges, $class_keep[4]);
+                    $keep = [...$keep, ...$class_keep[0]];
+                    $keep_signature = [...$keep_signature, ...$class_keep[1]];
+                    $add_or_delete = [...$add_or_delete, ...$class_keep[2]];
+                    $diff_map = [...$diff_map, ...$class_keep[3]];
+                    $deletion_ranges = [...$deletion_ranges, ...$class_keep[4]];
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_REMOVE) {
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\Use_

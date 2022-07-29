@@ -367,10 +367,10 @@ class IfAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
         ) {
-            return array_merge(
-                self::getDefinitelyEvaluatedOredExpressions($stmt->left),
-                self::getDefinitelyEvaluatedOredExpressions($stmt->right)
-            );
+            return [
+                ...self::getDefinitelyEvaluatedOredExpressions($stmt->left),
+                ...self::getDefinitelyEvaluatedOredExpressions($stmt->right)
+            ];
         }
 
         return [$stmt];

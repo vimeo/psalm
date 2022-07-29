@@ -198,14 +198,14 @@ class AndAnalyzer
                 $context->assigned_var_ids,
             );
 
-            $if_body_context->reconciled_expression_clauses = array_merge(
-                $if_body_context->reconciled_expression_clauses,
-                array_map(
+            $if_body_context->reconciled_expression_clauses = [
+                ...$if_body_context->reconciled_expression_clauses,
+                ...array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,
                     $partitioned_clauses[1]
                 )
-            );
+            ];
 
             $if_body_context->vars_possibly_in_scope = array_merge(
                 $if_body_context->vars_possibly_in_scope,

@@ -246,10 +246,7 @@ final class Creator
 
             foreach ($paths as $path) {
                 if ($path === '') {
-                    $nodes = array_merge(
-                        $nodes,
-                        self::guessPhpFileDirs($current_dir)
-                    );
+                    $nodes = [...$nodes, ...self::guessPhpFileDirs($current_dir)];
 
                     continue;
                 }

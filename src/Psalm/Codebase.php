@@ -67,7 +67,6 @@ use ReflectionType;
 use UnexpectedValueException;
 
 use function array_combine;
-use function array_merge;
 use function array_pop;
 use function array_reverse;
 use function count;
@@ -618,7 +617,7 @@ final class Codebase
         $locations = $this->file_reference_provider->getClassLocations($fq_class_name_lc);
 
         if (isset($this->use_referencing_locations[$fq_class_name_lc])) {
-            $locations = array_merge($locations, $this->use_referencing_locations[$fq_class_name_lc]);
+            $locations = [...$locations, ...$this->use_referencing_locations[$fq_class_name_lc]];
         }
 
         return $locations;
