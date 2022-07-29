@@ -113,6 +113,10 @@ return [
         'old' => ['object', 'args='=>'list<mixed>'],
         'new' => ['object', 'args='=>'array<array-key, mixed>'],
     ],
+    'ReflectionProperty::getValue' => [
+        'old' => ['mixed', 'object='=>'object'],
+        'new' => ['mixed', 'object='=>'null|object'],
+    ],
     'XMLWriter::flush' => [
       'old' => ['string|int|false', 'empty='=>'bool'],
       'new' => ['string|int', 'empty='=>'bool'],

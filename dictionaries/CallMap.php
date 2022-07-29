@@ -11608,7 +11608,7 @@ return [
 'ReflectionProperty::getModifiers' => ['int'],
 'ReflectionProperty::getName' => ['string'],
 'ReflectionProperty::getType' => ['?ReflectionType'],
-'ReflectionProperty::getValue' => ['mixed', 'object='=>'object'],
+'ReflectionProperty::getValue' => ['mixed', 'object='=>'null|object'],
 'ReflectionProperty::hasType' => ['bool'],
 'ReflectionProperty::isDefault' => ['bool'],
 'ReflectionProperty::isPrivate' => ['bool'],
