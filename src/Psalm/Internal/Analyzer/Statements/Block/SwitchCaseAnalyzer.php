@@ -356,10 +356,7 @@ class SwitchCaseAnalyzer
 
         if ($switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
             $entry_clauses = Algebra::simplifyCNF(
-                array_merge(
-                    $original_context->clauses,
-                    $switch_scope->negated_clauses
-                )
+                [...$original_context->clauses, ...$switch_scope->negated_clauses]
             );
         } else {
             $entry_clauses = $original_context->clauses;
@@ -376,9 +373,9 @@ class SwitchCaseAnalyzer
             );
 
             if (count($entry_clauses) + count($case_clauses) < 50) {
-                $case_context->clauses = Algebra::simplifyCNF(array_merge($entry_clauses, $case_clauses));
+                $case_context->clauses = Algebra::simplifyCNF([...$entry_clauses, ...$case_clauses]);
             } else {
-                $case_context->clauses = array_merge($entry_clauses, $case_clauses);
+                $case_context->clauses = [...$entry_clauses, ...$case_clauses];
             }
         } else {
             $case_context->clauses = $entry_clauses;
@@ -459,10 +456,7 @@ class SwitchCaseAnalyzer
                 }
             }
 
-            $switch_scope->negated_clauses = array_merge(
-                $switch_scope->negated_clauses,
-                $negated_case_clauses
-            );
+            $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
         }
 
         $statements_analyzer->analyze($case_stmts, $case_context);

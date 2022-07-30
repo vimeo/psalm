@@ -1254,26 +1254,13 @@ class InstancePropertyAssignmentAnalyzer
             false
         );
 
-        if ($codebase->properties_to_rename) {
-            $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
-
-            foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
-                if ($declaring_property_id === $original_property_id) {
-                    $file_manipulations = [
-                        new FileManipulation(
-                            (int)$stmt->name->getAttribute('startFilePos'),
-                            (int)$stmt->name->getAttribute('endFilePos') + 1,
-                            $new_property_name
-                        )
-                    ];
-
-                    FileManipulationBuffer::add(
-                        $statements_analyzer->getFilePath(),
-                        $file_manipulations
-                    );
-                }
-            }
-        }
+        self::handlePropertyRenames(
+            $codebase,
+            $declaring_property_class,
+            $prop_name,
+            $stmt,
+            $statements_analyzer->getFilePath()
+        );
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
@@ -1411,10 +1398,10 @@ class InstancePropertyAssignmentAnalyzer
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                        $origin_locations = array_merge(
-                            $origin_locations,
-                            $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                        );
+                        $origin_locations = [
+                            ...$origin_locations,
+                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                        ];
                     }
                 }
 
@@ -1444,6 +1431,37 @@ class InstancePropertyAssignmentAnalyzer
             $property_id,
             $assignment_value_type
         );
+    }
+
+    private static function handlePropertyRenames(
+        Codebase $codebase,
+        string $declaring_property_class,
+        string $prop_name,
+        PropertyFetch $stmt,
+        string $file_path
+    ): void {
+        if (!$codebase->properties_to_rename) {
+            return;
+        }
+
+        $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
+
+        foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
+            if ($declaring_property_id === $original_property_id) {
+                $file_manipulations = [
+                    new FileManipulation(
+                        (int)$stmt->name->getAttribute('startFilePos'),
+                        (int)$stmt->name->getAttribute('endFilePos') + 1,
+                        $new_property_name
+                    )
+                ];
+
+                FileManipulationBuffer::add(
+                    $file_path,
+                    $file_manipulations
+                );
+            }
+        }
     }
 
     public static function getExpandedPropertyType(

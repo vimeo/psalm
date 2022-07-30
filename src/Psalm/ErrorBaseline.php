@@ -249,19 +249,16 @@ final class ErrorBaseline
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);
 
         if ($include_php_versions) {
-            $extensions = array_merge(get_loaded_extensions(), get_loaded_extensions(true));
+            $extensions = [...get_loaded_extensions(), ...get_loaded_extensions(true)];
 
             usort($extensions, 'strnatcasecmp');
 
-            $filesNode->setAttribute('php-version', implode(';' . "\n\t", array_merge(
-                [
-                    ('php:' . PHP_VERSION),
-                ],
-                array_map(
-                    static fn(string $extension): string => $extension . ':' . phpversion($extension),
-                    $extensions
-                )
-            )));
+            $filesNode->setAttribute('php-version', implode(';' . "\n\t", [...[
+                ('php:' . PHP_VERSION),
+            ], ...array_map(
+                static fn(string $extension): string => $extension . ':' . phpversion($extension),
+                $extensions
+            )]));
         }
 
         foreach ($groupedIssues as $file => $issueTypes) {

@@ -186,10 +186,7 @@ class OrAnalyzer
         }
 
         $clauses_for_right_analysis = Algebra::simplifyCNF(
-            array_merge(
-                $context->clauses,
-                $negated_left_clauses
-            )
+            [...$context->clauses, ...$negated_left_clauses]
         );
 
         $active_negated_type_assertions = [];
@@ -292,7 +289,7 @@ class OrAnalyzer
         )[0];
 
         $combined_right_clauses = Algebra::simplifyCNF(
-            array_merge($clauses_for_right_analysis, $right_clauses)
+            [...$clauses_for_right_analysis, ...$right_clauses]
         );
 
         $active_right_type_assertions = [];

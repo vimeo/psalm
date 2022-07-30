@@ -232,11 +232,11 @@ class Populator
 
         if (!$storage->is_interface && !$storage->is_trait) {
             foreach ($storage->methods as $method) {
-                $method->internal = array_merge($storage->internal, $method->internal);
+                $method->internal = [...$storage->internal, ...$method->internal];
             }
 
             foreach ($storage->properties as $property) {
-                $property->internal = array_merge($storage->internal, $property->internal);
+                $property->internal = [...$storage->internal, ...$property->internal];
             }
         }
 

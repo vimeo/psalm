@@ -7,7 +7,6 @@ use Psalm\Internal\DataFlow\Path;
 
 use function abs;
 use function array_keys;
-use function array_merge;
 use function array_reverse;
 use function array_sum;
 use function count;
@@ -156,7 +155,7 @@ abstract class DataFlowGraph
         $edges = [];
 
         foreach ($this->forward_edges as $source => $destinations) {
-            $edges[] = array_merge([$source], array_keys($destinations));
+            $edges[] = [...[$source], ...array_keys($destinations)];
         }
 
         return $edges;

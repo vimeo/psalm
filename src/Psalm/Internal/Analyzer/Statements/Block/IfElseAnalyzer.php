@@ -171,7 +171,7 @@ class IfElseAnalyzer
 
         $if_clauses = Algebra::simplifyCNF($if_clauses);
 
-        $if_context_clauses = array_merge($entry_clauses, $if_clauses);
+        $if_context_clauses = [...$entry_clauses, ...$if_clauses];
 
         $if_context->clauses = $entry_clauses
             ? Algebra::simplifyCNF($if_context_clauses)
@@ -219,7 +219,7 @@ class IfElseAnalyzer
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
-                array_merge($context->clauses, $if_scope->negated_clauses)
+                [...$context->clauses, ...$if_scope->negated_clauses]
             )
         );
 
@@ -406,10 +406,7 @@ class IfElseAnalyzer
             && (count($if_scope->reasonable_clauses) > 1 || !$if_scope->reasonable_clauses[0]->wedge)
         ) {
             $context->clauses = Algebra::simplifyCNF(
-                array_merge(
-                    $if_scope->reasonable_clauses,
-                    $context->clauses
-                )
+                [...$if_scope->reasonable_clauses, ...$context->clauses]
             );
         }
 

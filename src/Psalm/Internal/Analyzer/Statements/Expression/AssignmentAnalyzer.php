@@ -3,6 +3,8 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Comment\Doc;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\PropertyFetch;
 use Psalm\CodeLocation;
@@ -83,7 +85,6 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function count;
 use function in_array;
 use function is_string;
@@ -405,10 +406,10 @@ class AssignmentAnalyzer
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                     foreach ($assign_value_type->parent_nodes as $parent_node) {
-                        $origin_locations = array_merge(
-                            $origin_locations,
-                            $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                        );
+                        $origin_locations = [
+                            ...$origin_locations,
+                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                        ];
                     }
                 }
 
@@ -492,6 +493,135 @@ class AssignmentAnalyzer
             );
         }
 
+        if (self::analyzeAssignment(
+            $assign_var,
+            $statements_analyzer,
+            $codebase,
+            $assign_value,
+            $assign_value_type,
+            $var_id,
+            $context,
+            $doc_comment,
+            $extended_var_id,
+            $var_comments,
+            $removed_taints
+        ) === false
+        ) {
+            return false;
+        }
+
+        if ($var_id && isset($context->vars_in_scope[$var_id])) {
+            if ($context->vars_in_scope[$var_id]->isVoid()) {
+                IssueBuffer::maybeAdd(
+                    new AssignmentToVoid(
+                        'Cannot assign ' . $var_id . ' to type void',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                );
+
+                $context->vars_in_scope[$var_id] = Type::getNull();
+
+                $context->inside_assignment = $was_in_assignment;
+
+                return $context->vars_in_scope[$var_id];
+            }
+
+            if ($context->vars_in_scope[$var_id]->isNever()) {
+                if (IssueBuffer::accepts(
+                    new NoValue(
+                        'This function or method call never returns output',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+
+                $context->vars_in_scope[$var_id] = Type::getNever();
+
+                $context->inside_assignment = $was_in_assignment;
+
+                return $context->vars_in_scope[$var_id];
+            }
+
+            if ($statements_analyzer->data_flow_graph) {
+                $data_flow_graph = $statements_analyzer->data_flow_graph;
+
+                if ($context->vars_in_scope[$var_id]->parent_nodes) {
+                    $context->vars_in_scope[$var_id] = clone $context->vars_in_scope[$var_id];
+
+                    if ($data_flow_graph instanceof TaintFlowGraph
+                        && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                    ) {
+                        $context->vars_in_scope[$var_id]->parent_nodes = [];
+                    } else {
+                        $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
+
+                        $event = new AddRemoveTaintsEvent($assign_var, $context, $statements_analyzer, $codebase);
+
+                        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                        $removed_taints = [
+                            ...$removed_taints,
+                            ...$codebase->config->eventDispatcher->dispatchRemoveTaints($event)
+                        ];
+
+                        self::taintAssignment(
+                            $context->vars_in_scope[$var_id],
+                            $data_flow_graph,
+                            $var_id,
+                            $var_location,
+                            $removed_taints,
+                            $added_taints
+                        );
+                    }
+
+                    if ($assign_expr) {
+                        $new_parent_node = DataFlowNode::getForAssignment(
+                            'assignment_expr',
+                            new CodeLocation($statements_analyzer->getSource(), $assign_expr)
+                        );
+
+                        $data_flow_graph->addNode($new_parent_node);
+
+                        foreach ($context->vars_in_scope[$var_id]->parent_nodes as $old_parent_node) {
+                            $data_flow_graph->addPath(
+                                $old_parent_node,
+                                $new_parent_node,
+                                '=',
+                            );
+                        }
+
+                        $assign_value_type = clone $assign_value_type;
+                        $assign_value_type->parent_nodes = [$new_parent_node->id => $new_parent_node];
+                    }
+                }
+            }
+        }
+
+        $context->inside_assignment = $was_in_assignment;
+
+        return $assign_value_type;
+    }
+
+    /**
+     * @param list<VarDocblockComment> $var_comments
+     * @param list<string> $removed_taints
+     * @return null|false
+     */
+    private static function analyzeAssignment(
+        Expr $assign_var,
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        ?Expr $assign_value,
+        Union $assign_value_type,
+        ?string $var_id,
+        Context $context,
+        ?Doc $doc_comment,
+        ?string $extended_var_id,
+        array $var_comments,
+        array $removed_taints
+    ): ?bool {
         if ($assign_var instanceof PhpParser\Node\Expr\Variable) {
             self::analyzeAssignmentToVariable(
                 $statements_analyzer,
@@ -558,99 +688,7 @@ class AssignmentAnalyzer
                 $context->vars_possibly_in_scope[$var_id] = true;
             }
         }
-
-        if ($var_id && isset($context->vars_in_scope[$var_id])) {
-            if ($context->vars_in_scope[$var_id]->isVoid()) {
-                IssueBuffer::maybeAdd(
-                    new AssignmentToVoid(
-                        'Cannot assign ' . $var_id . ' to type void',
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
-
-                $context->vars_in_scope[$var_id] = Type::getNull();
-
-                $context->inside_assignment = $was_in_assignment;
-
-                return $context->vars_in_scope[$var_id];
-            }
-
-            if ($context->vars_in_scope[$var_id]->isNever()) {
-                if (IssueBuffer::accepts(
-                    new NoValue(
-                        'This function or method call never returns output',
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-
-                $context->vars_in_scope[$var_id] = Type::getNever();
-
-                $context->inside_assignment = $was_in_assignment;
-
-                return $context->vars_in_scope[$var_id];
-            }
-
-            if ($statements_analyzer->data_flow_graph) {
-                $data_flow_graph = $statements_analyzer->data_flow_graph;
-
-                if ($context->vars_in_scope[$var_id]->parent_nodes) {
-                    $context->vars_in_scope[$var_id] = clone $context->vars_in_scope[$var_id];
-
-                    if ($data_flow_graph instanceof TaintFlowGraph
-                        && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-                    ) {
-                        $context->vars_in_scope[$var_id]->parent_nodes = [];
-                    } else {
-                        $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
-
-                        $event = new AddRemoveTaintsEvent($assign_var, $context, $statements_analyzer, $codebase);
-
-                        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                        $removed_taints = array_merge(
-                            $removed_taints,
-                            $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
-                        );
-
-                        self::taintAssignment(
-                            $context->vars_in_scope[$var_id],
-                            $data_flow_graph,
-                            $var_id,
-                            $var_location,
-                            $removed_taints,
-                            $added_taints
-                        );
-                    }
-
-                    if ($assign_expr) {
-                        $new_parent_node = DataFlowNode::getForAssignment(
-                            'assignment_expr',
-                            new CodeLocation($statements_analyzer->getSource(), $assign_expr)
-                        );
-
-                        $data_flow_graph->addNode($new_parent_node);
-
-                        foreach ($context->vars_in_scope[$var_id]->parent_nodes as $old_parent_node) {
-                            $data_flow_graph->addPath(
-                                $old_parent_node,
-                                $new_parent_node,
-                                '=',
-                            );
-                        }
-
-                        $assign_value_type = clone $assign_value_type;
-                        $assign_value_type->parent_nodes = [$new_parent_node->id => $new_parent_node];
-                    }
-                }
-            }
-        }
-
-        $context->inside_assignment = $was_in_assignment;
-
-        return $assign_value_type;
+        return null;
     }
 
     public static function assignTypeFromVarDocblock(
@@ -1500,10 +1538,10 @@ class AssignmentAnalyzer
                                 $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
 
                                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                                $removed_taints = array_merge(
-                                    $removed_taints,
-                                    $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
-                                );
+                                $removed_taints = [
+                                    ...$removed_taints,
+                                    ...$codebase->config->eventDispatcher->dispatchRemoveTaints($event)
+                                ];
 
                                 self::taintAssignment(
                                     $context->vars_in_scope[$list_var_id],
@@ -1754,7 +1792,7 @@ class AssignmentAnalyzer
                         $cond_object_id
                     );
 
-                    $context->clauses = array_merge($context->clauses, $assignment_clauses);
+                    $context->clauses = [...$context->clauses, ...$assignment_clauses];
                 }
             }
         } else {

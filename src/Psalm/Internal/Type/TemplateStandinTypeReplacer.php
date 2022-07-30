@@ -102,26 +102,23 @@ class TemplateStandinTypeReplacer
         $had_template = false;
 
         foreach ($original_atomic_types as $key => $atomic_type) {
-            $atomic_types = array_merge(
-                $atomic_types,
-                self::handleAtomicStandin(
-                    $atomic_type,
-                    $key,
-                    $template_result,
-                    $codebase,
-                    $statements_analyzer,
-                    $input_type,
-                    $input_arg_offset,
-                    $calling_class,
-                    $calling_function,
-                    $replace,
-                    $add_lower_bound,
-                    $bound_equality_classlike,
-                    $depth,
-                    count($original_atomic_types) === 1,
-                    $had_template
-                )
-            );
+            $atomic_types = [...$atomic_types, ...self::handleAtomicStandin(
+                $atomic_type,
+                $key,
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $bound_equality_classlike,
+                $depth,
+                count($original_atomic_types) === 1,
+                $had_template
+            )];
         }
 
         if ($replace) {

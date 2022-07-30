@@ -3,7 +3,6 @@
 namespace Psalm\Internal;
 
 use function array_diff;
-use function array_merge;
 use function array_unique;
 use function array_values;
 use function get_included_files;
@@ -38,7 +37,7 @@ final class IncludeCollector
 
         $included = array_diff($after, $before);
 
-        $this->included_files = array_values(array_unique(array_merge($this->included_files, $included)));
+        $this->included_files = array_values(array_unique([...$this->included_files, ...$included]));
 
         return $ret;
     }

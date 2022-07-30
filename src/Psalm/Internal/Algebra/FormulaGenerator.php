@@ -14,7 +14,6 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 
-use function array_merge;
 use function count;
 use function spl_object_id;
 use function substr;
@@ -62,10 +61,7 @@ class FormulaGenerator
                 $cache
             );
 
-            return array_merge(
-                $left_assertions,
-                $right_assertions
-            );
+            return [...$left_assertions, ...$right_assertions];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
