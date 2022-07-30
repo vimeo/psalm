@@ -70,6 +70,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -491,71 +492,21 @@ class AssignmentAnalyzer
             );
         }
 
-        if ($assign_var instanceof PhpParser\Node\Expr\Variable) {
-            self::analyzeAssignmentToVariable(
+        if (self::analyzeAssignment(
+                $assign_var,
                 $statements_analyzer,
                 $codebase,
-                $assign_var,
                 $assign_value,
                 $assign_value_type,
                 $var_id,
-                $context
-            );
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
-            || $assign_var instanceof PhpParser\Node\Expr\Array_
-        ) {
-            self::analyzeDestructuringAssignment(
-                $statements_analyzer,
-                $codebase,
-                $assign_var,
-                $assign_value,
-                $assign_value_type,
                 $context,
                 $doc_comment,
                 $extended_var_id,
                 $var_comments,
                 $removed_taints
-            );
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            ArrayAssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $assign_var,
-                $context,
-                $assign_value,
-                $assign_value_type
-            );
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
-            self::analyzePropertyAssignment(
-                $statements_analyzer,
-                $codebase,
-                $assign_var,
-                $context,
-                $assign_value,
-                $assign_value_type,
-                $var_id
-            );
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
-            $assign_var->class instanceof PhpParser\Node\Name
+            ) === false
         ) {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var, $context) === false) {
-                return false;
-            }
-
-            if ($context->check_classes) {
-                if (StaticPropertyAssignmentAnalyzer::analyze(
-                    $statements_analyzer,
-                    $assign_var,
-                    $assign_value,
-                    $assign_value_type,
-                    $context
-                ) === false) {
-                    return false;
-                }
-            }
-
-            if ($var_id) {
-                $context->vars_possibly_in_scope[$var_id] = true;
-            }
+            return false;
         }
 
         if ($var_id && isset($context->vars_in_scope[$var_id])) {
@@ -650,6 +601,93 @@ class AssignmentAnalyzer
         $context->inside_assignment = $was_in_assignment;
 
         return $assign_value_type;
+    }
+
+    /**
+     * @param list<VarDocblockComment> $var_comments
+     * @param list<string> $removed_taints
+     * @return null|false
+     */
+    private static function analyzeAssignment(
+        \PhpParser\Node\Expr $assign_var,
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        ?\PhpParser\Node\Expr $assign_value,
+        Union $assign_value_type,
+        ?string $var_id,
+        Context $context,
+        ?\PhpParser\Comment\Doc $doc_comment,
+        ?string $extended_var_id,
+        array $var_comments,
+        array $removed_taints
+    ): ?bool {
+        if ($assign_var instanceof PhpParser\Node\Expr\Variable) {
+            self::analyzeAssignmentToVariable(
+                $statements_analyzer,
+                $codebase,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $var_id,
+                $context
+            );
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
+            || $assign_var instanceof PhpParser\Node\Expr\Array_
+        ) {
+            self::analyzeDestructuringAssignment(
+                $statements_analyzer,
+                $codebase,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context,
+                $doc_comment,
+                $extended_var_id,
+                $var_comments,
+                $removed_taints
+            );
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            ArrayAssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $assign_var,
+                $context,
+                $assign_value,
+                $assign_value_type
+            );
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
+            self::analyzePropertyAssignment(
+                $statements_analyzer,
+                $codebase,
+                $assign_var,
+                $context,
+                $assign_value,
+                $assign_value_type,
+                $var_id
+            );
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
+            $assign_var->class instanceof PhpParser\Node\Name
+        ) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var, $context) === false) {
+                return false;
+            }
+
+            if ($context->check_classes) {
+                if (StaticPropertyAssignmentAnalyzer::analyze(
+                    $statements_analyzer,
+                    $assign_var,
+                    $assign_value,
+                    $assign_value_type,
+                    $context
+                ) === false) {
+                    return false;
+                }
+            }
+
+            if ($var_id) {
+                $context->vars_possibly_in_scope[$var_id] = true;
+            }
+        }
+        return null;
     }
 
     public static function assignTypeFromVarDocblock(
