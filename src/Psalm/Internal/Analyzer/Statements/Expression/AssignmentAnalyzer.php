@@ -3,6 +3,8 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Comment\Doc;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\PropertyFetch;
 use Psalm\CodeLocation;
@@ -70,7 +72,6 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
-use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -493,18 +494,18 @@ class AssignmentAnalyzer
         }
 
         if (self::analyzeAssignment(
-                $assign_var,
-                $statements_analyzer,
-                $codebase,
-                $assign_value,
-                $assign_value_type,
-                $var_id,
-                $context,
-                $doc_comment,
-                $extended_var_id,
-                $var_comments,
-                $removed_taints
-            ) === false
+            $assign_var,
+            $statements_analyzer,
+            $codebase,
+            $assign_value,
+            $assign_value_type,
+            $var_id,
+            $context,
+            $doc_comment,
+            $extended_var_id,
+            $var_comments,
+            $removed_taints
+        ) === false
         ) {
             return false;
         }
@@ -609,14 +610,14 @@ class AssignmentAnalyzer
      * @return null|false
      */
     private static function analyzeAssignment(
-        \PhpParser\Node\Expr $assign_var,
+        Expr $assign_var,
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
-        ?\PhpParser\Node\Expr $assign_value,
+        ?Expr $assign_value,
         Union $assign_value_type,
         ?string $var_id,
         Context $context,
-        ?\PhpParser\Comment\Doc $doc_comment,
+        ?Doc $doc_comment,
         ?string $extended_var_id,
         array $var_comments,
         array $removed_taints
