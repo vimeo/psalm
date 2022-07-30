@@ -4420,7 +4420,7 @@ return [
     'NumberFormatter::__construct' => ['void', 'locale'=>'string', 'style'=>'int', 'pattern='=>'string'],
     'NumberFormatter::create' => ['NumberFormatter|false', 'locale'=>'string', 'style'=>'int', 'pattern='=>'string'],
     'NumberFormatter::format' => ['string|false', 'num'=>'', 'type='=>'int'],
-    'NumberFormatter::formatCurrency' => ['string', 'num'=>'float', 'currency'=>'string'],
+    'NumberFormatter::formatCurrency' => ['string|false', 'num'=>'float', 'currency'=>'string'],
     'NumberFormatter::getAttribute' => ['int|false', 'attr'=>'int'],
     'NumberFormatter::getErrorCode' => ['int'],
     'NumberFormatter::getErrorMessage' => ['string'],
