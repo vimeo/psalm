@@ -264,7 +264,8 @@ class IfElseAnalyzer
             $if_scope,
             $if_conditional_scope,
             $if_context,
-            $context
+            $context,
+            $pre_assignment_else_redefined_vars
         ) === false) {
             return false;
         }

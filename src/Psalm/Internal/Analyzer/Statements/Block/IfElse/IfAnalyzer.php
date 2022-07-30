@@ -23,20 +23,25 @@ use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_combine;
 use function array_diff_key;
 use function array_filter;
+use function array_intersect;
 use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_reduce;
+use function array_unique;
 use function count;
 use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
+use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -44,6 +49,8 @@ use function spl_object_id;
 class IfAnalyzer
 {
     /**
+     * @param  array<string, Union> $pre_assignment_else_redefined_vars
+     *
      * @return false|null
      */
     public static function analyze(
@@ -52,7 +59,8 @@ class IfAnalyzer
         IfScope $if_scope,
         IfConditionalScope $if_conditional_scope,
         Context $if_context,
-        Context $outer_context
+        Context $outer_context,
+        array $pre_assignment_else_redefined_vars
     ): ?bool {
         $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
 
@@ -141,6 +149,8 @@ class IfAnalyzer
             $if_context->vars_possibly_in_scope,
             $outer_context->vars_possibly_in_scope
         );
+
+        $old_if_context = clone $if_context;
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -252,6 +262,38 @@ class IfAnalyzer
                     );
                 }
             }
+        }
+
+        // update the parent context as necessary, but only if we can safely reason about type negation.
+        // We only update vars that changed both at the start of the if block and then again by an assignment
+        // in the if statement.
+        if ($if_scope->negated_types) {
+            $vars_to_update = array_intersect(
+                array_keys($pre_assignment_else_redefined_vars),
+                array_keys($if_scope->negated_types)
+            );
+
+            $extra_vars_to_update = [];
+
+            // if there's an object-like array in there, we also need to update the root array variable
+            foreach ($vars_to_update as $var_id) {
+                $bracked_pos = strpos($var_id, '[');
+                if ($bracked_pos !== false) {
+                    $extra_vars_to_update[] = substr($var_id, 0, $bracked_pos);
+                }
+            }
+
+            if ($extra_vars_to_update) {
+                $vars_to_update = array_unique(array_merge($extra_vars_to_update, $vars_to_update));
+            }
+
+            $outer_context->update(
+                $old_if_context,
+                $if_context,
+                $has_leaving_statements,
+                $vars_to_update,
+                $if_scope->updated_vars
+            );
         }
 
         if (!$has_ending_statements) {

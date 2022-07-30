@@ -17,6 +17,21 @@ class ConditionalTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'arrayAssignmentPropagation' => [
+                'code' => '<?php
+                    $dummy = ["test" => 123];
+
+                    /** @var array{test: ?int} */
+                    $a = ["test" => null];
+
+                    if ($a["test"] === null) {
+                        $a = $dummy;
+                    }
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var' => 'int',
+                ],
+            ],
             'intIsMixed' => [
                 'code' => '<?php
                     /** @param mixed $a */

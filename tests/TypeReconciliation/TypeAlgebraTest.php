@@ -212,10 +212,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
-            // skipping this old test because it breaks if the elseif becomes
-            // an else if, and I don't believe it's a pattern that happens often
-            // enough to warrant special-casing
-            'SKIPPED-twoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf' => [
+            'twoVarLogicNotNestedWithElseifCorrectlyReinforcedInIf' => [
                 'code' => '<?php
                     class A {}
                     class B extends A {}
