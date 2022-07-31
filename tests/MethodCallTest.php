@@ -264,7 +264,6 @@ class MethodCallTest extends TestCase
             ],
             'dateTimeImmutableStatic' => [
                 '<?php
-                    /** @psalm-immutable */
                     final class MyDate extends DateTimeImmutable {}
 
                     $today = new MyDate();
