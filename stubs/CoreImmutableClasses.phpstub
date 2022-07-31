@@ -1,11 +1,106 @@
 <?php
 
-/**
- * @psalm-immutable
- */
 class DateTimeImmutable implements DateTimeInterface
 {
     public function __construct(string $datetime = "now", DateTimeZone $timezone = null) {}
+
+    /**
+     * @psalm-pure
+     * @return static|false
+     */
+    public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null) {}
+
+    /**
+     * @psalm-pure
+     * @param string $format
+     * @return string
+     */
+    public function format($format) {}
+
+    /**
+     * @psalm-pure
+     * @return DateTimeZone
+     */
+    public function getTimezone() {}
+
+    /**
+     * @psalm-pure
+     * @return int
+     */
+    public function getOffset() {}
+
+    /**
+     * @psalm-pure
+     * @return int
+     */
+    public function getTimestamp() {}
+
+    /**
+     * @psalm-pure
+     * @param bool $absolute
+     * @return DateInterval
+     */
+    public function diff(DateTimeInterface $targetObject, $absolute = false) {}
+
+    /**
+     * @psalm-pure
+     * @return static
+     */
+    public function modify(string $modifier) {}
+
+    /**
+     * @psalm-pure
+     * @return static
+     */
+    public function add(DateInterval $interval) {}
+
+    /**
+     * @psalm-pure
+     * @return static
+     */
+    public function sub(DateInterval $interval) {}
+
+    /**
+     * @psalm-pure
+     * @return static|false
+     */
+    public function setTimezone(DateTimeZone $timezone) {}
+
+    /**
+     * @psalm-pure
+     * @return static|false
+     */
+    public function setTime(int $hour, int $minute, int $second = 0, int $microsecond = 0) {}
+
+    /**
+     * @psalm-pure
+     * @return static|false
+     */
+    public function setDate(int $year, int $month, int $day) {}
+
+    /**
+     * @psalm-pure
+     * @return static|false
+     */
+    public function setISODate(int $year, int $week, int $dayOfWeek = 1) {}
+
+    /**
+     * @psalm-pure
+     * @return static|false
+     */
+    public function setTimestamp(int $unixtimestamp) {}
+
+    /**
+     * @psalm-pure
+     * @return static
+     */
+    public static function createFromMutable(DateTime $object) {}
+
+    /**
+     * @psalm-pure
+     * @return self
+     */
+    public static function createFromInterface(DateTimeInterface $object) {}
 }
 
 /**
