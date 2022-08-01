@@ -5,99 +5,99 @@ class DateTimeImmutable implements DateTimeInterface
     public function __construct(string $datetime = "now", DateTimeZone $timezone = null) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static|false
      */
     public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @param string $format
      * @return string
      */
     public function format($format) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return DateTimeZone
      */
     public function getTimezone() {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return int
      */
     public function getOffset() {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return int
      */
     public function getTimestamp() {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @param bool $absolute
      * @return DateInterval
      */
     public function diff(DateTimeInterface $targetObject, $absolute = false) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static
      */
     public function modify(string $modifier) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static
      */
     public function add(DateInterval $interval) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static
      */
     public function sub(DateInterval $interval) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static|false
      */
     public function setTimezone(DateTimeZone $timezone) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static|false
      */
     public function setTime(int $hour, int $minute, int $second = 0, int $microsecond = 0) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static|false
      */
     public function setDate(int $year, int $month, int $day) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static|false
      */
     public function setISODate(int $year, int $week, int $dayOfWeek = 1) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static|false
      */
     public function setTimestamp(int $unixtimestamp) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return static
      */
     public static function createFromMutable(DateTime $object) {}
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      * @return self
      */
     public static function createFromInterface(DateTimeInterface $object) {}
