@@ -249,7 +249,9 @@ class SimpleTypeInferer
                 $fq_classlike_name
             );
 
-            if ($stmt_expr_type === null || $stmt_expr_type->isAlwaysFalsy()) {
+            if ($stmt_expr_type === null) {
+                return null;
+            } elseif ($stmt_expr_type->isAlwaysFalsy()) {
                 return Type::getTrue();
             } elseif ($stmt_expr_type->isAlwaysTruthy()) {
                 return Type::getFalse();
