@@ -471,32 +471,25 @@ class CastAnalyzer
                 continue;
             }
 
+            // always 1 for "error" cases
+            $valid_ints[] = new TLiteralInt(1);
+
             $invalid_casts[] = $atomic_type->getId();
         }
 
         if ($invalid_casts) {
-            if ( $valid_ints || $castable_types ) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyInvalidCast(
-                        $invalid_casts[0] . ' cannot be cast to int',
-                        new CodeLocation( $statements_analyzer->getSource(), $stmt )
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
-            } else {
-                IssueBuffer::maybeAdd(
-                    new InvalidCast(
-                        $invalid_casts[0] . ' cannot be cast to int',
-                        new CodeLocation( $statements_analyzer->getSource(), $stmt )
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
-            }
+            IssueBuffer::maybeAdd(
+                new InvalidCast(
+                    $invalid_casts[0] . ' cannot be cast to int',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            );
         } elseif (!empty($possibly_unwanted_cast)) {
             IssueBuffer::maybeAdd(
                 new PossiblyInvalidCast(
                     'Casting ' . $possibly_unwanted_cast[0] . ' to int has possibly unintended value of 1',
-                    new CodeLocation( $statements_analyzer->getSource(), $stmt )
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
             );
@@ -703,32 +696,25 @@ class CastAnalyzer
                 continue;
             }
 
+            // always 1.0 for "error" cases
+            $valid_floats[] = new TLiteralFloat(1.0);
+
             $invalid_casts[] = $atomic_type->getId();
         }
 
         if ($invalid_casts) {
-            if ( $valid_floats || $castable_types ) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyInvalidCast(
-                        $invalid_casts[0] . ' cannot be cast to float',
-                        new CodeLocation( $statements_analyzer->getSource(), $stmt )
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
-            } else {
-                IssueBuffer::maybeAdd(
-                    new InvalidCast(
-                        $invalid_casts[0] . ' cannot be cast to float',
-                        new CodeLocation( $statements_analyzer->getSource(), $stmt )
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                );
-            }
+            IssueBuffer::maybeAdd(
+                new InvalidCast(
+                    $invalid_casts[0] . ' cannot be cast to float',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            );
         } elseif (!empty($possibly_unwanted_cast)) {
             IssueBuffer::maybeAdd(
                 new PossiblyInvalidCast(
                     'Casting ' . $possibly_unwanted_cast[0] . ' to float has possibly unintended value of 1.0',
-                    new CodeLocation( $statements_analyzer->getSource(), $stmt )
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
             );
