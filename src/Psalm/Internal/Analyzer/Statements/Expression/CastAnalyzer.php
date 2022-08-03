@@ -331,13 +331,14 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TString) {
-                if ($atomic_type instanceof TLiteralString && (int) $atomic_type->value !== 0) {
+                if ($atomic_type instanceof TLiteralString) {
                     $valid_ints[] = new TLiteralInt((int) $atomic_type->value);
                 } elseif ($atomic_type instanceof TNumericString) {
                     $castable_types[] = new TInt();
                 } else {
-                    // any normal string
-                    $valid_ints[] = new TLiteralInt(0);
+                    // any normal string is technically $valid_int[] = new TLiteralInt(0);
+                    // however we cannot be certain that it's not inferred, therefore less strict
+                    $castable_types[] = new TInt();
                 }
 
                 continue;
@@ -416,14 +417,14 @@ class CastAnalyzer
                             }
 
                             foreach ($return_type->getAtomicTypes() as $sub_atomic_type) {
-                                if ($sub_atomic_type instanceof TLiteralString
-                                    && (int) $sub_atomic_type->value !== 0
-                                ) {
+                                if ($sub_atomic_type instanceof TLiteralString) {
                                     $valid_ints[] = new TLiteralInt((int) $sub_atomic_type->value);
                                 } elseif ($sub_atomic_type instanceof TNumericString) {
                                     $castable_types[] = new TInt();
                                 } else {
-                                    $valid_ints[] = new TLiteralInt(0);
+                                    // any normal string is technically $valid_int[] = new TLiteralInt(0);
+                                    // however we cannot be certain that it's not inferred, therefore less strict
+                                    $castable_types[] = new TInt();
                                 }
                             }
 
@@ -557,13 +558,14 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TString) {
-                if ($atomic_type instanceof TLiteralString && (float) $atomic_type->value !== 0.0) {
+                if ($atomic_type instanceof TLiteralString) {
                     $valid_floats[] = new TLiteralFloat((float) $atomic_type->value);
                 } elseif ($atomic_type instanceof TNumericString) {
                     $castable_types[] = new TFloat();
                 } else {
-                    // any normal string
-                    $valid_floats[] = new TLiteralFloat(0.0);
+                    // any normal string is technically $valid_floats[] = new TLiteralFloat(0.0);
+                    // however we cannot be certain that it's not inferred, therefore less strict
+                    $castable_types[] = new TFloat();
                 }
 
                 continue;
@@ -641,14 +643,14 @@ class CastAnalyzer
                             }
 
                             foreach ($return_type->getAtomicTypes() as $sub_atomic_type) {
-                                if ($sub_atomic_type instanceof TLiteralString
-                                    && (float) $sub_atomic_type->value !== 0.0
-                                ) {
+                                if ($sub_atomic_type instanceof TLiteralString) {
                                     $valid_floats[] = new TLiteralFloat((float) $sub_atomic_type->value);
                                 } elseif ($sub_atomic_type instanceof TNumericString) {
                                     $castable_types[] = new TFloat();
                                 } else {
-                                    $valid_floats[] = new TLiteralFloat(0.0);
+                                    // any normal string is technically $valid_int[] = new TLiteralInt(0);
+                                    // however we cannot be certain that it's not inferred, therefore less strict
+                                    $castable_types[] = new TFloat();
                                 }
                             }
 
