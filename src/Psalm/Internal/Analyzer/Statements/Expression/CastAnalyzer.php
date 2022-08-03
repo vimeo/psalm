@@ -23,6 +23,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -33,6 +34,9 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
@@ -42,6 +46,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -352,8 +357,28 @@ class CastAnalyzer
                 continue;
             }
 
+            if ($atomic_type instanceof TTrue
+            ) {
+                $valid_strings[] = new TLiteralString('1');
+                continue;
+            }
+
+            if ($atomic_type instanceof TBool
+            ) {
+                $valid_strings[] = new TLiteralString('1');
+                $valid_strings[] = new TLiteralString('');
+                continue;
+            }
+
+            if ($atomic_type instanceof TClosedResource
+               || $atomic_type instanceof TResource
+            ) {
+                $castable_types[] = new TNonEmptyString();
+
+                continue;
+            }
+
             if ($atomic_type instanceof TMixed
-                || $atomic_type instanceof TResource
                 || $atomic_type instanceof Scalar
             ) {
                 $castable_types[] = new TString();
