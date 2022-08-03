@@ -1149,7 +1149,7 @@ class ClosureTest extends TestCase
 
                     takesA($getAButReallyB());
                     takesB($getAButReallyB());',
-                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:28 - Argument 1 of takesB expects B, parent type A provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:28 - Argument 1 of takesB expects B, but parent type A provided',
             ],
             'closureByRefUseToMixed' => [
                 '<?php
