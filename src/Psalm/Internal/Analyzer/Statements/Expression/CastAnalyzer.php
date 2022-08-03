@@ -102,13 +102,16 @@ class CastAnalyzer
                 if ($maybe_type->isFloat()) {
                     self::handleRedundantCast($maybe_type, $statements_analyzer, $stmt);
                 }
-            }
 
-            $type = Type::getFloat();
-
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-            ) {
-                $type->parent_nodes = $maybe_type->parent_nodes ?? [];
+                $type = self::castFloatAttempt(
+                    $statements_analyzer,
+                    $context,
+                    $maybe_type,
+                    $stmt->expr,
+                    true
+                );
+            } else {
+                $type = Type::getFloat();
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -517,6 +520,238 @@ class CastAnalyzer
         }
 
         return $int_type;
+    }
+
+    public static function castFloatAttempt(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Union $stmt_type,
+        PhpParser\Node\Expr $stmt,
+        bool $explicit_cast = false
+    ): Union {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $possibly_unwanted_cast = [];
+        $invalid_casts = [];
+        $valid_floats = [];
+        $castable_types = [];
+
+        $atomic_types = $stmt_type->getAtomicTypes();
+
+        $parent_nodes = [];
+
+        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
+            $parent_nodes = $stmt_type->parent_nodes;
+        }
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TFloat) {
+                $valid_floats[] = $atomic_type;
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TInt) {
+                if ($atomic_type instanceof TLiteralInt) {
+                    $valid_floats[] = new TLiteralFloat((float) $atomic_type->value);
+                } else {
+                    $castable_types[] = new TFloat();
+                }
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TString) {
+                if ($atomic_type instanceof TLiteralString && (float) $atomic_type->value !== 0.0) {
+                    $valid_floats[] = new TLiteralFloat((float) $atomic_type->value);
+                } elseif ($atomic_type instanceof TNumericString) {
+                    $castable_types[] = new TFloat();
+                } else {
+                    // any normal string
+                    $valid_floats[] = new TLiteralFloat(0.0);
+                }
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
+                $valid_floats[] = new TLiteralFloat(0.0);
+                continue;
+            }
+
+            if ($atomic_type instanceof TTrue) {
+                $valid_floats[] = new TLiteralFloat(1.0);
+                continue;
+            }
+
+            if ($atomic_type instanceof TBool) {
+                $valid_floats[] = new TLiteralFloat(0.0);
+                $valid_floats[] = new TLiteralFloat(1.0);
+                continue;
+            }
+
+            // could be invalid, but allow it, as it is allowed for TString below too
+            if ($atomic_type instanceof TMixed
+                || $atomic_type instanceof TClosedResource
+                || $atomic_type instanceof TResource
+                || $atomic_type instanceof Scalar
+            ) {
+                $castable_types[] = new TFloat();
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TNamedObject
+                || $atomic_type instanceof TObjectWithProperties
+            ) {
+                $intersection_types = [$atomic_type];
+
+                if ($atomic_type->extra_types) {
+                    $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
+                }
+
+                foreach ($intersection_types as $intersection_type) {
+                    if ($intersection_type instanceof TNamedObject) {
+                        $intersection_method_id = new MethodIdentifier(
+                            $intersection_type->value,
+                            '__tostring'
+                        );
+
+                        if ($codebase->methods->methodExists(
+                            $intersection_method_id,
+                            $context->calling_method_id,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        )) {
+                            $return_type = $codebase->methods->getMethodReturnType(
+                                $intersection_method_id,
+                                $self_class
+                            ) ?? Type::getString();
+
+                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
+
+                            MethodCallReturnTypeFetcher::taintMethodCallResult(
+                                $statements_analyzer,
+                                $return_type,
+                                $stmt,
+                                $stmt,
+                                [],
+                                $intersection_method_id,
+                                $declaring_method_id,
+                                $intersection_type->value . '::__toString',
+                                $context
+                            );
+
+                            if ($statements_analyzer->data_flow_graph) {
+                                $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
+                            }
+
+                            foreach ($return_type->getAtomicTypes() as $sub_atomic_type) {
+                                if ($sub_atomic_type instanceof TLiteralString
+                                    && (float) $sub_atomic_type->value !== 0.0
+                                ) {
+                                    $valid_floats[] = new TLiteralFloat((float) $sub_atomic_type->value);
+                                } elseif ($sub_atomic_type instanceof TNumericString) {
+                                    $castable_types[] = new TFloat();
+                                } else {
+                                    $valid_floats[] = new TLiteralFloat(0.0);
+                                }
+                            }
+
+                            continue 2;
+                        }
+                    }
+
+                    if ($intersection_type instanceof TObjectWithProperties
+                        && isset($intersection_type->methods['__toString'])
+                    ) {
+                        $castable_types[] = new TFloat();
+
+                        continue 2;
+                    }
+                }
+            }
+
+            if ($atomic_type instanceof TNonEmptyArray
+                || $atomic_type instanceof TNonEmptyList
+            ) {
+                $possibly_unwanted_cast[] = $atomic_type->getId();
+
+                $valid_floats[] = new TLiteralFloat(1.0);
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TArray
+                || $atomic_type instanceof TList
+                || $atomic_type instanceof TKeyedArray
+            ) {
+                // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not
+                // welcome to off-by-one hell if that happens :-)
+                $possibly_unwanted_cast[] = $atomic_type->getId();
+
+                $valid_floats[] = new TLiteralFloat(0.0);
+                $valid_floats[] = new TLiteralFloat(1.0);
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+
+                continue;
+            }
+
+            $invalid_casts[] = $atomic_type->getId();
+        }
+
+        if ($invalid_casts) {
+            if ( $valid_floats || $castable_types ) {
+                IssueBuffer::maybeAdd(
+                    new PossiblyInvalidCast(
+                        $invalid_casts[0] . ' cannot be cast to float',
+                        new CodeLocation( $statements_analyzer->getSource(), $stmt )
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                );
+            } else {
+                IssueBuffer::maybeAdd(
+                    new InvalidCast(
+                        $invalid_casts[0] . ' cannot be cast to float',
+                        new CodeLocation( $statements_analyzer->getSource(), $stmt )
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                );
+            }
+        } elseif (!empty($possibly_unwanted_cast)) {
+            IssueBuffer::maybeAdd(
+                new PossiblyInvalidCast(
+                    'Casting ' . $possibly_unwanted_cast[0] . ' to float has possibly unintended value of 1.0',
+                    new CodeLocation( $statements_analyzer->getSource(), $stmt )
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            );
+        } elseif ($explicit_cast && !$castable_types) {
+            // todo: emit error here
+        }
+
+        $valid_types = array_merge($valid_floats, $castable_types);
+
+        if (!$valid_types) {
+            $float_type = Type::getFloat();
+        } else {
+            $float_type = TypeCombiner::combine(
+                $valid_types,
+                $codebase
+            );
+        }
+
+        if ($statements_analyzer->data_flow_graph) {
+            $float_type->parent_nodes = $parent_nodes;
+        }
+
+        return $float_type;
     }
 
     public static function castStringAttempt(
