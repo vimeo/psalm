@@ -1519,7 +1519,7 @@ class TypeTest extends TestCase
 
                     function takesB(B $i): void {}',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - Argument 1 of takesB expects B,'
-                    . ' parent type A&static provided',
+                    . ' but parent type A&static provided',
             ],
             'intersectionTypeInterfaceCheckAfterInstanceof' => [
                 '<?php
@@ -1540,7 +1540,7 @@ class TypeTest extends TestCase
                     interface I {}
 
                     function takesI(I $i): void {}',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - Argument 1 of takesI expects I, A&static provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - Argument 1 of takesI expects I, but A&static provided',
             ],
         ];
     }

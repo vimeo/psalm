@@ -1500,7 +1500,7 @@ class ReturnTypeTest extends TestCase
 
                 $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:54 - Argument 1 expects T:fn-map as mixed, int provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:54 - Argument 1 expects T:fn-map as mixed, but int provided',
             ],
             'cannotInferReturnClosureWithDifferentReturnTypes' => [
                 '<?php
