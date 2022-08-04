@@ -998,6 +998,60 @@ class ConstantTest extends TestCase
                     '$c' => 'int',
                 ]
             ],
+            'bitwiseAndClassConstant' => [
+                'code' => '<?php
+                    class X {
+                        public const A = 1;
+                        public const B = 2;
+                        public const C = self::A & self::B;
+                    }
+
+                    $c = X::C;',
+                'assertions' => [
+                    '$c' => 'int',
+                ]
+            ],
+            'bitwiseXorClassConstant' => [
+                'code' => '<?php
+                    class X {
+                        public const A = 1;
+                        public const B = 2;
+                        public const C = self::A ^ self::B;
+                    }
+
+                    $c = X::C;',
+                'assertions' => [
+                    '$c' => 'int',
+                ]
+            ],
+            'bitwiseNotClassConstant' => [
+                'code' => '<?php
+                    class X {
+                        public const A = ~0;
+                        public const B = ~"aa";
+                    }
+
+                    $a = X::A;
+                    $b = X::B;',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'string',
+                ]
+            ],
+            'booleanNotClassConstant' => [
+                'code' => '<?php
+                    class X {
+                        public const A = !true;
+                        public const B = !false;
+                    }
+
+                    $a = X::A;
+                    $b = X::B;',
+                'assertions' => [
+                    '$a' => 'false',
+                    '$b' => 'true',
+                ]
+            ],
             'protectedClassConstantAccessibilitySameNameInChild' => [
                 'code' => '<?php
                     class A {

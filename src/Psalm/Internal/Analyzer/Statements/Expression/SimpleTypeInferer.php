@@ -203,6 +203,63 @@ class SimpleTypeInferer
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\BitwiseNot) {
+            $stmt_expr_type = self::infer(
+                $codebase,
+                $nodes,
+                $stmt->expr,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name
+            );
+
+            if ($stmt_expr_type === null) {
+                return null;
+            }
+
+            $invalidTypes = clone $stmt_expr_type;
+            $invalidTypes->removeType('string');
+            $invalidTypes->removeType('int');
+            $invalidTypes->removeType('float');
+
+            if (!$invalidTypes->isUnionEmpty()) {
+                return null;
+            }
+
+            $types = [];
+            if ($stmt_expr_type->hasString()) {
+                $types[] = Type::getString();
+            }
+            if ($stmt_expr_type->hasInt() || $stmt_expr_type->hasFloat()) {
+                $types[] = Type::getInt();
+            }
+
+            return $types ? Type::combineUnionTypeArray($types, null) : null;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
+            $stmt_expr_type = self::infer(
+                $codebase,
+                $nodes,
+                $stmt->expr,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name
+            );
+
+            if ($stmt_expr_type === null) {
+                return null;
+            } elseif ($stmt_expr_type->isAlwaysFalsy()) {
+                return Type::getTrue();
+            } elseif ($stmt_expr_type->isAlwaysTruthy()) {
+                return Type::getFalse();
+            } else {
+                return Type::getBool();
+            }
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             $name = strtolower($stmt->name->parts[0]);
             if ($name === 'false') {
