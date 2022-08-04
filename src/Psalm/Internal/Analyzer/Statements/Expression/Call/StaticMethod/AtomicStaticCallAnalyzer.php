@@ -512,7 +512,18 @@ class AtomicStaticCallAnalyzer
                 }
             }
 
-            $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
+            $expanded_return_type = TypeExpander::expandUnion(
+                $codebase,
+                $return_type_candidate,
+                $context->self,
+                $class_storage->name,
+                $context->parent,
+                true,
+                false,
+                true
+            );
+
+            $statements_analyzer->node_data->setType($stmt, $expanded_return_type);
 
             return true;
         }
