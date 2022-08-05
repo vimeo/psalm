@@ -46,7 +46,7 @@ class DateTimeImmutable implements DateTimeInterface
 
     /**
      * @psalm-mutation-free
-     * @return static
+     * @return static|false
      */
     public function modify(string $modifier) {}
 
