@@ -271,8 +271,8 @@ class MethodCallTest extends TestCase
 
                     $b = (new DateTimeImmutable())->modify("+3 hours");',
                 'assertions' => [
-                    '$yesterday' => 'MyDate',
-                    '$b' => 'DateTimeImmutable',
+                    '$yesterday' => 'MyDate|false',
+                    '$b' => 'DateTimeImmutable|false',
                 ],
             ],
             'magicCall' => [

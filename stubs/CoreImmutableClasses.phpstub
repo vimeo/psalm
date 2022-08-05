@@ -15,7 +15,7 @@ class DateTimeImmutable implements DateTimeInterface
      *
      * @param string $format
      *
-     * @return (\PHP_MAJOR_VERSION is int<0, 7> ? string|false : string)
+     * @return ($format is non-empty-string ? non-empty-string : string)
      */
     public function format($format) {}
 
