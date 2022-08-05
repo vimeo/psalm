@@ -1059,7 +1059,6 @@ return [
     'DateTimeImmutable::__wakeup' => ['void'],
     'DateTimeImmutable::add' => ['static', 'interval'=>'DateInterval'],
     'DateTimeImmutable::createFromMutable' => ['static', 'datetime'=>'DateTime'],
-    'DateTimeImmutable::diff' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
     'DateTimeImmutable::getLastErrors' => ['array{warning_count:int,warnings:array<int,string>,error_count:int,errors:array<int,string>}'],
     'DateTimeImmutable::modify' => ['static', 'modify'=>'string'],
     'DateTimeImmutable::setDate' => ['static|false', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
