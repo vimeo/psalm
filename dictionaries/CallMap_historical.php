@@ -1058,7 +1058,6 @@ return [
     'DateTimeImmutable::__set_state' => ['static', 'array'=>'array'],
     'DateTimeImmutable::__wakeup' => ['void'],
     'DateTimeImmutable::add' => ['static', 'interval'=>'DateInterval'],
-    'DateTimeImmutable::createFromFormat' => ['static|false', 'format'=>'string', 'time'=>'string', 'timezone='=>'?DateTimeZone'],
     'DateTimeImmutable::createFromMutable' => ['static', 'datetime'=>'DateTime'],
     'DateTimeImmutable::diff' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
     'DateTimeImmutable::format' => ['string|false', 'format'=>'string'],
