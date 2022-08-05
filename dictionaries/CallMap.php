@@ -1795,7 +1795,6 @@ return [
 'DateTime::sub' => ['static', 'interval'=>'DateInterval'],
 'DateTimeImmutable::__set_state' => ['static', 'array'=>'array'],
 'DateTimeImmutable::__wakeup' => ['void'],
-'DateTimeImmutable::add' => ['static', 'interval'=>'DateInterval'],
 'DateTimeImmutable::createFromInterface' => ['self', 'object' => 'DateTimeInterface'],
 'DateTimeImmutable::createFromMutable' => ['static', 'datetime'=>'DateTime'],
 'DateTimeImmutable::getLastErrors' => ['array{warning_count:int,warnings:array<int,string>,error_count:int,errors:array<int,string>}'],
