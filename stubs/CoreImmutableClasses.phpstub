@@ -73,7 +73,7 @@ class DateTimeImmutable implements DateTimeInterface
 
     /**
      * @psalm-mutation-free
-     * @return static|false
+     * @return static
      */
     public function setTime(int $hour, int $minute, int $second = 0, int $microsecond = 0) {}
 
