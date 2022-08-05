@@ -100,12 +100,6 @@ class DateTimeImmutable implements DateTimeInterface
      * @return static
      */
     public static function createFromMutable(DateTime $object) {}
-
-    /**
-     * @psalm-mutation-free
-     * @return self
-     */
-    public static function createFromInterface(DateTimeInterface $object) {}
 }
 
 /**
