@@ -1055,8 +1055,6 @@ return [
     'DateTime::setTimestamp' => ['static', 'unixtimestamp'=>'int'],
     'DateTime::setTimezone' => ['static', 'timezone'=>'DateTimeZone'],
     'DateTime::sub' => ['static', 'interval'=>'DateInterval'],
-    'DateTimeImmutable::__construct' => ['void', 'time='=>'string'],
-    'DateTimeImmutable::__construct\'1' => ['void', 'time'=>'?string', 'timezone'=>'?DateTimeZone'],
     'DateTimeImmutable::__set_state' => ['static', 'array'=>'array'],
     'DateTimeImmutable::__wakeup' => ['void'],
     'DateTimeImmutable::add' => ['static', 'interval'=>'DateInterval'],
