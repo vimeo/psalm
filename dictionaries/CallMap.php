@@ -1802,7 +1802,6 @@ return [
 'DateTimeImmutable::setISODate' => ['static|false', 'year'=>'int', 'week'=>'int', 'day='=>'int'],
 'DateTimeImmutable::setTime' => ['static|false', 'hour'=>'int', 'minute'=>'int', 'second='=>'int', 'microseconds='=>'int'],
 'DateTimeImmutable::setTimestamp' => ['static|false', 'unixtimestamp'=>'int'],
-'DateTimeImmutable::setTimezone' => ['static|false', 'timezone'=>'DateTimeZone'],
 'DateTimeInterface::diff' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
 'DateTimeInterface::format' => ['string', 'format'=>'string'],
 'DateTimeInterface::getOffset' => ['int'],
