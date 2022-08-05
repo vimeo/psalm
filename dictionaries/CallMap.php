@@ -1799,7 +1799,6 @@ return [
 'DateTimeImmutable::createFromInterface' => ['self', 'object' => 'DateTimeInterface'],
 'DateTimeImmutable::createFromMutable' => ['static', 'datetime'=>'DateTime'],
 'DateTimeImmutable::diff' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
-'DateTimeImmutable::format' => ['string', 'format'=>'string'],
 'DateTimeImmutable::getLastErrors' => ['array{warning_count:int,warnings:array<int,string>,error_count:int,errors:array<int,string>}'],
 'DateTimeImmutable::getOffset' => ['int'],
 'DateTimeImmutable::getTimestamp' => ['int|false'],

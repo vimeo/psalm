@@ -12,8 +12,10 @@ class DateTimeImmutable implements DateTimeInterface
 
     /**
      * @psalm-mutation-free
+     *
      * @param string $format
-     * @return string
+     *
+     * @return (\PHP_MAJOR_VERSION is int<0, 7> ? string|false : string)
      */
     public function format($format) {}
 
