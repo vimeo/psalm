@@ -1798,7 +1798,6 @@ return [
 'DateTimeImmutable::createFromInterface' => ['self', 'object' => 'DateTimeInterface'],
 'DateTimeImmutable::createFromMutable' => ['static', 'datetime'=>'DateTime'],
 'DateTimeImmutable::getLastErrors' => ['array{warning_count:int,warnings:array<int,string>,error_count:int,errors:array<int,string>}'],
-'DateTimeImmutable::setDate' => ['static|false', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
 'DateTimeImmutable::setISODate' => ['static|false', 'year'=>'int', 'week'=>'int', 'day='=>'int'],
 'DateTimeImmutable::setTimestamp' => ['static|false', 'unixtimestamp'=>'int'],
 'DateTimeInterface::diff' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],

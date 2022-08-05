@@ -79,7 +79,7 @@ class DateTimeImmutable implements DateTimeInterface
 
     /**
      * @psalm-mutation-free
-     * @return static|false
+     * @return static
      */
     public function setDate(int $year, int $month, int $day) {}
 
