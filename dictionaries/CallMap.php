@@ -1802,7 +1802,6 @@ return [
 'DateTimeImmutable::getLastErrors' => ['array{warning_count:int,warnings:array<int,string>,error_count:int,errors:array<int,string>}'],
 'DateTimeImmutable::getOffset' => ['int'],
 'DateTimeImmutable::getTimestamp' => ['int|false'],
-'DateTimeImmutable::getTimezone' => ['DateTimeZone|false'],
 'DateTimeImmutable::modify' => ['static', 'modify'=>'string'],
 'DateTimeImmutable::setDate' => ['static|false', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
 'DateTimeImmutable::setISODate' => ['static|false', 'year'=>'int', 'week'=>'int', 'day='=>'int'],
