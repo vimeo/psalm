@@ -41,10 +41,6 @@ return [
       'old' => ['string|false', 'format'=>'string'],
       'new' => ['string', 'format'=>'string'],
     ],
-    'DateTimeImmutable::format' => [
-      'old' => ['string|false', 'format'=>'string'],
-      'new' => ['string', 'format'=>'string'],
-    ],
     'DateTimeZone::listIdentifiers' => [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
       'new' => ['list<string>', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],

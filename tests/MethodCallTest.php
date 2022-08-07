@@ -264,7 +264,6 @@ class MethodCallTest extends TestCase
             ],
             'dateTimeImmutableStatic' => [
                 '<?php
-                    /** @psalm-immutable */
                     final class MyDate extends DateTimeImmutable {}
 
                     $today = new MyDate();
@@ -273,7 +272,7 @@ class MethodCallTest extends TestCase
                     $b = (new DateTimeImmutable())->modify("+3 hours");',
                 'assertions' => [
                     '$yesterday' => 'MyDate|false',
-                    '$b' => 'DateTimeImmutable',
+                    '$b' => 'DateTimeImmutable|false',
                 ],
             ],
             'magicCall' => [
