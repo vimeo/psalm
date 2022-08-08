@@ -80,10 +80,10 @@ final class TTemplatePropertiesOf extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): void {
-        TemplateInferredTypeReplacer::replace(
+        $this->as = TemplateInferredTypeReplacer::replace(
             new Union([$this->as]),
             $template_result,
             $codebase
-        );
+        )->getSingleAtomic();
     }
 }

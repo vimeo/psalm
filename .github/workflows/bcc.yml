@@ -13,7 +13,7 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -24,7 +24,7 @@ jobs:
           echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
 
       - name: Cache composer cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

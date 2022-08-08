@@ -756,9 +756,8 @@ class CallAnalyzer
                     $assertion_type_atomic = $assertion_rule->getAtomicType();
 
                     if ($assertion_type_atomic) {
-                        $assertion_type = new Union([clone $assertion_type_atomic]);
-                        TemplateInferredTypeReplacer::replace(
-                            $assertion_type,
+                        $assertion_type = TemplateInferredTypeReplacer::replace(
+                            new Union([clone $assertion_type_atomic]),
                             $template_result,
                             $codebase
                         );

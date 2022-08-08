@@ -169,7 +169,7 @@ class TypeHintResolver
         }
 
         if ($is_nullable) {
-            $type->addType(new TNull);
+            $type = $type->getBuilder()->addType(new TNull)->freeze();
         }
 
         return $type;

@@ -218,7 +218,9 @@ class ArrayAssignmentAnalyzer
             $new_child_type = $root_type;
         }
 
+        $new_child_type = $new_child_type->getBuilder();
         $new_child_type->removeType('null');
+        $new_child_type = $new_child_type->freeze();
 
         if (!$root_type->hasObjectType()) {
             $root_type = $new_child_type;
@@ -295,7 +297,7 @@ class ArrayAssignmentAnalyzer
         $has_matching_objectlike_property = false;
         $has_matching_string = false;
 
-        $child_stmt_type = clone $child_stmt_type;
+        $child_stmt_type = $child_stmt_type->getBuilder();
 
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
@@ -351,7 +353,7 @@ class ArrayAssignmentAnalyzer
             }
         }
 
-        $child_stmt_type->bustCache();
+        $child_stmt_type = $child_stmt_type->freeze();
 
         if (!$has_matching_objectlike_property && !$has_matching_string) {
             if (count($key_values) === 1) {
@@ -511,9 +513,7 @@ class ArrayAssignmentAnalyzer
                     }
                 }
 
-                $array_atomic_key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts(
-                    $key_type
-                );
+                $array_atomic_key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type);
             } else {
                 $array_atomic_key_type = Type::getArrayKey();
             }
@@ -557,7 +557,7 @@ class ArrayAssignmentAnalyzer
                         ]
                     );
 
-                    TemplateInferredTypeReplacer::replace(
+                    $value_type = TemplateInferredTypeReplacer::replace(
                         $value_type,
                         $template_result,
                         $codebase
@@ -742,17 +742,21 @@ class ArrayAssignmentAnalyzer
 
             $is_last = $i === count($child_stmts) - 1;
 
+            $child_stmt_dim_type_or_int = $child_stmt_dim_type ?? Type::getInt();
             $child_stmt_type = ArrayFetchAnalyzer::getArrayAccessTypeGivenOffset(
                 $statements_analyzer,
                 $child_stmt,
                 $array_type,
-                $child_stmt_dim_type ?? Type::getInt(),
+                $child_stmt_dim_type_or_int,
                 true,
                 $extended_var_id,
                 $context,
                 $assign_value,
                 !$is_last ? null : $assignment_type
             );
+            if ($child_stmt->dim) {
+                $statements_analyzer->node_data->setType($child_stmt->dim, $child_stmt_dim_type_or_int);
+            }
 
             $statements_analyzer->node_data->setType(
                 $child_stmt,
@@ -886,8 +890,10 @@ class ArrayAssignmentAnalyzer
                 );
             }
 
+            $new_child_type = $new_child_type->getBuilder();
             $new_child_type->removeType('null');
             $new_child_type->possibly_undefined = false;
+            $new_child_type = $new_child_type->freeze();
 
             if (!$child_stmt_type->hasObjectType()) {
                 $child_stmt_type = $new_child_type;

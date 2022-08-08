@@ -567,7 +567,7 @@ class ExistingAtomicStaticCallAnalyzer
                     null
                 );
 
-                TemplateInferredTypeReplacer::replace(
+                $return_type_candidate = TemplateInferredTypeReplacer::replace(
                     $return_type_candidate,
                     $template_result,
                     $codebase

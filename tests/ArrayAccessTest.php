@@ -1098,7 +1098,7 @@ class ArrayAccessTest extends TestCase
                     $_arr2[$index] = 5;',
                 'assertions' => [
                     '$_arr1===' => 'non-empty-array<1, 5>',
-                    '$_arr2===' => 'non-empty-array<1, 5>',
+                    '$_arr2===' => 'array{1: 5}',
                 ]
             ],
             'accessArrayWithSingleStringLiteralOffset' => [

@@ -80,6 +80,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -271,7 +272,7 @@ class ArrayFetchAnalyzer
                     && !$const_array_key_type->hasMixed()
                     && !$stmt_dim_type->hasMixed()
                 ) {
-                    $new_offset_type = clone $stmt_dim_type;
+                    $new_offset_type = $stmt_dim_type->getBuilder();
                     $const_array_key_atomic_types = $const_array_key_type->getAtomicTypes();
 
                     foreach ($new_offset_type->getAtomicTypes() as $offset_key => $offset_atomic_type) {
@@ -295,6 +296,8 @@ class ArrayFetchAnalyzer
                             $new_offset_type->removeType($offset_key);
                         }
                     }
+
+                    $new_offset_type = $new_offset_type->freeze();
                 }
             }
         }
@@ -456,14 +459,17 @@ class ArrayFetchAnalyzer
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        Union $array_type,
-        Union $offset_type,
+        Union &$array_type_original,
+        Union &$offset_type_original,
         bool $in_assignment,
         ?string $extended_var_id,
         Context $context,
         PhpParser\Node\Expr $assign_value = null,
         Union $replacement_type = null
     ): Union {
+        $array_type = $array_type_original->getBuilder();
+        $offset_type = $offset_type_original->getBuilder();
+
         $codebase = $statements_analyzer->getCodebase();
 
         $has_array_access = false;
@@ -847,6 +853,9 @@ class ArrayFetchAnalyzer
             }
         }
 
+        $array_type_original = $array_type->freeze();
+        $offset_type_original = $offset_type->freeze();
+
         if ($array_access_type === null) {
             // shouldn’t happen, but don’t crash
             return Type::getMixed();
@@ -864,7 +873,7 @@ class ArrayFetchAnalyzer
     }
 
     private static function checkLiteralIntArrayOffset(
-        Union $offset_type,
+        MutableUnion $offset_type,
         Union $expected_offset_type,
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -912,7 +921,7 @@ class ArrayFetchAnalyzer
     }
 
     private static function checkLiteralStringArrayOffset(
-        Union $offset_type,
+        MutableUnion $offset_type,
         Union $expected_offset_type,
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -961,26 +970,16 @@ class ArrayFetchAnalyzer
 
     public static function replaceOffsetTypeWithInts(Union $offset_type): Union
     {
+        $offset_type = $offset_type->getBuilder();
         $offset_types = $offset_type->getAtomicTypes();
-
-        $cloned = false;
 
         foreach ($offset_types as $key => $offset_type_part) {
             if ($offset_type_part instanceof TLiteralString) {
                 if (preg_match('/^(0|[1-9][0-9]*)$/', $offset_type_part->value)) {
-                    if (!$cloned) {
-                        $offset_type = clone $offset_type;
-                        $cloned = true;
-                    }
                     $offset_type->addType(new TLiteralInt((int) $offset_type_part->value));
                     $offset_type->removeType($key);
                 }
             } elseif ($offset_type_part instanceof TBool) {
-                if (!$cloned) {
-                    $offset_type = clone $offset_type;
-                    $cloned = true;
-                }
-
                 if ($offset_type_part instanceof TFalse) {
                     if (!$offset_type->ignore_falsable_issues) {
                         $offset_type->addType(new TLiteralInt(0));
@@ -997,7 +996,7 @@ class ArrayFetchAnalyzer
             }
         }
 
-        return $offset_type;
+        return $offset_type->freeze();
     }
 
     /**
@@ -1085,11 +1084,11 @@ class ArrayFetchAnalyzer
         bool $in_assignment,
         Atomic &$type,
         array &$key_values,
-        Union $array_type,
+        MutableUnion $array_type,
         string $type_string,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?Union $replacement_type,
-        Union &$offset_type,
+        MutableUnion $offset_type,
         Atomic $original_type,
         Codebase $codebase,
         ?string $extended_var_id,
@@ -1143,7 +1142,7 @@ class ArrayFetchAnalyzer
             }
         }
 
-        $offset_type = self::replaceOffsetTypeWithInts($offset_type);
+        $offset_type = self::replaceOffsetTypeWithInts($offset_type->freeze())->getBuilder();
 
         if ($type instanceof TList
             && (($in_assignment && $stmt->dim)
@@ -1226,10 +1225,10 @@ class ArrayFetchAnalyzer
         Codebase $codebase,
         Context $context,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        Union $array_type,
+        MutableUnion $array_type,
         ?string $extended_var_id,
         TArray $type,
-        Union $offset_type,
+        MutableUnion $offset_type,
         bool $in_assignment,
         array &$expected_offset_types,
         ?Union &$array_access_type,
@@ -1241,7 +1240,7 @@ class ArrayFetchAnalyzer
             if ($type->isEmptyArray()) {
                 $type->type_params[0] = $offset_type->isMixed()
                     ? Type::getArrayKey()
-                    : $offset_type;
+                    : $offset_type->freeze();
             }
         } elseif (!$type->isEmptyArray()) {
             $expected_offset_type = $type->type_params[0]->hasMixed()
@@ -1278,7 +1277,7 @@ class ArrayFetchAnalyzer
             } else {
                 $offset_type_contained_by_expected = UnionTypeComparator::isContainedBy(
                     $codebase,
-                    $offset_type,
+                    $offset_type->freeze(),
                     $expected_offset_type,
                     true,
                     $offset_type->ignore_falsable_issues,
@@ -1336,7 +1335,7 @@ class ArrayFetchAnalyzer
 
                     if (UnionTypeComparator::canExpressionTypesBeIdentical(
                         $codebase,
-                        $offset_type,
+                        $offset_type->freeze(),
                         $expected_offset_type
                     )) {
                         $has_valid_offset = true;
@@ -1378,7 +1377,7 @@ class ArrayFetchAnalyzer
     private static function handleArrayAccessOnClassStringMap(
         Codebase $codebase,
         TClassStringMap $type,
-        Union $offset_type,
+        MutableUnion $offset_type,
         ?Union $replacement_type,
         ?Union &$array_access_type
     ): void {
@@ -1440,7 +1439,7 @@ class ArrayFetchAnalyzer
 
                 $expected_value_param_get = clone $type->value_param;
 
-                TemplateInferredTypeReplacer::replace(
+                $expected_value_param_get = TemplateInferredTypeReplacer::replace(
                     $expected_value_param_get,
                     $template_result_get,
                     $codebase
@@ -1449,7 +1448,7 @@ class ArrayFetchAnalyzer
                 if ($replacement_type) {
                     $expected_value_param_set = clone $type->value_param;
 
-                    TemplateInferredTypeReplacer::replace(
+                    $replacement_type = TemplateInferredTypeReplacer::replace(
                         $replacement_type,
                         $template_result_set,
                         $codebase
@@ -1483,11 +1482,11 @@ class ArrayFetchAnalyzer
         ?Union &$array_access_type,
         bool $in_assignment,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        Union $offset_type,
+        MutableUnion $offset_type,
         ?string $extended_var_id,
         Context $context,
         TKeyedArray $type,
-        Union $array_type,
+        MutableUnion $array_type,
         array &$expected_offset_types,
         string $type_string,
         bool &$has_valid_offset
@@ -1589,7 +1588,7 @@ class ArrayFetchAnalyzer
 
             $is_contained = UnionTypeComparator::isContainedBy(
                 $codebase,
-                $offset_type,
+                $offset_type->freeze(),
                 $key_type,
                 true,
                 $offset_type->ignore_falsable_issues,
@@ -1600,7 +1599,7 @@ class ArrayFetchAnalyzer
                 $is_contained = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $key_type,
-                    $offset_type,
+                    $offset_type->freeze(),
                     true,
                     $offset_type->ignore_falsable_issues
                 );
@@ -1620,7 +1619,7 @@ class ArrayFetchAnalyzer
 
                     $new_key_type = Type::combineUnionTypes(
                         $generic_key_type,
-                        $offset_type->isMixed() ? Type::getArrayKey() : $offset_type
+                        $offset_type->isMixed() ? Type::getArrayKey() : $offset_type->freeze()
                     );
 
                     $property_count = $type->sealed ? count($type->properties) : null;
@@ -1682,7 +1681,7 @@ class ArrayFetchAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         TList $type,
-        Union $offset_type,
+        MutableUnion $offset_type,
         ?string $extended_var_id,
         array $key_values,
         Context $context,
@@ -1897,7 +1896,7 @@ class ArrayFetchAnalyzer
         Context $context,
         ?Union $replacement_type,
         TString $type,
-        Union $offset_type,
+        MutableUnion $offset_type,
         array &$expected_offset_types,
         ?Union &$array_access_type,
         bool &$has_valid_offset
@@ -1960,7 +1959,7 @@ class ArrayFetchAnalyzer
 
         if (!UnionTypeComparator::isContainedBy(
             $codebase,
-            $offset_type,
+            $offset_type->freeze(),
             $valid_offset_type,
             true
         )) {
@@ -1981,7 +1980,7 @@ class ArrayFetchAnalyzer
      * @param Atomic[] $offset_types
      */
     private static function checkArrayOffsetType(
-        Union $offset_type,
+        MutableUnion $offset_type,
         array $offset_types,
         Codebase $codebase
     ): bool {

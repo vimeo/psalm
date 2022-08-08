@@ -177,7 +177,7 @@ class YieldAnalyzer
         }
 
         if ($yield_type) {
-            $expression_type->substitute($expression_type, $yield_type);
+            $expression_type = $expression_type->getBuilder()->substitute($expression_type, $yield_type)->freeze();
         }
 
         $statements_analyzer->node_data->setType($stmt, $expression_type);

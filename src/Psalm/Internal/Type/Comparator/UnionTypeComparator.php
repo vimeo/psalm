@@ -174,14 +174,15 @@ class UnionTypeComparator
                         && $atomic_comparison_result->replacement_atomic_type
                     ) {
                         if (!$union_comparison_result->replacement_union_type) {
-                            $union_comparison_result->replacement_union_type = clone $input_type;
+                            $union_comparison_result->replacement_union_type = $input_type;
                         }
 
-                        $union_comparison_result->replacement_union_type->removeType($input_type->getKey());
-
-                        $union_comparison_result->replacement_union_type->addType(
+                        $replacement = $union_comparison_result->replacement_union_type->getBuilder();
+                        $replacement->removeType($input_type->getKey());
+                        $replacement->addType(
                             $atomic_comparison_result->replacement_atomic_type
                         );
+                        $union_comparison_result->replacement_union_type = $replacement->freeze();
                     }
                 }
 
@@ -321,10 +322,10 @@ class UnionTypeComparator
             return false;
         }
 
-        $input_type_not_null = clone $input_type;
+        $input_type_not_null = $input_type->getBuilder();
         $input_type_not_null->removeType('null');
 
-        $container_type_not_null = clone $container_type;
+        $container_type_not_null = $container_type->getBuilder();
         $container_type_not_null->removeType('null');
 
         if ($input_type_not_null->getId() === $container_type_not_null->getId()) {

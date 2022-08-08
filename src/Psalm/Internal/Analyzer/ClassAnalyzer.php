@@ -791,12 +791,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     $template_result = new TemplateResult([], $lower_bounds);
 
-                    TemplateInferredTypeReplacer::replace(
+                    $guide_property_type = TemplateInferredTypeReplacer::replace(
                         $guide_property_type,
                         $template_result,
                         $codebase
                     );
-                    TemplateInferredTypeReplacer::replace(
+                    $property_type = TemplateInferredTypeReplacer::replace(
                         $property_type,
                         $template_result,
                         $codebase
@@ -1294,7 +1294,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     } elseif (!$property_storage->has_default) {
                         if (isset($this->inferred_property_types[$property_name])) {
-                            $this->inferred_property_types[$property_name]->addType(new TNull());
+                            $this->inferred_property_types[$property_name] =
+                                $this->inferred_property_types[$property_name]
+                                    ->getBuilder()
+                                    ->addType(new TNull())
+                                    ->freeze();
                             $this->inferred_property_types[$property_name]->setFromDocblock();
                         }
                     }
@@ -1543,7 +1547,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($suggested_type && !$property_storage->has_default && $property_storage->is_static) {
-            $suggested_type->addType(new TNull());
+            $suggested_type = $suggested_type->getBuilder()->addType(new TNull())->freeze();
         }
 
         if ($suggested_type && !$suggested_type->isNull()) {

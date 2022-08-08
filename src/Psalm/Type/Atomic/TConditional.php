@@ -128,7 +128,7 @@ final class TConditional extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): void {
-        TemplateInferredTypeReplacer::replace(
+        $this->conditional_type = TemplateInferredTypeReplacer::replace(
             $this->conditional_type,
             $template_result,
             $codebase

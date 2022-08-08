@@ -839,7 +839,7 @@ class FunctionLikeNodeScanner
             );
 
             if ($is_nullable) {
-                $param_type->addType(new TNull);
+                $param_type = $param_type->getBuilder()->addType(new TNull)->freeze();
             } else {
                 $is_nullable = $param_type->isNullable();
             }

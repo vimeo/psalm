@@ -846,7 +846,7 @@ class FunctionLikeDocblockScanner
                     && !$new_param_type->isNullable()
                     && !$new_param_type->hasTemplate()
                 ) {
-                    $new_param_type->addType(new TNull());
+                    $new_param_type = $new_param_type->getBuilder()->addType(new TNull())->freeze();
                 }
 
                 $config = Config::getInstance();
@@ -888,7 +888,7 @@ class FunctionLikeDocblockScanner
             }
 
             if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                $new_param_type->addType(new TNull());
+                $new_param_type = $new_param_type->getBuilder()->addType(new TNull())->freeze();
             }
 
             $storage_param->type = $new_param_type;
@@ -1010,7 +1010,7 @@ class FunctionLikeDocblockScanner
                             $storage->signature_return_type
                         )
                     ) {
-                        $storage->return_type->addType(new TNull());
+                        $storage->return_type = $storage->return_type->getBuilder()->addType(new TNull())->freeze();
                     }
                 }
             }

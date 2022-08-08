@@ -45,6 +45,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -601,12 +602,15 @@ abstract class Type
 
                         if (null !== $intersection_atomic) {
                             if (null === $combined_type) {
-                                $combined_type = new Union([$intersection_atomic]);
+                                $combined_type = new MutableUnion([$intersection_atomic]);
                             } else {
                                 $combined_type->addType($intersection_atomic);
                             }
                         }
                     }
+                }
+                if ($combined_type) {
+                    $combined_type = $combined_type->freeze();
                 }
             }
 

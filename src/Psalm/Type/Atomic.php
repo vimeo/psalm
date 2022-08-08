@@ -549,7 +549,7 @@ abstract class Atomic implements TypeNode
         }
 
         if ($this instanceof TTemplateParam) {
-            $this->as->replaceClassLike($old, $new);
+            $this->as = $this->as->getBuilder()->replaceClassLike($old, $new)->freeze();
         }
 
         if ($this instanceof TLiteralClassString) {
@@ -562,14 +562,14 @@ abstract class Atomic implements TypeNode
             || $this instanceof TGenericObject
             || $this instanceof TIterable
         ) {
-            foreach ($this->type_params as $type_param) {
-                $type_param->replaceClassLike($old, $new);
+            foreach ($this->type_params as &$type_param) {
+                $type_param = $type_param->getBuilder()->replaceClassLike($old, $new)->freeze();
             }
         }
 
         if ($this instanceof TKeyedArray) {
-            foreach ($this->properties as $property_type) {
-                $property_type->replaceClassLike($old, $new);
+            foreach ($this->properties as &$property_type) {
+                $property_type = $property_type->getBuilder()->replaceClassLike($old, $new)->freeze();
             }
         }
 
@@ -579,13 +579,13 @@ abstract class Atomic implements TypeNode
             if ($this->params) {
                 foreach ($this->params as $param) {
                     if ($param->type) {
-                        $param->type->replaceClassLike($old, $new);
+                        $param->type = $param->type->getBuilder()->replaceClassLike($old, $new)->freeze();
                     }
                 }
             }
 
             if ($this->return_type) {
-                $this->return_type->replaceClassLike($old, $new);
+                $this->return_type = $this->return_type->getBuilder()->replaceClassLike($old, $new)->freeze();
             }
         }
     }

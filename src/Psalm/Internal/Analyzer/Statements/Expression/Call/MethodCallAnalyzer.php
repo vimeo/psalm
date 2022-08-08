@@ -400,7 +400,7 @@ class MethodCallAnalyzer extends CallAnalyzer
         ) {
             $keys_to_remove = [];
 
-            $class_type = clone $class_type;
+            $class_type = $class_type->getBuilder();
 
             foreach ($class_type->getAtomicTypes() as $key => $type) {
                 if (!$type instanceof TNamedObject) {
@@ -418,7 +418,7 @@ class MethodCallAnalyzer extends CallAnalyzer
 
             $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
 
-            $context->vars_in_scope[$lhs_var_id] = $class_type;
+            $context->vars_in_scope[$lhs_var_id] = $class_type->freeze();
         }
 
         return true;

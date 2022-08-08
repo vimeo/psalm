@@ -225,10 +225,10 @@ class ArrayAnalyzer
             }
 
             if ($bad_types && $good_types) {
-                $item_key_type->substitute(
+                $item_key_type = $item_key_type->getBuilder()->substitute(
                     TypeCombiner::combine($bad_types, $codebase),
                     TypeCombiner::combine($good_types, $codebase)
-                );
+                )->freeze();
             }
         }
 

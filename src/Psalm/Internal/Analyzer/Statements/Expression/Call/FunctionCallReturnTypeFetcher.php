@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -172,7 +173,7 @@ class FunctionCallReturnTypeFetcher
                                 null
                             );
 
-                            TemplateInferredTypeReplacer::replace(
+                            $return_type = TemplateInferredTypeReplacer::replace(
                                 $return_type,
                                 $template_result,
                                 $codebase
@@ -501,8 +502,10 @@ class FunctionCallReturnTypeFetcher
                     break;
 
                 case 'fgetcsv':
-                    $string_type = Type::getString();
-                    $string_type->addType(new TNull);
+                    $string_type = new Union([
+                        new TString,
+                        new TNull
+                    ]);
                     $string_type->ignore_nullable_issues = true;
 
                     $call_map_return_type = new Union([
@@ -609,10 +612,8 @@ class FunctionCallReturnTypeFetcher
         $conditionally_removed_taints = [];
 
         foreach ($function_storage->conditionally_removed_taints as $conditionally_removed_taint) {
-            $conditionally_removed_taint = clone $conditionally_removed_taint;
-
-            TemplateInferredTypeReplacer::replace(
-                $conditionally_removed_taint,
+            $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
+                clone $conditionally_removed_taint,
                 $template_result,
                 $codebase
             );

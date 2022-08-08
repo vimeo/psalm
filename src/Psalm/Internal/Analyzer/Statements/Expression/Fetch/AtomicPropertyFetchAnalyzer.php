@@ -743,7 +743,7 @@ class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            TemplateInferredTypeReplacer::replace(
+            $class_property_type = TemplateInferredTypeReplacer::replace(
                 $class_property_type,
                 new TemplateResult([], $template_types),
                 $codebase

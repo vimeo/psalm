@@ -255,7 +255,7 @@ class TypeParser
             );
 
             if ($non_nullable_type instanceof Union) {
-                $non_nullable_type->addType(new TNull);
+                $non_nullable_type = $non_nullable_type->getBuilder()->addType(new TNull)->freeze();
 
                 return $non_nullable_type;
             }
@@ -396,7 +396,7 @@ class TypeParser
 
     private static function getGenericParamClass(
         string $param_name,
-        Union $as,
+        Union &$as,
         string $defining_class
     ): TTemplateParamClass {
         if ($as->hasMixed()) {
@@ -430,7 +430,7 @@ class TypeParser
                     $t->type_params
                 );
 
-                $as->substitute(new Union([$t]), new Union([$traversable]));
+                $as = $as->getBuilder()->substitute(new Union([$t]), new Union([$traversable]))->freeze();
 
                 return new TTemplateParamClass(
                     $param_name,

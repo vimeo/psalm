@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@f7fc28bf5c23969ef1d9c8fd26f020ade0a2db9e">
+<files psalm-version="dev-master@b9a959e3e20c9f35a7d4fd08883b2d62877c9b92">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -289,6 +289,14 @@
       <code>$cs[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Type/Comparator/CallableTypeComparator.php">
+    <LessSpecificReturnStatement occurrences="1">
+      <code>$callable</code>
+    </LessSpecificReturnStatement>
+    <MoreSpecificReturnType occurrences="1">
+      <code>TCallable|TClosure|null</code>
+    </MoreSpecificReturnType>
+  </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
     <PossiblyUndefinedIntArrayOffset occurrences="6">
       <code>$combination-&gt;array_type_params[1]</code>
@@ -311,31 +319,6 @@
       <code>array_keys($template_type_map[$template_param_name])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Node/Stmt/VirtualClass.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualClass</code>
-    </PropertyNotSetInConstructor>
-  </file>
-  <file src="src/Psalm/Node/Stmt/VirtualFunction.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualFunction</code>
-    </PropertyNotSetInConstructor>
-  </file>
-  <file src="src/Psalm/Node/Stmt/VirtualInterface.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualInterface</code>
-    </PropertyNotSetInConstructor>
-  </file>
-  <file src="src/Psalm/Node/Stmt/VirtualTrait.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualTrait</code>
-    </PropertyNotSetInConstructor>
-  </file>
-  <file src="src/Psalm/Node/VirtualConst.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualConst</code>
-    </PropertyNotSetInConstructor>
-  </file>
   <file src="src/Psalm/Type/Atomic.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>array_keys($template_type_map[$value])[0]</code>
@@ -346,11 +329,35 @@
       <code>$this-&gt;type_params[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Type/Atomic/TTemplatePropertiesOf.php">
+    <PropertyTypeCoercion occurrences="1"/>
+  </file>
+  <file src="src/Psalm/Type/MutableUnion.php">
+    <PossiblyUnusedProperty occurrences="6">
+      <code>$allow_mutations</code>
+      <code>$failed_reconciliation</code>
+      <code>$from_template_default</code>
+      <code>$has_mutations</code>
+      <code>$initialized_class</code>
+      <code>$reference_free</code>
+    </PossiblyUnusedProperty>
+  </file>
   <file src="src/Psalm/Type/Reconciler.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$type[0]</code>
       <code>$type[0][0]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Type/Union.php">
+    <PossiblyUnusedProperty occurrences="1">
+      <code>$ignore_isset</code>
+    </PossiblyUnusedProperty>
+  </file>
+  <file src="src/Psalm/Type/UnionTrait.php">
+    <PossiblyUnusedMethod occurrences="2">
+      <code>allFloatLiterals</code>
+      <code>allFloatLiterals</code>
+    </PossiblyUnusedMethod>
   </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <PossiblyUndefinedStringArrayOffset occurrences="1">
