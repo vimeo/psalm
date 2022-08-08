@@ -44,6 +44,11 @@ final class TGenericObject extends TNamedObject
         $this->extra_types = $extra_types;
     }
 
+    public function setIntersectionTypes(?array $types): self
+    {
+        return new static($this->value, $this->type_params, $this->remapped_params, $types);
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         $s = '';

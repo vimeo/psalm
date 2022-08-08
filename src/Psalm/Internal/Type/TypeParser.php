@@ -597,10 +597,11 @@ class TypeParser
             $array_acccess = new TGenericObject('ArrayAccess', $generic_params);
             $countable = new TNamedObject('Countable');
 
-            $traversable->extra_types[$array_acccess->getKey()] = $array_acccess;
-            $traversable->extra_types[$countable->getKey()] = $countable;
-
-            return $traversable;
+            return $traversable->setIntersectionTypes([
+                ...$traversable->extra_types,
+                $array_acccess->getKey() => $array_acccess,
+                $countable->getKey() => $countable
+            ]);
         }
 
         if ($generic_type_value === 'non-empty-array') {
@@ -1096,10 +1097,10 @@ class TypeParser
             $first_type = array_shift($keyed_intersection_types);
 
             if ($keyed_intersection_types) {
-                $first_type->extra_types = $keyed_intersection_types;
+                $first_type = $first_type->setIntersectionTypes($keyed_intersection_types);
             }
         } else {
-            foreach ($intersection_types as $intersection_type) {
+            foreach ($intersection_types as &$intersection_type) {
                 if (!$intersection_type instanceof TIterable
                     && !$intersection_type instanceof TNamedObject
                     && !$intersection_type instanceof TTemplateParam
@@ -1136,7 +1137,7 @@ class TypeParser
             }
 
             if ($keyed_intersection_types) {
-                $first_type->extra_types = $keyed_intersection_types;
+                $first_type = $first_type->setIntersectionTypes($keyed_intersection_types);
             }
         }
 

@@ -273,7 +273,7 @@ class TryAnalyzer
                                 && $codebase->interfaceExists($fq_catch_class)
                                 && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
                             ) {
-                                $catch_class_type->addIntersectionType(new TNamedObject('Throwable'));
+                                return $catch_class_type->addIntersectionType(new TNamedObject('Throwable'));
                             }
 
                             return $catch_class_type;

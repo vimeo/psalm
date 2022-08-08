@@ -50,6 +50,11 @@ final class TIterable extends Atomic
         $this->extra_types = $extra_types;
     }
 
+    public function setIntersectionTypes(?array $types): self
+    {
+        return new self($this->type_params, $types);
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {

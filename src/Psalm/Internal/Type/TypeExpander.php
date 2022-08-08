@@ -170,12 +170,12 @@ class TypeExpander
                             $new_intersection_types,
                             $extra_type->extra_types
                         );
-                        $extra_type->extra_types = [];
+                        $extra_type = $extra_type->setIntersectionTypes([]);
                     }
                 }
 
                 if ($new_intersection_types) {
-                    $return_type->extra_types = array_merge($return_type->extra_types, $new_intersection_types);
+                    $return_type = $return_type->setIntersectionTypes(array_merge($return_type->extra_types, $new_intersection_types));
                 }
             }
 
@@ -643,20 +643,20 @@ class TypeExpander
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)
         ) {
-            $return_type = clone $return_type;
-            $cloned_static = clone $static_class_type;
-            $extra_static = $cloned_static->extra_types ?: [];
-            $cloned_static->extra_types = null;
+            $return_type_types = $return_type->getIntersectionTypes();
+            $cloned_static = $static_class_type->setIntersectionTypes(null);
+            $extra_static = $static_class_type->extra_types ?: [];
 
             if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
-                $return_type->extra_types[$static_class_type->getKey()] = clone $cloned_static;
+                $return_type_types[$cloned_static->getKey()] = $cloned_static;
             }
 
             foreach ($extra_static as $extra_static_type) {
                 if ($extra_static_type->getKey(false) !== $return_type->getKey(false)) {
-                    $return_type->extra_types[$extra_static_type->getKey()] = clone $extra_static_type;
+                    $return_type_types[$extra_static_type->getKey()] = clone $extra_static_type;
                 }
             }
+            $return_type = $return_type->setIntersectionTypes($return_type_types);
         } elseif ($return_type->is_static && is_string($static_class_type) && $final) {
             $return_type->value = $static_class_type;
             $return_type->is_static = false;

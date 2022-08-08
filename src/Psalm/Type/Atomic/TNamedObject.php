@@ -52,6 +52,11 @@ class TNamedObject extends Atomic
         $this->extra_types = $extra_types;
     }
 
+    public function setIntersectionTypes(?array $types): self
+    {
+        return new self($this->value, $this->is_static, $this->definite_class, $types);
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {

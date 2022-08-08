@@ -773,17 +773,17 @@ abstract class Type
                     .' Check the preceding code for errors.'
                 );
             }
-            if (!$intersection_atomic->extra_types) {
-                $intersection_atomic->extra_types = [];
-            }
 
             $intersection_performed = true;
 
-            $wider_type_clone = clone $wider_type;
+            $wider_type_clone = $wider_type->setIntersectionTypes([]);
 
-            $wider_type_clone->extra_types = [];
-
-            $intersection_atomic->extra_types[$wider_type_clone->getKey()] = $wider_type_clone;
+            $intersection_atomic->setIntersectionTypes(
+                [
+                    ...($intersection_atomic->getIntersectionTypes() ?? []),
+                    $wider_type_clone->getKey() => $wider_type_clone
+                ]
+            );
 
             $wider_type_intersection_types = $wider_type->getIntersectionTypes();
 

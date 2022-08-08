@@ -44,6 +44,11 @@ final class TTemplateParam extends Atomic
         $this->extra_types = $extra_types;
     }
 
+    public function setIntersectionTypes(?array $types): self
+    {
+        return new self($this->param_name, $this->as, $this->defining_class, $types);
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {

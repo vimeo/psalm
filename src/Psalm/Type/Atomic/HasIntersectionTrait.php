@@ -53,9 +53,12 @@ trait HasIntersectionTrait
     /**
      * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $type
      */
-    public function addIntersectionType(Atomic $type): void
+    public function addIntersectionType(Atomic $type): static
     {
-        $this->extra_types[$type->getKey()] = $type;
+        return $this->setIntersectionTypes([
+            ...$this->extra_types,
+            $type->getKey() => $type
+        ]);
     }
 
     /**

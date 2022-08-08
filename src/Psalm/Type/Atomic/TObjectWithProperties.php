@@ -47,6 +47,11 @@ final class TObjectWithProperties extends TObject
         $this->methods = $methods;
     }
 
+    public function setIntersectionTypes(?array $types): self
+    {
+        return new self($this->properties, $this->methods, $types);
+    }
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $extra_types = '';

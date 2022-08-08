@@ -756,11 +756,10 @@ class SimpleAssertionReconciler extends Reconciler
                     }
 
                     if (!$match_found) {
-                        $obj = new TObjectWithProperties(
+                        $type = $type->addIntersectionType(new TObjectWithProperties(
                             [],
                             [$method_name => $type->value . '::' . $method_name]
-                        );
-                        $type->extra_types[$obj->getKey()] = $obj;
+                        ));
                         $did_remove_type = true;
                     }
                 }
@@ -1449,7 +1448,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TNamedObject || $type instanceof TIterable) {
                 $countable = new TNamedObject('Countable');
-                $type->extra_types[$countable->getKey()] = $countable;
+                $type = $type->addIntersectionType($countable);
                 $iterable_types[] = $type;
                 $did_remove_type = true;
             } else {
@@ -1869,7 +1868,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TNamedObject) {
                 $traversable = new TNamedObject('Traversable');
-                $type->extra_types[$traversable->getKey()] = $traversable;
+                $type = $type->addIntersectionType($traversable);
                 $traversable_types[] = $type;
                 $did_remove_type = true;
             } else {

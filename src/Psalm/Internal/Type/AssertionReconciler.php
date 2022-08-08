@@ -398,15 +398,11 @@ class AssertionReconciler extends Reconciler
                     && ($codebase->classExists($existing_var_type_part->value)
                         || $codebase->interfaceExists($existing_var_type_part->value))
                 ) {
-                    $existing_var_type_part = clone $existing_var_type_part;
-                    $existing_var_type_part->addIntersectionType($new_type_part);
-                    $acceptable_atomic_types[] = $existing_var_type_part;
+                    $acceptable_atomic_types[] = $existing_var_type_part->addIntersectionType($new_type_part);
                 }
 
                 if ($existing_var_type_part instanceof TTemplateParam) {
-                    $existing_var_type_part = clone $existing_var_type_part;
-                    $existing_var_type_part->addIntersectionType($new_type_part);
-                    $acceptable_atomic_types[] = $existing_var_type_part;
+                    $acceptable_atomic_types[] = $existing_var_type_part->addIntersectionType($new_type_part);
                 }
             }
 
@@ -621,10 +617,7 @@ class AssertionReconciler extends Reconciler
             && ($codebase->interfaceExists($type_1_atomic->value)
                 || $codebase->interfaceExists($type_2_atomic->value))
         ) {
-            $matching_atomic_type = clone $type_2_atomic;
-            $matching_atomic_type->extra_types[$type_1_atomic->getKey()] = $type_1_atomic;
-
-            return $matching_atomic_type;
+            return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
         if ($type_2_atomic instanceof TKeyedArray
@@ -685,11 +678,7 @@ class AssertionReconciler extends Reconciler
             && $type_2_atomic->as->hasObject()
             && $type_1_atomic->as->hasObject()
         ) {
-            $matching_atomic_type = clone $type_2_atomic;
-
-            $matching_atomic_type->extra_types[$type_1_atomic->getKey()] = $type_1_atomic;
-
-            return $matching_atomic_type;
+            return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
         //we filter both types of standard iterables
