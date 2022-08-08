@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@b9a959e3e20c9f35a7d4fd08883b2d62877c9b92">
+<files psalm-version="dev-master@d7e897b0eb65539a8b769a911efdf49925dd4e7d">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -112,6 +112,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentAnalyzer.php">
+    <ComplexMethod occurrences="1">
+      <code>verifyType</code>
+    </ComplexMethod>
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$non_existent_method_ids[0]</code>
       <code>$parts[1]</code>
