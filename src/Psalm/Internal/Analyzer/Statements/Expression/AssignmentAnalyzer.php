@@ -1031,6 +1031,15 @@ class AssignmentAnalyzer
             return;
         }
 
+        self::analyze(
+            $statements_analyzer,
+            $stmt,
+            null,
+            $by_ref_out_type,
+            $context,
+            null
+        );
+
         $var_id = ExpressionIdentifier::getVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),

@@ -101,6 +101,9 @@ class ReferenceConstraintTest extends TestCase
                     addFoo($a);
 
                     echo strlen($a);',
+                'assertions' => [
+                    '$a' => 'string'
+                ]
             ],
             'paramOutChangeType' => [
                 'code' => '<?php
@@ -159,7 +162,10 @@ class ReferenceConstraintTest extends TestCase
 
                     $foo = [];
 
-                    addValue($foo["a"]);'
+                    addValue($foo["a"]);',
+                'assertions' => [
+                    '$a' => 'array{a: int}'
+                ]
             ],
             'paramOutArrayDefaultNullWithThrow' => [
                 'code' => '<?php
