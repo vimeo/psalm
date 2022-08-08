@@ -218,7 +218,7 @@ class SimpleTypeInferer
                 return null;
             }
 
-            $invalidTypes = clone $stmt_expr_type;
+            $invalidTypes = $stmt_expr_type->getBuilder();
             $invalidTypes->removeType('string');
             $invalidTypes->removeType('int');
             $invalidTypes->removeType('float');
