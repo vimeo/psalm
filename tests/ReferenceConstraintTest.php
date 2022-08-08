@@ -138,18 +138,6 @@ class ReferenceConstraintTest extends TestCase
                     '$b' => 'bool',
                 ],
             ],
-            'dontChangeThis' => [
-                'code' => '<?php
-                    interface I {}
-                    class C implements I {
-                        public function foo() : self {
-                            bar($this);
-                            return $this;
-                        }
-                    }
-
-                    function bar(I &$i) : void {}',
-            ],
             'notEmptyArrayAccess' => [
                 'code' => '<?php
                     /**
@@ -164,7 +152,7 @@ class ReferenceConstraintTest extends TestCase
 
                     addValue($foo["a"]);',
                 'assertions' => [
-                    '$a' => 'array{a: int}'
+                    '$foo' => 'array{a: int}'
                 ]
             ],
             'paramOutArrayDefaultNullWithThrow' => [
@@ -218,6 +206,19 @@ class ReferenceConstraintTest extends TestCase
                       $a = "hello";
                     }',
                 'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'dontChangeThis' => [
+                'code' => '<?php
+                    interface I {}
+                    class C implements I {
+                        public function foo() : self {
+                            bar($this);
+                            return $this;
+                        }
+                    }
+
+                    function bar(I &$i) : void {}',
+                'error_message' => 'InvalidScope'
             ],
             'classMethodParameterViolation' => [
                 'code' => '<?php
