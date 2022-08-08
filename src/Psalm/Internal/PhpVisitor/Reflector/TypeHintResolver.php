@@ -114,17 +114,14 @@ class TypeHintResolver
                 $type = Type::intersectUnionTypes($resolved_type, $type, $codebase);
             }
 
+            if ($type === null) {
+                throw new UnexpectedValueException('Intersection type could not be resolved');
+            }
+
             if ($type->isNever()) {
                 IssueBuffer::maybeAdd(
                     new InvalidIntersectionType(
                         'Intersection types can never be satisfied',
-                        $code_location
-                    )
-                );
-            } elseif ($type === null) {
-                IssueBuffer::maybeAdd(
-                    new ParseError(
-                        'Intersection type could not be resolved',
                         $code_location
                     )
                 );
