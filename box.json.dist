@@ -12,5 +12,6 @@
     ],
     "compactors" : [
         "KevinGH\\Box\\Compactor\\PhpScoper"
-    ]
+    ],
+    "exclude-composer-files": false
 }
