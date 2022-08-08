@@ -12,6 +12,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Issue\InvalidIntersectionType;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -113,8 +114,20 @@ class TypeHintResolver
                 $type = Type::intersectUnionTypes($resolved_type, $type, $codebase);
             }
 
-            if ($type === null) {
-                throw new UnexpectedValueException('Intersection type could not be resolved');
+            if ($type->isNever()) {
+                IssueBuffer::maybeAdd(
+                    new InvalidIntersectionType(
+                        'Intersection types can never be satisfied',
+                        $code_location
+                    )
+                );
+            } elseif ($type === null) {
+                IssueBuffer::maybeAdd(
+                    new ParseError(
+                        'Intersection type could not be resolved',
+                        $code_location
+                    )
+                );
             }
 
             return $type;
