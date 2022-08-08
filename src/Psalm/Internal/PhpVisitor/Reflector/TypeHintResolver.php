@@ -121,7 +121,7 @@ class TypeHintResolver
             if ($type->isNever()) {
                 IssueBuffer::maybeAdd(
                     new InvalidIntersectionType(
-                        'Intersection types can never be satisfied',
+                        'Intersection type can never be satisfied',
                         $code_location
                     )
                 );
