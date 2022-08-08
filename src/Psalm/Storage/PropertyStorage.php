@@ -41,16 +41,19 @@ final class PropertyStorage implements HasAttributesInterface
     public $signature_type_location;
 
     /**
+     * @readonly
      * @var Union|null
      */
     public $type;
 
     /**
+     * @readonly
      * @var Union|null
      */
     public $signature_type;
 
     /**
+     * @readonly
      * @var Union|null
      */
     public $suggested_type;

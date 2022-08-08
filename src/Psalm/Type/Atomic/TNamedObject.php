@@ -14,6 +14,7 @@ use function substr;
 
 /**
  * Denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`
+ * @psalm-immutable
  */
 class TNamedObject extends Atomic
 {
@@ -37,8 +38,9 @@ class TNamedObject extends Atomic
 
     /**
      * @param string $value the name of the object
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
      */
-    public function __construct(string $value, bool $is_static = false, bool $definite_class = false)
+    public function __construct(string $value, bool $is_static = false, bool $definite_class = false, ?array $extra_types = null)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -47,6 +49,7 @@ class TNamedObject extends Atomic
         $this->value = $value;
         $this->is_static = $is_static;
         $this->definite_class = $definite_class;
+        $this->extra_types = $extra_types;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -137,8 +140,13 @@ class TNamedObject extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+    ): self {
+        return new self(
+            $this->value,
+            $this->is_static,
+            $this->definite_class,
+            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
+        );
     }
 
     public function getChildNodes(): array

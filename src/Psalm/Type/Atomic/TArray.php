@@ -2,6 +2,8 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Codebase;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -10,15 +12,15 @@ use function get_class;
 
 /**
  * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
+ *
+ * @psalm-immutable
  */
 class TArray extends Atomic
 {
-    use GenericTrait;
-
     /**
-     * @var array{Union, Union}
+     * @use GenericTrait<array{Union, Union}>
      */
-    public $type_params;
+    use GenericTrait;
 
     /**
      * @var string
@@ -95,5 +97,13 @@ class TArray extends Atomic
     public function isEmptyArray(): bool
     {
         return $this->type_params[1]->isNever();
+    }
+
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
+    {
+        return new self($this->replaceTypeParamsTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        ));
     }
 }

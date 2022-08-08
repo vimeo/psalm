@@ -4,6 +4,9 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class IsClassEqual extends Assertion
 {
     public string $type;
@@ -13,13 +16,11 @@ final class IsClassEqual extends Assertion
         $this->type = $type;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new IsClassNotEqual($this->type);
     }
 
-    /** @psalm-mutation-free */
     public function hasEquality(): bool
     {
         return true;
@@ -30,7 +31,6 @@ final class IsClassEqual extends Assertion
         return '=get-class-' . $this->type;
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsClassNotEqual && $this->type === $assertion->type;

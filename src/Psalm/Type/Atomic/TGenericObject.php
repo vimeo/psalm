@@ -2,6 +2,8 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -13,15 +15,14 @@ use function substr;
 
 /**
  * Denotes an object type that has generic parameters e.g. `ArrayObject<string, Foo\Bar>`
+ * @psalm-immutable
  */
 final class TGenericObject extends TNamedObject
 {
-    use GenericTrait;
-
     /**
-     * @var non-empty-list<Union>
+     * @use GenericTrait<non-empty-list<Union>>
      */
-    public $type_params;
+    use GenericTrait;
 
     /** @var bool if the parameters have been remapped to another class */
     public $remapped_params = false;
@@ -29,8 +30,9 @@ final class TGenericObject extends TNamedObject
     /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
      */
-    public function __construct(string $value, array $type_params)
+    public function __construct(string $value, array $type_params, bool $remapped_params = false, ?array $extra_types = null)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -38,6 +40,8 @@ final class TGenericObject extends TNamedObject
 
         $this->value = $value;
         $this->type_params = $type_params;
+        $this->remapped_params = $remapped_params;
+        $this->extra_types = $extra_types;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -106,5 +110,22 @@ final class TGenericObject extends TNamedObject
     public function getChildNodes(): array
     {
         return array_merge($this->type_params, $this->extra_types ?? []);
+    }
+
+
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
+    {
+        return new self(
+            $this->value,
+            $this->replaceTypeParamsTemplateTypesWithArgTypes(
+                $template_result,
+                $codebase
+            ),
+            true,
+            $this->replaceIntersectionTemplateTypesWithArgTypes(
+                $template_result,
+                $codebase
+            )
+        );
     }
 }

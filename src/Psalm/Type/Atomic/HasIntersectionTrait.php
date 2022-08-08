@@ -10,6 +10,9 @@ use Psalm\Type\Atomic;
 use function array_map;
 use function implode;
 
+/**
+ * @psalm-immutable
+ */
 trait HasIntersectionTrait
 {
     /**
@@ -63,12 +66,15 @@ trait HasIntersectionTrait
         return $this->extra_types;
     }
 
+    /**
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
+     */
     public function replaceIntersectionTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
+    ): ?array {
         if (!$this->extra_types) {
-            return;
+            return $this->extra_types;
         }
 
         $new_types = [];
@@ -90,11 +96,11 @@ trait HasIntersectionTrait
                     }
                 }
             } else {
-                $extra_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+                $extra_type = $extra_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
                 $new_types[$extra_type->getKey()] = $extra_type;
             }
         }
 
-        $this->extra_types = $new_types;
+        return $new_types;
     }
 }

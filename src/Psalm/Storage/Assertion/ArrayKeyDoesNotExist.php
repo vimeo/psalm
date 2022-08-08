@@ -4,9 +4,11 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class ArrayKeyDoesNotExist extends Assertion
 {
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new ArrayKeyExists();
@@ -22,7 +24,6 @@ final class ArrayKeyDoesNotExist extends Assertion
         return '!array-key-exists';
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof ArrayKeyExists;

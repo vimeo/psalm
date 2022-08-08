@@ -19,8 +19,18 @@ use function implode;
 use function strpos;
 use function substr;
 
+/**
+ * @psalm-immutable
+ * @template TTypeParams as array<Union>
+ */
 trait GenericTrait
 {
+    /**
+     * @readonly
+     * @var TTypeParams
+     */
+    public $type_params;
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
@@ -230,11 +240,15 @@ trait GenericTrait
         return $atomic;
     }
 
-    public function replaceTemplateTypesWithArgTypes(
+    /**
+     * @return array<Union>
+     */
+    public function replaceTypeParamsTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        foreach ($this->type_params as $offset => &$type_param) {
+    ): array {
+        $type_params = [];
+        foreach ($this->type_params as $offset => $type_param) {
             $type_param = TemplateInferredTypeReplacer::replace(
                 $type_param,
                 $template_result,
@@ -242,16 +256,12 @@ trait GenericTrait
             );
 
             if ($this instanceof TArray && $offset === 0 && $type_param->isMixed()) {
-                $this->type_params[0] = Type::getArrayKey();
+                $type_param = Type::getArrayKey();
             }
+
+            $type_params[$offset] = $type_param;
         }
 
-        if ($this instanceof TGenericObject) {
-            $this->remapped_params = true;
-        }
-
-        if ($this instanceof TGenericObject || $this instanceof TIterable) {
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
-        }
+        return $type_params;
     }
 }

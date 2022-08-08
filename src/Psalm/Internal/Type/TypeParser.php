@@ -129,10 +129,15 @@ class TypeParser
             } else {
                 $only_token[0] = TypeTokenizer::fixScalarTerms($only_token[0], $analysis_php_version_id);
 
-                $atomic = Atomic::create($only_token[0], $analysis_php_version_id, $template_type_map, $type_aliases);
-                $atomic->offset_start = 0;
-                $atomic->offset_end = strlen($only_token[0]);
-                $atomic->text = isset($only_token[2]) && $only_token[2] !== $only_token[0] ? $only_token[2] : null;
+                $atomic = Atomic::create(
+                    $only_token[0],
+                    $analysis_php_version_id,
+                    $template_type_map,
+                    $type_aliases,
+                    0,
+                    strlen($only_token[0]),
+                    isset($only_token[2]) && $only_token[2] !== $only_token[0] ? $only_token[2] : null
+                );
 
                 return new Union([$atomic]);
             }
@@ -385,13 +390,15 @@ class TypeParser
 
         $atomic_type_string = TypeTokenizer::fixScalarTerms($parse_tree->value, $analysis_php_version_id);
 
-        $atomic_type = Atomic::create($atomic_type_string, $analysis_php_version_id, $template_type_map, $type_aliases);
-
-        $atomic_type->offset_start = $parse_tree->offset_start;
-        $atomic_type->offset_end = $parse_tree->offset_end;
-        $atomic_type->text = $parse_tree->text;
-
-        return $atomic_type;
+        return Atomic::create(
+            $atomic_type_string,
+            $analysis_php_version_id,
+            $template_type_map,
+            $type_aliases,
+            $parse_tree->offset_start,
+            $parse_tree->offset_end,
+            $parse_tree->text
+        );
     }
 
     private static function getGenericParamClass(

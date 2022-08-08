@@ -7,6 +7,9 @@ use Psalm\Type\Atomic;
 use function array_map;
 use function implode;
 
+/**
+ * @psalm-immutable
+ */
 final class TTypeAlias extends Atomic
 {
     /**

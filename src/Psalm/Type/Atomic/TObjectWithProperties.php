@@ -19,6 +19,7 @@ use function implode;
 
 /**
  * Denotes an object with specified member variables e.g. `object{foo:int, bar:string}`.
+ * @psalm-immutable
  */
 final class TObjectWithProperties extends TObject
 {
@@ -215,14 +216,16 @@ final class TObjectWithProperties extends TObject
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        foreach ($this->properties as &$property) {
-            $property = TemplateInferredTypeReplacer::replace(
+    ): self {
+        $properties = [];
+        foreach ($this->properties as $k => $property) {
+            $properties[$k] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
             );
         }
+        return new self($properties, $this->methods);
     }
 
     public function getChildNodes(): array

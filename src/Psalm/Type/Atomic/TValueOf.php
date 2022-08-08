@@ -15,6 +15,7 @@ use function count;
 
 /**
  * Represents a value of an array or enum.
+ * @psalm-immutable
  */
 final class TValueOf extends Atomic
 {

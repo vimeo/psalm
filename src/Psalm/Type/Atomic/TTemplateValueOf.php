@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TValueOf when the type of the array or enum is a template
+ * @psalm-immutable
  */
 final class TTemplateValueOf extends Atomic
 {
@@ -84,11 +85,15 @@ final class TTemplateValueOf extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->as = TemplateInferredTypeReplacer::replace(
-            $this->as,
-            $template_result,
-            $codebase
+    ): self {
+        return new static(
+            $this->param_name,
+            $this->defining_class,
+            TemplateInferredTypeReplacer::replace(
+                $this->as,
+                $template_result,
+                $codebase
+            )
         );
     }
 }

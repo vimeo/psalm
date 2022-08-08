@@ -76,6 +76,9 @@ use function is_numeric;
 use function strpos;
 use function strtolower;
 
+/**
+ * @psalm-immutable
+ */
 abstract class Atomic implements TypeNode
 {
     /**
@@ -113,6 +116,26 @@ abstract class Atomic implements TypeNode
      * @param array<string, TypeAlias> $type_aliases
      */
     public static function create(
+        string $value,
+        ?int   $analysis_php_version_id = null,
+        array  $template_type_map = [],
+        array  $type_aliases = [],
+        ?int   $offset_start = null,
+        ?int   $offset_end = null,
+        ?string $text = null
+    ): Atomic {
+        $result = self::createInner($value, $analysis_php_version_id, $template_type_map, $type_aliases);
+        $result->offset_start = $offset_start;
+        $result->offset_end = $offset_end;
+        $result->text = $text;
+        return $result;
+    }
+    /**
+     * @param int $analysis_php_version_id contains php version when the type comes from signature
+     * @param array<string, array<string, Union>> $template_type_map
+     * @param array<string, TypeAlias> $type_aliases
+     */
+    private static function createInner(
         string $value,
         ?int   $analysis_php_version_id = null,
         array  $template_type_map = [],
@@ -672,14 +695,16 @@ abstract class Atomic implements TypeNode
         bool $add_lower_bound = false,
         int $depth = 0
     ): self {
+        // do nothing
         return $this;
     }
 
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
+    ): self {
         // do nothing
+        return $this;
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

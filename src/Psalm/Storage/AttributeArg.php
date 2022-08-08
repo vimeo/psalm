@@ -15,6 +15,7 @@ final class AttributeArg
     public $name;
 
     /**
+     * @readonly
      * @var Union|UnresolvedConstantComponent
      */
     public $type;

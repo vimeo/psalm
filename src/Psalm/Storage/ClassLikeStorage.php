@@ -288,11 +288,13 @@ final class ClassLikeStorage implements HasAttributesInterface
     public $properties = [];
 
     /**
+     * @readonly
      * @var array<string, Union>
      */
     public $pseudo_property_set_types = [];
 
     /**
+     * @readonly
      * @var array<string, Union>
      */
     public $pseudo_property_get_types = [];
@@ -326,6 +328,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      * (i.e. the same as the class name). This allows operations with the same-named template defined
      * across multiple classes to not run into trouble.
      *
+     * @readonly
      * @var array<string, non-empty-array<string, Union>>|null
      */
     public $template_types;
@@ -342,6 +345,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      *
      * @internal
      *
+     * @readonly
      * @var array<string, non-empty-array<int, Union>>|null
      */
     public $template_extended_offsets;
@@ -358,6 +362,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      *     ]
      * ]
      *
+     * @readonly
      * @var array<string, array<string, Union>>|null
      */
     public $template_extended_params;
@@ -374,6 +379,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     public $template_type_implements_count;
 
     /**
+     * @readonly
      * @var ?Union
      */
     public $yield;

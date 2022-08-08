@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Represents a non-empty list
+ * @psalm-immutable
  */
 class TNonEmptyList extends TList
 {

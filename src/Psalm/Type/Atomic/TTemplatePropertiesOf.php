@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TPropertiesOf when the type of the array is a template
+ * @psalm-immutable
  */
 final class TTemplatePropertiesOf extends Atomic
 {
@@ -79,11 +80,16 @@ final class TTemplatePropertiesOf extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->as = TemplateInferredTypeReplacer::replace(
-            new Union([$this->as]),
-            $template_result,
-            $codebase
-        )->getSingleAtomic();
+    ): self {
+        return new self(
+            $this->param_name,
+            $this->defining_class,
+            TemplateInferredTypeReplacer::replace(
+                new Union([$this->as]),
+                $template_result,
+                $codebase
+            )->getSingleAtomic(),
+            $this->visibility_filter
+        );
     }
 }

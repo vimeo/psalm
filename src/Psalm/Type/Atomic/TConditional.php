@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Internal representation of a conditional return type in phpdoc. For example ($param1 is int ? int : string)
+ * @psalm-immutable
  */
 final class TConditional extends Atomic
 {
@@ -127,11 +128,18 @@ final class TConditional extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->conditional_type = TemplateInferredTypeReplacer::replace(
-            $this->conditional_type,
-            $template_result,
-            $codebase
+    ): self {
+        return new self(
+            $this->param_name,
+            $this->defining_class,
+            $this->as_type,
+            TemplateInferredTypeReplacer::replace(
+                $this->conditional_type,
+                $template_result,
+                $codebase
+            ),
+            $this->if_type,
+            $this->else_type
         );
     }
 }

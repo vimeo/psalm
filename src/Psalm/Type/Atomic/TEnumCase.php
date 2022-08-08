@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an enum with a specific value
+ * @psalm-immutable
  */
 final class TEnumCase extends TNamedObject
 {

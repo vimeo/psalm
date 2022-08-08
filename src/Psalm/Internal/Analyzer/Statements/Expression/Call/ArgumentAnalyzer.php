@@ -1351,20 +1351,28 @@ class ArgumentAnalyzer
         }
 
         if (!$input_type_changed && $param_type->from_docblock && !$input_type->hasMixed()) {
-            $input_type = clone $input_type;
-
+            $types = $input_type->getAtomicTypes();
             foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
                 if ($param_atomic_type instanceof TGenericObject) {
-                    foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
+                    foreach ($types as &$input_atomic_type) {
                         if ($input_atomic_type instanceof TGenericObject
                             && $input_atomic_type->value === $param_atomic_type->value
                         ) {
+                            $new_type_params = [];
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
                                 if ($type_param->isNever() && isset($param_atomic_type->type_params[$i])) {
                                     $input_type_changed = true;
 
-                                    $input_atomic_type->type_params[$i] = clone $param_atomic_type->type_params[$i];
+                                    $new_type_params[$i] = $param_atomic_type->type_params[$i];
                                 }
+                            }
+                            if ($new_type_params) {
+                                $input_atomic_type = new TGenericObject(
+                                    $input_atomic_type->value,
+                                    [...$input_atomic_type->type_params, ...$new_type_params],
+                                    $input_atomic_type->remapped_params,
+                                    $input_atomic_type->extra_types
+                                );
                             }
                         }
                     }
@@ -1374,6 +1382,8 @@ class ArgumentAnalyzer
             if (!$input_type_changed) {
                 return;
             }
+
+            $input_type = new Union($types);
         }
 
         $var_id = ExpressionIdentifier::getVarId(

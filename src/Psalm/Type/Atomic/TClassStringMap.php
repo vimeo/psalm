@@ -16,6 +16,7 @@ use function get_class;
 /**
  * Represents an array where the type of each value
  * is a function of its string key value
+ * @psalm-immutable
  */
 final class TClassStringMap extends Atomic
 {
@@ -181,11 +182,15 @@ final class TClassStringMap extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->value_param = TemplateInferredTypeReplacer::replace(
-            $this->value_param,
-            $template_result,
-            $codebase
+    ): self {
+        return new self(
+            $this->param_name,
+            $this->as_type,
+            TemplateInferredTypeReplacer::replace(
+                $this->value_param,
+                $template_result,
+                $codebase
+            )
         );
     }
 

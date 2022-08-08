@@ -12,6 +12,7 @@ use function implode;
 
 /**
  * denotes a template parameter that has been previously specified in a `@template` tag.
+ * @psalm-immutable
  */
 final class TTemplateParam extends Atomic
 {
@@ -32,11 +33,15 @@ final class TTemplateParam extends Atomic
      */
     public $defining_class;
 
-    public function __construct(string $param_name, Union $extends, string $defining_class)
+    /**
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     */
+    public function __construct(string $param_name, Union $extends, string $defining_class, ?array $extra_types = null)
     {
         $this->param_name = $param_name;
         $this->as = $extends;
         $this->defining_class = $defining_class;
+        $this->extra_types = $extra_types;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -126,7 +131,12 @@ final class TTemplateParam extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+    ): self {
+        return new self(
+            $this->param_name,
+            $this->as,
+            $this->defining_class,
+            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
+        );
     }
 }

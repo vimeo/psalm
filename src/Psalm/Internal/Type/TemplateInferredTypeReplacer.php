@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TValueOf;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -56,9 +57,10 @@ class TemplateInferredTypeReplacer
 
         $inferred_lower_bounds = $template_result->lower_bounds ?: [];
 
-        $union = $union->getBuilder();
+        $types = [];
+
         foreach ($union->getAtomicTypes() as $key => $atomic_type) {
-            $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+            $atomic_type = $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
             if ($atomic_type instanceof TTemplateParam) {
                 $template_type = self::replaceTemplateParam(
@@ -206,9 +208,11 @@ class TemplateInferredTypeReplacer
                     $new_types[] = $class_template_atomic_type;
                 }
             }
+
+            $types []= $atomic_type;
         }
 
-        $union->bustCache();
+        $union = new MutableUnion($types);
 
         if ($is_mixed) {
             if (!$new_types) {

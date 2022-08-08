@@ -10,6 +10,9 @@ use Psalm\Type\Union;
 use function is_string;
 use function str_replace;
 
+/**
+ * @psalm-immutable
+ */
 final class Possibilities
 {
     /**
@@ -52,8 +55,7 @@ final class Possibilities
                 );
 
                 foreach ($union->getAtomicTypes() as $atomic_type) {
-                    $assertion = clone $assertion;
-                    $assertion->setAtomicType($atomic_type);
+                    $assertion = $assertion->setAtomicType($atomic_type);
                     $assertion_rules[] = $assertion;
                 }
             } else {

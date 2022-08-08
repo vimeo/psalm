@@ -18,6 +18,8 @@ use function get_class;
  * - its keys are integers
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
+ *
+ * @psalm-immutable
  */
 class TList extends Atomic
 {
@@ -164,12 +166,12 @@ class TList extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->type_param = TemplateInferredTypeReplacer::replace(
+    ): self {
+        return new self(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
             $codebase
-        );
+        ));
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

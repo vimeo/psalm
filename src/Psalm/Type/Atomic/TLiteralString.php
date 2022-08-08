@@ -8,6 +8,7 @@ use function mb_substr;
 
 /**
  * Denotes a string whose value is known.
+ * @psalm-immutable
  */
 class TLiteralString extends TString
 {

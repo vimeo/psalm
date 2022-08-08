@@ -87,11 +87,13 @@ final class MethodStorage extends FunctionLikeStorage
     public $this_property_mutations;
 
     /**
+     * @readonly
      * @var Union|null
      */
     public $self_out_type;
 
     /**
+     * @readonly
      * @var Union|null
      */
     public $if_this_is_type = null;

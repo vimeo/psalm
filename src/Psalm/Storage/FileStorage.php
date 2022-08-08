@@ -43,6 +43,7 @@ final class FileStorage
     public $declaring_function_ids = [];
 
     /**
+     * @readonly
      * @var array<string, Union>
      */
     public $constants = [];

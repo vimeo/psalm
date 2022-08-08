@@ -152,6 +152,7 @@ final class Codebase
     private $progress;
 
     /**
+     * @readonly
      * @var array<string, Union>
      */
     private static $stubbed_constants = [];

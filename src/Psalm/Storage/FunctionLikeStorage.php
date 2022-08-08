@@ -39,6 +39,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $param_lookup = [];
 
     /**
+     * @readonly
      * @var Union|null
      */
     public $return_type;
@@ -49,6 +50,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $return_type_location;
 
     /**
+     * @readonly
      * @var Union|null
      */
     public $signature_return_type;
@@ -94,6 +96,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $required_param_count;
 
     /**
+     * @readonly
      * @var array<string, Union>
      */
     public $defined_constants = [];
@@ -104,6 +107,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $global_variables = [];
 
     /**
+     * @readonly
      * @var array<string, Union>
      */
     public $global_types = [];
@@ -117,6 +121,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
      * function identifier. This allows operations with the same-named template defined
      * across multiple classes and/or functions to not run into trouble.
      *
+     * @readonly
      * @var array<string, non-empty-array<string, Union>>|null
      */
     public $template_types;
@@ -205,6 +210,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $removed_taints = [];
 
     /**
+     * @readonly
      * @var array<Union>
      */
     public $conditionally_removed_taints = [];

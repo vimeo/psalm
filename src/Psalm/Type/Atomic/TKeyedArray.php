@@ -31,6 +31,7 @@ use function str_replace;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
+ * @psalm-immutable
  */
 class TKeyedArray extends Atomic
 {
@@ -321,14 +322,16 @@ class TKeyedArray extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        foreach ($this->properties as &$property) {
-            $property = TemplateInferredTypeReplacer::replace(
+    ): self {
+        $properties = [];
+        foreach ($this->properties as $k => $property) {
+            $properties[$k] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
             );
         }
+        return new self($properties, $this->class_strings);
     }
 
     public function getChildNodes(): array

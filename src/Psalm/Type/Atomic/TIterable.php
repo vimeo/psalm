@@ -2,6 +2,8 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -13,16 +15,15 @@ use function substr;
 
 /**
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
+ * @psalm-immutable
  */
 final class TIterable extends Atomic
 {
     use HasIntersectionTrait;
-    use GenericTrait;
-
     /**
-     * @var array{Union, Union}
+     * @use GenericTrait<array{Union, Union}>
      */
-    public $type_params;
+    use GenericTrait;
 
     /**
      * @var string
@@ -36,8 +37,9 @@ final class TIterable extends Atomic
 
     /**
      * @param list<Union> $type_params
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
      */
-    public function __construct(array $type_params = [])
+    public function __construct(array $type_params = [], ?array $extra_types = null)
     {
         if (count($type_params) === 2) {
             $this->has_docblock_params = true;
@@ -45,6 +47,7 @@ final class TIterable extends Atomic
         } else {
             $this->type_params = [Type::getMixed(), Type::getMixed()];
         }
+        $this->extra_types = $extra_types;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -116,5 +119,19 @@ final class TIterable extends Atomic
     public function getChildNodes(): array
     {
         return array_merge($this->type_params, $this->extra_types ?? []);
+    }
+
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
+    {
+        return new self(
+            $this->replaceTypeParamsTemplateTypesWithArgTypes(
+                $template_result,
+                $codebase
+            ),
+            $this->replaceIntersectionTemplateTypesWithArgTypes(
+                $template_result,
+                $codebase
+            )
+        );
     }
 }

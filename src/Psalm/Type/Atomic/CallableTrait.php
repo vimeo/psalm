@@ -15,6 +15,9 @@ use Psalm\Type\Union;
 use function count;
 use function implode;
 
+/**
+ * @psalm-immutable
+ */
 trait CallableTrait
 {
     /**
@@ -255,15 +258,14 @@ trait CallableTrait
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        if ($this->params) {
-            foreach ($this->params as $param) {
-                if (!$param->type) {
-                    continue;
-                }
+    ): self {
+        $params = null;
+        $return_type = null;
 
-                $param->type = TemplateInferredTypeReplacer::replace(
-                    $param->type,
+        if ($this->params) {
+            $params = [];
+            foreach ($this->params as $param) {
+                $params []= $param->replaceTemplateTypesWithArgTypes(
                     $template_result,
                     $codebase
                 );
@@ -271,12 +273,14 @@ trait CallableTrait
         }
 
         if ($this->return_type) {
-            $this->return_type = TemplateInferredTypeReplacer::replace(
+            $return_type = TemplateInferredTypeReplacer::replace(
                 $this->return_type,
                 $template_result,
                 $codebase
             );
         }
+
+        return new static($this->value, $params, $return_type, $this->is_pure);
     }
 
     /**

@@ -5,6 +5,9 @@ namespace Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Atomic;
 
+/**
+ * @psalm-immutable
+ */
 final class IsNotType extends Assertion
 {
     public Atomic $type;
@@ -19,7 +22,6 @@ final class IsNotType extends Assertion
         return true;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new IsType($this->type);
@@ -30,18 +32,16 @@ final class IsNotType extends Assertion
         return '!' . $this->type->getId();
     }
 
-    /** @psalm-mutation-free */
     public function getAtomicType(): ?Atomic
     {
         return $this->type;
     }
 
-    public function setAtomicType(Atomic $type): void
+    public function setAtomicType(Atomic $type): static
     {
-        $this->type = $type;
+        return new static($type);
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsType && $this->type->getId() === $assertion->type->getId();

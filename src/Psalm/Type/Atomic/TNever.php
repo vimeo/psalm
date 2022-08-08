@@ -7,6 +7,7 @@ use Psalm\Type\Atomic;
 /**
  * Denotes the `no-return`/`never-return` type for functions that never return, either throwing an exception or
  * terminating (like the builtin `exit()`).
+ * @psalm-immutable
  */
 final class TNever extends Atomic
 {

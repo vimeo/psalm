@@ -22,6 +22,7 @@ final class ClassConstantStorage
     /**
      * The type from an annotation, or the inferred type if no annotation exists.
      *
+     * @readonly
      * @var ?Union
      */
     public $type;
@@ -29,6 +30,7 @@ final class ClassConstantStorage
     /**
      * The type inferred from the value.
      *
+     * @readonly
      * @var ?Union
      */
     public $inferred_type;

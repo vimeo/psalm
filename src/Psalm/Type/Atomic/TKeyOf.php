@@ -10,6 +10,7 @@ use function array_values;
 
 /**
  * Represents an offset of an array.
+ * @psalm-immutable
  */
 final class TKeyOf extends TArrayKey
 {
