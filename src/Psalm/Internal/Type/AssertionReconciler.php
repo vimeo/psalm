@@ -59,6 +59,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
+use SebastianBergmann\CodeCoverage\Report\Xml\Unit;
 
 use function array_intersect_key;
 use function array_merge;
@@ -340,9 +341,12 @@ class AssertionReconciler extends Reconciler
             }
 
             if ($acceptable_atomic_types) {
-                $new_type_part->as = new Union($acceptable_atomic_types);
-
-                return new Union([$new_type_part]);
+                return new Union([new TTemplateParam(
+                    $new_type_part->param_name,
+                    new Union($acceptable_atomic_types),
+                    $new_type_part->defining_class,
+                    $new_type_part->extra_types,
+                )]);
             }
         }
 
@@ -818,7 +822,6 @@ class AssertionReconciler extends Reconciler
             && $type_1_atomic instanceof TTemplateParam
             && $type_1_atomic->as->hasObjectType()
         ) {
-            $type_1_atomic = clone $type_1_atomic;
             $type_1_as = self::filterTypeWithAnother(
                 $codebase,
                 $type_1_atomic->as,
@@ -829,9 +832,12 @@ class AssertionReconciler extends Reconciler
                 return null;
             }
 
-            $type_1_atomic->as = $type_1_as;
-
-            return $type_1_atomic;
+            return new TTemplateParam(
+                $type_1_atomic->param_name,
+                $type_1_as,
+                $type_1_atomic->defining_class,
+                $type_1_atomic->extra_types
+            );
         } else {
             return clone $type_2_atomic;
         }
@@ -1040,18 +1046,21 @@ class AssertionReconciler extends Reconciler
                     return $compatible_int_type;
                 }
 
-                $existing_var_atomic_type = clone $existing_var_atomic_type;
-
-                $existing_var_atomic_type->as = self::handleLiteralEquality(
-                    $statements_analyzer,
-                    $assertion,
-                    $assertion_type,
-                    $existing_var_atomic_type->as,
-                    $old_var_type_string,
-                    $var_id,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
+                $existing_var_atomic_type = new TTemplateParam(
+                    $existing_var_atomic_type->param_name,
+                    self::handleLiteralEquality(
+                        $statements_analyzer,
+                        $assertion,
+                        $assertion_type,
+                        $existing_var_atomic_type->as,
+                        $old_var_type_string,
+                        $var_id,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    ),
+                    $existing_var_atomic_type->defining_class,
+                    $existing_var_atomic_type->extra_types
                 );
 
                 return new Union([$existing_var_atomic_type]);
@@ -1182,18 +1191,21 @@ class AssertionReconciler extends Reconciler
                     return $literal_asserted_type_string;
                 }
 
-                $existing_var_atomic_type = clone $existing_var_atomic_type;
-
-                $existing_var_atomic_type->as = self::handleLiteralEquality(
-                    $statements_analyzer,
-                    $assertion,
-                    $assertion_type,
-                    $existing_var_atomic_type->as,
-                    $old_var_type_string,
-                    $var_id,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
+                $existing_var_atomic_type = new TTemplateParam(
+                    $existing_var_atomic_type->param_name,
+                    self::handleLiteralEquality(
+                        $statements_analyzer,
+                        $assertion,
+                        $assertion_type,
+                        $existing_var_atomic_type->as,
+                        $old_var_type_string,
+                        $var_id,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    ),
+                    $existing_var_atomic_type->defining_class,
+                    $existing_var_atomic_type->extra_types
                 );
 
                 return new Union([$existing_var_atomic_type]);
@@ -1324,18 +1336,21 @@ class AssertionReconciler extends Reconciler
                     return $literal_asserted_type;
                 }
 
-                $existing_var_atomic_type = clone $existing_var_atomic_type;
-
-                $existing_var_atomic_type->as = self::handleLiteralEquality(
-                    $statements_analyzer,
-                    $assertion,
-                    $assertion_type,
-                    $existing_var_atomic_type->as,
-                    $old_var_type_string,
-                    $var_id,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
+                $existing_var_atomic_type = new TTemplateParam(
+                    $existing_var_atomic_type->param_name,
+                    self::handleLiteralEquality(
+                        $statements_analyzer,
+                        $assertion,
+                        $assertion_type,
+                        $existing_var_atomic_type->as,
+                        $old_var_type_string,
+                        $var_id,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    ),
+                    $existing_var_atomic_type->defining_class,
+                    $existing_var_atomic_type->extra_types
                 );
 
                 return new Union([$existing_var_atomic_type]);
