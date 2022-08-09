@@ -121,6 +121,8 @@ class TypeHintResolver
                         $code_location
                     )
                 );
+
+                return Type::getNever();
             }
 
             return $type;
