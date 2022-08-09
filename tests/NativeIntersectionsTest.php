@@ -54,6 +54,28 @@ class NativeIntersectionsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
+            'docBlockIntersectionsMixedWithUnion' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    interface A {}
+                    interface B {}
+
+                    class Foobar
+                    {
+                        /** @var (Foo&A)|(Bar&B) */
+                        private $baz;
+
+                        /** @param Bar&B $baz */
+                        public function __construct($baz) {
+                            $this->baz = $baz;
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ]
         ];
     }
 
