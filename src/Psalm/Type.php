@@ -600,9 +600,6 @@ abstract class Type
                         );
 
                         if (null !== $intersection_atomic) {
-                            if ($intersection_atomic instanceof TNever) {
-                                return new Union([$intersection_atomic]);
-                            }
                             if (null === $combined_type) {
                                 $combined_type = new Union([$intersection_atomic]);
                             } else {
@@ -750,7 +747,7 @@ abstract class Type
                 $first_is_class = !$first->is_interface && !$first->is_trait;
                 $second_is_class = !$second->is_interface && !$second->is_trait;
                 if ($first_is_class && $second_is_class) {
-                    return $intersection_atomic ?? new TNever();
+                    return $intersection_atomic;
                 }
             }
             if ($intersection_atomic === null && $wider_type === null) {
