@@ -63,7 +63,7 @@ class NativeIntersectionsTest extends TestCase
 
                     class Foobar
                     {
-                        /** @var (Foo&A)|(Bar&B) */
+                        /** @var (Foo&Bar)|(Bar&B) */
                         private $baz;
 
                         /** @param Bar&B $baz */
@@ -116,6 +116,28 @@ class NativeIntersectionsTest extends TestCase
                     new Baz(new Foo());
                     ',
                 'error_message' => 'InvalidIntersectionType',
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
+            'docBlockIntersectionsMixedWithUnion' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    interface A {}
+                    interface B {}
+
+                    class Foobar
+                    {
+                        /** @var (Foo&Bar)|(Bar&B) */
+                        private $baz;
+
+                        /** @param Bar&A $baz */
+                        public function __construct($baz) {
+                            $this->baz = $baz;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidPropertyAssignmentValue',
                 'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
