@@ -119,6 +119,23 @@ class NativeIntersectionsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
+            'phpdocTypeIntersectionNamedClasses' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    class Baz
+                    {
+                        /**
+                         * @param Foo&Bar $foobar
+                         */
+                        public function test(Foo&Bar $foobar) {}
+                    }
+                    new Baz(new Foo());
+                    ',
+                'error_message' => 'InvalidIntersectionType',
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
             'docBlockIntersectionsMixedWithUnion' => [
                 'code' => '<?php
                     class Foo {}
