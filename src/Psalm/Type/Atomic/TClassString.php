@@ -43,10 +43,13 @@ class TClassString extends TString
     /** @var bool */
     public $is_enum = false;
 
-    public function __construct(string $as = 'object', ?TNamedObject $as_type = null)
+    public function __construct(string $as = 'object', ?TNamedObject $as_type = null, bool $is_loaded = false, bool $is_interface = false, bool $is_enum = false)
     {
         $this->as = $as;
         $this->as_type = $as_type;
+        $this->is_loaded = $is_loaded;
+        $this->is_interface = $is_interface;
+        $this->is_enum = $is_enum;
     }
 
     public function getKey(bool $include_extra = true): string

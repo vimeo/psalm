@@ -804,10 +804,7 @@ class AssertionFinder
             }
         } elseif ($class_exists_check_type = self::hasClassExistsCheck($expr)) {
             if ($first_var_name) {
-                $class_string_type = new TClassString();
-                if ($class_exists_check_type === 1) {
-                    $class_string_type->is_loaded = true;
-                }
+                $class_string_type = new TClassString('object', null, $class_exists_check_type === 1);
                 $if_types[$first_var_name] = [[new IsType($class_string_type)]];
             }
         } elseif ($class_exists_check_type = self::hasTraitExistsCheck($expr)) {
@@ -820,14 +817,12 @@ class AssertionFinder
             }
         } elseif (self::hasEnumExistsCheck($expr)) {
             if ($first_var_name) {
-                $class_string = new TClassString();
-                $class_string->is_enum = true;
+                $class_string = new TClassString('object', null, false, false, true);
                 $if_types[$first_var_name] = [[new IsType($class_string)]];
             }
         } elseif (self::hasInterfaceExistsCheck($expr)) {
             if ($first_var_name) {
-                $class_string = new TClassString();
-                $class_string->is_interface = true;
+                $class_string = new TClassString('object', null, false, true, false);
                 $if_types[$first_var_name] = [[new IsType($class_string)]];
             }
         } elseif (self::hasFunctionExistsCheck($expr)) {
@@ -1252,10 +1247,10 @@ class AssertionFinder
 
             if ($this_class_name
                 && (in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true))) {
-                $named_object =new TNamedObject($this_class_name);
+                $is_static = $stmt->class->parts[0] === 'static';
+                $named_object = new TNamedObject($this_class_name, $is_static);
 
-                if ($stmt->class->parts[0] === 'static') {
-                    $named_object->is_static = true;
+                if ($is_static) {
                     return [new IsIdentical($named_object)];
                 }
 
@@ -3534,8 +3529,7 @@ class AssertionFinder
 
                     if ($class_node->parts === ['static']) {
                         if ($this_class_name) {
-                            $object = new TNamedObject($this_class_name);
-                            $object->is_static = true;
+                            $object = new TNamedObject($this_class_name, true);
 
                             $if_types[$first_var_name] = [[new IsAClass($object, $third_arg_value === 'true')]];
                         }

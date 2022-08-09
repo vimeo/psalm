@@ -1826,13 +1826,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     $this_object_type = new TGenericObject(
                         $context->self,
-                        $template_params
+                        $template_params,
+                        false,
+                        !$storage->final
                     );
                 } else {
-                    $this_object_type = new TNamedObject($context->self);
+                    $this_object_type = new TNamedObject(
+                        $context->self,
+                        !$storage->final
+                    );
                 }
-
-                $this_object_type->is_static = !$storage->final;
 
                 if ($this->storage instanceof MethodStorage && $this->storage->if_this_is_type) {
                     $template_result = new TemplateResult($this->getTemplateTypeMap() ?? [], []);
@@ -1984,13 +1987,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $closure_type = new TClosure(
                 'Closure',
                 $storage->params,
-                $closure_return_type
+                $closure_return_type,
+                $storage instanceof FunctionStorage ? $storage->pure : null,
+                $storage instanceof FunctionStorage ? $storage->byref_uses : [],
             );
-
-            if ($storage instanceof FunctionStorage) {
-                $closure_type->byref_uses = $storage->byref_uses;
-                $closure_type->is_pure = $storage->pure;
-            }
 
             $type_provider->setType(
                 $this->function,

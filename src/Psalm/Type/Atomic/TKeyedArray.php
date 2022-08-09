@@ -78,10 +78,21 @@ class TKeyedArray extends Atomic
      * @param non-empty-array<string|int, Union> $properties
      * @param array<string, bool> $class_strings
      */
-    public function __construct(array $properties, ?array $class_strings = null)
+    public function __construct(
+        array $properties,
+        ?array $class_strings = null,
+        bool $sealed = false,
+        ?Union $previous_key_type = null,
+        ?Union $previous_value_type = null,
+        bool $is_list = false
+    )
     {
         $this->properties = $properties;
         $this->class_strings = $class_strings;
+        $this->sealed = $sealed;
+        $this->previous_key_type = $previous_key_type;
+        $this->previous_value_type = $previous_value_type;
+        $this->is_list = $is_list;
     }
 
     public function getId(bool $exact = true, bool $nested = false): string

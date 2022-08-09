@@ -92,8 +92,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                 $use_context->vars_in_scope['$this'] = clone $context->vars_in_scope['$this'];
             } elseif ($context->self) {
-                $this_atomic = new TNamedObject($context->self);
-                $this_atomic->is_static = true;
+                $this_atomic = new TNamedObject($context->self, true);
 
                 $use_context->vars_in_scope['$this'] = new Union([$this_atomic]);
             }

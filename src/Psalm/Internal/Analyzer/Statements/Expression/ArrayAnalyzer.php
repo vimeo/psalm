@@ -120,14 +120,14 @@ class ArrayAnalyzer
 
         // if this array looks like an object-like array, let's return that instead
         if (count($array_creation_info->property_types) !== 0) {
-            $atomic_type = new TKeyedArray($array_creation_info->property_types, $array_creation_info->class_strings);
-            if ($array_creation_info->can_create_objectlike) {
-                $atomic_type->sealed = true;
-            } else {
-                $atomic_type->previous_key_type = $item_key_type ?? Type::getArrayKey();
-                $atomic_type->previous_value_type = $item_value_type ?? Type::getMixed();
-            }
-            $atomic_type->is_list = $array_creation_info->all_list;
+            $atomic_type = new TKeyedArray(
+                $array_creation_info->property_types,
+                $array_creation_info->class_strings,
+                $array_creation_info->can_create_objectlike,
+                $array_creation_info->can_create_objectlike ? null : ($item_key_type ?? Type::getArrayKey()),
+                $array_creation_info->can_create_objectlike ? null : ($item_value_type ?? Type::getMixed()),
+                $array_creation_info->all_list
+            );
 
             $stmt_type = new Union([$atomic_type]);
 

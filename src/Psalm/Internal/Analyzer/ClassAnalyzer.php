@@ -295,8 +295,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
             $union = new Union($mixins);
 
-            $static_self = new TNamedObject($storage->name);
-            $static_self->is_static = true;
+            $static_self = new TNamedObject($storage->name, true);
 
             $union = TypeExpander::expandUnion(
                 $codebase,
@@ -1223,8 +1222,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
             $method_context->self = $fq_class_name;
 
-            $this_atomic_object_type = new TNamedObject($fq_class_name);
-            $this_atomic_object_type->is_static = !$storage->final;
+            $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
 
             $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
