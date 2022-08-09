@@ -49,6 +49,9 @@ use function reset;
 use function sort;
 use function strpos;
 
+/**
+ * @psalm-immutable
+ */
 trait UnionTrait
 {
     /**

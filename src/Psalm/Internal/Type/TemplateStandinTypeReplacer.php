@@ -61,6 +61,8 @@ class TemplateStandinTypeReplacer
      *
      * This method fills in the values in $template_result based on how the various atomic types
      * of $union_type match up to the types inside $input_type
+     *
+     * @psalm-pure
      */
     public static function replace(
         Union $union_type,
@@ -155,6 +157,7 @@ class TemplateStandinTypeReplacer
 
     /**
      * @return list<Atomic>
+     * @psalm-pure
      */
     private static function handleAtomicStandin(
         Atomic $atomic_type,
@@ -406,6 +409,7 @@ class TemplateStandinTypeReplacer
      * identifies the matching atomic types for `T` as `string|int`
      *
      * @return list<Atomic>
+     * @psalm-pure
      */
     private static function findMatchingAtomicTypesForTemplate(
         Atomic $base_type,
@@ -564,6 +568,7 @@ class TemplateStandinTypeReplacer
 
     /**
      * @return list<Atomic>
+     * @psalm-pure
      */
     private static function handleTemplateParamStandin(
         TTemplateParam $atomic_type,
@@ -915,6 +920,7 @@ class TemplateStandinTypeReplacer
 
     /**
      * @return non-empty-list<TClassString>
+     * @psalm-pure
      */
     public static function handleTemplateParamClassStandin(
         TTemplateParamClass $atomic_type,
@@ -1058,6 +1064,7 @@ class TemplateStandinTypeReplacer
 
     /**
      * @param  array<string, array<string, non-empty-list<TemplateBound>>>  $template_types
+     * @psalm-pure
      */
     public static function getRootTemplateType(
         array $template_types,
@@ -1107,6 +1114,7 @@ class TemplateStandinTypeReplacer
      * bound types.
      *
      * @param  non-empty-list<TemplateBound>  $lower_bounds
+     * @psalm-pure
      */
     public static function getMostSpecificTypeFromBounds(array $lower_bounds, ?Codebase $codebase): Union
     {
@@ -1157,6 +1165,7 @@ class TemplateStandinTypeReplacer
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TIterable $container_type_part
      * @return list<Union>
+     * @psalm-pure
      */
     public static function getMappedGenericTypeParams(
         Codebase $codebase,

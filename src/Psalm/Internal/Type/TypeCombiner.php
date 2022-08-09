@@ -88,7 +88,7 @@ class TypeCombiner
      * @param  non-empty-list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
-     *
+     * @psalm-pure
      */
     public static function combine(
         array $types,

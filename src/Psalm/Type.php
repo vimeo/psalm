@@ -71,6 +71,8 @@ abstract class Type
      *
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
+     *
+     * @psalm-pure
      */
     public static function parseString(
         string $type_string,
@@ -86,6 +88,9 @@ abstract class Type
         );
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getFQCLNFromString(
         string $class,
         Aliases $aliases
@@ -175,6 +180,9 @@ abstract class Type
         return '\\' . $value;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getInt(bool $from_calculation = false, ?int $value = null): Union
     {
         if ($value !== null) {
@@ -188,6 +196,9 @@ abstract class Type
         return $union;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getLowercaseString(): Union
     {
         $type = new TLowercaseString();
@@ -195,6 +206,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNonEmptyLowercaseString(): Union
     {
         $type = new TNonEmptyLowercaseString();
@@ -202,6 +216,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNonEmptyString(): Union
     {
         $type = new TNonEmptyString();
@@ -209,6 +226,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNumeric(): Union
     {
         $type = new TNumeric;
@@ -216,6 +236,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNumericString(): Union
     {
         $type = new TNumericString;
@@ -223,6 +246,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getString(?string $value = null): Union
     {
         $type = null;
@@ -250,6 +276,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getSingleLetter(): Union
     {
         $type = new TSingleLetter;
@@ -257,6 +286,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getClassString(string $extends = 'object'): Union
     {
         return new Union([
@@ -269,6 +301,9 @@ abstract class Type
         ]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getLiteralClassString(string $class_type, bool $definite_class = false): Union
     {
         $type = new TLiteralClassString($class_type, $definite_class);
@@ -276,6 +311,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNull(): Union
     {
         $type = new TNull;
@@ -283,6 +321,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getMixed(bool $from_loop_isset = false): Union
     {
         $type = new TMixed($from_loop_isset);
@@ -290,6 +331,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getScalar(): Union
     {
         $type = new TScalar();
@@ -297,6 +341,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNever(): Union
     {
         $type = new TNever();
@@ -304,6 +351,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getBool(): Union
     {
         $type = new TBool;
@@ -311,6 +361,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getFloat(?float $value = null): Union
     {
         if ($value !== null) {
@@ -322,6 +375,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getObject(): Union
     {
         $type = new TObject;
@@ -329,6 +385,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getClosure(): Union
     {
         $type = new TClosure('Closure');
@@ -336,6 +395,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getArrayKey(): Union
     {
         $type = new TArrayKey();
@@ -343,6 +405,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getArray(): Union
     {
         $type = new TArray(
@@ -355,6 +420,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getEmptyArray(): Union
     {
         $array_type = new TArray(
@@ -369,6 +437,9 @@ abstract class Type
         ]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getList(): Union
     {
         $type = new TList(new Union([new TMixed]));
@@ -376,6 +447,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNonEmptyList(): Union
     {
         $type = new TNonEmptyList(new Union([new TMixed]));
@@ -383,6 +457,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getVoid(): Union
     {
         $type = new TVoid;
@@ -390,6 +467,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getFalse(): Union
     {
         $type = new TFalse;
@@ -397,6 +477,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getTrue(): Union
     {
         $type = new TTrue;
@@ -404,6 +487,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getResource(): Union
     {
         return new Union([new TResource]);
@@ -411,6 +497,7 @@ abstract class Type
 
     /**
      * @param non-empty-list<Union> $union_types
+     * @psalm-pure
      */
     public static function combineUnionTypeArray(array $union_types, ?Codebase $codebase): Union
     {
@@ -428,7 +515,7 @@ abstract class Type
      *
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
-     *
+     * @psalm-pure
      */
     public static function combineUnionTypes(
         ?Union $type_1,
@@ -541,7 +628,7 @@ abstract class Type
     /**
      * Combines two union types into one via an intersection
      *
-     *
+     * @psalm-pure
      */
     public static function intersectUnionTypes(
         ?Union $type_1,
@@ -669,6 +756,9 @@ abstract class Type
         return $combined_type;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function intersectAtomicTypes(
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
@@ -800,6 +890,8 @@ abstract class Type
 
     /**
      * @psalm-assert-if-true TIterable|TNamedObject|TTemplateParam|TObjectWithProperties $type
+     *
+     * @psalm-pure
      */
     private static function mayHaveIntersection(Atomic $type, Codebase $codebase): bool
     {
@@ -816,6 +908,9 @@ abstract class Type
         return !$storage->final;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function hasIntersection(Atomic $type): bool
     {
         return ($type instanceof TIterable
