@@ -293,9 +293,7 @@ class ArrayFunctionArgumentsAnalyzer
                     );
                 } else {
                     if ($objectlike_list) {
-                        array_unshift($objectlike_list->properties, $arg_value_type);
-
-                        $by_ref_type = new Union([$objectlike_list]);
+                        $by_ref_type = new Union([...$objectlike_list->properties, $arg_value_type]);
                     } elseif ($array_type instanceof TList) {
                         $by_ref_type = Type::combineUnionTypes(
                             $by_ref_type,

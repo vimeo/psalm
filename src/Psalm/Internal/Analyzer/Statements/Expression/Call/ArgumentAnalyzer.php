@@ -58,7 +58,9 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function count;
 use function explode;
@@ -1439,20 +1441,27 @@ class ArgumentAnalyzer
 
             if ($unpack) {
                 if ($unpacked_atomic_array instanceof TList) {
-                    $unpacked_atomic_array = clone $unpacked_atomic_array;
-                    $unpacked_atomic_array->type_param = $input_type;
+                    $unpacked_atomic_array = new TList($input_type);
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TArray) {
-                    $unpacked_atomic_array = clone $unpacked_atomic_array;
-                    $unpacked_atomic_array->type_params[1] = $input_type;
+                    $unpacked_atomic_array = new TArray([
+                        $unpacked_atomic_array->type_params[0],
+                        $input_type
+                    ]);
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TKeyedArray
                     && $unpacked_atomic_array->is_list
                 ) {
-                    $unpacked_atomic_array = $unpacked_atomic_array->getList();
-                    $unpacked_atomic_array->type_param = $input_type;
+                    if (!$unpacked_atomic_array->is_list) {
+                        throw new UnexpectedValueException('Object-like array must be a list for conversion');
+                    }
+                    if ($unpacked_atomic_array->isNonEmpty()) {
+                        $unpacked_atomic_array = new TNonEmptyList($input_type);
+                    } else {
+                        $unpacked_atomic_array = new TList($input_type);
+                    }
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } else {
