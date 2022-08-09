@@ -115,10 +115,6 @@ class TypeHintResolver
             }
 
             if ($type === null) {
-                throw new UnexpectedValueException('Intersection type could not be resolved');
-            }
-
-            if ($type === null) {
                 IssueBuffer::maybeAdd(
                     new InvalidIntersectionType(
                         'Intersection type can never be satisfied',
