@@ -1638,9 +1638,8 @@ class ArrayFetchAnalyzer
                         $type = new TNonEmptyArray([
                             $new_key_type,
                             $generic_params,
-                        ]);
+                        ], $property_count);
                         $array_type->addType($type);
-                        $type->count = $property_count;
                     } else {
                         $array_type->removeType($type_string);
 
