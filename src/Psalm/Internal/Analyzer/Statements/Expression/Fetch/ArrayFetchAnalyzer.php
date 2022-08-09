@@ -1113,19 +1113,17 @@ class ArrayFetchAnalyzer
 
                     // ok, type becomes an TKeyedArray
                     $array_type->removeType($type_string);
-                    $type = new TKeyedArray([
-                        $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever()
-                    ]);
-                    if ($single_atomic instanceof TLiteralClassString) {
-                        $type->class_strings[$single_atomic->value] = true;
-                    }
-
-                    $type->sealed = $from_empty_array;
-
-                    if (!$from_empty_array) {
-                        $type->previous_value_type = clone $previous_value_type;
-                        $type->previous_key_type = clone $previous_key_type;
-                    }
+                    $type = new TKeyedArray(
+                        [
+                            $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever(),
+                        ],
+                        $single_atomic instanceof TLiteralClassString ? [
+                            $type->class_strings[$single_atomic->value] => true
+                        ] : null,
+                        $from_empty_array,
+                        $from_empty_array ? null : $previous_value_type,
+                        $from_empty_array ? null : $previous_key_type,
+                    );
 
                     $array_type->addType($type);
                 } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
@@ -1138,7 +1136,17 @@ class ArrayFetchAnalyzer
                 && $type->previous_value_type->isMixed()
                 && count($key_values) === 1
             ) {
-                $type->properties[$key_values[0]->value] = Type::getMixed();
+                $type = new TKeyedArray(
+                    [
+                        $key_values[0]->value => Type::getMixed(),
+                        ...$type->properties
+                    ],
+                    $type->class_strings,
+                    $type->sealed,
+                    $type->previous_key_type,
+                    $type->previous_value_type,
+                    $type->is_list
+                );
             }
         }
 
