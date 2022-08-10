@@ -198,11 +198,14 @@ class ObjectComparator
         }
 
         if ($intersection_input_type instanceof TTemplateParam) {
-            $intersection_container_type = clone $intersection_container_type;
-
             if ($intersection_container_type instanceof TNamedObject) {
                 // this is extra check is redundant since we're comparing to a template as type
-                $intersection_container_type->is_static = false;
+                $intersection_container_type = new TNamedObject(
+                    $intersection_container_type->value,
+                    false,
+                    $intersection_container_type->definite_class,
+                    $intersection_container_type->extra_types,
+                );
             }
 
             return UnionTypeComparator::isContainedBy(

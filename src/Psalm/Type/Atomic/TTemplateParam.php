@@ -44,6 +44,15 @@ final class TTemplateParam extends Atomic
         $this->extra_types = $extra_types;
     }
 
+    public function replaceAs(Union $as): self {
+        return new self(
+            $this->param_name,
+            $as,
+            $this->defining_class,
+            $this->extra_types
+        );
+    }
+
     public function setIntersectionTypes(?array $types): self
     {
         return new self($this->param_name, $this->as, $this->defining_class, $types);

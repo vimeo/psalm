@@ -693,10 +693,9 @@ class SimpleAssertionReconciler extends Reconciler
                 );
             } elseif ($array_atomic_type instanceof TList) {
                 $non_empty_list = new TNonEmptyList(
-                    $array_atomic_type->type_param
+                    $array_atomic_type->type_param,
+                    $count
                 );
-
-                $non_empty_list->count = $count;
 
                 $existing_var_type->addType(
                     $non_empty_list
@@ -860,9 +859,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
                 if ($type->as->hasString() || $type->as->hasMixed() || $type->as->hasScalar()) {
-                    $type = clone $type;
-
-                    $type->as = self::reconcileString(
+                    $type = $type->replaceAs(self::reconcileString(
                         $assertion,
                         $type->as,
                         null,
@@ -871,7 +868,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $failed_reconciliation,
                         $is_equality
-                    );
+                    ));
 
                     $string_types[] = $type;
                 }
