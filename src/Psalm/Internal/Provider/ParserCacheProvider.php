@@ -5,18 +5,13 @@ namespace Psalm\Internal\Provider;
 use PhpParser;
 use PhpParser\Node\Stmt;
 use Psalm\Config;
+use Psalm\Internal\Provider\Providers;
 use RuntimeException;
 
 use function clearstatcache;
 use function error_log;
-use function fclose;
-use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
-use function filesize;
-use function flock;
-use function fopen;
-use function fread;
 use function gettype;
 use function igbinary_serialize;
 use function igbinary_unserialize;
@@ -33,11 +28,9 @@ use function serialize;
 use function touch;
 use function unlink;
 use function unserialize;
-use function usleep;
 
 use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
-use const LOCK_SH;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -108,10 +101,10 @@ class ParserCacheProvider
         ) {
             if ($this->use_igbinary) {
                 /** @var list<Stmt> */
-                $stmts = igbinary_unserialize((string)file_get_contents($cache_location));
+                $stmts = igbinary_unserialize(Providers::safeFileGetContents($cache_location));
             } else {
                 /** @var list<Stmt> */
-                $stmts = unserialize((string)file_get_contents($cache_location));
+                $stmts = unserialize(Providers::safeFileGetContents($cache_location));
             }
 
             return $stmts;
@@ -142,11 +135,11 @@ class ParserCacheProvider
         if (is_readable($cache_location)) {
             if ($this->use_igbinary) {
                 /** @var list<Stmt> */
-                return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
+                return igbinary_unserialize(Providers::safeFileGetContents($cache_location)) ?: null;
             }
 
             /** @var list<Stmt> */
-            return unserialize((string)file_get_contents($cache_location)) ?: null;
+            return unserialize(Providers::safeFileGetContents($cache_location)) ?: null;
         }
 
         return null;
@@ -173,7 +166,7 @@ class ParserCacheProvider
         $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;
 
         if (is_readable($cache_location)) {
-            return file_get_contents($cache_location);
+            return Providers::safeFileGetContents($cache_location);
         }
 
         return null;
@@ -191,29 +184,7 @@ class ParserCacheProvider
             $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
 
             if ($root_cache_directory && is_readable($file_hashes_path)) {
-                $fp = fopen($file_hashes_path, 'r');
-                $max_wait_cycles = 5;
-                $has_lock = false;
-                while ($max_wait_cycles > 0) {
-                    if (flock($fp, LOCK_SH)) {
-                        $has_lock = true;
-                        break;
-                    }
-                    $max_wait_cycles--;
-                    usleep(50000);
-                }
-
-                if (!$has_lock) {
-                    fclose($fp);
-                    error_log('Could not acquire lock for content hashes file');
-                    $this->existing_file_content_hashes = [];
-
-                    return [];
-                }
-
-                $hashes_encoded = fread($fp, filesize($file_hashes_path));
-                fclose($fp);
-
+                $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
                 if (!$hashes_encoded) {
                     error_log('Unexpected value when loading from file content hashes');
                     $this->existing_file_content_hashes = [];
@@ -269,9 +240,9 @@ class ParserCacheProvider
             $this->createCacheDirectory($parser_cache_directory);
 
             if ($this->use_igbinary) {
-                file_put_contents($cache_location, igbinary_serialize($stmts));
+                file_put_contents($cache_location, igbinary_serialize($stmts), LOCK_EX);
             } else {
-                file_put_contents($cache_location, serialize($stmts));
+                file_put_contents($cache_location, serialize($stmts), LOCK_EX);
             }
 
             $this->new_file_content_hashes[$file_cache_key] = $file_content_hash;
@@ -343,7 +314,7 @@ class ParserCacheProvider
 
         $this->createCacheDirectory($parser_cache_directory);
 
-        file_put_contents($cache_location, $file_contents);
+        file_put_contents($cache_location, $file_contents, LOCK_EX);
     }
 
     public function deleteOldParserCaches(float $time_before): int
