@@ -210,6 +210,7 @@ abstract class Atomic implements TypeNode
             case 'non-empty-string':
                 return new TNonEmptyString();
 
+            case 'truthy-string':
             case 'non-falsy-string':
                 return new TNonFalsyString();
 
