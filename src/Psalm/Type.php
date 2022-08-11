@@ -552,15 +552,15 @@ abstract class Type
         }
 
         if ($type_1 === null) {
-            return $type_2;
+            return $type_2->isNever() ? null : $type_2;
         }
 
         if ($type_2 === null) {
-            return $type_1;
+            return $type_1->isNever() ? null : $type_1;
         }
 
         if ($type_1 === $type_2) {
-            return $type_1;
+            return $type_1->isNever() ? null : $type_1;
         }
 
         $intersection_performed = false;
@@ -576,10 +576,10 @@ abstract class Type
                 if ($type_2->failed_reconciliation) {
                     $both_failed_reconciliation = true;
                 } else {
-                    return $type_2;
+                    return $type_2->isNever() ? null : $type_2;
                 }
             } elseif ($type_2->failed_reconciliation) {
-                return $type_1;
+                return $type_1->isNever() ? null : $type_1;
             }
 
             if ($type_1_mixed) {
@@ -662,7 +662,7 @@ abstract class Type
             $combined_type->possibly_undefined = true;
         }
 
-        return $combined_type;
+        return $combined_type->isNever() ? null : $combined_type;
     }
 
     private static function intersectAtomicTypes(
