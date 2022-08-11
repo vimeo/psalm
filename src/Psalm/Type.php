@@ -540,27 +540,19 @@ abstract class Type
     /**
      * Combines two union types into one via an intersection
      *
-     *
+     * Returns null (not TNever) if the intersection is empty
      */
     public static function intersectUnionTypes(
-        ?Union $type_1,
-        ?Union $type_2,
+        Union $type_1,
+        Union $type_2,
         Codebase $codebase
     ): ?Union {
-        $type_1 = $type_1 && $type_1->isNever() ? null : $type_1;
-        $type_2 = $type_2 && $type_2->isNever() ? null : $type_2;
-        if ($type_2 === null && $type_1 === null) {
-            throw new UnexpectedValueException('At least one type must be provided to intersect');
-        }
-
-        if ($type_1 === null) {
+        if ($type_1->isNever()) {
             return $type_2;
         }
-
-        if ($type_2 === null) {
+        if ($type_2->isNever()) {
             return $type_1;
         }
-
         if ($type_1 === $type_2) {
             return $type_1;
         }

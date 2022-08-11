@@ -111,7 +111,7 @@ class TypeHintResolver
                     );
                 }
 
-                $type = Type::intersectUnionTypes($resolved_type, $type, $codebase);
+                $type = $type ? Type::intersectUnionTypes($resolved_type, $type, $codebase) : $resolved_type;
             }
 
             if ($type === null) {
