@@ -186,7 +186,7 @@
                 </xs:complexType>
             </xs:element>
         </xs:choice>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="IssueHandlersType">
@@ -482,7 +482,7 @@
             <xs:element name="UnusedReturnValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedVariable" type="IssueHandlerType" minOccurs="0" />
         </xs:choice>
-        <xs:anyAttribute/>
+        <xs:anyAttribute processContents="skip"/>
     </xs:complexType>
 
     <xs:complexType name="IssueHandlerType">
