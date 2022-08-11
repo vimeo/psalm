@@ -548,10 +548,10 @@ abstract class Type
         Codebase $codebase
     ): ?Union {
         if ($type_1->isNever()) {
-            return $type_2;
+            return null;
         }
         if ($type_2->isNever()) {
-            return $type_1;
+            return null;
         }
         if ($type_1 === $type_2) {
             return $type_1;
