@@ -11292,7 +11292,7 @@ return [
 'RedisCluster::zScore' => ['float', 'key'=>'string', 'member'=>'string'],
 'RedisCluster::zUnionStore' => ['int', 'Output'=>'string', 'ZSetKeys'=>'array', 'Weights='=>'?array', 'aggregateFunction='=>'string'],
 'Reflection::export' => ['?string', 'r'=>'reflector', 'return='=>'bool'],
-'Reflection::getModifierNames' => ['array', 'modifiers'=>'int'],
+'Reflection::getModifierNames' => ['list<string>', 'modifiers'=>'int'],
 'ReflectionClass::__clone' => ['void'],
 'ReflectionClass::__construct' => ['void', 'argument'=>'object|class-string'],
 'ReflectionClass::__toString' => ['string'],
