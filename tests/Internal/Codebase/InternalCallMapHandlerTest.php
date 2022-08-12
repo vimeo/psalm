@@ -112,7 +112,6 @@ class InternalCallMapHandlerTest extends TestCase
         'imagefilter',
         'imagegd',
         'imagegd2',
-        'imageinterlace',
         'imageopenpolygon',
         'imagepolygon',
         'imagerotate',

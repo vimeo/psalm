@@ -5410,7 +5410,7 @@ return [
 'imagegif' => ['bool', 'image'=>'GdImage', 'file='=>'string|resource|null'],
 'imagegrabscreen' => ['false|GdImage'],
 'imagegrabwindow' => ['false|GdImage', 'handle'=>'int', 'client_area='=>'int'],
-'imageinterlace' => ['int|false', 'image'=>'GdImage', 'enable='=>'int'],
+'imageinterlace' => ['bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
 'imageistruecolor' => ['bool', 'image'=>'GdImage'],
 'imagejpeg' => ['bool', 'image'=>'GdImage', 'file='=>'string|resource|null', 'quality='=>'int'],
 'imagelayereffect' => ['bool', 'image'=>'GdImage', 'effect'=>'int'],
