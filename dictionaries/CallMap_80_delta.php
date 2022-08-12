@@ -647,7 +647,7 @@ return [
     ],
     'imageinterlace' => [
       'old' => ['int|false', 'image'=>'resource', 'enable='=>'int'],
-      'new' => ['int|false', 'image'=>'GdImage', 'enable='=>'int'],
+      'new' => ['int|bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
     ],
     'imageistruecolor' => [
       'old' => ['bool', 'image'=>'resource'],

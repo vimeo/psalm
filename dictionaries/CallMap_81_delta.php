@@ -233,6 +233,10 @@ return [
       'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
       'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array'],
     ],
+    'imageinterlace' => [
+      'old' => ['int|bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
+      'new' => ['bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
+    ],
     'imap_append' => [
         'old' => ['bool', 'imap'=>'resource', 'folder'=>'string', 'message'=>'string', 'options='=>'string', 'internal_date='=>'string'],
         'new' => ['bool', 'imap'=>'IMAP\Connection', 'folder'=>'string', 'message'=>'string', 'options='=>'string', 'internal_date='=>'string'],
