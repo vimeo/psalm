@@ -37,7 +37,7 @@ Some issue types allow the use of `referencedMethod`, `referencedClass` or `refe
   </InvalidReturnType>
   <UndefinedMethod>
     <errorLevel type="suppress">
-      <referencedMethod name="Bar\Bat::bar" />
+      <referencedMethod name="Bar\Bat::bar" /> <!-- not supported for all types of errors -->
       <file name="some_bad_file.php" />
     </errorLevel>
   </UndefinedMethod>
