@@ -35,6 +35,7 @@ use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use RuntimeException;
 use SimpleXMLElement;
 use SimpleXMLIterator;
 use Throwable;
@@ -55,7 +56,6 @@ use function class_exists;
 use function clearstatcache;
 use function count;
 use function dirname;
-use function error_log;
 use function explode;
 use function extension_loaded;
 use function file_exists;
@@ -1013,8 +1013,19 @@ class Config
             chdir($config->base_dir);
         }
 
-        if (is_dir($config->cache_directory) === false && @mkdir($config->cache_directory, 0777, true) === false) {
-            error_log('Could not create cache directory: ' . $config->cache_directory);
+        if (!is_dir($config->cache_directory)) {
+            try {
+                if (mkdir($config->cache_directory, 0777, true) === false) {
+                    // any other error than directory already exists/permissions issue
+                    throw new RuntimeException('Failed to create Psalm cache directory for unknown reasons');
+                }
+            } catch (RuntimeException $e) {
+                if (!is_dir($config->cache_directory)) {
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
+                }
+            }
         }
 
         if ($cwd) {
