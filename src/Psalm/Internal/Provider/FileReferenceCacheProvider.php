@@ -5,6 +5,7 @@ namespace Psalm\Internal\Provider;
 use Psalm\Config;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Provider\Providers;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function file_exists;
@@ -12,6 +13,7 @@ use function file_put_contents;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_array;
+use function is_dir;
 use function is_readable;
 use function mkdir;
 use function serialize;
@@ -992,18 +994,29 @@ class FileReferenceCacheProvider
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
-        if ($cache_directory) {
-            if (!file_exists($cache_directory)) {
-                mkdir($cache_directory, 0777, true);
-            }
-
-            $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
-
-            file_put_contents(
-                $config_hash_cache_location,
-                $hash,
-                LOCK_EX
-            );
+        if (!$cache_directory) {
+            return;
         }
+
+        if (!is_dir($cache_directory)) {
+            try {
+                mkdir($cache_directory, 0777, true);
+            } catch (RuntimeException $e) {
+                // Race condition (#4483)
+                if (!is_dir($cache_directory)) {
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
+                }
+            }
+        }
+
+        $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
+
+        file_put_contents(
+            $config_hash_cache_location,
+            $hash,
+            LOCK_EX
+        );
     }
 }

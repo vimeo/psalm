@@ -5,6 +5,7 @@ namespace Psalm\Internal\Provider;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Storage\ClassLikeStorage;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -168,7 +169,16 @@ class ClassLikeStorageCacheProvider
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::CLASS_CACHE_DIRECTORY;
 
         if ($create_directory && !is_dir($parser_cache_directory)) {
-            mkdir($parser_cache_directory, 0777, true);
+            try {
+                mkdir($parser_cache_directory, 0777, true);
+            } catch (RuntimeException $e) {
+                // Race condition (#4483)
+                if (!is_dir($parser_cache_directory)) {
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
+                }
+            }
         }
 
         $data = $file_path ? strtolower($file_path) . ' ' : '';

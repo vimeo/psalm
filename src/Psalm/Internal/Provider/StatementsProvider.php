@@ -26,7 +26,7 @@ use function array_map;
 use function array_merge;
 use function count;
 use function filemtime;
-use function md5;
+use function hash;
 use function strlen;
 use function strpos;
 
@@ -132,7 +132,11 @@ class StatementsProvider
 
         $config = Config::getInstance();
 
-        $file_content_hash = md5($version . $file_contents);
+        if (PHP_VERSION_ID >= 80100) {
+            $file_content_hash = hash('xxh128', $version . $file_contents);
+        } else {
+            $file_content_hash = hash('md4', $version . $file_contents);
+        }
 
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
@@ -239,7 +243,11 @@ class StatementsProvider
                     array_flip($unchanged_signature_members)
                 );
 
-                $file_path_hash = md5($file_path);
+                if (PHP_VERSION_ID >= 80100) {
+                    $file_path_hash = hash('xxh128', $file_path);
+                } else {
+                    $file_path_hash = hash('md4', $file_path);
+                }
 
                 $changed_members = array_map(
                     function (string $key) use ($file_path_hash): string {

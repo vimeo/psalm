@@ -35,6 +35,7 @@ use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use RuntimeException;
 use SimpleXMLElement;
 use SimpleXMLIterator;
 use Throwable;
@@ -55,7 +56,6 @@ use function class_exists;
 use function clearstatcache;
 use function count;
 use function dirname;
-use function error_log;
 use function explode;
 use function extension_loaded;
 use function file_exists;
@@ -1013,8 +1013,16 @@ class Config
             chdir($config->base_dir);
         }
 
-        if (is_dir($config->cache_directory) === false && @mkdir($config->cache_directory, 0777, true) === false) {
-            error_log('Could not create cache directory: ' . $config->cache_directory);
+        if (!is_dir($config->cache_directory)) {
+            try {
+                mkdir($config->cache_directory, 0777, true);
+            } catch (RuntimeException $e) {
+                if (!is_dir($config->cache_directory)) {
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
+                }
+            }
         }
 
         if ($cwd) {
@@ -2287,19 +2295,28 @@ class Config
                     continue;
                 }
 
+                $full_path = $dir . '/' . $object;
+
                 // if it was deleted in the meantime/race condition with other psalm process
-                if (!file_exists($dir . '/' . $object)) {
+                if (!file_exists($full_path)) {
                     continue;
                 }
 
-                if (filetype($dir . '/' . $object) === 'dir') {
-                    self::removeCacheDirectory($dir . '/' . $object);
+                if (filetype($full_path) === 'dir') {
+                    self::removeCacheDirectory($full_path);
                 } else {
-                    unlink($dir . '/' . $object);
+                    try {
+                        unlink($full_path);
+                    } catch (RuntimeException $e) {
+                        clearstatcache(true, $full_path);
+                        if (file_exists($full_path)) {
+                            // rethrow the error with default message
+                            // it contains the reason why deletion failed
+                            throw $e;
+                        }
+                    }
                 }
             }
-
-            reset($objects);
 
             // may have been removed in the meantime
             clearstatcache(true, $dir);

@@ -7,12 +7,13 @@ use PhpParser\Node\Stmt;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
+use UnexpectedValueException;
 
 use function clearstatcache;
-use function error_log;
 use function file_put_contents;
 use function filemtime;
 use function gettype;
+use function hash;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_array;
@@ -21,7 +22,6 @@ use function is_readable;
 use function is_writable;
 use function json_decode;
 use function json_encode;
-use function md5;
 use function mkdir;
 use function scandir;
 use function serialize;
@@ -43,6 +43,11 @@ class ParserCacheProvider
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
     /**
+     * @var Config
+     */
+    private $config;
+
+    /**
      * A map of filename hashes to contents hashes
      *
      * @var array<string, string>|null
@@ -61,12 +66,9 @@ class ParserCacheProvider
      */
     private $use_file_cache;
 
-    /** @var bool */
-    private $use_igbinary;
-
     public function __construct(Config $config, bool $use_file_cache = true)
     {
-        $this->use_igbinary = $config->use_igbinary;
+        $this->config = $config;
         $this->use_file_cache = $use_file_cache;
     }
 
@@ -78,7 +80,11 @@ class ParserCacheProvider
         int $file_modified_time,
         string $file_content_hash
     ): ?array {
-        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+        if (!$this->use_file_cache) {
+            return null;
+        }
+
+        $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return null;
@@ -99,7 +105,7 @@ class ParserCacheProvider
             && is_readable($cache_location)
             && filemtime($cache_location) > $file_modified_time
         ) {
-            if ($this->use_igbinary) {
+            if ($this->config->use_igbinary) {
                 /** @var list<Stmt> */
                 $stmts = igbinary_unserialize(Providers::safeFileGetContents($cache_location));
             } else {
@@ -118,7 +124,11 @@ class ParserCacheProvider
      */
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
-        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+        if (!$this->use_file_cache) {
+            return null;
+        }
+
+        $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return null;
@@ -133,7 +143,7 @@ class ParserCacheProvider
         $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;
 
         if (is_readable($cache_location)) {
-            if ($this->use_igbinary) {
+            if ($this->config->use_igbinary) {
                 /** @var list<Stmt> */
                 return igbinary_unserialize(Providers::safeFileGetContents($cache_location)) ?: null;
             }
@@ -151,7 +161,7 @@ class ParserCacheProvider
             return null;
         }
 
-        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+        $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return null;
@@ -177,28 +187,24 @@ class ParserCacheProvider
      */
     private function getExistingFileContentHashes(): array
     {
-        $config = Config::getInstance();
-        $root_cache_directory = $config->getCacheDirectory();
+        if (!$this->use_file_cache) {
+            return [];
+        }
 
         if ($this->existing_file_content_hashes === null) {
+            $root_cache_directory = $this->config->getCacheDirectory();
             $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
 
             if ($root_cache_directory && is_readable($file_hashes_path)) {
                 $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
                 if (!$hashes_encoded) {
-                    error_log('Unexpected value when loading from file content hashes');
-                    $this->existing_file_content_hashes = [];
-
-                    return [];
+                    throw new UnexpectedValueException('File content hashes should be in cache');
                 }
 
                 $hashes_decoded = json_decode($hashes_encoded, true);
 
                 if (!is_array($hashes_decoded)) {
-                    error_log('Unexpected value ' . gettype($hashes_decoded));
-                    $this->existing_file_content_hashes = [];
-
-                    return [];
+                    throw new UnexpectedValueException('File content hashes are of invalid type ' . gettype($hashes_decoded));
                 }
 
                 /** @var array<string, string> $hashes_decoded */
@@ -220,7 +226,7 @@ class ParserCacheProvider
         array $stmts,
         bool $touch_only
     ): void {
-        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+        $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return;
@@ -239,7 +245,7 @@ class ParserCacheProvider
         } else {
             $this->createCacheDirectory($parser_cache_directory);
 
-            if ($this->use_igbinary) {
+            if ($this->config->use_igbinary) {
                 file_put_contents($cache_location, igbinary_serialize($stmts), LOCK_EX);
             } else {
                 file_put_contents($cache_location, serialize($stmts), LOCK_EX);
@@ -268,7 +274,11 @@ class ParserCacheProvider
 
     public function saveFileContentHashes(): void
     {
-        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+        if (!$this->use_file_cache) {
+            return;
+        }
+
+        $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return;
@@ -298,7 +308,7 @@ class ParserCacheProvider
             return;
         }
 
-        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+        $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return;
@@ -319,7 +329,7 @@ class ParserCacheProvider
 
     public function deleteOldParserCaches(float $time_before): int
     {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
+        $cache_directory = $this->config->getCacheDirectory();
 
         if (!$cache_directory) {
             return 0;
@@ -349,9 +359,15 @@ class ParserCacheProvider
         return $removed_count;
     }
 
-    private function getParserCacheKey(string $file_name): string
+    private function getParserCacheKey(string $file_path): string
     {
-        return md5($file_name) . ($this->use_igbinary ? '-igbinary' : '') . '-r';
+        if (PHP_VERSION_ID >= 80100) {
+            $hash = hash('xxh128', $file_path);
+        } else {
+            $hash = hash('md4', $file_path);
+        }
+
+        return $hash . ($this->config->use_igbinary ? '-igbinary' : '') . '-r';
     }
 
     private function createCacheDirectory(string $parser_cache_directory): void
@@ -362,7 +378,9 @@ class ParserCacheProvider
             } catch (RuntimeException $e) {
                 // Race condition (#4483)
                 if (!is_dir($parser_cache_directory)) {
-                    error_log('Could not create parser cache directory: ' . $parser_cache_directory);
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
                 }
             }
         }

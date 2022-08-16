@@ -82,6 +82,15 @@ class ParserInstanceCacheProvider extends ParserCacheProvider
         $this->file_contents_cache[$file_path] = $file_contents;
     }
 
+    public function deleteOldParserCaches(float $time_before): int
+    {
+        $this->file_contents_cache = [];
+        $this->file_content_hash = [];
+        $this->statements_cache = [];
+        $this->statements_cache_time = [];
+        return 0;
+    }
+
     public function saveFileContentHashes(): void
     {
     }
