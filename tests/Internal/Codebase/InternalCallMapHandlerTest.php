@@ -51,6 +51,7 @@ class InternalCallMapHandlerTest extends TestCase
     private static $ignoredFunctions = [
         'apcu_entry',
         'array_multisort',
+        'count', // #8346
         'bcdiv',
         'bcmod',
         'bcpowmod',

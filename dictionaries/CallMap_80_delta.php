@@ -214,7 +214,7 @@ return [
       'new' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'true'],
     ],
     'count' => [
-        'old' => ['int', 'value'=>'Countable|array|SimpleXMLElement|ResourceBundle', 'mode='=>'int'],
+        'old' => ['int', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
         'new' => ['int', 'value'=>'Countable|array', 'mode='=>'int'],
     ],
     'count_chars' => [
