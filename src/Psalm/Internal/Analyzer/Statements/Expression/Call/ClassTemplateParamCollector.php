@@ -172,7 +172,7 @@ class ClassTemplateParamCollector
         TGenericObject $lhs_type_part,
         ?TemplateResult $template_result = null
     ): ?Union {
-        if ($template_result === null) {
+        if ($template_result === null && $static_class_storage->template_types) {
             $templates = self::collect(
                 $codebase,
                 $static_class_storage,
@@ -230,10 +230,12 @@ class ClassTemplateParamCollector
                     }
                 }
             } else {
-                $type_extends_atomic->replaceTemplateTypesWithArgTypes(
-                    $template_result,
-                    $codebase
-                );
+                if ($template_result !== null) {
+                    $type_extends_atomic->replaceTemplateTypesWithArgTypes(
+                        $template_result,
+                        $codebase
+                    );
+                }
                 $output_type_extends = Type::combineUnionTypes(
                     new Union([$type_extends_atomic]),
                     $output_type_extends
