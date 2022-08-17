@@ -109,6 +109,23 @@ class ClassTemplateParamCollector
                 }
             }
 
+            $template_result = null;
+            if ($class_storage !== $static_class_storage && $static_class_storage->template_types) {
+                $templates = self::collect(
+                    $codebase,
+                    $static_class_storage,
+                    $static_class_storage,
+                    null,
+                    $lhs_type_part
+                );
+                if ($templates === null) {
+                    throw new AssertionError("Could not collect templates!");
+                }
+                $template_result = new TemplateResult(
+                    $static_class_storage->template_types,
+                    $templates
+                );
+            }
             foreach ($template_types as $type_name => $_) {
                 if (isset($class_template_params[$type_name])) {
                     continue;
@@ -123,7 +140,8 @@ class ClassTemplateParamCollector
                         $codebase,
                         $input_type_extends,
                         $static_class_storage,
-                        $lhs_type_part
+                        $lhs_type_part,
+                        $template_result
                     );
 
                     $class_template_params[$type_name][$class_storage->name]
@@ -173,19 +191,6 @@ class ClassTemplateParamCollector
         TGenericObject $lhs_type_part,
         ?TemplateResult $template_result = null
     ): ?Union {
-        if ($template_result === null && $static_class_storage->template_types) {
-            $templates = self::collect(
-                $codebase,
-                $static_class_storage,
-                $static_class_storage,
-                null,
-                $lhs_type_part
-            );
-            if ($templates === null) {
-                throw new AssertionError("Could not collect templates!");
-            }
-            $template_result = new TemplateResult($static_class_storage->template_types, $templates);
-        }
         $output_type_extends = null;
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
             if ($type_extends_atomic instanceof TTemplateParam) {
