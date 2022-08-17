@@ -235,6 +235,7 @@ class ClassTemplateParamCollector
                 }
             } else {
                 if ($template_result !== null) {
+                    $type_extends_atomic = clone $type_extends_atomic;
                     $type_extends_atomic->replaceTemplateTypesWithArgTypes(
                         $template_result,
                         $codebase
