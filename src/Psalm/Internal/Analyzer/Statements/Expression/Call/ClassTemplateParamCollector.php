@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use AssertionError;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -180,6 +181,9 @@ class ClassTemplateParamCollector
                 null,
                 $lhs_type_part
             );
+            if ($templates === null) {
+                throw new AssertionError("Could not collect templates!");
+            }
             $template_result = new TemplateResult($static_class_storage->template_types, $templates);
         }
         $output_type_extends = null;
