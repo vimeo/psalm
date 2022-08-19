@@ -86,23 +86,21 @@ class CoreStubsTest extends TestCase
             'error_levels' => [],
             'php_version' => '8.0',
         ];
-        yield 'DatePeriod implements only Traversable on PHP 7' => [
-            '<?php
-
-            $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
-            if ($period instanceof IteratorAggregate) {}',
-            'assertions' => [],
-            'error_levels' => [],
-            'php_version' => '7.3',
-        ];
         yield 'DatePeriod implements IteratorAggregate on PHP 8' => [
             '<?php
-
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
-            if ($period instanceof IteratorAggregate) {}',
-            'assertions' => [],
-            'error_levels' => ['RedundantCondition'],
+            $iterator = $period->getIterator();',
+            'assertions' => ['$iterator' => 'Traversable<int, DateTime>&Iterator'],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
+        yield 'DatePeriod implements only Traversable on PHP 7' => [
+        '<?php
+            $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
+            $iterator = $period->getIterator();',
+            'assertions' => ['$iterator' => 'Traversable<empty, empty>'],
+            'error_levels' => [],
+            'php_version' => '7.3',
+         ];
     }
 }
