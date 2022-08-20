@@ -34,7 +34,7 @@ This tells Psalm to move class `Ns1\Foo` into the namespace `Ns2\Bar` and rename
 vendor/bin/psalm-refactor --move "Ns1\Foo::bar" --into "Ns2\Baz"
 ```
 
-This tells Psalm to move a method named `bar` inside `Ns1\Foo` into the class `Ns2\Baz`, so any reference to `Ns1\Foo::bar` becomes `Ns2\Baz::bar`). Psalm currently allows you to move static methods between aribitrary classes, and instance methods into child classes of that instance.
+This tells Psalm to move a method named `bar` inside `Ns1\Foo` into the class `Ns2\Baz`, so any reference to `Ns1\Foo::bar` becomes `Ns2\Baz::bar`). Psalm currently allows you to move static methods between arbitrary classes, and instance methods into child classes of that instance.
 
 ## Moving and renaming methods
 

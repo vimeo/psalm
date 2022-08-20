@@ -28,7 +28,7 @@ $param = strip_tags($_GET['param']);
 </script>
 ```
 
-Passing `');alert('injection');//` as a `GET` param here would would cause the `alert` to trigger.
+Passing `');alert('injection');//` as a `GET` param here would cause the `alert` to trigger.
 
 ## Mitigations
 
