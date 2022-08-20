@@ -40,7 +40,7 @@ Psalm is almost always run on PHP code that parses a lint check (`php -l <filena
 
 Given Psalm is almost always used on syntatically-correct code it should use a parser built for that purpose, and `nikic/php-parser` is the gold-standard.
 
-Where Psalm needs to run on syntactically-incorrect code (e.g. in language server mode) Psalm should still use the same parser (and work around any issues that produces).
+Where Psalm needs to run on syntactically-incorrect code (e.g. in language server mode) Psalm should still use the same parser (and work around any issues that it produces).
 
 ## Docblock annotations are better than type-providing plugins
 

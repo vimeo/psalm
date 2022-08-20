@@ -66,7 +66,7 @@ class One_off_instance_of_MyContainer {
 }
 ```
 
-This pattern can be used in large number of different situations like mocking, collections, iterators and loading arbitrary objects. Psalm has a large number of annotations to make it easy to use templated types in your codebase.
+This pattern can be used in a large number of different situations like mocking, collections, iterators and loading arbitrary objects. Psalm has a large number of annotations to make it easy to use templated types in your codebase.
 
 ## `@template`, `@psalm-template`
 
@@ -111,7 +111,7 @@ function array_combine(array $arr, array $arr2) {}
 
 ### Notes
 - `@template` tag order matters for class docblocks, as they dictate the order in which those generic parameters are referenced in docblocks.
-- The names of your templated types (e.g. `TKey`, `TValue` don't matter outside the scope of the class or function in which they're declared.
+- The names of your templated types (e.g. `TKey`, `TValue`) don't matter outside the scope of the class or function in which they're declared.
 
 ## @param class-string&lt;T&gt;
 

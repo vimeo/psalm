@@ -1,6 +1,6 @@
 # TaintedLdap
 
-Potential LDAP injection. This rule is emitted when user-controlled input can be passed into a LDAP request.
+Potential LDAP injection. This rule is emitted when user-controlled input can be passed into an LDAP request.
 
 ## Risk
 
