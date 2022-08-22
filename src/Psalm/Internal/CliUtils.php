@@ -636,7 +636,7 @@ HELP;
 
         if (isset($options['php-version'])) {
             if (!is_string($options['php-version'])) {
-                die('Expecting a version number in the format x.y, got'. get_debug_type($options['php-version']) . PHP_EOL);
+                die('Expecting a version number in the format x.y' . PHP_EOL);
             }
             $version = $options['php-version'];
             $source = 'cli';
