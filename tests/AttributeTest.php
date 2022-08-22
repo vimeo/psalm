@@ -249,6 +249,32 @@ class AttributeTest extends TestCase
                 [],
                 '8.1'
             ],
+            'allowDynamicProperties' => [
+                '<?php
+
+                    namespace AllowDynamicPropertiesAttribute;
+
+                    #[\AllowDynamicProperties]
+                    class Foo
+                    {}',
+                [],
+                [],
+                '8.2'
+            ],
+            'sensitiveParameter' => [
+                '<?php
+
+                    namespace SensitiveParameter;
+
+                    class HelloWorld {
+                        public function __construct(
+                            #[\SensitiveParameter] string $password
+                        ) {}
+                    }',
+                [],
+                [],
+                '8.2'
+            ],
             'createObjectAsAttributeArg' => [
                 '<?php
                     #[Attribute]

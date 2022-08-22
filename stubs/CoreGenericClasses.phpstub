@@ -501,3 +501,15 @@ final class ReturnTypeWillChange
 {
     public function __construct() {}
 }
+
+#[Attribute]
+final class SensitiveParameter
+{
+    public function __construct() {}
+}
+
+#[Attribute]
+final class AllowDynamicProperties
+{
+    public function __construct() {}
+}
