@@ -254,7 +254,9 @@ class AttributeTest extends TestCase
 
                     namespace AllowDynamicPropertiesAttribute;
 
-                    #[\AllowDynamicProperties]
+                    use AllowDynamicProperties;
+
+                    #[AllowDynamicProperties]
                     class Foo
                     {}',
                 [],
@@ -266,9 +268,11 @@ class AttributeTest extends TestCase
 
                     namespace SensitiveParameter;
 
+                    use SensitiveParameter;
+
                     class HelloWorld {
                         public function __construct(
-                            #[\SensitiveParameter] string $password
+                            #[SensitiveParameter] string $password
                         ) {}
                     }',
                 [],
