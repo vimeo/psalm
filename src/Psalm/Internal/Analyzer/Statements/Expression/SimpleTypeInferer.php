@@ -430,19 +430,21 @@ class SimpleTypeInferer
                 return null;
             }
 
+            $new_types = [];
             foreach ($type_to_invert->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof TLiteralInt
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $type_part->value = -$type_part->value;
+                    $new_types []= new TLiteralInt(-$type_part->value);
                 } elseif ($type_part instanceof TLiteralFloat
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $type_part->value = -$type_part->value;
+                    $new_types []= new TLiteralFloat(-$type_part->value);
+                } else {
+                    $new_types []= $type_part;
                 }
             }
-
-            return $type_to_invert;
+            return new Union($new_types);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {

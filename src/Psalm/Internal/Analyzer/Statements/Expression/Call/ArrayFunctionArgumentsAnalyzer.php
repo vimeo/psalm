@@ -836,9 +836,6 @@ class ArrayFunctionArgumentsAnalyzer
                 && $closure_type->return_type
                 && $closure_param_type->hasTemplate()
             ) {
-                $closure_param_type = clone $closure_param_type;
-                $closure_type->return_type = clone $closure_type->return_type;
-
                 $template_result = new TemplateResult(
                     [],
                     []

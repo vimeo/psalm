@@ -36,6 +36,13 @@ class TArray extends Atomic
     {
         $this->type_params = $type_params;
     }
+    /**
+     * @param array{0: Union, 1: Union} $type_params
+     * @return self
+     */
+    public function replaceTypeParams(array $type_params): self {
+        return new self($type_params);
+    }
 
     public function getKey(bool $include_extra = true): string
     {
