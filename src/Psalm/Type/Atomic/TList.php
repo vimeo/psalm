@@ -39,6 +39,10 @@ class TList extends Atomic
         $this->type_param = $type_param;
     }
 
+    public function replaceTypeParam(Union $type_param): TList {
+        return new self($type_param);
+    }
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         return static::KEY . '<' . $this->type_param->getId($exact) . '>';

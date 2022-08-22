@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 
 use function array_pop;
@@ -298,62 +299,80 @@ class ArrayAssignmentAnalyzer
         $has_matching_string = false;
 
         $child_stmt_type = $child_stmt_type->getBuilder();
-
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                $type->as = self::updateTypeWithKeyValues(
-                    $codebase,
-                    $type->as,
-                    $current_type,
-                    $key_values
-                );
-
-                $has_matching_objectlike_property = true;
-
-                $child_stmt_type->substitute(new Union([$type]), $type->as);
-
-                continue;
-            }
-
-            foreach ($key_values as $key_value) {
-                if ($type instanceof TKeyedArray) {
-                    if (isset($type->properties[$key_value->value])) {
-                        $has_matching_objectlike_property = true;
-
-                        $type->properties[$key_value->value] = clone $current_type;
-                    }
-                } elseif ($type instanceof TString
-                    && $key_value instanceof TLiteralInt
-                ) {
-                    $has_matching_string = true;
-
-                    if ($type instanceof TLiteralString
-                        && $current_type->isSingleStringLiteral()
-                    ) {
-                        $new_char = $current_type->getSingleStringLiteral()->value;
-
-                        if (strlen($new_char) === 1) {
-                            $type->value[0] = $new_char;
-                        }
-                    }
-                } elseif ($type instanceof TNonEmptyList
-                    && $key_value instanceof TLiteralInt
-                    && count($key_values) === 1
-                ) {
-                    $has_matching_objectlike_property = true;
-
-                    $type->type_param = Type::combineUnionTypes(
-                        clone $current_type,
-                        $type->type_param,
+                $child_stmt_type->substitute(
+                    new Union([$type]),
+                    self::updateTypeWithKeyValues(
                         $codebase,
-                        true,
-                        false
-                    );
-                }
+                        $type->as,
+                        $current_type,
+                        $key_values
+                    )
+                );
+                $has_matching_objectlike_property = true;
             }
         }
 
-        $child_stmt_type = $child_stmt_type->freeze();
+        $new_types = [];
+        foreach ($child_stmt_type->getAtomicTypes() as $type) {
+            if ($type instanceof TKeyedArray) {
+                $properties = $type->properties;
+                foreach ($key_values as $key_value) {
+                    if (isset($properties[$key_value->value])) {
+                        $has_matching_objectlike_property = true;
+
+                        $properties[$key_value->value] = clone $current_type;
+                    }
+                }
+                if ($has_matching_objectlike_property) {
+                    $new_types []= new TKeyedArray($properties);
+                } else {
+                    $new_types []= $type;
+                }
+            } elseif ($type instanceof TString) {
+                $new_value = null;
+                foreach ($key_values as $key_value) {
+                    if ($key_value instanceof TLiteralInt) {
+                        $has_matching_string = true;
+
+                        if ($type instanceof TLiteralString
+                            && $current_type->isSingleStringLiteral()
+                        ) {
+                            $new_char = $current_type->getSingleStringLiteral()->value;
+
+                            if (strlen($new_char) === 1) {
+                                // This is really strange
+                                $new_value ??= $type->value;
+                                $new_value[0] = $new_char;
+                            }
+                        }
+                    }
+                }
+                if ($new_value) {
+                    $new_types []= new TLiteralString($new_value);
+                } else {
+                    $new_types []= $type;
+                }
+            } elseif ($type instanceof TNonEmptyList
+                && count($key_values) === 1
+                && $key_values[0] instanceof TLiteralInt
+            ) {
+                $has_matching_objectlike_property = true;
+
+                $new_types []= $type->replaceTypeParam(Type::combineUnionTypes(
+                    clone $current_type,
+                    $type->type_param,
+                    $codebase,
+                    true,
+                    false
+                ));
+            } else {
+                $new_types []= $type;
+            }
+        }
+
+        $child_stmt_type = new Union($new_types);
 
         if (!$has_matching_objectlike_property && !$has_matching_string) {
             if (count($key_values) === 1) {
@@ -363,10 +382,9 @@ class ArrayAssignmentAnalyzer
                     [$key_value->value => clone $current_type],
                     $key_value instanceof TLiteralClassString
                         ? [$key_value->value => true]
-                        : null
+                        : null,
+                    true
                 );
-
-                $object_like->sealed = true;
 
                 $array_assignment_type = new Union([
                     $object_like,
