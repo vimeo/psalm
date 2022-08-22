@@ -1311,11 +1311,13 @@ class SimpleAssertionReconciler extends Reconciler
 
                 $did_remove_type = true;
             } elseif ($type instanceof TIterable) {
-                $clone_type = clone $type;
+                $params = $type->type_params;
+                $params[0] = self::refineArrayKey($params[0]);
 
-                self::refineArrayKey($clone_type->type_params[0]);
-
-                $object_types[] = new TGenericObject('Traversable', $clone_type->type_params);
+                $object_types[] = new TGenericObject(
+                    'Traversable',
+                    $params
+                );
 
                 $did_remove_type = true;
             } else {
@@ -1935,11 +1937,9 @@ class SimpleAssertionReconciler extends Reconciler
 
                 $did_remove_type = true;
             } elseif ($type instanceof TIterable) {
-                $clone_type = clone $type;
-
-                self::refineArrayKey($clone_type->type_params[0]);
-
-                $array_types[] = new TArray($clone_type->type_params);
+                $params = $type->type_params;
+                $params[0] = self::refineArrayKey($params[0]);
+                $array_types[] = new TArray($params);
 
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {

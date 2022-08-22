@@ -50,6 +50,13 @@ final class TIterable extends Atomic
         $this->extra_types = $extra_types;
     }
 
+    /**
+     * @param list<Union> $type_params
+     */
+    public function replaceTypeParams(array $type_params): self {
+        return new self($type_params, $this->extra_types);
+    }
+
     public function setIntersectionTypes(?array $types): self
     {
         return new self($this->type_params, $types);
