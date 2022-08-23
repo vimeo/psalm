@@ -48,7 +48,8 @@ final class TGenericObject extends TNamedObject
     /**
      * @param non-empty-list<Union> $type_params
      */
-    public function replaceTypeParams(array $type_params): self {
+    public function replaceTypeParams(array $type_params): self
+    {
         return new self($this->value, $type_params, $this->remapped_params, $this->is_static, $this->extra_types);
     }
 

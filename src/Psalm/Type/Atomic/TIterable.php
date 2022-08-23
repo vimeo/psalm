@@ -53,7 +53,8 @@ final class TIterable extends Atomic
     /**
      * @param list<Union> $type_params
      */
-    public function replaceTypeParams(array $type_params): self {
+    public function replaceTypeParams(array $type_params): self
+    {
         return new self($type_params, $this->extra_types);
     }
 

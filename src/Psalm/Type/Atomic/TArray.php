@@ -2,8 +2,8 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Internal\Type\TemplateResult;
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -38,9 +38,9 @@ class TArray extends Atomic
     }
     /**
      * @param array{0: Union, 1: Union} $type_params
-     * @return self
      */
-    public function replaceTypeParams(array $type_params): self {
+    public function replaceTypeParams(array $type_params): self
+    {
         return new self($type_params);
     }
 

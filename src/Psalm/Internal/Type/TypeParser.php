@@ -1202,9 +1202,6 @@ class TypeParser
                 $is_variadic
             );
 
-            // type is not authoritative
-            $param->signature_type = null;
-
             $params[] = $param;
         }
 
@@ -1363,13 +1360,13 @@ class TypeParser
             return new TCallableKeyedArray($properties);
         }
 
-        $object_like = new TKeyedArray($properties, $class_strings);
-
-        if ($is_tuple) {
-            $object_like->sealed = true;
-            $object_like->is_list = true;
-        }
-
-        return $object_like;
+        return new TKeyedArray(
+            $properties,
+            $class_strings,
+            $is_tuple,
+            null,
+            null,
+            $is_tuple
+        );
     }
 }

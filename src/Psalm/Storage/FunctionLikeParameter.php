@@ -2,8 +2,8 @@
 
 namespace Psalm\Storage;
 
-use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -175,6 +175,12 @@ final class FunctionLikeParameter implements HasAttributesInterface
             $template_result,
             $codebase
         );
+        return $cloned;
+    }
+
+    public function replaceType(Union $type): self {
+        $cloned = clone $this;
+        $cloned->type = $type;
         return $cloned;
     }
 

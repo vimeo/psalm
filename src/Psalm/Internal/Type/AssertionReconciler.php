@@ -59,7 +59,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
-use SebastianBergmann\CodeCoverage\Report\Xml\Unit;
 
 use function array_intersect_key;
 use function array_merge;

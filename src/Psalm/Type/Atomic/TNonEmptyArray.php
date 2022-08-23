@@ -39,9 +39,9 @@ class TNonEmptyArray extends TArray
 
     /**
      * @param array{0: Union, 1: Union} $type_params
-     * @return self
      */
-    public function replaceTypeParams(array $type_params): self {
+    public function replaceTypeParams(array $type_params): self
+    {
         return new self($type_params, $this->count, $this->min_count, $this->value);
     }
 }

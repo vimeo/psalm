@@ -868,21 +868,20 @@ abstract class Type
 
             $wider_type_clone = $wider_type->setIntersectionTypes([]);
 
-            $intersection_atomic->setIntersectionTypes(
-                [
-                    ...($intersection_atomic->getIntersectionTypes() ?? []),
-                    $wider_type_clone->getKey() => $wider_type_clone
-                ]
-            );
+            $final_intersection = [
+                ...($intersection_atomic->getIntersectionTypes() ?? []),
+                $wider_type_clone->getKey() => $wider_type_clone
+            ];
 
             $wider_type_intersection_types = $wider_type->getIntersectionTypes();
 
             if ($wider_type_intersection_types !== null) {
                 foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
-                    $intersection_atomic->extra_types[$wider_type_intersection_type->getKey()]
-                        = clone $wider_type_intersection_type;
+                    $final_intersection[$wider_type_intersection_type->getKey()] = $wider_type_intersection_type;
                 }
             }
+
+            return $intersection_atomic->setIntersectionTypes($final_intersection);
         }
 
         return $intersection_atomic;

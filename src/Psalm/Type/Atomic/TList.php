@@ -39,7 +39,8 @@ class TList extends Atomic
         $this->type_param = $type_param;
     }
 
-    public function replaceTypeParam(Union $type_param): TList {
+    public function replaceTypeParam(Union $type_param): TList
+    {
         return new self($type_param);
     }
 

@@ -128,6 +128,7 @@ class TypeChecker extends NodeVisitor
             $this->checkResource($type);
         }
 
+        /** @psalm-suppress InaccessibleProperty Allow mutation of checked */
         $type->checked = true;
 
         return null;

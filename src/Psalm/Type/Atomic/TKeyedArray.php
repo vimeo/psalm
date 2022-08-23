@@ -85,14 +85,21 @@ class TKeyedArray extends Atomic
         ?Union $previous_key_type = null,
         ?Union $previous_value_type = null,
         bool $is_list = false
-    )
-    {
+    ) {
         $this->properties = $properties;
         $this->class_strings = $class_strings;
         $this->sealed = $sealed;
         $this->previous_key_type = $previous_key_type;
         $this->previous_value_type = $previous_value_type;
         $this->is_list = $is_list;
+    }
+
+    /**
+     * @param non-empty-array<string|int, Union> $properties
+     */
+    public function setProperties(array $properties): self
+    {
+        return new self($properties, $this->class_strings, $this->sealed, $this->previous_key_type, $this->previous_value_type, $this->is_list);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string

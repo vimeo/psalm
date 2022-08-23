@@ -218,6 +218,7 @@ trait CallableTrait
                     continue;
                 }
 
+                /** @psalm-suppress InaccessibleProperty We're acting on a cloned instance */
                 $param->type = TemplateStandinTypeReplacer::replace(
                     $param->type,
                     $template_result,

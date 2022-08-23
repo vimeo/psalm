@@ -64,6 +64,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
@@ -111,6 +112,8 @@ abstract class Atomic implements TypeNode
     public $text;
 
     /**
+     * @psalm-suppress InaccessibleProperty Allowed during construction
+     *
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
@@ -131,6 +134,8 @@ abstract class Atomic implements TypeNode
         return $result;
     }
     /**
+     * @psalm-suppress InaccessibleProperty Allowed during construction
+     *
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
@@ -540,77 +545,114 @@ abstract class Atomic implements TypeNode
         return [];
     }
 
-    public function replaceClassLike(string $old, string $new): void
+    /**
+     * @psalm-suppress InaccessibleProperty We're only ever accessing properties on cloned objects
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): static
     {
-        if ($this instanceof TNamedObject) {
-            if (strtolower($this->value) === $old) {
-                $this->value = $new;
-            }
-        }
-
         if ($this instanceof TNamedObject
             || $this instanceof TIterable
             || $this instanceof TTemplateParam
         ) {
-            if ($this->extra_types) {
-                foreach ($this->extra_types as $extra_type) {
-                    $extra_type->replaceClassLike($old, $new);
+            $extra_types = $this->extra_types;
+            if ($extra_types) {
+                foreach ($extra_types as &$extra_type) {
+                    $extra_type = $extra_type->replaceClassLike($old, $new);
                 }
             }
+            if ($this instanceof TNamedObject && strtolower($this->value) === $old) {
+                $cloned = clone $this;
+                $cloned->extra_types = $extra_types;
+                $cloned->value = $new;
+                return $cloned;
+            }
+            if ($extra_types) {
+                $cloned = clone $this;
+                $cloned->extra_types = $extra_types;
+                return $cloned;
+            }
+            return $this;
         }
 
         if ($this instanceof TClassConstant) {
             if (strtolower($this->fq_classlike_name) === $old) {
-                $this->fq_classlike_name = $new;
+                return new TClassConstant(
+                    $new,
+                    $this->const_name
+                );
             }
+            return $this;
         }
 
         if ($this instanceof TClassString && $this->as !== 'object') {
             if (strtolower($this->as) === $old) {
-                $this->as = $new;
+                $cloned = clone $this;
+                $cloned->as = $new;
+                return $cloned;
             }
+            return $this;
         }
 
         if ($this instanceof TTemplateParam) {
-            $this->as = $this->as->getBuilder()->replaceClassLike($old, $new)->freeze();
+            return $this->replaceAs($this->as->getBuilder()->replaceClassLike($old, $new)->freeze());
         }
 
         if ($this instanceof TLiteralClassString) {
             if (strtolower($this->value) === $old) {
-                $this->value = $new;
+                return new TLiteralClassString($new, $this->definite_class);
             }
+            return $this;
         }
 
         if ($this instanceof TArray
             || $this instanceof TGenericObject
             || $this instanceof TIterable
         ) {
-            foreach ($this->type_params as &$type_param) {
+            $type_params = $this->type_params;
+            foreach ($type_params as &$type_param) {
                 $type_param = $type_param->getBuilder()->replaceClassLike($old, $new)->freeze();
             }
+            return $this->replaceTypeParams($type_params);
         }
 
         if ($this instanceof TKeyedArray) {
-            foreach ($this->properties as &$property_type) {
+            $properties = [];
+            foreach ($properties as &$property_type) {
                 $property_type = $property_type->getBuilder()->replaceClassLike($old, $new)->freeze();
             }
+            return $this->setProperties($properties);
         }
 
         if ($this instanceof TClosure
             || $this instanceof TCallable
         ) {
-            if ($this->params) {
-                foreach ($this->params as $param) {
+            $replaced = false;
+
+            $params = $this->params;
+            if ($params) {
+                foreach ($params as &$param) {
                     if ($param->type) {
-                        $param->type = $param->type->getBuilder()->replaceClassLike($old, $new)->freeze();
+                        $replaced = true;
+                        $param = $param->replaceType($param->type->getBuilder()->replaceClassLike($old, $new)->freeze());
                     }
                 }
             }
 
-            if ($this->return_type) {
-                $this->return_type = $this->return_type->getBuilder()->replaceClassLike($old, $new)->freeze();
+            $return_type = $this->return_type;
+            if ($return_type) {
+                $replaced = true;
+                $return_type = $return_type->getBuilder()->replaceClassLike($old, $new)->freeze();
             }
+            if ($replaced) {
+                $cloned = clone $this;
+                $cloned->params = $params;
+                $cloned->return_type = $return_type;
+                return $cloned;
+            }
+            return $this;
         }
+        return $this;
     }
 
     final public function __toString(): string

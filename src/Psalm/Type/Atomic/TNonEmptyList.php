@@ -36,7 +36,8 @@ class TNonEmptyList extends TList
         $this->min_count = $min_count;
     }
 
-    public function replaceTypeParam(Union $type_param): TNonEmptyList {
+    public function replaceTypeParam(Union $type_param): TNonEmptyList
+    {
         return new self($type_param, $this->count, $this->min_count);
     }
 

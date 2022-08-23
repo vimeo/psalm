@@ -35,7 +35,6 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
-use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 
 use function array_pop;

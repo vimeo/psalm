@@ -49,6 +49,8 @@ final class DynamicFunctionStorage
     public bool $variadic = false;
 
     /**
+     * @psalm-suppress InaccessibleProperty Allowed during construction
+     *
      * @internal
      */
     public function toFunctionStorage(string $function_cased_name): FunctionStorage
