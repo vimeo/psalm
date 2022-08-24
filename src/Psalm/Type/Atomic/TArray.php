@@ -17,7 +17,7 @@ use function get_class;
 class TArray extends Atomic
 {
     /**
-     * @use GenericTrait<array{0: Union, 1: Union}>
+     * @use GenericTrait<array{Union, Union}>
      */
     use GenericTrait;
 
@@ -29,7 +29,7 @@ class TArray extends Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param array{0: Union, 1: Union} $type_params
+     * @param array{Union, Union} $type_params
      */
     public function __construct(array $type_params)
     {

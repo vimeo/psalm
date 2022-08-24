@@ -2,6 +2,8 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Union;
+
 /**
  * Denotes array known to be non-empty of the form `non-empty-array<TKey, TValue>`.
  * It expects an array with two elements, both union types.
@@ -24,7 +26,7 @@ class TNonEmptyArray extends TArray
     public $value = 'non-empty-array';
 
     /**
-     * @param array{0: Union, 1: Union} $type_params
+     * @param array{Union, Union} $type_params
      * @param positive-int|null $count
      * @param positive-int|null $min_count
      */
