@@ -79,8 +79,8 @@ final class TTemplatePropertiesOf extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): self {
-        return new self(
+    ): static {
+        return new static(
             $this->param_name,
             $this->defining_class,
             TemplateInferredTypeReplacer::replace(

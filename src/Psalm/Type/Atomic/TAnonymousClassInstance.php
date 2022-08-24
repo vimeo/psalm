@@ -23,12 +23,6 @@ final class TAnonymousClassInstance extends TNamedObject
         $this->extends = $extends;
     }
 
-
-    public function setIntersectionTypes(?array $types): self
-    {
-        return new static($this->value, $this->is_static, $this->extends, $types);
-    }
-
     public function toPhpString(
         ?string $namespace,
         array $aliased_classes,

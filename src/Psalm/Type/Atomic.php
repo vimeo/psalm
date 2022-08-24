@@ -629,7 +629,7 @@ abstract class Atomic implements TypeNode
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): self {
+    ): static {
         // do nothing
         return $this;
     }
@@ -637,7 +637,7 @@ abstract class Atomic implements TypeNode
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): self {
+    ): static {
         // do nothing
         return $this;
     }

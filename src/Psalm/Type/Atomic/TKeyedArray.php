@@ -98,7 +98,9 @@ class TKeyedArray extends Atomic
      */
     public function setProperties(array $properties): self
     {
-        return new self($properties, $this->class_strings, $this->sealed, $this->previous_key_type, $this->previous_value_type, $this->is_list);
+        $cloned = clone $this;
+        $cloned->properties = $properties;
+        return $cloned;
     }
 
     public function replaceClassLike(string $old, string $new): static
@@ -348,16 +350,16 @@ class TKeyedArray extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): self {
-        $properties = [];
-        foreach ($this->properties as $k => $property) {
-            $properties[$k] = TemplateInferredTypeReplacer::replace(
+    ): static {
+        $cloned = clone $this;
+        foreach ($cloned->properties as &$property) {
+            $property = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
             );
         }
-        return new self($properties, $this->class_strings);
+        return $cloned;
     }
 
     public function getChildNodes(): array

@@ -45,19 +45,6 @@ final class TGenericObject extends TNamedObject
         $this->extra_types = $extra_types;
     }
 
-    /**
-     * @param non-empty-list<Union> $type_params
-     */
-    public function replaceTypeParams(array $type_params): self
-    {
-        return new self($this->value, $type_params, $this->remapped_params, $this->is_static, $this->extra_types);
-    }
-
-    public function setIntersectionTypes(?array $types): self
-    {
-        return new static($this->value, $this->type_params, $this->remapped_params, $this->is_static, $types);
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         $s = '';

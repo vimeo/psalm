@@ -48,11 +48,6 @@ final class TObjectWithProperties extends TObject
         $this->extra_types = $extra_types;
     }
 
-    public function setIntersectionTypes(?array $types): self
-    {
-        return new self($this->properties, $this->methods, $types);
-    }
-
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $extra_types = '';
@@ -216,7 +211,7 @@ final class TObjectWithProperties extends TObject
             );
         }
 
-        return new self($properties, $this->methods, $this->replaceIntersectionTemplateTypesWithStandins(
+        return new static($properties, $this->methods, $this->replaceIntersectionTemplateTypesWithStandins(
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -236,7 +231,7 @@ final class TObjectWithProperties extends TObject
         foreach ($this->properties as $k => $property) {
             $properties[$k] = $property->getBuilder()->replaceClassLike($old, $new)->freeze();
         }
-        return new self(
+        return new static(
             $properties,
             $this->methods,
             $this->replaceIntersectionClassLike($old, $new)
@@ -245,7 +240,7 @@ final class TObjectWithProperties extends TObject
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): self {
+    ): static {
         $properties = [];
         foreach ($this->properties as $k => $property) {
             $properties[$k] = TemplateInferredTypeReplacer::replace(
@@ -254,7 +249,7 @@ final class TObjectWithProperties extends TObject
                 $codebase
             );
         }
-        return new self(
+        return new static(
             $properties,
             $this->methods,
             $this->replaceIntersectionTemplateTypesWithArgTypes(

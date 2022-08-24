@@ -28,7 +28,16 @@ trait GenericTrait
      * @readonly
      * @var TTypeParams
      */
-    public $type_params;
+    public array $type_params;
+
+    /**
+     * @param TTypeParams $type_params
+     */
+    public function replaceTypeParams(array $type_params): static{
+        $cloned = clone $this;
+        $cloned->type_params = $type_params;
+        return $cloned;
+    }
 
     public function getId(bool $exact = true, bool $nested = false): string
     {

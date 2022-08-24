@@ -35,12 +35,4 @@ class TNonEmptyArray extends TArray
         $this->min_count = $min_count;
         $this->value = $value;
     }
-
-    /**
-     * @param array{0: Union, 1: Union} $type_params
-     */
-    public function replaceTypeParams(array $type_params): self
-    {
-        return new self($type_params, $this->count, $this->min_count, $this->value);
-    }
 }

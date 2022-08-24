@@ -50,19 +50,6 @@ final class TIterable extends Atomic
         $this->extra_types = $extra_types;
     }
 
-    /**
-     * @param list<Union> $type_params
-     */
-    public function replaceTypeParams(array $type_params): self
-    {
-        return new self($type_params, $this->extra_types);
-    }
-
-    public function setIntersectionTypes(?array $types): self
-    {
-        return new self($this->type_params, $types);
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
@@ -136,7 +123,7 @@ final class TIterable extends Atomic
 
     public function replaceClassLike(string $old, string $new): static
     {
-        return new self(
+        return new static(
             $this->replaceTypeParamsClassLike(
                 $old,
                 $new
@@ -149,7 +136,7 @@ final class TIterable extends Atomic
     }
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
     {
-        return new self(
+        return new static(
             $this->replaceTypeParamsTemplateTypesWithArgTypes(
                 $template_result,
                 $codebase
@@ -163,7 +150,7 @@ final class TIterable extends Atomic
 
     public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
     {
-        return new self(
+        return new static(
             $this->replaceTypeParamsTemplateTypesWithStandins(
                 $template_result,
                 $codebase,

@@ -55,9 +55,18 @@ trait HasIntersectionTrait
     public function addIntersectionType(Atomic $type): static
     {
         return $this->setIntersectionTypes([
-            ...$this->extra_types,
+            ...($this->extra_types ?? []),
             $type->getKey() => $type
         ]);
+    }
+
+    /**
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $types
+     */
+    public function setIntersectionTypes(?array $types): static {
+        $cloned = clone $this;
+        $cloned->extra_types = $tyes;
+        return $cloned;
     }
 
     /**

@@ -39,11 +39,6 @@ final class TClosure extends TNamedObject
         $this->extra_types = $extra_types;
     }
 
-    public function setIntersectionTypes(?array $types): TClosure
-    {
-        return new self($this->value, $this->params, $this->return_type, $this->is_pure, $this->byref_uses, $types);
-    }
-
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
@@ -52,7 +47,7 @@ final class TClosure extends TNamedObject
     public function replaceClassLike(string $old, string $new): static
     {
         $replaced = $this->replaceCallableClassLike($old, $new);
-        return new self(
+        return new static(
             strtolower($this->value) === $old ? $new : $this->value,
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,

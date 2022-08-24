@@ -45,17 +45,12 @@ final class TTemplateParam extends Atomic
 
     public function replaceAs(Union $as): self
     {
-        return new self(
+        return new static(
             $this->param_name,
             $as,
             $this->defining_class,
             $this->extra_types
         );
-    }
-
-    public function setIntersectionTypes(?array $types): self
-    {
-        return new self($this->param_name, $this->as, $this->defining_class, $types);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -144,7 +139,7 @@ final class TTemplateParam extends Atomic
 
     public function replaceClassLike(string $old, string $new): static
     {
-        return new self(
+        return new static(
             $this->param_name,
             $this->as->getBuilder()->replaceClassLike($old, $new)->freeze(),
             $this->defining_class,
@@ -155,8 +150,8 @@ final class TTemplateParam extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): self {
-        return new self(
+    ): static {
+        return new static(
             $this->param_name,
             $this->as,
             $this->defining_class,
