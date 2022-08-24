@@ -100,12 +100,15 @@ class TArray extends Atomic
 
     public function replaceClassLike(string $old, string $new): static
     {
-        return new self($this->replaceTypeParamsClassLike($old, $new));
+        $cloned = clone $this;
+        $cloned->type_params = $this->replaceTypeParamsClassLike($old, $new);
+        return $cloned;
     }
 
-    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): Atomic
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
     {
-        return new self($this->replaceTypeParamsTemplateTypesWithStandins(
+        $cloned = clone $this;
+        $cloned->type_params = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -116,14 +119,17 @@ class TArray extends Atomic
             $replace,
             $add_lower_bound,
             $depth
-        ));
+        );
+        return $cloned;
     }
 
-    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
     {
-        return new self($this->replaceTypeParamsTemplateTypesWithArgTypes(
+        $cloned = clone $this;
+        $cloned->type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
             $template_result,
             $codebase
-        ));
+        );
+        return $cloned;
     }
 }

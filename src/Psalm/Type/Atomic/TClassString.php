@@ -155,7 +155,7 @@ class TClassString extends TString
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
+    ): static {
         $class_string = clone $this;
 
         if (!$class_string->as_type) {

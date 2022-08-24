@@ -43,7 +43,7 @@ final class TTemplateParam extends Atomic
         $this->extra_types = $extra_types;
     }
 
-    public function replaceAs(Union $as): self
+    public function replaceAs(Union $as): static
     {
         return new static(
             $this->param_name,

@@ -39,7 +39,7 @@ final class TDependentListKey extends TInt implements DependentType
         return 'int';
     }
 
-    public function getReplacement(): Atomic
+    public function getReplacement(): TInt
     {
         return new TInt();
     }

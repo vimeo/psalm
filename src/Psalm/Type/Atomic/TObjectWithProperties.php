@@ -183,7 +183,7 @@ final class TObjectWithProperties extends TObject
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
+    ): static {
         $properties = [];
 
         foreach ($this->properties as $offset => $property) {

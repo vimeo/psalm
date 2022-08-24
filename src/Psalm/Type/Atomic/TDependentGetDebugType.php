@@ -34,7 +34,7 @@ final class TDependentGetDebugType extends TString implements DependentType
         return $this->typeof;
     }
 
-    public function getReplacement(): Atomic
+    public function getReplacement(): TString
     {
         return new TString();
     }

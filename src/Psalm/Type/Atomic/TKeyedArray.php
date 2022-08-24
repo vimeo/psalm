@@ -96,7 +96,7 @@ class TKeyedArray extends Atomic
     /**
      * @param non-empty-array<string|int, Union> $properties
      */
-    public function setProperties(array $properties): self
+    public function setProperties(array $properties): static
     {
         $cloned = clone $this;
         $cloned->properties = $properties;
@@ -316,7 +316,7 @@ class TKeyedArray extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
+    ): static {
         $object_like = clone $this;
 
         foreach ($this->properties as $offset => $property) {

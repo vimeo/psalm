@@ -119,7 +119,7 @@ class TList extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
+    ): static {
         $list = clone $this;
 
         foreach ([Type::getInt(), $list->type_param] as $offset => $type_param) {
@@ -172,7 +172,7 @@ class TList extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): self {
+    ): static {
         return $this->replaceTypeParam(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,

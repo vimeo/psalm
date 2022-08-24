@@ -61,7 +61,7 @@ final class TClosure extends TNamedObject
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): self {
+    ): static {
         $replaced = $this->replaceCallableTemplateTypesWithArgTypes($template_result, $codebase);
         return new static(
             $this->value,
@@ -73,7 +73,7 @@ final class TClosure extends TNamedObject
         );
     }
 
-    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): Atomic
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
     {
         $replaced = $this->replaceCallableTemplateTypesWithStandins($template_result, $codebase, $statements_analyzer, $input_type, $input_arg_offset, $calling_class, $calling_function, $replace, $add_lower_bound, $depth);
         return new static(
