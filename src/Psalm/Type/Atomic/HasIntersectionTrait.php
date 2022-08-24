@@ -65,7 +65,7 @@ trait HasIntersectionTrait
      */
     public function setIntersectionTypes(?array $types): static {
         $cloned = clone $this;
-        $cloned->extra_types = $tyes;
+        $cloned->extra_types = $types;
         return $cloned;
     }
 
