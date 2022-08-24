@@ -410,7 +410,7 @@ final class MutableUnion implements TypeNode, Stringable
     public function replaceClassLike(string $old, string $new): self
     {
         foreach ($this->types as $key => $atomic_type) {
-            $atomic_type->replaceClassLike($old, $new);
+            $atomic_type = $atomic_type->replaceClassLike($old, $new);
 
             $this->removeType($key);
             $this->addType($atomic_type);

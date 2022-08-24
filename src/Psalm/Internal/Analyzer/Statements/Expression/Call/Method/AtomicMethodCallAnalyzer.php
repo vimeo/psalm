@@ -849,9 +849,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $lhs_var_id === '$this'
                 );
 
-                $lhs_type_part = clone $mixin;
-
-                $lhs_type_part->replaceTemplateTypesWithArgTypes(
+                $lhs_type_part = $lhs_type_part->replaceTemplateTypesWithArgTypes(
                     new TemplateResult([], $mixin_class_template_params ?: []),
                     $codebase
                 );

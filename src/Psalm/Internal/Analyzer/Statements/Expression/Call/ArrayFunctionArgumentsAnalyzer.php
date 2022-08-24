@@ -863,7 +863,7 @@ class ArrayFunctionArgumentsAnalyzer
                     $context->calling_method_id ?: $context->calling_function_id
                 );
 
-                $closure_type->replaceTemplateTypesWithArgTypes(
+                $closure_type = $closure_type->replaceTemplateTypesWithArgTypes(
                     $template_result,
                     $codebase
                 );

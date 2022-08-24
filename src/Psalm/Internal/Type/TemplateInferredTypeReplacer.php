@@ -58,7 +58,7 @@ class TemplateInferredTypeReplacer
 
         $union = $union->getBuilder();
         foreach ($union->getAtomicTypes() as $key => $atomic_type) {
-            $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+            $atomic_type = $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
             if ($atomic_type instanceof TTemplateParam) {
                 $template_type = self::replaceTemplateParam(
