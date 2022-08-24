@@ -238,13 +238,8 @@ class TypeExpander
         }
 
         if ($return_type instanceof TClassConstant) {
-            if ($return_type->fq_classlike_name === 'self' && $self_class) {
-                $return_type->fq_classlike_name = $self_class;
-            }
-
-            if ($return_type->fq_classlike_name === 'static' && $self_class) {
-                $return_type->fq_classlike_name = is_string($static_class_type) ? $static_class_type : $self_class;
-            }
+            $return_type = $return_type->replaceClassLike('self', $self_class);
+            $return_type = $return_type->replaceClassLike('static', is_string($static_class_type) ? $static_class_type : $self_class);
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
                 if (strtolower($return_type->const_name) === 'class') {
@@ -892,7 +887,7 @@ class TypeExpander
      */
     private static function expandPropertiesOf(
         Codebase $codebase,
-        TPropertiesOf $return_type,
+        TPropertiesOf &$return_type,
         ?string $self_class,
         $static_class_type
     ): array {

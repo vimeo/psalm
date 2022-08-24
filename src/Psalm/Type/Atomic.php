@@ -20,7 +20,6 @@ use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
@@ -64,7 +63,6 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
@@ -546,112 +544,10 @@ abstract class Atomic implements TypeNode
     }
 
     /**
-     * @psalm-suppress InaccessibleProperty We're only ever accessing properties on cloned objects
      * @return static
      */
     public function replaceClassLike(string $old, string $new): static
     {
-        if ($this instanceof TNamedObject
-            || $this instanceof TIterable
-            || $this instanceof TTemplateParam
-        ) {
-            $extra_types = $this->extra_types;
-            if ($extra_types) {
-                foreach ($extra_types as &$extra_type) {
-                    $extra_type = $extra_type->replaceClassLike($old, $new);
-                }
-            }
-            if ($this instanceof TNamedObject && strtolower($this->value) === $old) {
-                $cloned = clone $this;
-                $cloned->extra_types = $extra_types;
-                $cloned->value = $new;
-                return $cloned;
-            }
-            if ($extra_types) {
-                $cloned = clone $this;
-                $cloned->extra_types = $extra_types;
-                return $cloned;
-            }
-            return $this;
-        }
-
-        if ($this instanceof TClassConstant) {
-            if (strtolower($this->fq_classlike_name) === $old) {
-                return new TClassConstant(
-                    $new,
-                    $this->const_name
-                );
-            }
-            return $this;
-        }
-
-        if ($this instanceof TClassString && $this->as !== 'object') {
-            if (strtolower($this->as) === $old) {
-                $cloned = clone $this;
-                $cloned->as = $new;
-                return $cloned;
-            }
-            return $this;
-        }
-
-        if ($this instanceof TTemplateParam) {
-            return $this->replaceAs($this->as->getBuilder()->replaceClassLike($old, $new)->freeze());
-        }
-
-        if ($this instanceof TLiteralClassString) {
-            if (strtolower($this->value) === $old) {
-                return new TLiteralClassString($new, $this->definite_class);
-            }
-            return $this;
-        }
-
-        if ($this instanceof TArray
-            || $this instanceof TGenericObject
-            || $this instanceof TIterable
-        ) {
-            $type_params = $this->type_params;
-            foreach ($type_params as &$type_param) {
-                $type_param = $type_param->getBuilder()->replaceClassLike($old, $new)->freeze();
-            }
-            return $this->replaceTypeParams($type_params);
-        }
-
-        if ($this instanceof TKeyedArray) {
-            $properties = [];
-            foreach ($properties as &$property_type) {
-                $property_type = $property_type->getBuilder()->replaceClassLike($old, $new)->freeze();
-            }
-            return $this->setProperties($properties);
-        }
-
-        if ($this instanceof TClosure
-            || $this instanceof TCallable
-        ) {
-            $replaced = false;
-
-            $params = $this->params;
-            if ($params) {
-                foreach ($params as &$param) {
-                    if ($param->type) {
-                        $replaced = true;
-                        $param = $param->replaceType($param->type->getBuilder()->replaceClassLike($old, $new)->freeze());
-                    }
-                }
-            }
-
-            $return_type = $this->return_type;
-            if ($return_type) {
-                $replaced = true;
-                $return_type = $return_type->getBuilder()->replaceClassLike($old, $new)->freeze();
-            }
-            if ($replaced) {
-                $cloned = clone $this;
-                $cloned->params = $params;
-                $cloned->return_type = $return_type;
-                return $cloned;
-            }
-            return $this;
-        }
         return $this;
     }
 

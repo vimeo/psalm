@@ -102,6 +102,15 @@ class TKeyedArray extends Atomic
         return new self($properties, $this->class_strings, $this->sealed, $this->previous_key_type, $this->previous_value_type, $this->is_list);
     }
 
+    public function replaceClassLike(string $old, string $new): static
+    {
+        $properties = [];
+        foreach ($properties as &$property_type) {
+            $property_type = $property_type->getBuilder()->replaceClassLike($old, $new)->freeze();
+        }
+        return $this->setProperties($properties);
+    }
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $property_strings = [];

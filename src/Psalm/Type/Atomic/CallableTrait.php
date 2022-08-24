@@ -190,7 +190,7 @@ trait CallableTrait
             . $this->value . $param_string . $return_type_string;
     }
 
-    public function replaceTemplateTypesWithStandins(
+    protected function replaceCallableTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
@@ -256,7 +256,7 @@ trait CallableTrait
         return $callable;
     }
 
-    public function replaceTemplateTypesWithArgTypes(
+    protected function replaceCallableTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
@@ -284,6 +284,34 @@ trait CallableTrait
         return new static($this->value, $params, $return_type, $this->is_pure);
     }
 
+    protected function replaceCallableClassLike(string $old, string $new): static
+    {
+        $replaced = false;
+
+        $params = $this->params;
+        if ($params) {
+            foreach ($params as &$param) {
+                if ($param->type) {
+                    $replaced = true;
+                    $param = $param->replaceType($param->type->getBuilder()->replaceClassLike($old, $new)->freeze());
+                }
+            }
+        }
+
+        $return_type = $this->return_type;
+        if ($return_type) {
+            $replaced = true;
+            $return_type = $return_type->getBuilder()->replaceClassLike($old, $new)->freeze();
+        }
+        if ($replaced) {
+            $cloned = clone $this;
+            $cloned->params = $params;
+            $cloned->return_type = $return_type;
+            return $cloned;
+        }
+        return $this;
+    }
+
     /**
      * @return list<TypeNode>
      */
@@ -305,4 +333,5 @@ trait CallableTrait
 
         return $child_nodes;
     }
+
 }

@@ -143,6 +143,16 @@ final class TTemplateParam extends Atomic
         return false;
     }
 
+    public function replaceClassLike(string $old, string $new): static
+    {
+        return new self(
+            $this->param_name,
+            $this->as->getBuilder()->replaceClassLike($old, $new)->freeze(),
+            $this->defining_class,
+            $this->replaceIntersectionClassLike($old, $new)
+        );
+    }
+
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase

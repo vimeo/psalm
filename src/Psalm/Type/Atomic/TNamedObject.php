@@ -3,6 +3,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -142,11 +143,21 @@ class TNamedObject extends Atomic
         return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 
+    public function replaceClassLike(string $old, string $new): static
+    {
+        return new self(
+            strtolower($this->value) === $old ? $new : $this->value,
+            $this->is_static,
+            $this->definite_class,
+            $this->replaceIntersectionClassLike($old, $new)
+        );
+    }
+
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
-        return new self(
+        return new static(
             $this->value,
             $this->is_static,
             $this->definite_class,
@@ -154,6 +165,26 @@ class TNamedObject extends Atomic
         );
     }
 
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): Atomic
+    {
+        return new static(
+            $this->value,
+            $this->is_static,
+            $this->definite_class,
+            $this->replaceIntersectionTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
+            )
+        );
+    }
     public function getChildNodes(): array
     {
         return $this->extra_types ?? [];

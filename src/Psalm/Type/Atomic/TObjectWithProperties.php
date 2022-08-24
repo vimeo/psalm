@@ -40,11 +40,13 @@ final class TObjectWithProperties extends TObject
      *
      * @param array<string|int, Union> $properties
      * @param array<string, string> $methods
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
      */
-    public function __construct(array $properties, array $methods = [])
+    public function __construct(array $properties, array $methods = [], ?array $extra_types = null)
     {
         $this->properties = $properties;
         $this->methods = $methods;
+        $this->extra_types = $extra_types;
     }
 
     public function setIntersectionTypes(?array $types): self
@@ -188,7 +190,7 @@ final class TObjectWithProperties extends TObject
         bool $add_lower_bound = false,
         int $depth = 0
     ): Atomic {
-        $object_like = clone $this;
+        $properties = [];
 
         foreach ($this->properties as $offset => $property) {
             $input_type_param = null;
@@ -199,7 +201,7 @@ final class TObjectWithProperties extends TObject
                 $input_type_param = $input_type->properties[$offset];
             }
 
-            $object_like->properties[$offset] = TemplateStandinTypeReplacer::replace(
+            $properties[$offset] = TemplateStandinTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
@@ -215,9 +217,32 @@ final class TObjectWithProperties extends TObject
             );
         }
 
-        return $object_like;
+        return new self($properties, $this->methods, $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        ));
     }
 
+    public function replaceClassLike(string $old, string $new): static
+    {
+        $properties = [];
+        foreach ($this->properties as $k => $property) {
+            $properties[$k] = $property->getBuilder()->replaceClassLike($old, $new)->freeze();
+        }
+        return new self(
+            $properties,
+            $this->methods,
+            $this->replaceIntersectionClassLike($old, $new)
+        );
+    }
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
@@ -230,7 +255,14 @@ final class TObjectWithProperties extends TObject
                 $codebase
             );
         }
-        return new self($properties, $this->methods);
+        return new self(
+            $properties,
+            $this->methods,
+            $this->replaceIntersectionTemplateTypesWithArgTypes(
+                $template_result,
+                $codebase
+            )
+        );
     }
 
     public function getChildNodes(): array

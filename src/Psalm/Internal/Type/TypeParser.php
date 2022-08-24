@@ -96,6 +96,7 @@ use function strtolower;
 use function substr;
 
 /**
+ * @psalm-suppress InaccessibleProperty Allowed during construction
  * @internal
  */
 class TypeParser

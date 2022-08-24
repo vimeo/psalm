@@ -3,6 +3,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -126,6 +127,49 @@ final class TGenericObject extends TNamedObject
         return array_merge($this->type_params, $this->extra_types ?? []);
     }
 
+    public function replaceClassLike(string $old, string $new): static
+    {
+        return new static(
+            strtolower($this->value) === $old ? $new : $this->value,
+            $this->replaceTypeParamsClassLike($old, $new),
+            $this->remapped_params,
+            $this->is_static,
+            $this->replaceIntersectionClassLike($old, $new)
+        );
+    }
+
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
+    {
+        return new self(
+            $this->value,
+            $this->replaceTypeParamsTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
+            ),
+            $this->remapped_params,
+            $this->is_static,
+            $this->replaceIntersectionTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
+            )
+        );
+    }
 
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
     {
@@ -136,6 +180,7 @@ final class TGenericObject extends TNamedObject
                 $codebase
             ),
             true,
+            $this->is_static,
             $this->replaceIntersectionTemplateTypesWithArgTypes(
                 $template_result,
                 $codebase

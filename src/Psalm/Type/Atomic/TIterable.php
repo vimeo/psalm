@@ -3,6 +3,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -36,7 +37,7 @@ final class TIterable extends Atomic
     public $has_docblock_params = false;
 
     /**
-     * @param list<Union> $type_params
+     * @param array{Union, Union} $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
      */
     public function __construct(array $type_params = [], ?array $extra_types = null)
@@ -134,6 +135,19 @@ final class TIterable extends Atomic
         return array_merge($this->type_params, $this->extra_types ?? []);
     }
 
+    public function replaceClassLike(string $old, string $new): static
+    {
+        return new self(
+            $this->replaceTypeParamsClassLike(
+                $old,
+                $new
+            ),
+            $this->replaceIntersectionClassLike(
+                $old,
+                $new
+            )
+        );
+    }
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
     {
         return new self(
@@ -144,6 +158,36 @@ final class TIterable extends Atomic
             $this->replaceIntersectionTemplateTypesWithArgTypes(
                 $template_result,
                 $codebase
+            )
+        );
+    }
+
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
+    {
+        return new self(
+            $this->replaceTypeParamsTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
+            ),
+            $this->replaceIntersectionTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
             )
         );
     }

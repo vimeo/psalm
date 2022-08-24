@@ -12,7 +12,7 @@ use Psalm\Type\Atomic;
  *
  * @psalm-immutable
  */
-class TPropertiesOf extends Atomic
+final class TPropertiesOf extends Atomic
 {
     // These should match the values of
     // `Psalm\Internal\Analyzer\ClassLikeAnalyzer::VISIBILITY_*`, as they are
