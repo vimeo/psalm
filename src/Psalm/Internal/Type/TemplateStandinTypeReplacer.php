@@ -344,8 +344,7 @@ class TemplateStandinTypeReplacer
             }
 
             $atomic_type = new TPropertiesOf(
-                (string) $classlike_type,
-                clone $classlike_type,
+                $classlike_type,
                 $atomic_type->visibility_filter
             );
             return [$atomic_type];

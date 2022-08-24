@@ -172,7 +172,7 @@ class TList extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
-        return new self(TemplateInferredTypeReplacer::replace(
+        return $this->replaceTypeParam(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
             $codebase
