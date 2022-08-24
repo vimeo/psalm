@@ -124,9 +124,9 @@ final class TGenericObject extends TNamedObject
         );
     }
 
-    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
     {
-        return new self(
+        return new static(
             $this->value,
             $this->replaceTypeParamsTemplateTypesWithStandins(
                 $template_result,
@@ -159,7 +159,7 @@ final class TGenericObject extends TNamedObject
 
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
     {
-        return new self(
+        return new static(
             $this->value,
             $this->replaceTypeParamsTemplateTypesWithArgTypes(
                 $template_result,

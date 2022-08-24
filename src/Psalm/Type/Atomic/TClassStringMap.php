@@ -128,7 +128,7 @@ final class TClassStringMap extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
+    ): static {
         $map = clone $this;
 
         foreach ([Type::getString(), $map->value_param] as $offset => $type_param) {
@@ -181,8 +181,8 @@ final class TClassStringMap extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): self {
-        return new self(
+    ): static {
+        return new static(
             $this->param_name,
             $this->as_type,
             TemplateInferredTypeReplacer::replace(

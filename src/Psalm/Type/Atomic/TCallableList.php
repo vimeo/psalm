@@ -8,9 +8,4 @@ namespace Psalm\Type\Atomic;
 final class TCallableList extends TNonEmptyList
 {
     public const KEY = 'callable-list';
-
-    public function replaceTypeParam(Union $type_param): TCallableList
-    {
-        return new self($type_param, $this->count, $this->min_count);
-    }
 }
