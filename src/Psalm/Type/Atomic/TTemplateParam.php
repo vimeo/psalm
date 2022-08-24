@@ -32,11 +32,30 @@ final class TTemplateParam extends Atomic
      */
     public $defining_class;
 
-    public function __construct(string $param_name, Union $extends, string $defining_class)
+    /**
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     */
+    public function __construct(string $param_name, Union $extends, string $defining_class, ?array $extra_types = null)
     {
         $this->param_name = $param_name;
         $this->as = $extends;
         $this->defining_class = $defining_class;
+        $this->extra_types = $extra_types;
+    }
+
+    public function replaceAs(Union $as): self
+    {
+        return new self(
+            $this->param_name,
+            $as,
+            $this->defining_class,
+            $this->extra_types
+        );
+    }
+
+    public function setIntersectionTypes(?array $types): self
+    {
+        return new self($this->param_name, $this->as, $this->defining_class, $types);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -123,10 +142,25 @@ final class TTemplateParam extends Atomic
         return false;
     }
 
+    public function replaceClassLike(string $old, string $new): static
+    {
+        return new self(
+            $this->param_name,
+            $this->as->getBuilder()->replaceClassLike($old, $new)->freeze(),
+            $this->defining_class,
+            $this->replaceIntersectionClassLike($old, $new)
+        );
+    }
+
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+    ): self {
+        return new self(
+            $this->param_name,
+            $this->as,
+            $this->defining_class,
+            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
+        );
     }
 }

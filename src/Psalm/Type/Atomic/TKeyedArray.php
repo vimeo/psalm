@@ -77,10 +77,37 @@ class TKeyedArray extends Atomic
      * @param non-empty-array<string|int, Union> $properties
      * @param array<string, bool> $class_strings
      */
-    public function __construct(array $properties, ?array $class_strings = null)
-    {
+    public function __construct(
+        array $properties,
+        ?array $class_strings = null,
+        bool $sealed = false,
+        ?Union $previous_key_type = null,
+        ?Union $previous_value_type = null,
+        bool $is_list = false
+    ) {
         $this->properties = $properties;
         $this->class_strings = $class_strings;
+        $this->sealed = $sealed;
+        $this->previous_key_type = $previous_key_type;
+        $this->previous_value_type = $previous_value_type;
+        $this->is_list = $is_list;
+    }
+
+    /**
+     * @param non-empty-array<string|int, Union> $properties
+     */
+    public function setProperties(array $properties): self
+    {
+        return new self($properties, $this->class_strings, $this->sealed, $this->previous_key_type, $this->previous_value_type, $this->is_list);
+    }
+
+    public function replaceClassLike(string $old, string $new): static
+    {
+        $properties = [];
+        foreach ($properties as &$property_type) {
+            $property_type = $property_type->getBuilder()->replaceClassLike($old, $new)->freeze();
+        }
+        return $this->setProperties($properties);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -321,14 +348,16 @@ class TKeyedArray extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        foreach ($this->properties as &$property) {
-            $property = TemplateInferredTypeReplacer::replace(
+    ): self {
+        $properties = [];
+        foreach ($this->properties as $k => $property) {
+            $properties[$k] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
             );
         }
+        return new self($properties, $this->class_strings);
     }
 
     public function getChildNodes(): array

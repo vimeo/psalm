@@ -19,6 +19,12 @@ final class TEnumCase extends TNamedObject
         $this->case_name = $case_name;
     }
 
+    public function setIntersectionTypes(?array $types): self
+    {
+        return $this;
+    }
+
+
     public function getKey(bool $include_extra = true): string
     {
         return 'enum(' . $this->value . '::' . $this->case_name . ')';

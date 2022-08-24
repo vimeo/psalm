@@ -2,6 +2,9 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -16,12 +19,10 @@ use function substr;
  */
 final class TGenericObject extends TNamedObject
 {
-    use GenericTrait;
-
     /**
-     * @var non-empty-list<Union>
+     * @use GenericTrait<non-empty-list<Union>>
      */
-    public $type_params;
+    use GenericTrait;
 
     /** @var bool if the parameters have been remapped to another class */
     public $remapped_params = false;
@@ -29,8 +30,9 @@ final class TGenericObject extends TNamedObject
     /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
      */
-    public function __construct(string $value, array $type_params)
+    public function __construct(string $value, array $type_params, bool $remapped_params = false, bool $is_static = false, ?array $extra_types = null)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -38,6 +40,22 @@ final class TGenericObject extends TNamedObject
 
         $this->value = $value;
         $this->type_params = $type_params;
+        $this->remapped_params = $remapped_params;
+        $this->is_static = $is_static;
+        $this->extra_types = $extra_types;
+    }
+
+    /**
+     * @param non-empty-list<Union> $type_params
+     */
+    public function replaceTypeParams(array $type_params): self
+    {
+        return new self($this->value, $type_params, $this->remapped_params, $this->is_static, $this->extra_types);
+    }
+
+    public function setIntersectionTypes(?array $types): self
+    {
+        return new static($this->value, $this->type_params, $this->remapped_params, $this->is_static, $types);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -106,5 +124,66 @@ final class TGenericObject extends TNamedObject
     public function getChildNodes(): array
     {
         return array_merge($this->type_params, $this->extra_types ?? []);
+    }
+
+    public function replaceClassLike(string $old, string $new): static
+    {
+        return new static(
+            strtolower($this->value) === $old ? $new : $this->value,
+            $this->replaceTypeParamsClassLike($old, $new),
+            $this->remapped_params,
+            $this->is_static,
+            $this->replaceIntersectionClassLike($old, $new)
+        );
+    }
+
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
+    {
+        return new self(
+            $this->value,
+            $this->replaceTypeParamsTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
+            ),
+            $this->remapped_params,
+            $this->is_static,
+            $this->replaceIntersectionTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
+            )
+        );
+    }
+
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
+    {
+        return new self(
+            $this->value,
+            $this->replaceTypeParamsTemplateTypesWithArgTypes(
+                $template_result,
+                $codebase
+            ),
+            true,
+            $this->is_static,
+            $this->replaceIntersectionTemplateTypesWithArgTypes(
+                $template_result,
+                $codebase
+            )
+        );
     }
 }

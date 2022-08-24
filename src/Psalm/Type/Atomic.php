@@ -20,7 +20,6 @@ use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
@@ -108,11 +107,35 @@ abstract class Atomic implements TypeNode
     public $text;
 
     /**
+     * @psalm-suppress InaccessibleProperty Allowed during construction
+     *
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
      */
     public static function create(
+        string $value,
+        ?int   $analysis_php_version_id = null,
+        array  $template_type_map = [],
+        array  $type_aliases = [],
+        ?int   $offset_start = null,
+        ?int   $offset_end = null,
+        ?string $text = null
+    ): Atomic {
+        $result = self::createInner($value, $analysis_php_version_id, $template_type_map, $type_aliases);
+        $result->offset_start = $offset_start;
+        $result->offset_end = $offset_end;
+        $result->text = $text;
+        return $result;
+    }
+    /**
+     * @psalm-suppress InaccessibleProperty Allowed during construction
+     *
+     * @param int $analysis_php_version_id contains php version when the type comes from signature
+     * @param array<string, array<string, Union>> $template_type_map
+     * @param array<string, TypeAlias> $type_aliases
+     */
+    private static function createInner(
         string $value,
         ?int   $analysis_php_version_id = null,
         array  $template_type_map = [],
@@ -517,77 +540,12 @@ abstract class Atomic implements TypeNode
         return [];
     }
 
-    public function replaceClassLike(string $old, string $new): void
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): static
     {
-        if ($this instanceof TNamedObject) {
-            if (strtolower($this->value) === $old) {
-                $this->value = $new;
-            }
-        }
-
-        if ($this instanceof TNamedObject
-            || $this instanceof TIterable
-            || $this instanceof TTemplateParam
-        ) {
-            if ($this->extra_types) {
-                foreach ($this->extra_types as $extra_type) {
-                    $extra_type->replaceClassLike($old, $new);
-                }
-            }
-        }
-
-        if ($this instanceof TClassConstant) {
-            if (strtolower($this->fq_classlike_name) === $old) {
-                $this->fq_classlike_name = $new;
-            }
-        }
-
-        if ($this instanceof TClassString && $this->as !== 'object') {
-            if (strtolower($this->as) === $old) {
-                $this->as = $new;
-            }
-        }
-
-        if ($this instanceof TTemplateParam) {
-            $this->as = $this->as->getBuilder()->replaceClassLike($old, $new)->freeze();
-        }
-
-        if ($this instanceof TLiteralClassString) {
-            if (strtolower($this->value) === $old) {
-                $this->value = $new;
-            }
-        }
-
-        if ($this instanceof TArray
-            || $this instanceof TGenericObject
-            || $this instanceof TIterable
-        ) {
-            foreach ($this->type_params as &$type_param) {
-                $type_param = $type_param->getBuilder()->replaceClassLike($old, $new)->freeze();
-            }
-        }
-
-        if ($this instanceof TKeyedArray) {
-            foreach ($this->properties as &$property_type) {
-                $property_type = $property_type->getBuilder()->replaceClassLike($old, $new)->freeze();
-            }
-        }
-
-        if ($this instanceof TClosure
-            || $this instanceof TCallable
-        ) {
-            if ($this->params) {
-                foreach ($this->params as $param) {
-                    if ($param->type) {
-                        $param->type = $param->type->getBuilder()->replaceClassLike($old, $new)->freeze();
-                    }
-                }
-            }
-
-            if ($this->return_type) {
-                $this->return_type = $this->return_type->getBuilder()->replaceClassLike($old, $new)->freeze();
-            }
-        }
+        return $this;
     }
 
     final public function __toString(): string
@@ -672,14 +630,16 @@ abstract class Atomic implements TypeNode
         bool $add_lower_bound = false,
         int $depth = 0
     ): self {
+        // do nothing
         return $this;
     }
 
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
+    ): self {
         // do nothing
+        return $this;
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

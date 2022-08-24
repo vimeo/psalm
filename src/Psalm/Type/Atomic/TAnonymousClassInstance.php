@@ -14,12 +14,19 @@ final class TAnonymousClassInstance extends TNamedObject
 
     /**
      * @param string $value the name of the object
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
      */
-    public function __construct(string $value, bool $is_static = false, ?string $extends = null)
+    public function __construct(string $value, bool $is_static = false, ?string $extends = null, ?array $extra_types = null)
     {
-        parent::__construct($value, $is_static);
+        parent::__construct($value, $is_static, false, $extra_types);
 
         $this->extends = $extends;
+    }
+
+
+    public function setIntersectionTypes(?array $types): self
+    {
+        return new static($this->value, $this->is_static, $this->extends, $types);
     }
 
     public function toPhpString(

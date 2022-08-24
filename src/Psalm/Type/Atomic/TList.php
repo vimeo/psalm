@@ -18,6 +18,7 @@ use function get_class;
  * - its keys are integers
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
+ *
  */
 class TList extends Atomic
 {
@@ -35,6 +36,11 @@ class TList extends Atomic
     public function __construct(Union $type_param)
     {
         $this->type_param = $type_param;
+    }
+
+    public function replaceTypeParam(Union $type_param): TList
+    {
+        return new self($type_param);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -164,12 +170,12 @@ class TList extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->type_param = TemplateInferredTypeReplacer::replace(
+    ): self {
+        return $this->replaceTypeParam(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
             $codebase
-        );
+        ));
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

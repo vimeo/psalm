@@ -39,9 +39,9 @@ final class TClassStringMap extends Atomic
      */
     public function __construct(string $param_name, ?TNamedObject $as_type, Union $value_param)
     {
-        $this->value_param = $value_param;
         $this->param_name = $param_name;
         $this->as_type = $as_type;
+        $this->value_param = $value_param;
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -181,11 +181,15 @@ final class TClassStringMap extends Atomic
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->value_param = TemplateInferredTypeReplacer::replace(
-            $this->value_param,
-            $template_result,
-            $codebase
+    ): self {
+        return new self(
+            $this->param_name,
+            $this->as_type,
+            TemplateInferredTypeReplacer::replace(
+                $this->value_param,
+                $template_result,
+                $codebase
+            )
         );
     }
 

@@ -3,12 +3,14 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 
 use function array_map;
 use function implode;
+use function strtolower;
 
 trait HasIntersectionTrait
 {
@@ -50,9 +52,12 @@ trait HasIntersectionTrait
     /**
      * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $type
      */
-    public function addIntersectionType(Atomic $type): void
+    public function addIntersectionType(Atomic $type): static
     {
-        $this->extra_types[$type->getKey()] = $type;
+        return $this->setIntersectionTypes([
+            ...$this->extra_types,
+            $type->getKey() => $type
+        ]);
     }
 
     /**
@@ -63,12 +68,15 @@ trait HasIntersectionTrait
         return $this->extra_types;
     }
 
-    public function replaceIntersectionTemplateTypesWithArgTypes(
+    /**
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
+     */
+    protected function replaceIntersectionTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
+    ): ?array {
         if (!$this->extra_types) {
-            return;
+            return $this->extra_types;
         }
 
         $new_types = [];
@@ -90,11 +98,65 @@ trait HasIntersectionTrait
                     }
                 }
             } else {
-                $extra_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+                $extra_type = $extra_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
                 $new_types[$extra_type->getKey()] = $extra_type;
             }
         }
 
-        $this->extra_types = $new_types;
+        return $new_types;
+    }
+
+    /**
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
+     */
+    protected function replaceIntersectionTemplateTypesWithStandins(
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer = null,
+        ?Atomic $input_type = null,
+        ?int $input_arg_offset = null,
+        ?string $calling_class = null,
+        ?string $calling_function = null,
+        bool $replace = true,
+        bool $add_lower_bound = false,
+        int $depth = 0
+    ): ?array {
+        if (!$this->extra_types) {
+            return $this->extra_types;
+        }
+        $new_types = [];
+        foreach ($this->extra_types as $type) {
+            $type = $type->replaceTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
+            );
+            $new_types[$type->getKey()] = $type;
+        }
+
+        return $new_types;
+    }
+
+    /**
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
+     */
+    protected function replaceIntersectionClassLike(string $old, string $new): array
+    {
+        if (!$this->extra_types) {
+            return $this->extra_types;
+        }
+        $new_types = [];
+        foreach ($this->extra_types as $extra_type) {
+            $extra_type = $extra_type->replaceClassLike($old, $new);
+            $new_types[$extra_type->getKey()] = $extra_type;
+        }
+        return $new_types;
     }
 }

@@ -2,6 +2,9 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -13,12 +16,10 @@ use function get_class;
  */
 class TArray extends Atomic
 {
-    use GenericTrait;
-
     /**
-     * @var array{Union, Union}
+     * @use GenericTrait<array{0: Union, 1: Union}>
      */
-    public $type_params;
+    use GenericTrait;
 
     /**
      * @var string
@@ -28,11 +29,18 @@ class TArray extends Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param array{Union, Union} $type_params
+     * @param array{0: Union, 1: Union} $type_params
      */
     public function __construct(array $type_params)
     {
         $this->type_params = $type_params;
+    }
+    /**
+     * @param array{0: Union, 1: Union} $type_params
+     */
+    public function replaceTypeParams(array $type_params): self
+    {
+        return new self($type_params);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -95,5 +103,34 @@ class TArray extends Atomic
     public function isEmptyArray(): bool
     {
         return $this->type_params[1]->isNever();
+    }
+
+    public function replaceClassLike(string $old, string $new): static
+    {
+        return new self($this->replaceTypeParamsClassLike($old, $new));
+    }
+
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): Atomic
+    {
+        return new self($this->replaceTypeParamsTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        ));
+    }
+
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
+    {
+        return new self($this->replaceTypeParamsTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        ));
     }
 }

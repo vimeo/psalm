@@ -2,6 +2,8 @@
 
 namespace Psalm\Type\Atomic;
 
+/**
+ */
 final class TLowercaseString extends TString
 {
     public function getId(bool $exact = true, bool $nested = false): string

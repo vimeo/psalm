@@ -3,6 +3,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -37,8 +38,9 @@ class TNamedObject extends Atomic
 
     /**
      * @param string $value the name of the object
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
      */
-    public function __construct(string $value, bool $is_static = false, bool $definite_class = false)
+    public function __construct(string $value, bool $is_static = false, bool $definite_class = false, ?array $extra_types = null)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -47,6 +49,12 @@ class TNamedObject extends Atomic
         $this->value = $value;
         $this->is_static = $is_static;
         $this->definite_class = $definite_class;
+        $this->extra_types = $extra_types;
+    }
+
+    public function setIntersectionTypes(?array $types): self
+    {
+        return new self($this->value, $this->is_static, $this->definite_class, $types);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -134,13 +142,48 @@ class TNamedObject extends Atomic
         return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 
+    public function replaceClassLike(string $old, string $new): static
+    {
+        return new self(
+            strtolower($this->value) === $old ? $new : $this->value,
+            $this->is_static,
+            $this->definite_class,
+            $this->replaceIntersectionClassLike($old, $new)
+        );
+    }
+
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+    ): self {
+        return new static(
+            $this->value,
+            $this->is_static,
+            $this->definite_class,
+            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
+        );
     }
 
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): Atomic
+    {
+        return new static(
+            $this->value,
+            $this->is_static,
+            $this->definite_class,
+            $this->replaceIntersectionTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
+            )
+        );
+    }
     public function getChildNodes(): array
     {
         return $this->extra_types ?? [];
