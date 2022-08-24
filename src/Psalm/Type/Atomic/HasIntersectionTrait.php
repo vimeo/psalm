@@ -10,7 +10,6 @@ use Psalm\Type\Atomic;
 
 use function array_map;
 use function implode;
-use function strtolower;
 
 trait HasIntersectionTrait
 {
@@ -63,7 +62,8 @@ trait HasIntersectionTrait
     /**
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $types
      */
-    public function setIntersectionTypes(?array $types): static {
+    public function setIntersectionTypes(?array $types): static
+    {
         $cloned = clone $this;
         $cloned->extra_types = $types;
         return $cloned;

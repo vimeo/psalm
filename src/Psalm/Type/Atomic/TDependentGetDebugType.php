@@ -2,8 +2,6 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-
 /**
  * Represents a string whose value is that of a type found by get_debug_type($var)
  */

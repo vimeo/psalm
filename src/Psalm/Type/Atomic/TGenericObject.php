@@ -12,6 +12,7 @@ use function array_merge;
 use function count;
 use function implode;
 use function strrpos;
+use function strtolower;
 use function substr;
 
 /**

@@ -349,5 +349,4 @@ trait CallableTrait
 
         return $child_nodes;
     }
-
 }

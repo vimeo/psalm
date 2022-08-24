@@ -2,8 +2,6 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-
 /**
  * Represents a list key created from foreach ($list as $key => $value)
  */

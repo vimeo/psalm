@@ -8,6 +8,8 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function strtolower;
+
 /**
  * Represents a closure where we know the return type and params
  */

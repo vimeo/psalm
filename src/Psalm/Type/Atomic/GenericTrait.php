@@ -33,7 +33,8 @@ trait GenericTrait
     /**
      * @param TTypeParams $type_params
      */
-    public function replaceTypeParams(array $type_params): static{
+    public function replaceTypeParams(array $type_params): static
+    {
         $cloned = clone $this;
         $cloned->type_params = $type_params;
         return $cloned;

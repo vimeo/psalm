@@ -382,7 +382,6 @@ class TemplateInferredTypeReplacer
         }
 
         return new TPropertiesOf(
-            (string) $classlike_type,
             clone $classlike_type,
             $atomic_type->visibility_filter
         );
