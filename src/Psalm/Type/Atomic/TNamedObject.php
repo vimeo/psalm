@@ -140,45 +140,39 @@ class TNamedObject extends Atomic
 
     public function replaceClassLike(string $old, string $new): static
     {
-        return new static(
-            strtolower($this->value) === $old ? $new : $this->value,
-            $this->is_static,
-            $this->definite_class,
-            $this->replaceIntersectionClassLike($old, $new)
-        );
+        $cloned = clone $this;
+        if (strtolower($cloned->value) === $old) {
+            $cloned->value = $new;
+        }
+        $cloned->extra_types = $this->replaceIntersectionClassLike($old, $new);
+        return $cloned;
     }
 
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): static {
-        return new static(
-            $this->value,
-            $this->is_static,
-            $this->definite_class,
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
-        );
+        $cloned = clone $this;
+        $cloned->extra_types = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        return $cloned;
     }
 
     public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
     {
-        return new static(
-            $this->value,
-            $this->is_static,
-            $this->definite_class,
-            $this->replaceIntersectionTemplateTypesWithStandins(
-                $template_result,
-                $codebase,
-                $statements_analyzer,
-                $input_type,
-                $input_arg_offset,
-                $calling_class,
-                $calling_function,
-                $replace,
-                $add_lower_bound,
-                $depth
-            )
+        $cloned = clone $this;
+        $cloned->extra_types = $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
         );
+        return $cloned;
     }
     public function getChildNodes(): array
     {
