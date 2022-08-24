@@ -565,6 +565,22 @@ class ClosureTest extends TestCase
                     '$result' => 'array{stdClass}'
                 ],
             ],
+            'CallableWithArrayReduce' => [
+                '<?php
+                    /**
+                     * @return callable(int, int): int
+                     */
+                    function maker() {
+                       return function(int $sum, int $e) {
+                          return $sum + $e;
+                       };
+                    }
+                    $maker = maker();
+                    $result = array_reduce([1, 2, 3], $maker, 0);',
+                'assertions' => [
+                    '$result' => 'int'
+                ],
+            ],
             'FirstClassCallable:NamedFunction:is_int' => [
                 '<?php
                     $closure = is_int(...);
