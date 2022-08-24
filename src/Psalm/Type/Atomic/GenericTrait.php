@@ -166,14 +166,6 @@ trait GenericTrait
     }
 
     /**
-     * @return array<TypeNode>
-     */
-    public function getChildNodes(): array
-    {
-        return $this->type_params;
-    }
-
-    /**
      * @return TTypeParams
      */
     public function replaceTypeParamsTemplateTypesWithStandins(

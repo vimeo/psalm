@@ -132,4 +132,9 @@ class TArray extends Atomic
         );
         return $cloned;
     }
+
+    public function getChildNodes(): array
+    {
+        return $this->type_params;
+    }
 }

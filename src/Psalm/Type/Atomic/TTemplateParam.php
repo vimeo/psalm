@@ -129,7 +129,7 @@ final class TTemplateParam extends Atomic
 
     public function getChildNodes(): array
     {
-        return [$this->as];
+        return array_merge([$this->as], array_values($this->extra_types??[]));
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

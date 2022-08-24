@@ -331,7 +331,7 @@ trait CallableTrait
     /**
      * @return list<TypeNode>
      */
-    public function getChildNodes(): array
+    protected function getCallableChildNodes(): array
     {
         $child_nodes = [];
 
