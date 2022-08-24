@@ -25,7 +25,6 @@ use function substr;
 trait GenericTrait
 {
     /**
-     * @readonly
      * @var TTypeParams
      */
     public array $type_params;
