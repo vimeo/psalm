@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TValueOf;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -56,7 +57,8 @@ class TemplateInferredTypeReplacer
 
         $inferred_lower_bounds = $template_result->lower_bounds ?: [];
 
-        $union = $union->getBuilder();
+        $types = [];
+
         foreach ($union->getAtomicTypes() as $key => $atomic_type) {
             $atomic_type = $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
@@ -206,9 +208,11 @@ class TemplateInferredTypeReplacer
                     $new_types[] = $class_template_atomic_type;
                 }
             }
+
+            $types []= $atomic_type;
         }
 
-        $union->bustCache();
+        $union = new MutableUnion($types);
 
         if ($is_mixed) {
             if (!$new_types) {
@@ -272,15 +276,15 @@ class TemplateInferredTypeReplacer
                         || $atomic_template_type instanceof TIterable
                         || $atomic_template_type instanceof TObjectWithProperties
                     ) {
-                        $atomic_template_type->extra_types = array_merge(
+                        $atomic_template_type = $atomic_template_type->setIntersectionTypes(array_merge(
                             $atomic_type->extra_types,
                             $atomic_template_type->extra_types ?: []
-                        );
+                        ));
                     } elseif ($atomic_template_type instanceof TObject) {
                         $first_atomic_type = array_shift($atomic_type->extra_types);
 
                         if ($atomic_type->extra_types) {
-                            $first_atomic_type->extra_types = $atomic_type->extra_types;
+                            $first_atomic_type = $first_atomic_type->setIntersectionTypes($atomic_type->extra_types);
                         }
 
                         $template_type->removeType($template_type_key);
@@ -382,7 +386,7 @@ class TemplateInferredTypeReplacer
         }
 
         return new TPropertiesOf(
-            clone $classlike_type,
+            $classlike_type,
             $atomic_type->visibility_filter
         );
     }
