@@ -2,6 +2,10 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
@@ -44,5 +48,58 @@ final class TClosure extends TNamedObject
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
+    }
+
+    public function replaceClassLike(string $old, string $new): static
+    {
+        $replaced = $this->replaceCallableClassLike($old, $new);
+        return new self(
+            strtolower($this->value) === $old ? $new : $this->value,
+            $replaced[0] ?? $this->params,
+            $replaced[1] ?? $this->return_type,
+            $this->is_pure,
+            $this->byref_uses,
+            $this->replaceIntersectionClassLike($old, $new)
+        );
+    }
+
+
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase
+    ): self {
+        $replaced = $this->replaceCallableTemplateTypesWithArgTypes($template_result, $codebase);
+        return new static(
+            $this->value,
+            $replaced[0] ?? $this->params,
+            $replaced[1] ?? $this->return_type,
+            $this->is_pure,
+            $this->byref_uses,
+            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
+        );
+    }
+
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): Atomic
+    {
+        $replaced = $this->replaceCallableTemplateTypesWithStandins($template_result, $codebase, $statements_analyzer, $input_type, $input_arg_offset, $calling_class, $calling_function, $replace, $add_lower_bound, $depth);
+        return new static(
+            $this->value,
+            $replaced[0] ?? $this->params,
+            $replaced[1] ?? $this->return_type,
+            $this->is_pure,
+            $this->byref_uses,
+            $this->replaceIntersectionTemplateTypesWithStandins(
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                $depth
+            )
+        );
     }
 }

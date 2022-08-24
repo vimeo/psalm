@@ -162,22 +162,6 @@ final class FunctionLikeParameter implements HasAttributesInterface
         }
     }
 
-    public function replaceTemplateTypesWithArgTypes(
-        TemplateResult $template_result,
-        ?Codebase $codebase
-    ): self {
-        if (!$this->type) {
-            return $this;
-        }
-        $cloned = clone $this;
-        $cloned->type = TemplateInferredTypeReplacer::replace(
-            $cloned->type,
-            $template_result,
-            $codebase
-        );
-        return $cloned;
-    }
-
     public function replaceType(Union $type): self
     {
         $cloned = clone $this;
