@@ -156,7 +156,7 @@ trait HasIntersectionTrait
     /**
      * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
      */
-    protected function replaceIntersectionClassLike(string $old, string $new): array
+    protected function replaceIntersectionClassLike(string $old, string $new): ?array
     {
         if (!$this->extra_types) {
             return $this->extra_types;
