@@ -924,7 +924,7 @@ class TypeExpander
                 ) {
                     continue;
                 }
-                if ($property->is_static) {
+                if ($property->is_static || !$property->type) {
                     continue;
                 }
                 $type = $return_type->classlike_type instanceof TGenericObject
@@ -937,9 +937,7 @@ class TypeExpander
                     )
                     : $property->type
                 ;
-                if ($type) {
-                    $properties[$key] = $type;
-                }
+                $properties[$key] = $type;
             }
         }
 
