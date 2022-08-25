@@ -131,7 +131,7 @@ class ArrayFunctionArgumentsAnalyzer
             }
 
             if ($new) {
-                $statements_analyzer->node_data->setType($closure_arg->value, new Union($new));
+                $statements_analyzer->node_data->setType($closure_arg->value, $closure_arg_type->getBuilder()->setTypes($new)->freeze());
             }
         }
     }
