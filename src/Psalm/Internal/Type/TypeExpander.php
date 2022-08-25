@@ -916,6 +916,9 @@ class TypeExpander
             }
             $storage = $codebase->classlike_storage_provider->get($class);
             foreach ($storage->properties as $key => $property) {
+                if (isset($properties[$key])) {
+                    continue;
+                }
                 if ($return_type->visibility_filter !== null
                     && $property->visibility !== $return_type->visibility_filter
                 ) {
@@ -935,10 +938,7 @@ class TypeExpander
                     : $property->type
                 ;
                 if ($type) {
-                    $properties[$key] = Type::combineUnionTypes(
-                        $properties[$key],
-                        $type
-                    );
+                    $properties[$key] = $type;
                 }
             }
         }
