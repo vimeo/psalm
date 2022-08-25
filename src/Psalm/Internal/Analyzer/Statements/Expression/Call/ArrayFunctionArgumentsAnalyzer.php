@@ -115,8 +115,9 @@ class ArrayFunctionArgumentsAnalyzer
                 $max_closure_param_count = count($args) > 2 ? 2 : 1;
             }
 
+            $new = [];
             foreach ($closure_arg_type->getAtomicTypes() as $closure_type) {
-                self::checkClosureType(
+                $new = [...$new, ...(self::checkClosureType(
                     $statements_analyzer,
                     $context,
                     $method_id,
@@ -126,7 +127,11 @@ class ArrayFunctionArgumentsAnalyzer
                     $max_closure_param_count,
                     $array_arg_types,
                     $check_functions
-                );
+                ) ?? [$closure_type])];
+            }
+
+            if ($new) {
+                $statements_analyzer->node_data->setType($closure_arg->value, new Union($new));
             }
         }
     }
@@ -585,6 +590,7 @@ class ArrayFunctionArgumentsAnalyzer
     /**
      * @param  (TArray|null)[] $array_arg_types
      *
+     * @return non-empty-list<Atomic>|null
      */
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
@@ -596,19 +602,19 @@ class ArrayFunctionArgumentsAnalyzer
         int $max_closure_param_count,
         array $array_arg_types,
         bool $check_functions
-    ): void {
+    ): ?array {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$closure_type instanceof TClosure) {
             if ($method_id === 'array_map') {
-                return;
+                return null;
             }
 
             if (!$closure_arg->value instanceof PhpParser\Node\Scalar\String_
                 && !$closure_arg->value instanceof PhpParser\Node\Expr\Array_
                 && !$closure_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
             ) {
-                return;
+                return null;
             }
 
             $function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
@@ -649,7 +655,7 @@ class ArrayFunctionArgumentsAnalyzer
                         }
 
                         if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
-                            return;
+                            return null;
                         }
 
                         $function_id_part = new MethodIdentifier(
@@ -729,7 +735,7 @@ class ArrayFunctionArgumentsAnalyzer
             $closure_types = [$closure_type];
         }
 
-        foreach ($closure_types as $closure_type) {
+        foreach ($closure_types as &$closure_type) {
             if ($closure_type->params === null) {
                 continue;
             }
@@ -745,6 +751,8 @@ class ArrayFunctionArgumentsAnalyzer
                 $array_arg_types
             );
         }
+
+        return $closure_types;
     }
 
     /**
@@ -755,7 +763,7 @@ class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         string $method_id,
-        Atomic $closure_type,
+        Atomic &$closure_type,
         PhpParser\Node\Arg $closure_arg,
         int $min_closure_param_count,
         int $max_closure_param_count,
