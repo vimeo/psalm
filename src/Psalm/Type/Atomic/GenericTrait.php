@@ -278,6 +278,6 @@ trait GenericTrait
         foreach ($type_params as &$type_param) {
             $type_param = $type_param->getBuilder()->replaceClassLike($old, $new)->freeze();
         }
-        return $this->replaceTypeParams($type_params);
+        return $type_params;
     }
 }
