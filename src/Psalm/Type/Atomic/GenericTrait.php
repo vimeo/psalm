@@ -272,7 +272,7 @@ trait GenericTrait
      * @psalm-suppress InaccessibleProperty We're only ever accessing properties on cloned objects
      * @return TTypeParams
      */
-    protected function replaceTypeParamsClassLike(string $old, string $new): static
+    protected function replaceTypeParamsClassLike(string $old, string $new): array
     {
         $type_params = $this->type_params;
         foreach ($type_params as &$type_param) {
