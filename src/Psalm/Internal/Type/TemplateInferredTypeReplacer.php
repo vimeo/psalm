@@ -258,13 +258,12 @@ class TemplateInferredTypeReplacer
         if ($traversed_type) {
             $template_type = $traversed_type;
 
-            if (!$atomic_type->as->isMixed() && $template_type->isMixed()) {
-                $template_type = $atomic_type->as->getBuilder();
-            } else {
-                $template_type = $template_type->getBuilder();
+            if ($template_type->isMixed() && !$atomic_type->as->isMixed()) {
+                $template_type = $atomic_type->as;
             }
 
             if ($atomic_type->extra_types) {
+                $template_type = $template_type->getBuilder();
                 foreach ($template_type->getAtomicTypes() as $template_type_key => $atomic_template_type) {
                     if ($atomic_template_type instanceof TNamedObject
                         || $atomic_template_type instanceof TTemplateParam
@@ -286,8 +285,8 @@ class TemplateInferredTypeReplacer
                         $template_type->addType($first_atomic_type);
                     }
                 }
+                $template_type = $template_type->freeze();
             }
-            $template_type = $template_type->freeze();
         } elseif ($codebase) {
             foreach ($inferred_lower_bounds as $template_type_map) {
                 foreach ($template_type_map as $template_class => $_) {

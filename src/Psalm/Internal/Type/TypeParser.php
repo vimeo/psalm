@@ -703,6 +703,11 @@ class TypeParser
                         $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.'
                     );
                 }
+                if ($template_param->getIntersectionTypes()) {
+                    throw new TypeParseTreeException(
+                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam with no intersection types.'
+                    );
+                }
 
                 return new TTemplatePropertiesOf(
                     $param_name,
