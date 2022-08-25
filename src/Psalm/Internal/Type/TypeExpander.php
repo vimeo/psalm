@@ -12,6 +12,7 @@ use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -934,7 +935,10 @@ class TypeExpander
                     : $property->type
                 ;
                 if ($type) {
-                    $properties[$key] = $type;
+                    $properties[$key] = Type::combineUnionTypes(
+                        $properties[$key],
+                        $type
+                    );
                 }
             }
         }
