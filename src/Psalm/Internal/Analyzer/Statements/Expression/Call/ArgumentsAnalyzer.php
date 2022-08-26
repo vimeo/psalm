@@ -767,7 +767,7 @@ class ArgumentsAnalyzer
             }
         }
 
-        if ($function_params) {
+        if ($function_params && !$is_variadic) {
             foreach ($function_params as $function_param) {
                 $is_variadic = $is_variadic || $function_param->is_variadic;
             }
