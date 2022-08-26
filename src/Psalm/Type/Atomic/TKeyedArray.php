@@ -105,7 +105,7 @@ class TKeyedArray extends Atomic
 
     public function replaceClassLike(string $old, string $new): static
     {
-        $properties = [];
+        $properties = $this->properties;
         foreach ($properties as &$property_type) {
             $property_type = $property_type->getBuilder()->replaceClassLike($old, $new)->freeze();
         }

@@ -111,7 +111,7 @@ final class TGenericObject extends TNamedObject
 
     public function getChildNodes(): array
     {
-        return array_merge(parent::getChildNodes(), array_values($this->type_params));
+        return array_merge(parent::getChildNodes(), $this->type_params);
     }
 
     public function replaceClassLike(string $old, string $new): static

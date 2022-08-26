@@ -590,7 +590,7 @@ class ArrayFunctionArgumentsAnalyzer
     /**
      * @param  (TArray|null)[] $array_arg_types
      *
-     * @return non-empty-list<Atomic>|null
+     * @return list<TCallable|TClosure>|null
      */
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,

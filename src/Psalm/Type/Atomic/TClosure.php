@@ -32,7 +32,7 @@ final class TClosure extends TNamedObject
         ?Union $return_type = null,
         ?bool $is_pure = null,
         array $byref_uses = [],
-        array $extra_types = []
+        ?array $extra_types = []
     ) {
         $this->value = $value;
         $this->params = $params;

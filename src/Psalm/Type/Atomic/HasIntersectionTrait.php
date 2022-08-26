@@ -53,10 +53,10 @@ trait HasIntersectionTrait
      */
     public function addIntersectionType(Atomic $type): static
     {
-        return $this->setIntersectionTypes([
-            ...($this->extra_types ?? []),
-            $type->getKey() => $type
-        ]);
+        return $this->setIntersectionTypes(array_merge(
+            $this->extra_types ?? [],
+            [$type->getKey() => $type]
+        ));
     }
 
     /**
