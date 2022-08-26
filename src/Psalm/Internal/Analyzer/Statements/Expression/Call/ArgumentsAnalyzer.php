@@ -269,7 +269,7 @@ class ArgumentsAnalyzer
                 $codebase = $statements_analyzer->getCodebase();
 
                 TemplateStandinTypeReplacer::fillTemplateResult(
-                    $param->type,
+                    clone $param->type,
                     $template_result,
                     $codebase,
                     $statements_analyzer,
@@ -514,7 +514,7 @@ class ArgumentsAnalyzer
                 isset($container_hof_atomic->params[$offset])
             ) {
                 TemplateStandinTypeReplacer::fillTemplateResult(
-                    $actual_func_param->type,
+                    clone $actual_func_param->type,
                     $high_order_template_result,
                     $codebase,
                     null,
@@ -1795,7 +1795,7 @@ class ArgumentsAnalyzer
                     }
 
                     TemplateStandinTypeReplacer::fillTemplateResult(
-                        $param->type,
+                        clone $param->type,
                         $template_result,
                         $codebase,
                         $statements_analyzer,

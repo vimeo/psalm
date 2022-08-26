@@ -758,7 +758,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     // Get actual types used for templates (to support @template-covariant)
                     $template_standins = new TemplateResult($lower_bounds, []);
-                    $guide_property_type = TemplateStandinTypeReplacer::replace(
+                    TemplateStandinTypeReplacer::fillTemplateResult(
                         $guide_property_type,
                         $template_standins,
                         $codebase,

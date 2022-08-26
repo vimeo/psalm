@@ -208,7 +208,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $method_template_result = new TemplateResult($method_storage->template_types ?: [], []);
 
             TemplateStandinTypeReplacer::fillTemplateResult(
-                $method_storage->if_this_is_type,
+                clone $method_storage->if_this_is_type,
                 $method_template_result,
                 $codebase,
                 null,
