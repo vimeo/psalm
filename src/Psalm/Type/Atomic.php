@@ -373,7 +373,7 @@ abstract class Atomic implements TypeNode
             || ($this instanceof TTemplateParam
                 && ($this->as->hasNamedObjectType()
                     || array_filter(
-                        $this->extra_types ?: [],
+                        $this->extra_types,
                         static fn($extra_type): bool => $extra_type->isNamedObjectType()
                     )
                 )

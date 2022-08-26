@@ -81,9 +81,9 @@ class TypeCombination
     public $class_string_types = [];
 
     /**
-     * @var array<string, TNamedObject|TTemplateParam|TIterable|TObject>|null
+     * @var array<string, TNamedObject|TTemplateParam|TIterable|TObject>
      */
-    public $extra_types;
+    public $extra_types = [];
 
     /** @var ?bool */
     public $all_arrays_lists;

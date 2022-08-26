@@ -647,9 +647,8 @@ class TypeExpander
                 || $static_class_type instanceof TTemplateParam)
         ) {
             $return_type = clone $return_type;
-            $cloned_static = clone $static_class_type;
-            $extra_static = $cloned_static->extra_types ?: [];
-            $cloned_static->extra_types = null;
+            $extra_static = $static_class_type->extra_types;
+            $cloned_static = $static_class_type->setIntersectionTypes([]);
 
             if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
                 $return_type->extra_types[$static_class_type->getKey()] = clone $cloned_static;
@@ -908,7 +907,7 @@ class TypeExpander
         if ($codebase->classExists($return_type->classlike_type->value)) {
             $class_storage = $codebase->classlike_storage_provider->get($return_type->classlike_type->value);
         } else {
-            foreach ($return_type->classlike_type->getIntersectionTypes() ?? [] as $type) {
+            foreach ($return_type->classlike_type->extra_types as $type) {
                 if ($type instanceof TNamedObject && $codebase->classExists($type->value)) {
                     $class_storage = $codebase->classlike_storage_provider->get($type->value);
                     break;

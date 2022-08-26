@@ -275,7 +275,7 @@ class TemplateInferredTypeReplacer
                     ) {
                         $types []= $atomic_template_type->setIntersectionTypes(array_merge(
                             $atomic_type->extra_types,
-                            $atomic_template_type->extra_types ?: []
+                            $atomic_template_type->extra_types
                         ));
                     } elseif ($atomic_template_type instanceof TObject) {
                         $first_atomic_type = array_shift($atomic_type->extra_types);

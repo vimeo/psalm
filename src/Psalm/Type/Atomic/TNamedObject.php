@@ -39,9 +39,9 @@ class TNamedObject extends Atomic
 
     /**
      * @param string $value the name of the object
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $value, bool $is_static = false, bool $definite_class = false, ?array $extra_types = null)
+    public function __construct(string $value, bool $is_static = false, bool $definite_class = false, array $extra_types = [])
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -176,6 +176,6 @@ class TNamedObject extends Atomic
     }
     public function getChildNodes(): array
     {
-        return array_values($this->extra_types ?? []);
+        return array_values($this->extra_types);
     }
 }

@@ -39,9 +39,9 @@ final class TObjectWithProperties extends TObject
      *
      * @param array<string|int, Union> $properties
      * @param array<string, string> $methods
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(array $properties, array $methods = [], ?array $extra_types = null)
+    public function __construct(array $properties, array $methods = [], array $extra_types = [])
     {
         $this->properties = $properties;
         $this->methods = $methods;
@@ -261,7 +261,7 @@ final class TObjectWithProperties extends TObject
 
     public function getChildNodes(): array
     {
-        return array_merge($this->properties, $this->extra_types !== null ? array_values($this->extra_types) : []);
+        return array_merge($this->properties, array_values($this->extra_types));
     }
 
     public function getAssertionString(): string

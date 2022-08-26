@@ -33,9 +33,9 @@ final class TTemplateParam extends Atomic
     public $defining_class;
 
     /**
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $param_name, Union $extends, string $defining_class, ?array $extra_types = null)
+    public function __construct(string $param_name, Union $extends, string $defining_class, array $extra_types = [])
     {
         $this->param_name = $param_name;
         $this->as = $extends;
@@ -129,7 +129,7 @@ final class TTemplateParam extends Atomic
 
     public function getChildNodes(): array
     {
-        return array_merge([$this->as], array_values($this->extra_types??[]));
+        return array_merge([$this->as], array_values($this->extra_types));
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

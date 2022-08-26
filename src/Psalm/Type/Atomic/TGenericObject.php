@@ -31,9 +31,9 @@ final class TGenericObject extends TNamedObject
     /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $value, array $type_params, bool $remapped_params = false, bool $is_static = false, ?array $extra_types = null)
+    public function __construct(string $value, array $type_params, bool $remapped_params = false, bool $is_static = false, array $extra_types = [])
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);

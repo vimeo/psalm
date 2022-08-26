@@ -37,9 +37,9 @@ final class TIterable extends Atomic
 
     /**
      * @param array{Union, Union}|array<never, never> $type_params
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(array $type_params = [], ?array $extra_types = null)
+    public function __construct(array $type_params = [], array $extra_types = [])
     {
         if (count($type_params) === 2) {
             $this->has_docblock_params = true;
@@ -118,7 +118,7 @@ final class TIterable extends Atomic
 
     public function getChildNodes(): array
     {
-        return array_merge($this->type_params, $this->extra_types !== null ? array_values($this->extra_types) : []);
+        return array_merge($this->type_params, array_values($this->extra_types));
     }
 
     public function replaceClassLike(string $old, string $new): static

@@ -63,10 +63,10 @@ class AtomicTypeComparator
 
         if (($container_type_part instanceof TTemplateParam
                 || ($container_type_part instanceof TNamedObject
-                    && isset($container_type_part->extra_types)))
+                    && $container_type_part->extra_types))
             && ($input_type_part instanceof TTemplateParam
                 || ($input_type_part instanceof TNamedObject
-                    && isset($input_type_part->extra_types)))
+                    && $input_type_part->extra_types))
         ) {
             return ObjectComparator::isShallowlyContainedBy(
                 $codebase,
