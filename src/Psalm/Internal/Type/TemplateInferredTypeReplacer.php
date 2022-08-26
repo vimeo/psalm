@@ -227,6 +227,9 @@ class TemplateInferredTypeReplacer
         }
 
         $atomic_types = array_merge($types, $new_types);
+        if (!$atomic_types) {
+            throw new UnexpectedValueException('This array should be full');
+        }
 
         return $union->getBuilder()->setTypes(
             TypeCombiner::combine(

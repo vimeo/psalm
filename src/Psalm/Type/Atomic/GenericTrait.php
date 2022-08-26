@@ -267,7 +267,6 @@ trait GenericTrait
     }
 
     /**
-     * @psalm-suppress InaccessibleProperty We're only ever accessing properties on cloned objects
      * @return TTypeParams
      */
     protected function replaceTypeParamsClassLike(string $old, string $new): array

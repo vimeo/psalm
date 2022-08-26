@@ -66,12 +66,13 @@ class PropertiesOfTemplateTest extends TestCase
 
                     /** @template T */
                     class A {
-                        /** @var T */
-                        public $a = 42;
                         /** @var bool */
                         private $b = true;
                         /** @var string */
                         protected $c = "c";
+
+                        /** @param T $a */
+                        public function __construct(public $a) {}
                     }
 
                     /** @var A<int> */
