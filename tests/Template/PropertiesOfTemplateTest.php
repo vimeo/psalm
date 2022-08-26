@@ -75,8 +75,7 @@ class PropertiesOfTemplateTest extends TestCase
                         public function __construct(public $a) {}
                     }
 
-                    /** @var A<int> */
-                    $obj = new A();
+                    $obj = new A(42);
                     $objAsArray = asArray($obj);
                 ',
                 'assertions' => [

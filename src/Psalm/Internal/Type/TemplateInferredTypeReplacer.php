@@ -266,14 +266,14 @@ class TemplateInferredTypeReplacer
             }
 
             if ($atomic_type->extra_types) {
-                $template_type = $template_type->getBuilder();
-                foreach ($template_type->getAtomicTypes() as $template_type_key => $atomic_template_type) {
+                $types = [];
+                foreach ($template_type->getAtomicTypes() as $atomic_template_type) {
                     if ($atomic_template_type instanceof TNamedObject
                         || $atomic_template_type instanceof TTemplateParam
                         || $atomic_template_type instanceof TIterable
                         || $atomic_template_type instanceof TObjectWithProperties
                     ) {
-                        $atomic_template_type = $atomic_template_type->setIntersectionTypes(array_merge(
+                        $types []= $atomic_template_type->setIntersectionTypes(array_merge(
                             $atomic_type->extra_types,
                             $atomic_template_type->extra_types ?: []
                         ));
@@ -284,11 +284,12 @@ class TemplateInferredTypeReplacer
                             $first_atomic_type = $first_atomic_type->setIntersectionTypes($atomic_type->extra_types);
                         }
 
-                        $template_type->removeType($template_type_key);
-                        $template_type->addType($first_atomic_type);
+                        $types []= $first_atomic_type;
+                    } else {
+                        $types []= $atomic_template_type;
                     }
                 }
-                $template_type = $template_type->freeze();
+                $template_type = $template_type->getBuilder()->setTypes($types)->freeze();
             }
         } elseif ($codebase) {
             foreach ($inferred_lower_bounds as $template_type_map) {
