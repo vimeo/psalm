@@ -409,7 +409,7 @@ class CallableTypeComparator
                         $input_with_templates = new Atomic\TGenericObject($input_type_part->value, $type_params);
                         $template_result = new TemplateResult($invokable_storage->template_types ?? [], []);
 
-                        TemplateStandinTypeReplacer::replace(
+                        TemplateStandinTypeReplacer::fillTemplateResult(
                             new Type\Union([$input_with_templates]),
                             $template_result,
                             $codebase,

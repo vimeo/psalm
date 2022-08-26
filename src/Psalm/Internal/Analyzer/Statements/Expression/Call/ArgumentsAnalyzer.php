@@ -268,8 +268,8 @@ class ArgumentsAnalyzer
             if (null !== $inferred_arg_type && null !== $template_result && null !== $param && null !== $param->type) {
                 $codebase = $statements_analyzer->getCodebase();
 
-                TemplateStandinTypeReplacer::replace(
-                    clone $param->type,
+                TemplateStandinTypeReplacer::fillTemplateResult(
+                    $param->type,
                     $template_result,
                     $codebase,
                     $statements_analyzer,
@@ -308,19 +308,6 @@ class ArgumentsAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $generic_param_type = new Union([
-            new TArray([
-                Type::getArrayKey(),
-                new Union([
-                    new TTemplateParam(
-                        'ArrayValue' . $argument_offset,
-                        Type::getMixed(),
-                        $method_id
-                    )
-                ])
-            ])
-        ]);
-
         $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
         $replace_template_result = new TemplateResult(
@@ -330,8 +317,19 @@ class ArgumentsAnalyzer
 
         $existing_type = $statements_analyzer->node_data->getType($arg->value);
 
-        TemplateStandinTypeReplacer::replace(
-            $generic_param_type,
+        TemplateStandinTypeReplacer::fillTemplateResult(
+            new Union([
+                new TArray([
+                    Type::getArrayKey(),
+                    new Union([
+                        new TTemplateParam(
+                            'ArrayValue' . $argument_offset,
+                            Type::getMixed(),
+                            $method_id
+                        )
+                    ])
+                ])
+            ]),
             $replace_template_result,
             $codebase,
             $statements_analyzer,
@@ -515,8 +513,8 @@ class ArgumentsAnalyzer
                 $actual_func_param->type->getTemplateTypes() &&
                 isset($container_hof_atomic->params[$offset])
             ) {
-                TemplateStandinTypeReplacer::replace(
-                    clone $actual_func_param->type,
+                TemplateStandinTypeReplacer::fillTemplateResult(
+                    $actual_func_param->type,
                     $high_order_template_result,
                     $codebase,
                     null,
@@ -1616,7 +1614,7 @@ class ArgumentsAnalyzer
                 $calling_class_storage->final ?? false
             );
 
-            TemplateStandinTypeReplacer::replace(
+            TemplateStandinTypeReplacer::fillTemplateResult(
                 $fleshed_out_param_type,
                 $template_result,
                 $codebase,
@@ -1796,8 +1794,8 @@ class ArgumentsAnalyzer
                         $default_type = new Union([$default_type_atomic]);
                     }
 
-                    TemplateStandinTypeReplacer::replace(
-                        clone $param->type,
+                    TemplateStandinTypeReplacer::fillTemplateResult(
+                        $param->type,
                         $template_result,
                         $codebase,
                         $statements_analyzer,
