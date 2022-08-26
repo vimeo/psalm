@@ -904,14 +904,25 @@ class TypeExpander
             $return_type = $return_type->replaceClassLike('static', is_string($static_class_type) ? $static_class_type : $self_class);
         }
 
-        if (!$codebase->classExists($return_type->classlike_type->value)) {
+        $class_storage = null;
+        if ($codebase->classExists($return_type->classlike_type->value)) {
+            $class_storage = $codebase->classlike_storage_provider->get($return_type->classlike_type->value);
+        } else {
+            foreach ($return_type->classlike_type->getIntersectionTypes() ?? [] as $type) {
+                if ($type instanceof TNamedObject && $codebase->classExists($type->value)) {
+                    $class_storage = $codebase->classlike_storage_provider->get($type->value);
+                    break;
+                }
+            }
+        }
+
+        if (!$class_storage) {
             return [$return_type];
         }
 
-        $class_storage = $codebase->classlike_storage_provider->get($return_type->classlike_type->value);
         $properties = [];
-        foreach ([$return_type->classlike_type->value, ...$class_storage->parent_classes] as $class) {
-            if (!$codebase->classOrInterfaceExists($class)) {
+        foreach ([$class_storage->name, ...array_values($class_storage->parent_classes)] as $class) {
+            if (!$codebase->classExists($class)) {
                 continue;
             }
             $storage = $codebase->classlike_storage_provider->get($class);
