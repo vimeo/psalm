@@ -9,6 +9,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 
 use function array_map;
+use function array_merge;
 use function implode;
 
 trait HasIntersectionTrait

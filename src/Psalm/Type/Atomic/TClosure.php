@@ -9,6 +9,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function array_merge;
 use function strtolower;
 
 /**

@@ -9,7 +9,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function array_map;
