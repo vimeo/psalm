@@ -261,9 +261,7 @@ class CallableTypeComparator
 
                     foreach ($function_storage->params as $param) {
                         if ($param->type) {
-                            $param = new FunctionLikeParameter(
-                                $param->name,
-                                $param->by_ref,
+                            $param = $param->replaceType(
                                 TypeExpander::expandUnion(
                                     $codebase,
                                     $param->type,
@@ -275,15 +273,7 @@ class CallableTypeComparator
                                     false,
                                     false,
                                     true
-                                ),
-                                $param->location,
-                                $param->type_location,
-                                $param->is_optional,
-                                $param->is_nullable,
-                                $param->is_variadic,
-                                $param->default_type,
-                                $param->out_type,
-                                $param->signature_type,
+                                )
                             );
                         }
 
