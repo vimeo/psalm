@@ -22,10 +22,14 @@ final class TTypeAlias extends Atomic
     /** @var string */
     public $alias_name;
 
-    public function __construct(string $declaring_fq_classlike_name, string $alias_name)
+    /**
+     * @param array<string, TTypeAlias>|null $extra_types
+     */
+    public function __construct(string $declaring_fq_classlike_name, string $alias_name, ?array $extra_types = null)
     {
         $this->declaring_fq_classlike_name = $declaring_fq_classlike_name;
         $this->alias_name = $alias_name;
+        $this->extra_types = $extra_types;
     }
     public function setExtraTypes(?array $extra_types): self {
         if ($extra_types === $this->extra_types) {

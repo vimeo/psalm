@@ -1119,80 +1119,76 @@ class Reconciler
 
         $base_key = implode($key_parts);
 
-        if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
-            foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
-                if ($base_atomic_type instanceof TKeyedArray
-                    || ($base_atomic_type instanceof TArray
-                        && !$base_atomic_type->isEmptyArray())
-                    || $base_atomic_type instanceof TList
-                    || $base_atomic_type instanceof TClassStringMap
-                ) {
-                    $new_base_type = clone $existing_types[$base_key];
+        if (!isset($existing_types[$base_key]) || $array_key_offset === false) {
+            return;
+        }
+        foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
+            if ($base_atomic_type instanceof TKeyedArray
+                || ($base_atomic_type instanceof TArray
+                    && !$base_atomic_type->isEmptyArray())
+                || $base_atomic_type instanceof TList
+                || $base_atomic_type instanceof TClassStringMap
+            ) {
+                $new_base_type = clone $existing_types[$base_key];
 
-                    if ($base_atomic_type instanceof TArray) {
-                        $previous_key_type = clone $base_atomic_type->type_params[0];
-                        $previous_value_type = clone $base_atomic_type->type_params[1];
+                if ($base_atomic_type instanceof TArray) {
+                    $previous_key_type = $base_atomic_type->type_params[0];
+                    $previous_value_type = $base_atomic_type->type_params[1];
 
-                        $base_atomic_type = new TKeyedArray(
-                            [
-                                $array_key_offset => clone $result_type,
-                            ],
-                            null
-                        );
-
-                        if (!$previous_key_type->isNever()) {
-                            $base_atomic_type->previous_key_type = $previous_key_type;
-                        }
-                        $base_atomic_type->previous_value_type = $previous_value_type;
-                    } elseif ($base_atomic_type instanceof TList) {
-                        $previous_key_type = Type::getInt();
-                        $previous_value_type = clone $base_atomic_type->type_param;
-
-                        $base_atomic_type = new TKeyedArray(
-                            [
-                                $array_key_offset => clone $result_type,
-                            ],
-                            null
-                        );
-
-                        $base_atomic_type->is_list = true;
-
-                        $base_atomic_type->previous_key_type = $previous_key_type;
-                        $base_atomic_type->previous_value_type = $previous_value_type;
-                    } elseif ($base_atomic_type instanceof TClassStringMap) {
-                        // do nothing
-                    } else {
-                        $base_atomic_type = clone $base_atomic_type;
-                        $base_atomic_type->properties[$array_key_offset] = clone $result_type;
-                    }
-
-                    $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();
-
-                    $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
-
-                    if ($key_parts[count($key_parts) - 1] === ']') {
-                        self::adjustTKeyedArrayType(
-                            $key_parts,
-                            $existing_types,
-                            $changed_var_ids,
-                            $new_base_type
-                        );
-                    }
-
-                    $existing_types[$base_key] = $new_base_type;
-                    break;
+                    $base_atomic_type = new TKeyedArray(
+                        [
+                            $array_key_offset => $result_type,
+                        ],
+                        null,
+                        false,
+                        $previous_key_type->isNever() ? null : $previous_key_type,
+                        $previous_value_type
+                    );
+                } elseif ($base_atomic_type instanceof TList) {
+                    $base_atomic_type = new TKeyedArray(
+                        [
+                            $array_key_offset => $result_type,
+                        ],
+                        null,
+                        false,
+                        Type::getInt(),
+                        $base_atomic_type->type_param,
+                        true
+                    );
+                } elseif ($base_atomic_type instanceof TClassStringMap) {
+                    // do nothing
+                } else {
+                    $base_atomic_type = $base_atomic_type->setProperties([
+                        $array_key_offset => $result_type
+                    ]);
                 }
+
+                $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();
+
+                $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
+
+                if ($key_parts[count($key_parts) - 1] === ']') {
+                    self::adjustTKeyedArrayType(
+                        $key_parts,
+                        $existing_types,
+                        $changed_var_ids,
+                        $new_base_type
+                    );
+                }
+
+                $existing_types[$base_key] = $new_base_type;
+                break;
             }
         }
     }
 
-    protected static function refineArrayKey(Union &$key_type): void
+    protected static function refineArrayKey(Union $key_type): Union
     {
         $key_type = $key_type->getBuilder();
         foreach ($key_type->getAtomicTypes() as $key => $cat) {
             if ($cat instanceof TTemplateParam) {
-                self::refineArrayKey($cat->as);
-                $key_type->bustCache();
+                $key_type->removeType($key);
+                $key_type->addType($cat->replaceAs(self::refineArrayKey($cat->as)));
             } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
                 $key_type->removeType($key);
                 $key_type->addType(new TArrayKey());
@@ -1206,6 +1202,6 @@ class Reconciler
             // this should ideally prompt some sort of error
             $key_type->addType(new TArrayKey());
         }
-        $key_type = $key_type->freeze();
+        return $key_type->freeze();
     }
 }
