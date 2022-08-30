@@ -14,6 +14,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -259,20 +260,30 @@ class CallableTypeComparator
                     $params = [];
 
                     foreach ($function_storage->params as $param) {
-                        $param = clone $param;
-
                         if ($param->type) {
-                            $param->type = TypeExpander::expandUnion(
-                                $codebase,
-                                $param->type,
-                                null,
-                                null,
-                                null,
-                                true,
-                                true,
-                                false,
-                                false,
-                                true
+                            $param = new FunctionLikeParameter(
+                                $param->name,
+                                $param->by_ref,
+                                TypeExpander::expandUnion(
+                                    $codebase,
+                                    $param->type,
+                                    null,
+                                    null,
+                                    null,
+                                    true,
+                                    true,
+                                    false,
+                                    false,
+                                    true
+                                ),
+                                $param->location,
+                                $param->type_location,
+                                $param->is_optional,
+                                $param->is_nullable,
+                                $param->is_variadic,
+                                $param->default_type,
+                                $param->out_type,
+                                $param->signature_type,
                             );
                         }
 

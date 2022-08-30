@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TValueOf;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -42,6 +43,7 @@ class TemplateInferredTypeReplacer
 {
     /**
      * This replaces template types in unions with the inferred types they should be
+     * @psalm-pure
      */
     public static function replace(
         Union $union,
@@ -206,7 +208,6 @@ class TemplateInferredTypeReplacer
                     $new_types[] = $class_template_atomic_type;
                 }
             }
-
             if ($should_set) {
                 $types []= $atomic_type;
             }
@@ -240,6 +241,7 @@ class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @psalm-pure
      */
     private static function replaceTemplateParam(
         ?Codebase $codebase,
@@ -330,6 +332,7 @@ class TemplateInferredTypeReplacer
     /**
      * @param TTemplateKeyOf|TTemplateValueOf $atomic_type
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @psalm-pure
      */
     private static function replaceTemplateKeyOfValueOf(
         ?Codebase $codebase,
@@ -362,6 +365,7 @@ class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @psalm-pure
      */
     private static function replaceTemplatePropertiesOf(
         ?Codebase $codebase,
@@ -383,13 +387,14 @@ class TemplateInferredTypeReplacer
         }
 
         return new TPropertiesOf(
-            clone $classlike_type,
+            $classlike_type,
             $atomic_type->visibility_filter
         );
     }
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @psalm-pure
      */
     private static function replaceConditional(
         TemplateResult $template_result,

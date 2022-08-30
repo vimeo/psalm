@@ -693,10 +693,9 @@ class SimpleAssertionReconciler extends Reconciler
                 );
             } elseif ($array_atomic_type instanceof TList) {
                 $non_empty_list = new TNonEmptyList(
-                    $array_atomic_type->type_param
+                    $array_atomic_type->type_param,
+                    $count
                 );
-
-                $non_empty_list->count = $count;
 
                 $existing_var_type->addType(
                     $non_empty_list
@@ -756,11 +755,10 @@ class SimpleAssertionReconciler extends Reconciler
                     }
 
                     if (!$match_found) {
-                        $obj = new TObjectWithProperties(
+                        $type = $type->addIntersectionType(new TObjectWithProperties(
                             [],
                             [$method_name => $type->value . '::' . $method_name]
-                        );
-                        $type->extra_types[$obj->getKey()] = $obj;
+                        ));
                         $did_remove_type = true;
                     }
                 }
@@ -861,9 +859,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {
                 if ($type->as->hasString() || $type->as->hasMixed() || $type->as->hasScalar()) {
-                    $type = clone $type;
-
-                    $type->as = self::reconcileString(
+                    $type = $type->replaceAs(self::reconcileString(
                         $assertion,
                         $type->as,
                         null,
@@ -872,7 +868,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $failed_reconciliation,
                         $is_equality
-                    );
+                    ));
 
                     $string_types[] = $type;
                 }
@@ -1315,11 +1311,13 @@ class SimpleAssertionReconciler extends Reconciler
 
                 $did_remove_type = true;
             } elseif ($type instanceof TIterable) {
-                $clone_type = clone $type;
+                $params = $type->type_params;
+                $params[0] = self::refineArrayKey($params[0]);
 
-                self::refineArrayKey($clone_type->type_params[0]);
-
-                $object_types[] = new TGenericObject('Traversable', $clone_type->type_params);
+                $object_types[] = new TGenericObject(
+                    'Traversable',
+                    $params
+                );
 
                 $did_remove_type = true;
             } else {
@@ -1449,7 +1447,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TNamedObject || $type instanceof TIterable) {
                 $countable = new TNamedObject('Countable');
-                $type->extra_types[$countable->getKey()] = $countable;
+                $type = $type->addIntersectionType($countable);
                 $iterable_types[] = $type;
                 $did_remove_type = true;
             } else {
@@ -1869,7 +1867,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif ($type instanceof TNamedObject) {
                 $traversable = new TNamedObject('Traversable');
-                $type->extra_types[$traversable->getKey()] = $traversable;
+                $type = $type->addIntersectionType($traversable);
                 $traversable_types[] = $type;
                 $did_remove_type = true;
             } else {
@@ -1939,11 +1937,9 @@ class SimpleAssertionReconciler extends Reconciler
 
                 $did_remove_type = true;
             } elseif ($type instanceof TIterable) {
-                $clone_type = clone $type;
-
-                self::refineArrayKey($clone_type->type_params[0]);
-
-                $array_types[] = new TArray($clone_type->type_params);
+                $params = $type->type_params;
+                $params[0] = self::refineArrayKey($params[0]);
+                $array_types[] = new TArray($params);
 
                 $did_remove_type = true;
             } elseif ($type instanceof TTemplateParam) {

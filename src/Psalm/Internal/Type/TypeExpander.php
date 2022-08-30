@@ -170,12 +170,12 @@ class TypeExpander
                             $new_intersection_types,
                             $extra_type->extra_types
                         );
-                        $extra_type->extra_types = [];
+                        $extra_type = $extra_type->setIntersectionTypes([]);
                     }
                 }
 
                 if ($new_intersection_types) {
-                    $return_type->extra_types = array_merge($return_type->extra_types, $new_intersection_types);
+                    $return_type = $return_type->setIntersectionTypes(array_merge($return_type->extra_types, $new_intersection_types));
                 }
             }
 
@@ -238,13 +238,8 @@ class TypeExpander
         }
 
         if ($return_type instanceof TClassConstant) {
-            if ($return_type->fq_classlike_name === 'self' && $self_class) {
-                $return_type->fq_classlike_name = $self_class;
-            }
-
-            if ($return_type->fq_classlike_name === 'static' && $self_class) {
-                $return_type->fq_classlike_name = is_string($static_class_type) ? $static_class_type : $self_class;
-            }
+            $return_type = $return_type->replaceClassLike('self', $self_class);
+            $return_type = $return_type->replaceClassLike('static', is_string($static_class_type) ? $static_class_type : $self_class);
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
                 if (strtolower($return_type->const_name) === 'class') {
@@ -643,19 +638,20 @@ class TypeExpander
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)
         ) {
-            $return_type = clone $return_type;
+            $return_type_types = $return_type->getIntersectionTypes();
+            $cloned_static = $static_class_type->setIntersectionTypes(null);
             $extra_static = $static_class_type->extra_types;
-            $cloned_static = $static_class_type->setIntersectionTypes([]);
 
             if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
-                $return_type->extra_types[$static_class_type->getKey()] = clone $cloned_static;
+                $return_type_types[$cloned_static->getKey()] = $cloned_static;
             }
 
             foreach ($extra_static as $extra_static_type) {
                 if ($extra_static_type->getKey(false) !== $return_type->getKey(false)) {
-                    $return_type->extra_types[$extra_static_type->getKey()] = clone $extra_static_type;
+                    $return_type_types[$extra_static_type->getKey()] = clone $extra_static_type;
                 }
             }
+            $return_type = $return_type->setIntersectionTypes($return_type_types);
         } elseif ($return_type->is_static && is_string($static_class_type) && $final) {
             $return_type->value = $static_class_type;
             $return_type->is_static = false;
@@ -677,7 +673,7 @@ class TypeExpander
      */
     private static function expandConditional(
         Codebase $codebase,
-        TConditional $return_type,
+        TConditional &$return_type,
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
@@ -701,8 +697,6 @@ class TypeExpander
             $expand_templates,
             $throw_on_unresolvable_constant,
         );
-
-        $return_type->as_type = $new_as_type;
 
         if ($evaluate_conditional_types) {
             $assertion = null;
@@ -836,52 +830,54 @@ class TypeExpander
                     $codebase
                 );
 
+                $return_type = $return_type->replaceTypes($new_as_type);
+
                 return array_values($combined->getAtomicTypes());
             }
         }
 
-        $return_type->conditional_type = self::expandUnion(
-            $codebase,
-            $return_type->conditional_type,
-            $self_class,
-            $static_class_type,
-            $parent_class,
-            $evaluate_class_constants,
-            $evaluate_conditional_types,
-            $final,
-            $expand_generic,
-            $expand_templates,
-            $throw_on_unresolvable_constant,
+        $return_type = $return_type->replaceTypes(
+            $new_as_type,
+            self::expandUnion(
+                $codebase,
+                $return_type->conditional_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            ),
+            self::expandUnion(
+                $codebase,
+                $return_type->if_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            ),
+            self::expandUnion(
+                $codebase,
+                $return_type->else_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            )
         );
-
-        $return_type->if_type = self::expandUnion(
-            $codebase,
-            $return_type->if_type,
-            $self_class,
-            $static_class_type,
-            $parent_class,
-            $evaluate_class_constants,
-            $evaluate_conditional_types,
-            $final,
-            $expand_generic,
-            $expand_templates,
-            $throw_on_unresolvable_constant,
-        );
-
-        $return_type->else_type = self::expandUnion(
-            $codebase,
-            $return_type->else_type,
-            $self_class,
-            $static_class_type,
-            $parent_class,
-            $evaluate_class_constants,
-            $evaluate_conditional_types,
-            $final,
-            $expand_generic,
-            $expand_templates,
-            $throw_on_unresolvable_constant,
-        );
-
         return [$return_type];
     }
 
@@ -993,8 +989,8 @@ class TypeExpander
                 continue;
             }
 
-            if ($type_param->fq_classlike_name === 'self' && $self_class) {
-                $type_param->fq_classlike_name = $self_class;
+            if ($self_class) {
+                $type_param = $type_param->replaceClassLike('self', $self_class);
             }
 
             if ($throw_on_unresolvable_constant
