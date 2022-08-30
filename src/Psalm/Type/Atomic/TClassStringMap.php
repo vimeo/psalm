@@ -119,6 +119,7 @@ final class TClassStringMap extends Atomic
     }
 
     /**
+     * @psalm-suppress InaccessibleProperty We're only acting on cloned instances
      * @return static
      */
     public function replaceTemplateTypesWithStandins(
