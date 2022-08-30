@@ -59,6 +59,32 @@ final class TConditional extends Atomic
         $this->else_type = $else_type;
     }
 
+    public function replaceTypes(
+        ?Union $as_type,
+        ?Union $conditional_type = null,
+        ?Union $if_type = null,
+        ?Union $else_type = null
+    ): self {
+        $as_type ??= $this->as_type;
+        $conditional_type ??= $this->conditional_type;
+        $if_type ??= $this->if_type;
+        $else_type ??= $this->else_type;
+
+        if ($as_type === $this->as_type
+            && $conditional_type === $this->conditional_type
+            && $if_type === $this->if_type
+            && $else_type === $this->else_type
+        ) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->as_type = $as_type;
+        $cloned->conditional_type = $conditional_type;
+        $cloned->if_type = $if_type;
+        $cloned->else_type = $else_type;
+        return $cloned;
+    }
+
     public function __clone()
     {
         $this->conditional_type = clone $this->conditional_type;
