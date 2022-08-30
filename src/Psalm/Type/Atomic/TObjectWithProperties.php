@@ -40,18 +40,13 @@ final class TObjectWithProperties extends TObject
      *
      * @param array<string|int, Union> $properties
      * @param array<string, string> $methods
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(array $properties, array $methods = [], ?array $extra_types = null)
+    public function __construct(array $properties, array $methods = [], array $extra_types = [])
     {
         $this->properties = $properties;
         $this->methods = $methods;
         $this->extra_types = $extra_types;
-    }
-
-    public function setIntersectionTypes(?array $types): self
-    {
-        return new self($this->properties, $this->methods, $types);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -178,6 +173,9 @@ final class TObjectWithProperties extends TObject
         return true;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -189,7 +187,7 @@ final class TObjectWithProperties extends TObject
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
+    ): self {
         $properties = [];
 
         foreach ($this->properties as $offset => $property) {
@@ -217,7 +215,7 @@ final class TObjectWithProperties extends TObject
             );
         }
 
-        return new self($properties, $this->methods, $this->replaceIntersectionTemplateTypesWithStandins(
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -228,46 +226,64 @@ final class TObjectWithProperties extends TObject
             $replace,
             $add_lower_bound,
             $depth
-        ));
+        );
+        if ($properties === $this->properties && !$intersection) {
+            return $this;
+        }
+        return new static($properties, $this->methods, $intersection ?? $this->extra_types);
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
-        $properties = [];
-        foreach ($this->properties as $k => $property) {
-            $properties[$k] = $property->getBuilder()->replaceClassLike($old, $new)->freeze();
+        $properties = $this->properties;
+        foreach ($properties as &$property) {
+            $property = $property->replaceClassLike($old, $new);
         }
-        return new self(
+        $intersection = $this->replaceIntersectionClassLike($old, $new);
+        if (!$intersection && $properties === $this->properties) {
+            return $this;
+        }
+        return new static(
             $properties,
             $this->methods,
-            $this->replaceIntersectionClassLike($old, $new)
+            $intersection ?? $this->extra_types
         );
     }
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
-        $properties = [];
-        foreach ($this->properties as $k => $property) {
-            $properties[$k] = TemplateInferredTypeReplacer::replace(
+        $properties = $this->properties;
+        foreach ($this->properties as &$property) {
+            $property = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
             );
         }
-        return new self(
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        );
+        if ($properties === $this->properties && !$intersection) {
+            return $this;
+        }
+        return new static(
             $properties,
             $this->methods,
-            $this->replaceIntersectionTemplateTypesWithArgTypes(
-                $template_result,
-                $codebase
-            )
+            $intersection ?? $this->extra_types
         );
     }
 
     public function getChildNodes(): array
     {
-        return array_merge($this->properties, $this->extra_types !== null ? array_values($this->extra_types) : []);
+        return array_merge($this->properties, array_values($this->extra_types));
     }
 
     public function getAssertionString(): string

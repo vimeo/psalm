@@ -51,7 +51,10 @@ class TClassString extends TString
         $this->is_interface = $is_interface;
         $this->is_enum = $is_enum;
     }
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         if ($this->as !== 'object' && strtolower($this->as) === $old) {
             $cloned = clone $this;
@@ -145,6 +148,9 @@ class TClassString extends TString
         return $this->as_type ? [$this->as_type] : [];
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -156,11 +162,9 @@ class TClassString extends TString
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $class_string = clone $this;
-
-        if (!$class_string->as_type) {
-            return $class_string;
+    ): self {
+        if (!$this->as_type) {
+            return $this;
         }
 
         if ($input_type instanceof TLiteralClassString) {
@@ -172,7 +176,7 @@ class TClassString extends TString
         }
 
         $as_type = TemplateStandinTypeReplacer::replace(
-            new Union([$class_string->as_type]),
+            new Union([$this->as_type]),
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -188,15 +192,24 @@ class TClassString extends TString
 
         $as_type_types = array_values($as_type->getAtomicTypes());
 
-        $class_string->as_type = count($as_type_types) === 1
+        $as_type = count($as_type_types) === 1
             && $as_type_types[0] instanceof TNamedObject
             ? $as_type_types[0]
             : null;
 
-        if (!$class_string->as_type) {
-            $class_string->as = 'object';
+        if ($this->as_type === $as_type) {
+            if (!$this->as_type && $this->as !== 'object') {
+                $cloned = clone $this;
+                $cloned->as = 'object';
+                return $cloned;
+            }
+            return $this;
         }
-
-        return $class_string;
+        $cloned = clone $this;
+        $cloned->as_type = $as_type;
+        if (!$cloned->as_type) {
+            $cloned->as = 'object';
+        }
+        return $cloned;
     }
 }

@@ -13,13 +13,12 @@ use function get_class;
 
 /**
  * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
- *
  * @psalm-immutable
  */
 class TArray extends Atomic
 {
     /**
-     * @use GenericTrait<array{0: Union, 1: Union}>
+     * @use GenericTrait<array{Union, Union}>
      */
     use GenericTrait;
 
@@ -31,18 +30,11 @@ class TArray extends Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param array{0: Union, 1: Union} $type_params
+     * @param array{Union, Union} $type_params
      */
     public function __construct(array $type_params)
     {
         $this->type_params = $type_params;
-    }
-    /**
-     * @param array{0: Union, 1: Union} $type_params
-     */
-    public function replaceTypeParams(array $type_params): self
-    {
-        return new self($type_params);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -107,14 +99,26 @@ class TArray extends Atomic
         return $this->type_params[1]->isNever();
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
-        return new self($this->replaceTypeParamsClassLike($old, $new));
+        $type_params = $this->replaceTypeParamsClassLike($old, $new);
+        if ($type_params) {
+            $cloned = clone $this;
+            $cloned->type_params = $type_params;
+            return $cloned;
+        }
+        return $this;
     }
 
-    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): Atomic
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
     {
-        return new self($this->replaceTypeParamsTemplateTypesWithStandins(
+        $type_params = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -125,14 +129,34 @@ class TArray extends Atomic
             $replace,
             $add_lower_bound,
             $depth
-        ));
+        );
+        if ($type_params) {
+            $cloned = clone $this;
+            $cloned->type_params = $type_params;
+            return $cloned;
+        }
+        return $this;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
     {
-        return new self($this->replaceTypeParamsTemplateTypesWithArgTypes(
+        $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
             $template_result,
             $codebase
-        ));
+        );
+        if ($type_params) {
+            $cloned = clone $this;
+            $cloned->type_params = $type_params;
+            return $cloned;
+        }
+        return $this;
+    }
+
+    public function getChildNodes(): array
+    {
+        return $this->type_params;
     }
 }

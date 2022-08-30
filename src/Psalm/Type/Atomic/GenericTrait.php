@@ -9,7 +9,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -20,16 +19,29 @@ use function strpos;
 use function substr;
 
 /**
- * @psalm-immutable
  * @template TTypeParams as array<Union>
  */
 trait GenericTrait
 {
     /**
-     * @readonly
      * @var TTypeParams
      */
-    public $type_params;
+    public array $type_params;
+
+    /**
+     * @param TTypeParams $type_params
+     *
+     * @return static
+     */
+    public function replaceTypeParams(array $type_params): self
+    {
+        if ($this->type_params === $type_params) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->type_params = $type_params;
+        return $cloned;
+    }
 
     public function getId(bool $exact = true, bool $nested = false): string
     {
@@ -157,17 +169,9 @@ trait GenericTrait
     }
 
     /**
-     * @return array<TypeNode>
+     * @return TTypeParams|null
      */
-    public function getChildNodes(): array
-    {
-        return $this->type_params;
-    }
-
-    /**
-     * @return TTypeParams
-     */
-    public function replaceTypeParamsTemplateTypesWithStandins(
+    protected function replaceTypeParamsTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
@@ -178,7 +182,7 @@ trait GenericTrait
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): array {
+    ): ?array {
         if ($input_type instanceof TList) {
             $input_type = new TArray([Type::getInt(), $input_type->type_param]);
         }
@@ -240,18 +244,18 @@ trait GenericTrait
             );
         }
 
-        return $type_params;
+        return $type_params === $this->type_params ? null : $type_params;
     }
 
     /**
-     * @return TTypeParams
+     * @return TTypeParams|null
      */
     protected function replaceTypeParamsTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): array {
-        $type_params = [];
-        foreach ($this->type_params as $offset => $type_param) {
+    ): ?array {
+        $type_params = $this->type_params;
+        foreach ($type_params as $offset => &$type_param) {
             $type_param = TemplateInferredTypeReplacer::replace(
                 $type_param,
                 $template_result,
@@ -261,23 +265,20 @@ trait GenericTrait
             if ($this instanceof TArray && $offset === 0 && $type_param->isMixed()) {
                 $type_param = Type::getArrayKey();
             }
-
-            $type_params[$offset] = $type_param;
         }
 
-        return $type_params;
+        return $type_params === $this->type_params ? null : $type_params;
     }
 
     /**
-     * @psalm-suppress InaccessibleProperty We're only ever accessing properties on cloned objects
-     * @return TTypeParams
+     * @return TTypeParams|null
      */
-    protected function replaceTypeParamsClassLike(string $old, string $new): static
+    protected function replaceTypeParamsClassLike(string $old, string $new): ?array
     {
         $type_params = $this->type_params;
         foreach ($type_params as &$type_param) {
-            $type_param = $type_param->getBuilder()->replaceClassLike($old, $new)->freeze();
+            $type_param = $type_param->replaceClassLike($old, $new);
         }
-        return $this->replaceTypeParams($type_params);
+        return $type_params === $this->type_params ? null : $type_params;
     }
 }

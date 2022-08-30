@@ -12,6 +12,7 @@ use function array_merge;
 use function count;
 use function implode;
 use function strrpos;
+use function strtolower;
 use function substr;
 
 /**
@@ -31,9 +32,9 @@ final class TGenericObject extends TNamedObject
     /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $value, array $type_params, bool $remapped_params = false, bool $is_static = false, ?array $extra_types = null)
+    public function __construct(string $value, array $type_params, bool $remapped_params = false, bool $is_static = false, array $extra_types = [])
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -44,19 +45,6 @@ final class TGenericObject extends TNamedObject
         $this->remapped_params = $remapped_params;
         $this->is_static = $is_static;
         $this->extra_types = $extra_types;
-    }
-
-    /**
-     * @param non-empty-list<Union> $type_params
-     */
-    public function replaceTypeParams(array $type_params): self
-    {
-        return new self($this->value, $type_params, $this->remapped_params, $this->is_static, $this->extra_types);
-    }
-
-    public function setIntersectionTypes(?array $types): self
-    {
-        return new static($this->value, $this->type_params, $this->remapped_params, $this->is_static, $types);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -124,67 +112,91 @@ final class TGenericObject extends TNamedObject
 
     public function getChildNodes(): array
     {
-        return array_merge($this->type_params, $this->extra_types ?? []);
+        return array_merge(parent::getChildNodes(), $this->type_params);
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
+        $type_params = $this->replaceTypeParamsClassLike($old, $new);
+        $intersection = $this->replaceIntersectionClassLike($old, $new);
+        if (!$type_params && !$intersection) {
+            return $this;
+        }
         return new static(
             strtolower($this->value) === $old ? $new : $this->value,
-            $this->replaceTypeParamsClassLike($old, $new),
+            $type_params ?? $this->type_params,
             $this->remapped_params,
             $this->is_static,
-            $this->replaceIntersectionClassLike($old, $new)
+            $intersection ?? $this->extra_types
         );
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
     {
-        return new self(
+        $types = $this->replaceTypeParamsTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        );
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        );
+        if (!$types && !$intersection) {
+            return $this;
+        }
+        return new static(
             $this->value,
-            $this->replaceTypeParamsTemplateTypesWithStandins(
-                $template_result,
-                $codebase,
-                $statements_analyzer,
-                $input_type,
-                $input_arg_offset,
-                $calling_class,
-                $calling_function,
-                $replace,
-                $add_lower_bound,
-                $depth
-            ),
+            $types ?? $this->type_params,
             $this->remapped_params,
             $this->is_static,
-            $this->replaceIntersectionTemplateTypesWithStandins(
-                $template_result,
-                $codebase,
-                $statements_analyzer,
-                $input_type,
-                $input_arg_offset,
-                $calling_class,
-                $calling_function,
-                $replace,
-                $add_lower_bound,
-                $depth
-            )
+            $intersection ?? $this->extra_types
         );
     }
 
-    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
     {
-        return new self(
+        $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        );
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        );
+        if (!$type_params && !$intersection) {
+            return $this;
+        }
+        return new static(
             $this->value,
-            $this->replaceTypeParamsTemplateTypesWithArgTypes(
-                $template_result,
-                $codebase
-            ),
+            $type_params ?? $this->type_params,
             true,
             $this->is_static,
-            $this->replaceIntersectionTemplateTypesWithArgTypes(
-                $template_result,
-                $codebase
-            )
+            $intersection ?? $this->extra_types
         );
     }
 }

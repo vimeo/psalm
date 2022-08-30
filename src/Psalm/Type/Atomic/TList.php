@@ -39,9 +39,17 @@ class TList extends Atomic
         $this->type_param = $type_param;
     }
 
-    public function replaceTypeParam(Union $type_param): TList
+    /**
+     * @return static
+     */
+    public function replaceTypeParam(Union $type_param): self
     {
-        return new self($type_param);
+        if ($type_param === $this->type_param) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->type_param = $type_param;
+        return $cloned;
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -107,6 +115,9 @@ class TList extends Atomic
         return 'array';
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -118,10 +129,10 @@ class TList extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $list = clone $this;
+    ): self {
+        $cloned = null;
 
-        foreach ([Type::getInt(), $list->type_param] as $offset => $type_param) {
+        foreach ([Type::getInt(), $this->type_param] as $offset => $type_param) {
             $input_type_param = null;
 
             if (($input_type instanceof TGenericObject
@@ -160,14 +171,18 @@ class TList extends Atomic
                 $depth + 1
             );
 
-            if ($offset === 1) {
-                $list->type_param = $type_param;
+            if ($offset === 1 && ($cloned || $this->type_param !== $type_param)) {
+                $cloned ??= clone $this;
+                $cloned->type_param = $type_param;
             }
         }
 
-        return $list;
+        return $cloned ?? $this;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase

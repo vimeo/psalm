@@ -9,8 +9,8 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 
 use function array_map;
+use function array_merge;
 use function implode;
-use function strtolower;
 
 /**
  * @psalm-immutable
@@ -18,9 +18,9 @@ use function strtolower;
 trait HasIntersectionTrait
 {
     /**
-     * @var array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
+     * @var array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>
      */
-    public $extra_types;
+    public array $extra_types = [];
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
@@ -54,19 +54,36 @@ trait HasIntersectionTrait
 
     /**
      * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $type
+     *
+     * @return static
      */
-    public function addIntersectionType(Atomic $type): static
+    public function addIntersectionType(Atomic $type): self
     {
-        return $this->setIntersectionTypes([
-            ...$this->extra_types,
-            $type->getKey() => $type
-        ]);
+        return $this->setIntersectionTypes(array_merge(
+            $this->extra_types,
+            [$type->getKey() => $type]
+        ));
     }
 
     /**
-     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $types
+     *
+     * @return static
      */
-    public function getIntersectionTypes(): ?array
+    public function setIntersectionTypes(array $types): self
+    {
+        if ($types === $this->extra_types) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->extra_types = $types;
+        return $cloned;
+    }
+
+    /**
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>
+     */
+    public function getIntersectionTypes(): array
     {
         return $this->extra_types;
     }
@@ -79,7 +96,7 @@ trait HasIntersectionTrait
         ?Codebase $codebase
     ): ?array {
         if (!$this->extra_types) {
-            return $this->extra_types;
+            return null;
         }
 
         $new_types = [];
@@ -106,7 +123,7 @@ trait HasIntersectionTrait
             }
         }
 
-        return $new_types;
+        return $new_types === $this->extra_types ? null : $new_types;
     }
 
     /**
@@ -125,7 +142,7 @@ trait HasIntersectionTrait
         int $depth = 0
     ): ?array {
         if (!$this->extra_types) {
-            return $this->extra_types;
+            return null;
         }
         $new_types = [];
         foreach ($this->extra_types as $type) {
@@ -144,22 +161,22 @@ trait HasIntersectionTrait
             $new_types[$type->getKey()] = $type;
         }
 
-        return $new_types;
+        return $new_types === $this->extra_types ? null : $new_types;
     }
 
     /**
      * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
      */
-    protected function replaceIntersectionClassLike(string $old, string $new): array
+    protected function replaceIntersectionClassLike(string $old, string $new): ?array
     {
         if (!$this->extra_types) {
-            return $this->extra_types;
+            return null;
         }
         $new_types = [];
         foreach ($this->extra_types as $extra_type) {
             $extra_type = $extra_type->replaceClassLike($old, $new);
             $new_types[$extra_type->getKey()] = $extra_type;
         }
-        return $new_types;
+        return $new_types === $this->extra_types ? null : $new_types;
     }
 }

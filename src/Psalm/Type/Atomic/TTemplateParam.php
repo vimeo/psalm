@@ -8,6 +8,8 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_map;
+use function array_merge;
+use function array_values;
 use function implode;
 
 /**
@@ -34,9 +36,9 @@ final class TTemplateParam extends Atomic
     public $defining_class;
 
     /**
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $param_name, Union $extends, string $defining_class, ?array $extra_types = null)
+    public function __construct(string $param_name, Union $extends, string $defining_class, array $extra_types = [])
     {
         $this->param_name = $param_name;
         $this->as = $extends;
@@ -44,19 +46,20 @@ final class TTemplateParam extends Atomic
         $this->extra_types = $extra_types;
     }
 
+    /**
+     * @return static
+     */
     public function replaceAs(Union $as): self
     {
-        return new self(
+        if ($as === $this->as) {
+            return $this;
+        }
+        return new static(
             $this->param_name,
             $as,
             $this->defining_class,
             $this->extra_types
         );
-    }
-
-    public function setIntersectionTypes(?array $types): self
-    {
-        return new self($this->param_name, $this->as, $this->defining_class, $types);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -135,7 +138,7 @@ final class TTemplateParam extends Atomic
 
     public function getChildNodes(): array
     {
-        return [$this->as];
+        return array_merge([$this->as], array_values($this->extra_types));
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
@@ -143,25 +146,40 @@ final class TTemplateParam extends Atomic
         return false;
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
-        return new self(
+        $intersection = $this->replaceIntersectionClassLike($old, $new);
+        $replaced = $this->as->replaceClassLike($old, $new);
+        if (!$intersection && $replaced === $this->as) {
+            return $this;
+        }
+        return new static(
             $this->param_name,
-            $this->as->getBuilder()->replaceClassLike($old, $new)->freeze(),
+            $replaced,
             $this->defining_class,
-            $this->replaceIntersectionClassLike($old, $new)
+            $intersection ?? $this->extra_types
         );
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
-        return new self(
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        if (!$intersection) {
+            return $this;
+        }
+        return new static(
             $this->param_name,
             $this->as,
             $this->defining_class,
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
+            $intersection
         );
     }
 }

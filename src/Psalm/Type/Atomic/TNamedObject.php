@@ -9,8 +9,10 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 
 use function array_map;
+use function array_values;
 use function implode;
 use function strrpos;
+use function strtolower;
 use function substr;
 
 /**
@@ -39,9 +41,9 @@ class TNamedObject extends Atomic
 
     /**
      * @param string $value the name of the object
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $value, bool $is_static = false, bool $definite_class = false, ?array $extra_types = null)
+    public function __construct(string $value, bool $is_static = false, bool $definite_class = false, array $extra_types = [])
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -51,11 +53,6 @@ class TNamedObject extends Atomic
         $this->is_static = $is_static;
         $this->definite_class = $definite_class;
         $this->extra_types = $extra_types;
-    }
-
-    public function setIntersectionTypes(?array $types): self
-    {
-        return new self($this->value, $this->is_static, $this->definite_class, $types);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -143,50 +140,65 @@ class TNamedObject extends Atomic
         return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
-        return new self(
-            strtolower($this->value) === $old ? $new : $this->value,
-            $this->is_static,
-            $this->definite_class,
-            $this->replaceIntersectionClassLike($old, $new)
-        );
+        $intersection = $this->replaceIntersectionClassLike($old, $new);
+        if (!$intersection && strtolower($this->value) !== $old) {
+            return $this;
+        }
+        $cloned = clone $this;
+        if (strtolower($cloned->value) === $old) {
+            $cloned->value = $new;
+        }
+        $cloned->extra_types = $intersection ?? $this->extra_types;
+        return $cloned;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
-        return new static(
-            $this->value,
-            $this->is_static,
-            $this->definite_class,
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
-        );
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        if (!$intersection) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->extra_types = $intersection;
+        return $cloned;
     }
 
-    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): Atomic
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
     {
-        return new static(
-            $this->value,
-            $this->is_static,
-            $this->definite_class,
-            $this->replaceIntersectionTemplateTypesWithStandins(
-                $template_result,
-                $codebase,
-                $statements_analyzer,
-                $input_type,
-                $input_arg_offset,
-                $calling_class,
-                $calling_function,
-                $replace,
-                $add_lower_bound,
-                $depth
-            )
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
         );
+        if ($intersection) {
+            $cloned = clone $this;
+            $cloned->extra_types = $intersection;
+            return $cloned;
+        }
+        return $this;
     }
     public function getChildNodes(): array
     {
-        return $this->extra_types ?? [];
+        return array_values($this->extra_types);
     }
 }

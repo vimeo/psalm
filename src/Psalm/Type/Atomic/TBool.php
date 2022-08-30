@@ -4,7 +4,6 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `bool` type where the exact value is unknown.
- *
  * @psalm-immutable
  */
 class TBool extends Scalar

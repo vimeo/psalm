@@ -118,6 +118,9 @@ final class TClassStringMap extends Atomic
         return 'array';
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -129,10 +132,10 @@ final class TClassStringMap extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $map = clone $this;
+    ): self {
+        $cloned = null;
 
-        foreach ([Type::getString(), $map->value_param] as $offset => $type_param) {
+        foreach ([Type::getString(), $this->value_param] as $offset => $type_param) {
             $input_type_param = null;
 
             if (($input_type instanceof TGenericObject
@@ -171,26 +174,34 @@ final class TClassStringMap extends Atomic
                 $depth + 1
             );
 
-            if ($offset === 1) {
-                $map->value_param = $value_param;
+            if ($offset === 1 && ($cloned || $this->value_param !== $value_param)) {
+                $cloned ??= clone $this;
+                $cloned->value_param = $value_param;
             }
         }
 
-        return $map;
+        return $cloned ?? $this;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
-        return new self(
+        $value_param = TemplateInferredTypeReplacer::replace(
+            $this->value_param,
+            $template_result,
+            $codebase
+        );
+        if ($value_param === $this->value_param) {
+            return $this;
+        }
+        return new static(
             $this->param_name,
             $this->as_type,
-            TemplateInferredTypeReplacer::replace(
-                $this->value_param,
-                $template_result,
-                $codebase
-            )
+            $value_param
         );
     }
 
