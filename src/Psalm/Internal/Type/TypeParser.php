@@ -598,11 +598,13 @@ class TypeParser
             $array_acccess = new TGenericObject('ArrayAccess', $generic_params);
             $countable = new TNamedObject('Countable');
 
-            return $traversable->setIntersectionTypes([
-                ...$traversable->extra_types,
-                $array_acccess->getKey() => $array_acccess,
-                $countable->getKey() => $countable
-            ]);
+            return $traversable->setIntersectionTypes(array_merge(
+                $traversable->extra_types,
+                [
+                    $array_acccess->getKey() => $array_acccess,
+                    $countable->getKey() => $countable
+                ]
+            ));
         }
 
         if ($generic_type_value === 'non-empty-array') {

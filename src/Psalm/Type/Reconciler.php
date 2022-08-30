@@ -1185,19 +1185,43 @@ class Reconciler
 
     protected static function refineArrayKey(Union $key_type): Union
     {
+        return self::refineArrayKeyInner($key_type) ?? $key_type;
+    }
+    private static function refineArrayKeyInner(Union $key_type): ?Union
+    {
+        $refined = false;
         $types = [];
         foreach ($key_type->getAtomicTypes() as $cat) {
             if ($cat instanceof TTemplateParam) {
-                $types []= $cat->replaceAs(self::refineArrayKey($cat->as));
+                $as = self::refineArrayKeyInner($cat->as, $refined_inner);
+                if ($as) {
+                    $refined = true;
+                    $types []= $cat->replaceAs(self::refineArrayKey($cat->as));
+                } else {
+                    $types []= $cat;
+                }
             } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
-                $types []= new TArrayKey();
+                if ($cat instanceof TArrayKey) {
+                    $types []= $cat;
+                } else {
+                    $refined = true;
+                    $types []= new TArrayKey();
+                }
             } elseif (!$cat instanceof TString && !$cat instanceof TInt) {
-                $types []= new TArrayKey();
+                if ($cat instanceof TArrayKey) {
+                    $types []= $cat;
+                } else {
+                    $refined = true;
+                    $types []= new TArrayKey();
+                }
             } else {
                 $types []= $cat;
             }
         }
 
-        return $key_type->getBuilder()->setTypes($types)->freeze();
+        if ($refined) {
+            return $key_type->getBuilder()->setTypes($types)->freeze();
+        }
+        return null;
     }
 }

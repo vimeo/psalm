@@ -130,7 +130,7 @@ class TypeExpander
      *
      * @return non-empty-list<Atomic>
      *
-     * @psalm-suppress ComplexMethod
+     * @psalm-suppress ComplexMethod, ConflictingReferenceConstraint
      */
     public static function expandAtomic(
         Codebase $codebase,
