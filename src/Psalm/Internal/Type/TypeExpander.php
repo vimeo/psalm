@@ -643,7 +643,7 @@ class TypeExpander
                 || $static_class_type instanceof TTemplateParam)
         ) {
             $return_type_types = $return_type->getIntersectionTypes();
-            $cloned_static = $static_class_type->setIntersectionTypes(null);
+            $cloned_static = $static_class_type->setIntersectionTypes([]);
             $extra_static = $static_class_type->extra_types;
 
             if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
