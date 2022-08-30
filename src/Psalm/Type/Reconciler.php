@@ -1132,8 +1132,8 @@ class Reconciler
                 $new_base_type = clone $existing_types[$base_key];
 
                 if ($base_atomic_type instanceof TArray) {
-                    $previous_key_type = $base_atomic_type->type_params[0];
-                    $previous_value_type = $base_atomic_type->type_params[1];
+                    $previous_key_type = clone $base_atomic_type->type_params[0];
+                    $previous_value_type = clone $base_atomic_type->type_params[1];
 
                     $base_atomic_type = new TKeyedArray(
                         [
@@ -1158,9 +1158,10 @@ class Reconciler
                 } elseif ($base_atomic_type instanceof TClassStringMap) {
                     // do nothing
                 } else {
-                    $base_atomic_type = $base_atomic_type->setProperties([
-                        $array_key_offset => $result_type
-                    ]);
+                    $base_atomic_type = $base_atomic_type->setProperties(array_merge(
+                        $base_atomic_type->properties,
+                        [$array_key_offset => $result_type]
+                    ));
                 }
 
                 $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();
