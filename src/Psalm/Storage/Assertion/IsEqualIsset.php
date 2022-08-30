@@ -4,9 +4,11 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class IsEqualIsset extends Assertion
 {
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new Any();
@@ -17,13 +19,11 @@ final class IsEqualIsset extends Assertion
         return '=isset';
     }
 
-    /** @psalm-mutation-free */
     public function hasEquality(): bool
     {
         return true;
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return false;

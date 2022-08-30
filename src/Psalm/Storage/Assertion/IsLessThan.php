@@ -4,6 +4,9 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class IsLessThan extends Assertion
 {
     public int $value;
@@ -13,7 +16,6 @@ final class IsLessThan extends Assertion
         $this->value = $value;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new IsGreaterThanOrEqualTo($this->value);
@@ -24,7 +26,6 @@ final class IsLessThan extends Assertion
         return '<' . $this->value;
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsGreaterThanOrEqualTo && $this->value === $assertion->value;

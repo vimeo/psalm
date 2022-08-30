@@ -5,6 +5,9 @@ namespace Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion;
 use UnexpectedValueException;
 
+/**
+ * @psalm-immutable
+ */
 final class HasArrayKey extends Assertion
 {
     public $key;
@@ -14,7 +17,6 @@ final class HasArrayKey extends Assertion
         $this->key = $key;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         throw new UnexpectedValueException('This should never be called');
@@ -25,7 +27,6 @@ final class HasArrayKey extends Assertion
         return 'has-array-key-' . $this->key;
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return false;
