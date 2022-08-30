@@ -141,11 +141,15 @@ class TNamedObject extends Atomic
 
     public function replaceClassLike(string $old, string $new): static
     {
+        $intersection = $this->replaceIntersectionClassLike($old, $new);
+        if (!$intersection && strtolower($this->value) !== $old) {
+            return $this;
+        }
         $cloned = clone $this;
         if (strtolower($cloned->value) === $old) {
             $cloned->value = $new;
         }
-        $cloned->extra_types = $this->replaceIntersectionClassLike($old, $new);
+        $cloned->extra_types = $intersection ?? $this->extra_types;
         return $cloned;
     }
 
@@ -153,15 +157,18 @@ class TNamedObject extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): static {
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        if (!$intersection) {
+            return $this;
+        }
         $cloned = clone $this;
-        $cloned->extra_types = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        $cloned->extra_types = $intersection;
         return $cloned;
     }
 
     public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
     {
-        $cloned = clone $this;
-        $cloned->extra_types = $this->replaceIntersectionTemplateTypesWithStandins(
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -173,7 +180,12 @@ class TNamedObject extends Atomic
             $add_lower_bound,
             $depth
         );
-        return $cloned;
+        if ($intersection) {
+            $cloned = clone $this;
+            $cloned->extra_types = $intersection;
+            return $cloned;
+        }
+        return $this;
     }
     public function getChildNodes(): array
     {

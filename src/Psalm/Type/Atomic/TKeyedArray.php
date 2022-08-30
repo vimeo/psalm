@@ -98,6 +98,9 @@ class TKeyedArray extends Atomic
      */
     public function setProperties(array $properties): static
     {
+        if ($properties === $this->properties) {
+            return $this;
+        }
         $cloned = clone $this;
         $cloned->properties = $properties;
         return $cloned;
@@ -107,7 +110,7 @@ class TKeyedArray extends Atomic
     {
         $properties = $this->properties;
         foreach ($properties as &$property_type) {
-            $property_type = $property_type->getBuilder()->replaceClassLike($old, $new)->freeze();
+            $property_type = $property_type->replaceClassLike($old, $new);
         }
         return $this->setProperties($properties);
     }
@@ -317,9 +320,9 @@ class TKeyedArray extends Atomic
         bool $add_lower_bound = false,
         int $depth = 0
     ): static {
-        $object_like = clone $this;
+        $properties = $this->properties;
 
-        foreach ($this->properties as $offset => $property) {
+        foreach ($properties as $offset => &$property) {
             $input_type_param = null;
 
             if ($input_type instanceof TKeyedArray
@@ -328,7 +331,7 @@ class TKeyedArray extends Atomic
                 $input_type_param = $input_type->properties[$offset];
             }
 
-            $object_like->properties[$offset] = TemplateStandinTypeReplacer::replace(
+            $property = TemplateStandinTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
@@ -344,22 +347,32 @@ class TKeyedArray extends Atomic
             );
         }
 
-        return $object_like;
+        if ($properties === $this->properties) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->properties = $properties;
+        return $cloned;
     }
 
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): static {
-        $cloned = clone $this;
-        foreach ($cloned->properties as &$property) {
+        $properties = $this->properties;
+        foreach ($properties as &$property) {
             $property = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
             );
         }
-        return $cloned;
+        if ($properties !== $this->properties) {
+            $cloned = clone $this;
+            $cloned->properties = $properties;
+            return $cloned;
+        }
+        return $this;
     }
 
     public function getChildNodes(): array

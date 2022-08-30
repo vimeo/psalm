@@ -124,58 +124,70 @@ final class TIterable extends Atomic
 
     public function replaceClassLike(string $old, string $new): static
     {
+        $type_params = $this->replaceTypeParamsClassLike(
+            $old,
+            $new
+        );
+        $intersection = $this->replaceIntersectionClassLike(
+            $old,
+            $new
+        );
+        if (!$type_params && !$intersection) {
+            return $this;
+        }
         return new static(
-            $this->replaceTypeParamsClassLike(
-                $old,
-                $new
-            ),
-            $this->replaceIntersectionClassLike(
-                $old,
-                $new
-            )
+            $type_params ?? $this->type_params,
+            $intersection ?? $this->extra_types
         );
     }
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
     {
+        $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        );
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        );
         return new static(
-            $this->replaceTypeParamsTemplateTypesWithArgTypes(
-                $template_result,
-                $codebase
-            ),
-            $this->replaceIntersectionTemplateTypesWithArgTypes(
-                $template_result,
-                $codebase
-            )
+            $type_params ?? $this->type_params,
+            $intersection ?? $this->extra_types
         );
     }
 
     public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
     {
+        $types = $this->replaceTypeParamsTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        );
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        );
+        if (!$types && !$intersection) {
+            return $this;
+        }
         return new static(
-            $this->replaceTypeParamsTemplateTypesWithStandins(
-                $template_result,
-                $codebase,
-                $statements_analyzer,
-                $input_type,
-                $input_arg_offset,
-                $calling_class,
-                $calling_function,
-                $replace,
-                $add_lower_bound,
-                $depth
-            ),
-            $this->replaceIntersectionTemplateTypesWithStandins(
-                $template_result,
-                $codebase,
-                $statements_analyzer,
-                $input_type,
-                $input_arg_offset,
-                $calling_class,
-                $calling_function,
-                $replace,
-                $add_lower_bound,
-                $depth
-            )
+            $types ?? $this->type_params,
+            $intersection ?? $this->extra_types
         );
     }
 }

@@ -100,15 +100,18 @@ class TArray extends Atomic
 
     public function replaceClassLike(string $old, string $new): static
     {
-        $cloned = clone $this;
-        $cloned->type_params = $this->replaceTypeParamsClassLike($old, $new);
-        return $cloned;
+        $type_params = $this->replaceTypeParamsClassLike($old, $new);
+        if ($type_params) {
+            $cloned = clone $this;
+            $cloned->type_params = $type_params;
+            return $cloned;
+        }
+        return $this;
     }
 
     public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
     {
-        $cloned = clone $this;
-        $cloned->type_params = $this->replaceTypeParamsTemplateTypesWithStandins(
+        $type_params = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -120,17 +123,26 @@ class TArray extends Atomic
             $add_lower_bound,
             $depth
         );
-        return $cloned;
+        if ($type_params) {
+            $cloned = clone $this;
+            $cloned->type_params = $type_params;
+            return $cloned;
+        }
+        return $this;
     }
 
     public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
     {
-        $cloned = clone $this;
-        $cloned->type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
+        $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
             $template_result,
             $codebase
         );
-        return $cloned;
+        if ($type_params) {
+            $cloned = clone $this;
+            $cloned->type_params = $type_params;
+            return $cloned;
+        }
+        return $this;
     }
 
     public function getChildNodes(): array

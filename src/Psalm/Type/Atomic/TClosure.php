@@ -51,13 +51,17 @@ final class TClosure extends TNamedObject
     public function replaceClassLike(string $old, string $new): static
     {
         $replaced = $this->replaceCallableClassLike($old, $new);
+        $intersection = $this->replaceIntersectionClassLike($old, $new);
+        if (!$replaced && !$intersection) {
+            return $this;
+        }
         return new static(
             strtolower($this->value) === $old ? $new : $this->value,
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,
             $this->is_pure,
             $this->byref_uses,
-            $this->replaceIntersectionClassLike($old, $new)
+            $intersection ?? $this->extra_types
         );
     }
 
@@ -67,37 +71,45 @@ final class TClosure extends TNamedObject
         ?Codebase $codebase
     ): static {
         $replaced = $this->replaceCallableTemplateTypesWithArgTypes($template_result, $codebase);
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        if (!$replaced && !$intersection) {
+            return $this;
+        }
         return new static(
             $this->value,
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,
             $this->is_pure,
             $this->byref_uses,
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
+            $intersection ?? $this->extra_types
         );
     }
 
     public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
     {
         $replaced = $this->replaceCallableTemplateTypesWithStandins($template_result, $codebase, $statements_analyzer, $input_type, $input_arg_offset, $calling_class, $calling_function, $replace, $add_lower_bound, $depth);
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        );
+        if (!$replaced && !$intersection) {
+            return $this;
+        }
         return new static(
             $this->value,
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,
             $this->is_pure,
             $this->byref_uses,
-            $this->replaceIntersectionTemplateTypesWithStandins(
-                $template_result,
-                $codebase,
-                $statements_analyzer,
-                $input_type,
-                $input_arg_offset,
-                $calling_class,
-                $calling_function,
-                $replace,
-                $add_lower_bound,
-                $depth
-            )
+            $intersection ?? $this->extra_types
         );
     }
 

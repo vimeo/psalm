@@ -33,6 +33,9 @@ trait GenericTrait
      */
     public function replaceTypeParams(array $type_params): static
     {
+        if ($this->type_params === $type_params) {
+            return $this;
+        }
         $cloned = clone $this;
         $cloned->type_params = $type_params;
         return $cloned;
@@ -164,9 +167,9 @@ trait GenericTrait
     }
 
     /**
-     * @return TTypeParams
+     * @return TTypeParams|null
      */
-    public function replaceTypeParamsTemplateTypesWithStandins(
+    protected function replaceTypeParamsTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
@@ -177,7 +180,7 @@ trait GenericTrait
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): array {
+    ): ?array {
         if ($input_type instanceof TList) {
             $input_type = new TArray([Type::getInt(), $input_type->type_param]);
         }
@@ -239,16 +242,16 @@ trait GenericTrait
             );
         }
 
-        return $type_params;
+        return $type_params === $this->type_params ? null : $type_params;
     }
 
     /**
-     * @return TTypeParams
+     * @return TTypeParams|null
      */
     protected function replaceTypeParamsTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): array {
+    ): ?array {
         $type_params = $this->type_params;
         foreach ($type_params as $offset => &$type_param) {
             $type_param = TemplateInferredTypeReplacer::replace(
@@ -262,18 +265,18 @@ trait GenericTrait
             }
         }
 
-        return $type_params;
+        return $type_params === $this->type_params ? null : $type_params;
     }
 
     /**
-     * @return TTypeParams
+     * @return TTypeParams|null
      */
-    protected function replaceTypeParamsClassLike(string $old, string $new): array
+    protected function replaceTypeParamsClassLike(string $old, string $new): ?array
     {
         $type_params = $this->type_params;
         foreach ($type_params as &$type_param) {
-            $type_param = $type_param->getBuilder()->replaceClassLike($old, $new)->freeze();
+            $type_param = $type_param->replaceClassLike($old, $new);
         }
-        return $type_params;
+        return $type_params === $this->type_params ? null : $type_params;
     }
 }

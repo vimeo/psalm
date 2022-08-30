@@ -85,14 +85,18 @@ final class TTemplateKeyOf extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): static {
+        $as = TemplateInferredTypeReplacer::replace(
+            $this->as,
+            $template_result,
+            $codebase
+        );
+        if ($as === $this->as) {
+            return $this;
+        }
         return new static(
             $this->param_name,
             $this->defining_class,
-            TemplateInferredTypeReplacer::replace(
-                $this->as,
-                $template_result,
-                $codebase
-            )
+            $as
         );
     }
 }

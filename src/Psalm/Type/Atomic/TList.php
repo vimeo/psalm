@@ -40,6 +40,9 @@ class TList extends Atomic
 
     public function replaceTypeParam(Union $type_param): static
     {
+        if ($type_param === $this->type_param) {
+            return $this;
+        }
         $cloned = clone $this;
         $cloned->type_param = $type_param;
         return $cloned;
@@ -120,9 +123,9 @@ class TList extends Atomic
         bool $add_lower_bound = false,
         int $depth = 0
     ): static {
-        $list = clone $this;
+        $cloned = null;
 
-        foreach ([Type::getInt(), $list->type_param] as $offset => $type_param) {
+        foreach ([Type::getInt(), $this->type_param] as $offset => $type_param) {
             $input_type_param = null;
 
             if (($input_type instanceof TGenericObject
@@ -161,12 +164,13 @@ class TList extends Atomic
                 $depth + 1
             );
 
-            if ($offset === 1) {
-                $list->type_param = $type_param;
+            if ($offset === 1 && ($cloned || $this->type_param !== $type_param)) {
+                $cloned ??= clone $this;
+                $cloned->type_param = $type_param;
             }
         }
 
-        return $list;
+        return $cloned ?? $this;
     }
 
     public function replaceTemplateTypesWithArgTypes(

@@ -209,7 +209,6 @@ trait CallableTrait
                 if (!$param->type) {
                     continue;
                 }
-                $replaced = true;
 
                 $input_param_type = null;
 
@@ -219,7 +218,7 @@ trait CallableTrait
                     $input_param_type = $input_type->params[$offset]->type;
                 }
 
-                $param = $param->replaceType(TemplateStandinTypeReplacer::replace(
+                $new_param = $param->replaceType(TemplateStandinTypeReplacer::replace(
                     $param->type,
                     $template_result,
                     $codebase,
@@ -233,12 +232,13 @@ trait CallableTrait
                     null,
                     $depth
                 ));
+                $replaced = $replaced || $new_param !== $param;
+                $param = $new_param;
             }
         }
 
         $return_type = $this->return_type;
         if ($return_type) {
-            $replaced = true;
             $return_type = TemplateStandinTypeReplacer::replace(
                 $return_type,
                 $template_result,
@@ -253,6 +253,7 @@ trait CallableTrait
                 $replace,
                 $add_lower_bound
             );
+            $replaced = $replaced || $this->return_type !== $return_type;
         }
 
         if ($replaced) {
@@ -275,24 +276,25 @@ trait CallableTrait
         if ($params) {
             foreach ($params as &$param) {
                 if ($param->type) {
-                    $replaced = true;
-                    $param = $param->replaceType(TemplateInferredTypeReplacer::replace(
+                    $new_param = $param->replaceType(TemplateInferredTypeReplacer::replace(
                         $param->type,
                         $template_result,
                         $codebase
                     ));
+                    $replaced = $replaced || $new_param !== $param;
+                    $param = $new_param;
                 }
             }
         }
 
         $return_type = $this->return_type;
         if ($return_type) {
-            $replaced = true;
             $return_type = TemplateInferredTypeReplacer::replace(
                 $return_type,
                 $template_result,
                 $codebase
             );
+            $replaced = $replaced || $return_type !== $this->return_type;
         }
         if ($replaced) {
             return [$params, $return_type];
@@ -311,16 +313,17 @@ trait CallableTrait
         if ($params) {
             foreach ($params as &$param) {
                 if ($param->type) {
-                    $replaced = true;
-                    $param = $param->replaceType($param->type->getBuilder()->replaceClassLike($old, $new)->freeze());
+                    $new_param = $param->replaceType($param->type->replaceClassLike($old, $new));
+                    $replaced = $replaced || $new_param !== $param;
+                    $param = $new_param;
                 }
             }
         }
 
         $return_type = $this->return_type;
         if ($return_type) {
-            $replaced = true;
-            $return_type = $return_type->getBuilder()->replaceClassLike($old, $new)->freeze();
+            $return_type = $return_type->replaceClassLike($old, $new);
+            $replaced = $replaced || $return_type !== $this->return_type;
         }
         if ($replaced) {
             return [$params, $return_type];

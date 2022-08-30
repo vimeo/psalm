@@ -155,18 +155,8 @@ class TemplateStandinTypeReplacer
         }
 
         if ($replace) {
-            if (count($original_atomic_types) === count($atomic_types)) {
-                $all_equal = true;
-                $k = 0;
-                foreach ($original_atomic_types as $t) {
-                    if (!$atomic_types[$k++]->equals($t, true)) {
-                        $all_equal = false;
-                        break;
-                    }
-                }
-                if ($all_equal) {
-                    return $union_type;
-                }
+            if (array_values($original_atomic_types) === $atomic_types) {
+                return $union_type;
             }
 
             if (!$atomic_types) {

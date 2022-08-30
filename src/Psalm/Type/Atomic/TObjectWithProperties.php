@@ -211,7 +211,7 @@ final class TObjectWithProperties extends TObject
             );
         }
 
-        return new static($properties, $this->methods, $this->replaceIntersectionTemplateTypesWithStandins(
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -222,40 +222,52 @@ final class TObjectWithProperties extends TObject
             $replace,
             $add_lower_bound,
             $depth
-        ));
+        );
+        if ($properties === $this->properties && !$intersection) {
+            return $this;
+        }
+        return new static($properties, $this->methods, $intersection ?? $this->extra_types);
     }
 
     public function replaceClassLike(string $old, string $new): static
     {
         $properties = [];
-        foreach ($this->properties as $k => $property) {
-            $properties[$k] = $property->getBuilder()->replaceClassLike($old, $new)->freeze();
+        foreach ($properties as &$property) {
+            $property = $property->replaceClassLike($old, $new);
+        }
+        $intersection = $this->replaceIntersectionClassLike($old, $new);
+        if (!$intersection && $properties === $this->properties) {
+            return $this;
         }
         return new static(
             $properties,
             $this->methods,
-            $this->replaceIntersectionClassLike($old, $new)
+            $intersection ?? $this->extra_types
         );
     }
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): static {
-        $properties = [];
-        foreach ($this->properties as $k => $property) {
-            $properties[$k] = TemplateInferredTypeReplacer::replace(
+        $properties = $this->properties;
+        foreach ($this->properties as &$property) {
+            $property = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
             );
         }
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        );
+        if ($properties === $this->properties && !$intersection) {
+            return $this;
+        }
         return new static(
             $properties,
             $this->methods,
-            $this->replaceIntersectionTemplateTypesWithArgTypes(
-                $template_result,
-                $codebase
-            )
+            $intersection ?? $this->extra_types
         );
     }
 

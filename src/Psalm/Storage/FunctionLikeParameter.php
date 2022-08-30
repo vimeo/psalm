@@ -146,6 +146,9 @@ final class FunctionLikeParameter implements HasAttributesInterface
 
     public function replaceType(Union $type): self
     {
+        if ($this->type === $type) {
+            return $this;
+        }
         $cloned = clone $this;
         $cloned->type = $type;
         return $cloned;

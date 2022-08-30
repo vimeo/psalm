@@ -47,6 +47,9 @@ final class TTemplateParam extends Atomic
 
     public function replaceAs(Union $as): static
     {
+        if ($as === $this->as) {
+            return $this;
+        }
         return new static(
             $this->param_name,
             $as,
@@ -141,11 +144,16 @@ final class TTemplateParam extends Atomic
 
     public function replaceClassLike(string $old, string $new): static
     {
+        $intersection = $this->replaceIntersectionClassLike($old, $new);
+        $replaced = $this->as->replaceClassLike($old, $new);
+        if (!$intersection && $replaced === $this->as) {
+            return $this;
+        }
         return new static(
             $this->param_name,
-            $this->as->getBuilder()->replaceClassLike($old, $new)->freeze(),
+            $replaced,
             $this->defining_class,
-            $this->replaceIntersectionClassLike($old, $new)
+            $intersection ?? $this->extra_types
         );
     }
 
@@ -153,11 +161,15 @@ final class TTemplateParam extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): static {
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        if (!$intersection) {
+            return $this;
+        }
         return new static(
             $this->param_name,
             $this->as,
             $this->defining_class,
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase)
+            $intersection
         );
     }
 }

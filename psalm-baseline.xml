@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@d7e897b0eb65539a8b769a911efdf49925dd4e7d">
+<files psalm-version="dev-master@afe85fad86536c3abe4f9495238a767ac60d5140">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -310,6 +310,11 @@
       <code>$combination-&gt;array_type_params[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Type/TypeExpander.php">
+    <ConflictingReferenceConstraint occurrences="1">
+      <code>if ($return_type instanceof TKeyOf</code>
+    </ConflictingReferenceConstraint>
+  </file>
   <file src="src/Psalm/Internal/Type/TypeParser.php">
     <PossiblyUndefinedIntArrayOffset occurrences="8">
       <code>$intersection_types[0]</code>
@@ -331,9 +336,21 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$this-&gt;type_params[1]</code>
     </PossiblyUndefinedIntArrayOffset>
+    <PossiblyUnusedMethod occurrences="3">
+      <code>replaceTypeParams</code>
+      <code>replaceTypeParams</code>
+      <code>replaceTypeParams</code>
+    </PossiblyUnusedMethod>
   </file>
-  <file src="src/Psalm/Type/Atomic/TTemplatePropertiesOf.php">
-    <PropertyTypeCoercion occurrences="1"/>
+  <file src="src/Psalm/Type/Atomic/TIterable.php">
+    <PropertyTypeCoercion occurrences="1">
+      <code>$type_params</code>
+    </PropertyTypeCoercion>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TTemplateParam.php">
+    <PossiblyUnusedMethod occurrences="1">
+      <code>replaceAs</code>
+    </PossiblyUnusedMethod>
   </file>
   <file src="src/Psalm/Type/MutableUnion.php">
     <PossiblyUnusedProperty occurrences="6">
@@ -361,6 +378,11 @@
       <code>allFloatLiterals</code>
       <code>allFloatLiterals</code>
     </PossiblyUnusedMethod>
+  </file>
+  <file src="tests/Internal/Codebase/InternalCallMapHandlerTest.php">
+    <UnusedPsalmSuppress occurrences="1">
+      <code>UndefinedMethod</code>
+    </UnusedPsalmSuppress>
   </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <PossiblyUndefinedStringArrayOffset occurrences="1">

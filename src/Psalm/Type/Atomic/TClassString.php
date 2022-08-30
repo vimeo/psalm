@@ -156,10 +156,8 @@ class TClassString extends TString
         bool $add_lower_bound = false,
         int $depth = 0
     ): static {
-        $class_string = clone $this;
-
-        if (!$class_string->as_type) {
-            return $class_string;
+        if (!$this->as_type) {
+            return $this;
         }
 
         if ($input_type instanceof TLiteralClassString) {
@@ -171,7 +169,7 @@ class TClassString extends TString
         }
 
         $as_type = TemplateStandinTypeReplacer::replace(
-            new Union([$class_string->as_type]),
+            new Union([$this->as_type]),
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -187,15 +185,24 @@ class TClassString extends TString
 
         $as_type_types = array_values($as_type->getAtomicTypes());
 
-        $class_string->as_type = count($as_type_types) === 1
+        $as_type = count($as_type_types) === 1
             && $as_type_types[0] instanceof TNamedObject
             ? $as_type_types[0]
             : null;
 
-        if (!$class_string->as_type) {
-            $class_string->as = 'object';
+        if ($this->as_type === $as_type) {
+            if ($as_type === null && $this->as !== 'object') {
+                $cloned = clone $this;
+                $cloned->as = 'object';
+                return $cloned;
+            }
+            return $this;
         }
-
-        return $class_string;
+        $cloned = clone $this;
+        $cloned->as_type = $as_type;
+        if (!$cloned->as_type) {
+            $cloned->as = 'object';
+        }
+        return $cloned;
     }
 }

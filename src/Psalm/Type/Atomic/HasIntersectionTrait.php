@@ -65,6 +65,9 @@ trait HasIntersectionTrait
      */
     public function setIntersectionTypes(array $types): static
     {
+        if ($types === $this->extra_types) {
+            return $this;
+        }
         $cloned = clone $this;
         $cloned->extra_types = $types;
         return $cloned;
@@ -79,14 +82,14 @@ trait HasIntersectionTrait
     }
 
     /**
-     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
      */
     protected function replaceIntersectionTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): array {
+    ): ?array {
         if (!$this->extra_types) {
-            return $this->extra_types;
+            return null;
         }
 
         $new_types = [];
@@ -113,11 +116,11 @@ trait HasIntersectionTrait
             }
         }
 
-        return $new_types;
+        return $new_types === $this->extra_types ? null : $new_types;
     }
 
     /**
-     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
      */
     protected function replaceIntersectionTemplateTypesWithStandins(
         TemplateResult $template_result,
@@ -130,9 +133,9 @@ trait HasIntersectionTrait
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): array {
+    ): ?array {
         if (!$this->extra_types) {
-            return $this->extra_types;
+            return null;
         }
         $new_types = [];
         foreach ($this->extra_types as $type) {
@@ -151,22 +154,22 @@ trait HasIntersectionTrait
             $new_types[$type->getKey()] = $type;
         }
 
-        return $new_types;
+        return $new_types === $this->extra_types ? null : $new_types;
     }
 
     /**
-     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
      */
-    protected function replaceIntersectionClassLike(string $old, string $new): array
+    protected function replaceIntersectionClassLike(string $old, string $new): ?array
     {
         if (!$this->extra_types) {
-            return $this->extra_types;
+            return null;
         }
         $new_types = [];
         foreach ($this->extra_types as $extra_type) {
             $extra_type = $extra_type->replaceClassLike($old, $new);
             $new_types[$extra_type->getKey()] = $extra_type;
         }
-        return $new_types;
+        return $new_types === $this->extra_types ? null : $new_types;
     }
 }
