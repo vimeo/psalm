@@ -737,9 +737,6 @@ class TypeParser
             if (!$param_union_types[0] instanceof TNamedObject) {
                 throw new TypeParseTreeException('Param should be a named object in ' . $generic_type_value);
             }
-            if ($param_union_types[0]->getIntersectionTypes()) {
-                throw new TypeParseTreeException('Param should be a named object with no intersections in ' . $generic_type_value);
-            }
 
             return new TPropertiesOf(
                 $param_union_types[0],
