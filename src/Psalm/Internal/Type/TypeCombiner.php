@@ -88,7 +88,6 @@ class TypeCombiner
      * @param  non-empty-list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
-     * @psalm-pure
      */
     public static function combine(
         array $types,
@@ -243,10 +242,10 @@ class TypeCombiner
 
         if ($combination->extra_types) {
             /** @psalm-suppress PropertyTypeCoercion */
-            $combination = $combination->setIntersectionTypes(self::combine(
+            $combination->extra_types = self::combine(
                 array_values($combination->extra_types),
                 $codebase
-            )->getAtomicTypes());
+            )->getAtomicTypes();
         }
 
         foreach ($combination->builtin_type_params as $generic_type => $generic_type_params) {
@@ -269,13 +268,10 @@ class TypeCombiner
                 $generic_type,
                 $generic_type_params,
                 false,
-                false,
+                $combination->object_static[$generic_type] ?? false,
                 $combination->extra_types
             );
 
-            if ($combination->object_static[$generic_type] ?? false) {
-                $generic_object->is_static = true;
-            }
             $new_types[] = $generic_object;
         }
 
@@ -510,10 +506,10 @@ class TypeCombiner
             || $type instanceof TObjectWithProperties
         ) {
             if ($type->extra_types) {
-                $combination = $combination->setIntersectionTypes(array_merge(
+                $combination->extra_types = array_merge(
                     $combination->extra_types,
                     $type->extra_types
-                ));
+                );
             }
         }
 
