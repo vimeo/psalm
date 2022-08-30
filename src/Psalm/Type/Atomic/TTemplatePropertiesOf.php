@@ -80,18 +80,22 @@ final class TTemplatePropertiesOf extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): static {
+        $param = new TTemplateParam(
+            $this->as->param_name,
+            TemplateInferredTypeReplacer::replace(
+                new Union([$this->as]),
+                $template_result,
+                $codebase,
+            ),
+            $this->as->defining_class
+        );
+        if ($param->as === $this->as) {
+            return $this;
+        }
         return new static(
             $this->param_name,
             $this->defining_class,
-            new TTemplateParam(
-                $this->as->param_name,
-                TemplateInferredTypeReplacer::replace(
-                    new Union([$this->as]),
-                    $template_result,
-                    $codebase,
-                ),
-                $this->as->defining_class
-            ),
+            $param,
             $this->visibility_filter
         );
     }
