@@ -30,8 +30,10 @@ trait GenericTrait
 
     /**
      * @param TTypeParams $type_params
+     *
+     * @return static
      */
-    public function replaceTypeParams(array $type_params): static
+    public function replaceTypeParams(array $type_params): self
     {
         if ($this->type_params === $type_params) {
             return $this;

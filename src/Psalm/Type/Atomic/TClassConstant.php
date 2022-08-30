@@ -24,7 +24,10 @@ final class TClassConstant extends Atomic
         $this->const_name = $const_name;
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         if (strtolower($this->fq_classlike_name) === $old) {
             return new TClassConstant(

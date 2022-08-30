@@ -88,7 +88,10 @@ final class TPropertiesOf extends Atomic
         }
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         $replaced = $this->classlike_type->replaceClassLike($old, $new);
         if ($replaced === $this->classlike_type) {

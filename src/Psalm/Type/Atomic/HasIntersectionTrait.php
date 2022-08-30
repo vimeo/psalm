@@ -51,8 +51,10 @@ trait HasIntersectionTrait
 
     /**
      * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $type
+     *
+     * @return static
      */
-    public function addIntersectionType(Atomic $type): static
+    public function addIntersectionType(Atomic $type): self
     {
         return $this->setIntersectionTypes(array_merge(
             $this->extra_types,
@@ -62,8 +64,10 @@ trait HasIntersectionTrait
 
     /**
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $types
+     *
+     * @return static
      */
-    public function setIntersectionTypes(array $types): static
+    public function setIntersectionTypes(array $types): self
     {
         if ($types === $this->extra_types) {
             return $this;

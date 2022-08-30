@@ -98,7 +98,10 @@ class TArray extends Atomic
         return $this->type_params[1]->isNever();
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         $type_params = $this->replaceTypeParamsClassLike($old, $new);
         if ($type_params) {
@@ -109,7 +112,10 @@ class TArray extends Atomic
         return $this;
     }
 
-    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,
@@ -131,7 +137,10 @@ class TArray extends Atomic
         return $this;
     }
 
-    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
             $template_result,

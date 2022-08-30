@@ -61,7 +61,10 @@ final class TLiteralClassString extends TLiteralString
         return $this->getKey();
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         if (strtolower($this->value) === $old) {
             return new static($new, $this->definite_class);

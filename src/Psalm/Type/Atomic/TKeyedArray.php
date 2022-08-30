@@ -95,8 +95,10 @@ class TKeyedArray extends Atomic
 
     /**
      * @param non-empty-array<string|int, Union> $properties
+     *
+     * @return static
      */
-    public function setProperties(array $properties): static
+    public function setProperties(array $properties): self
     {
         if ($properties === $this->properties) {
             return $this;
@@ -106,7 +108,10 @@ class TKeyedArray extends Atomic
         return $cloned;
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         $properties = $this->properties;
         foreach ($properties as &$property_type) {
@@ -308,6 +313,9 @@ class TKeyedArray extends Atomic
         return static::KEY;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -319,7 +327,7 @@ class TKeyedArray extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): static {
+    ): self {
         $properties = $this->properties;
 
         foreach ($properties as $offset => &$property) {
@@ -355,10 +363,13 @@ class TKeyedArray extends Atomic
         return $cloned;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): static {
+    ): self {
         $properties = $this->properties;
         foreach ($properties as &$property) {
             $property = TemplateInferredTypeReplacer::replace(

@@ -139,7 +139,10 @@ class TNamedObject extends Atomic
         return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         $intersection = $this->replaceIntersectionClassLike($old, $new);
         if (!$intersection && strtolower($this->value) !== $old) {
@@ -153,10 +156,13 @@ class TNamedObject extends Atomic
         return $cloned;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): static {
+    ): self {
         $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
         if (!$intersection) {
             return $this;
@@ -166,7 +172,10 @@ class TNamedObject extends Atomic
         return $cloned;
     }
 
-    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
     {
         $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
             $template_result,

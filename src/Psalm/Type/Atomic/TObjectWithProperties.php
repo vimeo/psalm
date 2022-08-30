@@ -172,6 +172,9 @@ final class TObjectWithProperties extends TObject
         return true;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -183,7 +186,7 @@ final class TObjectWithProperties extends TObject
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): static {
+    ): self {
         $properties = [];
 
         foreach ($this->properties as $offset => $property) {
@@ -229,7 +232,10 @@ final class TObjectWithProperties extends TObject
         return new static($properties, $this->methods, $intersection ?? $this->extra_types);
     }
 
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         $properties = [];
         foreach ($properties as &$property) {
@@ -245,10 +251,13 @@ final class TObjectWithProperties extends TObject
             $intersection ?? $this->extra_types
         );
     }
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): static {
+    ): self {
         $properties = $this->properties;
         foreach ($this->properties as &$property) {
             $property = TemplateInferredTypeReplacer::replace(

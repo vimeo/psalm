@@ -36,7 +36,10 @@ final class TCallable extends Atomic
         return $this->params === null && $this->return_type === null;
     }
 
-    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): static
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
     {
         $replaced = $this->replaceCallableTemplateTypesWithArgTypes($template_result, $codebase);
         if (!$replaced) {
@@ -49,7 +52,10 @@ final class TCallable extends Atomic
             $this->is_pure
         );
     }
-    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): static
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
     {
         $replaced = $this->replaceCallableTemplateTypesWithStandins($template_result, $codebase, $statements_analyzer, $input_type, $input_arg_offset, $calling_class, $calling_function, $replace, $add_lower_bound, $depth);
         if (!$replaced) {
@@ -62,7 +68,10 @@ final class TCallable extends Atomic
             $this->is_pure
         );
     }
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         $replaced = $this->replaceCallableClassLike($old, $new);
         if (!$replaced) {

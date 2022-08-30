@@ -50,7 +50,10 @@ class TClassString extends TString
         $this->is_interface = $is_interface;
         $this->is_enum = $is_enum;
     }
-    public function replaceClassLike(string $old, string $new): static
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
     {
         if ($this->as !== 'object' && strtolower($this->as) === $old) {
             $cloned = clone $this;
@@ -144,6 +147,9 @@ class TClassString extends TString
         return $this->as_type ? [$this->as_type] : [];
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -155,7 +161,7 @@ class TClassString extends TString
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): static {
+    ): self {
         if (!$this->as_type) {
             return $this;
         }

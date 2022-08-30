@@ -539,7 +539,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return static
      */
-    public function replaceClassLike(string $old, string $new): static
+    public function replaceClassLike(string $old, string $new): self
     {
         return $this;
     }
@@ -614,6 +614,9 @@ abstract class Atomic implements TypeNode
 
     abstract public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool;
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -625,15 +628,18 @@ abstract class Atomic implements TypeNode
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): static {
+    ): self {
         // do nothing
         return $this;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): static {
+    ): self {
         // do nothing
         return $this;
     }

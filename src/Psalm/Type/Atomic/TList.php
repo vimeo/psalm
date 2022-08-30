@@ -38,7 +38,10 @@ class TList extends Atomic
         $this->type_param = $type_param;
     }
 
-    public function replaceTypeParam(Union $type_param): static
+    /**
+     * @return static
+     */
+    public function replaceTypeParam(Union $type_param): self
     {
         if ($type_param === $this->type_param) {
             return $this;
@@ -111,6 +114,9 @@ class TList extends Atomic
         return 'array';
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -122,7 +128,7 @@ class TList extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): static {
+    ): self {
         $cloned = null;
 
         foreach ([Type::getInt(), $this->type_param] as $offset => $type_param) {
@@ -173,10 +179,13 @@ class TList extends Atomic
         return $cloned ?? $this;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): static {
+    ): self {
         return $this->replaceTypeParam(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
