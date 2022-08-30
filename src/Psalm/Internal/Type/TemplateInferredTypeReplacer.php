@@ -43,7 +43,6 @@ class TemplateInferredTypeReplacer
 {
     /**
      * This replaces template types in unions with the inferred types they should be
-     * @psalm-pure
      */
     public static function replace(
         Union $union,
@@ -241,7 +240,6 @@ class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
-     * @psalm-pure
      */
     private static function replaceTemplateParam(
         ?Codebase $codebase,
@@ -332,7 +330,6 @@ class TemplateInferredTypeReplacer
     /**
      * @param TTemplateKeyOf|TTemplateValueOf $atomic_type
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
-     * @psalm-pure
      */
     private static function replaceTemplateKeyOfValueOf(
         ?Codebase $codebase,
@@ -365,7 +362,6 @@ class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
-     * @psalm-pure
      */
     private static function replaceTemplatePropertiesOf(
         ?Codebase $codebase,
@@ -394,7 +390,6 @@ class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
-     * @psalm-pure
      */
     private static function replaceConditional(
         TemplateResult $template_result,
