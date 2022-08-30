@@ -238,8 +238,12 @@ class TypeExpander
         }
 
         if ($return_type instanceof TClassConstant) {
-            $return_type = $return_type->replaceClassLike('self', $self_class);
-            $return_type = $return_type->replaceClassLike('static', is_string($static_class_type) ? $static_class_type : $self_class);
+            if ($self_class) {
+                $return_type = $return_type->replaceClassLike('self', $self_class);
+            }
+            if (is_string($static_class_type) || $self_class) {
+                $return_type = $return_type->replaceClassLike('static', is_string($static_class_type) ? $static_class_type : $self_class);
+            }
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
                 if (strtolower($return_type->const_name) === 'class') {
