@@ -1184,24 +1184,19 @@ class Reconciler
 
     protected static function refineArrayKey(Union $key_type): Union
     {
-        $key_type = $key_type->getBuilder();
-        foreach ($key_type->getAtomicTypes() as $key => $cat) {
+        $types = [];
+        foreach ($key_type->getAtomicTypes() as $cat) {
             if ($cat instanceof TTemplateParam) {
-                $key_type->removeType($key);
-                $key_type->addType($cat->replaceAs(self::refineArrayKey($cat->as)));
+                $types []= $cat->replaceAs(self::refineArrayKey($cat->as));
             } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
-                $key_type->removeType($key);
-                $key_type->addType(new TArrayKey());
+                $types []= new TArrayKey();
             } elseif (!$cat instanceof TString && !$cat instanceof TInt) {
-                $key_type->removeType($key);
-                $key_type->addType(new TArrayKey());
+                $types []= new TArrayKey();
+            } else {
+                $types []= $cat;
             }
         }
 
-        if ($key_type->isUnionEmpty()) {
-            // this should ideally prompt some sort of error
-            $key_type->addType(new TArrayKey());
-        }
-        return $key_type->freeze();
+        return $key_type->getBuilder()->setTypes($types)->freeze();
     }
 }
