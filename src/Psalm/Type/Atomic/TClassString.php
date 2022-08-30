@@ -197,7 +197,7 @@ class TClassString extends TString
             : null;
 
         if ($this->as_type === $as_type) {
-            if ($as_type === null && $this->as !== 'object') {
+            if (!$this->as_type && $this->as !== 'object') {
                 $cloned = clone $this;
                 $cloned->as = 'object';
                 return $cloned;

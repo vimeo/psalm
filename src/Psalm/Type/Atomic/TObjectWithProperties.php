@@ -237,7 +237,7 @@ final class TObjectWithProperties extends TObject
      */
     public function replaceClassLike(string $old, string $new): self
     {
-        $properties = [];
+        $properties = $this->properties;
         foreach ($properties as &$property) {
             $property = $property->replaceClassLike($old, $new);
         }

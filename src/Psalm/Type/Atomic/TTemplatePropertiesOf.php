@@ -92,7 +92,7 @@ final class TTemplatePropertiesOf extends Atomic
             ),
             $this->as->defining_class
         );
-        if ($param->as === $this->as) {
+        if ($param->as === $this->as->as) {
             return $this;
         }
         return new static(
