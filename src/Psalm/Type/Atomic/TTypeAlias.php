@@ -31,7 +31,10 @@ final class TTypeAlias extends Atomic
         $this->alias_name = $alias_name;
         $this->extra_types = $extra_types;
     }
-    public function setExtraTypes(?array $extra_types): self {
+    /**
+     * @param array<string, TTypeAlias>|null $extra_types
+     */
+    public function setIntersectionTypes(?array $extra_types): self {
         if ($extra_types === $this->extra_types) {
             return $this;
         }
