@@ -342,6 +342,12 @@
       <code>replaceTypeParams</code>
     </PossiblyUnusedMethod>
   </file>
+  <file src="src/Psalm/Type/Atomic/TClassString.php">
+    <DocblockTypeContradiction occurrences="2">
+      <code>!$this-&gt;as_type</code>
+      <code>!$this-&gt;as_type</code>
+    </DocblockTypeContradiction>
+  </file>
   <file src="src/Psalm/Type/Atomic/TIterable.php">
     <PropertyTypeCoercion occurrences="1">
       <code>$type_params</code>
