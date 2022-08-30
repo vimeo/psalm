@@ -27,6 +27,16 @@ final class TTypeAlias extends Atomic
         $this->declaring_fq_classlike_name = $declaring_fq_classlike_name;
         $this->alias_name = $alias_name;
     }
+    public function setExtraTypes(?array $extra_types): self {
+        if ($extra_types === $this->extra_types) {
+            return $this;
+        }
+        return new self(
+            $this->declaring_fq_classlike_name,
+            $this->alias_name,
+            $extra_types
+        );
+    }
 
     public function getKey(bool $include_extra = true): string
     {
