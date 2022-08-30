@@ -44,7 +44,7 @@ class UnaryPlusMinusAnalyzer
             $acceptable_types = [];
 
             foreach ($stmt_expr_type->getAtomicTypes() as $type_part) {
-                if (($type_part instanceof TInt || $type_part instanceof TFloat) {
+                if ($type_part instanceof TInt || $type_part instanceof TFloat) {
                     if (!$stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
                         continue;
                     }
