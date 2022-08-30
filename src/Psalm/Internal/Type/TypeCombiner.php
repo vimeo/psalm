@@ -510,7 +510,7 @@ class TypeCombiner
         ) {
             if ($type->extra_types) {
                 $combination = $combination->setIntersectionTypes(array_merge(
-                    $combination->extra_types ?: [],
+                    $combination->extra_types,
                     $type->extra_types
                 ));
             }

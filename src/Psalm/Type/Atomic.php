@@ -380,7 +380,7 @@ abstract class Atomic implements TypeNode
             || ($this instanceof TTemplateParam
                 && ($this->as->hasNamedObjectType()
                     || array_filter(
-                        $this->extra_types ?: [],
+                        $this->extra_types,
                         static fn($extra_type): bool => $extra_type->isNamedObjectType()
                     )
                 )
@@ -546,7 +546,7 @@ abstract class Atomic implements TypeNode
     /**
      * @return static
      */
-    public function replaceClassLike(string $old, string $new): static
+    public function replaceClassLike(string $old, string $new): self
     {
         return $this;
     }
@@ -621,6 +621,9 @@ abstract class Atomic implements TypeNode
 
     abstract public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool;
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -637,6 +640,9 @@ abstract class Atomic implements TypeNode
         return $this;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase

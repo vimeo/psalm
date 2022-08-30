@@ -51,6 +51,37 @@ class PropertiesOfTemplateTest extends TestCase
                     $cConcat = $c . "foo";
                 ',
             ],
+            'propertiesOfTemplateParamWithTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $obj
+                     * @return properties-of<T>
+                     */
+                    function asArray($obj) {
+                        /** @var properties-of<T> */
+                        $properties = [];
+                        return $properties;
+                    }
+
+                    /** @template T */
+                    class A {
+                        /** @var bool */
+                        private $b = true;
+                        /** @var string */
+                        protected $c = "c";
+
+                        /** @param T $a */
+                        public function __construct(public $a) {}
+                    }
+
+                    $obj = new A(42);
+                    $objAsArray = asArray($obj);
+                ',
+                'assertions' => [
+                    '$objAsArray===' => 'array{a: 42, b: bool, c: string}'
+                ]
+            ],
             'privatePropertiesPicksPrivate' => [
                 'code' => '<?php
                     /**

@@ -401,11 +401,13 @@ class AssertionReconciler extends Reconciler
                     && ($codebase->classExists($existing_var_type_part->value)
                         || $codebase->interfaceExists($existing_var_type_part->value))
                 ) {
-                    $acceptable_atomic_types[] = $existing_var_type_part->addIntersectionType($new_type_part);
+                    $existing_var_type_part = $existing_var_type_part->addIntersectionType($new_type_part);
+                    $acceptable_atomic_types[] = $existing_var_type_part;
                 }
 
                 if ($existing_var_type_part instanceof TTemplateParam) {
-                    $acceptable_atomic_types[] = $existing_var_type_part->addIntersectionType($new_type_part);
+                    $existing_var_type_part = $existing_var_type_part->addIntersectionType($new_type_part);
+                    $acceptable_atomic_types[] = $existing_var_type_part;
                 }
             }
 
@@ -1616,8 +1618,7 @@ class AssertionReconciler extends Reconciler
                         if ($codebase->classExists($existing_var_type_part->value)
                             || $codebase->interfaceExists($existing_var_type_part->value)
                         ) {
-                            $existing_var_type_part = clone $existing_var_type_part;
-                            $existing_var_type_part->addIntersectionType($new_type_part);
+                            $existing_var_type_part = $existing_var_type_part->addIntersectionType($new_type_part);
                             $acceptable_atomic_types[] = $existing_var_type_part;
                         }
                     }

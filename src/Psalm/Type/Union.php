@@ -229,4 +229,14 @@ final class Union implements TypeNode, Stringable
         }
         return $union;
     }
+
+    public function replaceClassLike(string $old, string $new): self
+    {
+        $types = $this->types;
+        foreach ($types as &$atomic_type) {
+            $atomic_type = $atomic_type->replaceClassLike($old, $new);
+        }
+        return $types === $this->types ? $this : $this->getBuilder()->setTypes($types)->freeze();
+    }
+
 }

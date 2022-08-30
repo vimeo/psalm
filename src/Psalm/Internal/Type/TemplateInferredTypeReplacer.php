@@ -50,8 +50,6 @@ class TemplateInferredTypeReplacer
         TemplateResult $template_result,
         ?Codebase $codebase
     ): Union {
-        $keys_to_unset = [];
-
         $new_types = [];
 
         $is_mixed = false;
@@ -61,6 +59,7 @@ class TemplateInferredTypeReplacer
         $types = [];
 
         foreach ($union->getAtomicTypes() as $key => $atomic_type) {
+            $should_set = true;
             $atomic_type = $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
             if ($atomic_type instanceof TTemplateParam) {
@@ -72,7 +71,7 @@ class TemplateInferredTypeReplacer
                 );
 
                 if ($template_type) {
-                    $keys_to_unset[] = $key;
+                    $should_set = false;
 
                     foreach ($template_type->getAtomicTypes() as $template_type_part) {
                         if ($template_type_part instanceof TMixed) {
@@ -117,11 +116,11 @@ class TemplateInferredTypeReplacer
                 }
 
                 if ($class_template_type) {
-                    $keys_to_unset[] = $key;
+                    $should_set = false;
                     $new_types[] = $class_template_type;
                 }
             } elseif ($atomic_type instanceof TTemplateIndexedAccess) {
-                $keys_to_unset[] = $key;
+                $should_set = false;
 
                 $template_type = null;
 
@@ -179,7 +178,7 @@ class TemplateInferredTypeReplacer
                 );
 
                 if ($new_type) {
-                    $keys_to_unset[] = $key;
+                    $should_set = false;
                     $new_types[] = $new_type;
                 }
             } elseif ($atomic_type instanceof TTemplatePropertiesOf) {
@@ -190,7 +189,7 @@ class TemplateInferredTypeReplacer
                 );
 
                 if ($new_type) {
-                    $keys_to_unset[] = $key;
+                    $should_set = false;
                     $new_types[] = $new_type;
                 }
             } elseif ($atomic_type instanceof TConditional
@@ -203,24 +202,23 @@ class TemplateInferredTypeReplacer
                     $inferred_lower_bounds
                 );
 
-                $keys_to_unset[] = $key;
+                $should_set = false;
 
                 foreach ($class_template_type->getAtomicTypes() as $class_template_atomic_type) {
                     $new_types[] = $class_template_atomic_type;
                 }
             }
-
-            $types []= $atomic_type;
+            if ($should_set) {
+                $types []= $atomic_type;
+            }
         }
-
-        $union = new MutableUnion($types);
 
         if ($is_mixed) {
             if (!$new_types) {
                 throw new UnexpectedValueException('This array should be full');
             }
 
-            return $union->replaceTypes(
+            return $union->getBuilder()->setTypes(
                 TypeCombiner::combine(
                     $new_types,
                     $codebase
@@ -228,13 +226,12 @@ class TemplateInferredTypeReplacer
             )->freeze();
         }
 
-        foreach ($keys_to_unset as $key) {
-            $union->removeType($key);
+        $atomic_types = array_merge($types, $new_types);
+        if (!$atomic_types) {
+            throw new UnexpectedValueException('This array should be full');
         }
 
-        $atomic_types = array_values(array_merge($union->getAtomicTypes(), $new_types));
-
-        return $union->replaceTypes(
+        return $union->getBuilder()->setTypes(
             TypeCombiner::combine(
                 $atomic_types,
                 $codebase
@@ -265,22 +262,21 @@ class TemplateInferredTypeReplacer
         if ($traversed_type) {
             $template_type = $traversed_type;
 
-            if (!$atomic_type->as->isMixed() && $template_type->isMixed()) {
-                $template_type = $atomic_type->as->getBuilder();
-            } else {
-                $template_type = $template_type->getBuilder();
+            if ($template_type->isMixed() && !$atomic_type->as->isMixed()) {
+                $template_type = $atomic_type->as;
             }
 
             if ($atomic_type->extra_types) {
-                foreach ($template_type->getAtomicTypes() as $template_type_key => $atomic_template_type) {
+                $types = [];
+                foreach ($template_type->getAtomicTypes() as $atomic_template_type) {
                     if ($atomic_template_type instanceof TNamedObject
                         || $atomic_template_type instanceof TTemplateParam
                         || $atomic_template_type instanceof TIterable
                         || $atomic_template_type instanceof TObjectWithProperties
                     ) {
-                        $atomic_template_type = $atomic_template_type->setIntersectionTypes(array_merge(
+                        $types []= $atomic_template_type->setIntersectionTypes(array_merge(
                             $atomic_type->extra_types,
-                            $atomic_template_type->extra_types ?: []
+                            $atomic_template_type->extra_types
                         ));
                     } elseif ($atomic_template_type instanceof TObject) {
                         $first_atomic_type = array_shift($atomic_type->extra_types);
@@ -289,12 +285,13 @@ class TemplateInferredTypeReplacer
                             $first_atomic_type = $first_atomic_type->setIntersectionTypes($atomic_type->extra_types);
                         }
 
-                        $template_type->removeType($template_type_key);
-                        $template_type->addType($first_atomic_type);
+                        $types []= $first_atomic_type;
+                    } else {
+                        $types []= $atomic_template_type;
                     }
                 }
+                $template_type = $template_type->getBuilder()->setTypes($types)->freeze();
             }
-            $template_type = $template_type->freeze();
         } elseif ($codebase) {
             foreach ($inferred_lower_bounds as $template_type_map) {
                 foreach ($template_type_map as $template_class => $_) {

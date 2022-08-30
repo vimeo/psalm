@@ -55,6 +55,39 @@ use function usort;
 class TemplateStandinTypeReplacer
 {
     /**
+     * This method fills in the values in $template_result based on how the various atomic types
+     * of $union_type match up to the types inside $input_type.
+     */
+    public static function fillTemplateResult(
+        Union $union_type,
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer,
+        ?Union $input_type,
+        ?int $input_arg_offset = null,
+        ?string $calling_class = null,
+        ?string $calling_function = null,
+        bool $replace = true,
+        bool $add_lower_bound = false,
+        ?string $bound_equality_classlike = null,
+        int $depth = 1
+    ): void {
+        self::replace(
+            $union_type,
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $bound_equality_classlike,
+            $depth
+        );
+    }
+    /**
      * This replaces template types in unions with standins (normally the template as type)
      *
      * $input_type here is normally the argument passed to a templated function or method.

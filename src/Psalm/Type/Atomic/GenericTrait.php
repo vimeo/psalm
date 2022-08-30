@@ -20,6 +20,7 @@ use function substr;
 
 /**
  * @template TTypeParams as array<Union>
+ * @psalm-immutable
  */
 trait GenericTrait
 {
