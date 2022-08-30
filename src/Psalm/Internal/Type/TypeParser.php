@@ -1107,7 +1107,7 @@ class TypeParser
                 $first_type = $first_type->setIntersectionTypes($keyed_intersection_types);
             }
         } else {
-            foreach ($intersection_types as &$intersection_type) {
+            foreach ($intersection_types as $intersection_type) {
                 if (!$intersection_type instanceof TIterable
                     && !$intersection_type instanceof TNamedObject
                     && !$intersection_type instanceof TTemplateParam

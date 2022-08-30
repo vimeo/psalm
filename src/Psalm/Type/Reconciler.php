@@ -1193,7 +1193,7 @@ class Reconciler
         $types = [];
         foreach ($key_type->getAtomicTypes() as $cat) {
             if ($cat instanceof TTemplateParam) {
-                $as = self::refineArrayKeyInner($cat->as, $refined_inner);
+                $as = self::refineArrayKeyInner($cat->as);
                 if ($as) {
                     $refined = true;
                     $types []= $cat->replaceAs(self::refineArrayKey($cat->as));
@@ -1201,13 +1201,6 @@ class Reconciler
                     $types []= $cat;
                 }
             } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
-                if ($cat instanceof TArrayKey) {
-                    $types []= $cat;
-                } else {
-                    $refined = true;
-                    $types []= new TArrayKey();
-                }
-            } elseif (!$cat instanceof TString && !$cat instanceof TInt) {
                 if ($cat instanceof TArrayKey) {
                     $types []= $cat;
                 } else {
