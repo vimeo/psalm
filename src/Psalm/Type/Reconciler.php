@@ -1196,19 +1196,15 @@ class Reconciler
                 $as = self::refineArrayKeyInner($cat->as);
                 if ($as) {
                     $refined = true;
-                    $types []= $cat->replaceAs(self::refineArrayKey($cat->as));
+                    $types []= $cat->replaceAs($as);
                 } else {
                     $types []= $cat;
                 }
-            } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
-                if ($cat instanceof TArrayKey) {
-                    $types []= $cat;
-                } else {
-                    $refined = true;
-                    $types []= new TArrayKey();
-                }
-            } else {
+            } elseif ($cat instanceof TArrayKey || $cat instanceof TString || $cat instanceof TInt) {
                 $types []= $cat;
+            } else {
+                $refined = true;
+                $types []= new TArrayKey;
             }
         }
 
