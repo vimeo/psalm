@@ -37,7 +37,10 @@ final class IsIdentical extends Assertion
         return $this->type;
     }
 
-    public function setAtomicType(Atomic $type): static
+    /**
+     * @return static
+     */
+    public function setAtomicType(Atomic $type): self
     {
         return new static($type);
     }
