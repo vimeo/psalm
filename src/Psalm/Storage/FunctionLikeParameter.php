@@ -117,6 +117,7 @@ final class FunctionLikeParameter implements HasAttributesInterface
         string $name,
         bool $by_ref,
         ?Union $type = null,
+        ?Union $signature_type = null,
         ?CodeLocation $location = null,
         ?CodeLocation $type_location = null,
         bool $is_optional = true,
@@ -124,12 +125,11 @@ final class FunctionLikeParameter implements HasAttributesInterface
         bool $is_variadic = false,
         $default_type = null,
         ?Union $out_type = null,
-        ?Union $signature_type = null
     ) {
         $this->name = $name;
         $this->by_ref = $by_ref;
         $this->type = $type;
-        $this->signature_type = $type;
+        $this->signature_type = $signature_type;
         $this->is_optional = $is_optional;
         $this->is_nullable = $is_nullable;
         $this->is_variadic = $is_variadic;
@@ -138,7 +138,6 @@ final class FunctionLikeParameter implements HasAttributesInterface
         $this->signature_type_location = $type_location;
         $this->default_type = $default_type;
         $this->out_type = $out_type;
-        $this->signature_type = $signature_type;
     }
 
     public function getId(): string

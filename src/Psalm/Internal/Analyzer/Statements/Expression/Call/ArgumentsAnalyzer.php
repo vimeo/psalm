@@ -551,16 +551,18 @@ class ArgumentsAnalyzer
             $function_like_params = [];
 
             foreach ($template_result->lower_bounds as $template_name => $_) {
+                $t = new Union([
+                    new TTemplateParam(
+                        $template_name,
+                        Type::getMixed(),
+                        $method_id
+                    )
+                ]);
                 $function_like_params[] = new FunctionLikeParameter(
                     'function',
                     false,
-                    new Union([
-                        new TTemplateParam(
-                            $template_name,
-                            Type::getMixed(),
-                            $method_id
-                        )
-                    ])
+                    $t,
+                    $t
                 );
             }
 
