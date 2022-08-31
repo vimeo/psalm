@@ -197,7 +197,7 @@ class ObjectComparator
         }
 
         if ($intersection_input_type instanceof TTemplateParam) {
-            if ($intersection_container_type instanceof TNamedObject) {
+            if ($intersection_container_type instanceof TNamedObject && $intersection_container_type->is_static) {
                 // this is extra check is redundant since we're comparing to a template as type
                 $intersection_container_type = new TNamedObject(
                     $intersection_container_type->value,
