@@ -724,7 +724,7 @@ class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($method_id) {
-            if (!$in_call_map && $method_id instanceof MethodIdentifier) {
+            if ($in_call_map && $method_id instanceof MethodIdentifier) {
                 $fq_class_name = $method_id->fq_class_name;
             }
 
