@@ -731,8 +731,6 @@ class SimpleAssertionReconciler extends Reconciler
             if ($type instanceof TNamedObject
                 && $codebase->classOrInterfaceExists($type->value)
             ) {
-                $object_types[] = $type;
-
                 if (!$codebase->methodExists($type->value . '::' . $method_name)) {
                     $match_found = false;
 
@@ -762,13 +760,13 @@ class SimpleAssertionReconciler extends Reconciler
                         $did_remove_type = true;
                     }
                 }
-            } elseif ($type instanceof TObjectWithProperties) {
                 $object_types[] = $type;
-
+            } elseif ($type instanceof TObjectWithProperties) {
                 if (!isset($type->methods[$method_name])) {
                     $type->methods[$method_name] = 'object::' . $method_name;
                     $did_remove_type = true;
                 }
+                $object_types[] = $type;
             } elseif ($type instanceof TObject || $type instanceof TMixed) {
                 $object_types[] = new TObjectWithProperties(
                     [],
