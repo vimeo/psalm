@@ -151,7 +151,8 @@ class TypeExpander
             if ($return_type->extra_types) {
                 $new_intersection_types = [];
 
-                foreach ($return_type->extra_types as &$extra_type) {
+                $extra_types = [];
+                foreach ($return_type->extra_types as $extra_type) {
                     self::expandAtomic(
                         $codebase,
                         $extra_type,
@@ -172,10 +173,11 @@ class TypeExpander
                         );
                         $extra_type = $extra_type->setIntersectionTypes([]);
                     }
+                    $extra_types []= $extra_type;
                 }
 
-                if ($new_intersection_types) {
-                    $return_type = $return_type->setIntersectionTypes(array_merge($return_type->extra_types, $new_intersection_types));
+                if ($new_intersection_types || $extra_types) {
+                    $return_type = $return_type->setIntersectionTypes(array_merge($extra_types, $new_intersection_types));
                 }
             }
 
