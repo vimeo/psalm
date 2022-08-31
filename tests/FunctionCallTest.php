@@ -1785,6 +1785,33 @@ class FunctionCallTest extends TestCase
                 [],
                 '8.0',
             ],
+            'trimSavesLowercaseAttribute' => [
+                '<?php
+                    $a = random_bytes(2);
+                    $b = trim(strtolower($a));
+                ',
+                'assertions' => [
+                    '$b===' => 'lowercase-string',
+                ],
+            ],
+            'ltrimSavesLowercaseAttribute' => [
+                '<?php
+                    $a = random_bytes(2);
+                    $b = ltrim(strtolower($a));
+                ',
+                'assertions' => [
+                    '$b===' => 'lowercase-string',
+                ],
+            ],
+            'rtrimSavesLowercaseAttribute' => [
+                '<?php
+                    $a = random_bytes(2);
+                    $b = rtrim(strtolower($a));
+                ',
+                'assertions' => [
+                    '$b===' => 'lowercase-string',
+                ],
+            ],
         ];
     }
 

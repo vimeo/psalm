@@ -566,6 +566,12 @@ function strpos($haystack, $needle, int $offset = 0) : int {}
 /**
  * @psalm-pure
  *
+ * @return (
+ *      $string is class-string
+ *          ? ($characters is '\\' ? class-string : string)
+ *          : ($string is lowercase-string ? lowercase-string : string)
+ * )
+ *
  * @psalm-flow ($string) -> return
  */
 function trim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
@@ -573,7 +579,11 @@ function trim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 /**
  * @psalm-pure
  *
- * @return ($string is class-string ? ($characters is '\\' ? class-string : string) : string)
+ * @return (
+ *      $string is class-string
+ *          ? ($characters is '\\' ? class-string : string)
+ *          : ($string is lowercase-string ? lowercase-string : string)
+ * )
  *
  * @psalm-flow ($string) -> return
  */
@@ -581,6 +591,8 @@ function ltrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
+ *
+ * @return ($string is lowercase-string ? lowercase-string : string)
  *
  * @psalm-flow ($string) -> return
  */
