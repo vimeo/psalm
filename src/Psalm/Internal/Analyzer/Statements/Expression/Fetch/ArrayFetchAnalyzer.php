@@ -1505,27 +1505,28 @@ class ArrayFetchAnalyzer
         }
 
         if ($key_values) {
+            $properties = $type->properties;
             foreach ($key_values as $key_value) {
-                if (isset($type->properties[$key_value->value]) || $replacement_type) {
+                if (isset($properties[$key_value->value]) || $replacement_type) {
                     $has_valid_offset = true;
 
                     if ($replacement_type) {
-                        $type->properties[$key_value->value] = Type::combineUnionTypes(
-                            $type->properties[$key_value->value] ?? null,
+                        $properties[$key_value->value] = Type::combineUnionTypes(
+                            $properties[$key_value->value] ?? null,
                             $replacement_type
                         );
                     }
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
-                        clone $type->properties[$key_value->value]
+                        clone $properties[$key_value->value]
                     );
                 } elseif ($in_assignment) {
-                    $type->properties[$key_value->value] = new Union([new TNever]);
+                    $properties[$key_value->value] = new Union([new TNever]);
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
-                        clone $type->properties[$key_value->value]
+                        clone $properties[$key_value->value]
                     );
                 } elseif ($type->previous_value_type) {
                     if ($codebase->config->ensure_array_string_offsets_exist) {
@@ -1550,7 +1551,7 @@ class ArrayFetchAnalyzer
                         );
                     }
 
-                    $type->properties[$key_value->value] = clone $type->previous_value_type;
+                    $properties[$key_value->value] = clone $type->previous_value_type;
 
                     $array_access_type = clone $type->previous_value_type;
                 } elseif ($array_type->hasMixed()) {
@@ -1559,7 +1560,7 @@ class ArrayFetchAnalyzer
                     $array_access_type = Type::getMixed();
                 } else {
                     if ($type->sealed || !$context->inside_isset) {
-                        $object_like_keys = array_keys($type->properties);
+                        $object_like_keys = array_keys($properties);
 
                         $last_key = array_pop($object_like_keys);
 
@@ -1586,6 +1587,8 @@ class ArrayFetchAnalyzer
                     $array_access_type = Type::getMixed();
                 }
             }
+
+            $type_orig = $type_orig->setProperties($properties);
         } else {
             $key_type = $generic_key_type->hasMixed()
                 ? Type::getArrayKey()
