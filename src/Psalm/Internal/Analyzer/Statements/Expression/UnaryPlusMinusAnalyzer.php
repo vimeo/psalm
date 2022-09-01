@@ -45,39 +45,38 @@ class UnaryPlusMinusAnalyzer
 
             foreach ($stmt_expr_type->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof TInt || $type_part instanceof TFloat) {
-                    if ($type_part instanceof TLiteralInt
-                        && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
-                    ) {
-                        $type_part->value = -$type_part->value;
-                    } elseif ($type_part instanceof TLiteralFloat
-                        && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
-                    ) {
-                        $type_part->value = -$type_part->value;
+                    if (!$stmt instanceof PhpParser\Node\Expr\UnaryMinus) {
+                        continue;
                     }
-
-                    if ($type_part instanceof TIntRange
-                        && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
-                    ) {
+                    if ($type_part instanceof TLiteralInt) {
+                        $type_part = new TLiteralInt(-$type_part->value);
+                    } elseif ($type_part instanceof TLiteralFloat) {
+                        $type_part = new TLiteralFloat(-$type_part->value);
+                    } elseif ($type_part instanceof TIntRange) {
                         //we'll have to inverse min and max bound and negate any literal
                         $old_min_bound = $type_part->min_bound;
                         $old_max_bound = $type_part->max_bound;
+                        $new_min_bound = $old_min_bound;
+                        $new_max_bound = $old_max_bound;
                         if ($old_min_bound === null) {
                             //min bound is null, max bound will be null
-                            $type_part->max_bound = null;
+                            $new_max_bound = null;
                         } elseif ($old_min_bound === 0) {
-                            $type_part->max_bound = 0;
+                            $new_max_bound = 0;
                         } else {
-                            $type_part->max_bound = -$old_min_bound;
+                            $new_max_bound = -$old_min_bound;
                         }
 
                         if ($old_max_bound === null) {
                             //max bound is null, min bound will be null
-                            $type_part->min_bound = null;
+                            $new_min_bound = null;
                         } elseif ($old_max_bound === 0) {
-                            $type_part->min_bound = 0;
+                            $new_min_bound = 0;
                         } else {
-                            $type_part->min_bound = -$old_max_bound;
+                            $new_min_bound = -$old_max_bound;
                         }
+
+                        $type_part = new TIntRange($new_min_bound, $new_max_bound);
                     }
 
                     $acceptable_types[] = $type_part;
