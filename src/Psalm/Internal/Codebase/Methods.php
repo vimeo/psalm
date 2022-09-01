@@ -723,9 +723,7 @@ class Methods
                     $types[] = new Union([new TEnumCase($original_fq_class_name, $case_name)]);
                 }
 
-                $list = new TKeyedArray($types);
-                $list->is_list = true;
-                $list->sealed = true;
+                $list = new TKeyedArray($types, null, true, null, null, true);
                 return new Union([$list]);
             }
         }
