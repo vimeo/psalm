@@ -645,6 +645,11 @@ class ArrayFetchAnalyzer
                     $has_valid_expected_offset
                 );
 
+                if ($type !== $original_type) {
+                    $array_type->removeType($type_string);
+                    $array_type->addType($type);
+                }
+
                 continue;
             }
 
