@@ -173,12 +173,10 @@ class TypeExpander
                         );
                         $extra_type = $extra_type->setIntersectionTypes([]);
                     }
-                    $extra_types []= $extra_type;
+                    $extra_types[$extra_type->getKey()] = $extra_type;
                 }
 
-                if ($new_intersection_types || $extra_types) {
-                    $return_type = $return_type->setIntersectionTypes(array_merge($extra_types, $new_intersection_types));
-                }
+                $return_type = $return_type->setIntersectionTypes(array_merge($extra_types, $new_intersection_types));
             }
 
             if ($return_type instanceof TNamedObject) {
