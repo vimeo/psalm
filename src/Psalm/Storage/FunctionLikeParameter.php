@@ -124,7 +124,7 @@ final class FunctionLikeParameter implements HasAttributesInterface
         bool $is_nullable = false,
         bool $is_variadic = false,
         $default_type = null,
-        ?Union $out_type = null,
+        ?Union $out_type = null
     ) {
         $this->name = $name;
         $this->by_ref = $by_ref;
