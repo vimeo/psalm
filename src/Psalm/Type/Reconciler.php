@@ -1159,10 +1159,9 @@ class Reconciler
                     } elseif ($base_atomic_type instanceof TClassStringMap) {
                         // do nothing
                     } else {
-                        $base_atomic_type = $base_atomic_type->setProperties(array_merge(
-                            $base_atomic_type->properties,
-                            [$array_key_offset => clone $result_type]
-                        ));
+                        $properties = $base_atomic_type->properties;
+                        $properties[$array_key_offset] = clone $result_type;
+                        $base_atomic_type = $base_atomic_type->setProperties($properties);
                     }
 
                     $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();
