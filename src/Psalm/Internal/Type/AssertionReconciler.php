@@ -1324,8 +1324,7 @@ class AssertionReconciler extends Reconciler
                     return $literal_asserted_type;
                 }
 
-                $existing_var_atomic_type = new TTemplateParam(
-                    $existing_var_atomic_type->param_name,
+                $existing_var_atomic_type = $existing_var_atomic_type->replaceAs(
                     self::handleLiteralEquality(
                         $statements_analyzer,
                         $assertion,
