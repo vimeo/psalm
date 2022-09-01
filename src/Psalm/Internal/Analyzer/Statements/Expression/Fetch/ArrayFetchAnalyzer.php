@@ -1126,8 +1126,8 @@ class ArrayFetchAnalyzer
                             $single_atomic->value => true
                         ] : null,
                         $from_empty_array,
-                        $from_empty_array ? null : $previous_value_type,
                         $from_empty_array ? null : $previous_key_type,
+                        $from_empty_array ? null : $previous_value_type,
                     );
 
                     $array_type->addType($type);
