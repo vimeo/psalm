@@ -238,5 +238,4 @@ final class Union implements TypeNode, Stringable
         }
         return $types === $this->types ? $this : $this->getBuilder()->setTypes($types)->freeze();
     }
-
 }
