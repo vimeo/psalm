@@ -241,10 +241,11 @@ class TypeCombiner
         }
 
         if ($combination->extra_types) {
-            $combination = $combination->setIntersectionTypes(self::combine(
+            /** @psalm-suppress PropertyTypeCoercion */
+            $combination->extra_types = self::combine(
                 array_values($combination->extra_types),
                 $codebase
-            )->getAtomicTypes());
+            )->getAtomicTypes();
         }
 
         foreach ($combination->builtin_type_params as $generic_type => $generic_type_params) {
