@@ -1123,7 +1123,7 @@ class ArrayFetchAnalyzer
                             $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever(),
                         ],
                         $single_atomic instanceof TLiteralClassString ? [
-                            $type->class_strings[$single_atomic->value] => true
+                            $single_atomic->value => true
                         ] : null,
                         $from_empty_array,
                         $from_empty_array ? null : $previous_value_type,
