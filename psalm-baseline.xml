@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@afe85fad86536c3abe4f9495238a767ac60d5140">
+<files psalm-version="dev-master@3bbd55ccb0e4dfffbbbd7e2cb0b4a01298709ddb">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -301,6 +301,10 @@
     </MoreSpecificReturnType>
   </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
+    <ArgumentTypeCoercion occurrences="2">
+      <code>$combination-&gt;extra_types</code>
+      <code>$combination-&gt;extra_types</code>
+    </ArgumentTypeCoercion>
     <PossiblyUndefinedIntArrayOffset occurrences="6">
       <code>$combination-&gt;array_type_params[1]</code>
       <code>$combination-&gt;array_type_params[1]</code>
@@ -311,9 +315,10 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/TypeExpander.php">
-    <ConflictingReferenceConstraint occurrences="1">
-      <code>if ($return_type instanceof TKeyOf</code>
-    </ConflictingReferenceConstraint>
+    <ArgumentTypeCoercion occurrences="2">
+      <code>array_merge($extra_types, $new_intersection_types)</code>
+      <code>array_merge($extra_types, $new_intersection_types)</code>
+    </ArgumentTypeCoercion>
   </file>
   <file src="src/Psalm/Internal/Type/TypeParser.php">
     <PossiblyUndefinedIntArrayOffset occurrences="8">
@@ -352,11 +357,6 @@
     <PropertyTypeCoercion occurrences="1">
       <code>$type_params</code>
     </PropertyTypeCoercion>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TTemplateParam.php">
-    <PossiblyUnusedMethod occurrences="1">
-      <code>replaceAs</code>
-    </PossiblyUnusedMethod>
   </file>
   <file src="src/Psalm/Type/MutableUnion.php">
     <PossiblyUnusedProperty occurrences="6">
