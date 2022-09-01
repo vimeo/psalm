@@ -1147,6 +1147,10 @@ class ArrayFetchAnalyzer
             && (($in_assignment && $stmt->dim)
                 || $original_type instanceof TTemplateParam
                 || !$offset_type->isInt())
+            && !($type instanceof TNonEmptyList
+                && $offset_type->isSingleIntLiteral()
+                && $offset_type->getSingleIntLiteral()->value === 0
+            )
         ) {
             $type = new TArray([Type::getInt(), $type->type_param]);
         }
