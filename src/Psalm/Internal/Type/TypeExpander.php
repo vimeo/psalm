@@ -130,7 +130,7 @@ class TypeExpander
      *
      * @return non-empty-list<Atomic>
      *
-     * @psalm-suppress ComplexMethod
+     * @psalm-suppress ComplexMethod, ConflictingReferenceConstraint
      */
     public static function expandAtomic(
         Codebase $codebase,
@@ -151,7 +151,8 @@ class TypeExpander
             if ($return_type->extra_types) {
                 $new_intersection_types = [];
 
-                foreach ($return_type->extra_types as &$extra_type) {
+                $extra_types = [];
+                foreach ($return_type->extra_types as $extra_type) {
                     self::expandAtomic(
                         $codebase,
                         $extra_type,
@@ -172,10 +173,11 @@ class TypeExpander
                         );
                         $extra_type = $extra_type->setIntersectionTypes([]);
                     }
+                    $extra_types []= $extra_type;
                 }
 
-                if ($new_intersection_types) {
-                    $return_type = $return_type->setIntersectionTypes(array_merge($return_type->extra_types, $new_intersection_types));
+                if ($new_intersection_types || $extra_types) {
+                    $return_type = $return_type->setIntersectionTypes(array_merge($extra_types, $new_intersection_types));
                 }
             }
 
@@ -238,8 +240,12 @@ class TypeExpander
         }
 
         if ($return_type instanceof TClassConstant) {
-            $return_type = $return_type->replaceClassLike('self', $self_class);
-            $return_type = $return_type->replaceClassLike('static', is_string($static_class_type) ? $static_class_type : $self_class);
+            if ($self_class) {
+                $return_type = $return_type->replaceClassLike('self', $self_class);
+            }
+            if (is_string($static_class_type) || $self_class) {
+                $return_type = $return_type->replaceClassLike('static', is_string($static_class_type) ? $static_class_type : $self_class);
+            }
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
                 if (strtolower($return_type->const_name) === 'class') {
@@ -639,7 +645,7 @@ class TypeExpander
                 || $static_class_type instanceof TTemplateParam)
         ) {
             $return_type_types = $return_type->getIntersectionTypes();
-            $cloned_static = $static_class_type->setIntersectionTypes(null);
+            $cloned_static = $static_class_type->setIntersectionTypes([]);
             $extra_static = $static_class_type->extra_types;
 
             if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {

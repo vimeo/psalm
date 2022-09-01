@@ -32,7 +32,10 @@ abstract class Assertion
         return null;
     }
 
-    public function setAtomicType(Atomic $type): static
+    /**
+     * @return static
+     */
+    public function setAtomicType(Atomic $type): self
     {
         return $this;
     }

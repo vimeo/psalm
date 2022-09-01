@@ -594,15 +594,18 @@ class TypeParser
         }
 
         if ($generic_type_value === 'arraylike-object') {
-            $traversable = new TGenericObject('Traversable', $generic_params);
             $array_acccess = new TGenericObject('ArrayAccess', $generic_params);
             $countable = new TNamedObject('Countable');
-
-            return $traversable->setIntersectionTypes([
-                ...$traversable->extra_types,
-                $array_acccess->getKey() => $array_acccess,
-                $countable->getKey() => $countable
-            ]);
+            return new TGenericObject(
+                'Traversable',
+                $generic_params,
+                false,
+                false,
+                [
+                    $array_acccess->getKey() => $array_acccess,
+                    $countable->getKey() => $countable
+                ]
+            );
         }
 
         if ($generic_type_value === 'non-empty-array') {
@@ -1105,7 +1108,7 @@ class TypeParser
             $first_type = array_shift($keyed_intersection_types);
 
             if ($keyed_intersection_types) {
-                $first_type = $first_type->setIntersectionTypes($keyed_intersection_types);
+                return $first_type->setIntersectionTypes($keyed_intersection_types);
             }
         } else {
             foreach ($intersection_types as &$intersection_type) {
@@ -1145,7 +1148,7 @@ class TypeParser
             }
 
             if ($keyed_intersection_types) {
-                $first_type = $first_type->setIntersectionTypes($keyed_intersection_types);
+                return $first_type->setIntersectionTypes($keyed_intersection_types);
             }
         }
 
@@ -1203,6 +1206,7 @@ class TypeParser
                 '',
                 false,
                 $tree_type instanceof Union ? $tree_type : new Union([$tree_type]),
+                null,
                 null,
                 null,
                 $is_optional,

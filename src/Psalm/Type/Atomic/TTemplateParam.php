@@ -54,12 +54,9 @@ final class TTemplateParam extends Atomic
         if ($as === $this->as) {
             return $this;
         }
-        return new static(
-            $this->param_name,
-            $as,
-            $this->defining_class,
-            $this->extra_types
-        );
+        $cloned = clone $this;
+        $cloned->as = $as;
+        return $cloned;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -156,12 +153,10 @@ final class TTemplateParam extends Atomic
         if (!$intersection && $replaced === $this->as) {
             return $this;
         }
-        return new static(
-            $this->param_name,
-            $replaced,
-            $this->defining_class,
-            $intersection ?? $this->extra_types
-        );
+        $cloned = clone $this;
+        $cloned->as = $replaced;
+        $cloned->extra_types = $intersection ?? $this->extra_types;
+        return $cloned;
     }
 
     /**
@@ -175,11 +170,8 @@ final class TTemplateParam extends Atomic
         if (!$intersection) {
             return $this;
         }
-        return new static(
-            $this->param_name,
-            $this->as,
-            $this->defining_class,
-            $intersection
-        );
+        $cloned = clone $this;
+        $cloned->extra_types = $intersection;
+        return $cloned;
     }
 }

@@ -269,13 +269,10 @@ class TypeCombiner
                 $generic_type,
                 $generic_type_params,
                 false,
-                false,
+                $combination->object_static[$generic_type] ?? false,
                 $combination->extra_types
             );
 
-            if ($combination->object_static[$generic_type] ?? false) {
-                $generic_object->is_static = true;
-            }
             $new_types[] = $generic_object;
         }
 

@@ -305,6 +305,7 @@ class InternalCallMapHandler
                     $arg_name,
                     $by_reference,
                     $param_type,
+                    $param_type,
                     null,
                     null,
                     $optional,
