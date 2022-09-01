@@ -38,6 +38,11 @@ class TNonEmptyArray extends TArray
         $this->value = $value;
     }
 
+    /**
+     * @param positive-int|null $count
+     *
+     * @return static
+     */
     public function setCount(?int $count): self
     {
         if ($count === $this->count) {

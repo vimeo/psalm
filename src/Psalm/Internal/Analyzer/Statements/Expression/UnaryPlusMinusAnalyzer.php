@@ -56,8 +56,6 @@ class UnaryPlusMinusAnalyzer
                         //we'll have to inverse min and max bound and negate any literal
                         $old_min_bound = $type_part->min_bound;
                         $old_max_bound = $type_part->max_bound;
-                        $new_min_bound = $old_min_bound;
-                        $new_max_bound = $old_max_bound;
                         if ($old_min_bound === null) {
                             //min bound is null, max bound will be null
                             $new_max_bound = null;

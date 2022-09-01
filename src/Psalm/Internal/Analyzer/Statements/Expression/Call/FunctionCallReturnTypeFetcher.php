@@ -328,9 +328,7 @@ class FunctionCallReturnTypeFetcher
                     $keyed_array = new TKeyedArray([
                         Type::getInt(),
                         Type::getInt()
-                    ]);
-                    $keyed_array->sealed = true;
-                    $keyed_array->is_list = true;
+                    ], null, true, null, null, true);
                     return new Union([$keyed_array]);
 
                 case 'get_called_class':
@@ -441,9 +439,7 @@ class FunctionCallReturnTypeFetcher
                         $keyed_array = new TKeyedArray([
                             Type::getInt(),
                             Type::getInt()
-                        ]);
-                        $keyed_array->sealed = true;
-                        $keyed_array->is_list = true;
+                        ], null, true, null, null, true);
 
                         if ((string) $first_arg_type === 'false') {
                             return new Union([$keyed_array]);
