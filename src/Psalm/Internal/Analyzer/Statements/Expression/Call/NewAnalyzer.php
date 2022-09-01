@@ -526,6 +526,7 @@ class NewAnalyzer extends CallAnalyzer
                 $result_atomic_type = new TGenericObject(
                     $fq_class_name,
                     $generic_param_types,
+                    false,
                     $from_static
                 );
 
