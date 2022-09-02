@@ -1148,20 +1148,25 @@ class ArrayFetchAnalyzer
                 || $original_type instanceof TTemplateParam
                 || !$offset_type->isInt())
         ) {
-            if ($type instanceof TNonEmptyList && $offset_type->allIntLiterals()) {
-                $keep_list = true;
+            $to_array = true;
+
+            if (isset($context->vars_in_scope[$extended_var_id])
+                && !$context->vars_in_scope[$extended_var_id]->possibly_undefined
+            ) {
+                $to_array = false;
+            } elseif ($type instanceof TNonEmptyList && $offset_type->allIntLiterals()) {
+                $to_array = false;
+
                 $count = ($type->count ?? $type->min_count) ?? 1;
                 foreach ($offset_type->getLiteralInts() as $literal) {
-                    if ($literal->value < $count) {
-                        continue;
+                    if ($literal->value >= $count) {
+                        $to_array = true;
+                        break;
                     }
-                    $keep_list = false;
-                    break;
                 }
-                if (!$keep_list) {
-                    $type = new TArray([Type::getInt(), $type->type_param]);
-                }
-            } else {
+            }
+
+            if ($to_array) {
                 $type = new TArray([Type::getInt(), $type->type_param]);
             }
         }
