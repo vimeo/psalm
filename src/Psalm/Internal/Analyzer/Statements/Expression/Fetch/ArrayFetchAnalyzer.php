@@ -557,6 +557,7 @@ class ArrayFetchAnalyzer
         $types = $array_type->getAtomicTypes();
         $changed = false;
         foreach ($types as $type_string => $type) {
+            $original_type_real = $type;
             $original_type = $type;
 
             if ($type instanceof TMixed
@@ -635,7 +636,7 @@ class ArrayFetchAnalyzer
                     $stmt,
                     $replacement_type,
                     $offset_type,
-                    $original_type,
+                    $original_type_real,
                     $codebase,
                     $extended_var_id,
                     $context,
