@@ -103,6 +103,8 @@ class AssertionFinder
         'is_scalar' => ['scalar', [Type::class, 'getScalar']],
         'is_iterable' => ['iterable'],
         'is_countable' => ['countable'],
+        'ctype_digit' => ['numeric-string', [Type::class, 'getNumericString']],
+        'ctype_lower' => ['non-empty-lowercase-string', [Type::class, 'getNonEmptyLowercaseString']],
     ];
 
     /**
