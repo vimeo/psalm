@@ -157,6 +157,13 @@
       <code>$callable_arg-&gt;items[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/ArrayFetchAnalyzer.php">
+    <ConflictingReferenceConstraint occurrences="3">
+      <code>else {</code>
+      <code>elseif ($type instanceof TClassStringMap) {</code>
+      <code>elseif ($type instanceof TList) {</code>
+    </ConflictingReferenceConstraint>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/InstancePropertyFetchAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$invalid_fetch_types[0]</code>
@@ -341,11 +348,6 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$this-&gt;type_params[1]</code>
     </PossiblyUndefinedIntArrayOffset>
-    <PossiblyUnusedMethod occurrences="3">
-      <code>replaceTypeParams</code>
-      <code>replaceTypeParams</code>
-      <code>replaceTypeParams</code>
-    </PossiblyUnusedMethod>
   </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
     <DocblockTypeContradiction occurrences="2">
@@ -359,8 +361,9 @@
     </PropertyTypeCoercion>
   </file>
   <file src="src/Psalm/Type/MutableUnion.php">
-    <PossiblyUnusedProperty occurrences="6">
+    <PossiblyUnusedProperty occurrences="7">
       <code>$allow_mutations</code>
+      <code>$by_ref</code>
       <code>$failed_reconciliation</code>
       <code>$from_template_default</code>
       <code>$has_mutations</code>
