@@ -1148,30 +1148,23 @@ class ArrayFetchAnalyzer
                 || $original_type instanceof TTemplateParam
                 || !$offset_type->isInt())
         ) {
-            $to_array = true;
-
-            if (isset($context->vars_in_scope[$extended_var_id])
-                && !$context->vars_in_scope[$extended_var_id]->possibly_undefined
-            ) {
-                $to_array = false;
-            } elseif ($type instanceof TNonEmptyList && $offset_type->allIntLiterals()) {
-                $to_array = false;
-
-                $count = ($type->count ?? $type->min_count) ?? 1;
-                foreach ($offset_type->getLiteralInts() as $literal) {
-                    if ($literal->value >= $count) {
-                        $to_array = true;
-                        break;
-                    }
-                }
-            }
-
-            if ($to_array) {
-                $type = new TArray([Type::getInt(), $type->type_param]);
-            }
-        }
-
-        if ($type instanceof TArray) {
+            $temp = new TArray([Type::getInt(), $type->type_param]);
+            self::handleArrayAccessOnTArray(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $stmt,
+                $hasMixed,
+                $extended_var_id,
+                $temp,
+                $offset_type,
+                $in_assignment,
+                $expected_offset_types,
+                $array_access_type,
+                $original_type,
+                $has_valid_offset
+            );
+        } elseif ($type instanceof TArray) {
             self::handleArrayAccessOnTArray(
                 $statements_analyzer,
                 $codebase,
