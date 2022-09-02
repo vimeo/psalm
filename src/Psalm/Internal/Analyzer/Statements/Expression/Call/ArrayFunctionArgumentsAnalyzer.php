@@ -43,6 +43,7 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_shift;
+use function array_unshift;
 use function assert;
 use function count;
 use function explode;

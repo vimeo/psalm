@@ -1512,7 +1512,6 @@ class ArrayFetchAnalyzer
         array &$expected_offset_types,
         bool &$has_valid_offset
     ): void {
-        $type = $type_orig;
         $generic_key_type = $type->getGenericKeyType();
 
         if (!$stmt->dim && $type->sealed && $type->is_list) {

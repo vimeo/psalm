@@ -3,10 +3,7 @@
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
-use Psalm\Codebase;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
-use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Union;
 
 final class FunctionLikeParameter implements HasAttributesInterface

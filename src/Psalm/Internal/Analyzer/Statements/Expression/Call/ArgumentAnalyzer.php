@@ -60,7 +60,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function count;
 use function explode;

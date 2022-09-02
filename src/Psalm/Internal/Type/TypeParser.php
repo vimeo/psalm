@@ -738,9 +738,6 @@ class TypeParser
             if (!$param_union_types[0] instanceof TNamedObject) {
                 throw new TypeParseTreeException('Param should be a named object in ' . $generic_type_value);
             }
-            if ($param_union_types[0]->getIntersectionTypes()) {
-                throw new TypeParseTreeException('Param should be a named object with no intersections in ' . $generic_type_value);
-            }
 
             return new TPropertiesOf(
                 $param_union_types[0],
@@ -1111,7 +1108,7 @@ class TypeParser
                 return $first_type->setIntersectionTypes($keyed_intersection_types);
             }
         } else {
-            foreach ($intersection_types as &$intersection_type) {
+            foreach ($intersection_types as $intersection_type) {
                 if (!$intersection_type instanceof TIterable
                     && !$intersection_type instanceof TNamedObject
                     && !$intersection_type instanceof TTemplateParam
