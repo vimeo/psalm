@@ -1084,6 +1084,7 @@ class ArrayFetchAnalyzer
     /**
      * @param list<string> $expected_offset_types
      * @param TArray|TKeyedArray|TList|TClassStringMap $type
+     * @param-out TArray|TKeyedArray|TList|TClassStringMap $type
      * @param list<TLiteralInt|TLiteralString> $key_values
      */
     private static function handleArrayAccessOnArray(
@@ -1232,6 +1233,7 @@ class ArrayFetchAnalyzer
 
     /**
      * @param list<string> $expected_offset_types
+     * @param-out TArray $type
      */
     private static function handleArrayAccessOnTArray(
         StatementsAnalyzer $statements_analyzer,
@@ -1492,6 +1494,7 @@ class ArrayFetchAnalyzer
     /**
      * @param list<string> $expected_offset_types
      * @param list<TLiteralString|TLiteralInt> $key_values
+     * @param-out TArray|TKeyedArray|TList $type
      */
     private static function handleArrayAccessOnKeyedArray(
         StatementsAnalyzer $statements_analyzer,
@@ -1689,6 +1692,7 @@ class ArrayFetchAnalyzer
     /**
      * @param list<string> $expected_offset_types
      * @param list<TLiteralString|TLiteralInt> $key_values
+     * @param-out TList $type
      */
     private static function handleArrayAccessOnList(
         StatementsAnalyzer $statements_analyzer,

@@ -1372,6 +1372,7 @@ class ArgumentAnalyzer
                                     $input_atomic_type->value,
                                     [...$input_atomic_type->type_params, ...$new_type_params],
                                     $input_atomic_type->remapped_params,
+                                    false,
                                     $input_atomic_type->extra_types
                                 );
                             }

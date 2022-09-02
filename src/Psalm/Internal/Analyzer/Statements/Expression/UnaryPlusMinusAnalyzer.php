@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
+use RuntimeException;
 
 /**
  * @internal
@@ -84,6 +85,10 @@ class UnaryPlusMinusAnalyzer
                 } else {
                     $acceptable_types[] = new TInt;
                 }
+            }
+
+            if (!$acceptable_types) {
+                throw new RuntimeException("Impossible!");
             }
 
             $statements_analyzer->node_data->setType($stmt, new Union($acceptable_types));
