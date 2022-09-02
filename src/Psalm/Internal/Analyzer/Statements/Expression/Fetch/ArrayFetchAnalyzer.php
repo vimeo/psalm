@@ -581,6 +581,7 @@ class ArrayFetchAnalyzer
                 }
 
                 $type = clone $type->as->getSingleAtomic();
+                $original_type = $type;
             }
 
             if ($type instanceof TNull) {
