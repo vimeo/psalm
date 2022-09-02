@@ -1373,6 +1373,7 @@ class ArgumentAnalyzer
                                     $input_atomic_type->value,
                                     [...$input_atomic_type->type_params, ...$new_type_params],
                                     $input_atomic_type->remapped_params,
+                                    false,
                                     $input_atomic_type->extra_types
                                 );
                             }
@@ -1441,11 +1442,11 @@ class ArgumentAnalyzer
 
             if ($unpack) {
                 if ($unpacked_atomic_array instanceof TList) {
-                    $unpacked_atomic_array = new TList($input_type);
+                    $unpacked_atomic_array = $unpacked_atomic_array->replaceTypeParam($input_type);
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TArray) {
-                    $unpacked_atomic_array = new TArray([
+                    $unpacked_atomic_array = $unpacked_atomic_array->replaceTypeParams([
                         $unpacked_atomic_array->type_params[0],
                         $input_type
                     ]);
@@ -1454,9 +1455,6 @@ class ArgumentAnalyzer
                 } elseif ($unpacked_atomic_array instanceof TKeyedArray
                     && $unpacked_atomic_array->is_list
                 ) {
-                    if (!$unpacked_atomic_array->is_list) {
-                        throw new UnexpectedValueException('Object-like array must be a list for conversion');
-                    }
                     if ($unpacked_atomic_array->isNonEmpty()) {
                         $unpacked_atomic_array = new TNonEmptyList($input_type);
                     } else {

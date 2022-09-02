@@ -52,7 +52,7 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         if ($first_arg_array instanceof TArray) {
             if ($first_arg_array instanceof TNonEmptyArray) {
-                $first_arg_array = new TNonEmptyArray($first_arg_array->type_params, null, $first_arg_array->min_count, $first_arg_array->value);
+                $first_arg_array = $first_arg_array->setCount(null);
             }
 
             return new Union([$first_arg_array]);

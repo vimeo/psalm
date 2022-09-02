@@ -300,9 +300,55 @@ class ArrayAssignmentAnalyzer
         $child_stmt_type = $child_stmt_type->getBuilder();
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                $child_stmt_type->substitute(
-                    new Union([$type]),
-                    self::updateTypeWithKeyValues(
+                $type->as = self::updateTypeWithKeyValues(
+                    $codebase,
+                    $type->as,
+                    $current_type,
+                    $key_values
+                );
+
+                $has_matching_objectlike_property = true;
+
+                $child_stmt_type->substitute(new Union([$type]), $type->as);
+
+                continue;
+            }
+
+            foreach ($key_values as $key_value) {
+                if ($type instanceof TKeyedArray) {
+                    if (isset($type->properties[$key_value->value])) {
+                        $has_matching_objectlike_property = true;
+
+                        $type->properties[$key_value->value] = clone $current_type;
+                    }
+                } elseif ($type instanceof TString
+                    && $key_value instanceof TLiteralInt
+                ) {
+                    $has_matching_string = true;
+
+                    if ($type instanceof TLiteralString
+                        && $current_type->isSingleStringLiteral()
+                    ) {
+                        $new_char = $current_type->getSingleStringLiteral()->value;
+
+                        if (strlen($new_char) === 1) {
+                            $type->value[0] = $new_char;
+                        }
+                    }
+                } elseif ($type instanceof TNonEmptyList
+                    && $key_value instanceof TLiteralInt
+                    && count($key_values) === 1
+                ) {
+                    $count = ($type->count ?? $type->min_count) ?? 1;
+                    if ($key_value->value >= $count) {
+                        continue;
+                    }
+
+                    $has_matching_objectlike_property = true;
+
+                    $type->type_param = Type::combineUnionTypes(
+                        clone $current_type,
+                        $type->type_param,
                         $codebase,
                         $type->as,
                         $current_type,
