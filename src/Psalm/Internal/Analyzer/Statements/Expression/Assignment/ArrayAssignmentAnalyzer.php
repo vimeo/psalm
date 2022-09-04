@@ -297,32 +297,45 @@ class ArrayAssignmentAnalyzer
         $has_matching_objectlike_property = false;
         $has_matching_string = false;
 
-        $child_stmt_type = $child_stmt_type->getBuilder();
-
-        foreach ($child_stmt_type->getAtomicTypes() as $type) {
+        $changed = false;
+        $types = [];
+        foreach ($child_stmt_type->getAtomicTypes() as $k => $type) {
             if ($type instanceof TTemplateParam) {
-                $type->as = self::updateTypeWithKeyValues(
+                $changed = true;
+                $type = $type->replaceAs(self::updateTypeWithKeyValues(
                     $codebase,
                     $type->as,
                     $current_type,
                     $key_values
-                );
+                ));
+                $types[$type->getKey()] = $type;
 
                 $has_matching_objectlike_property = true;
-
-                $child_stmt_type->substitute(new Union([$type]), $type->as);
 
                 continue;
             }
 
-            foreach ($key_values as $key_value) {
-                if ($type instanceof TKeyedArray) {
-                    if (isset($type->properties[$key_value->value])) {
+            if ($type instanceof TKeyedArray) {
+                $changedProperties = false;
+                $properties = $type->properties;
+                foreach ($key_values as $key_value) {
+                    if (isset($properties[$key_value->value])) {
                         $has_matching_objectlike_property = true;
 
-                        $type->properties[$key_value->value] = clone $current_type;
+                        $changedProperties = true;
+                        $properties[$key_value->value] = clone $current_type;
                     }
-                } elseif ($type instanceof TString
+                }
+                if ($changedProperties) {
+                    $changed = true;
+                    $type = $type->setProperties($properties);
+                    $types[$type->getKey()] = $type;
+                    unset($types[$k]);
+                }
+                continue;
+            }
+            foreach ($key_values as $key_value) {
+                if ($type instanceof TString
                     && $key_value instanceof TLiteralInt
                 ) {
                     $has_matching_string = true;
@@ -358,7 +371,9 @@ class ArrayAssignmentAnalyzer
             }
         }
 
-        $child_stmt_type = $child_stmt_type->freeze();
+        if ($changed) {
+            $child_stmt_type = $child_stmt_type->getBuilder()->setTypes($types)->freeze();
+        }
 
         if (!$has_matching_objectlike_property && !$has_matching_string) {
             if (count($key_values) === 1) {

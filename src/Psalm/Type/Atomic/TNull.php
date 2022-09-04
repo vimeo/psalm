@@ -9,6 +9,10 @@ use Psalm\Type\Atomic;
  */
 final class TNull extends Atomic
 {
+    public function __construct(bool $from_docblock = false)
+    {
+        $this->from_docblock = $from_docblock;
+    }
     public function getKey(bool $include_extra = true): string
     {
         return 'null';
