@@ -2848,6 +2848,58 @@ class ConditionalTest extends TestCase
                         return true;
                     }'
             ],
+            'ctypeDigitMakesStringNumeric' => [
+                '<?php
+                    /** @param numeric-string $num */
+                    function foo(string $num): void {}
+
+                    /** @param mixed $m */
+                    function bar(mixed $m): void
+                    {
+                        if (is_string($m) && ctype_digit($m)) {
+                            foo($m);
+                        }
+                    }
+                    ',
+            ],
+            'SKIPPED-ctypeDigitNarrowsIntToARange' => [
+                '<?php
+                    $int = rand(-1000, 1000);
+
+                    if (!ctype_digit($int)) {
+                        die;
+                    }
+                    ',
+                'assertions' => [
+                    '$int' => 'int<48, 57>|int<256, 1000>'
+                ]
+            ],
+            'ctypeLowerMakesStringLowercase' => [
+                '<?php
+                    /** @param non-empty-lowercase-string $num */
+                    function foo(string $num): void {}
+
+                    /** @param mixed $m */
+                    function bar($m): void
+                    {
+                        if (is_string($m) && ctype_lower($m)) {
+                            foo($m);
+                        }
+                    }
+                    ',
+            ],
+            'SKIPPED-ctypeLowerNarrowsIntToARange' => [
+                '<?php
+                    $int = rand(-1000, 1000);
+
+                    if (!ctype_lower($int)) {
+                        die;
+                    }
+                    ',
+                'assertions' => [
+                    '$int' => 'int<97, 122>'
+                ]
+            ],
         ];
     }
 
