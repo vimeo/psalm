@@ -361,16 +361,14 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 || ($interface_exists && !$codebase->interfaceHasCorrectCasing($fq_class_name))
                 || ($enum_exists && !$codebase->classlikes->enumHasCorrectCasing($fq_class_name))
             ) {
-                if ($codebase->classlikes->isUserDefined(strtolower($aliased_name))) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidClass(
-                            'Class, interface or enum ' . $fq_class_name . ' has wrong casing',
-                            $code_location,
-                            $fq_class_name
-                        ),
-                        $suppressed_issues
-                    );
-                }
+                IssueBuffer::maybeAdd(
+                    new InvalidClass(
+                        'Class, interface or enum ' . $fq_class_name . ' has wrong casing',
+                        $code_location,
+                        $fq_class_name
+                    ),
+                    $suppressed_issues
+                );
             }
         }
 
