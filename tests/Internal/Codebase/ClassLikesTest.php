@@ -30,7 +30,7 @@ final class ClassLikesTest extends TestCase
 
     public function testWillDetectClassImplementingAliasedInterface(): void
     {
-        $this->classlikes->addClassAlias('Foo', 'bar');
+        $this->classlikes->addClassAlias('Foo', 'Bar');
 
         $classStorage = new ClassLikeStorage('Baz');
         $classStorage->class_implements['bar'] = 'Bar';
@@ -42,9 +42,9 @@ final class ClassLikesTest extends TestCase
 
     public function testWillResolveAliasedAliases(): void
     {
-        $this->classlikes->addClassAlias('Foo', 'bar');
-        $this->classlikes->addClassAlias('Bar', 'baz');
-        $this->classlikes->addClassAlias('Baz', 'qoo');
+        $this->classlikes->addClassAlias('Foo', 'Bar');
+        $this->classlikes->addClassAlias('Bar', 'Baz');
+        $this->classlikes->addClassAlias('Baz', 'Qoo');
 
         self::assertSame('Foo', $this->classlikes->getUnAliasedName('Qoo'));
     }
