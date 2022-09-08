@@ -342,6 +342,7 @@ class InternalCallMapHandlerTest extends TestCase
         'cal_from_jd',
         'collator_get_strength',
         'curl_multi_init',
+        'curl_multi_getcontent', // issue #8351
         'date_add',
         'date_date_set',
         'date_diff',

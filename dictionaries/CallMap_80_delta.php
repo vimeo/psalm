@@ -278,8 +278,8 @@ return [
       'new' => ['int', 'multi_handle'=>'CurlMultiHandle', '&w_still_running'=>'int'],
     ],
     'curl_multi_getcontent' => [
-      'old' => ['?string', 'ch'=>'resource'],
-      'new' => ['?string', 'handle'=>'CurlHandle'],
+      'old' => ['string', 'ch'=>'resource'],
+      'new' => ['string', 'handle'=>'CurlHandle'],
     ],
     'curl_multi_info_read' => [
       'old' => ['array|false', 'mh'=>'resource', '&w_msgs_in_queue='=>'int'],

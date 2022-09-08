@@ -10219,7 +10219,7 @@ return [
     'curl_multi_add_handle' => ['int', 'mh'=>'resource', 'ch'=>'resource'],
     'curl_multi_close' => ['void', 'mh'=>'resource'],
     'curl_multi_exec' => ['int', 'mh'=>'resource', '&w_still_running'=>'int'],
-    'curl_multi_getcontent' => ['?string', 'ch'=>'resource'],
+    'curl_multi_getcontent' => ['string', 'ch'=>'resource'],
     'curl_multi_info_read' => ['array|false', 'mh'=>'resource', '&w_msgs_in_queue='=>'int'],
     'curl_multi_init' => ['resource|false'],
     'curl_multi_remove_handle' => ['int', 'mh'=>'resource', 'ch'=>'resource'],
