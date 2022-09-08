@@ -1370,7 +1370,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 return false;
             }
 
-            if (!$codebase->traitHasCorrectCase($fq_trait_name)) {
+            if (!$codebase->traitHasCorrectCasing($fq_trait_name)) {
                 if (IssueBuffer::accepts(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' has wrong casing',

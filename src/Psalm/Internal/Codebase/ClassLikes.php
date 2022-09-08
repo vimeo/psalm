@@ -780,7 +780,7 @@ class ClassLikes
         return isset($this->existing_enums[$fq_enum_name]);
     }
 
-    public function traitHasCorrectCase(string $fq_trait_name): bool
+    public function traitHasCorrectCasing(string $fq_trait_name): bool
     {
         if (isset($this->existing_classlike_aliases[$fq_trait_name])) {
             return true;

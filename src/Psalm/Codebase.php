@@ -793,9 +793,9 @@ class Codebase
         return $this->classlikes->interfaceHasCorrectCasing($fq_interface_name);
     }
 
-    public function traitHasCorrectCase(string $fq_trait_name): bool
+    public function traitHasCorrectCasing(string $fq_trait_name): bool
     {
-        return $this->classlikes->traitHasCorrectCase($fq_trait_name);
+        return $this->classlikes->traitHasCorrectCasing($fq_trait_name);
     }
 
     /**
