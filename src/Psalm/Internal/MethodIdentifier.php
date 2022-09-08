@@ -56,8 +56,8 @@ class MethodIdentifier
         if (!static::isValidMethodIdReference($method_id)) {
             throw new InvalidArgumentException('Invalid method id reference provided: ' . $method_id);
         }
-        // remove trailing backslash if it exists
-        $method_id = preg_replace('/^\\\\/', '', $method_id);
+        // remove leading backslash if it exists
+        $method_id = ltrim($method_id, '\\');
         $method_id_parts = explode('::', $method_id);
         return new self($method_id_parts[0], strtolower($method_id_parts[1]));
     }

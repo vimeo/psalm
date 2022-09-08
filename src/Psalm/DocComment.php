@@ -64,9 +64,9 @@ class DocComment
     {
         // Strip off comments.
         $docblock = trim($docblock);
-        $docblock = preg_replace('@^/\*\*@', '', $docblock);
-        $docblock = preg_replace('@\*/$@', '', $docblock);
-        $docblock = preg_replace('@^[ \t]*\*@m', '', $docblock);
+        $docblock = preg_replace('@^/\*\*@', '', $docblock, 1);
+        $docblock = preg_replace('@\*/$@', '', $docblock, 1);
+        $docblock = preg_replace('@^[ \t]*\*@m', '', $docblock, 1);
 
         // Normalize multi-line @specials.
         $lines = explode("\n", $docblock);
@@ -157,7 +157,7 @@ class DocComment
 
         // Trim any empty lines off the front, but leave the indent level if there
         // is one.
-        $docblock = preg_replace('/^\s*\n/', '', $docblock);
+        $docblock = preg_replace('/^\s*\n/', '', $docblock, 1);
 
         foreach ($special as $special_key => $_) {
             if (strpos($special_key, 'psalm-') === 0) {

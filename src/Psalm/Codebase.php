@@ -1669,7 +1669,7 @@ class Codebase
             ) {
                 $file_contents = $this->getFileContents($file_path);
 
-                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name);
+                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name, 1);
 
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);
