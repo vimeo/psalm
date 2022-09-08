@@ -7,12 +7,13 @@ use PhpParser\Node\Stmt;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
+use UnexpectedValueException;
 
 use function clearstatcache;
-use function error_log;
 use function file_put_contents;
 use function filemtime;
 use function gettype;
+use function hash;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_array;
@@ -21,7 +22,6 @@ use function is_readable;
 use function is_writable;
 use function json_decode;
 use function json_encode;
-use function md5;
 use function mkdir;
 use function scandir;
 use function serialize;
@@ -186,19 +186,13 @@ class ParserCacheProvider
             if ($root_cache_directory && is_readable($file_hashes_path)) {
                 $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
                 if (!$hashes_encoded) {
-                    error_log('Unexpected value when loading from file content hashes');
-                    $this->existing_file_content_hashes = [];
-
-                    return [];
+                    throw new UnexpectedValueException('File content hashes should be in cache');
                 }
 
                 $hashes_decoded = json_decode($hashes_encoded, true);
 
                 if (!is_array($hashes_decoded)) {
-                    error_log('Unexpected value ' . gettype($hashes_decoded));
-                    $this->existing_file_content_hashes = [];
-
-                    return [];
+                    throw new UnexpectedValueException('File content hashes are of invalid type ' . gettype($hashes_decoded));
                 }
 
                 /** @var array<string, string> $hashes_decoded */
@@ -349,9 +343,15 @@ class ParserCacheProvider
         return $removed_count;
     }
 
-    private function getParserCacheKey(string $file_name): string
+    private function getParserCacheKey(string $file_path): string
     {
-        return md5($file_name) . ($this->use_igbinary ? '-igbinary' : '') . '-r';
+        if (PHP_VERSION_ID >= 80100) {
+            $hash = hash('xxh128', $file_path);
+        } else {
+            $hash = hash('md4', $file_path);
+        }
+
+        return $hash . ($this->use_igbinary ? '-igbinary' : '') . '-r';
     }
 
     private function createCacheDirectory(string $parser_cache_directory): void
@@ -362,7 +362,9 @@ class ParserCacheProvider
             } catch (RuntimeException $e) {
                 // Race condition (#4483)
                 if (!is_dir($parser_cache_directory)) {
-                    error_log('Could not create parser cache directory: ' . $parser_cache_directory);
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
                 }
             }
         }
