@@ -80,6 +80,10 @@ class ParserCacheProvider
         int $file_modified_time,
         string $file_content_hash
     ): ?array {
+        if (!$this->use_file_cache) {
+            return null;
+        }
+
         $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
@@ -120,6 +124,10 @@ class ParserCacheProvider
      */
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
+        if (!$this->use_file_cache) {
+            return null;
+        }
+
         $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
@@ -179,9 +187,12 @@ class ParserCacheProvider
      */
     private function getExistingFileContentHashes(): array
     {
-        $root_cache_directory = $this->config->getCacheDirectory();
+        if (!$this->use_file_cache) {
+            return [];
+        }
 
         if ($this->existing_file_content_hashes === null) {
+            $root_cache_directory = $this->config->getCacheDirectory();
             $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
 
             if ($root_cache_directory && is_readable($file_hashes_path)) {
@@ -263,6 +274,10 @@ class ParserCacheProvider
 
     public function saveFileContentHashes(): void
     {
+        if (!$this->use_file_cache) {
+            return;
+        }
+
         $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
