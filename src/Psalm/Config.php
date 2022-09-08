@@ -1312,7 +1312,7 @@ class Config
     private function loadFileExtensions(SimpleXMLElement $extensions): void
     {
         foreach ($extensions as $extension) {
-            $extension_name = preg_replace('/^\.?/', '', (string)$extension['name']);
+            $extension_name = preg_replace('/^\.?/', '', (string)$extension['name'], 1);
             $this->file_extensions[] = $extension_name;
 
             if (isset($extension['scanner'])) {
@@ -1506,7 +1506,7 @@ class Config
     public function shortenFileName(string $to): string
     {
         if (!is_file($to)) {
-            return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to);
+            return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
         }
 
         $from = $this->base_dir;
@@ -1678,7 +1678,7 @@ class Config
         }
 
         if (strpos($issue_type, 'Possibly') === 0) {
-            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type);
+            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
 
             if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
                 $stripped_issue_type = 'Invalid' . $stripped_issue_type;
@@ -1692,7 +1692,7 @@ class Config
         }
 
         if (preg_match('/^(False|Null)[A-Z]/', $issue_type) && !strpos($issue_type, 'Reference')) {
-            return preg_replace('/^(False|Null)/', 'Invalid', $issue_type);
+            return preg_replace('/^(False|Null)/', 'Invalid', $issue_type, 1);
         }
 
         if ($issue_type === 'UndefinedInterfaceMethod') {

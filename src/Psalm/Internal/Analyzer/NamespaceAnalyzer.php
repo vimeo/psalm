@@ -221,7 +221,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
      */
     public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
     {
-        $root_namespace = preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName);
+        $root_namespace = preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName, 1);
         if ($root_namespace === "") {
             throw new InvalidArgumentException("Invalid classname \"$fullyQualifiedClassName\"");
         }

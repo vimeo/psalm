@@ -421,7 +421,7 @@ class FileFilter
      */
     protected static function slashify(string $str): string
     {
-        return preg_replace('/\/?$/', DIRECTORY_SEPARATOR, $str);
+        return rtrim( $str, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR;
     }
 
     public function allows(string $file_name, bool $case_sensitive = false): bool

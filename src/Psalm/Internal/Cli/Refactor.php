@@ -82,7 +82,7 @@ final class Refactor
         array_map(
             function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
+                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if ($arg_name === 'refactor') {
                         // valid option for psalm, ignored by psalter
