@@ -784,14 +784,6 @@ class ClassLikes
         return isset($this->existing_traits[$fq_trait_name]);
     }
 
-    /**
-     * @param  lowercase-string  $fq_class_name
-     */
-    public function isUserDefined(string $fq_class_name): bool
-    {
-        return $this->classlike_storage_provider->get($fq_class_name)->user_defined;
-    }
-
     public function getTraitNode(string $fq_trait_name): PhpParser\Node\Stmt\Trait_
     {
         $fq_trait_name_lc = strtolower($fq_trait_name);

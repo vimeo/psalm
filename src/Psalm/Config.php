@@ -6,7 +6,7 @@ use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
 use DOMDocument;
-use DomElement;
+use DOMElement;
 use InvalidArgumentException;
 use LogicException;
 use OutOfBoundsException;
@@ -752,7 +752,6 @@ class Config
 
         $psalm_nodes = $dom_document->getElementsByTagName('psalm');
 
-        /** @var DomElement|null */
         $psalm_node = $psalm_nodes->item(0);
 
         if (!$psalm_node) {
