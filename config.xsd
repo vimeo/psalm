@@ -462,6 +462,7 @@
             <xs:element name="RedundantIdentityWithTrue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RiskyCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCallable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCookie" type="IssueHandlerType" minOccurs="0" />

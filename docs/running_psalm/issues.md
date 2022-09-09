@@ -214,6 +214,7 @@
  - [RedundantPropertyInitializationCheck](issues/RedundantPropertyInitializationCheck.md)
  - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
  - [ReservedWord](issues/ReservedWord.md)
+ - [RiskyCast](issues/RiskyCast.md)
  - [StringIncrement](issues/StringIncrement.md)
  - [TaintedCallable](issues/TaintedCallable.md)
  - [TaintedCookie](issues/TaintedCookie.md)

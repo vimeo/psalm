@@ -17,6 +17,7 @@ use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
 use Psalm\Issue\RedundantCastGivenDocblockType;
+use Psalm\Issue\RiskyCast;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -298,7 +299,7 @@ class CastAnalyzer
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
-        $possibly_unwanted_cast = [];
+        $risky_cast = [];
         $invalid_casts = [];
         $valid_ints = [];
         $castable_types = [];
@@ -445,7 +446,7 @@ class CastAnalyzer
             if ($atomic_type instanceof TNonEmptyArray
                 || $atomic_type instanceof TNonEmptyList
             ) {
-                $possibly_unwanted_cast[] = $atomic_type->getId();
+                $risky_cast[] = $atomic_type->getId();
 
                 $valid_ints[] = new TLiteralInt(1);
 
@@ -458,7 +459,7 @@ class CastAnalyzer
             ) {
                 // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not
                 // welcome to off-by-one hell if that happens :-)
-                $possibly_unwanted_cast[] = $atomic_type->getId();
+                $risky_cast[] = $atomic_type->getId();
 
                 $valid_ints[] = new TLiteralInt(0);
                 $valid_ints[] = new TLiteralInt(1);
@@ -486,10 +487,10 @@ class CastAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues()
             );
-        } elseif (!empty($possibly_unwanted_cast)) {
+        } elseif ($risky_cast) {
             IssueBuffer::maybeAdd(
-                new PossiblyInvalidCast(
-                    'Casting ' . $possibly_unwanted_cast[0] . ' to int has possibly unintended value of 1',
+                new RiskyCast(
+                    'Casting ' . $risky_cast[0] . ' to int has possibly unintended value of 0/1',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
@@ -525,7 +526,7 @@ class CastAnalyzer
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
-        $possibly_unwanted_cast = [];
+        $risky_cast = [];
         $invalid_casts = [];
         $valid_floats = [];
         $castable_types = [];
@@ -671,7 +672,7 @@ class CastAnalyzer
             if ($atomic_type instanceof TNonEmptyArray
                 || $atomic_type instanceof TNonEmptyList
             ) {
-                $possibly_unwanted_cast[] = $atomic_type->getId();
+                $risky_cast[] = $atomic_type->getId();
 
                 $valid_floats[] = new TLiteralFloat(1.0);
 
@@ -684,7 +685,7 @@ class CastAnalyzer
             ) {
                 // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not
                 // welcome to off-by-one hell if that happens :-)
-                $possibly_unwanted_cast[] = $atomic_type->getId();
+                $risky_cast[] = $atomic_type->getId();
 
                 $valid_floats[] = new TLiteralFloat(0.0);
                 $valid_floats[] = new TLiteralFloat(1.0);
@@ -712,10 +713,10 @@ class CastAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues()
             );
-        } elseif (!empty($possibly_unwanted_cast)) {
+        } elseif ($risky_cast) {
             IssueBuffer::maybeAdd(
-                new PossiblyInvalidCast(
-                    'Casting ' . $possibly_unwanted_cast[0] . ' to float has possibly unintended value of 1.0',
+                new RiskyCast(
+                    'Casting ' . $risky_cast[0] . ' to float has possibly unintended value of 0.0/1.0',
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
