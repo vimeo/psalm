@@ -45,6 +45,7 @@ use function in_array;
 use function ini_set;
 use function is_array;
 use function is_dir;
+use function is_numeric;
 use function is_string;
 use function microtime;
 use function pathinfo;
@@ -230,7 +231,7 @@ HELP;
             chdir($current_dir);
         }
 
-        $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
+        $threads = isset($options['threads']) && is_numeric($options['threads']) ? (int)$options['threads'] : 1;
 
         if (isset($options['no-cache'])) {
             $providers = new Providers(
