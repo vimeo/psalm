@@ -201,7 +201,7 @@ class Creator
 
             if (!$replacements) {
                 throw new ConfigCreationException(
-                    'Could not located any PSR-0 or PSR-4-compatible paths in ' . $composer_json_location
+                    'Could not locate any PSR-0 or PSR-4-compatible paths with PHP files in ' . $composer_json_location
                 );
             }
         }
