@@ -513,7 +513,7 @@ class AssertAnnotationTest extends TestCase
                     }
 
                     /** @psalm-suppress MixedAssignment */
-                    $a = $_GET["a"];
+                    $a = $GLOBALS["a"];
 
                     assertIntOrFoo($a);
 

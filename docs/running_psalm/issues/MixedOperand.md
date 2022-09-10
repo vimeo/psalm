@@ -5,7 +5,7 @@ Emitted when Psalm cannot infer a type for an operand in any calculated expressi
 ```php
 <?php
 
-echo $_GET['foo'] + "hello";
+echo $GLOBALS['foo'] + "hello";
 ```
 
 ## Why it’s bad

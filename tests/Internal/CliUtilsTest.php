@@ -19,7 +19,7 @@ class CliUtilsTest extends TestCase
     protected function setUp(): void
     {
         global $argv;
-        $this->argv = $argv;
+        $this->argv = $argv ?? [];
     }
 
     protected function tearDown(): void

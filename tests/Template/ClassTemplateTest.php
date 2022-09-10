@@ -1425,7 +1425,7 @@ class ClassTemplateTest extends TestCase
                     }
 
                     /** @psalm-suppress MixedArgument */
-                    $c = new ArrayCollection($_GET["a"]);',
+                    $c = new ArrayCollection($GLOBALS["a"]);',
                 [
                     '$c' => 'ArrayCollection<array-key, mixed>',
                 ],

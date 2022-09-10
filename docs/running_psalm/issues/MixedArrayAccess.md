@@ -5,5 +5,5 @@ Emitted when trying to access an array offset on a value whose type Psalm cannot
 ```php
 <?php
 
-echo $_GET['foo'][0];
+echo $GLOBALS['foo'][0];
 ```

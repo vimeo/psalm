@@ -1213,7 +1213,7 @@ class ReturnTypeTest extends TestCase
                      * @psalm-suppress UndefinedClass
                      */
                     function fooFoo(): A {
-                        return $_GET["a"];
+                        return $GLOBALS["a"];
                     }
 
                     fooFoo()->bar();',
