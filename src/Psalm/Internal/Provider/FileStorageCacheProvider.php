@@ -5,6 +5,7 @@ namespace Psalm\Internal\Provider;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Storage\FileStorage;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -168,7 +169,19 @@ class FileStorageCacheProvider
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_STORAGE_CACHE_DIRECTORY;
 
         if ($create_directory && !is_dir($parser_cache_directory)) {
-            mkdir($parser_cache_directory, 0777, true);
+            try {
+                if (mkdir($parser_cache_directory, 0777, true) === false) {
+                    // any other error than directory already exists/permissions issue
+                    throw new RuntimeException('Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons');
+                }
+            } catch (RuntimeException $e) {
+                // Race condition (#4483)
+                if (!is_dir($parser_cache_directory)) {
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
+                }
+            }
         }
 
         if (PHP_VERSION_ID >= 80100) {
