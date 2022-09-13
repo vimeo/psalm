@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use DateTime;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
@@ -21,8 +22,7 @@ class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProviderInterf
         $statements_source = $event->getSource();
         $call_args = $event->getCallArgs();
         $method_name_lowercase = $event->getMethodNameLowercase();
-        if (
-            !$statements_source instanceof StatementsAnalyzer
+        if (!$statements_source instanceof StatementsAnalyzer
             || $method_name_lowercase !== 'modify'
             || !isset($call_args[0])
         ) {
@@ -42,7 +42,7 @@ class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProviderInterf
                 return null;
             }
 
-            if (@(new \DateTime())->modify($type_part->value) === false) {
+            if (@(new DateTime())->modify($type_part->value) === false) {
                 $has_false = true;
             } else {
                 $has_date_time = true;
