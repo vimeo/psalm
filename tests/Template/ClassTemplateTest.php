@@ -4600,6 +4600,23 @@ class ClassTemplateTest extends TestCase
                     final class Three {}',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40 - The inferred type \'T:A as One|Two\' ',
             ],
+            'preventMixedNestedCoercion' => [
+                'code' => '<?php
+                    /** @template T */
+                    class MyCollection {
+                        /** @param array<T> $members */
+                        public function __construct(public array $members) {}
+                    }
+
+                    /**
+                     * @param MyCollection<string> $c
+                     * @return MyCollection<mixed>
+                     */
+                    function getMixedCollection(MyCollection $c): MyCollection {
+                        return $c;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }
