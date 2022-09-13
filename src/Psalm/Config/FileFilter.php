@@ -15,10 +15,10 @@ use function in_array;
 use function is_dir;
 use function is_iterable;
 use function preg_match;
-use function preg_replace;
 use function readlink;
 use function realpath;
 use function restore_error_handler;
+use function rtrim;
 use function set_error_handler;
 use function str_replace;
 use function stripos;
@@ -421,7 +421,7 @@ class FileFilter
      */
     protected static function slashify(string $str): string
     {
-        return rtrim( $str, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR;
+        return rtrim($str, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
     }
 
     public function allows(string $file_name, bool $case_sensitive = false): bool

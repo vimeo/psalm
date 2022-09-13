@@ -31,6 +31,7 @@ use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
+use const PHP_VERSION_ID;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -179,7 +180,9 @@ class ParserCacheProvider
             $hashes_decoded = json_decode($hashes_encoded, true);
 
             if (!is_array($hashes_decoded)) {
-                throw new UnexpectedValueException('File content hashes are of invalid type ' . gettype($hashes_decoded));
+                throw new UnexpectedValueException(
+                    'File content hashes are of invalid type ' . gettype($hashes_decoded)
+                );
             }
 
             /** @var array<string, string> $hashes_decoded */
@@ -243,8 +246,9 @@ class ParserCacheProvider
             return;
         }
 
-        // directory was removed
-        // most likely due to a race condition with other psalm instances that were manually started at the same time
+        // directory was removed most likely due to a race condition
+        // with other psalm instances that were manually started at
+        // the same time
         clearstatcache(true, $root_cache_directory);
         if (!is_dir($root_cache_directory)) {
             return;
@@ -319,8 +323,11 @@ class ParserCacheProvider
     }
 
 
-    private function getCacheLocationForPath(string $file_path, string $subdirectory, bool $create_directory = false): string
-    {
+    private function getCacheLocationForPath(
+        string $file_path,
+        string $subdirectory,
+        bool $create_directory = false
+    ): string {
         $root_cache_directory = $this->config->getCacheDirectory();
 
         if (!$root_cache_directory) {
@@ -333,7 +340,9 @@ class ParserCacheProvider
             try {
                 if (mkdir($parser_cache_directory, 0777, true) === false) {
                     // any other error than directory already exists/permissions issue
-                    throw new RuntimeException('Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons');
+                    throw new RuntimeException(
+                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons'
+                    );
                 }
             } catch (RuntimeException $e) {
                 // Race condition (#4483)

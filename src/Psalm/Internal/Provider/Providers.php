@@ -100,7 +100,7 @@ class Providers
 
         $file_size = filesize($path);
         $content = '';
-        if ( $file_size > 0 ) {
+        if ($file_size > 0) {
             $content = (string) fread($fp, $file_size);
         }
 

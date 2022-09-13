@@ -172,7 +172,9 @@ class FileStorageCacheProvider
             try {
                 if (mkdir($parser_cache_directory, 0777, true) === false) {
                     // any other error than directory already exists/permissions issue
-                    throw new RuntimeException('Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons');
+                    throw new RuntimeException(
+                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons'
+                    );
                 }
             } catch (RuntimeException $e) {
                 // Race condition (#4483)

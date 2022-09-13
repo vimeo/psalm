@@ -6,7 +6,6 @@ use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
 use DOMDocument;
-use DOMElement;
 use InvalidArgumentException;
 use LogicException;
 use OutOfBoundsException;

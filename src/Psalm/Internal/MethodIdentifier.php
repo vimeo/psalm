@@ -6,7 +6,7 @@ use InvalidArgumentException;
 
 use function explode;
 use function is_string;
-use function preg_replace;
+use function ltrim;
 use function strpos;
 use function strtolower;
 

@@ -31,6 +31,8 @@ use function md5;
 use function strlen;
 use function strpos;
 
+use const PHP_VERSION_ID;
+
 /**
  * @internal
  */
