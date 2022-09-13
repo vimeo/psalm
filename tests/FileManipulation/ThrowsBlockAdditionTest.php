@@ -118,6 +118,30 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 ['MissingThrowsDocblock'],
                 true,
             ],
+            'addThrowsAnnotationToFunctionInNamespace' => [
+                '<?php
+                    namespace Foo;
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \InvalidArgumentException();
+                        }
+                        return $s;
+                    }',
+                '<?php
+                    namespace Foo;
+                    /**
+                     * @throws \InvalidArgumentException
+                     */
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \InvalidArgumentException();
+                        }
+                        return $s;
+                    }',
+                '7.4',
+                ['MissingThrowsDocblock'],
+                true,
+            ],
         ];
     }
 }
