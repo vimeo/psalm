@@ -38,6 +38,7 @@
             <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
             <directory name="vendor/netresearch/jsonmapper" />
             <directory name="vendor/phpunit" />
+            <file name="vendor/nikic/php-parser/lib/PhpParser/Node/UnionType.php" />
         </ignoreFiles>
     </projectFiles>
 
