@@ -405,6 +405,7 @@ class FunctionDocblockManipulator
             $inferredThrowsClause = array_reduce(
                 $this->throwsExceptions,
                 function (string $throwsClause, string $exception) {
+                    $exception = '\\' . $exception;
                     return $throwsClause === '' ? $exception : $throwsClause.'|'.$exception;
                 },
                 ''
