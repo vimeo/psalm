@@ -541,18 +541,28 @@ class VariableFetchAnalyzer
 
         if ($var_id === '$argv') {
             // only in CLI, null otherwise
-            return new Union([
+            $argv_nullable = new Union([
                 new TNonEmptyList(Type::getString()),
                 new TNull()
             ]);
+            // use TNull explicitly instead of this
+            // as it will cause weird errors due to ignore_nullable_issues true
+            // e.g. InvalidPropertyAssignmentValue
+            // $this->argv 'list<string>' cannot be assigned type 'non-empty-list<string>'
+            // $argv_nullable->possibly_undefined = true;
+            $argv_nullable->ignore_nullable_issues = true;
+            return $argv_nullable;
         }
 
         if ($var_id === '$argc') {
             // only in CLI, null otherwise
-            return new Union([
+            $argc_nullable = new Union([
                 new TIntRange(1, null),
                 new TNull()
             ]);
+            // $argc_nullable->possibly_undefined = true;
+            $argc_nullable->ignore_nullable_issues = true;
+            return $argc_nullable;
         }
 
         if (!self::isSuperGlobal($var_id)) {
