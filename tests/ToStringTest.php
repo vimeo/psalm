@@ -505,6 +505,18 @@ class ToStringTest extends TestCase
                 ',
                 'error_message' => 'ImplicitToStringCast'
             ],
+            'toStringTypecastNonString' => [
+                '<?php
+                    class A {
+                        function __toString(): string {
+                            return "ha";
+                        }
+                    }
+
+                    $foo = new A();
+                    echo (int) $foo;',
+                'error_message' => 'InvalidCast',
+            ],
         ];
     }
 }

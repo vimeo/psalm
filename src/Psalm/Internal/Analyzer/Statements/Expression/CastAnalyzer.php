@@ -54,9 +54,18 @@ use function array_merge;
 use function array_pop;
 use function array_values;
 use function get_class;
+use function strtolower;
 
 class CastAnalyzer
 {
+    /** @var string[] */
+    private const PSEUDO_CASTABLE_CLASSES = [
+        'SimpleXMLElement',
+        'DOMNode',
+        'GMP',
+        'Decimal\Decimal',
+    ];
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Cast $stmt,
@@ -78,7 +87,6 @@ class CastAnalyzer
 
                 $type = self::castIntAttempt(
                     $statements_analyzer,
-                    $context,
                     $maybe_type,
                     $stmt->expr,
                     true
@@ -106,7 +114,6 @@ class CastAnalyzer
 
                 $type = self::castFloatAttempt(
                     $statements_analyzer,
-                    $context,
                     $maybe_type,
                     $stmt->expr,
                     true
@@ -292,7 +299,6 @@ class CastAnalyzer
 
     public static function castIntAttempt(
         StatementsAnalyzer $statements_analyzer,
-        Context $context,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false
@@ -373,9 +379,7 @@ class CastAnalyzer
                 continue;
             }
 
-            if ($atomic_type instanceof TNamedObject
-                || $atomic_type instanceof TObjectWithProperties
-            ) {
+            if ($atomic_type instanceof TNamedObject) {
                 $intersection_types = [$atomic_type];
 
                 if ($atomic_type->extra_types) {
@@ -383,62 +387,25 @@ class CastAnalyzer
                 }
 
                 foreach ($intersection_types as $intersection_type) {
-                    if ($intersection_type instanceof TNamedObject) {
-                        $intersection_method_id = new MethodIdentifier(
-                            $intersection_type->value,
-                            '__tostring'
-                        );
-
-                        if ($codebase->methods->methodExists(
-                            $intersection_method_id,
-                            $context->calling_method_id,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        )) {
-                            $return_type = $codebase->methods->getMethodReturnType(
-                                $intersection_method_id,
-                                $self_class
-                            ) ?? Type::getString();
-
-                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
-
-                            MethodCallReturnTypeFetcher::taintMethodCallResult(
-                                $statements_analyzer,
-                                $return_type,
-                                $stmt,
-                                $stmt,
-                                [],
-                                $intersection_method_id,
-                                $declaring_method_id,
-                                $intersection_type->value . '::__toString',
-                                $context
-                            );
-
-                            if ($statements_analyzer->data_flow_graph) {
-                                $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
-                            }
-
-                            foreach ($return_type->getAtomicTypes() as $sub_atomic_type) {
-                                if ($sub_atomic_type instanceof TLiteralString) {
-                                    $valid_ints[] = new TLiteralInt((int) $sub_atomic_type->value);
-                                } elseif ($sub_atomic_type instanceof TNumericString) {
-                                    $castable_types[] = new TInt();
-                                } else {
-                                    // any normal string is technically $valid_int[] = new TLiteralInt(0);
-                                    // however we cannot be certain that it's not inferred, therefore less strict
-                                    $castable_types[] = new TInt();
-                                }
-                            }
-
-                            continue 2;
-                        }
+                    if (!$intersection_type instanceof TNamedObject) {
+                        continue;
                     }
 
-                    if ($intersection_type instanceof TObjectWithProperties
-                        && isset($intersection_type->methods['__toString'])
-                    ) {
-                        $castable_types[] = new TInt();
+                    // prevent "Could not get class storage for mixed"
+                    if (!$codebase->classExists($intersection_type->value)) {
+                        continue;
+                    }
 
-                        continue 2;
+                    foreach (self::PSEUDO_CASTABLE_CLASSES as $pseudo_castable_class) {
+                        if (strtolower($intersection_type->value) === strtolower($pseudo_castable_class)
+                            || $codebase->classExtends(
+                                $intersection_type->value,
+                                $pseudo_castable_class
+                            )
+                        ) {
+                            $castable_types[] = new TInt();
+                            continue 3;
+                        }
                     }
                 }
             }
@@ -519,7 +486,6 @@ class CastAnalyzer
 
     public static function castFloatAttempt(
         StatementsAnalyzer $statements_analyzer,
-        Context $context,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false
@@ -599,9 +565,7 @@ class CastAnalyzer
                 continue;
             }
 
-            if ($atomic_type instanceof TNamedObject
-                || $atomic_type instanceof TObjectWithProperties
-            ) {
+            if ($atomic_type instanceof TNamedObject) {
                 $intersection_types = [$atomic_type];
 
                 if ($atomic_type->extra_types) {
@@ -609,62 +573,25 @@ class CastAnalyzer
                 }
 
                 foreach ($intersection_types as $intersection_type) {
-                    if ($intersection_type instanceof TNamedObject) {
-                        $intersection_method_id = new MethodIdentifier(
-                            $intersection_type->value,
-                            '__tostring'
-                        );
-
-                        if ($codebase->methods->methodExists(
-                            $intersection_method_id,
-                            $context->calling_method_id,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        )) {
-                            $return_type = $codebase->methods->getMethodReturnType(
-                                $intersection_method_id,
-                                $self_class
-                            ) ?? Type::getString();
-
-                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
-
-                            MethodCallReturnTypeFetcher::taintMethodCallResult(
-                                $statements_analyzer,
-                                $return_type,
-                                $stmt,
-                                $stmt,
-                                [],
-                                $intersection_method_id,
-                                $declaring_method_id,
-                                $intersection_type->value . '::__toString',
-                                $context
-                            );
-
-                            if ($statements_analyzer->data_flow_graph) {
-                                $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
-                            }
-
-                            foreach ($return_type->getAtomicTypes() as $sub_atomic_type) {
-                                if ($sub_atomic_type instanceof TLiteralString) {
-                                    $valid_floats[] = new TLiteralFloat((float) $sub_atomic_type->value);
-                                } elseif ($sub_atomic_type instanceof TNumericString) {
-                                    $castable_types[] = new TFloat();
-                                } else {
-                                    // any normal string is technically $valid_int[] = new TLiteralInt(0);
-                                    // however we cannot be certain that it's not inferred, therefore less strict
-                                    $castable_types[] = new TFloat();
-                                }
-                            }
-
-                            continue 2;
-                        }
+                    if (!$intersection_type instanceof TNamedObject) {
+                        continue;
                     }
 
-                    if ($intersection_type instanceof TObjectWithProperties
-                        && isset($intersection_type->methods['__toString'])
-                    ) {
-                        $castable_types[] = new TFloat();
+                    // prevent "Could not get class storage for mixed"
+                    if (!$codebase->classExists($intersection_type->value)) {
+                        continue;
+                    }
 
-                        continue 2;
+                    foreach (self::PSEUDO_CASTABLE_CLASSES as $pseudo_castable_class) {
+                        if (strtolower($intersection_type->value) === strtolower($pseudo_castable_class)
+                            || $codebase->classExtends(
+                                $intersection_type->value,
+                                $pseudo_castable_class
+                            )
+                        ) {
+                            $castable_types[] = new TFloat();
+                            continue 3;
+                        }
                     }
                 }
             }
