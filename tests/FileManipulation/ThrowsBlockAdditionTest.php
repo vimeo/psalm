@@ -180,6 +180,46 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 ['MissingThrowsDocblock'],
                 true,
             ],
+            'addThrowsAnnotationAccountsForUseStatements' => [
+                '<?php
+                    namespace Foo {
+                        use Bar\BarException;
+                        function foo(): void {
+                            bar();
+                        }
+                        /**
+                         * @throws BarException
+                         */
+                        function bar(): void {
+                            throw new BarException();
+                        }
+                    }
+                    namespace Bar {
+                        class BarException extends \DomainException {}
+                    }',
+                '<?php
+                    namespace Foo {
+                        use Bar\BarException;
+                        /**
+                         * @throws BarException
+                         */
+                        function foo(): void {
+                            bar();
+                        }
+                        /**
+                         * @throws BarException
+                         */
+                        function bar(): void {
+                            throw new BarException();
+                        }
+                    }
+                    namespace Bar {
+                        class BarException extends \DomainException {}
+                    }',
+                '7.4',
+                ['MissingThrowsDocblock'],
+                true,
+            ],
         ];
     }
 }
