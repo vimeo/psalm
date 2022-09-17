@@ -3653,8 +3653,8 @@ class AssertionFinder
                 )
                 : null;
 
-            if ($array_root) {
-                if ($first_var_name === null && isset($expr->getArgs()[0])) {
+            if ($array_root && isset($expr->getArgs()[0])) {
+                if ($first_var_name === null) {
                     $first_arg = $expr->getArgs()[0];
 
                     if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
