@@ -20,7 +20,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                     }',
                 '<?php
                     /**
-                     * @throws \InvalidArgumentException
+                     * @throws InvalidArgumentException
                      */
                     function foo(string $s): string {
                         if("" === $s) {
@@ -45,7 +45,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                     }',
                 '<?php
                     /**
-                     * @throws \InvalidArgumentException|\DomainException
+                     * @throws InvalidArgumentException|DomainException
                      */
                     function foo(string $s): string {
                         if("" === $s) {
@@ -74,7 +74,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @throws InvalidArgumentException|DomainException
-                     * @throws \Exception
+                     * @throws Exception
                      */
                     function foo(string $s): string {
                         if("" === $s) {
@@ -103,7 +103,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 '<?php
                     /**
                      * @throws InvalidArgumentException
-                     * @throws \DomainException
+                     * @throws DomainException
                      */
                     function foo(string $s): string {
                         if("" === $s) {
