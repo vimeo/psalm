@@ -2,6 +2,25 @@
 
 `object`, `stdClass`, `Foo`, `Bar\Baz` etc. are examples of object types. These types are also valid types in PHP.
 
+#### Object properties
+
+Psalm supports specifying the properties of an object and their expected types, e.g.:
+
+```php
+/** @param object{foo: string} $obj */
+function takesObject(object $obj) : string {
+    return $obj->foo;
+}
+
+takesObject((object) ["foo" => "hello"]);
+```
+
+Optional properties can be denoted by a trailing `?`, e.g.:
+
+```php
+/** @param object{optional?: string} */
+```
+
 #### Generic object types
 
 Psalm supports using generic object types like `ArrayObject<int, string>`. Any generic object should be typehinted with appropriate [`@template` tags](../templated_annotations.md).
