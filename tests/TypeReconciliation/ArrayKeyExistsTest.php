@@ -459,4 +459,29 @@ class ArrayKeyExistsTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testAllowStaticPropertyFetchAsNeedle(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+            class Foo {
+                /** @var self::STATE_* $status */
+                public static int $status = self::STATE_A;
+                public const STATE_A = 0;
+                public const STATE_B = 1;
+            }
+
+            /** @var array<string> $bar */
+            $bar = [];
+
+            if (array_key_exists(Foo::$status, $bar)) {
+                echo $bar[Foo::$status];
+            }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }
