@@ -3687,6 +3687,7 @@ class AssertionFinder
                     }
                 } elseif (($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\Variable
                         || $expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\PropertyFetch
+                        || $expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
                     )
                     && $source instanceof StatementsAnalyzer
                     && ($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
