@@ -229,7 +229,7 @@ Templated types aren't limited to key-value pairs, and you can re-use templates 
 ```php
 <?php
 /**
- * @template T0 as array-key
+ * @template T0 of array-key
  *
  * @template-implements IteratorAggregate<T0, int>
  */

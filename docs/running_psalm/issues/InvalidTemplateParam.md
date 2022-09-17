@@ -6,7 +6,7 @@ Emitted when using the `@extends`/`@implements` annotation to extend a class tha
 <?php
 
 /**
- * @template T as object
+ * @template T of object
  */
 class Base {}
 
