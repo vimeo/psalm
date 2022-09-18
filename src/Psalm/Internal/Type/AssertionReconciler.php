@@ -293,6 +293,10 @@ class AssertionReconciler extends Reconciler
 
         $old_var_type_string = $existing_var_type->getId();
 
+        if ($new_type_part instanceof TMixed) {
+            return $existing_var_type;
+        }
+
         $new_type_has_interface = false;
 
         if ($new_type_part->isObjectType()) {

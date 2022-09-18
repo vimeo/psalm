@@ -105,7 +105,7 @@ class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $inside_loop = false
     ): ?Union {
-        if ($assertion instanceof Any && $existing_var_type->hasMixed()) {
+        if ($assertion instanceof Any) {
             return $existing_var_type;
         }
 

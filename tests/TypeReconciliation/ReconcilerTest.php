@@ -9,6 +9,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Any;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsLooselyEqual;
@@ -179,6 +180,7 @@ class ReconcilerTest extends TestCase
             'SimpleXMLElementNotAlwaysTruthy2' => ['SimpleXMLElement', new Falsy(), 'SimpleXMLElement'],
             'SimpleXMLIteratorNotAlwaysTruthy' => ['SimpleXMLIterator', new Truthy(), 'SimpleXMLIterator'],
             'SimpleXMLIteratorNotAlwaysTruthy2' => ['SimpleXMLIterator', new Falsy(), 'SimpleXMLIterator'],
+            'stringWithAny' => ['string', new Any(), 'string'],
         ];
     }
 
