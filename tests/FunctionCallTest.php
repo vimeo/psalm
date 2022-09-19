@@ -128,7 +128,7 @@ class FunctionCallTest extends TestCase
             'noRedundantConditionAfterMixedOrEmptyArrayCountCheck' => [
                 '<?php
                     function foo(string $s) : void {
-                        $a = $_GET["s"] ?: [];
+                        $a = $GLOBALS["s"] ?: [];
                         if (count($a)) {}
                         if (!count($a)) {}
                     }',
@@ -1037,7 +1037,7 @@ class FunctionCallTest extends TestCase
                     /** @psalm-suppress InvalidScalarArgument */
                     $a = mktime("foo");
                     /** @psalm-suppress MixedArgument */
-                    $b = mktime($_GET["foo"]);
+                    $b = mktime($GLOBALS["foo"]);
                     $c = mktime(1, 2, 3);',
                 'assertions' => [
                     '$a' => 'false|int',
@@ -1481,7 +1481,7 @@ class FunctionCallTest extends TestCase
                     $y2 = date("Y", 10000);
                     $F2 = date("F", 10000);
                     /** @psalm-suppress MixedArgument */
-                    $F3 = date("F", $_GET["F3"]);',
+                    $F3 = date("F", $GLOBALS["F3"]);',
                 [
                     '$y' => 'numeric-string',
                     '$m' => 'numeric-string',

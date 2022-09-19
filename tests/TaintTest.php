@@ -458,13 +458,6 @@ class TaintTest extends TestCase
 
                     echo $a[0]["b"];',
             ],
-            'intUntainted' => [
-                '<?php
-                    $input = $_GET[\'input\'];
-                    if (is_int($input)) {
-                        echo "$input";
-                    }',
-            ],
             'dontTaintSpecializedInstanceProperty' => [
                 '<?php
                     /** @psalm-taint-specialize */
@@ -672,7 +665,7 @@ class TaintTest extends TestCase
             ],
             'resultOfPlusIsNotTainted' => [
                 '<?php
-                    $input = $_GET["foo"];
+                    $input = is_numeric( $_GET["foo"] ) ? $_GET["foo"] : "";
                     $var = $input + 1;
                     var_dump($var);'
             ],
@@ -1611,7 +1604,15 @@ class TaintTest extends TestCase
                     function test(...$args) {
                         echo $args[0];
                     }
-                    test(...$_GET["other"]);',
+
+                    /**
+                     * @psalm-taint-source input
+                     */
+                    function getQueryParam() {}
+
+                    // cannot use $_GET, see #8477
+                    $foo = getQueryParam();
+                    test(...$foo);',
                 'error_message' => 'TaintedHtml',
             ],
             'foreachArg' => [

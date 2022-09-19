@@ -12,7 +12,7 @@ use const DIRECTORY_SEPARATOR;
 class CliUtilsTest extends TestCase
 {
     /**
-     * @var array<int, string>
+     * @var list<string>
      */
     private $argv = [];
 

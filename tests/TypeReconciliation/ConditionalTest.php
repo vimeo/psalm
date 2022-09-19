@@ -768,10 +768,10 @@ class ConditionalTest extends TestCase
                         }
                     }',
             ],
-            'isStringServerVar' => [
+            'isStringSessionVar' => [
                 '<?php
-                    if (is_string($_SERVER["abc"])) {
-                        echo substr($_SERVER["abc"], 1, 2);
+                    if (is_string($_SESSION["abc"])) {
+                        echo substr($_SESSION["abc"], 1, 2);
                     }',
             ],
             'notObject' => [

@@ -1088,7 +1088,7 @@ class Codebase
             }
 
             if (strpos($symbol, '$') === 0) {
-                $type = VariableFetchAnalyzer::getGlobalType($symbol);
+                $type = VariableFetchAnalyzer::getGlobalType($symbol, $this->analysis_php_version_id);
                 if (!$type->isMixed()) {
                     return ['type' => '<?php ' . $type];
                 }

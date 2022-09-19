@@ -1512,7 +1512,7 @@ class ArrayFunctionCallTest extends TestCase
                     $direct_closure_result = array_reduce(
                         $arr,
                         function (int $carry, int $item) {
-                            return $_GET["boo"];
+                            return $GLOBALS["boo"];
                         },
                         1
                     );',
@@ -2212,7 +2212,7 @@ class ArrayFunctionCallTest extends TestCase
                     $e = array_filter(
                         ["a" => 5, "b" => 12, "c" => null],
                         function(?int $i) {
-                            return $_GET["a"];
+                            return $GLOBALS["a"];
                         }
                     );',
                 'error_message' => 'MixedArgumentTypeCoercion',
