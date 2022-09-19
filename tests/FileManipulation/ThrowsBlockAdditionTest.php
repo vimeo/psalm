@@ -118,6 +118,108 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 ['MissingThrowsDocblock'],
                 true,
             ],
+            'addThrowsAnnotationToFunctionInNamespace' => [
+                '<?php
+                    namespace Foo;
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \InvalidArgumentException();
+                        }
+                        return $s;
+                    }',
+                '<?php
+                    namespace Foo;
+                    /**
+                     * @throws \InvalidArgumentException
+                     */
+                    function foo(string $s): string {
+                        if("" === $s) {
+                            throw new \InvalidArgumentException();
+                        }
+                        return $s;
+                    }',
+                '7.4',
+                ['MissingThrowsDocblock'],
+                true,
+            ],
+            'addThrowsAnnotationToFunctionFromFunctionFromOtherNamespace' => [
+                '<?php
+                    namespace Foo {
+                        function foo(): void {
+                            \Bar\bar();
+                        }
+                    }
+                    namespace Bar {
+                        class BarException extends \DomainException {}
+                        /**
+                         * @throws BarException
+                         */
+                        function bar(): void {
+                            throw new BarException();
+                        }
+                    }',
+                '<?php
+                    namespace Foo {
+                        /**
+                         * @throws \Bar\BarException
+                         */
+                        function foo(): void {
+                            \Bar\bar();
+                        }
+                    }
+                    namespace Bar {
+                        class BarException extends \DomainException {}
+                        /**
+                         * @throws BarException
+                         */
+                        function bar(): void {
+                            throw new BarException();
+                        }
+                    }',
+                '7.4',
+                ['MissingThrowsDocblock'],
+                true,
+            ],
+            'addThrowsAnnotationAccountsForUseStatements' => [
+                '<?php
+                    namespace Foo {
+                        use Bar\BarException;
+                        function foo(): void {
+                            bar();
+                        }
+                        /**
+                         * @throws BarException
+                         */
+                        function bar(): void {
+                            throw new BarException();
+                        }
+                    }
+                    namespace Bar {
+                        class BarException extends \DomainException {}
+                    }',
+                '<?php
+                    namespace Foo {
+                        use Bar\BarException;
+                        /**
+                         * @throws BarException
+                         */
+                        function foo(): void {
+                            bar();
+                        }
+                        /**
+                         * @throws BarException
+                         */
+                        function bar(): void {
+                            throw new BarException();
+                        }
+                    }
+                    namespace Bar {
+                        class BarException extends \DomainException {}
+                    }',
+                '7.4',
+                ['MissingThrowsDocblock'],
+                true,
+            ],
         ];
     }
 }
