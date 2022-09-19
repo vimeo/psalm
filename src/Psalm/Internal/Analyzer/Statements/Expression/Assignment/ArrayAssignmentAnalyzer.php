@@ -345,8 +345,14 @@ class ArrayAssignmentAnalyzer
                     ) {
                         $new_char = $current_type->getSingleStringLiteral()->value;
 
-                        if (strlen($new_char) === 1) {
-                            $type->value[0] = $new_char;
+                        if (strlen($new_char) === 1 && $type->value[0] !== $new_char) {
+                            $v = $type->value;
+                            $v[0] = $new_char;
+                            $changed = true;
+                            $type = new TLiteralString($v);
+                            $types[$type->getKey()] = $type;
+                            unset($types[$k]);
+                            break;
                         }
                     }
                 } elseif ($type instanceof TNonEmptyList
@@ -360,13 +366,17 @@ class ArrayAssignmentAnalyzer
 
                     $has_matching_objectlike_property = true;
 
-                    $type->type_param = Type::combineUnionTypes(
+                    $changed = true;
+                    $type = $type->replaceTypeParam(Type::combineUnionTypes(
                         clone $current_type,
                         $type->type_param,
                         $codebase,
                         true,
                         false
-                    );
+                    ));
+                    $types[$type->getKey()] = $type;
+                    unset($types[$k]);
+                    break;
                 }
             }
         }
@@ -383,10 +393,9 @@ class ArrayAssignmentAnalyzer
                     [$key_value->value => clone $current_type],
                     $key_value instanceof TLiteralClassString
                         ? [$key_value->value => true]
-                        : null
+                        : null,
+                    true
                 );
-
-                $object_like->sealed = true;
 
                 $array_assignment_type = new Union([
                     $object_like,
@@ -620,10 +629,12 @@ class ArrayAssignmentAnalyzer
                 } elseif ($atomic_root_types['array'] instanceof TNonEmptyArray
                     || $atomic_root_types['array'] instanceof TNonEmptyList
                 ) {
+                    /** @psalm-suppress InaccessibleProperty We just created this object */
                     $array_atomic_type->count = $atomic_root_types['array']->count;
                 } elseif ($atomic_root_types['array'] instanceof TKeyedArray
                     && $atomic_root_types['array']->sealed
                 ) {
+                    /** @psalm-suppress InaccessibleProperty We just created this object */
                     $array_atomic_type->count = count($atomic_root_types['array']->properties);
                     $from_countable_object_like = true;
 
