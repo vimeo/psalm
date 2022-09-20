@@ -517,6 +517,16 @@ class ToStringTest extends TestCase
                     echo (int) $foo;',
                 'error_message' => 'InvalidCast',
             ],
+            'riskyArrayToIntCast' => [
+                '<?php
+                    echo (int) array();',
+                'error_message' => 'RiskyCast',
+            ],
+            'riskyArrayToFloatCast' => [
+                '<?php
+                    echo (float) array(\'hello\');',
+                'error_message' => 'RiskyCast',
+            ],
         ];
     }
 }
