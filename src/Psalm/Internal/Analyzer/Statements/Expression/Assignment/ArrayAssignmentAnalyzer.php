@@ -299,71 +299,53 @@ class ArrayAssignmentAnalyzer
 
         $changed = false;
         $types = [];
-        foreach ($child_stmt_type->getAtomicTypes() as $k => $type) {
+        foreach ($child_stmt_type->getAtomicTypes() as $type) {
+            $old_type = $type;
             if ($type instanceof TTemplateParam) {
-                $changed = true;
                 $type = $type->replaceAs(self::updateTypeWithKeyValues(
                     $codebase,
                     $type->as,
                     $current_type,
                     $key_values
                 ));
-                $types[$type->getKey()] = $type;
-
                 $has_matching_objectlike_property = true;
-
-                continue;
-            }
-
-            if ($type instanceof TKeyedArray) {
-                $changedProperties = false;
+            } elseif ($type instanceof TKeyedArray) {
                 $properties = $type->properties;
                 foreach ($key_values as $key_value) {
                     if (isset($properties[$key_value->value])) {
                         $has_matching_objectlike_property = true;
 
-                        $changedProperties = true;
                         $properties[$key_value->value] = clone $current_type;
                     }
                 }
-                if ($changedProperties) {
-                    $changed = true;
-                    $type = $type->setProperties($properties);
-                    $types[$type->getKey()] = $type;
-                    unset($types[$k]);
-                }
-                continue;
-            }
-            foreach ($key_values as $key_value) {
-                if ($type instanceof TString
-                    && $key_value instanceof TLiteralInt
-                ) {
-                    $has_matching_string = true;
+                $type = $type->setProperties($properties);
+            } elseif ($type instanceof TString) {
+                foreach ($key_values as $key_value) {
+                    if ($key_value instanceof TLiteralInt) {
+                        $has_matching_string = true;
 
-                    if ($type instanceof TLiteralString
-                        && $current_type->isSingleStringLiteral()
-                    ) {
-                        $new_char = $current_type->getSingleStringLiteral()->value;
+                        if ($type instanceof TLiteralString
+                            && $current_type->isSingleStringLiteral()
+                        ) {
+                            $new_char = $current_type->getSingleStringLiteral()->value;
 
-                        if (strlen($new_char) === 1 && $type->value[0] !== $new_char) {
-                            $v = $type->value;
-                            $v[0] = $new_char;
-                            $changed = true;
-                            $type = new TLiteralString($v);
-                            $types[$type->getKey()] = $type;
-                            unset($types[$k]);
-                            break;
+                            if (strlen($new_char) === 1 && $type->value[0] !== $new_char) {
+                                $v = $type->value;
+                                $v[0] = $new_char;
+                                $changed = true;
+                                $type = new TLiteralString($v);
+                                break;
+                            }
                         }
                     }
-                } elseif ($type instanceof TNonEmptyList
-                    && $key_value instanceof TLiteralInt
-                    && count($key_values) === 1
-                ) {
-                    $count = ($type->count ?? $type->min_count) ?? 1;
-                    if ($key_value->value >= $count) {
-                        continue;
-                    }
-
+                }
+            } elseif ($type instanceof TNonEmptyList
+                && count($key_values) === 1
+                && $key_values[0] instanceof TLiteralInt
+            ) {
+                $key_value = $key_values[0];
+                $count = ($type->count ?? $type->min_count) ?? 1;
+                if ($key_value->value < $count) {
                     $has_matching_objectlike_property = true;
 
                     $changed = true;
@@ -374,11 +356,10 @@ class ArrayAssignmentAnalyzer
                         true,
                         false
                     ));
-                    $types[$type->getKey()] = $type;
-                    unset($types[$k]);
-                    break;
                 }
             }
+            $types[$type->getKey()] = $type;
+            $changed = $changed || $old_type !== $type;
         }
 
         if ($changed) {
