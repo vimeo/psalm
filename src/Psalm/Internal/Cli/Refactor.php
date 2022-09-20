@@ -35,6 +35,7 @@ use function implode;
 use function in_array;
 use function ini_set;
 use function is_array;
+use function is_numeric;
 use function is_string;
 use function max;
 use function microtime;
@@ -284,7 +285,7 @@ HELP;
             chdir($current_dir);
         }
 
-        $threads = isset($options['threads'])
+        $threads = isset($options['threads']) && is_numeric($options['threads'])
             ? (int)$options['threads']
             : max(1, ProjectAnalyzer::getCpuCount() - 2);
 

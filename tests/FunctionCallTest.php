@@ -31,7 +31,6 @@ class FunctionCallTest extends TestCase
                   }
                 '
             ],
-
             'typedArrayWithDefault' => [
                 '<?php
                     class A {}
@@ -1810,6 +1809,14 @@ class FunctionCallTest extends TestCase
                 ',
                 'assertions' => [
                     '$b===' => 'lowercase-string',
+                ],
+            ],
+            'round_literalValue' => [
+                '<?php
+                    $a = round(10.363, 2);
+                ',
+                'assertions' => [
+                    '$a===' => 'float(10.36)',
                 ],
             ],
         ];
