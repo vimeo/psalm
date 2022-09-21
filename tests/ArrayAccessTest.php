@@ -564,11 +564,20 @@ class ArrayAccessTest extends TestCase
             ],
             'unsetTKeyedArrayOffset' => [
                 'code' => '<?php
-                    function takesInt(int $i) : void {}
-                    $x = ["a" => "value"];
-                    unset($x["a"]);
-                    $x[] = 5;
-                    takesInt($x[0]);',
+                    $x1 = ["a" => "value"];
+                    unset($x1["a"]);
+
+                    $x2 = ["a" => "value", "b" => "value"];
+                    unset($x2["a"]);
+
+                    $x3 = ["a" => "value", "b" => "value"];
+                    $k = "a";
+                    unset($x3[$k]);',
+                'assertions' => [
+                    '$x1===' => 'array<never, never>',
+                    '$x2===' => "array{b: 'value'}",
+                    '$x3===' => "array{b: 'value'}",
+                ]
             ],
             'domNodeListAccessible' => [
                 'code' => '<?php
