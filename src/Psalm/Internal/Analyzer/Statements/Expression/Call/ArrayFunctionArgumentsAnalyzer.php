@@ -562,6 +562,8 @@ class ArrayFunctionArgumentsAnalyzer
                         }
 
                         $array_atomic_types[] = $array_atomic_type;
+                    } else {
+                        $array_atomic_types[] = $array_atomic_type;
                     }
                 }
 

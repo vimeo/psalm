@@ -136,6 +136,8 @@ class UnsetAnalyzer
                                     $atomic_root_type->type_param
                                 ])
                             ;
+                        } else {
+                            $root_types []= $atomic_root_type;
                         }
                     }
 
