@@ -168,8 +168,7 @@ class ReturnTypeAnalyzer
             // only add null if we have a return statement elsewhere and it wasn't void
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
                 if (!$inferred_return_type_part->isVoid()) {
-                    $atomic_null = new TNull();
-                    $atomic_null->from_docblock = true;
+                    $atomic_null = new TNull(true);
                     $inferred_return_type_parts[] = new Union([$atomic_null]);
                     break;
                 }

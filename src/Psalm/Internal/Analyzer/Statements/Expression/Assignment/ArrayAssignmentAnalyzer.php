@@ -297,68 +297,74 @@ class ArrayAssignmentAnalyzer
         $has_matching_objectlike_property = false;
         $has_matching_string = false;
 
-        $child_stmt_type = $child_stmt_type->getBuilder();
-
+        $changed = false;
+        $types = [];
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
+            $old_type = $type;
             if ($type instanceof TTemplateParam) {
-                $type->as = self::updateTypeWithKeyValues(
+                $type = $type->replaceAs(self::updateTypeWithKeyValues(
                     $codebase,
                     $type->as,
                     $current_type,
                     $key_values
-                );
-
+                ));
                 $has_matching_objectlike_property = true;
-
-                $child_stmt_type->substitute(new Union([$type]), $type->as);
-
-                continue;
-            }
-
-            foreach ($key_values as $key_value) {
-                if ($type instanceof TKeyedArray) {
-                    if (isset($type->properties[$key_value->value])) {
+            } elseif ($type instanceof TKeyedArray) {
+                $properties = $type->properties;
+                foreach ($key_values as $key_value) {
+                    if (isset($properties[$key_value->value])) {
                         $has_matching_objectlike_property = true;
 
-                        $type->properties[$key_value->value] = clone $current_type;
+                        $properties[$key_value->value] = clone $current_type;
                     }
-                } elseif ($type instanceof TString
-                    && $key_value instanceof TLiteralInt
-                ) {
-                    $has_matching_string = true;
+                }
+                $type = $type->setProperties($properties);
+            } elseif ($type instanceof TString) {
+                foreach ($key_values as $key_value) {
+                    if ($key_value instanceof TLiteralInt) {
+                        $has_matching_string = true;
 
-                    if ($type instanceof TLiteralString
-                        && $current_type->isSingleStringLiteral()
-                    ) {
-                        $new_char = $current_type->getSingleStringLiteral()->value;
+                        if ($type instanceof TLiteralString
+                            && $current_type->isSingleStringLiteral()
+                        ) {
+                            $new_char = $current_type->getSingleStringLiteral()->value;
 
-                        if (strlen($new_char) === 1) {
-                            $type->value[0] = $new_char;
+                            if (strlen($new_char) === 1 && $type->value[0] !== $new_char) {
+                                $v = $type->value;
+                                $v[0] = $new_char;
+                                $changed = true;
+                                $type = new TLiteralString($v);
+                                break;
+                            }
                         }
                     }
-                } elseif ($type instanceof TNonEmptyList
-                    && $key_value instanceof TLiteralInt
-                    && count($key_values) === 1
-                ) {
-                    $count = ($type->count ?? $type->min_count) ?? 1;
-                    if ($key_value->value >= $count) {
-                        continue;
-                    }
-
+                }
+            } elseif ($type instanceof TNonEmptyList
+                && count($key_values) === 1
+                && $key_values[0] instanceof TLiteralInt
+            ) {
+                $key_value = $key_values[0];
+                $count = ($type->count ?? $type->min_count) ?? 1;
+                if ($key_value->value < $count) {
                     $has_matching_objectlike_property = true;
 
-                    $type->type_param = Type::combineUnionTypes(
+                    $changed = true;
+                    $type = $type->replaceTypeParam(Type::combineUnionTypes(
                         clone $current_type,
                         $type->type_param,
                         $codebase,
                         true,
                         false
-                    );
+                    ));
                 }
             }
+            $types[$type->getKey()] = $type;
+            $changed = $changed || $old_type !== $type;
         }
 
-        $child_stmt_type = $child_stmt_type->freeze();
+        if ($changed) {
+            $child_stmt_type = $child_stmt_type->getBuilder()->setTypes($types)->freeze();
+        }
 
         if (!$has_matching_objectlike_property && !$has_matching_string) {
             if (count($key_values) === 1) {
@@ -368,10 +374,9 @@ class ArrayAssignmentAnalyzer
                     [$key_value->value => clone $current_type],
                     $key_value instanceof TLiteralClassString
                         ? [$key_value->value => true]
-                        : null
+                        : null,
+                    true
                 );
-
-                $object_like->sealed = true;
 
                 $array_assignment_type = new Union([
                     $object_like,
@@ -605,10 +610,12 @@ class ArrayAssignmentAnalyzer
                 } elseif ($atomic_root_types['array'] instanceof TNonEmptyArray
                     || $atomic_root_types['array'] instanceof TNonEmptyList
                 ) {
+                    /** @psalm-suppress InaccessibleProperty We just created this object */
                     $array_atomic_type->count = $atomic_root_types['array']->count;
                 } elseif ($atomic_root_types['array'] instanceof TKeyedArray
                     && $atomic_root_types['array']->sealed
                 ) {
+                    /** @psalm-suppress InaccessibleProperty We just created this object */
                     $array_atomic_type->count = count($atomic_root_types['array']->properties);
                     $from_countable_object_like = true;
 
@@ -659,7 +666,9 @@ class ArrayAssignmentAnalyzer
                     || $atomic_root_types['array'] instanceof TNonEmptyList)
                 && $atomic_root_types['array']->count !== null
             ) {
-                $atomic_root_types['array']->count++;
+                $atomic_root_types['array'] =
+                    $atomic_root_types['array']->setCount($atomic_root_types['array']->count+1);
+                $new_child_type = new Union($atomic_root_types);
             }
         }
 
