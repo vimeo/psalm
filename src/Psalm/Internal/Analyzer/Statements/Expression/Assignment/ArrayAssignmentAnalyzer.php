@@ -666,7 +666,9 @@ class ArrayAssignmentAnalyzer
                     || $atomic_root_types['array'] instanceof TNonEmptyList)
                 && $atomic_root_types['array']->count !== null
             ) {
-                $atomic_root_types['array']->count++;
+                $atomic_root_types['array'] =
+                    $atomic_root_types['array']->setCount($atomic_root_types['array']->count+1);
+                $new_child_type = new Union($atomic_root_types);
             }
         }
 
