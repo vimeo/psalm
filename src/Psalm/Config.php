@@ -295,6 +295,11 @@ class Config
      */
     public $hide_external_errors = false;
 
+    /**
+     * @var bool
+     */
+    public $hide_all_errors_except_passed_files = false;
+
     /** @var bool */
     public $allow_includes = true;
 
@@ -926,6 +931,7 @@ class Config
             'useDocblockPropertyTypes' => 'use_docblock_property_types',
             'throwExceptionOnError' => 'throw_exception',
             'hideExternalErrors' => 'hide_external_errors',
+            'hideAllErrorsExceptPassedFiles' => 'hide_all_errors_except_passed_files',
             'resolveFromConfigFile' => 'resolve_from_config_file',
             'allowFileIncludes' => 'allow_includes',
             'strictBinaryOperands' => 'strict_binary_operands',
@@ -1566,6 +1572,13 @@ class Config
         $dependent_files = [strtolower($file_path) => $file_path];
 
         $project_analyzer = ProjectAnalyzer::getInstance();
+
+        // if the option is set and at least one file is passed via CLI
+        if ($this->hide_all_errors_except_passed_files
+            && $project_analyzer->check_paths_files
+            && !in_array($file_path, $project_analyzer->check_paths_files, true)) {
+            return false;
+        }
 
         $codebase = $project_analyzer->getCodebase();
 

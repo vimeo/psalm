@@ -205,6 +205,11 @@ class ProjectAnalyzer
     public $provide_completion = false;
 
     /**
+     * @var list<string>
+     */
+    public $check_paths_files = [];
+
+    /**
      * @var array<string,string>
      */
     private $project_files = [];
@@ -1178,6 +1183,7 @@ class ProjectAnalyzer
             if (is_dir($path)) {
                 $this->checkDirWithConfig($path, $this->config, true);
             } elseif (is_file($path)) {
+                $this->check_paths_files[] = $path;
                 $this->codebase->addFilesToAnalyze([$path => $path]);
                 $this->config->hide_external_errors = $this->config->isInProjectDirs($path);
             }
