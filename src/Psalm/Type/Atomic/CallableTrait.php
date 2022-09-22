@@ -332,24 +332,10 @@ trait CallableTrait
     }
 
     /**
-     * @return list<TypeNode>
+     * @return list<string>
      */
-    protected function getCallableChildNodes(): array
+    protected function getCallableChildNodeKeys(): array
     {
-        $child_nodes = [];
-
-        if ($this->params) {
-            foreach ($this->params as $param) {
-                if ($param->type) {
-                    $child_nodes[] = $param->type;
-                }
-            }
-        }
-
-        if ($this->return_type) {
-            $child_nodes[] = $this->return_type;
-        }
-
-        return $child_nodes;
+        return ['params', 'return_type'];
     }
 }

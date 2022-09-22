@@ -280,9 +280,9 @@ final class TObjectWithProperties extends TObject
         );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_merge($this->properties, array_values($this->extra_types));
+        return ['properties', 'extra_types'];
     }
 
     public function getAssertionString(): string

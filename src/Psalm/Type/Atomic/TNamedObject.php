@@ -196,8 +196,8 @@ class TNamedObject extends Atomic
         }
         return $this;
     }
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_values($this->extra_types);
+        return ['extra_types'];
     }
 }

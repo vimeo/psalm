@@ -531,7 +531,7 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
         return [];
     }

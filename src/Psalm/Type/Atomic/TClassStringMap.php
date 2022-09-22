@@ -204,9 +204,9 @@ final class TClassStringMap extends Atomic
         );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return [$this->value_param];
+        return ['value_param'];
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

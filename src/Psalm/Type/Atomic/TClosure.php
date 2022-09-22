@@ -122,8 +122,8 @@ final class TClosure extends TNamedObject
         );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_merge(parent::getChildNodes(), $this->getCallableChildNodes());
+        return array_merge(parent::getChildNodeKeys(), $this->getCallableChildNodeKeys());
     }
 }

@@ -250,6 +250,9 @@ class TKeyedArray extends Atomic
         return $value_type;
     }
 
+    /**
+     * @return TArray|TNonEmptyArray
+     */
     public function getGenericArrayType(bool $allow_non_empty = true): TArray
     {
         $key_types = [];
@@ -386,9 +389,9 @@ class TKeyedArray extends Atomic
         return $this;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return $this->properties;
+        return ['properties'];
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

@@ -85,8 +85,8 @@ final class TCallable extends Atomic
         );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return $this->getCallableChildNodes();
+        return $this->getCallableChildNodeKeys();
     }
 }

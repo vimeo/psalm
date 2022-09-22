@@ -142,9 +142,9 @@ class TClassString extends TString
         return false;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return $this->as_type ? [$this->as_type] : [];
+        return $this->as_type ? ['as_type'] : [];
     }
 
     /**

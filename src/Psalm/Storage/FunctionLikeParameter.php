@@ -4,9 +4,10 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
-final class FunctionLikeParameter implements HasAttributesInterface
+final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 {
     use CustomMetadataTrait;
 
@@ -162,6 +163,15 @@ final class FunctionLikeParameter implements HasAttributesInterface
         if ($this->type) {
             $this->type = clone $this->type;
         }
+    }
+
+    public function getChildNodeKeys(): array
+    {
+        $result = ['type', 'signature_type', 'out_type'];
+        if ($this->default_type instanceof Union) {
+            $result []= 'default_type';
+        }
+        return $result;
     }
 
     /**

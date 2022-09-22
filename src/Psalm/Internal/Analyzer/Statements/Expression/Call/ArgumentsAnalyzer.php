@@ -897,7 +897,8 @@ class ArgumentsAnalyzer
                     $array_type = $arg_value_type->getAtomicTypes()['array'];
 
                     if ($array_type instanceof TKeyedArray) {
-                        $key_types = $array_type->getGenericArrayType()->getChildNodes()[0]->getChildNodes();
+                        $array_type = $array_type->getGenericArrayType();
+                        $key_types = $array_type->type_params[0]->getAtomicTypes();
 
                         foreach ($key_types as $key_type) {
                             if (!$key_type instanceof TLiteralString

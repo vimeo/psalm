@@ -140,9 +140,9 @@ final class TConditional extends Atomic
         return '';
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return [$this->conditional_type, $this->if_type, $this->else_type];
+        return ['conditional_type', 'if_type', 'else_type'];
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
