@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Type\SimpleAssertionReconciler;
 use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
 use Psalm\Internal\Type\TypeParser;
+use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -239,10 +240,16 @@ class TypeExpander
 
         if ($return_type instanceof TClassConstant) {
             if ($self_class) {
-                $return_type = $return_type->replaceClassLike('self', $self_class);
+                (new ClasslikeReplacer(
+                    'self',
+                    $self_class
+                ))->traverse($return_type);
             }
             if (is_string($static_class_type) || $self_class) {
-                $return_type = $return_type->replaceClassLike('static', is_string($static_class_type) ? $static_class_type : $self_class);
+                (new ClasslikeReplacer(
+                    'static',
+                    is_string($static_class_type) ? $static_class_type : $self_class
+                ))->traverse($return_type);
             }
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
@@ -896,8 +903,14 @@ class TypeExpander
         $static_class_type
     ): array {
         if ($self_class) {
-            $return_type = $return_type->replaceClassLike('self', $self_class);
-            $return_type = $return_type->replaceClassLike('static', is_string($static_class_type) ? $static_class_type : $self_class);
+            (new ClasslikeReplacer(
+                'self',
+                $self_class
+            ))->traverse($return_type);
+            (new ClasslikeReplacer(
+                'static',
+                is_string($static_class_type) ? $static_class_type : $self_class
+            ))->traverse($return_type);
         }
 
         $class_storage = null;
@@ -994,7 +1007,7 @@ class TypeExpander
             }
 
             if ($self_class) {
-                $type_param = $type_param->replaceClassLike('self', $self_class);
+                (new ClasslikeReplacer('self', $self_class))->traverse($type_param);
             }
 
             if ($throw_on_unresolvable_constant

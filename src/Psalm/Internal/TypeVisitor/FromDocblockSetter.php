@@ -4,6 +4,7 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;

@@ -303,35 +303,6 @@ trait CallableTrait
     }
 
     /**
-     * @return array{list<FunctionLikeParameter>|null, Union|null}|null
-     */
-    protected function replaceCallableClassLike(string $old, string $new): ?array
-    {
-        $replaced = false;
-
-        $params = $this->params;
-        if ($params) {
-            foreach ($params as &$param) {
-                if ($param->type) {
-                    $new_param = $param->replaceType($param->type->replaceClassLike($old, $new));
-                    $replaced = $replaced || $new_param !== $param;
-                    $param = $new_param;
-                }
-            }
-        }
-
-        $return_type = $this->return_type;
-        if ($return_type) {
-            $return_type = $return_type->replaceClassLike($old, $new);
-            $replaced = $replaced || $return_type !== $this->return_type;
-        }
-        if ($replaced) {
-            return [$params, $return_type];
-        }
-        return null;
-    }
-
-    /**
      * @return list<string>
      */
     protected function getCallableChildNodeKeys(): array

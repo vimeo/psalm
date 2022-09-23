@@ -269,16 +269,4 @@ trait GenericTrait
 
         return $type_params === $this->type_params ? null : $type_params;
     }
-
-    /**
-     * @return TTypeParams|null
-     */
-    protected function replaceTypeParamsClassLike(string $old, string $new): ?array
-    {
-        $type_params = $this->type_params;
-        foreach ($type_params as &$type_param) {
-            $type_param = $type_param->replaceClassLike($old, $new);
-        }
-        return $type_params === $this->type_params ? null : $type_params;
-    }
 }

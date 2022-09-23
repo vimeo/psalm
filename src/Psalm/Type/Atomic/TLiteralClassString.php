@@ -62,17 +62,6 @@ final class TLiteralClassString extends TLiteralString
     }
 
     /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        if (strtolower($this->value) === $old) {
-            return new static($new, $this->definite_class);
-        }
-        return $this;
-    }
-
-    /**
      * @param array<lowercase-string, string> $aliased_classes
      */
     public function toNamespacedString(

@@ -68,22 +68,6 @@ final class TCallable extends Atomic
             $this->is_pure
         );
     }
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $replaced = $this->replaceCallableClassLike($old, $new);
-        if (!$replaced) {
-            return $this;
-        }
-        return new static(
-            $this->value,
-            $replaced[0],
-            $replaced[1],
-            $this->is_pure
-        );
-    }
 
     public function getChildNodeKeys(): array
     {

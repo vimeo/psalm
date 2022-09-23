@@ -117,25 +117,6 @@ final class TGenericObject extends TNamedObject
     /**
      * @return static
      */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $type_params = $this->replaceTypeParamsClassLike($old, $new);
-        $intersection = $this->replaceIntersectionClassLike($old, $new);
-        if (!$type_params && !$intersection) {
-            return $this;
-        }
-        return new static(
-            strtolower($this->value) === $old ? $new : $this->value,
-            $type_params ?? $this->type_params,
-            $this->remapped_params,
-            $this->is_static,
-            $intersection ?? $this->extra_types
-        );
-    }
-
-    /**
-     * @return static
-     */
     public function replaceTemplateTypesWithStandins(TemplateResult $template_result, Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null, ?Atomic $input_type = null, ?int $input_arg_offset = null, ?string $calling_class = null, ?string $calling_function = null, bool $replace = true, bool $add_lower_bound = false, int $depth = 0): self
     {
         $types = $this->replaceTypeParamsTemplateTypesWithStandins(

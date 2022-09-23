@@ -22,6 +22,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
@@ -1460,9 +1461,10 @@ class ClassLikes
 
             foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
                 if ($type->containsClassLike($old_fq_class_name)) {
-                    $type = $type->getBuilder();
-
-                    $type = $type->replaceClassLike($old_fq_class_name, $new_fq_class_name)->freeze();
+                    (new ClasslikeReplacer(
+                        $old_fq_class_name,
+                        $new_fq_class_name
+                    ))->traverse($type);
 
                     $bounds = $type_location->getSelectionBounds();
 
@@ -1500,9 +1502,10 @@ class ClassLikes
             $destination_class = $codebase->classes_to_move[$fq_class_name_lc];
 
             if ($type->containsClassLike($fq_class_name_lc)) {
-                $type = $type->getBuilder();
-
-                $type = $type->replaceClassLike($fq_class_name_lc, $destination_class)->freeze();
+                (new ClasslikeReplacer(
+                    $fq_class_name_lc,
+                    $destination_class
+                ))->traverse($type);
             }
 
             $this->airliftClassDefinedDocblockType(

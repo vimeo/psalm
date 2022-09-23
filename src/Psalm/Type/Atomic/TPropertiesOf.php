@@ -88,19 +88,9 @@ final class TPropertiesOf extends Atomic
         }
     }
 
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
+    public function getChildNodeKeys(): array
     {
-        $replaced = $this->classlike_type->replaceClassLike($old, $new);
-        if ($replaced === $this->classlike_type) {
-            return $this;
-        }
-        return new static(
-            $replaced,
-            $this->visibility_filter
-        );
+        return ['classlike_type'];
     }
 
     public function getKey(bool $include_extra = true): string

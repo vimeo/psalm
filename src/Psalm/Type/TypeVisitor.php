@@ -8,15 +8,22 @@ abstract class TypeVisitor
     public const DONT_TRAVERSE_CHILDREN = 2;
 
     /**
+     * @template T as TypeNode
+     * @param T $type
+     * @param-out T $type
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     abstract protected function enterNode(TypeNode &$type): ?int;
 
     /**
+     * @template T as TypeNode
+     * @param T $node
+     * @param-out T $node
      * @return bool - true if we want to continue traversal, false otherwise
      */
     public function traverse(TypeNode &$node): bool
     {
+        $old = $node;
         $visitor_result = $this->enterNode($node);
 
         if ($visitor_result === self::DONT_TRAVERSE_CHILDREN) {
@@ -27,7 +34,7 @@ abstract class TypeVisitor
             return false;
         }
 
-        $cloned = false;
+        $cloned = $node !== $old;
         foreach ($node->getChildNodeKeys() as $key) {
             if ($node instanceof Union || $node instanceof MutableUnion) {
                 $child_node = $node->getAtomicTypes();
@@ -54,6 +61,14 @@ abstract class TypeVisitor
                         $cloned = true;
                         $node = clone $node;
                     }
+                    if ($key === 'extra_types' && is_array($child_node)) {
+                        $new = [];
+                        /** @var Union */
+                        foreach ($child_node as $value) {
+                            $new[$value->getKey()] = $value;
+                        }
+                        $child_node = $new;
+                    }
                     $node->{$key} = $child_node;
                 }
             }
@@ -66,8 +81,9 @@ abstract class TypeVisitor
     }
 
     /**
-     * @param array<TypeNode> $nodes
-     * @param-out array<TypeNode> $nodes
+     * @template T as TypeNode
+     * @param array<T> $nodes
+     * @param-out array<T> $nodes
      */
     public function traverseArray(array &$nodes): bool
     {

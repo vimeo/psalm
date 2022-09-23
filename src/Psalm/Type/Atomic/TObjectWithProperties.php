@@ -235,25 +235,6 @@ final class TObjectWithProperties extends TObject
     /**
      * @return static
      */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $properties = $this->properties;
-        foreach ($properties as &$property) {
-            $property = $property->replaceClassLike($old, $new);
-        }
-        $intersection = $this->replaceIntersectionClassLike($old, $new);
-        if (!$intersection && $properties === $this->properties) {
-            return $this;
-        }
-        return new static(
-            $properties,
-            $this->methods,
-            $intersection ?? $this->extra_types
-        );
-    }
-    /**
-     * @return static
-     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase

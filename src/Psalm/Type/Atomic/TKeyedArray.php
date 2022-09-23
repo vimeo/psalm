@@ -108,18 +108,6 @@ class TKeyedArray extends Atomic
         return $cloned;
     }
 
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $properties = $this->properties;
-        foreach ($properties as &$property_type) {
-            $property_type = $property_type->replaceClassLike($old, $new);
-        }
-        return $this->setProperties($properties);
-    }
-
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $property_strings = [];

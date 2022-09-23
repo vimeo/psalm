@@ -50,18 +50,7 @@ class TClassString extends TString
         $this->is_interface = $is_interface;
         $this->is_enum = $is_enum;
     }
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        if ($this->as !== 'object' && strtolower($this->as) === $old) {
-            $cloned = clone $this;
-            $cloned->as = $new;
-            return $cloned;
-        }
-        return $this;
-    }
+
     public function getKey(bool $include_extra = true): string
     {
         if ($this->is_interface) {

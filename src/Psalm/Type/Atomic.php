@@ -536,14 +536,6 @@ abstract class Atomic implements TypeNode
         return [];
     }
 
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        return $this;
-    }
-
     final public function __toString(): string
     {
         return $this->getId();
