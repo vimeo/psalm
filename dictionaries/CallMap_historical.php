@@ -10085,7 +10085,7 @@ return [
     'copy' => ['bool', 'from'=>'string', 'to'=>'string', 'context='=>'resource'],
     'cos' => ['float', 'num'=>'float'],
     'cosh' => ['float', 'num'=>'float'],
-    'count' => ['int', 'value'=>'Countable|array|SimpleXMLElement|ResourceBundle', 'mode='=>'int'],
+    'count' => ['int', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
     'count_chars' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'0|1|2'],
     'count_chars\'1' => ['string|false', 'input'=>'string', 'mode='=>'3|4'],
     'crack_check' => ['bool', 'dictionary'=>'', 'password'=>'string'],

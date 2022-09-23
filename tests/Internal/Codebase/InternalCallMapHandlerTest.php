@@ -519,7 +519,13 @@ class InternalCallMapHandlerTest extends TestCase
             /** @var string */
             $function = is_int($key) ? $value : $key;
 
-            $this->assertGreaterThan(0, strcmp($function, $previousFunction));
+            $diff = strcmp($function, $previousFunction);
+            if ($diff <= 0) {
+                // faster debugging errors in tests
+                echo "\n" . $previousFunction . "\n" . $function . "\n";
+            }
+
+            $this->assertGreaterThan(0, $diff);
             $previousFunction = $function;
         }
     }
