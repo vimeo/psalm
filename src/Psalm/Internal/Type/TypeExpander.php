@@ -555,10 +555,11 @@ class TypeExpander
         if ($return_type instanceof TCallable
             || $return_type instanceof TClosure
         ) {
-            if ($return_type->params) {
-                foreach ($return_type->params as $param) {
+            $params = $return_type->params;
+            if ($params) {
+                foreach ($params as &$param) {
                     if ($param->type) {
-                        $param->type = self::expandUnion(
+                        $param = $param->replaceType(self::expandUnion(
                             $codebase,
                             $param->type,
                             $self_class,
@@ -570,14 +571,15 @@ class TypeExpander
                             $expand_generic,
                             $expand_templates,
                             $throw_on_unresolvable_constant,
-                        );
+                        ));
                     }
                 }
             }
-            if ($return_type->return_type) {
-                $return_type->return_type = self::expandUnion(
+            $sub_return_type = $return_type->return_type;
+            if ($sub_return_type) {
+                $sub_return_type = self::expandUnion(
                     $codebase,
-                    $return_type->return_type,
+                    $sub_return_type,
                     $self_class,
                     $static_class_type,
                     $parent_class,
@@ -588,6 +590,14 @@ class TypeExpander
                     $expand_templates,
                     $throw_on_unresolvable_constant,
                 );
+            }
+
+            if ($sub_return_type !== $sub_return_type || $params !== $return_type->params) {
+                $return_type = clone $return_type;
+                /** @psalm-suppress InaccessibleProperty We just cloned this */
+                $return_type->return_type = $sub_return_type;
+                /** @psalm-suppress InaccessibleProperty We just cloned this */
+                $return_type->params = $params;
             }
         }
 

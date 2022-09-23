@@ -1191,7 +1191,7 @@ class TypeCombiner
                                 );
                             }
                         }
-                        if ($min_bound !== $current_int_type->min_bound && $max_bound !== $current_int_type->max_bound) {
+                        if ($min_bound !== $current_int_type->min_bound || $max_bound !== $current_int_type->max_bound) {
                             $combination->value_types['int'] = new TIntRange(
                                 $min_bound,
                                 $max_bound
