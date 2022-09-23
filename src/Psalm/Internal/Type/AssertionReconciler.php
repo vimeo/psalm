@@ -567,9 +567,7 @@ class AssertionReconciler extends Reconciler
         }
 
         if ($type_1_atomic instanceof TNamedObject && !$type_1_atomic->is_static) {
-            $type_1_atomic = clone $type_1_atomic;
-            /** @psalm-suppress InaccessibleProperty We just cloned this object */
-            $type_1_atomic->is_static = false;
+            $type_1_atomic = $type_1_atomic->setIsStatic(false);
         }
 
         $atomic_comparison_results = new TypeComparisonResult();

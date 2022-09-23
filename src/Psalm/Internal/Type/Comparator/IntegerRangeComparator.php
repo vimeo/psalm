@@ -84,6 +84,8 @@ class IntegerRangeComparator
      * This method receives an array of atomics from the container and a range.
      * The goal is to use values in atomics in order to reduce the range.
      * Once the range is empty, it means that every value in range was covered by some atomics combination
+     *
+     * @psalm-suppress InaccessibleProperty $reduced_range was already cloned
      * @param array<string, Atomic> $container_atomic_types
      */
     private static function reduceRangeIncrementally(array &$container_atomic_types, TIntRange $reduced_range): ?bool
@@ -98,7 +100,6 @@ class IntegerRangeComparator
                     if ($container_atomic_type->max_bound === null) {
                         //this container range is int<X, max>
                         //X-1 becomes the max of our reduced range if it was higher
-                        /** @psalm-suppress InaccessibleProperty $reduced_range was already cloned */
                         $reduced_range->max_bound = TIntRange::getNewLowestBound(
                             $container_atomic_type->min_bound - 1,
                             $reduced_range->max_bound ?? $container_atomic_type->min_bound - 1
@@ -109,7 +110,6 @@ class IntegerRangeComparator
                     if ($container_atomic_type->min_bound === null) {
                         //this container range is int<min, X>
                         //X+1 becomes the min of our reduced range if it was lower
-                        /** @psalm-suppress InaccessibleProperty $reduced_range was already cloned */
                         $reduced_range->min_bound = TIntRange::getNewHighestBound(
                             $container_atomic_type->max_bound + 1,
                             $reduced_range->min_bound ?? $container_atomic_type->max_bound + 1
@@ -124,14 +124,12 @@ class IntegerRangeComparator
                     ) {
                         //this container range is int<X, Y> and contains the min of our reduced range.
                         //the min from our reduced range becomes Y + 1
-                        /** @psalm-suppress InaccessibleProperty $reduced_range was already cloned */
                         $reduced_range->min_bound = $container_atomic_type->max_bound + 1;
                         unset($container_atomic_types[$key]); //we don't need this one anymore
                     } elseif ($reduced_range->max_bound !== null
                         && $container_atomic_type->contains($reduced_range->max_bound)) {
                         //this container range is int<X, Y> and contains the max of our reduced range.
                         //the max from our reduced range becomes X - 1
-                        /** @psalm-suppress InaccessibleProperty $reduced_range was already cloned */
                         $reduced_range->max_bound = $container_atomic_type->min_bound - 1;
                         unset($container_atomic_types[$key]); //we don't need this one anymore
                     }
@@ -144,11 +142,9 @@ class IntegerRangeComparator
                 if (!$reduced_range->contains($container_atomic_type->value)) {
                     unset($container_atomic_types[$key]); //we don't need this one anymore
                 } elseif ($reduced_range->min_bound === $container_atomic_type->value) {
-                    /** @psalm-suppress InaccessibleProperty $reduced_range was already cloned */
                     $reduced_range->min_bound++;
                     unset($container_atomic_types[$key]); //we don't need this one anymore
                 } elseif ($reduced_range->max_bound === $container_atomic_type->value) {
-                    /** @psalm-suppress InaccessibleProperty $reduced_range was already cloned */
                     $reduced_range->max_bound--;
                     unset($container_atomic_types[$key]); //we don't need this one anymore
                 }

@@ -54,6 +54,15 @@ class TNamedObject extends Atomic
         $this->extra_types = $extra_types;
     }
 
+    public function setIsStatic(bool $is_static): self {
+        if ($this->is_static === $is_static) {
+            return $is_static;
+        }
+        $cloned = clone $this;
+        $cloned->is_static = $is_static;
+        return $this;
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
