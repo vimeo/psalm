@@ -118,32 +118,11 @@ final class TIterable extends Atomic
         return true;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_merge($this->type_params, array_values($this->extra_types));
+        return ['type_params', 'extra_types'];
     }
 
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $type_params = $this->replaceTypeParamsClassLike(
-            $old,
-            $new
-        );
-        $intersection = $this->replaceIntersectionClassLike(
-            $old,
-            $new
-        );
-        if (!$type_params && !$intersection) {
-            return $this;
-        }
-        return new static(
-            $type_params ?? $this->type_params,
-            $intersection ?? $this->extra_types
-        );
-    }
     /**
      * @return static
      */

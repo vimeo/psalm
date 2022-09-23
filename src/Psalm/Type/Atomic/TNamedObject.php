@@ -143,23 +143,6 @@ class TNamedObject extends Atomic
     /**
      * @return static
      */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $intersection = $this->replaceIntersectionClassLike($old, $new);
-        if (!$intersection && strtolower($this->value) !== $old) {
-            return $this;
-        }
-        $cloned = clone $this;
-        if (strtolower($cloned->value) === $old) {
-            $cloned->value = $new;
-        }
-        $cloned->extra_types = $intersection ?? $this->extra_types;
-        return $cloned;
-    }
-
-    /**
-     * @return static
-     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
@@ -197,8 +180,8 @@ class TNamedObject extends Atomic
         }
         return $this;
     }
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_values($this->extra_types);
+        return ['extra_types'];
     }
 }

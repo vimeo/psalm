@@ -7,7 +7,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\NodeVisitor;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
 
 use function strtolower;
@@ -15,7 +15,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeScanner extends NodeVisitor
+class TypeScanner extends TypeVisitor
 {
     private $scanner;
 
@@ -36,7 +36,7 @@ class TypeScanner extends NodeVisitor
         $this->phantom_classes = $phantom_classes;
     }
 
-    protected function enterNode(TypeNode $type): ?int
+    protected function enterNode(TypeNode &$type): ?int
     {
         if ($type instanceof TNamedObject) {
             $fq_classlike_name_lc = strtolower($type->value);

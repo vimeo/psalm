@@ -217,8 +217,8 @@ class TList extends Atomic
         return $this->getId();
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return [$this->type_param];
+        return ['type_param'];
     }
 }

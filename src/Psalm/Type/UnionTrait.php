@@ -1235,12 +1235,9 @@ trait UnionTrait
         return $this->literal_float_types;
     }
 
-    /**
-     * @return array<string, Atomic>
-     */
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return $this->types;
+        return ['types'];
     }
 
     /**

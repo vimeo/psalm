@@ -52,27 +52,6 @@ final class TClosure extends TNamedObject
     /**
      * @return static
      */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $replaced = $this->replaceCallableClassLike($old, $new);
-        $intersection = $this->replaceIntersectionClassLike($old, $new);
-        if (!$replaced && !$intersection) {
-            return $this;
-        }
-        return new static(
-            strtolower($this->value) === $old ? $new : $this->value,
-            $replaced[0] ?? $this->params,
-            $replaced[1] ?? $this->return_type,
-            $this->is_pure,
-            $this->byref_uses,
-            $intersection ?? $this->extra_types
-        );
-    }
-
-
-    /**
-     * @return static
-     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
@@ -123,8 +102,8 @@ final class TClosure extends TNamedObject
         );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_merge(parent::getChildNodes(), $this->getCallableChildNodes());
+        return array_merge(parent::getChildNodeKeys(), $this->getCallableChildNodeKeys());
     }
 }

@@ -5,7 +5,7 @@ namespace Psalm\Internal\TypeVisitor;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\NodeVisitor;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
 
 use function strtolower;
@@ -13,7 +13,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ContainsClassLikeVisitor extends NodeVisitor
+class ContainsClassLikeVisitor extends TypeVisitor
 {
     /**
      * @var lowercase-string
@@ -33,26 +33,26 @@ class ContainsClassLikeVisitor extends NodeVisitor
         $this->fq_classlike_name = $fq_classlike_name;
     }
 
-    protected function enterNode(TypeNode $type): ?int
+    protected function enterNode(TypeNode &$type): ?int
     {
         if ($type instanceof TNamedObject) {
             if (strtolower($type->value) === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
-                return NodeVisitor::STOP_TRAVERSAL;
+                return TypeVisitor::STOP_TRAVERSAL;
             }
         }
 
         if ($type instanceof TClassConstant) {
             if (strtolower($type->fq_classlike_name) === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
-                return NodeVisitor::STOP_TRAVERSAL;
+                return TypeVisitor::STOP_TRAVERSAL;
             }
         }
 
         if ($type instanceof TLiteralClassString) {
             if (strtolower($type->value) === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
-                return NodeVisitor::STOP_TRAVERSAL;
+                return TypeVisitor::STOP_TRAVERSAL;
             }
         }
 

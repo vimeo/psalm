@@ -110,28 +110,9 @@ final class TGenericObject extends TNamedObject
         return $this->value;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_merge(parent::getChildNodes(), $this->type_params);
-    }
-
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $type_params = $this->replaceTypeParamsClassLike($old, $new);
-        $intersection = $this->replaceIntersectionClassLike($old, $new);
-        if (!$type_params && !$intersection) {
-            return $this;
-        }
-        return new static(
-            strtolower($this->value) === $old ? $new : $this->value,
-            $type_params ?? $this->type_params,
-            $this->remapped_params,
-            $this->is_static,
-            $intersection ?? $this->extra_types
-        );
+        return array_merge(parent::getChildNodeKeys(), ['type_params']);
     }
 
     /**

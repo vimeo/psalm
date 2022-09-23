@@ -538,17 +538,9 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
         return [];
-    }
-
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        return $this;
     }
 
     final public function __toString(): string
