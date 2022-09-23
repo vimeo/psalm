@@ -15,17 +15,11 @@ use Psalm\Type\TypeNode;
 
 use function strtolower;
 
-/**
- * @internal
- */
 class ClasslikeReplacer extends TypeVisitor
 {
     private string $old;
     private string $new;
 
-    /**
-     * @param  array<string, mixed> $phantom_classes
-     */
     public function __construct(
         string $old,
         string $new
