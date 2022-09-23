@@ -589,18 +589,18 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $is_equality
     ): Union {
-        $existing_var_type = $existing_var_type->getBuilder();
+        $types = $existing_var_type->getAtomicTypes();
         $old_var_type_string = $existing_var_type->getId();
         $did_remove_type = false;
 
-        if ($existing_var_type->hasType('null')) {
+        if (isset($types['null'])) {
             $did_remove_type = true;
-            $existing_var_type->removeType('null');
+            unset($types['null']);
         }
 
-        foreach ($existing_var_type->getAtomicTypes() as $type) {
+        foreach ($types as &$type) {
             if ($type instanceof TTemplateParam) {
-                $type->as = self::reconcileNull(
+                $new = $type->replaceAs(self::reconcileNull(
                     $assertion,
                     $type->as,
                     null,
@@ -609,10 +609,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $suppressed_issues,
                     $failed_reconciliation,
                     $is_equality
-                );
+                ));
 
-                $did_remove_type = true;
-                $existing_var_type->bustCache();
+                $did_remove_type = $new !== $type;
+                $type = $new;
             }
         }
 
@@ -635,8 +635,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$existing_var_type->isUnionEmpty()) {
-            return $existing_var_type->freeze();
+        if ($types) {
+            return $existing_var_type->setTypes($types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
