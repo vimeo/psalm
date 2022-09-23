@@ -480,9 +480,10 @@ class TypeExpander
             || $return_type instanceof TGenericObject
             || $return_type instanceof TIterable
         ) {
-            foreach ($return_type->type_params as $k => $type_param) {
+            $type_params = $return_type->type_params;
+            foreach ($type_params as &$type_param) {
                 /** @psalm-suppress PropertyTypeCoercion */
-                $return_type->type_params[$k] = self::expandUnion(
+                $type_param = self::expandUnion(
                     $codebase,
                     $type_param,
                     $self_class,
@@ -496,8 +497,10 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            $return_type = $return_type->replaceTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
-            foreach ($return_type->properties as &$property_type) {
+            $properties = $return_type->properties;
+            foreach ($properties as &$property_type) {
                 $property_type = self::expandUnion(
                     $codebase,
                     $property_type,
@@ -512,8 +515,9 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            $return_type = $return_type->setProperties($properties);
         } elseif ($return_type instanceof TList) {
-            $return_type->type_param = self::expandUnion(
+            $return_type = $return_type->replaceTypeParam(self::expandUnion(
                 $codebase,
                 $return_type->type_param,
                 $self_class,
@@ -525,11 +529,12 @@ class TypeExpander
                 $expand_generic,
                 $expand_templates,
                 $throw_on_unresolvable_constant,
-            );
+            ));
         }
 
         if ($return_type instanceof TObjectWithProperties) {
-            foreach ($return_type->properties as &$property_type) {
+            $properties = $return_type->properties;
+            foreach ($properties as &$property_type) {
                 $property_type = self::expandUnion(
                     $codebase,
                     $property_type,
@@ -544,6 +549,7 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            $return_type = $return_type->setProperties($properties);
         }
 
         if ($return_type instanceof TCallable
