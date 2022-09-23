@@ -198,6 +198,8 @@ class FunctionLikeDocblockScanner
             }
         }
 
+        $storage->require_param_validation = $docblock_info->require_param_validation;
+
         if (!$config->use_docblock_types) {
             return;
         }

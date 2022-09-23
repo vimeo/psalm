@@ -39,6 +39,13 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $param_lookup = [];
 
     /**
+     * Whether to force docblock param validation when analyzing the functionlike.
+     *
+     * @var bool
+     */
+    public $require_param_validation = false;
+
+    /**
      * @var Union|null
      */
     public $return_type;
