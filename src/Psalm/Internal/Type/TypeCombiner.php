@@ -791,11 +791,12 @@ class TypeCombiner
                 $existing_template_type = $combination->value_types[$type_key];
 
                 if (!$existing_template_type->as->equals($type->as)) {
-                    $existing_template_type->as = Type::combineUnionTypes(
-                        clone $type->as,
+                    $existing_template_type = $existing_template_type->replaceAs(Type::combineUnionTypes(
+                        $type->as,
                         $existing_template_type->as,
                         $codebase
-                    );
+                    ));
+                    $combination->value_types[$type_key] = $existing_template_type;
                 }
 
                 return null;

@@ -109,9 +109,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                     $template_types = $key_type->getTemplateTypes();
                     $template_type = array_shift($template_types);
                     if ($template_type->as->hasMixed()) {
-                        $template_type = clone $template_type;
-                        /** @psalm-suppress InaccessibleProperty We just cloned this object */
-                        $template_type->as = Type::getArrayKey();
+                        $template_type = $template_type->replaceAs(Type::getArrayKey());
                         $key_type = new Union([$template_type]);
                     }
                 }

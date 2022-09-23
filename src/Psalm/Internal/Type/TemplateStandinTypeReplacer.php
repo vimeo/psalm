@@ -599,7 +599,7 @@ class TemplateStandinTypeReplacer
      * @return list<Atomic>
      */
     private static function handleTemplateParamStandin(
-        TTemplateParam $atomic_type,
+        TTemplateParam &$atomic_type,
         string $key,
         ?Union $input_type,
         ?int $input_arg_offset,
@@ -762,7 +762,7 @@ class TemplateStandinTypeReplacer
 
             $matching_input_keys = [];
 
-            $atomic_type->as = TypeExpander::expandUnion(
+            $as = TypeExpander::expandUnion(
                 $codebase,
                 $atomic_type->as,
                 $calling_class,
@@ -770,8 +770,8 @@ class TemplateStandinTypeReplacer
                 null
             );
 
-            $atomic_type->as = self::replace(
-                $atomic_type->as,
+            $as = self::replace(
+                $as,
                 $template_result,
                 $codebase,
                 $statements_analyzer,
@@ -784,6 +784,8 @@ class TemplateStandinTypeReplacer
                 $bound_equality_classlike,
                 $depth + 1
             );
+
+            $atomic_type = $atomic_type->replaceAs($as);
 
             if ($input_type
                 && !$template_result->readonly

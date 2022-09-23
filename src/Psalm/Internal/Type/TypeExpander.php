@@ -196,7 +196,7 @@ class TypeExpander
         if ($return_type instanceof TClassString
             && $return_type->as_type
         ) {
-            $new_as_type = clone $return_type->as_type;
+            $new_as_type = $return_type->as_type;
 
             self::expandAtomic(
                 $codebase,
@@ -212,9 +212,14 @@ class TypeExpander
                 $throw_on_unresolvable_constant,
             );
 
-            if ($new_as_type instanceof TNamedObject) {
-                $return_type->as_type = $new_as_type;
-                $return_type->as = $return_type->as_type->value;
+            if ($new_as_type instanceof TNamedObject && $new_as_type !== $return_type->as_type) {
+                $return_type = new TClassString(
+                    $return_type->as_type->value,
+                    $return_type->as_type,
+                    $return_type->is_loaded,
+                    $return_type->is_interface,
+                    $return_type->is_enum,
+                );
             }
         } elseif ($return_type instanceof TTemplateParam) {
             $new_as_type = self::expandUnion(
@@ -235,7 +240,7 @@ class TypeExpander
                 return array_values($new_as_type->getAtomicTypes());
             }
 
-            $return_type->as = $new_as_type;
+            $return_type = $return_type->replaceAs($new_as_type);
         }
 
         if ($return_type instanceof TClassConstant) {
