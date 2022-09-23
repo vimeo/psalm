@@ -32,18 +32,18 @@ class ClasslikeReplacer extends TypeVisitor
     {
         if ($type instanceof TClassConstant) {
             if (strtolower($type->fq_classlike_name) === $this->old) {
-                $cloned = clone $type;
-                $cloned->fq_classlike_name = $this->new;
+                $type = clone $type;
+                $type->fq_classlike_name = $this->new;
             }
         } else if ($type instanceof TClassString) {
             if ($type->as !== 'object' && strtolower($type->as) === $this->old) {
-                $cloned = clone $type;
-                $cloned->as = $this->new;
+                $type = clone $type;
+                $type->as = $this->new;
             }
         } else if ($type instanceof TNamedObject || $type instanceof TLiteralClassString) {
             if (strtolower($type->value) === $this->old) {
-                $cloned = clone $type;
-                $cloned->value = $this->new;
+                $type = clone $type;
+                $type->value = $this->new;
             }
         }
         return null;
