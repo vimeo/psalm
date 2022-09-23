@@ -528,6 +528,8 @@ class Methods
         ))->traverse($type);
 
         return $type;
+    }
+
     /**
      * @param array<string, array<string, Union>> $extends
      * @return list<Atomic>
