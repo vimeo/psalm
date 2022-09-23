@@ -1075,17 +1075,21 @@ class TypeParser
                 }
             }
 
-            $keyed_array = new TKeyedArray($properties);
-
             if ($first_type instanceof TArray) {
-                $keyed_array->previous_key_type = $first_type->type_params[0];
-                $keyed_array->previous_value_type = $first_type->type_params[1];
+                $previous_key_type = $first_type->type_params[0];
+                $previous_value_type = $first_type->type_params[1];
             } elseif ($last_type instanceof TArray) {
-                $keyed_array->previous_key_type = $last_type->type_params[0];
-                $keyed_array->previous_value_type = $last_type->type_params[1];
+                $previous_key_type = $last_type->type_params[0];
+                $previous_value_type = $last_type->type_params[1];
             }
 
-            return $keyed_array;
+            return new TKeyedArray(
+                $properties,
+                null,
+                false,
+                $previous_key_type,
+                $previous_value_type
+            );
         }
 
         $keyed_intersection_types = [];
