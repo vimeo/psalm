@@ -48,6 +48,30 @@ final class TObjectWithProperties extends TObject
         $this->extra_types = $extra_types;
     }
 
+    /**
+     * @param array<string|int, Union> $properties
+     */
+    public function setProperties(array $properties): self {
+        if ($properties === $this->properties) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->properties = $properties;
+        return $cloned;
+    }
+
+    /**
+     * @param array<string, string> $methods
+     */
+    public function setMethods(array $methods): self {
+        if ($methods === $this->methods) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->methods = $methods;
+        return $cloned;
+    }
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $extra_types = '';
