@@ -660,18 +660,18 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $is_equality
     ): Union {
+        $types = $existing_var_type->getAtomicTypes();
         $old_var_type_string = $existing_var_type->getId();
-        $did_remove_type = $existing_var_type->hasScalar();
+        $did_remove_type = false;
 
-        $existing_var_type = $existing_var_type->getBuilder();
-        if ($existing_var_type->hasType('false')) {
+        if (isset($types['false'])) {
             $did_remove_type = true;
-            $existing_var_type->removeType('false');
+            unset($types['false']);
         }
 
-        foreach ($existing_var_type->getAtomicTypes() as $type) {
+        foreach ($types as &$type) {
             if ($type instanceof TTemplateParam) {
-                $type->as = self::reconcileFalse(
+                $new = $type->replaceAs(self::reconcileFalse(
                     $assertion,
                     $type->as,
                     null,
@@ -680,10 +680,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $suppressed_issues,
                     $failed_reconciliation,
                     $is_equality
-                );
+                ));
 
-                $did_remove_type = true;
-                $existing_var_type->bustCache();
+                $did_remove_type = $new !== $type;
+                $type = $new;
             }
         }
 
@@ -706,8 +706,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$existing_var_type->isUnionEmpty()) {
-            return $existing_var_type->freeze();
+        if ($types) {
+            return $existing_var_type->setTypes($types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -877,9 +877,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$existing_var_atomic_type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $existing_var_atomic_type = clone $existing_var_atomic_type;
-
-                    $existing_var_atomic_type->as = self::reconcileFalsyOrEmpty(
+                    $existing_var_atomic_type = $existing_var_atomic_type->replaceAs(self::reconcileFalsyOrEmpty(
                         $assertion,
                         $existing_var_atomic_type->as,
                         $key,
@@ -888,7 +886,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $template_did_fail,
                         $recursive_check
-                    );
+                    ));
 
                     if (!$template_did_fail) {
                         $existing_var_type->removeType($type_key);
@@ -925,9 +923,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$is_equality && !$type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $type = clone $type;
-
-                    $type->as = self::reconcileScalar(
+                    $type = $type->replaceAs(self::reconcileScalar(
                         $assertion,
                         $type->as,
                         null,
@@ -936,7 +932,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $template_did_fail,
                         $is_equality
-                    );
+                    ));
 
                     $did_remove_type = true;
 
@@ -1015,9 +1011,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$is_equality && !$type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $type = clone $type;
-
-                    $type->as = self::reconcileObject(
+                    $type = $type->replaceAs(self::reconcileObject(
                         $assertion,
                         $type->as,
                         null,
@@ -1026,7 +1020,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $template_did_fail,
                         $is_equality
-                    );
+                    ));
 
                     $did_remove_type = true;
 
@@ -1119,9 +1113,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$is_equality && !$type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $type = clone $type;
-
-                    $type->as = self::reconcileNumeric(
+                    $type = $type->replaceAs(self::reconcileNumeric(
                         $assertion,
                         $type->as,
                         null,
@@ -1130,7 +1122,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $template_did_fail,
                         $is_equality
-                    );
+                    ));
 
                     $did_remove_type = true;
 
@@ -1212,9 +1204,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$is_equality && !$type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $type = clone $type;
-
-                    $type->as = self::reconcileInt(
+                    $type = $type->replaceAs(self::reconcileInt(
                         $assertion,
                         $type->as,
                         null,
@@ -1223,7 +1213,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $template_did_fail,
                         $is_equality
-                    );
+                    ));
 
                     $did_remove_type = true;
 
@@ -1316,9 +1306,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$is_equality && !$type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $type = clone $type;
-
-                    $type->as = self::reconcileFloat(
+                    $type = $type->replaceAs(self::reconcileFloat(
                         $assertion,
                         $type->as,
                         null,
@@ -1327,7 +1315,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $template_did_fail,
                         $is_equality
-                    );
+                    ));
 
                     $did_remove_type = true;
 
@@ -1415,9 +1403,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$is_equality && !$type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $type = clone $type;
-
-                    $type->as = self::reconcileString(
+                    $type = $type->replaceAs(self::reconcileString(
                         $assertion,
                         $type->as,
                         null,
@@ -1426,7 +1412,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $template_did_fail,
                         $is_equality
-                    );
+                    ));
 
                     $did_remove_type = true;
 
@@ -1523,9 +1509,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 if (!$is_equality && !$type->as->isMixed()) {
                     $template_did_fail = 0;
 
-                    $type = clone $type;
-
-                    $type->as = self::reconcileArray(
+                    $type = $type->replaceAs(self::reconcileArray(
                         $assertion,
                         $type->as,
                         null,
@@ -1534,7 +1518,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $template_did_fail,
                         $is_equality
-                    );
+                    ));
 
                     $did_remove_type = true;
 
@@ -1619,19 +1603,18 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $is_equality
     ): Union {
+        $types = $existing_var_type->getAtomicTypes();
         $old_var_type_string = $existing_var_type->getId();
         $did_remove_type = false;
 
-        if ($existing_var_type->hasType('resource')) {
+        if (isset($types['resource'])) {
             $did_remove_type = true;
-            $existing_var_type = $existing_var_type->getBuilder();
-            $existing_var_type->removeType('resource');
-            $existing_var_type = $existing_var_type->freeze();
+            unset($types['resource']);
         }
 
-        foreach ($existing_var_type->getAtomicTypes() as $type) {
+        foreach ($types as &$type) {
             if ($type instanceof TTemplateParam) {
-                $type->as = self::reconcileResource(
+                $new = $type->replaceAs(self::reconcileResource(
                     $assertion,
                     $type->as,
                     null,
@@ -1640,10 +1623,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $suppressed_issues,
                     $failed_reconciliation,
                     $is_equality
-                );
+                ));
 
-                $did_remove_type = true;
-                $existing_var_type->bustCache();
+                $did_remove_type = $new !== $type;
+                $type = $new;
             }
         }
 
@@ -1666,8 +1649,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$existing_var_type->isUnionEmpty()) {
-            return $existing_var_type;
+        if ($types) {
+            return $existing_var_type->setTypes($types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1710,15 +1693,19 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     // if the range contains the assertion, the range must be adapted
                     $did_remove_type = true;
                     $existing_var_type->removeType($atomic_type->getKey());
+                    $max_bound = $atomic_type->max_bound;
                     if ($atomic_type->max_bound === null) {
-                        $atomic_type->max_bound = $assertion_value;
+                        $max_bound = $assertion_value;
                     } else {
-                        $atomic_type->max_bound = TIntRange::getNewLowestBound(
+                        $max_bound = TIntRange::getNewLowestBound(
                             $assertion_value,
                             $atomic_type->max_bound
                         );
                     }
-                    $existing_var_type->addType($atomic_type);
+                    $existing_var_type->addType(new TIntRange(
+                        $atomic_type->min_bound,
+                        $max_bound
+                    ));
                 } elseif ($atomic_type->isLesserThan($assertion_value)) {
                     // if the range is lesser than the assertion, the check is redundant
                 } elseif ($atomic_type->isGreaterThan($assertion_value)) {
