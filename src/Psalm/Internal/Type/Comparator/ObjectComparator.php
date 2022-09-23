@@ -100,8 +100,7 @@ class ObjectComparator
                     // T1 as T2 as object becomes (T1 as object) & (T2 as object)
                     if ($as_atomic_type instanceof TTemplateParam) {
                         $intersection_types += self::getIntersectionTypes($as_atomic_type);
-                        $type_part = clone $type_part;
-                        $type_part->as = $as_atomic_type->as;
+                        $type_part = $type_part->replaceAs($as_atomic_type->as);
                         $intersection_types[$type_part->getKey()] = $type_part;
 
                         return $intersection_types;

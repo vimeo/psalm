@@ -326,7 +326,7 @@ class CallableTypeComparator
                         }
                     }
 
-                    $matching_callable = InternalCallMapHandler::getCallableFromCallMapById(
+                    $matching_callable = clone InternalCallMapHandler::getCallableFromCallMapById(
                         $codebase,
                         $input_type_part->value,
                         $args,
@@ -335,6 +335,7 @@ class CallableTypeComparator
 
                     $must_use = false;
 
+                    /** @psalm-suppress InaccessibleProperty We just cloned this object */
                     $matching_callable->is_pure = $codebase->functions->isCallMapFunctionPure(
                         $codebase,
                         $statements_analyzer->node_data ?? null,

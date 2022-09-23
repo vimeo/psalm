@@ -196,6 +196,17 @@ final class Union implements TypeNode, Stringable
      */
     public $different = false;
 
+    /**
+     * @param non-empty-array<Atomic>  $types
+     */
+    public function setTypes(array $types): self
+    {
+        if ($types === $this->types) {
+            return $this;
+        }
+        return $this->getBuilder()->setTypes($types)->freeze();
+    }
+
     public function getBuilder(): MutableUnion
     {
         $types = [];

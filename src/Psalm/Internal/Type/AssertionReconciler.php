@@ -356,13 +356,10 @@ class AssertionReconciler extends Reconciler
                         $existing_var_type_part->properties,
                         $new_type_part->properties
                     )) {
-                        $existing_var_type_part = clone $existing_var_type_part;
-                        $existing_var_type_part->properties = array_merge(
+                        $acceptable_atomic_types[] = $existing_var_type_part->setProperties(array_merge(
                             $existing_var_type_part->properties,
                             $new_type_part->properties
-                        );
-
-                        $acceptable_atomic_types[] = $existing_var_type_part;
+                        ));
                     }
                 }
             }
@@ -569,8 +566,8 @@ class AssertionReconciler extends Reconciler
             return $type_2_atomic;
         }
 
-        if ($type_1_atomic instanceof TNamedObject) {
-            $type_1_atomic->is_static = false;
+        if ($type_1_atomic instanceof TNamedObject && !$type_1_atomic->is_static) {
+            $type_1_atomic = $type_1_atomic->setIsStatic(false);
         }
 
         $atomic_comparison_results = new TypeComparisonResult();
@@ -641,12 +638,14 @@ class AssertionReconciler extends Reconciler
                     return null;
                 }
 
-                $hybrid_type_part = new TKeyedArray($type_2_atomic->properties);
-                $hybrid_type_part->previous_key_type = Type::getInt();
-                $hybrid_type_part->previous_value_type = $type_2_value;
-                $hybrid_type_part->is_list = true;
-
-                return $hybrid_type_part;
+                return new TKeyedArray(
+                    $type_2_atomic->properties,
+                    null,
+                    false,
+                    Type::getInt(),
+                    $type_2_value,
+                    true
+                );
             }
         } elseif ($type_1_atomic instanceof TKeyedArray
             && $type_2_atomic instanceof TList
@@ -666,12 +665,14 @@ class AssertionReconciler extends Reconciler
                     return null;
                 }
 
-                $hybrid_type_part = new TKeyedArray($type_1_atomic->properties);
-                $hybrid_type_part->previous_key_type = Type::getInt();
-                $hybrid_type_part->previous_value_type = $type_1_value;
-                $hybrid_type_part->is_list = true;
-
-                return $hybrid_type_part;
+                return new TKeyedArray(
+                    $type_1_atomic->properties,
+                    null,
+                    false,
+                    Type::getInt(),
+                    $type_1_value,
+                    true
+                );
             }
         }
 
@@ -693,8 +694,9 @@ class AssertionReconciler extends Reconciler
                 || $type_1_atomic instanceof TIterable)
             && count($type_2_atomic->type_params) === count($type_1_atomic->type_params)
         ) {
+            $type_1_params = $type_1_atomic->type_params;
             foreach ($type_2_atomic->type_params as $i => $type_2_param) {
-                $type_1_param = $type_1_atomic->type_params[$i];
+                $type_1_param = $type_1_params[$i];
 
                 $type_2_param_id = $type_2_param->getId();
 
@@ -709,11 +711,15 @@ class AssertionReconciler extends Reconciler
                     return null;
                 }
 
-                if ($type_1_atomic->type_params[$i]->getId() !== $type_2_param_id) {
+                if ($type_1_params[$i]->getId() !== $type_2_param_id) {
                     /** @psalm-suppress PropertyTypeCoercion */
-                    $type_1_atomic->type_params[$i] = $type_2_param;
+                    $type_1_params[$i] = $type_2_param;
                 }
             }
+
+            $type_1_atomic = $type_1_atomic->replaceTypeParams(
+                $type_1_params
+            );
 
             $matching_atomic_type = $type_1_atomic;
             $atomic_comparison_results->type_coerced = true;
@@ -739,7 +745,7 @@ class AssertionReconciler extends Reconciler
             }
 
             if ($type_1_atomic->type_param->getId() !== $type_2_param->getId()) {
-                $type_1_atomic->type_param = $type_2_param;
+                $type_1_atomic = $type_1_atomic->replaceTypeParam($type_2_param);
             }
 
             $matching_atomic_type = $type_1_atomic;
@@ -752,7 +758,8 @@ class AssertionReconciler extends Reconciler
             && $type_1_atomic instanceof TKeyedArray
         ) {
             $type_2_param = $type_2_atomic->type_params[1];
-            foreach ($type_1_atomic->properties as $property_key => $type_1_param) {
+            $type_1_properties = $type_1_atomic->properties;
+            foreach ($type_1_properties as &$type_1_param) {
                 $type_2_param = self::filterTypeWithAnother(
                     $codebase,
                     $type_1_param,
@@ -764,12 +771,12 @@ class AssertionReconciler extends Reconciler
                     return null;
                 }
 
-                if ($type_1_atomic->properties[$property_key]->getId() !== $type_2_param->getId()) {
-                    $type_1_atomic->properties[$property_key] = $type_2_param;
+                if ($type_1_param->getId() !== $type_2_param->getId()) {
+                    $type_1_param = $type_2_param;
                 }
             }
 
-            $matching_atomic_type = $type_1_atomic;
+            $matching_atomic_type = $type_1_atomic->setProperties($type_1_properties);
             $atomic_comparison_results->type_coerced = true;
         }
 

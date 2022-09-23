@@ -398,7 +398,7 @@ class TemplateInferredTypeReplacer
     private static function replaceConditional(
         TemplateResult $template_result,
         Codebase $codebase,
-        TConditional $atomic_type,
+        TConditional &$atomic_type,
         array $inferred_lower_bounds
     ): Union {
         $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
@@ -411,16 +411,19 @@ class TemplateInferredTypeReplacer
         $if_template_type = null;
         $else_template_type = null;
 
-        $atomic_type = clone $atomic_type;
+        $as_type = $atomic_type->as_type;
+        $conditional_type = $atomic_type->conditional_type;
+        $if_type = $atomic_type->if_type;
+        $else_type = $atomic_type->else_type;
 
         if ($template_type) {
-            $atomic_type->as_type = self::replace(
-                $atomic_type->as_type,
+            $as_type = self::replace(
+                $as_type,
                 $template_result,
                 $codebase
             );
 
-            if ($atomic_type->as_type->isNullable() && $template_type->isVoid()) {
+            if ($as_type->isNullable() && $template_type->isVoid()) {
                 $template_type = Type::getNull();
             }
 
@@ -431,7 +434,7 @@ class TemplateInferredTypeReplacer
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     new Union([$candidate_atomic_type]),
-                    $atomic_type->conditional_type,
+                    $conditional_type,
                     false,
                     false,
                     null,
@@ -439,12 +442,12 @@ class TemplateInferredTypeReplacer
                     false
                 )
                     && (!$candidate_atomic_type instanceof TInt
-                        || $atomic_type->conditional_type->getId() !== 'float')
+                        || $conditional_type->getId() !== 'float')
                 ) {
                     $matching_if_types[] = $candidate_atomic_type;
                 } elseif (!UnionTypeComparator::isContainedBy(
                     $codebase,
-                    $atomic_type->conditional_type,
+                    $conditional_type,
                     new Union([$candidate_atomic_type]),
                     false,
                     false,
@@ -463,7 +466,7 @@ class TemplateInferredTypeReplacer
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $if_candidate_type,
-                    $atomic_type->conditional_type,
+                    $conditional_type,
                     false,
                     false,
                     null,
@@ -471,7 +474,7 @@ class TemplateInferredTypeReplacer
                     false
                 )
             ) {
-                $if_template_type = clone $atomic_type->if_type;
+                $if_template_type = clone $if_type;
 
                 $refined_template_result = clone $template_result;
 
@@ -493,7 +496,7 @@ class TemplateInferredTypeReplacer
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $else_candidate_type,
-                    $atomic_type->as_type,
+                    $as_type,
                     false,
                     false,
                     null,
@@ -501,7 +504,7 @@ class TemplateInferredTypeReplacer
                     false
                 )
             ) {
-                $else_template_type = clone $atomic_type->else_type;
+                $else_template_type = clone $else_type;
 
                 $refined_template_result = clone $template_result;
 
@@ -521,21 +524,21 @@ class TemplateInferredTypeReplacer
         }
 
         if (!$if_template_type && !$else_template_type) {
-            $atomic_type->if_type = self::replace(
-                $atomic_type->if_type,
+            $if_type = self::replace(
+                $if_type,
                 $template_result,
                 $codebase
             );
 
-            $atomic_type->else_type = self::replace(
-                $atomic_type->else_type,
+            $else_type = self::replace(
+                $else_type,
                 $template_result,
                 $codebase
             );
 
             $class_template_type = Type::combineUnionTypes(
-                $atomic_type->if_type,
-                $atomic_type->else_type,
+                $if_type,
+                $else_type,
                 $codebase
             );
         } else {
@@ -545,6 +548,13 @@ class TemplateInferredTypeReplacer
                 $codebase
             );
         }
+
+        $atomic_type = $atomic_type->replaceTypes(
+            $as_type,
+            $conditional_type,
+            $if_type,
+            $else_type
+        );
 
         return $class_template_type;
     }
