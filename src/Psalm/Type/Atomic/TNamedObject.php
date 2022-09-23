@@ -56,7 +56,7 @@ class TNamedObject extends Atomic
 
     public function setIsStatic(bool $is_static): self {
         if ($this->is_static === $is_static) {
-            return $is_static;
+            return $this;
         }
         $cloned = clone $this;
         $cloned->is_static = $is_static;

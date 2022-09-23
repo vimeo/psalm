@@ -165,6 +165,7 @@ class TypeHintResolver
 
         if ($type_string) {
             $atomic_type = $type->getSingleAtomic();
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $atomic_type->text = $type_string;
         }
 
