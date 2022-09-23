@@ -473,14 +473,16 @@ class SimpleAssertionReconciler extends Reconciler
         if ($existing_var_type->isSingle()
             && $existing_var_type->hasTemplate()
         ) {
-            foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            $types = $existing_var_type->getAtomicTypes();
+            foreach ($types as $k => $atomic_type) {
                 if ($atomic_type instanceof TTemplateParam && $assertion_type) {
                     if ($atomic_type->as->hasMixed()
                         || $atomic_type->as->hasObject()
                     ) {
-                        $atomic_type->as = new Union([clone $assertion_type]);
-
-                        return $existing_var_type;
+                        unset($types[$k]);
+                        $atomic_type = $atomic_type->replaceAs(new Union([clone $assertion_type]));
+                        $types[$atomic_type->getKey()] = $atomic_type;
+                        return new Union($types);
                     }
                 }
             }
@@ -586,12 +588,10 @@ class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->removeType('array');
                     } else {
                         $non_empty_array = new TNonEmptyArray(
-                            $array_atomic_type->type_params
+                            $array_atomic_type->type_params,
+                            null,
+                            $assertion instanceof HasAtLeastCount ? $assertion->count : null
                         );
-
-                        if ($assertion instanceof HasAtLeastCount) {
-                            $non_empty_array->min_count = $assertion->count;
-                        }
 
                         $existing_var_type->addType($non_empty_array);
                     }
@@ -604,12 +604,10 @@ class SimpleAssertionReconciler extends Reconciler
                         && $array_atomic_type->count < $assertion->count)
                 ) {
                     $non_empty_list = new TNonEmptyList(
-                        $array_atomic_type->type_param
+                        $array_atomic_type->type_param,
+                        null,
+                        $assertion instanceof HasAtLeastCount ? $assertion->count : null
                     );
-
-                    if ($assertion instanceof HasAtLeastCount) {
-                        $non_empty_list->min_count = $assertion->count;
-                    }
 
                     $did_remove_type = true;
                     $existing_var_type->addType($non_empty_list);
@@ -635,10 +633,14 @@ class SimpleAssertionReconciler extends Reconciler
                             // this means a redundant condition
                         } else {
                             $did_remove_type = true;
+                            $properties = $array_atomic_type->properties;
                             for ($i = $prop_count; $i < $assertion->count; $i++) {
-                                $array_atomic_type->properties[$i]
+                                $properties[$i]
                                     = clone ($array_atomic_type->previous_value_type ?: Type::getMixed());
                             }
+                            $array_atomic_type = $array_atomic_type->setProperties($properties);
+                            $existing_var_type->removeType('array');
+                            $existing_var_type->addType($array_atomic_type);
                         }
                     } else {
                         $did_remove_type = true;
@@ -683,10 +685,9 @@ class SimpleAssertionReconciler extends Reconciler
 
             if ($array_atomic_type instanceof TArray) {
                 $non_empty_array = new TNonEmptyArray(
-                    $array_atomic_type->type_params
+                    $array_atomic_type->type_params,
+                    $count
                 );
-
-                $non_empty_array->count = $count;
 
                 $existing_var_type->addType(
                     $non_empty_array
