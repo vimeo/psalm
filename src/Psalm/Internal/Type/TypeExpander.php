@@ -196,7 +196,7 @@ class TypeExpander
         if ($return_type instanceof TClassString
             && $return_type->as_type
         ) {
-            $new_as_type = $return_type->as_type;
+            $new_as_type = clone $return_type->as_type;
 
             self::expandAtomic(
                 $codebase,
@@ -214,8 +214,8 @@ class TypeExpander
 
             if ($new_as_type instanceof TNamedObject && $new_as_type !== $return_type->as_type) {
                 $return_type = new TClassString(
-                    $return_type->as_type->value,
-                    $return_type->as_type,
+                    $new_as_type->value,
+                    $new_as_type,
                     $return_type->is_loaded,
                     $return_type->is_interface,
                     $return_type->is_enum,
