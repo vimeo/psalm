@@ -611,7 +611,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $is_equality
                 ));
 
-                $did_remove_type = $new !== $type;
+                $did_remove_type = $did_remove_type || $new !== $type;
                 $type = $new;
             }
         }
@@ -682,7 +682,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $is_equality
                 ));
 
-                $did_remove_type = $new !== $type;
+                $did_remove_type = $did_remove_type || $new !== $type;
                 $type = $new;
             }
         }
