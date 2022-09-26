@@ -14,6 +14,11 @@ use Psalm\Type\Union;
  */
 class FromDocblockSetter extends TypeVisitor
 {
+    private bool $from_docblock;
+    public function __construct(bool $from_docblock)
+    {
+        $this->from_docblock = $from_docblock;
+    }
     /**
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
@@ -22,7 +27,7 @@ class FromDocblockSetter extends TypeVisitor
         if (!$type instanceof Atomic && !$type instanceof Union && !$type instanceof MutableUnion) {
             return null;
         }
-        $type->from_docblock = true;
+        $type->from_docblock = $this->from_docblock;
 
         if ($type instanceof TTemplateParam
             && $type->as->isMixed()

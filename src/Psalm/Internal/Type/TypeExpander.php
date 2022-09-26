@@ -654,19 +654,24 @@ class TypeExpander
 
         if ($static_class_type && ($return_type_lc === 'static' || $return_type_lc === '$this')) {
             if (is_string($static_class_type)) {
-                $return_type = $return_type->setValue($static_class_type);
+                $return_type = clone $return_type;
+                /** @psalm-suppress InaccessibleProperty Acting on a clone */
+                $return_type->value = $static_class_type;
             } else {
                 if ($return_type instanceof TGenericObject
                     && $static_class_type instanceof TGenericObject
                 ) {
-                    $return_type = $return_type->setValue($static_class_type->value);
+                    $return_type = clone $return_type;
+                    /** @psalm-suppress InaccessibleProperty Acting on a clone */
+                    $return_type->value = $static_class_type->value;
                 } else {
                     $return_type = clone $static_class_type;
                 }
             }
 
             if (!$final && $return_type instanceof TNamedObject) {
-                $return_type = $return_type->setIsStatic(true);
+                /** @psalm-suppress InaccessibleProperty Acting on a clone */
+                $return_type->is_static = true;
             }
         } elseif ($return_type->is_static
             && ($static_class_type instanceof TNamedObject
@@ -687,14 +692,26 @@ class TypeExpander
             }
             $return_type = $return_type->setIntersectionTypes($return_type_types);
         } elseif ($return_type->is_static && is_string($static_class_type) && $final) {
-            $return_type = $return_type->setValue($static_class_type);
-            $return_type = $return_type->setIsStatic(false);
+            $return_type = clone $return_type;
+            /** @psalm-suppress InaccessibleProperty Acting on a clone */
+            $return_type->value = $static_class_type;
+            /** @psalm-suppress InaccessibleProperty Acting on a clone */
+            $return_type->is_static = false;
         } elseif ($self_class && $return_type_lc === 'self') {
-            $return_type = $return_type->setValue($self_class);
+            $return_type = clone $return_type;
+            /** @psalm-suppress InaccessibleProperty Acting on a clone */
+            $return_type->value = $self_class;
         } elseif ($parent_class && $return_type_lc === 'parent') {
-            $return_type = $return_type->setValue($parent_class);
+            $return_type = clone $return_type;
+            /** @psalm-suppress InaccessibleProperty Acting on a clone */
+            $return_type->value = $parent_class;
         } else {
-            $return_type = $return_type->setValue($codebase->classlikes->getUnAliasedName($return_type->value));
+            $new_value = $codebase->classlikes->getUnAliasedName($return_type->value);
+            if ($return_type->value !== $new_value) {
+                $return_type = clone $return_type;
+                /** @psalm-suppress InaccessibleProperty Acting on a clone */
+                $return_type->value = $new_value;
+            }
         }
 
         return $return_type;
