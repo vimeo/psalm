@@ -1087,8 +1087,8 @@ class TypeParser
                 $properties,
                 null,
                 false,
-                $previous_key_type,
-                $previous_value_type
+                $previous_key_type ?? null,
+                $previous_value_type ?? null
             );
         }
 
