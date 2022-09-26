@@ -23,7 +23,6 @@ use function strtolower;
 
 class TypeLocalizer extends TypeVisitor
 {
-    private ClassLikeStorage $storage;
     /**
      * @var array<string, array<string, Union>>
      */
@@ -34,11 +33,9 @@ class TypeLocalizer extends TypeVisitor
      * @param array<string, array<string, Union>> $extends
      */
     public function __construct(
-        ClassLikeStorage $storage,
         array $extends,
         string $base_fq_class_name
     ) {
-        $this->storage = $storage;
         $this->extends = $extends;
         $this->base_fq_class_name = $base_fq_class_name;
     }

@@ -522,7 +522,6 @@ class Methods
         }
 
         (new TypeLocalizer(
-            $class_storage,
             $extends,
             $base_fq_class_name
         ))->traverse($type);

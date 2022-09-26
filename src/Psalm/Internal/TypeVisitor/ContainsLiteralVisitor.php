@@ -8,20 +8,21 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\ImmutableTypeVisitor;
 use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
 
 /**
  * @internal
  */
-class ContainsLiteralVisitor extends TypeVisitor
+class ContainsLiteralVisitor extends ImmutableTypeVisitor
 {
     /**
      * @var bool
      */
     private $contains_literal = false;
 
-    protected function enterNode(TypeNode &$type): ?int
+    protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TLiteralString
             || $type instanceof TLiteralInt
