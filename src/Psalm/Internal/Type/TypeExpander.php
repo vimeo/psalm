@@ -150,34 +150,36 @@ class TypeExpander
             || $return_type instanceof TTemplateParam
         ) {
             if ($return_type->extra_types) {
-                $new_intersection_types = [];
-
+                $new_intersection_types = $return_type->extra_types;
                 $extra_types = [];
-                foreach ($return_type->extra_types as $extra_type) {
-                    self::expandAtomic(
-                        $codebase,
-                        $extra_type,
-                        $self_class,
-                        $static_class_type,
-                        $parent_class,
-                        $evaluate_class_constants,
-                        $evaluate_conditional_types,
-                        $expand_generic,
-                        $expand_templates,
-                        $throw_on_unresolvable_constant,
-                    );
-
-                    if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
-                        $new_intersection_types = array_merge(
-                            $new_intersection_types,
-                            $extra_type->extra_types
-                        );
-                        $extra_type = $extra_type->setIntersectionTypes([]);
+                while ($new_intersection_types) {
+                    $current_intersection_types = $new_intersection_types;
+                    $new_intersection_types = [];
+                    foreach ($current_intersection_types as $extra_type) {
+                        foreach (self::expandAtomic(
+                            $codebase,
+                            $extra_type,
+                            $self_class,
+                            $static_class_type,
+                            $parent_class,
+                            $evaluate_class_constants,
+                            $evaluate_conditional_types,
+                            $expand_generic,
+                            $expand_templates,
+                            $throw_on_unresolvable_constant,
+                        ) as $extra_type_type) {
+                            if ($extra_type_type instanceof TNamedObject && $extra_type_type->extra_types) {
+                                $new_intersection_types = array_merge(
+                                    $new_intersection_types,
+                                    $extra_type_type->extra_types
+                                );
+                                $extra_type_type = $extra_type_type->setIntersectionTypes([]);
+                            }
+                            $extra_types[$extra_type_type->getKey()] = $extra_type_type;
+                        }
                     }
-                    $extra_types[$extra_type->getKey()] = $extra_type;
                 }
-
-                $return_type = $return_type->setIntersectionTypes(array_merge($extra_types, $new_intersection_types));
+                $return_type = $return_type->setIntersectionTypes($extra_types);
             }
 
             if ($return_type instanceof TNamedObject) {
@@ -610,7 +612,7 @@ class TypeExpander
      */
     private static function expandNamedObject(
         Codebase $codebase,
-        TNamedObject $return_type,
+        TNamedObject &$return_type,
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
@@ -652,19 +654,19 @@ class TypeExpander
 
         if ($static_class_type && ($return_type_lc === 'static' || $return_type_lc === '$this')) {
             if (is_string($static_class_type)) {
-                $return_type->value = $static_class_type;
+                $return_type = $return_type->setValue($static_class_type);
             } else {
                 if ($return_type instanceof TGenericObject
                     && $static_class_type instanceof TGenericObject
                 ) {
-                    $return_type->value = $static_class_type->value;
+                    $return_type = $return_type->setValue($static_class_type->value);
                 } else {
                     $return_type = clone $static_class_type;
                 }
             }
 
             if (!$final && $return_type instanceof TNamedObject) {
-                $return_type->is_static = true;
+                $return_type = $return_type->setIsStatic(true);
             }
         } elseif ($return_type->is_static
             && ($static_class_type instanceof TNamedObject
@@ -685,14 +687,14 @@ class TypeExpander
             }
             $return_type = $return_type->setIntersectionTypes($return_type_types);
         } elseif ($return_type->is_static && is_string($static_class_type) && $final) {
-            $return_type->value = $static_class_type;
-            $return_type->is_static = false;
+            $return_type = $return_type->setValue($static_class_type);
+            $return_type = $return_type->setIsStatic(false);
         } elseif ($self_class && $return_type_lc === 'self') {
-            $return_type->value = $self_class;
+            $return_type = $return_type->setValue($self_class);
         } elseif ($parent_class && $return_type_lc === 'parent') {
-            $return_type->value = $parent_class;
+            $return_type = $return_type->setValue($parent_class);
         } else {
-            $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
+            $return_type = $return_type->setValue($codebase->classlikes->getUnAliasedName($return_type->value));
         }
 
         return $return_type;

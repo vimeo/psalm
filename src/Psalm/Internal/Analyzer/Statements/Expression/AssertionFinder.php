@@ -964,15 +964,17 @@ class AssertionFinder
                     if ($rule_type instanceof TClassConstant) {
                         $codebase = $source->getCodebase();
 
-                        $newRules[] = $rule->setAtomicType(
-                            TypeExpander::expandAtomic(
-                                $codebase,
-                                $rule_type,
-                                null,
-                                null,
-                                null
-                            )[0]
-                        );
+                        foreach (TypeExpander::expandAtomic(
+                            $codebase,
+                            $rule_type,
+                            null,
+                            null,
+                            null
+                        ) as $t) {
+                            $newRules[] = $rule->setAtomicType(
+                                $t
+                            );
+                        }
                     } else {
                         $newRules []= $rule;
                     }
@@ -1102,15 +1104,15 @@ class AssertionFinder
                     if ($rule_type instanceof TClassConstant) {
                         $codebase = $source->getCodebase();
 
-                        $newRules []= $rule->setAtomicType(
-                            TypeExpander::expandAtomic(
-                                $codebase,
-                                $rule_type,
-                                null,
-                                null,
-                                null
-                            )[0]
-                        );
+                        foreach (TypeExpander::expandAtomic(
+                            $codebase,
+                            $rule_type,
+                            null,
+                            null,
+                            null
+                        ) as $t) {
+                            $newRules []= $rule->setAtomicType($t);
+                        }
                     } else {
                         $newRules []= $rule;
                     }

@@ -63,6 +63,15 @@ class TNamedObject extends Atomic
         return $this;
     }
 
+    public function setValue(string $value): self {
+        if ($this->value === $value) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->value = $value;
+        return $this;
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
