@@ -480,9 +480,10 @@ class TypeExpander
             || $return_type instanceof TGenericObject
             || $return_type instanceof TIterable
         ) {
-            foreach ($return_type->type_params as $k => $type_param) {
+            $type_params = $return_type->type_params;
+            foreach ($type_params as &$type_param) {
                 /** @psalm-suppress PropertyTypeCoercion */
-                $return_type->type_params[$k] = self::expandUnion(
+                $type_param = self::expandUnion(
                     $codebase,
                     $type_param,
                     $self_class,
@@ -496,8 +497,10 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            $return_type = $return_type->replaceTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
-            foreach ($return_type->properties as &$property_type) {
+            $properties = $return_type->properties;
+            foreach ($properties as &$property_type) {
                 $property_type = self::expandUnion(
                     $codebase,
                     $property_type,
@@ -512,8 +515,9 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            $return_type = $return_type->setProperties($properties);
         } elseif ($return_type instanceof TList) {
-            $return_type->type_param = self::expandUnion(
+            $return_type = $return_type->replaceTypeParam(self::expandUnion(
                 $codebase,
                 $return_type->type_param,
                 $self_class,
@@ -525,11 +529,12 @@ class TypeExpander
                 $expand_generic,
                 $expand_templates,
                 $throw_on_unresolvable_constant,
-            );
+            ));
         }
 
         if ($return_type instanceof TObjectWithProperties) {
-            foreach ($return_type->properties as &$property_type) {
+            $properties = $return_type->properties;
+            foreach ($properties as &$property_type) {
                 $property_type = self::expandUnion(
                     $codebase,
                     $property_type,
@@ -544,15 +549,17 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            $return_type = $return_type->setProperties($properties);
         }
 
         if ($return_type instanceof TCallable
             || $return_type instanceof TClosure
         ) {
-            if ($return_type->params) {
-                foreach ($return_type->params as $param) {
+            $params = $return_type->params;
+            if ($params) {
+                foreach ($params as &$param) {
                     if ($param->type) {
-                        $param->type = self::expandUnion(
+                        $param = $param->replaceType(self::expandUnion(
                             $codebase,
                             $param->type,
                             $self_class,
@@ -564,14 +571,15 @@ class TypeExpander
                             $expand_generic,
                             $expand_templates,
                             $throw_on_unresolvable_constant,
-                        );
+                        ));
                     }
                 }
             }
-            if ($return_type->return_type) {
-                $return_type->return_type = self::expandUnion(
+            $sub_return_type = $return_type->return_type;
+            if ($sub_return_type) {
+                $sub_return_type = self::expandUnion(
                     $codebase,
-                    $return_type->return_type,
+                    $sub_return_type,
                     $self_class,
                     $static_class_type,
                     $parent_class,
@@ -582,6 +590,14 @@ class TypeExpander
                     $expand_templates,
                     $throw_on_unresolvable_constant,
                 );
+            }
+
+            if ($sub_return_type !== $sub_return_type || $params !== $return_type->params) {
+                $return_type = clone $return_type;
+                /** @psalm-suppress InaccessibleProperty We just cloned this */
+                $return_type->return_type = $sub_return_type;
+                /** @psalm-suppress InaccessibleProperty We just cloned this */
+                $return_type->params = $params;
             }
         }
 

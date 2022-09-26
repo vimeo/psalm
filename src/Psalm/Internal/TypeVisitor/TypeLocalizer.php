@@ -43,6 +43,9 @@ class TypeLocalizer extends TypeVisitor
         $this->base_fq_class_name = $base_fq_class_name;
     }
 
+    /**
+     * @psalm-suppress InaccessibleProperty Acting on clones
+     */
     protected function enterNode(TypeNode &$type): ?int
     {
         if ($type instanceof TTemplateParamClass) {

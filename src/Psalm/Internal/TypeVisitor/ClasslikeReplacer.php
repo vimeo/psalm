@@ -28,6 +28,9 @@ class ClasslikeReplacer extends TypeVisitor
         $this->new = $new;
     }
 
+    /**
+     * @psalm-suppress InaccessibleProperty Acting on clones
+     */
     protected function enterNode(TypeNode &$type): ?int
     {
         if ($type instanceof TClassConstant) {
