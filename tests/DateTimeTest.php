@@ -14,6 +14,11 @@ class DateTimeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'construct' => [
+                '<?php
+                    $datetime = new DateTime(timezone: new \DateTimeZone("UTC"));
+                ',
+            ],
             'modify' => [
                 '<?php
                     function getString(): string
