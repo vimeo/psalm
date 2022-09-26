@@ -212,7 +212,7 @@ class TypeExpander
                 $throw_on_unresolvable_constant,
             );
 
-            if ($new_as_type instanceof TNamedObject && $new_as_type !== $return_type->as_type) {
+            if ($new_as_type instanceof TNamedObject) {
                 $return_type = new TClassString(
                     $new_as_type->value,
                     $new_as_type,
