@@ -28,10 +28,7 @@ class TClassString extends TString
      */
     public $as;
 
-    /**
-     * @var ?TNamedObject
-     */
-    public $as_type;
+    public ?TNamedObject $as_type;
 
     /** @var bool */
     public $is_loaded = false;

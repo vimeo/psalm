@@ -20,10 +20,7 @@ final class TPropertiesOf extends Atomic
     public const VISIBILITY_PROTECTED = 2;
     public const VISIBILITY_PRIVATE = 3;
 
-    /**
-     * @var TNamedObject
-     */
-    public $classlike_type;
+    public TNamedObject $classlike_type;
     /**
      * @var self::VISIBILITY_*|null
      */

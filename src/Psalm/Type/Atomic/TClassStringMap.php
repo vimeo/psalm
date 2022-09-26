@@ -24,10 +24,7 @@ final class TClassStringMap extends Atomic
      */
     public $param_name;
 
-    /**
-     * @var ?TNamedObject
-     */
-    public $as_type;
+    public ?TNamedObject $as_type;
 
     /**
      * @var Union
