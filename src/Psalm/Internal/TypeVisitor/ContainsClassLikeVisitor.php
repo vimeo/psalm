@@ -5,6 +5,7 @@ namespace Psalm\Internal\TypeVisitor;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\ImmutableTypeVisitor;
 use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
 
@@ -13,7 +14,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ContainsClassLikeVisitor extends TypeVisitor
+class ContainsClassLikeVisitor extends ImmutableTypeVisitor
 {
     /**
      * @var lowercase-string
@@ -33,7 +34,7 @@ class ContainsClassLikeVisitor extends TypeVisitor
         $this->fq_classlike_name = $fq_classlike_name;
     }
 
-    protected function enterNode(TypeNode &$type): ?int
+    protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {
             if (strtolower($type->value) === $this->fq_classlike_name) {

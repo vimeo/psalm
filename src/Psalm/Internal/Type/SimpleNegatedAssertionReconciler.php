@@ -611,12 +611,12 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $is_equality
                 ));
 
-                $did_remove_type = $new !== $type;
+                $did_remove_type = $did_remove_type || $new !== $type;
                 $type = $new;
             }
         }
 
-        if (!$did_remove_type || $existing_var_type->isUnionEmpty()) {
+        if (!$did_remove_type || !$types) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -682,12 +682,12 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $is_equality
                 ));
 
-                $did_remove_type = $new !== $type;
+                $did_remove_type = $did_remove_type || $new !== $type;
                 $type = $new;
             }
         }
 
-        if (!$did_remove_type || $existing_var_type->isUnionEmpty()) {
+        if (!$did_remove_type || !$types) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -1630,7 +1630,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$did_remove_type || $existing_var_type->isUnionEmpty()) {
+        if (!$did_remove_type || !$types) {
             if ($key && $code_location && !$is_equality) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,

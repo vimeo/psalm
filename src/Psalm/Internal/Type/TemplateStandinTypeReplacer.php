@@ -977,6 +977,7 @@ class TemplateStandinTypeReplacer
 
         $atomic_types = [];
 
+        $as_type = $atomic_type->as_type;
         if ($input_type && !$template_result->readonly) {
             $valid_input_atomic_types = [];
 
@@ -1019,11 +1020,11 @@ class TemplateStandinTypeReplacer
                 $generic_param = Type::getMixed();
             }
 
-            if ($atomic_type->as_type) {
+            if ($as_type) {
                 // sometimes templated class-strings can contain nested templates
                 // in the as type that need to be resolved as well.
                 $as_type_union = self::replace(
-                    new Union([$atomic_type->as_type]),
+                    new Union([$as_type]),
                     $template_result,
                     $codebase,
                     $statements_analyzer,
@@ -1040,9 +1041,9 @@ class TemplateStandinTypeReplacer
                 $first = $as_type_union->getSingleAtomic();
 
                 if (count($as_type_union->getAtomicTypes()) === 1 && $first instanceof TNamedObject) {
-                    $atomic_type->as_type = $first;
+                    $as_type = $first;
                 } else {
-                    $atomic_type->as_type = null;
+                    $as_type = null;
                 }
             }
 
@@ -1087,7 +1088,7 @@ class TemplateStandinTypeReplacer
             }
         }
 
-        $class_string = new TClassString($atomic_type->as, $atomic_type->as_type);
+        $class_string = new TClassString($atomic_type->as, $as_type);
 
         if (!$atomic_types) {
             $atomic_types[] = $class_string;
