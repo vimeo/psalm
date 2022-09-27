@@ -592,7 +592,7 @@ class TypeExpander
                 );
             }
 
-            if ($sub_return_type !== $sub_return_type || $params !== $return_type->params) {
+            if ($sub_return_type !== $return_type->return_type || $params !== $return_type->params) {
                 $return_type = clone $return_type;
                 /** @psalm-suppress InaccessibleProperty We just cloned this */
                 $return_type->return_type = $sub_return_type;
