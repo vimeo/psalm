@@ -61,7 +61,7 @@ class TNamedObject extends Atomic
         }
         $cloned = clone $this;
         $cloned->is_static = $is_static;
-        return $this;
+        return $cloned;
     }
 
     public function getKey(bool $include_extra = true): string
