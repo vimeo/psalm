@@ -9,8 +9,8 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\ImmutableTypeVisitor;
-use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 
 /**
  * @internal

@@ -9,8 +9,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_merge;
-use function array_values;
 use function count;
 use function implode;
 use function substr;

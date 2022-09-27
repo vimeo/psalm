@@ -750,7 +750,7 @@ class AssertionReconciler extends Reconciler
 
             if ($type_1_param->getId() !== $type_2_param->getId()) {
                 $type_1_atomic = $type_1_atomic->replaceTypeParam($type_2_param);
-            } else if ($type_1_param !== $type_1_atomic->type_param) {
+            } elseif ($type_1_param !== $type_1_atomic->type_param) {
                 $type_1_atomic = $type_1_atomic->replaceTypeParam($type_1_param);
             }
 

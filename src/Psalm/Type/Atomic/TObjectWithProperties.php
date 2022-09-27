@@ -12,8 +12,6 @@ use Psalm\Type\Union;
 
 use function array_keys;
 use function array_map;
-use function array_merge;
-use function array_values;
 use function count;
 use function implode;
 
@@ -52,7 +50,8 @@ final class TObjectWithProperties extends TObject
     /**
      * @param array<string|int, Union> $properties
      */
-    public function setProperties(array $properties): self {
+    public function setProperties(array $properties): self
+    {
         if ($properties === $this->properties) {
             return $this;
         }
@@ -64,7 +63,8 @@ final class TObjectWithProperties extends TObject
     /**
      * @param array<string, string> $methods
      */
-    public function setMethods(array $methods): self {
+    public function setMethods(array $methods): self
+    {
         if ($methods === $this->methods) {
             return $this;
         }

@@ -113,7 +113,8 @@ abstract class Atomic implements TypeNode
     /**
      * @return static
      */
-    public function setFromDocblock(bool $from_docblock): self {
+    public function setFromDocblock(bool $from_docblock): self
+    {
         if ($from_docblock === $this->from_docblock) {
             return $this;
         }

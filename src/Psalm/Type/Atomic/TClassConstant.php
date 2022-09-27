@@ -5,8 +5,6 @@ namespace Psalm\Type\Atomic;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
-use function strtolower;
-
 /**
  * Denotes a class constant whose value might not yet be known.
  */
