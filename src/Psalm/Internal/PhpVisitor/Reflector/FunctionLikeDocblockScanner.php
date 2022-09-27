@@ -981,6 +981,7 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->return_type->getAtomicTypes() as $key => $type) {
                     if (isset($signature_return_atomic_types[$key])) {
+                        /** @psalm-suppress InaccessibleProperty We just created this atomic type */
                         $type->from_docblock = false;
                     } else {
                         $all_typehint_types_match = false;

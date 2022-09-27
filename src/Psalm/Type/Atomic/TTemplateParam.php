@@ -8,8 +8,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_map;
-use function array_merge;
-use function array_values;
 use function implode;
 
 /**

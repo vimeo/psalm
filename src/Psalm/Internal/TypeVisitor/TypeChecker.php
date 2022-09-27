@@ -27,8 +27,8 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\ImmutableTypeVisitor;
 use Psalm\Type\MutableUnion;
-use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 use ReflectionProperty;
 

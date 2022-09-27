@@ -9,10 +9,8 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 
 use function array_map;
-use function array_values;
 use function implode;
 use function strrpos;
-use function strtolower;
 use function substr;
 
 /**
@@ -56,13 +54,14 @@ class TNamedObject extends Atomic
         $this->from_docblock = $from_docblock;
     }
 
-    public function setIsStatic(bool $is_static): self {
+    public function setIsStatic(bool $is_static): self
+    {
         if ($this->is_static === $is_static) {
             return $this;
         }
         $cloned = clone $this;
         $cloned->is_static = $is_static;
-        return $this;
+        return $cloned;
     }
 
     public function getKey(bool $include_extra = true): string

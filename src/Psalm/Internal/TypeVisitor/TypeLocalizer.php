@@ -3,23 +3,16 @@
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Internal\Codebase\Methods;
-use Psalm\Internal\Codebase\Scanner;
-use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\FileStorage;
-use Psalm\Type\Atomic\TClassConstant;
-use Psalm\Type\Atomic\TClassString;
-use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\MutableUnion;
-use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 
-use function strtolower;
+use function array_values;
+use function count;
 
 class TypeLocalizer extends TypeVisitor
 {
@@ -55,7 +48,7 @@ class TypeLocalizer extends TypeVisitor
                     if (count($types) === 1 && $types[0] instanceof TNamedObject) {
                         $type = clone $type;
                         $type->as_type = $types[0];
-                    } else if ($type->as_type !== null) {
+                    } elseif ($type->as_type !== null) {
                         $type = clone $type;
                         $type->as_type = null;
                     }
@@ -67,7 +60,7 @@ class TypeLocalizer extends TypeVisitor
         if ($type instanceof Union) {
             $type = $type->getBuilder();
             $wasUnion = true;
-        } else if (!$type instanceof MutableUnion) {
+        } elseif (!$type instanceof MutableUnion) {
             return null;
         }
 

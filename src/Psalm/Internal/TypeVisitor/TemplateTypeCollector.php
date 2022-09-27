@@ -7,7 +7,6 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\ImmutableTypeVisitor;
-use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 

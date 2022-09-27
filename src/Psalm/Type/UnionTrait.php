@@ -7,7 +7,6 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
-use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;

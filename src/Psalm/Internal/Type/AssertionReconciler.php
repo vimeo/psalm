@@ -282,7 +282,7 @@ class AssertionReconciler extends Reconciler
         StatementsAnalyzer $statements_analyzer,
         Assertion $assertion,
         Atomic $new_type_part,
-        Union $existing_var_type,
+        Union &$existing_var_type,
         ?string $key,
         bool $negated,
         ?CodeLocation $code_location,
@@ -522,7 +522,7 @@ class AssertionReconciler extends Reconciler
      */
     private static function filterTypeWithAnother(
         Codebase $codebase,
-        Union $existing_type,
+        Union &$existing_type,
         Union $new_type,
         bool &$any_scalar_type_match_found = false
     ): ?Union {
@@ -530,8 +530,9 @@ class AssertionReconciler extends Reconciler
 
         $new_type = clone $new_type;
 
+        $existing_types = $existing_type->getAtomicTypes();
         foreach ($new_type->getAtomicTypes() as $new_type_part) {
-            foreach ($existing_type->getAtomicTypes() as $existing_type_part) {
+            foreach ($existing_types as &$existing_type_part) {
                 $matching_atomic_type = self::filterAtomicWithAnother(
                     $existing_type_part,
                     $new_type_part,
@@ -544,9 +545,9 @@ class AssertionReconciler extends Reconciler
                 }
             }
         }
+        $existing_type = $existing_type->setTypes($existing_types);
 
         if ($matching_atomic_types) {
-            $existing_type->bustCache();
             return new Union($matching_atomic_types);
         }
 
@@ -554,7 +555,7 @@ class AssertionReconciler extends Reconciler
     }
 
     private static function filterAtomicWithAnother(
-        Atomic $type_1_atomic,
+        Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
         bool &$any_scalar_type_match_found
@@ -566,7 +567,7 @@ class AssertionReconciler extends Reconciler
             return $type_2_atomic;
         }
 
-        if ($type_1_atomic instanceof TNamedObject && !$type_1_atomic->is_static) {
+        if ($type_1_atomic instanceof TNamedObject) {
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
         }
 
@@ -627,12 +628,14 @@ class AssertionReconciler extends Reconciler
             $type_2_value = $type_2_atomic->getGenericValueType();
 
             if (!$type_2_key->hasString()) {
+                $type_1_type_param = $type_1_atomic->type_param;
                 $type_2_value = self::filterTypeWithAnother(
                     $codebase,
-                    $type_1_atomic->type_param,
+                    $type_1_type_param,
                     $type_2_value,
                     $any_scalar_type_match_found
                 );
+                $type_1_atomic = $type_1_atomic->replaceTypeParam($type_1_type_param);
 
                 if ($type_2_value === null) {
                     return null;
@@ -654,9 +657,10 @@ class AssertionReconciler extends Reconciler
             $type_1_value = $type_1_atomic->getGenericValueType();
 
             if (!$type_1_key->hasString()) {
+                $type_2_type_param = $type_2_atomic->type_param;
                 $type_1_value = self::filterTypeWithAnother(
                     $codebase,
-                    $type_2_atomic->type_param,
+                    $type_2_type_param,
                     $type_1_value,
                     $any_scalar_type_match_found
                 );
@@ -744,8 +748,10 @@ class AssertionReconciler extends Reconciler
                 return null;
             }
 
-            if ($type_1_atomic->type_param->getId() !== $type_2_param->getId()) {
+            if ($type_1_param->getId() !== $type_2_param->getId()) {
                 $type_1_atomic = $type_1_atomic->replaceTypeParam($type_2_param);
+            } elseif ($type_1_param !== $type_1_atomic->type_param) {
+                $type_1_atomic = $type_1_atomic->replaceTypeParam($type_1_param);
             }
 
             $matching_atomic_type = $type_1_atomic;
@@ -828,9 +834,10 @@ class AssertionReconciler extends Reconciler
             && $type_1_atomic instanceof TTemplateParam
             && $type_1_atomic->as->hasObjectType()
         ) {
+            $type_1_as_init = $type_1_atomic->as;
             $type_1_as = self::filterTypeWithAnother(
                 $codebase,
-                $type_1_atomic->as,
+                $type_1_as_init,
                 new Union([$type_2_atomic])
             );
 

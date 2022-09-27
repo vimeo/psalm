@@ -2,6 +2,8 @@
 
 namespace Psalm\Type;
 
+use function is_array;
+
 abstract class ImmutableTypeVisitor
 {
     public const STOP_TRAVERSAL = 1;
