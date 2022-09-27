@@ -554,7 +554,7 @@ class AssertionReconciler extends Reconciler
     }
 
     private static function filterAtomicWithAnother(
-        Atomic $type_1_atomic,
+        Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
         bool &$any_scalar_type_match_found
