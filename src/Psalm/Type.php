@@ -314,9 +314,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getNull(): Union
+    public static function getNull(bool $from_docblock = false): Union
     {
-        $type = new TNull;
+        $type = new TNull($from_docblock);
 
         return new Union([$type]);
     }
@@ -324,9 +324,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getMixed(bool $from_loop_isset = false): Union
+    public static function getMixed(bool $from_loop_isset = false, bool $from_docblock = false): Union
     {
-        $type = new TMixed($from_loop_isset);
+        $type = new TMixed($from_loop_isset, $from_docblock);
 
         return new Union([$type]);
     }
@@ -334,9 +334,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getScalar(): Union
+    public static function getScalar(bool $from_docblock = false): Union
     {
-        $type = new TScalar();
+        $type = new TScalar($from_docblock);
 
         return new Union([$type]);
     }
@@ -344,9 +344,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getNever(): Union
+    public static function getNever(bool $from_docblock = false): Union
     {
-        $type = new TNever();
+        $type = new TNever($from_docblock);
 
         return new Union([$type]);
     }
@@ -354,9 +354,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getBool(): Union
+    public static function getBool(bool $from_docblock = false): Union
     {
-        $type = new TBool;
+        $type = new TBool($from_docblock);
 
         return new Union([$type]);
     }
@@ -398,9 +398,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getArrayKey(): Union
+    public static function getArrayKey(bool $from_docblock = false): Union
     {
-        $type = new TArrayKey();
+        $type = new TArrayKey($from_docblock);
 
         return new Union([$type]);
     }
@@ -460,9 +460,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getVoid(): Union
+    public static function getVoid(bool $from_docblock = false): Union
     {
-        $type = new TVoid;
+        $type = new TVoid($from_docblock);
 
         return new Union([$type]);
     }
@@ -470,9 +470,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getFalse(): Union
+    public static function getFalse(bool $from_docblock = false): Union
     {
-        $type = new TFalse;
+        $type = new TFalse($from_docblock);
 
         return new Union([$type]);
     }
@@ -480,9 +480,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getTrue(): Union
+    public static function getTrue(bool $from_docblock = false): Union
     {
-        $type = new TTrue;
+        $type = new TTrue($from_docblock);
 
         return new Union([$type]);
     }
@@ -490,9 +490,9 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getResource(): Union
+    public static function getResource(bool $from_docblock = false): Union
     {
-        return new Union([new TResource]);
+        return new Union([new TResource($from_docblock)]);
     }
 
     /**

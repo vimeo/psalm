@@ -59,10 +59,8 @@ trait UnionTrait
      *
      * @param non-empty-array<Atomic>     $types
      */
-    public function __construct(array $types)
+    public function __construct(array $types, bool $from_docblock = false)
     {
-        $from_docblock = false;
-
         $keyed_types = [];
 
         foreach ($types as $type) {
@@ -1122,13 +1120,6 @@ trait UnionTrait
         $template_type_collector->traverseArray($this->types);
 
         return $template_type_collector->getTemplateTypes();
-    }
-
-    public function setFromDocblock(): void
-    {
-        $this->from_docblock = true;
-
-        (new FromDocblockSetter())->traverseArray($this->types);
     }
 
     public function equals(self $other_type, bool $ensure_source_equality = true): bool

@@ -159,7 +159,8 @@ class CommentAnalyzer
                         $var_type_tokens,
                         null,
                         $template_type_map ?: [],
-                        $type_aliases ?: []
+                        $type_aliases ?: [],
+                        true
                     );
                 } catch (TypeParseTreeException $e) {
                     throw new DocblockParseException(
@@ -172,8 +173,6 @@ class CommentAnalyzer
                         ')'
                     );
                 }
-
-                $defined_type->setFromDocblock();
 
                 $var_comment = new VarDocblockComment();
                 $var_comment->type = $defined_type;

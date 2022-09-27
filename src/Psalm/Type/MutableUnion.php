@@ -4,6 +4,7 @@ namespace Psalm\Type;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -222,7 +223,6 @@ final class MutableUnion implements TypeNode, Stringable
         $this->typed_class_strings = [];
 
         $from_docblock = false;
-
         $keyed_types = [];
 
         foreach ($types as $type) {
@@ -337,6 +337,15 @@ final class MutableUnion implements TypeNode, Stringable
         }
 
         return false;
+    }
+
+    public function setFromDocblock(bool $fromDocblock = true): self
+    {
+        $this->from_docblock = $fromDocblock;
+
+        (new FromDocblockSetter($fromDocblock))->traverseArray($this->types);
+
+        return $this;
     }
 
     public function bustCache(): void
