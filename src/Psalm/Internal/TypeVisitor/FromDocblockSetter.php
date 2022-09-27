@@ -27,6 +27,11 @@ class FromDocblockSetter extends TypeVisitor
         if (!$type instanceof Atomic && !$type instanceof Union && !$type instanceof MutableUnion) {
             return null;
         }
+        if ($type->from_docblock === $this->from_docblock) {
+            return null;
+        }
+        $type = clone $type;
+        /** @psalm-suppress InaccessibleProperty Acting on clone */
         $type->from_docblock = $this->from_docblock;
 
         if ($type instanceof TTemplateParam

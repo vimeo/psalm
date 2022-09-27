@@ -295,9 +295,10 @@ class TypeParser
             $result = new TTemplateParam(
                 $parse_tree->param_name,
                 new Union([new TNamedObject($parse_tree->as)]),
-                'class-string-map'
+                'class-string-map',
+                [],
+                $from_docblock
             );
-            $result->from_docblock = $from_docblock;
             return $result;
         }
 
@@ -353,16 +354,15 @@ class TypeParser
                 $else_type = new Union([$else_type], $from_docblock);
             }
 
-            $result = new TConditional(
+            return new TConditional(
                 $template_param_name,
                 $first_class,
                 $template_type_map[$template_param_name][$first_class],
                 $conditional_type,
                 $if_type,
-                $else_type
+                $else_type,
+                $from_docblock
             );
-            $result->from_docblock = $from_docblock;
-            return $result;
         }
 
         if (!$parse_tree instanceof Value) {
@@ -456,9 +456,12 @@ class TypeParser
             if ($t instanceof TIterable) {
                 $traversable = new TGenericObject(
                     'Traversable',
-                    $t->type_params
+                    $t->type_params,
+                    false,
+                    false,
+                    [],
+                    $from_docblock
                 );
-                $traversable->from_docblock = $from_docblock;
 
                 $as = $as->getBuilder()->substitute(new Union([$t]), new Union([$traversable]))->freeze();
 

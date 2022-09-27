@@ -383,30 +383,30 @@ abstract class Type
         return new Union([$type]);
     }
 
-    public static function getVoid(): Union
+    public static function getVoid(bool $from_docblock = false): Union
     {
-        $type = new TVoid;
+        $type = new TVoid($from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getFalse(): Union
+    public static function getFalse(bool $from_docblock = false): Union
     {
-        $type = new TFalse;
+        $type = new TFalse($from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getTrue(): Union
+    public static function getTrue(bool $from_docblock = false): Union
     {
-        $type = new TTrue;
+        $type = new TTrue($from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getResource(): Union
+    public static function getResource(bool $from_docblock = false): Union
     {
-        return new Union([new TResource]);
+        return new Union([new TResource($from_docblock)]);
     }
 
     /**

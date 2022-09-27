@@ -869,9 +869,7 @@ class TypeExpander
                 );
 
                 if (count($all_conditional_return_types) !== $number_of_types) {
-                    $null_type = new TNull();
-                    $null_type->from_docblock = true;
-                    $all_conditional_return_types[] = $null_type;
+                    $all_conditional_return_types[] = new TNull(true);
                 }
             }
 

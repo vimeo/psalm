@@ -49,7 +49,8 @@ final class TConditional extends Atomic
         Union $as_type,
         Union $conditional_type,
         Union $if_type,
-        Union $else_type
+        Union $else_type,
+        bool $from_docblock = false
     ) {
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
@@ -57,6 +58,7 @@ final class TConditional extends Atomic
         $this->conditional_type = $conditional_type;
         $this->if_type = $if_type;
         $this->else_type = $else_type;
+        $this->from_docblock = $from_docblock;
     }
 
     public function replaceTypes(
