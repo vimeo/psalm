@@ -31,6 +31,7 @@ use function str_replace;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
+ * @psalm-immutable
  */
 class TKeyedArray extends Atomic
 {

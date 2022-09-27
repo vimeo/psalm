@@ -4,6 +4,9 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
 
+/**
+ * @psalm-immutable
+ */
 interface DependentType
 {
     public function getVarId(): string;

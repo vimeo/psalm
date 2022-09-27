@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TKeyOf when the type of the array is a template
+ * @psalm-immutable
  */
 final class TTemplateKeyOf extends Atomic
 {

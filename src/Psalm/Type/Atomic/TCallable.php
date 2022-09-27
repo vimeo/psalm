@@ -9,6 +9,7 @@ use Psalm\Type\Atomic;
 
 /**
  * Denotes the `callable` type. Can result from an `is_callable` check.
+ * @psalm-immutable
  */
 final class TCallable extends Atomic
 {

@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes a non-empty-string where every character is lowercased. (which can also result from a `strtolower` call).
+ * @psalm-immutable
  */
 final class TNonEmptyLowercaseString extends TNonEmptyString
 {

@@ -16,6 +16,7 @@ use function substr;
 
 /**
  * Denotes an object type that has generic parameters e.g. `ArrayObject<string, Foo\Bar>`
+ * @psalm-immutable
  */
 final class TGenericObject extends TNamedObject
 {

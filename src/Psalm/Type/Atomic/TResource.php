@@ -6,6 +6,7 @@ use Psalm\Type\Atomic;
 
 /**
  * Denotes the `resource` type (e.g. a file handle).
+ * @psalm-immutable
  */
 final class TResource extends Atomic
 {

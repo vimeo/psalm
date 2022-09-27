@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TPropertiesOf when the type of the array is a template
+ * @psalm-immutable
  */
 final class TTemplatePropertiesOf extends Atomic
 {

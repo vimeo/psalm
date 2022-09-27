@@ -19,6 +19,7 @@ use function get_class;
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
  *
+ * @psalm-immutable
  */
 class TList extends Atomic
 {
@@ -116,6 +117,7 @@ class TList extends Atomic
     }
 
     /**
+     * @psalm-suppress InaccessibleProperty We're only acting on cloned instances
      * @return static
      */
     public function replaceTemplateTypesWithStandins(

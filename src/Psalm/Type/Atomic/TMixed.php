@@ -7,6 +7,7 @@ use Psalm\Type\Atomic;
 /**
  * Denotes the `mixed` type, used when you don’t know the type of an expression.
  *
+ * @psalm-immutable
  */
 class TMixed extends Atomic
 {

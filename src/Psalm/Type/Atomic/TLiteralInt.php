@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an integer value where the exact numeric value is known.
+ * @psalm-immutable
  */
 final class TLiteralInt extends TInt
 {

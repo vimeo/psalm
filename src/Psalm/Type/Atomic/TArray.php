@@ -13,6 +13,7 @@ use function get_class;
 
 /**
  * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
+ * @psalm-immutable
  */
 class TArray extends Atomic
 {

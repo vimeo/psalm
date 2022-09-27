@@ -15,6 +15,7 @@ use function substr;
 
 /**
  * Denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`
+ * @psalm-immutable
  */
 class TNamedObject extends Atomic
 {

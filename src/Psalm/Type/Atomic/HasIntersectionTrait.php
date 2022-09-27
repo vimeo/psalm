@@ -12,6 +12,9 @@ use function array_map;
 use function array_merge;
 use function implode;
 
+/**
+ * @psalm-immutable
+ */
 trait HasIntersectionTrait
 {
     /**

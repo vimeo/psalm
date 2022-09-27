@@ -12,6 +12,7 @@ use function implode;
 
 /**
  * denotes a template parameter that has been previously specified in a `@template` tag.
+ * @psalm-immutable
  */
 final class TTemplateParam extends Atomic
 {

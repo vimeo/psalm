@@ -6,6 +6,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents a non-empty list
+ * @psalm-immutable
  */
 class TNonEmptyList extends TList
 {

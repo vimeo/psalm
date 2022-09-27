@@ -14,6 +14,9 @@ use Psalm\Type\Union;
 use function count;
 use function implode;
 
+/**
+ * @psalm-immutable
+ */
 trait CallableTrait
 {
     /**

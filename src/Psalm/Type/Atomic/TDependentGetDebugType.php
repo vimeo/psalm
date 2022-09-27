@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Represents a string whose value is that of a type found by get_debug_type($var)
+ * @psalm-immutable
  */
 final class TDependentGetDebugType extends TString implements DependentType
 {
