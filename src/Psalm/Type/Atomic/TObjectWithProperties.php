@@ -41,11 +41,12 @@ final class TObjectWithProperties extends TObject
      * @param array<string, string> $methods
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(array $properties, array $methods = [], array $extra_types = [])
+    public function __construct(array $properties, array $methods = [], array $extra_types = [], bool $from_docblock = false)
     {
         $this->properties = $properties;
         $this->methods = $methods;
         $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
     /**

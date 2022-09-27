@@ -3,6 +3,7 @@
 namespace Psalm\Type;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -239,5 +240,12 @@ final class Union implements TypeNode, Stringable
             $union->{$key} = $value;
         }
         return $union;
+    }
+
+    public function setFromDocblock(bool $fromDocblock = true): self
+    {
+        $cloned = clone $this;
+        (new FromDocblockSetter($fromDocblock))->traverse($cloned);
+        return $cloned;
     }
 }

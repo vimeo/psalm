@@ -812,13 +812,11 @@ class TemplateStandinTypeReplacer
                         }
                     }
                 }
-                $generic_param = $generic_param->freeze();
-
                 if ($add_lower_bound) {
                     return array_values($generic_param->getAtomicTypes());
                 }
 
-                $generic_param->setFromDocblock();
+                $generic_param = $generic_param->setFromDocblock()->freeze();
 
                 if (isset(
                     $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class]
@@ -979,7 +977,11 @@ class TemplateStandinTypeReplacer
             foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
                 if ($input_atomic_type instanceof TLiteralClassString) {
                     $valid_input_atomic_types[] = new TNamedObject(
-                        $input_atomic_type->value
+                        $input_atomic_type->value,
+                        false,
+                        false,
+                        [],
+                        true
                     );
                 } elseif ($input_atomic_type instanceof TTemplateParamClass) {
                     $valid_input_atomic_types[] = new TTemplateParam(
@@ -989,20 +991,28 @@ class TemplateStandinTypeReplacer
                             : ($input_atomic_type->as === 'object'
                                 ? Type::getObject()
                                 : Type::getMixed()),
-                        $input_atomic_type->defining_class
+                        $input_atomic_type->defining_class,
+                        [],
+                        true
                     );
                 } elseif ($input_atomic_type instanceof TClassString) {
                     if ($input_atomic_type->as_type) {
-                        $valid_input_atomic_types[] = clone $input_atomic_type->as_type;
+                        $cloned = clone $input_atomic_type->as_type;
+                        $cloned->from_docblock = true;
+                        $valid_input_atomic_types[] = $cloned;
                     } elseif ($input_atomic_type->as !== 'object') {
                         $valid_input_atomic_types[] = new TNamedObject(
-                            $input_atomic_type->as
+                            $input_atomic_type->as,
+                            false,
+                            false,
+                            [],
+                            true
                         );
                     } else {
-                        $valid_input_atomic_types[] = new TObject();
+                        $valid_input_atomic_types[] = new TObject(true);
                     }
                 } elseif ($input_atomic_type instanceof TDependentGetClass) {
-                    $valid_input_atomic_types[] = new TObject();
+                    $valid_input_atomic_types[] = new TObject(true);
                 }
             }
 
@@ -1010,7 +1020,6 @@ class TemplateStandinTypeReplacer
 
             if ($valid_input_atomic_types) {
                 $generic_param = new Union($valid_input_atomic_types);
-                $generic_param->setFromDocblock();
             } elseif ($was_single) {
                 $generic_param = Type::getMixed();
             }

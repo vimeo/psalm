@@ -33,9 +33,10 @@ class TList extends Atomic
     /**
      * Constructs a new instance of a list
      */
-    public function __construct(Union $type_param)
+    public function __construct(Union $type_param, bool $from_docblock = false)
     {
         $this->type_param = $type_param;
+        $this->from_docblock = $from_docblock;
     }
 
     /**

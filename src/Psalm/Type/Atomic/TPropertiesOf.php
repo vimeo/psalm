@@ -44,10 +44,12 @@ final class TPropertiesOf extends Atomic
      */
     public function __construct(
         TNamedObject $classlike_type,
-        ?int $visibility_filter
+        ?int $visibility_filter,
+        bool $from_docblock = false
     ) {
         $this->classlike_type = $classlike_type;
         $this->visibility_filter = $visibility_filter;
+        $this->from_docblock = $from_docblock;
     }
 
     /**

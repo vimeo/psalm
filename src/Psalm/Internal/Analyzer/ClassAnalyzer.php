@@ -1296,8 +1296,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 $this->inferred_property_types[$property_name]
                                     ->getBuilder()
                                     ->addType(new TNull())
+                                    ->setFromDocblock(true)
                                     ->freeze();
-                            $this->inferred_property_types[$property_name]->setFromDocblock();
                         }
                     }
                 }

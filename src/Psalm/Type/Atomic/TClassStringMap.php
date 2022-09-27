@@ -34,11 +34,12 @@ final class TClassStringMap extends Atomic
     /**
      * Constructs a new instance of a list
      */
-    public function __construct(string $param_name, ?TNamedObject $as_type, Union $value_param)
+    public function __construct(string $param_name, ?TNamedObject $as_type, Union $value_param, bool $from_docblock = false)
     {
         $this->param_name = $param_name;
         $this->as_type = $as_type;
         $this->value_param = $value_param;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getId(bool $exact = true, bool $nested = false): string

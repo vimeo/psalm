@@ -14,9 +14,10 @@ class TLiteralString extends TString
     /** @var string */
     public $value;
 
-    public function __construct(string $value)
+    public function __construct(string $value, bool $from_docblock = false)
     {
         $this->value = $value;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

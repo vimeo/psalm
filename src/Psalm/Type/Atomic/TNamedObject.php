@@ -42,7 +42,7 @@ class TNamedObject extends Atomic
      * @param string $value the name of the object
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $value, bool $is_static = false, bool $definite_class = false, array $extra_types = [])
+    public function __construct(string $value, bool $is_static = false, bool $definite_class = false, array $extra_types = [], bool $from_docblock = false)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -52,6 +52,7 @@ class TNamedObject extends Atomic
         $this->is_static = $is_static;
         $this->definite_class = $definite_class;
         $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
     public function setIsStatic(bool $is_static): self {

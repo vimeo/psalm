@@ -18,10 +18,11 @@ final class TClassConstant extends Atomic
     /** @var string */
     public $const_name;
 
-    public function __construct(string $fq_classlike_name, string $const_name)
+    public function __construct(string $fq_classlike_name, string $const_name, bool $from_docblock = false)
     {
         $this->fq_classlike_name = $fq_classlike_name;
         $this->const_name = $const_name;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

@@ -37,12 +37,14 @@ final class TTemplatePropertiesOf extends Atomic
         string $param_name,
         string $defining_class,
         TTemplateParam $as,
-        ?int $visibility_filter
+        ?int $visibility_filter,
+        bool $from_docblock = false
     ) {
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
         $this->as = $as;
         $this->visibility_filter = $visibility_filter;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

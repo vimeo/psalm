@@ -14,9 +14,10 @@ final class TIntMask extends TInt
     public $values;
 
     /** @param non-empty-array<TLiteralInt|TClassConstant> $values */
-    public function __construct(array $values)
+    public function __construct(array $values, bool $from_docblock = false)
     {
         $this->values = $values;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

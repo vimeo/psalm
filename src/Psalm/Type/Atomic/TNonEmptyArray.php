@@ -30,12 +30,13 @@ class TNonEmptyArray extends TArray
      * @param positive-int|null $count
      * @param positive-int|null $min_count
      */
-    public function __construct(array $type_params, ?int $count = null, ?int $min_count = null, string $value = 'non-empty-array')
+    public function __construct(array $type_params, ?int $count = null, ?int $min_count = null, string $value = 'non-empty-array', bool $from_docblock = false)
     {
         $this->type_params = $type_params;
         $this->count = $count;
         $this->min_count = $min_count;
         $this->value = $value;
+        $this->from_docblock = $from_docblock;
     }
 
     /**

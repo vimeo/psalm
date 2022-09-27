@@ -33,7 +33,7 @@ final class TGenericObject extends TNamedObject
      * @param non-empty-list<Union> $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $value, array $type_params, bool $remapped_params = false, bool $is_static = false, array $extra_types = [])
+    public function __construct(string $value, array $type_params, bool $remapped_params = false, bool $is_static = false, array $extra_types = [], bool $from_docblock = false)
     {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -44,6 +44,7 @@ final class TGenericObject extends TNamedObject
         $this->remapped_params = $remapped_params;
         $this->is_static = $is_static;
         $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

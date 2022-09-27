@@ -31,9 +31,10 @@ class TArray extends Atomic
      *
      * @param array{Union, Union} $type_params
      */
-    public function __construct(array $type_params)
+    public function __construct(array $type_params, bool $from_docblock = false)
     {
         $this->type_params = $type_params;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

@@ -1119,13 +1119,6 @@ trait UnionTrait
         return $template_type_collector->getTemplateTypes();
     }
 
-    public function setFromDocblock(bool $fromDocblock = true): void
-    {
-        $this->from_docblock = $fromDocblock;
-
-        (new FromDocblockSetter($fromDocblock))->traverseArray($this->types);
-    }
-
     public function equals(self $other_type, bool $ensure_source_equality = true): bool
     {
         if ($other_type === $this) {

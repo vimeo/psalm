@@ -77,6 +77,10 @@ use function strtolower;
 
 abstract class Atomic implements TypeNode
 {
+    public function __construct(bool $from_docblock = false)
+    {
+        $this->from_docblock = $from_docblock;
+    }
     /**
      * Whether or not the type has been checked yet
      *
@@ -118,12 +122,14 @@ abstract class Atomic implements TypeNode
         array  $type_aliases = [],
         ?int   $offset_start = null,
         ?int   $offset_end = null,
-        ?string $text = null
+        ?string $text = null,
+        bool    $from_docblock = false
     ): Atomic {
         $result = self::createInner($value, $analysis_php_version_id, $template_type_map, $type_aliases);
         $result->offset_start = $offset_start;
         $result->offset_end = $offset_end;
         $result->text = $text;
+        $result->from_docblock = $from_docblock;
         return $result;
     }
     /**
@@ -135,7 +141,8 @@ abstract class Atomic implements TypeNode
         string $value,
         ?int   $analysis_php_version_id = null,
         array  $template_type_map = [],
-        array  $type_aliases = []
+        array  $type_aliases = [],
+        bool   $from_docblock = false
     ): Atomic {
         switch ($value) {
             case 'int':
@@ -197,19 +204,19 @@ abstract class Atomic implements TypeNode
 
             case 'array':
             case 'associative-array':
-                return new TArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TArray([new Union([new TArrayKey($from_docblock)]), new Union([new TMixed(false, $from_docblock)])]);
 
             case 'non-empty-array':
-                return new TNonEmptyArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TNonEmptyArray([new Union([new TArrayKey($from_docblock)]), new Union([new TMixed(false, $from_docblock)])]);
 
             case 'callable-array':
-                return new TCallableArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TCallableArray([new Union([new TArrayKey($from_docblock)]), new Union([new TMixed(false, $from_docblock)])]);
 
             case 'list':
-                return new TList(Type::getMixed());
+                return new TList(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-list':
-                return new TNonEmptyList(Type::getMixed());
+                return new TNonEmptyList(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-string':
                 return new TNonEmptyString();

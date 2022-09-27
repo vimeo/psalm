@@ -276,37 +276,37 @@ abstract class Type
         return new Union([$type]);
     }
 
-    public static function getNull(): Union
+    public static function getNull(bool $from_docblock = false): Union
     {
-        $type = new TNull;
+        $type = new TNull($from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getMixed(bool $from_loop_isset = false): Union
+    public static function getMixed(bool $from_loop_isset = false, bool $from_docblock = false): Union
     {
-        $type = new TMixed($from_loop_isset);
+        $type = new TMixed($from_loop_isset, $from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getScalar(): Union
+    public static function getScalar(bool $from_docblock = false): Union
     {
-        $type = new TScalar();
+        $type = new TScalar($from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getNever(): Union
+    public static function getNever(bool $from_docblock = false): Union
     {
-        $type = new TNever();
+        $type = new TNever($from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getBool(): Union
+    public static function getBool(bool $from_docblock = false): Union
     {
-        $type = new TBool;
+        $type = new TBool($from_docblock);
 
         return new Union([$type]);
     }
@@ -336,9 +336,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    public static function getArrayKey(): Union
+    public static function getArrayKey(bool $from_docblock = false): Union
     {
-        $type = new TArrayKey();
+        $type = new TArrayKey($from_docblock);
 
         return new Union([$type]);
     }

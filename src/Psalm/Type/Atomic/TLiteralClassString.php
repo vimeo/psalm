@@ -19,9 +19,9 @@ final class TLiteralClassString extends TLiteralString
      */
     public $definite_class = false;
 
-    public function __construct(string $value, bool $definite_class = false)
+    public function __construct(string $value, bool $definite_class = false, bool $from_docblock = false)
     {
-        parent::__construct($value);
+        parent::__construct($value, $from_docblock);
         $this->definite_class = $definite_class;
     }
 

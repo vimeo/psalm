@@ -41,12 +41,14 @@ trait CallableTrait
         string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
-        ?bool $is_pure = null
+        ?bool $is_pure = null,
+        bool $from_docblock = false
     ) {
         $this->value = $value;
         $this->params = $params;
         $this->return_type = $return_type;
         $this->is_pure = $is_pure;
+        $this->from_docblock = $from_docblock;
     }
 
     public function __clone()

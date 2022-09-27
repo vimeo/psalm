@@ -83,7 +83,8 @@ class TKeyedArray extends Atomic
         bool $sealed = false,
         ?Union $previous_key_type = null,
         ?Union $previous_value_type = null,
-        bool $is_list = false
+        bool $is_list = false,
+        bool $from_docblock = false
     ) {
         $this->properties = $properties;
         $this->class_strings = $class_strings;
@@ -91,6 +92,7 @@ class TKeyedArray extends Atomic
         $this->previous_key_type = $previous_key_type;
         $this->previous_value_type = $previous_value_type;
         $this->is_list = $is_list;
+        $this->from_docblock = $from_docblock;
     }
 
     /**

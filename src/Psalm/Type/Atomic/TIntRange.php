@@ -22,10 +22,11 @@ final class TIntRange extends TInt
      */
     public $max_bound;
 
-    public function __construct(?int $min_bound, ?int $max_bound)
+    public function __construct(?int $min_bound, ?int $max_bound, bool $from_docblock = false)
     {
         $this->min_bound = $min_bound;
         $this->max_bound = $max_bound;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

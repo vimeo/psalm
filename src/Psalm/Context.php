@@ -487,12 +487,12 @@ final class Context
                 ) {
                     $existing_type = $existing_type
                         ->getBuilder()
-                        ->substitute($old_type, $new_type)
-                        ->freeze();
+                        ->substitute($old_type, $new_type);
 
                     if ($new_type && $new_type->from_docblock) {
-                        $existing_type->setFromDocblock();
+                        $existing_type = $existing_type->setFromDocblock();
                     }
+                    $existing_type = $existing_type->freeze();
 
                     $updated_vars[$var_id] = true;
                 }

@@ -10,9 +10,10 @@ final class TLiteralInt extends TInt
     /** @var int */
     public $value;
 
-    public function __construct(int $value)
+    public function __construct(int $value, bool $from_docblock = false)
     {
         $this->value = $value;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

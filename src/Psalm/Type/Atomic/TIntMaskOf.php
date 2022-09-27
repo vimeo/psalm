@@ -17,9 +17,10 @@ final class TIntMaskOf extends TInt
     /**
      * @param TClassConstant|TKeyOf|TValueOf $value
      */
-    public function __construct(Atomic $value)
+    public function __construct(Atomic $value, bool $from_docblock = false)
     {
         $this->value = $value;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -43,6 +44,11 @@ final class TIntMaskOf extends TInt
         return 'int-mask-of<'
             . $this->value->toNamespacedString($namespace, $aliased_classes, $this_class, false)
             . '>';
+    }
+
+    public function getChildNodeKeys(): array
+    {
+        return ['value'];
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

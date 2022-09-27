@@ -499,9 +499,9 @@ class ClassLikeNodeScanner
                         $yield_type_tokens,
                         null,
                         $storage->template_types ?: [],
-                        $this->type_aliases
+                        $this->type_aliases,
+                        true
                     );
-                    $yield_type->setFromDocblock();
                     $yield_type->queueClassLikesForScanning(
                         $this->codebase,
                         $this->file_storage,
@@ -559,9 +559,9 @@ class ClassLikeNodeScanner
                             $pseudo_property_type_tokens,
                             null,
                             $this->class_template_types,
-                            $this->type_aliases
+                            $this->type_aliases,
+                            true
                         );
-                        $pseudo_property_type->setFromDocblock();
                         $pseudo_property_type->queueClassLikesForScanning(
                             $this->codebase,
                             $this->file_storage,
@@ -660,7 +660,8 @@ class ClassLikeNodeScanner
                     ),
                     null,
                     $this->class_template_types,
-                    $this->type_aliases
+                    $this->type_aliases,
+                    true
                 );
 
                 $mixin_type->queueClassLikesForScanning(
@@ -668,8 +669,6 @@ class ClassLikeNodeScanner
                     $this->file_storage,
                     $storage->template_types ?: []
                 );
-
-                $mixin_type->setFromDocblock();
 
                 if ($mixin_type->isSingle()) {
                     $mixin_type = $mixin_type->getSingleAtomic();
@@ -797,10 +796,9 @@ class ClassLikeNodeScanner
                     $type->replacement_tokens,
                     null,
                     [],
-                    $this->type_aliases
+                    $this->type_aliases,
+                    true
                 );
-
-                $union->setFromDocblock();
 
                 $converted_aliases[$key] = new ClassTypeAlias(array_values($union->getAtomicTypes()));
             } catch (Exception $e) {
@@ -924,7 +922,8 @@ class ClassLikeNodeScanner
                 ),
                 null,
                 $this->class_template_types,
-                $this->type_aliases
+                $this->type_aliases,
+                true
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -941,8 +940,6 @@ class ClassLikeNodeScanner
                 new CodeLocation($this->file_scanner, $node, null, true)
             );
         }
-
-        $extended_union_type->setFromDocblock();
 
         $extended_union_type->queueClassLikesForScanning(
             $this->codebase,
@@ -1008,7 +1005,8 @@ class ClassLikeNodeScanner
                 ),
                 null,
                 $this->class_template_types,
-                $this->type_aliases
+                $this->type_aliases,
+                true
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1027,8 +1025,6 @@ class ClassLikeNodeScanner
 
             return;
         }
-
-        $implemented_union_type->setFromDocblock();
 
         $implemented_union_type->queueClassLikesForScanning(
             $this->codebase,
@@ -1094,7 +1090,8 @@ class ClassLikeNodeScanner
                 ),
                 null,
                 $this->class_template_types,
-                $this->type_aliases
+                $this->type_aliases,
+                true
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1113,8 +1110,6 @@ class ClassLikeNodeScanner
 
             return;
         }
-
-        $used_union_type->setFromDocblock();
 
         $used_union_type->queueClassLikesForScanning(
             $this->codebase,
@@ -1543,7 +1538,6 @@ class ClassLikeNodeScanner
 
         if ($doc_var_group_type) {
             $doc_var_group_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
-            $doc_var_group_type->setFromDocblock();
         }
 
         foreach ($stmt->props as $property) {

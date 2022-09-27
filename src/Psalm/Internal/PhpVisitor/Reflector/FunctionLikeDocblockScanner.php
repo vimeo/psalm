@@ -786,7 +786,8 @@ class FunctionLikeDocblockScanner
                     ),
                     null,
                     $function_template_types + $class_template_types,
-                    $type_aliases
+                    $type_aliases,
+                    true
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -798,7 +799,6 @@ class FunctionLikeDocblockScanner
             }
 
             $storage_param->has_docblock_type = true;
-            $new_param_type->setFromDocblock();
 
             $new_param_type->queueClassLikesForScanning(
                 $codebase,
@@ -967,10 +967,9 @@ class FunctionLikeDocblockScanner
                 array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
-                $type_aliases
+                $type_aliases,
+                true
             );
-
-            $storage->return_type->setFromDocblock();
 
             if ($storage instanceof MethodStorage) {
                 $storage->has_docblock_return_type = true;

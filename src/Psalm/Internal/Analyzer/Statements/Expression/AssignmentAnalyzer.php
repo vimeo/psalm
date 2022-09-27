@@ -716,7 +716,7 @@ class AssignmentAnalyzer
                 $statements_analyzer->getParentFQCLN()
             );
 
-            $var_comment_type->setFromDocblock();
+            $var_comment_type = $var_comment_type->setFromDocblock();
 
             $var_comment_type->check(
                 $statements_analyzer,
@@ -1497,7 +1497,7 @@ class AssignmentAnalyzer
                                 $statements_analyzer->getParentFQCLN()
                             );
 
-                            $var_comment_type->setFromDocblock();
+                            $var_comment_type = $var_comment_type->setFromDocblock();
 
                             $new_assign_type = $var_comment_type;
                             break;

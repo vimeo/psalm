@@ -33,7 +33,8 @@ final class TClosure extends TNamedObject
         ?Union $return_type = null,
         ?bool $is_pure = null,
         array $byref_uses = [],
-        array $extra_types = []
+        array $extra_types = [],
+        bool $from_docblock = false
     ) {
         $this->value = $value;
         $this->params = $params;
@@ -41,6 +42,7 @@ final class TClosure extends TNamedObject
         $this->is_pure = $is_pure;
         $this->byref_uses = $byref_uses;
         $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
