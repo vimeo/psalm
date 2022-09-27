@@ -554,7 +554,7 @@ class AssertionReconciler extends Reconciler
     }
 
     private static function filterAtomicWithAnother(
-        Atomic &$type_1_atomic,
+        Atomic $type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
         bool &$any_scalar_type_match_found
@@ -566,7 +566,7 @@ class AssertionReconciler extends Reconciler
             return $type_2_atomic;
         }
 
-        if ($type_1_atomic instanceof TNamedObject && !$type_1_atomic->is_static) {
+        if ($type_1_atomic instanceof TNamedObject) {
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
         }
 
