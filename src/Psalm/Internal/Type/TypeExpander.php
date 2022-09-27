@@ -150,36 +150,34 @@ class TypeExpander
             || $return_type instanceof TTemplateParam
         ) {
             if ($return_type->extra_types) {
-                $new_intersection_types = $return_type->extra_types;
+                $new_intersection_types = [];
+
                 $extra_types = [];
-                while ($new_intersection_types) {
-                    $current_intersection_types = $new_intersection_types;
-                    $new_intersection_types = [];
-                    foreach ($current_intersection_types as $extra_type) {
-                        foreach (self::expandAtomic(
-                            $codebase,
-                            $extra_type,
-                            $self_class,
-                            $static_class_type,
-                            $parent_class,
-                            $evaluate_class_constants,
-                            $evaluate_conditional_types,
-                            $expand_generic,
-                            $expand_templates,
-                            $throw_on_unresolvable_constant,
-                        ) as $extra_type_type) {
-                            if ($extra_type_type instanceof TNamedObject && $extra_type_type->extra_types) {
-                                $new_intersection_types = array_merge(
-                                    $new_intersection_types,
-                                    $extra_type_type->extra_types
-                                );
-                                $extra_type_type = $extra_type_type->setIntersectionTypes([]);
-                            }
-                            $extra_types[$extra_type_type->getKey()] = $extra_type_type;
-                        }
+                foreach ($return_type->extra_types as $extra_type) {
+                    self::expandAtomic(
+                        $codebase,
+                        $extra_type,
+                        $self_class,
+                        $static_class_type,
+                        $parent_class,
+                        $evaluate_class_constants,
+                        $evaluate_conditional_types,
+                        $expand_generic,
+                        $expand_templates,
+                        $throw_on_unresolvable_constant,
+                    );
+
+                    if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
+                        $new_intersection_types = array_merge(
+                            $new_intersection_types,
+                            $extra_type->extra_types
+                        );
+                        $extra_type = $extra_type->setIntersectionTypes([]);
                     }
+                    $extra_types[$extra_type->getKey()] = $extra_type;
                 }
-                $return_type = $return_type->setIntersectionTypes($extra_types);
+
+                $return_type = $return_type->setIntersectionTypes(array_merge($extra_types, $new_intersection_types));
             }
 
             if ($return_type instanceof TNamedObject) {
