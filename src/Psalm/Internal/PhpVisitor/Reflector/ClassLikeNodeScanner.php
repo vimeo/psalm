@@ -1844,6 +1844,10 @@ class ClassLikeNodeScanner
                 array_shift($var_line_parts);
             }
 
+            if (!isset($var_line_parts[0])) {
+                continue;
+            }
+
             if ($var_line_parts[0] === '=') {
                 array_shift($var_line_parts);
             }

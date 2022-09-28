@@ -1104,9 +1104,6 @@ class FunctionLikeDocblockScanner
 
                     if (!empty($fully_qualified_name) && !empty($source_param_string)) {
                         $source_params = preg_split('/, ?/', substr($source_param_string, 0, -1)) ?: [];
-                        if ($source_params === false) {
-                            throw new AssertionError(preg_last_error_msg());
-                        }
                         $call_params = [];
                         foreach ($source_params as $source_param) {
                             $source_param = substr($source_param, 1);
