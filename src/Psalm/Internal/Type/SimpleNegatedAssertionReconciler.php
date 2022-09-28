@@ -611,7 +611,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $is_equality
                 ));
 
-                $did_remove_type = $did_remove_type || $new !== $type;
+                // $did_remove_type = $did_remove_type || $new !== $type;
+                // This is technically wrong, but for some reason we get a
+                // duplicated assertion here when using template types.
+                $did_remove_type = true;
                 $type = $new;
             }
         }
