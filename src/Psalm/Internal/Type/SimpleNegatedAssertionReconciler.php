@@ -581,7 +581,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
      */
     private static function reconcileNull(
         Assertion $assertion,
-        Union &$existing_var_type,
+        Union $existing_var_type,
         ?string $key,
         bool $negated,
         ?CodeLocation $code_location,
@@ -600,10 +600,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($types as &$type) {
             if ($type instanceof TTemplateParam) {
-                $as = $type->as;
                 $new = $type->replaceAs(self::reconcileNull(
                     $assertion,
-                    $as,
+                    $type->as,
                     null,
                     false,
                     null,
@@ -637,7 +636,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($types) {
-            return $existing_var_type = $existing_var_type->setTypes($types);
+            return $existing_var_type->setTypes($types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
