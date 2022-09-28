@@ -113,7 +113,6 @@ class UnsetAnalyzer
                                 $properties = [];
                                 foreach ($atomic_root_type->properties as $key => $type) {
                                     $properties[$key] = clone $type;
-                                    /** @psalm-suppress InaccessibleProperty We just cloned this type */
                                     $properties[$key]->possibly_undefined = true;
                                 }
                                 $root_types []= new TKeyedArray(

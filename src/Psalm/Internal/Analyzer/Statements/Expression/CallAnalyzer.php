@@ -936,19 +936,7 @@ class CallAnalyzer
                         );
                     }
 
-                    $op_vars_in_scope[$var_id]->from_docblock = true;
-
-                    foreach ($op_vars_in_scope[$var_id]->getAtomicTypes() as $changed_atomic_type) {
-                        $changed_atomic_type->from_docblock = true;
-
-                        if ($changed_atomic_type instanceof TNamedObject
-                            && $changed_atomic_type->extra_types
-                        ) {
-                            foreach ($changed_atomic_type->extra_types as $extra_type) {
-                                $extra_type->from_docblock = true;
-                            }
-                        }
-                    }
+                    $op_vars_in_scope[$var_id] = $op_vars_in_scope[$var_id]->setFromDocblock(true);
                 }
             }
 

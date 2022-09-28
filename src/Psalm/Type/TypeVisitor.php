@@ -10,7 +10,6 @@ abstract class TypeVisitor
     public const DONT_TRAVERSE_CHILDREN = 2;
 
     /**
-     * @psalm-external-mutation-free
      * @template T as TypeNode
      * @param T $type
      * @param-out T $type
@@ -19,7 +18,6 @@ abstract class TypeVisitor
     abstract protected function enterNode(TypeNode &$type): ?int;
 
     /**
-     * @psalm-external-mutation-free
      * @template T as TypeNode
      * @param T $node
      * @param-out T $node
@@ -85,7 +83,6 @@ abstract class TypeVisitor
     }
 
     /**
-     * @psalm-external-mutation-free
      * @template T as TypeNode
      * @param array<T> $nodes
      * @param-out array<T> $nodes

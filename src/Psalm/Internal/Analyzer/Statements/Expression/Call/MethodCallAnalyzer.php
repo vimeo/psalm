@@ -398,26 +398,20 @@ class MethodCallAnalyzer extends CallAnalyzer
             && ($class_type->from_docblock || $class_type->isNullable())
             && $real_method_call
         ) {
-            $keys_to_remove = [];
+            $types = $class_type->getAtomicTypes();
 
-            $class_type = $class_type->getBuilder();
-
-            foreach ($class_type->getAtomicTypes() as $key => $type) {
+            foreach ($types as $key => &$type) {
                 if (!$type instanceof TNamedObject) {
-                    $keys_to_remove[] = $key;
+                    unset($types[$key]);
                 } else {
-                    $type->from_docblock = false;
+                    $type = $type->setFromDocblock(false);
                 }
             }
 
-            foreach ($keys_to_remove as $key) {
-                $class_type->removeType($key);
-            }
-
-            $class_type->from_docblock = false;
-
             $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
 
+            $class_type = $class_type->getBuilder()->setTypes($types);
+            $class_type->from_docblock = false;
             $context->vars_in_scope[$lhs_var_id] = $class_type->freeze();
         }
 

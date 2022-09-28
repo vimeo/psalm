@@ -54,7 +54,7 @@ trait UnionTrait
      * Constructs an Union instance
      *
      * @psalm-external-mutation-free
-     * 
+     *
      * @param non-empty-array<Atomic>     $types
      */
     public function __construct(array $types, bool $from_docblock = false)
@@ -1220,8 +1220,6 @@ trait UnionTrait
 
     /**
      * @param  array<string, mixed> $phantom_classes
-     *
-     * @psalm-mutation-free
      */
     public function queueClassLikesForScanning(
         Codebase $codebase,
