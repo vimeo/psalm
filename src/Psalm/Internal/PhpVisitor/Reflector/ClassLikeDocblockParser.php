@@ -110,6 +110,9 @@ class ClassLikeDocblockParser
         if (isset($parsed_docblock->combined_tags['template-covariant'])) {
             foreach ($parsed_docblock->combined_tags['template-covariant'] as $offset => $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
+                if ($template_type === false) {
+                    throw new IncorrectDocblockException('Invalid @template-covariant tag: '.preg_last_error_msg());
+                }
 
                 $template_name = array_shift($template_type);
 

@@ -482,7 +482,6 @@ class TypeExpander
         ) {
             $type_params = $return_type->type_params;
             foreach ($type_params as &$type_param) {
-                /** @psalm-suppress PropertyTypeCoercion */
                 $type_param = self::expandUnion(
                     $codebase,
                     $type_param,

@@ -716,7 +716,6 @@ class AssertionReconciler extends Reconciler
                 }
 
                 if ($type_1_params[$i]->getId() !== $type_2_param_id) {
-                    /** @psalm-suppress PropertyTypeCoercion */
                     $type_1_params[$i] = $type_2_param;
                 }
             }

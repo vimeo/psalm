@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use AssertionError;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -1081,6 +1082,9 @@ class FunctionLikeDocblockScanner
 
                     if ($source_param_string[0] === '(' && substr($source_param_string, -1) === ')') {
                         $source_params = preg_split('/, ?/', substr($source_param_string, 1, -1));
+                        if ($source_params === false) {
+                            throw new AssertionError(preg_last_error_msg());
+                        }
 
                         foreach ($source_params as $source_param) {
                             $source_param = substr($source_param, 1);
@@ -1100,6 +1104,9 @@ class FunctionLikeDocblockScanner
 
                     if (!empty($fully_qualified_name) && !empty($source_param_string)) {
                         $source_params = preg_split('/, ?/', substr($source_param_string, 0, -1)) ?: [];
+                        if ($source_params === false) {
+                            throw new AssertionError(preg_last_error_msg());
+                        }
                         $call_params = [];
                         foreach ($source_params as $source_param) {
                             $source_param = substr($source_param, 1);
