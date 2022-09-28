@@ -198,6 +198,7 @@ final class Union implements TypeNode, Stringable
     public $different = false;
 
     /**
+     * @psalm-mutation-free
      * @param non-empty-array<Atomic>  $types
      */
     public function setTypes(array $types): self
@@ -208,6 +209,9 @@ final class Union implements TypeNode, Stringable
         return $this->getBuilder()->setTypes($types)->freeze();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getBuilder(): MutableUnion
     {
         $types = [];
@@ -242,6 +246,9 @@ final class Union implements TypeNode, Stringable
         return $union;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function setFromDocblock(bool $fromDocblock = true): self
     {
         $cloned = clone $this;

@@ -72,6 +72,7 @@ final class TPropertiesOf extends Atomic
     }
 
     /**
+     * @psalm-pure
      * @return TokenName
      */
     public static function tokenNameForFilter(?int $visibility_filter): string

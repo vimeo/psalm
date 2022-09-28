@@ -86,6 +86,7 @@ final class TObjectWithProperties extends TObject
             ', ',
             array_map(
                 /**
+                 * @psalm-pure
                  * @param  string|int $name
                  */
                 static fn($name, Union $type): string => $name . ($type->possibly_undefined ? '?' : '') . ':'
@@ -98,6 +99,9 @@ final class TObjectWithProperties extends TObject
         $methods_string = implode(
             ', ',
             array_map(
+                /**
+                 * @psalm-pure
+                 */
                 static fn(string $name): string => $name . '()',
                 array_keys($this->methods)
             )
@@ -128,6 +132,7 @@ final class TObjectWithProperties extends TObject
                     ', ',
                     array_map(
                         /**
+                         * @psalm-pure
                          * @param  string|int $name
                          */
                         static fn($name, Union $type): string =>
@@ -266,7 +271,7 @@ final class TObjectWithProperties extends TObject
         ?Codebase $codebase
     ): self {
         $properties = $this->properties;
-        foreach ($this->properties as &$property) {
+        foreach ($properties as &$property) {
             $property = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,

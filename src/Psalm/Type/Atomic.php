@@ -75,6 +75,9 @@ use function is_numeric;
 use function strpos;
 use function strtolower;
 
+/**
+ * @psalm-immutable
+ */
 abstract class Atomic implements TypeNode
 {
     public function __construct(bool $from_docblock = false)
