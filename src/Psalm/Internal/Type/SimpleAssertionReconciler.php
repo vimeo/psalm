@@ -854,7 +854,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $string_types[] = $type;
 
                 if (get_class($type) === TString::class) {
-                    $type->from_docblock = false;
+                    $type = $type->setFromDocblock(false);
                 }
             } elseif ($type instanceof TCallable) {
                 $string_types[] = new TCallableString;
@@ -945,7 +945,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $int_types[] = $type;
 
                 if (get_class($type) === TInt::class) {
-                    $type->from_docblock = false;
+                    $type = $type->setFromDocblock(false);
                 }
 
                 if ($existing_var_type->from_calculation) {
@@ -1033,8 +1033,8 @@ class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TBool) {
+                $type = $type->setFromDocblock(false);
                 $bool_types[] = $type;
-                $type->from_docblock = false;
             } elseif ($type instanceof TScalar) {
                 $bool_types[] = new TBool;
                 $did_remove_type = true;

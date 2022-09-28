@@ -1610,6 +1610,7 @@ class ClassLikeNodeScanner
 
                     foreach ($property_storage->type->getAtomicTypes() as $key => $type) {
                         if (isset($signature_atomic_types[$key])) {
+                            /** @psalm-suppress InaccessibleProperty We just created this type */
                             $type->from_docblock = false;
                         } else {
                             $all_typehint_types_match = false;

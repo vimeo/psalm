@@ -997,9 +997,7 @@ class TemplateStandinTypeReplacer
                     );
                 } elseif ($input_atomic_type instanceof TClassString) {
                     if ($input_atomic_type->as_type) {
-                        $cloned = clone $input_atomic_type->as_type;
-                        $cloned->from_docblock = true;
-                        $valid_input_atomic_types[] = $cloned;
+                        $valid_input_atomic_types[] = $input_atomic_type->as_type->setFromDocblock(true);
                     } elseif ($input_atomic_type->as !== 'object') {
                         $valid_input_atomic_types[] = new TNamedObject(
                             $input_atomic_type->as,

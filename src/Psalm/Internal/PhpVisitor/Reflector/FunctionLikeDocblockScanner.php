@@ -871,6 +871,7 @@ class FunctionLikeDocblockScanner
 
             foreach ($new_param_type->getAtomicTypes() as $key => $type) {
                 if (isset($storage_param_atomic_types[$key])) {
+                    /** @psalm-suppress InaccessibleProperty We just created this type */
                     $type->from_docblock = false;
 
                     if ($storage_param_atomic_types[$key] instanceof TArray

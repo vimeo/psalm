@@ -600,9 +600,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($types as &$type) {
             if ($type instanceof TTemplateParam) {
+                $as = $type->as;
                 $new = $type->replaceAs(self::reconcileNull(
                     $assertion,
-                    $type->as,
+                    $as,
                     null,
                     false,
                     null,

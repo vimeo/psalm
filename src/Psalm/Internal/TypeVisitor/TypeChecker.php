@@ -131,6 +131,7 @@ class TypeChecker extends ImmutableTypeVisitor
             $this->checkResource($type);
         }
 
+        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
         $type->checked = true;
 
         return null;
