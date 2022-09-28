@@ -851,11 +851,10 @@ class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TString) {
-                $string_types[] = $type;
-
                 if (get_class($type) === TString::class) {
                     $type = $type->setFromDocblock(false);
                 }
+                $string_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $string_types[] = new TCallableString;
                 $did_remove_type = true;
@@ -942,11 +941,11 @@ class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TInt) {
-                $int_types[] = $type;
-
                 if (get_class($type) === TInt::class) {
                     $type = $type->setFromDocblock(false);
                 }
+
+                $int_types[] = $type;
 
                 if ($existing_var_type->from_calculation) {
                     $did_remove_type = true;
