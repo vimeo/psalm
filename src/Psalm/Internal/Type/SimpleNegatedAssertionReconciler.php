@@ -612,7 +612,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 ));
 
                 // $did_remove_type = $did_remove_type || $new !== $type;
-                // This is technically wrong, but for some reason we get a
+                // TODO: This is technically wrong, but for some reason we get a
                 // duplicated assertion here when using template types.
                 $did_remove_type = true;
                 $type = $new;
