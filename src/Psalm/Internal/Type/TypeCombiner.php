@@ -85,7 +85,7 @@ class TypeCombiner
      *  - and `array<string> + array<never> = array<string>`
      *  - and `array + array<string> = array<mixed>`
      *
-     * @psalm-pure
+     * @psalm-external-mutation-free
      *
      * @param  non-empty-list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this

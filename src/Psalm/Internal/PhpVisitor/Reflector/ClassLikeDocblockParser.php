@@ -30,6 +30,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -66,6 +67,9 @@ class ClassLikeDocblockParser
         if (isset($parsed_docblock->combined_tags['template'])) {
             foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
+                if ($template_type === false) {
+                    throw new IncorrectDocblockException('Invalid @ŧemplate tag: '.preg_last_error_msg());
+                }
 
                 $template_name = array_shift($template_type);
 

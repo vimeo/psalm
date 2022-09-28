@@ -491,7 +491,7 @@ abstract class Type
     }
 
     /**
-     * @psalm-pure
+     * @psalm-external-mutation-free
      * @param non-empty-list<Union> $union_types
      */
     public static function combineUnionTypeArray(array $union_types, ?Codebase $codebase): Union
@@ -511,7 +511,7 @@ abstract class Type
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
      *
-     * @psalm-pure
+     * @psalm-external-mutation-free
      */
     public static function combineUnionTypes(
         ?Union $type_1,

@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -406,6 +407,9 @@ class MethodCallAnalyzer extends CallAnalyzer
                 } else {
                     $type = $type->setFromDocblock(false);
                 }
+            }
+            if (!$types) {
+                throw new AssertionError("We must have some types here!");
             }
 
             $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
