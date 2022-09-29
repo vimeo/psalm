@@ -139,23 +139,11 @@ class TypeCombiner
             && !$combination->floats
         ) {
             if (isset($combination->value_types['false'])) {
-                $union_type = Type::getFalse();
-
-                if ($from_docblock) {
-                    $union_type->from_docblock = true;
-                }
-
-                return $union_type;
+                return Type::getFalse($from_docblock);
             }
 
             if (isset($combination->value_types['true'])) {
-                $union_type = Type::getTrue();
-
-                if ($from_docblock) {
-                    $union_type->from_docblock = true;
-                }
-
-                return $union_type;
+                return Type::getTrue($from_docblock);
             }
         } elseif (isset($combination->value_types['void'])) {
             unset($combination->value_types['void']);
@@ -1520,6 +1508,7 @@ class TypeCombiner
                     );
                 }
             } else {
+                /** @psalm-suppress ArgumentTypeCoercion */
                 $array_type = new TNonEmptyArray(
                     $generic_type_params,
                     $combination->array_counts && count($combination->array_counts) === 1

@@ -5,6 +5,7 @@ namespace Psalm\Type;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
@@ -1246,6 +1247,19 @@ trait UnionTrait
         $classlike_visitor->traverseArray($this->types);
 
         return $classlike_visitor->matches();
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
+    {
+        $type = $this;
+        (new ClasslikeReplacer(
+            $old,
+            $new
+        ))->traverse($type);
+        return $type;
     }
 
     /** @psalm-mutation-free */

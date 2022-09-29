@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
+use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -124,6 +125,19 @@ abstract class Atomic implements TypeNode
         $cloned = clone $this;
         $cloned->from_docblock = $from_docblock;
         return $cloned;
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
+    {
+        $type = $this;
+        (new ClasslikeReplacer(
+            $old,
+            $new
+        ))->traverse($type);
+        return $type;
     }
 
     /**

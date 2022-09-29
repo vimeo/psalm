@@ -14,6 +14,9 @@ use Psalm\Type\Union;
 use function array_values;
 use function count;
 
+/**
+ * @internal
+ */
 class TypeLocalizer extends TypeVisitor
 {
     /**
