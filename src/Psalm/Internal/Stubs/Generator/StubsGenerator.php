@@ -177,10 +177,6 @@ class StubsGenerator
                     continue;
                 }
 
-                if ($type->isMixed()) {
-                    continue;
-                }
-
                 $name_parts = explode('\\', $fq_name);
                 $constant_name = array_pop($name_parts);
 

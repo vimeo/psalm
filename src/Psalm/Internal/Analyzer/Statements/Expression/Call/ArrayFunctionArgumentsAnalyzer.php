@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -567,6 +568,9 @@ class ArrayFunctionArgumentsAnalyzer
                     }
                 }
 
+                if (!$array_atomic_types) {
+                    throw new AssertionError("We must have some types here!");
+                }
                 $array_type = new Union($array_atomic_types);
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;

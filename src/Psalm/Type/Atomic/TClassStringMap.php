@@ -55,11 +55,6 @@ final class TClassStringMap extends Atomic
             . '>';
     }
 
-    public function __clone()
-    {
-        $this->value_param = clone $this->value_param;
-    }
-
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      *

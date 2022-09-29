@@ -581,7 +581,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
      */
     private static function reconcileNull(
         Assertion $assertion,
-        Union &$existing_var_type,
+        Union $existing_var_type,
         ?string $key,
         bool $negated,
         ?CodeLocation $code_location,
@@ -611,7 +611,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $is_equality
                 ));
 
-                $did_remove_type = $did_remove_type || $new !== $type;
+                // $did_remove_type = $did_remove_type || $new !== $type;
+                // TODO: This is technically wrong, but for some reason we get a
+                // duplicated assertion here when using template types.
+                $did_remove_type = true;
                 $type = $new;
             }
         }
@@ -636,7 +639,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($types) {
-            return $existing_var_type = $existing_var_type->setTypes($types);
+            return $existing_var_type->setTypes($types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1693,7 +1696,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     // if the range contains the assertion, the range must be adapted
                     $did_remove_type = true;
                     $existing_var_type->removeType($atomic_type->getKey());
-                    $max_bound = $atomic_type->max_bound;
                     if ($atomic_type->max_bound === null) {
                         $max_bound = $assertion_value;
                     } else {

@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Cli;
 
+use AssertionError;
 use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
@@ -240,6 +241,9 @@ final class Refactor
 
                 if ($operation === 'move_into') {
                     $last_arg_parts = preg_split('/, ?/', $last_arg);
+                    if ($last_arg_parts === false) {
+                        throw new AssertionError(preg_last_error_msg());
+                    }
 
                     foreach ($last_arg_parts as $last_arg_part) {
                         if (strpos($last_arg_part, '::')) {

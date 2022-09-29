@@ -27,6 +27,7 @@ class ContainsClassLikeVisitor extends ImmutableTypeVisitor
     private $contains_classlike = false;
 
     /**
+     * @psalm-external-mutation-free
      * @param lowercase-string $fq_classlike_name
      */
     public function __construct(string $fq_classlike_name)
@@ -34,6 +35,9 @@ class ContainsClassLikeVisitor extends ImmutableTypeVisitor
         $this->fq_classlike_name = $fq_classlike_name;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {
@@ -60,6 +64,9 @@ class ContainsClassLikeVisitor extends ImmutableTypeVisitor
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function matches(): bool
     {
         return $this->contains_classlike;

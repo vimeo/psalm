@@ -496,6 +496,7 @@ abstract class Type
     }
 
     /**
+     * @psalm-external-mutation-free
      * @param non-empty-list<Union> $union_types
      * @psalm-pure
      */
@@ -515,7 +516,8 @@ abstract class Type
      *
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
-     * @psalm-pure
+     *
+     * @psalm-external-mutation-free
      */
     public static function combineUnionTypes(
         ?Union $type_1,

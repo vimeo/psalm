@@ -42,7 +42,8 @@ class TemplateInferredTypeReplacer
 {
     /**
      * This replaces template types in unions with the inferred types they should be
-     * @psalm-pure
+     *
+     * @psalm-external-mutation-free
      */
     public static function replace(
         Union $union,

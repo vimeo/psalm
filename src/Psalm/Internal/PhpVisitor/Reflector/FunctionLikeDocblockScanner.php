@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use AssertionError;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -871,6 +872,7 @@ class FunctionLikeDocblockScanner
 
             foreach ($new_param_type->getAtomicTypes() as $key => $type) {
                 if (isset($storage_param_atomic_types[$key])) {
+                    /** @psalm-suppress InaccessibleProperty We just created this type */
                     $type->from_docblock = false;
 
                     if ($storage_param_atomic_types[$key] instanceof TArray
@@ -1080,6 +1082,9 @@ class FunctionLikeDocblockScanner
 
                     if ($source_param_string[0] === '(' && substr($source_param_string, -1) === ')') {
                         $source_params = preg_split('/, ?/', substr($source_param_string, 1, -1));
+                        if ($source_params === false) {
+                            throw new AssertionError(preg_last_error_msg());
+                        }
 
                         foreach ($source_params as $source_param) {
                             $source_param = substr($source_param, 1);

@@ -294,13 +294,6 @@ class TKeyedArray extends Atomic
         return false;
     }
 
-    public function __clone()
-    {
-        foreach ($this->properties as &$property) {
-            $property = clone $property;
-        }
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         /** @var string */

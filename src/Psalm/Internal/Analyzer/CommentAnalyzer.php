@@ -374,7 +374,7 @@ class CommentAnalyzer
                 $remaining = trim(preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
-                    return array_merge([rtrim($type)], preg_split('/[ \s]+/', $remaining));
+                    return array_merge([rtrim($type)], preg_split('/[ \s]+/', $remaining) ?: []);
                 }
 
                 return [$type];
