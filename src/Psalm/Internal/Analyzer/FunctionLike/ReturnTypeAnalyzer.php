@@ -576,15 +576,13 @@ class ReturnTypeAnalyzer
                         return false;
                     }
                 }
-            } elseif (!$inferred_return_type->hasMixed()
-                && !UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $declared_return_type,
-                    $inferred_return_type,
-                    false,
-                    false
-                )
-            ) {
+            } elseif (!UnionTypeComparator::isContainedBy(
+                $codebase,
+                $declared_return_type,
+                $inferred_return_type,
+                false,
+                false
+            )) {
                 if ($codebase->alter_code) {
                     if (isset($project_analyzer->getIssuesToFix()['LessSpecificReturnType'])
                         && !in_array('LessSpecificReturnType', $suppressed_issues)

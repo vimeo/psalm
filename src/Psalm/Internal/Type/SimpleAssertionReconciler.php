@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Type;
 
+use AssertionError;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
@@ -1611,9 +1612,9 @@ class SimpleAssertionReconciler extends Reconciler
                             [$assertion => Type::getMixed()]
                         ),
                         $is_class_string ? array_merge(
-                            $atomic_type->class_strings,
+                            $atomic_type->class_strings ?? [],
                             [$assertion => true]
-                        ) : $atomic_type->class_strings,
+                        ) : $atomic_type->class_strings ?? [],
                         $atomic_type->sealed,
                         $atomic_type->previous_key_type,
                         $atomic_type->previous_value_type,
@@ -2365,7 +2366,7 @@ class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $recursive_check
     ): Union {
-        $existing_var_type = $existing_var_type->getBuilder();
+        $types = $existing_var_type->getAtomicTypes();
         $old_var_type_string = $existing_var_type->getId();
 
         //empty is used a lot to check for array offset existence, so we have to silent errors a lot
@@ -2374,12 +2375,12 @@ class SimpleAssertionReconciler extends Reconciler
         $did_remove_type = $existing_var_type->possibly_undefined
             || $existing_var_type->possibly_undefined_from_try;
 
-        foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_key => $existing_var_type_part) {
+        foreach ($types as $existing_var_type_key => $existing_var_type_part) {
             //if any atomic in the union is either always falsy, we remove it. If not always truthy, we mark the check
             //as not redundant.
             if ($existing_var_type_part->isFalsy()) {
                 $did_remove_type = true;
-                $existing_var_type->removeType($existing_var_type_key);
+                unset($types[$existing_var_type_key]);
             } elseif ($existing_var_type->possibly_undefined
                 || $existing_var_type->possibly_undefined_from_try
                 || !$existing_var_type_part->isTruthy()
@@ -2388,7 +2389,7 @@ class SimpleAssertionReconciler extends Reconciler
             }
         }
 
-        if ($did_remove_type && $existing_var_type->isUnionEmpty()) {
+        if ($did_remove_type && !$types) {
             //every type was removed, this is an impossible assertion
             if ($code_location && $key && !$is_empty_assertion && !$recursive_check) {
                 self::triggerIssueForImpossible(
@@ -2424,74 +2425,63 @@ class SimpleAssertionReconciler extends Reconciler
 
             $failed_reconciliation = 1;
 
-            return $existing_var_type->freeze();
+            return $existing_var_type->setTypes($types);
         }
 
-        $existing_var_type->possibly_undefined = false;
-        $existing_var_type->possibly_undefined_from_try = false;
-
-        if ($existing_var_type->hasType('bool')) {
-            $existing_var_type->removeType('bool');
-            $existing_var_type->addType(new TTrue());
+        if (isset($types['bool'])) {
+            unset($types['bool']);
+            $types []= new TTrue;
         }
 
-        if ($existing_var_type->hasArray()) {
-            $array_atomic_type = $existing_var_type->getAtomicTypes()['array'];
+        if (isset($types['array'])) {
+            $array_atomic_type = $types['array'];
 
             if ($array_atomic_type instanceof TArray
                 && !$array_atomic_type instanceof TNonEmptyArray
             ) {
-                $existing_var_type->removeType('array');
-                $existing_var_type->addType(
-                    new TNonEmptyArray(
-                        $array_atomic_type->type_params
-                    )
-                );
+                unset($types['array']);
+                $types [] = new TNonEmptyArray($array_atomic_type->type_params);
             } elseif ($array_atomic_type instanceof TList
                 && !$array_atomic_type instanceof TNonEmptyList
             ) {
-                $existing_var_type->removeType('array');
-                $existing_var_type->addType(
-                    new TNonEmptyList(
-                        $array_atomic_type->type_param
-                    )
-                );
+                unset($types['array']);
+                $types [] = new TNonEmptyList($array_atomic_type->type_param);
             }
         }
 
-        if ($existing_var_type->hasMixed()) {
-            $mixed_atomic_type = $existing_var_type->getAtomicTypes()['mixed'];
+        if (isset($types['mixed'])) {
+            $mixed_atomic_type = $types['mixed'];
 
             if (get_class($mixed_atomic_type) === TMixed::class) {
-                $existing_var_type->removeType('mixed');
-                $existing_var_type->addType(new TNonEmptyMixed());
+                unset($types['mixed']);
+                $types []= new TNonEmptyMixed();
             }
         }
 
-        if ($existing_var_type->hasScalar()) {
-            $scalar_atomic_type = $existing_var_type->getAtomicTypes()['scalar'];
+        if (isset($types['scalar'])) {
+            $scalar_atomic_type = $types['scalar'];
 
             if (get_class($scalar_atomic_type) === TScalar::class) {
-                $existing_var_type->removeType('scalar');
-                $existing_var_type->addType(new TNonEmptyScalar());
+                unset($types['scalar']);
+                $types []= new TNonEmptyScalar();
             }
         }
 
-        if ($existing_var_type->hasType('string')) {
-            $string_atomic_type = $existing_var_type->getAtomicTypes()['string'];
+        if (isset($types['string'])) {
+            $string_atomic_type = $types['string'];
 
             if (get_class($string_atomic_type) === TString::class) {
-                $existing_var_type->removeType('string');
-                $existing_var_type->addType(new TNonFalsyString());
+                unset($types['string']);
+                $types []= new TNonFalsyString();
             } elseif (get_class($string_atomic_type) === TLowercaseString::class) {
-                $existing_var_type->removeType('string');
-                $existing_var_type->addType(new TNonEmptyLowercaseString());
+                unset($types['string']);
+                $types []= new TNonEmptyLowercaseString();
             } elseif (get_class($string_atomic_type) === TNonspecificLiteralString::class) {
-                $existing_var_type->removeType('string');
-                $existing_var_type->addType(new TNonEmptyNonspecificLiteralString());
+                unset($types['string']);
+                $types []= new TNonEmptyNonspecificLiteralString();
             } elseif (get_class($string_atomic_type) === TNonEmptyString::class) {
-                $existing_var_type->removeType('string');
-                $existing_var_type->addType(new TNonFalsyString());
+                unset($types['string']);
+                $types []= new TNonFalsyString();
             }
         }
 
@@ -2501,23 +2491,19 @@ class SimpleAssertionReconciler extends Reconciler
             if ($existing_range_types) {
                 foreach ($existing_range_types as $int_key => $literal_type) {
                     if ($literal_type->contains(0)) {
-                        $existing_var_type->removeType($int_key);
+                        unset($types[$int_key]);
                         if ($literal_type->min_bound === null || $literal_type->min_bound <= -1) {
-                            $existing_var_type->addType(new TIntRange($literal_type->min_bound, -1));
+                            $types []= new TIntRange($literal_type->min_bound, -1);
                         }
                         if ($literal_type->max_bound === null || $literal_type->max_bound >= 1) {
-                            $existing_var_type->addType(new TIntRange(1, $literal_type->max_bound));
+                            $types []= new TIntRange(1, $literal_type->max_bound);
                         }
                     }
                 }
             }
-
-            if ($existing_var_type->isSingle()) {
-                return $existing_var_type->freeze();
-            }
         }
 
-        foreach ($existing_var_type->getAtomicTypes() as $type_key => $existing_var_atomic_type) {
+        foreach ($types as $type_key => $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TTemplateParam) {
                 if (!$existing_var_atomic_type->as->isMixed()) {
                     $template_did_fail = 0;
@@ -2534,15 +2520,26 @@ class SimpleAssertionReconciler extends Reconciler
                     ));
 
                     if (!$template_did_fail) {
-                        $existing_var_type->removeType($type_key);
-                        $existing_var_type->addType($existing_var_atomic_type);
+                        unset($types[$type_key]);
+                        $types []= $existing_var_atomic_type;
                     }
                 }
             }
         }
 
-        assert(!$existing_var_type->isUnionEmpty());
-        return $existing_var_type->freeze();
+        if (!$types) {
+            throw new AssertionError("We must have some types here!");
+        }
+        $new = $existing_var_type->setTypes($types);
+        if ($new === $existing_var_type && ($new->possibly_undefined || $new->possibly_undefined_from_try)) {
+            $new = clone $existing_var_type;
+            $new->possibly_undefined = false;
+            $new->possibly_undefined_from_try = false;
+        } else {
+            $new->possibly_undefined = false;
+            $new->possibly_undefined_from_try = false;
+        }
+        return $new;
     }
 
     /**
