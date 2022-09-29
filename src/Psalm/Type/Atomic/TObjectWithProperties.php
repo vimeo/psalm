@@ -169,13 +169,6 @@ final class TObjectWithProperties extends TObject
         return false;
     }
 
-    public function __clone()
-    {
-        foreach ($this->properties as &$property) {
-            $property = clone $property;
-        }
-    }
-
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if (!$other_type instanceof self) {

@@ -88,14 +88,6 @@ final class TConditional extends Atomic
         return $cloned;
     }
 
-    public function __clone()
-    {
-        $this->conditional_type = clone $this->conditional_type;
-        $this->if_type = clone $this->if_type;
-        $this->else_type = clone $this->else_type;
-        $this->as_type = clone $this->as_type;
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'TConditional<' . $this->param_name . '>';

@@ -53,17 +53,6 @@ trait CallableTrait
         $this->from_docblock = $from_docblock;
     }
 
-    public function __clone()
-    {
-        if ($this->params) {
-            foreach ($this->params as &$param) {
-                $param = clone $param;
-            }
-        }
-
-        $this->return_type = $this->return_type ? clone $this->return_type : null;
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         $param_string = '';

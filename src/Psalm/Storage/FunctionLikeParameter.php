@@ -158,13 +158,6 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         return $cloned;
     }
 
-    public function __clone()
-    {
-        if ($this->type) {
-            $this->type = clone $this->type;
-        }
-    }
-
     public function getChildNodeKeys(): array
     {
         $result = ['type', 'signature_type', 'out_type'];
