@@ -1696,7 +1696,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     // if the range contains the assertion, the range must be adapted
                     $did_remove_type = true;
                     $existing_var_type->removeType($atomic_type->getKey());
-                    $max_bound = $atomic_type->max_bound;
                     if ($atomic_type->max_bound === null) {
                         $max_bound = $assertion_value;
                     } else {

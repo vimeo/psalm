@@ -214,11 +214,7 @@ final class Union implements TypeNode, Stringable
      */
     public function getBuilder(): MutableUnion
     {
-        $types = [];
-        foreach ($this->getAtomicTypes() as $type) {
-            $types []= clone $type;
-        }
-        $union = new MutableUnion($types);
+        $union = new MutableUnion($this->getAtomicTypes());
         foreach (get_object_vars($this) as $key => $value) {
             if ($key === 'types') {
                 continue;

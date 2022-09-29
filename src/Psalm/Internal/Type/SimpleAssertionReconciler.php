@@ -2425,6 +2425,9 @@ class SimpleAssertionReconciler extends Reconciler
 
             $failed_reconciliation = 1;
 
+            if (!$types) {
+                throw new AssertionError("We must have some types here!");
+            }
             return $existing_var_type->setTypes($types);
         }
 
