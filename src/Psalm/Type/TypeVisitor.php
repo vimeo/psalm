@@ -41,6 +41,7 @@ abstract class TypeVisitor
             if ($node instanceof Union || $node instanceof MutableUnion) {
                 $child_node = $node->getAtomicTypes();
             } else {
+                /** @var TypeNode|array<TypeNode>|null */
                 $child_node = $node->{$key};
             }
             if ($child_node === null) {
