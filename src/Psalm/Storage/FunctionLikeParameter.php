@@ -116,6 +116,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     public $description;
 
     /**
+     * @psalm-external-mutation-free
      * @param Union|UnresolvedConstantComponent|null $default_type
      */
     public function __construct(
@@ -145,6 +146,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         $this->out_type = $out_type;
     }
 
+    /** @psalm-mutation-free */
     public function getId(): string
     {
         return ($this->type ? $this->type->getId() : 'mixed')
@@ -152,6 +154,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
             . ($this->is_optional ? '=' : '');
     }
 
+    /** @psalm-mutation-free */
     public function replaceType(Union $type): self
     {
         if ($this->type === $type) {
@@ -162,6 +165,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         return $cloned;
     }
 
+    /** @psalm-mutation-free */
     public function getChildNodeKeys(): array
     {
         $result = ['type', 'signature_type', 'out_type'];
@@ -172,6 +176,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     }
 
     /**
+     * @psalm-mutation-free
      * @return list<AttributeStorage>
      */
     public function getAttributeStorages(): array

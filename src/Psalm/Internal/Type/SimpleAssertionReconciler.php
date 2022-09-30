@@ -1614,7 +1614,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $is_class_string ? array_merge(
                             $atomic_type->class_strings ?? [],
                             [$assertion => true]
-                        ) : $atomic_type->class_strings ?? [],
+                        ) : $atomic_type->class_strings,
                         $atomic_type->sealed,
                         $atomic_type->previous_key_type,
                         $atomic_type->previous_value_type,

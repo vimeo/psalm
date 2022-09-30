@@ -11,6 +11,9 @@ use Psalm\Type\TypeVisitor;
 
 use function strtolower;
 
+/**
+ * @internal
+ */
 class ClasslikeReplacer extends TypeVisitor
 {
     private string $old;

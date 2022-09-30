@@ -26,6 +26,11 @@ final class TIterable extends Atomic
     use GenericTrait;
 
     /**
+     * @var array{Union, Union}
+     */
+    public array $type_params;
+
+    /**
      * @var string
      */
     public $value = 'iterable';

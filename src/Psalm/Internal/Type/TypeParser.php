@@ -1117,6 +1117,8 @@ class TypeParser
                 }
             }
 
+            $previous_key_type = null;
+            $previous_value_type = null;
             if ($first_type instanceof TArray) {
                 $previous_key_type = $first_type->type_params[0];
                 $previous_value_type = $first_type->type_params[1];

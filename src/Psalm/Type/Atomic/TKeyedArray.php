@@ -317,7 +317,7 @@ class TKeyedArray extends Atomic
     ): self {
         $properties = $this->properties;
 
-        foreach ($properties as $offset => &$property) {
+        foreach ($properties as $offset => $property) {
             $input_type_param = null;
 
             if ($input_type instanceof TKeyedArray
@@ -326,7 +326,7 @@ class TKeyedArray extends Atomic
                 $input_type_param = $input_type->properties[$offset];
             }
 
-            $property = TemplateStandinTypeReplacer::replace(
+            $properties[$offset] = TemplateStandinTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
@@ -358,8 +358,8 @@ class TKeyedArray extends Atomic
         ?Codebase $codebase
     ): self {
         $properties = $this->properties;
-        foreach ($properties as &$property) {
-            $property = TemplateInferredTypeReplacer::replace(
+        foreach ($properties as $offset => $property) {
+            $properties[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase

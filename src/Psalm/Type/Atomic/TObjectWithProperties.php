@@ -264,8 +264,8 @@ final class TObjectWithProperties extends TObject
         ?Codebase $codebase
     ): self {
         $properties = $this->properties;
-        foreach ($properties as &$property) {
-            $property = TemplateInferredTypeReplacer::replace(
+        foreach ($properties as $offset => $property) {
+            $properties[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase

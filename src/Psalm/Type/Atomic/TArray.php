@@ -23,6 +23,11 @@ class TArray extends Atomic
     use GenericTrait;
 
     /**
+     * @var array{Union, Union}
+     */
+    public array $type_params;
+
+    /**
      * @var string
      */
     public $value = 'array';

@@ -198,7 +198,7 @@ trait CallableTrait
         $replaced = false;
         $params = $this->params;
         if ($params) {
-            foreach ($params as $offset => &$param) {
+            foreach ($params as $offset => $param) {
                 if (!$param->type) {
                     continue;
                 }
@@ -226,7 +226,7 @@ trait CallableTrait
                     $depth
                 ));
                 $replaced = $replaced || $new_param !== $param;
-                $param = $new_param;
+                $params[$offset] = $new_param;
             }
         }
 
@@ -267,7 +267,7 @@ trait CallableTrait
 
         $params = $this->params;
         if ($params) {
-            foreach ($params as &$param) {
+            foreach ($params as $k => $param) {
                 if ($param->type) {
                     $new_param = $param->replaceType(TemplateInferredTypeReplacer::replace(
                         $param->type,
@@ -275,7 +275,7 @@ trait CallableTrait
                         $codebase
                     ));
                     $replaced = $replaced || $new_param !== $param;
-                    $param = $new_param;
+                    $params[$k] = $new_param;
                 }
             }
         }

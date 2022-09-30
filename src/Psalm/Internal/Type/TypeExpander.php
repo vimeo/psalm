@@ -59,7 +59,7 @@ use function substr;
 class TypeExpander
 {
     /**
-     * @param  string|TNamedObject|TTemplateParam|null $static_class_type
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      */
     public static function expandUnion(
         Codebase $codebase,
@@ -127,8 +127,8 @@ class TypeExpander
     }
 
     /**
-     * @param  string|TNamedObject|TTemplateParam|null $static_class_type
-     *
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
+     * @param-out Atomic $return_type
      * @return non-empty-list<Atomic>
      *
      * @psalm-suppress ComplexMethod, ConflictingReferenceConstraint
@@ -245,16 +245,16 @@ class TypeExpander
 
         if ($return_type instanceof TClassConstant) {
             if ($self_class) {
-                (new ClasslikeReplacer(
+                $return_type = $return_type->replaceClassLike(
                     'self',
                     $self_class
-                ))->traverse($return_type);
+                );
             }
             if (is_string($static_class_type) || $self_class) {
-                (new ClasslikeReplacer(
+                $return_type = $return_type->replaceClassLike(
                     'static',
                     is_string($static_class_type) ? $static_class_type : $self_class
-                ))->traverse($return_type);
+                );
             }
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
@@ -496,6 +496,7 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            /** @psalm-suppress ArgumentTypeCoercion */
             $return_type = $return_type->replaceTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;
@@ -604,7 +605,7 @@ class TypeExpander
     }
 
     /**
-     * @param  string|TNamedObject|TTemplateParam|null $static_class_type
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return TNamedObject|TTemplateParam
      */
     private static function expandNamedObject(
@@ -715,7 +716,7 @@ class TypeExpander
     }
 
     /**
-     * @param  string|TNamedObject|TTemplateParam|null $static_class_type
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      *
      * @return non-empty-list<Atomic>
      */
@@ -938,14 +939,14 @@ class TypeExpander
         $static_class_type
     ): array {
         if ($self_class) {
-            (new ClasslikeReplacer(
+            $return_type = $return_type->replaceClassLike(
                 'self',
                 $self_class
-            ))->traverse($return_type);
-            (new ClasslikeReplacer(
+            );
+            $return_type = $return_type->replaceClassLike(
                 'static',
                 is_string($static_class_type) ? $static_class_type : $self_class
-            ))->traverse($return_type);
+            );
         }
 
         $class_storage = null;
@@ -1042,7 +1043,7 @@ class TypeExpander
             }
 
             if ($self_class) {
-                (new ClasslikeReplacer('self', $self_class))->traverse($type_param);
+                $return_type = $return_type->replaceClassLike('self', $self_class);
             }
 
             if ($throw_on_unresolvable_constant

@@ -58,11 +58,6 @@ class TList extends Atomic
         return static::KEY . '<' . $this->type_param->getId($exact) . '>';
     }
 
-    public function __clone()
-    {
-        $this->type_param = clone $this->type_param;
-    }
-
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      *
