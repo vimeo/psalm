@@ -244,7 +244,7 @@ trait GenericTrait
         ?Codebase $codebase
     ): ?array {
         $type_params = $this->type_params;
-        foreach ($type_params as $offset => &$type_param) {
+        foreach ($type_params as $offset => $type_param) {
             $type_param = TemplateInferredTypeReplacer::replace(
                 $type_param,
                 $template_result,
@@ -254,6 +254,8 @@ trait GenericTrait
             if ($this instanceof TArray && $offset === 0 && $type_param->isMixed()) {
                 $type_param = Type::getArrayKey();
             }
+
+            $type_params[$offset] = $type_param;
         }
 
         return $type_params === $this->type_params ? null : $type_params;
