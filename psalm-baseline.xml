@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@3bbd55ccb0e4dfffbbbd7e2cb0b4a01298709ddb">
+<files psalm-version="dev-master@2488c523963efcc6d8a1a6a8874d08bd0d7a40cf">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -105,7 +105,15 @@
       <code>$gettype_expr-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/InstancePropertyAssignmentAnalyzer.php">
+    <ComplexMethod occurrences="1">
+      <code>analyzeAtomicAssignment</code>
+    </ComplexMethod>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/ArithmeticOpAnalyzer.php">
+    <ComplexMethod occurrences="1">
+      <code>analyzeOperands</code>
+    </ComplexMethod>
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$invalid_left_messages[0]</code>
       <code>$invalid_right_messages[0]</code>
@@ -122,9 +130,8 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentsAnalyzer.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="2">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$arg_function_params[$argument_offset][0]</code>
-      <code>$array_type-&gt;getGenericArrayType()-&gt;getChildNodes()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArrayFunctionArgumentsAnalyzer.php">
@@ -164,6 +171,11 @@
       <code>elseif ($type instanceof TList) {</code>
     </ConflictingReferenceConstraint>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/AtomicPropertyFetchAnalyzer.php">
+    <ComplexMethod occurrences="1">
+      <code>analyze</code>
+    </ComplexMethod>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/InstancePropertyFetchAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$invalid_fetch_types[0]</code>
@@ -173,6 +185,12 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$atomic_return_type-&gt;type_params[2]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/UnsetAnalyzer.php">
+    <DocblockTypeContradiction occurrences="2">
+      <code>!$properties</code>
+      <code>$properties</code>
+    </DocblockTypeContradiction>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/UnusedAssignmentRemover.php">
     <PossiblyUndefinedIntArrayOffset occurrences="6">
@@ -263,10 +281,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="3">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$l[4]</code>
       <code>$r[4]</code>
-      <code>$var_line_parts[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionScanner.php">
@@ -306,12 +323,42 @@
     <MoreSpecificReturnType occurrences="1">
       <code>TCallable|TClosure|null</code>
     </MoreSpecificReturnType>
+    <PossiblyNullArgument occurrences="1">
+      <code>$calling_method_id ?: $file_name</code>
+    </PossiblyNullArgument>
+  </file>
+  <file src="src/Psalm/Internal/Type/Comparator/GenericTypeComparator.php">
+    <ArgumentTypeCoercion occurrences="1">
+      <code>$atomic_comparison_result_type_params</code>
+    </ArgumentTypeCoercion>
+  </file>
+  <file src="src/Psalm/Internal/Type/SimpleNegatedAssertionReconciler.php">
+    <RedundantCondition occurrences="1">
+      <code>assert(!$existing_var_type-&gt;isUnionEmpty())</code>
+    </RedundantCondition>
+  </file>
+  <file src="src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php">
+    <ReferenceConstraintViolation occurrences="3">
+      <code>$atomic_type</code>
+      <code>$atomic_type</code>
+      <code>return $atomic_types;</code>
+    </ReferenceConstraintViolation>
   </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
     <ArgumentTypeCoercion occurrences="2">
       <code>$combination-&gt;extra_types</code>
       <code>$combination-&gt;extra_types</code>
     </ArgumentTypeCoercion>
+    <ComplexMethod occurrences="1">
+      <code>scrapeTypeProperties</code>
+    </ComplexMethod>
+    <ImpurePropertyAssignment occurrences="5">
+      <code>$combination-&gt;array_type_params</code>
+      <code>$combination-&gt;extra_types</code>
+      <code>$combination-&gt;value_types</code>
+      <code>$result-&gt;from_docblock</code>
+      <code>$union_type-&gt;from_docblock</code>
+    </ImpurePropertyAssignment>
     <PossiblyUndefinedIntArrayOffset occurrences="6">
       <code>$combination-&gt;array_type_params[1]</code>
       <code>$combination-&gt;array_type_params[1]</code>
@@ -326,6 +373,19 @@
       <code>array_merge($extra_types, $new_intersection_types)</code>
       <code>array_merge($extra_types, $new_intersection_types)</code>
     </ArgumentTypeCoercion>
+    <ReferenceConstraintViolation occurrences="11">
+      <code>$return_type</code>
+      <code>$return_type</code>
+      <code>$return_type</code>
+      <code>$return_type</code>
+      <code>$return_type</code>
+      <code>$return_type</code>
+      <code>$return_type</code>
+      <code>$return_type</code>
+      <code>$return_type</code>
+      <code>$return_type</code>
+      <code>return $return_type;</code>
+    </ReferenceConstraintViolation>
   </file>
   <file src="src/Psalm/Internal/Type/TypeParser.php">
     <PossiblyUndefinedIntArrayOffset occurrences="8">
@@ -339,28 +399,149 @@
       <code>array_keys($template_type_map[$template_param_name])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Type.php">
+    <ImpurePropertyAssignment occurrences="12">
+      <code>$combined_type-&gt;by_ref</code>
+      <code>$combined_type-&gt;failed_reconciliation</code>
+      <code>$combined_type-&gt;from_calculation</code>
+      <code>$combined_type-&gt;from_docblock</code>
+      <code>$combined_type-&gt;had_template</code>
+      <code>$combined_type-&gt;ignore_falsable_issues</code>
+      <code>$combined_type-&gt;ignore_nullable_issues</code>
+      <code>$combined_type-&gt;initialized</code>
+      <code>$combined_type-&gt;parent_nodes</code>
+      <code>$combined_type-&gt;possibly_undefined</code>
+      <code>$combined_type-&gt;possibly_undefined_from_try</code>
+      <code>$combined_type-&gt;reference_free</code>
+    </ImpurePropertyAssignment>
+  </file>
   <file src="src/Psalm/Type/Atomic.php">
+    <ImpureMethodCall occurrences="11">
+      <code>classExtendsOrImplements</code>
+      <code>classExtendsOrImplements</code>
+      <code>classExtendsOrImplements</code>
+      <code>classOrInterfaceExists</code>
+      <code>classOrInterfaceExists</code>
+      <code>classOrInterfaceExists</code>
+      <code>getMappedGenericTypeParams</code>
+      <code>interfaceExtends</code>
+      <code>interfaceExtends</code>
+      <code>interfaceExtends</code>
+      <code>traverse</code>
+    </ImpureMethodCall>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>array_keys($template_type_map[$value])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Type/Atomic/CallableTrait.php">
+    <ImpureMethodCall occurrences="4">
+      <code>replace</code>
+      <code>replace</code>
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
   <file src="src/Psalm/Type/Atomic/GenericTrait.php">
+    <ImpureMethodCall occurrences="3">
+      <code>getMappedGenericTypeParams</code>
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$this-&gt;type_params[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Type/Atomic/HasIntersectionTrait.php">
+    <ImpureMethodCall occurrences="1">
+      <code>getMostSpecificTypeFromBounds</code>
+    </ImpureMethodCall>
+  </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
-    <DocblockTypeContradiction occurrences="2">
-      <code>!$this-&gt;as_type</code>
-      <code>!$this-&gt;as_type</code>
-    </DocblockTypeContradiction>
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TClassStringMap.php">
+    <ImpureMethodCall occurrences="4">
+      <code>getString</code>
+      <code>getString</code>
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+    <ImpurePropertyAssignment occurrences="1">
+      <code>$cloned-&gt;value_param</code>
+    </ImpurePropertyAssignment>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TConditional.php">
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Type/Atomic/TIterable.php">
     <PropertyTypeCoercion occurrences="1">
       <code>$type_params</code>
     </PropertyTypeCoercion>
   </file>
+  <file src="src/Psalm/Type/Atomic/TKeyedArray.php">
+    <ImpureMethodCall occurrences="10">
+      <code>combine</code>
+      <code>combine</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+    <ImpurePropertyAssignment occurrences="3">
+      <code>$key_type-&gt;possibly_undefined</code>
+      <code>$value_type-&gt;possibly_undefined</code>
+      <code>$value_type-&gt;possibly_undefined</code>
+    </ImpurePropertyAssignment>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TList.php">
+    <ImpureMethodCall occurrences="2">
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+    <ImpurePropertyAssignment occurrences="1">
+      <code>$cloned-&gt;type_param</code>
+    </ImpurePropertyAssignment>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TObjectWithProperties.php">
+    <ImpureMethodCall occurrences="2">
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+    <ImpurePropertyFetch occurrences="2">
+      <code>$type-&gt;possibly_undefined</code>
+      <code>$type-&gt;possibly_undefined</code>
+    </ImpurePropertyFetch>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TTemplateKeyOf.php">
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TTemplatePropertiesOf.php">
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TTemplateValueOf.php">
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
   <file src="src/Psalm/Type/MutableUnion.php">
+    <ImpureMethodCall occurrences="1">
+      <code>traverseArray</code>
+    </ImpureMethodCall>
+    <ImpurePropertyAssignment occurrences="1">
+      <code>$union-&gt;{$key}</code>
+    </ImpurePropertyAssignment>
     <PossiblyUnusedProperty occurrences="7">
       <code>$allow_mutations</code>
       <code>$by_ref</code>
@@ -377,12 +558,33 @@
       <code>$type[0][0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Type/TypeVisitor.php">
+    <ConflictingReferenceConstraint occurrences="1">
+      <code>else {</code>
+    </ConflictingReferenceConstraint>
+    <ReferenceConstraintViolation occurrences="3">
+      <code>$node</code>
+      <code>return false;</code>
+      <code>return true;</code>
+    </ReferenceConstraintViolation>
+  </file>
   <file src="src/Psalm/Type/Union.php">
+    <ImpureMethodCall occurrences="1">
+      <code>traverse</code>
+    </ImpureMethodCall>
+    <ImpurePropertyAssignment occurrences="1">
+      <code>$union-&gt;{$key}</code>
+    </ImpurePropertyAssignment>
     <PossiblyUnusedProperty occurrences="1">
       <code>$ignore_isset</code>
     </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Type/UnionTrait.php">
+    <ImpureMethodCall occurrences="3">
+      <code>traverseArray</code>
+      <code>traverseArray</code>
+      <code>traverseArray</code>
+    </ImpureMethodCall>
     <PossiblyUnusedMethod occurrences="2">
       <code>allFloatLiterals</code>
       <code>allFloatLiterals</code>
@@ -397,5 +599,10 @@
     <PossiblyUndefinedStringArrayOffset occurrences="1">
       <code>$subNodes['expr']</code>
     </PossiblyUndefinedStringArrayOffset>
+  </file>
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/UnionType.php">
+    <InvalidPropertyAssignmentValue occurrences="1">
+      <code>$types</code>
+    </InvalidPropertyAssignmentValue>
   </file>
 </files>
