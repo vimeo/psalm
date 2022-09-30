@@ -1497,6 +1497,7 @@ class TypeCombiner
                         true
                     );
                 } else {
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     $array_type = new TNonEmptyList(
                         $generic_type_params[1],
                         $combination->array_counts && count($combination->array_counts) === 1

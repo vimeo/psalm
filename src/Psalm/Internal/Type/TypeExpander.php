@@ -496,6 +496,7 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            /** @psalm-suppress ArgumentTypeCoercion */
             $return_type = $return_type->replaceTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;
