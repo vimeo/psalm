@@ -33,7 +33,7 @@ abstract class ImmutableTypeVisitor
             if ($node instanceof Union || $node instanceof MutableUnion) {
                 $child_node = $node->getAtomicTypes();
             } else {
-                /** @var TypeNode|array<TypeNode>|null */
+                /** @var TypeNode|non-empty-array<TypeNode>|null */
                 $child_node = $node->{$key};
             }
             if ($child_node === null) {
@@ -53,7 +53,7 @@ abstract class ImmutableTypeVisitor
     }
 
     /**
-     * @param array<TypeNode> $nodes
+     * @param non-empty-array<TypeNode> $nodes
      */
     public function traverseArray(array $nodes): bool
     {

@@ -41,7 +41,7 @@ abstract class TypeVisitor
             if ($node instanceof Union || $node instanceof MutableUnion) {
                 $child_node = $node->getAtomicTypes();
             } else {
-                /** @var TypeNode|array<TypeNode>|null */
+                /** @var TypeNode|non-empty-array<TypeNode>|null */
                 $child_node = $node->{$key};
             }
             if ($child_node === null) {
@@ -55,9 +55,11 @@ abstract class TypeVisitor
             }
             if ($child_node !== $orig) {
                 if ($node instanceof Union) {
+                    /** @var non-empty-array<Atomic> $child_node */
                     $node = $node->getBuilder()->setTypes($child_node)->freeze();
                 } elseif ($node instanceof MutableUnion) {
                     // This mutates in-place
+                    /** @var non-empty-array<Atomic> $child_node */
                     $node->setTypes($child_node);
                 } else {
                     if (!$cloned) {
@@ -85,8 +87,8 @@ abstract class TypeVisitor
 
     /**
      * @template T as TypeNode
-     * @param array<T> $nodes
-     * @param-out array<T> $nodes
+     * @param non-empty-array<T> $nodes
+     * @param-out non-empty-array<T> $nodes
      */
     public function traverseArray(array &$nodes): bool
     {
