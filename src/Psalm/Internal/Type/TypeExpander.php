@@ -1043,7 +1043,7 @@ class TypeExpander
             }
 
             if ($self_class) {
-                $return_type = $return_type->replaceClassLike('self', $self_class);
+                $type_param = $type_param->replaceClassLike('self', $self_class);
             }
 
             if ($throw_on_unresolvable_constant
