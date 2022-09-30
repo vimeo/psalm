@@ -94,7 +94,6 @@ class TemplateStandinTypeReplacer
      *
      * This method fills in the values in $template_result based on how the various atomic types
      * of $union_type match up to the types inside $input_type
-     *
      */
     public static function replace(
         Union $union_type,

@@ -186,6 +186,7 @@ abstract class Type
             $union = new Union([new TInt()]);
         }
 
+        /** @psalm-suppress ImpurePropertyAssignment We just created this object */
         $union->from_calculation = $from_calculation;
 
         return $union;
@@ -241,9 +242,6 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /**
-     * @psalm-pure
-     */
     public static function getString(?string $value = null): Union
     {
         $type = null;
