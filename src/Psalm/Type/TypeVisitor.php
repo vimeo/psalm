@@ -86,9 +86,9 @@ abstract class TypeVisitor
     }
 
     /**
-     * @template T as TypeNode
-     * @param non-empty-array<T> $nodes
-     * @param-out non-empty-array<T> $nodes
+     * @template T as array<TypeNode>
+     * @param T $nodes
+     * @param-out T $nodes
      */
     public function traverseArray(array &$nodes): bool
     {
