@@ -59,15 +59,15 @@ class TypeLocalizer extends TypeVisitor
             }
         }
 
-        $wasUnion = false;
         if ($type instanceof Union) {
-            $type = $type->getBuilder();
-            $wasUnion = true;
-        } elseif (!$type instanceof MutableUnion) {
+            $union = $type->getBuilder();
+        } elseif ($type instanceof MutableUnion) {
+            $union = $type;
+        } else {
             return null;
         }
 
-        foreach ($type->getAtomicTypes() as $key => $atomic_type) {
+        foreach ($union->getAtomicTypes() as $key => $atomic_type) {
             if ($atomic_type instanceof TTemplateParam
                 && ($atomic_type->defining_class === $this->base_fq_class_name
                     || isset($this->extends[$atomic_type->defining_class]))
@@ -78,16 +78,19 @@ class TypeLocalizer extends TypeVisitor
                 );
 
                 if ($types_to_add) {
-                    $type->removeType($key);
+                    $union->removeType($key);
 
                     foreach ($types_to_add as $extra_added_type) {
-                        $type->addType($extra_added_type);
+                        $union->addType($extra_added_type);
                     }
                 }
             }
         }
-        if ($wasUnion) {
-            $type = $type->freeze();
+
+        if ($type instanceof Union) {
+            $type = $union->freeze();
+        } else {
+            $type = $union;
         }
 
         return null;
