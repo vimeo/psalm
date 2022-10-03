@@ -149,7 +149,7 @@ class MissingMethodCallHandler
                 $return_type_candidate = clone $pseudo_method_storage->return_type;
 
                 if ($found_generic_params) {
-                    TemplateInferredTypeReplacer::replace(
+                    $return_type_candidate = TemplateInferredTypeReplacer::replace(
                         $return_type_candidate,
                         new TemplateResult([], $found_generic_params),
                         $codebase
@@ -315,7 +315,7 @@ class MissingMethodCallHandler
                 $return_type_candidate = clone $pseudo_method_storage->return_type;
 
                 if ($found_generic_params) {
-                    TemplateInferredTypeReplacer::replace(
+                    $return_type_candidate = TemplateInferredTypeReplacer::replace(
                         $return_type_candidate,
                         new TemplateResult([], $found_generic_params),
                         $codebase

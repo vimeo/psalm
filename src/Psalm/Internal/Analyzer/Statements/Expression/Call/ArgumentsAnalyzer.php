@@ -494,7 +494,7 @@ class ArgumentsAnalyzer
         // The map function expects callable(A):B as second param
         // We know that previous arg type is list<int> where the int is the A template.
         // Then we can replace callable(A): B to callable(int):B using $inferred_template_result.
-        TemplateInferredTypeReplacer::replace(
+        $replaced_container_hof_atomic = TemplateInferredTypeReplacer::replace(
             $replaced_container_hof_atomic,
             $inferred_template_result,
             $codebase
@@ -601,7 +601,7 @@ class ArgumentsAnalyzer
             $context->calling_method_id ?: $context->calling_function_id
         );
 
-        TemplateInferredTypeReplacer::replace(
+        $replaced_type = TemplateInferredTypeReplacer::replace(
             $replaced_type,
             $replace_template_result,
             $codebase
@@ -1234,7 +1234,7 @@ class ArgumentsAnalyzer
                     );
 
                     if ($template_result->lower_bounds) {
-                        TemplateInferredTypeReplacer::replace(
+                        $original_by_ref_type = TemplateInferredTypeReplacer::replace(
                             $original_by_ref_type,
                             $template_result,
                             $codebase
@@ -1259,7 +1259,7 @@ class ArgumentsAnalyzer
                     );
 
                     if ($template_result->lower_bounds) {
-                        TemplateInferredTypeReplacer::replace(
+                        $original_by_ref_out_type = TemplateInferredTypeReplacer::replace(
                             $original_by_ref_out_type,
                             $template_result,
                             $codebase
@@ -1386,16 +1386,18 @@ class ArgumentsAnalyzer
                     $statements_analyzer
                 );
 
-                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $type) {
+                $t = $context->vars_in_scope[$var_id]->getBuilder();
+                foreach ($t->getAtomicTypes() as $type) {
                     if ($type instanceof TArray && $type->isEmptyArray()) {
-                        $context->vars_in_scope[$var_id]->removeType('array');
-                        $context->vars_in_scope[$var_id]->addType(
+                        $t->removeType('array');
+                        $t->addType(
                             new TArray(
                                 [Type::getArrayKey(), Type::getMixed()]
                             )
                         );
                     }
                 }
+                $context->vars_in_scope[$var_id] = $t->freeze();
             }
         }
 

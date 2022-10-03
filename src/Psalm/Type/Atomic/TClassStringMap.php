@@ -182,7 +182,7 @@ final class TClassStringMap extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): void {
-        TemplateInferredTypeReplacer::replace(
+        $this->value_param = TemplateInferredTypeReplacer::replace(
             $this->value_param,
             $template_result,
             $codebase

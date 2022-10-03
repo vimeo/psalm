@@ -165,7 +165,7 @@ class TList extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): void {
-        TemplateInferredTypeReplacer::replace(
+        $this->type_param = TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
             $codebase

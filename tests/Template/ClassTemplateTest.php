@@ -4457,7 +4457,7 @@ class ClassTemplateTest extends TestCase
                     }
                     $a = new A(function() { return "a";});
                     $a->setCallback(function() { return "b";});',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'preventBoundsMismatchDifferentContainers' => [
                 'code' => '<?php

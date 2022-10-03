@@ -943,6 +943,7 @@ class AssertionReconciler extends Reconciler
             $can_be_equal = false;
             $did_remove_type = false;
 
+            $existing_var_type = $existing_var_type->getBuilder();
             foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
                 if (get_class($atomic_type) === TNamedObject::class
                     && $atomic_type->value === $fq_enum_name
@@ -958,6 +959,7 @@ class AssertionReconciler extends Reconciler
                     $can_be_equal = true;
                 }
             }
+            $existing_var_type = $existing_var_type->freeze();
 
             if ($var_id
                 && $code_location

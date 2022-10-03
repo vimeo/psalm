@@ -84,7 +84,7 @@ class TemplateStandinTypeReplacer
         // when they're also in the union type, so those shared atomic
         // types will never be inferred as part of the generic type
         if ($input_type && !$input_type->isSingle()) {
-            $new_input_type = clone $input_type;
+            $new_input_type = $input_type->getBuilder();
 
             foreach ($original_atomic_types as $key => $_) {
                 if ($new_input_type->hasType($key)) {
@@ -93,7 +93,7 @@ class TemplateStandinTypeReplacer
             }
 
             if (!$new_input_type->isUnionEmpty()) {
-                $input_type = $new_input_type;
+                $input_type = $new_input_type->freeze();
             } else {
                 return $union_type;
             }
@@ -766,7 +766,7 @@ class TemplateStandinTypeReplacer
                     )
                 )
             ) {
-                $generic_param = clone $input_type;
+                $generic_param = $input_type->getBuilder();
 
                 if ($matching_input_keys) {
                     $generic_param_keys = array_keys($generic_param->getAtomicTypes());
@@ -777,6 +777,7 @@ class TemplateStandinTypeReplacer
                         }
                     }
                 }
+                $generic_param = $generic_param->freeze();
 
                 if ($add_lower_bound) {
                     return array_values($generic_param->getAtomicTypes());
@@ -858,7 +859,7 @@ class TemplateStandinTypeReplacer
                 $matching_input_keys
             )
             ) {
-                $generic_param = clone $input_type;
+                $generic_param = $input_type->getBuilder();
 
                 if ($matching_input_keys) {
                     $generic_param_keys = array_keys($generic_param->getAtomicTypes());
@@ -869,6 +870,7 @@ class TemplateStandinTypeReplacer
                         }
                     }
                 }
+                $generic_param = $generic_param->freeze();
 
                 $upper_bound = $template_result->upper_bounds
                     [$param_name_key]
@@ -1258,7 +1260,7 @@ class TemplateStandinTypeReplacer
 
                     $new_input_param = clone $new_input_param;
 
-                    TemplateInferredTypeReplacer::replace(
+                    $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,
                         new TemplateResult([], $replacement_templates),
                         $codebase

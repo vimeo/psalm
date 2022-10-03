@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function end;
@@ -440,15 +441,11 @@ class CallableTypeComparator
                     );
 
                     if ($template_result) {
-                        $replaced_callable = clone $callable;
-
-                        TemplateInferredTypeReplacer::replace(
-                            new Type\Union([$replaced_callable]),
+                        $callable = TemplateInferredTypeReplacer::replace(
+                            new Union([clone $callable]),
                             $template_result,
                             $codebase
-                        );
-
-                        $callable = $replaced_callable;
+                        )->getSingleAtomic();
                     }
 
                     return $callable;

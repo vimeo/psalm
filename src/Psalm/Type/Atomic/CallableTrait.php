@@ -262,7 +262,7 @@ trait CallableTrait
                     continue;
                 }
 
-                TemplateInferredTypeReplacer::replace(
+                $param->type = TemplateInferredTypeReplacer::replace(
                     $param->type,
                     $template_result,
                     $codebase
@@ -271,7 +271,7 @@ trait CallableTrait
         }
 
         if ($this->return_type) {
-            TemplateInferredTypeReplacer::replace(
+            $this->return_type = TemplateInferredTypeReplacer::replace(
                 $this->return_type,
                 $template_result,
                 $codebase

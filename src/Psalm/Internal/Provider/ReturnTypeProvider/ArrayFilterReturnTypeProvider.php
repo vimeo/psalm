@@ -153,11 +153,11 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             }
 
             if ($key_type->getLiteralStrings()) {
-                $key_type->addType(new TString);
+                $key_type = $key_type->getBuilder()->addType(new TString)->freeze();
             }
 
             if ($key_type->getLiteralInts()) {
-                $key_type->addType(new TInt);
+                $key_type = $key_type->getBuilder()->addType(new TInt)->freeze();
             }
 
             if ($inner_type->isUnionEmpty()) {

@@ -283,7 +283,7 @@ class Reconciler
                     );
 
                     if ($result_type_candidate->isUnionEmpty()) {
-                        $result_type_candidate->addType(new TNever);
+                        $result_type_candidate = $result_type_candidate->getBuilder()->addType(new TNever)->freeze();
                     }
 
                     $orred_type = Type::combineUnionTypes(
@@ -715,7 +715,9 @@ class Reconciler
 
                             if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
                                 if ($has_inverted_isset && $new_base_key === $key) {
+                                    $new_base_type_candidate = $new_base_type_candidate->getBuilder();
                                     $new_base_type_candidate->addType(new TNull);
+                                    $new_base_type_candidate = $new_base_type_candidate->freeze();
                                 }
 
                                 $new_base_type_candidate->possibly_undefined = true;
@@ -729,7 +731,10 @@ class Reconciler
 
                             if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
                                 if ($has_inverted_isset && $new_base_key === $key) {
-                                    $new_base_type_candidate->addType(new TNull);
+                                    $new_base_type_candidate = $new_base_type_candidate
+                                        ->getBuilder()
+                                        ->addType(new TNull)
+                                        ->freeze();
                                 }
 
                                 $new_base_type_candidate->possibly_undefined = true;
@@ -963,11 +968,11 @@ class Reconciler
     }
 
     /**
+     * @param Union|MutableUnion $existing_var_type
      * @param  string[]     $suppressed_issues
-     *
      */
     protected static function triggerIssueForImpossible(
-        Union $existing_var_type,
+        $existing_var_type,
         string $old_var_type_string,
         string $key,
         Assertion $assertion,
@@ -1161,7 +1166,7 @@ class Reconciler
                         $base_atomic_type->properties[$array_key_offset] = clone $result_type;
                     }
 
-                    $new_base_type->addType($base_atomic_type);
+                    $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();
 
                     $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
 
@@ -1181,8 +1186,9 @@ class Reconciler
         }
     }
 
-    protected static function refineArrayKey(Union $key_type): void
+    protected static function refineArrayKey(Union &$key_type): void
     {
+        $key_type = $key_type->getBuilder();
         foreach ($key_type->getAtomicTypes() as $key => $cat) {
             if ($cat instanceof TTemplateParam) {
                 self::refineArrayKey($cat->as);
@@ -1200,5 +1206,6 @@ class Reconciler
             // this should ideally prompt some sort of error
             $key_type->addType(new TArrayKey());
         }
+        $key_type = $key_type->freeze();
     }
 }

@@ -58,7 +58,7 @@ class UnsetAnalyzer
                 );
 
                 if ($root_var_id && isset($context->vars_in_scope[$root_var_id])) {
-                    $root_type = clone $context->vars_in_scope[$root_var_id];
+                    $root_type = $context->vars_in_scope[$root_var_id]->getBuilder();
 
                     foreach ($root_type->getAtomicTypes() as $atomic_root_type) {
                         if ($atomic_root_type instanceof TKeyedArray) {
@@ -126,7 +126,7 @@ class UnsetAnalyzer
                         }
                     }
 
-                    $context->vars_in_scope[$root_var_id] = $root_type;
+                    $context->vars_in_scope[$root_var_id] = $root_type->freeze();
 
                     $context->removeVarFromConflictingClauses(
                         $root_var_id,

@@ -266,7 +266,7 @@ class ArrayFunctionArgumentsAnalyzer
                         new Union([new TArray([$new_offset_type, Type::getMixed()])])
                     );
                 } elseif ($arg->unpack) {
-                    $arg_value_type = clone $arg_value_type;
+                    $arg_value_type = $arg_value_type->getBuilder();
 
                     foreach ($arg_value_type->getAtomicTypes() as $arg_value_atomic_type) {
                         if ($arg_value_atomic_type instanceof TKeyedArray) {
@@ -285,6 +285,7 @@ class ArrayFunctionArgumentsAnalyzer
                             $arg_value_type->addType($arg_value_atomic_type);
                         }
                     }
+                    $arg_value_type = $arg_value_type->freeze();
 
                     $by_ref_type = Type::combineUnionTypes(
                         $by_ref_type,
@@ -508,7 +509,7 @@ class ArrayFunctionArgumentsAnalyzer
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {
-                $array_type = clone $context->vars_in_scope[$var_id];
+                $array_type = $context->vars_in_scope[$var_id]->getBuilder();
 
                 $array_atomic_types = $array_type->getAtomicTypes();
 
@@ -574,6 +575,7 @@ class ArrayFunctionArgumentsAnalyzer
                     }
                 }
 
+                $array_type = $array_type->freeze();
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
             }

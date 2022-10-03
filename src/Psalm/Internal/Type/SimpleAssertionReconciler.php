@@ -504,6 +504,7 @@ class SimpleAssertionReconciler extends Reconciler
         bool $is_equality,
         bool $inside_loop
     ): Union {
+        $existing_var_type = $existing_var_type->getBuilder();
         $old_var_type_string = $existing_var_type->getId();
 
         // if key references an array offset
@@ -554,7 +555,7 @@ class SimpleAssertionReconciler extends Reconciler
         $existing_var_type->possibly_undefined_from_try = false;
         $existing_var_type->ignore_isset = false;
 
-        return $existing_var_type;
+        return $existing_var_type->freeze();
     }
 
     /**
@@ -570,6 +571,7 @@ class SimpleAssertionReconciler extends Reconciler
         bool $is_equality
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
+        $existing_var_type = $existing_var_type->getBuilder();
 
         if ($existing_var_type->hasType('array')) {
             $array_atomic_type = $existing_var_type->getAtomicTypes()['array'];
@@ -665,7 +667,7 @@ class SimpleAssertionReconciler extends Reconciler
             }
         }
 
-        return $existing_var_type;
+        return $existing_var_type->freeze();
     }
 
     /**
@@ -675,6 +677,7 @@ class SimpleAssertionReconciler extends Reconciler
         Union $existing_var_type,
         int $count
     ): Union {
+        $existing_var_type = $existing_var_type->getBuilder();
         if ($existing_var_type->hasType('array')) {
             $array_atomic_type = $existing_var_type->getAtomicTypes()['array'];
 
@@ -701,7 +704,7 @@ class SimpleAssertionReconciler extends Reconciler
             }
         }
 
-        return $existing_var_type;
+        return $existing_var_type->freeze();
     }
 
     /**
@@ -1177,6 +1180,7 @@ class SimpleAssertionReconciler extends Reconciler
         if ($existing_var_type->hasMixed()) {
             return Type::getNumeric();
         }
+        $existing_var_type = $existing_var_type->getBuilder();
 
         $old_var_type_string = $existing_var_type->getId();
 
@@ -1631,6 +1635,7 @@ class SimpleAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array         $suppressed_issues
     ): Union {
+        $existing_var_type = $existing_var_type->getBuilder();
         //we add 1 from the assertion value because we're on a strict operator
         $assertion_value = $assertion->value + 1;
 
@@ -1720,7 +1725,7 @@ class SimpleAssertionReconciler extends Reconciler
             $existing_var_type->addType(new TNever());
         }
 
-        return $existing_var_type;
+        return $existing_var_type->freeze();
     }
 
     /**
@@ -1738,6 +1743,7 @@ class SimpleAssertionReconciler extends Reconciler
     ): Union {
         //we remove 1 from the assertion value because we're on a strict operator
         $assertion_value = $assertion->value - 1;
+        $existing_var_type = $existing_var_type->getBuilder();
 
         $did_remove_type = false;
 
@@ -1822,7 +1828,7 @@ class SimpleAssertionReconciler extends Reconciler
             $existing_var_type->addType(new TNever());
         }
 
-        return $existing_var_type;
+        return $existing_var_type->freeze();
     }
 
     /**
@@ -2354,6 +2360,7 @@ class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $recursive_check
     ): Union {
+        $existing_var_type = $existing_var_type->getBuilder();
         $old_var_type_string = $existing_var_type->getId();
 
         //empty is used a lot to check for array offset existence, so we have to silent errors a lot
@@ -2412,7 +2419,7 @@ class SimpleAssertionReconciler extends Reconciler
 
             $failed_reconciliation = 1;
 
-            return $existing_var_type;
+            return $existing_var_type->freeze();
         }
 
         $existing_var_type->possibly_undefined = false;
@@ -2501,7 +2508,7 @@ class SimpleAssertionReconciler extends Reconciler
             }
 
             if ($existing_var_type->isSingle()) {
-                return $existing_var_type;
+                return $existing_var_type->freeze();
             }
         }
 
@@ -2532,7 +2539,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         assert(!$existing_var_type->isUnionEmpty());
-        return $existing_var_type;
+        return $existing_var_type->freeze();
     }
 
     /**

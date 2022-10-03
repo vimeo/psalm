@@ -1629,7 +1629,7 @@ class ClassLikeNodeScanner
                     if ($property_storage->signature_type->isNullable()
                         && !$property_storage->type->isNullable()
                     ) {
-                        $property_storage->type->addType(new TNull());
+                        $property_storage->type = $property_storage->type->getBuilder()->addType(new TNull())->freeze();
                     }
                 }
 

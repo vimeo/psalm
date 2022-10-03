@@ -469,13 +469,13 @@ class AtomicStaticCallAnalyzer
                             $tGenericMixin,
                             $class_storage,
                             $mixin_declaring_class_storage
-                        );
+                        )->getBuilder();
 
                         foreach ($mixin_candidate_type->getAtomicTypes() as $type) {
                             $new_mixin_candidate_type->addType($type);
                         }
 
-                        $mixin_candidate_type = $new_mixin_candidate_type;
+                        $mixin_candidate_type = $new_mixin_candidate_type->freeze();
                     }
 
                     $new_lhs_type = TypeExpander::expandUnion(
@@ -720,7 +720,7 @@ class AtomicStaticCallAnalyzer
                 if (isset($context->vars_in_scope['$this'])
                     && $method_call_type = $statements_analyzer->node_data->getType($stmt)
                 ) {
-                    $method_call_type = clone $method_call_type;
+                    $method_call_type = $method_call_type->getBuilder();
 
                     foreach ($method_call_type->getAtomicTypes() as $name => $type) {
                         if ($type instanceof TNamedObject && $type->is_static && $type->value === $fq_class_name) {
@@ -730,7 +730,7 @@ class AtomicStaticCallAnalyzer
                         }
                     }
 
-                    $statements_analyzer->node_data->setType($stmt, $method_call_type);
+                    $statements_analyzer->node_data->setType($stmt, $method_call_type->freeze());
                 }
 
                 return true;

@@ -485,7 +485,10 @@ final class Context
                 if ((!$new_type || !$old_type->equals($new_type))
                     && ($new_type || count($existing_type->getAtomicTypes()) > 1)
                 ) {
-                    $existing_type->substitute($old_type, $new_type);
+                    $existing_type = $existing_type
+                        ->getBuilder()
+                        ->substitute($old_type, $new_type)
+                        ->freeze();
 
                     if ($new_type && $new_type->from_docblock) {
                         $existing_type->setFromDocblock();
@@ -770,17 +773,22 @@ final class Context
             $statements_analyzer
         );
 
-        foreach ($this->vars_in_scope as $var_id => $type) {
+        foreach ($this->vars_in_scope as $var_id => &$type) {
             if (preg_match('/' . preg_quote($remove_var_id, '/') . '[\]\[\-]/', $var_id)) {
                 $this->remove($var_id, false);
             }
 
+            $builder = null;
             foreach ($type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof DependentType
                     && $atomic_type->getVarId() === $remove_var_id
                 ) {
-                    $type->addType($atomic_type->getReplacement());
+                    $builder ??= $type->getBuilder();
+                    $builder->addType($atomic_type->getReplacement());
                 }
+            }
+            if ($builder) {
+                $type = $builder->freeze();
             }
         }
     }

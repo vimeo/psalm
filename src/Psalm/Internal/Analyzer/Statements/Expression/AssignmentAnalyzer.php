@@ -1561,7 +1561,10 @@ class AssignmentAnalyzer
                 if (($context->error_suppressing && ($offset || $can_be_empty))
                     || $has_null
                 ) {
-                    $context->vars_in_scope[$list_var_id]->addType(new TNull);
+                    $context->vars_in_scope[$list_var_id] = $context->vars_in_scope[$list_var_id]
+                        ->getBuilder()
+                        ->addType(new TNull)
+                        ->freeze();
                 }
             }
         }
