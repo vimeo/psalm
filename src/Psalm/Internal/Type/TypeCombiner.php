@@ -252,6 +252,7 @@ class TypeCombiner
             if ($generic_type === 'iterable') {
                 $new_types[] = new TIterable($generic_type_params);
             } else {
+                /** @psalm-suppress ArgumentTypeCoercion Caused by the above assignment */
                 $generic_object = new TGenericObject(
                     $generic_type,
                     $generic_type_params,
@@ -270,6 +271,7 @@ class TypeCombiner
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
             $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
 
+            /** @psalm-suppress ArgumentTypeCoercion */
             $generic_object = new TGenericObject(
                 $generic_type,
                 $generic_type_params,

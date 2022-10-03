@@ -177,6 +177,7 @@ class TypeExpander
                     $extra_types[$extra_type->getKey()] = $extra_type;
                 }
 
+                /** @psalm-suppress ArgumentTypeCoercion */
                 $return_type = $return_type->setIntersectionTypes(array_merge($extra_types, $new_intersection_types));
             }
 
