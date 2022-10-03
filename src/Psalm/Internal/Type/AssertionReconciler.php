@@ -340,9 +340,11 @@ class AssertionReconciler extends Reconciler
             }
 
             if ($acceptable_atomic_types) {
-                $acceptable_atomic_types = count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
-                    ? $existing_var_type
-                    : new Union($acceptable_atomic_types);
+                $acceptable_atomic_types =
+                    count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
+                        ? $existing_var_type
+                        : new Union($acceptable_atomic_types)
+                ;
                 return new Union([$new_type_part->replaceAs($acceptable_atomic_types)]);
             }
         }

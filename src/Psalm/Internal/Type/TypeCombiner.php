@@ -252,7 +252,13 @@ class TypeCombiner
             if ($generic_type === 'iterable') {
                 $new_types[] = new TIterable($generic_type_params);
             } else {
-                $generic_object = new TGenericObject($generic_type, $generic_type_params, false, false, $combination->extra_types);
+                $generic_object = new TGenericObject(
+                    $generic_type,
+                    $generic_type_params,
+                    false,
+                    false,
+                    $combination->extra_types
+                );
                 $new_types[] = $generic_object;
 
                 if ($combination->named_object_types) {
