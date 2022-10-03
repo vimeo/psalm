@@ -115,7 +115,7 @@ class ObjectComparator
         $type_part = clone $type_part;
 
         $extra_types = $type_part->extra_types;
-        $type_part->extra_types = null;
+        $type_part->extra_types = [];
 
         $extra_types[$type_part->getKey()] = $type_part;
 

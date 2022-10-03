@@ -787,11 +787,9 @@ abstract class Type
 
             $wider_type_intersection_types = $wider_type->getIntersectionTypes();
 
-            if ($wider_type_intersection_types !== null) {
-                foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
-                    $intersection_atomic->extra_types[$wider_type_intersection_type->getKey()]
-                        = clone $wider_type_intersection_type;
-                }
+            foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
+                $intersection_atomic->extra_types[$wider_type_intersection_type->getKey()]
+                    = clone $wider_type_intersection_type;
             }
         }
 

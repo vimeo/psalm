@@ -39,11 +39,13 @@ final class TObjectWithProperties extends TObject
      *
      * @param array<string|int, Union> $properties
      * @param array<string, string> $methods
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(array $properties, array $methods = [])
+    public function __construct(array $properties, array $methods = [], array $extra_types = [])
     {
         $this->properties = $properties;
         $this->methods = $methods;
+        $this->extra_types = $extra_types;
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -170,6 +172,9 @@ final class TObjectWithProperties extends TObject
         return true;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -181,8 +186,8 @@ final class TObjectWithProperties extends TObject
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $object_like = clone $this;
+    ): self {
+        $properties = [];
 
         foreach ($this->properties as $offset => $property) {
             $input_type_param = null;
@@ -193,7 +198,7 @@ final class TObjectWithProperties extends TObject
                 $input_type_param = $input_type->properties[$offset];
             }
 
-            $object_like->properties[$offset] = TemplateStandinTypeReplacer::replace(
+            $properties[$offset] = TemplateStandinTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
@@ -209,13 +214,51 @@ final class TObjectWithProperties extends TObject
             );
         }
 
-        return $object_like;
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        );
+        if ($properties === $this->properties && !$intersection) {
+            return $this;
+        }
+        return new static($properties, $this->methods, $intersection ?? $this->extra_types);
     }
 
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
+    {
+        $properties = $this->properties;
+        foreach ($properties as &$property) {
+            $property = $property->replaceClassLike($old, $new);
+        }
+        $intersection = $this->replaceIntersectionClassLike($old, $new);
+        if (!$intersection && $properties === $this->properties) {
+            return $this;
+        }
+        return new static(
+            $properties,
+            $this->methods,
+            $intersection ?? $this->extra_types
+        );
+    }
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
+    ): self {
+        $properties = $this->properties;
         foreach ($this->properties as &$property) {
             $property = TemplateInferredTypeReplacer::replace(
                 $property,
@@ -223,11 +266,23 @@ final class TObjectWithProperties extends TObject
                 $codebase
             );
         }
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        );
+        if ($properties === $this->properties && !$intersection) {
+            return $this;
+        }
+        return new static(
+            $properties,
+            $this->methods,
+            $intersection ?? $this->extra_types
+        );
     }
 
     public function getChildNodes(): array
     {
-        return array_merge($this->properties, $this->extra_types !== null ? array_values($this->extra_types) : []);
+        return array_merge($this->properties, array_values($this->extra_types));
     }
 
     public function getAssertionString(): string

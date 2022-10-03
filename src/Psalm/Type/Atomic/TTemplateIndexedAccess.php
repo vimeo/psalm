@@ -4,6 +4,8 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
 
+/**
+ */
 final class TTemplateIndexedAccess extends Atomic
 {
     /**

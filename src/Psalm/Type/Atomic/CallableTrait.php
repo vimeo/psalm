@@ -187,7 +187,10 @@ trait CallableTrait
             . $this->value . $param_string . $return_type_string;
     }
 
-    public function replaceTemplateTypesWithStandins(
+    /**
+     * @return array{list<FunctionLikeParameter>|null, Union|null}|null
+     */
+    protected function replaceCallableTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
@@ -198,11 +201,15 @@ trait CallableTrait
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $callable = clone $this;
+    ): ?array {
+        $replaced = false;
+        $params = $this->params;
+        if ($params) {
+            foreach ($params as $offset => &$param) {
+                if (!$param->type) {
+                    continue;
+                }
 
-        if ($callable->params) {
-            foreach ($callable->params as $offset => $param) {
                 $input_param_type = null;
 
                 if (($input_type instanceof TClosure || $input_type instanceof TCallable)
@@ -211,11 +218,7 @@ trait CallableTrait
                     $input_param_type = $input_type->params[$offset]->type;
                 }
 
-                if (!$param->type) {
-                    continue;
-                }
-
-                $param->type = TemplateStandinTypeReplacer::replace(
+                $new_param = $param->replaceType(TemplateStandinTypeReplacer::replace(
                     $param->type,
                     $template_result,
                     $codebase,
@@ -228,13 +231,16 @@ trait CallableTrait
                     !$add_lower_bound,
                     null,
                     $depth
-                );
+                ));
+                $replaced = $replaced || $new_param !== $param;
+                $param = $new_param;
             }
         }
 
-        if ($callable->return_type) {
-            $callable->return_type = TemplateStandinTypeReplacer::replace(
-                $callable->return_type,
+        $return_type = $this->return_type;
+        if ($return_type) {
+            $return_type = TemplateStandinTypeReplacer::replace(
+                $return_type,
                 $template_result,
                 $codebase,
                 $statements_analyzer,
@@ -247,42 +253,88 @@ trait CallableTrait
                 $replace,
                 $add_lower_bound
             );
+            $replaced = $replaced || $this->return_type !== $return_type;
         }
 
-        return $callable;
+        if ($replaced) {
+            return [$params, $return_type];
+        }
+        return null;
     }
 
-    public function replaceTemplateTypesWithArgTypes(
+
+    /**
+     * @return array{list<FunctionLikeParameter>|null, Union|null}|null
+     */
+    protected function replaceCallableTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        if ($this->params) {
-            foreach ($this->params as $param) {
-                if (!$param->type) {
-                    continue;
-                }
+    ): ?array {
+        $replaced = false;
 
-                $param->type = TemplateInferredTypeReplacer::replace(
-                    $param->type,
-                    $template_result,
-                    $codebase
-                );
+        $params = $this->params;
+        if ($params) {
+            foreach ($params as &$param) {
+                if ($param->type) {
+                    $new_param = $param->replaceType(TemplateInferredTypeReplacer::replace(
+                        $param->type,
+                        $template_result,
+                        $codebase
+                    ));
+                    $replaced = $replaced || $new_param !== $param;
+                    $param = $new_param;
+                }
             }
         }
 
-        if ($this->return_type) {
-            $this->return_type = TemplateInferredTypeReplacer::replace(
-                $this->return_type,
+        $return_type = $this->return_type;
+        if ($return_type) {
+            $return_type = TemplateInferredTypeReplacer::replace(
+                $return_type,
                 $template_result,
                 $codebase
             );
+            $replaced = $replaced || $return_type !== $this->return_type;
         }
+        if ($replaced) {
+            return [$params, $return_type];
+        }
+        return null;
+    }
+
+    /**
+     * @return array{list<FunctionLikeParameter>|null, Union|null}|null
+     */
+    protected function replaceCallableClassLike(string $old, string $new): ?array
+    {
+        $replaced = false;
+
+        $params = $this->params;
+        if ($params) {
+            foreach ($params as &$param) {
+                if ($param->type) {
+                    $new_param = $param->replaceType($param->type->replaceClassLike($old, $new));
+                    $replaced = $replaced || $new_param !== $param;
+                    $param = $new_param;
+                }
+            }
+        }
+
+        $return_type = $this->return_type;
+        if ($return_type) {
+            $return_type = $return_type->replaceClassLike($old, $new);
+            $replaced = $replaced || $return_type !== $this->return_type;
+        }
+        if ($replaced) {
+            return [$params, $return_type];
+        }
+        return null;
     }
 
     /**
      * @return list<TypeNode>
      */
-    public function getChildNodes(): array
+    protected function getCallableChildNodes(): array
     {
         $child_nodes = [];
 

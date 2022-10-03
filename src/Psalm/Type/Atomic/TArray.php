@@ -2,6 +2,9 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -13,12 +16,10 @@ use function get_class;
  */
 class TArray extends Atomic
 {
-    use GenericTrait;
-
     /**
-     * @var array{Union, Union}
+     * @use GenericTrait<array{Union, Union}>
      */
-    public $type_params;
+    use GenericTrait;
 
     /**
      * @var string
@@ -95,5 +96,76 @@ class TArray extends Atomic
     public function isEmptyArray(): bool
     {
         return $this->type_params[1]->isNever();
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
+    {
+        $type_params = $this->replaceTypeParamsClassLike($old, $new);
+        if ($type_params) {
+            $cloned = clone $this;
+            $cloned->type_params = $type_params;
+            return $cloned;
+        }
+        return $this;
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithStandins(
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer = null,
+        ?Atomic $input_type = null,
+        ?int $input_arg_offset = null,
+        ?string $calling_class = null,
+        ?string $calling_function = null,
+        bool $replace = true,
+        bool $add_lower_bound = false,
+        int $depth = 0
+    ): self {
+        $type_params = $this->replaceTypeParamsTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        );
+        if ($type_params) {
+            $cloned = clone $this;
+            $cloned->type_params = $type_params;
+            return $cloned;
+        }
+        return $this;
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
+    {
+        $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase
+        );
+        if ($type_params) {
+            $cloned = clone $this;
+            $cloned->type_params = $type_params;
+            return $cloned;
+        }
+        return $this;
+    }
+
+    public function getChildNodes(): array
+    {
+        return $this->type_params;
     }
 }

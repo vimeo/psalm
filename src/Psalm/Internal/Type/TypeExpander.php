@@ -5,11 +5,11 @@ namespace Psalm\Internal\Type;
 use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\UnresolvableConstantException;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Type\SimpleAssertionReconciler;
 use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Storage\Assertion\IsType;
-use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -130,6 +130,7 @@ class TypeExpander
      *
      * @return non-empty-list<Atomic>
      *
+     * @psalm-suppress ConflictingReferenceConstraint Ultimately, the output type is always an Atomic
      * @psalm-suppress ComplexMethod
      */
     public static function expandAtomic(
@@ -644,9 +645,8 @@ class TypeExpander
                 || $static_class_type instanceof TTemplateParam)
         ) {
             $return_type = clone $return_type;
-            $cloned_static = clone $static_class_type;
-            $extra_static = $cloned_static->extra_types ?: [];
-            $cloned_static->extra_types = null;
+            $extra_static = $static_class_type->extra_types;
+            $cloned_static = $static_class_type->setIntersectionTypes([]);
 
             if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
                 $return_type->extra_types[$static_class_type->getKey()] = clone $cloned_static;
@@ -892,62 +892,65 @@ class TypeExpander
      */
     private static function expandPropertiesOf(
         Codebase $codebase,
-        TPropertiesOf $return_type,
+        TPropertiesOf &$return_type,
         ?string $self_class,
         $static_class_type
     ): array {
-        if ($return_type->fq_classlike_name === 'self' && $self_class) {
-            $return_type->fq_classlike_name = $self_class;
-        }
-
-        if ($return_type->fq_classlike_name === 'static' && $self_class) {
-            $return_type->fq_classlike_name = is_string($static_class_type) ? $static_class_type : $self_class;
-        }
-
-        if (!$codebase->classExists($return_type->fq_classlike_name)) {
-            return [$return_type];
-        }
-
-        // Get and merge all properties from parent classes
-        $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
-        $properties_types = $class_storage->properties;
-        foreach ($class_storage->parent_classes as $parent_class) {
-            if (!$codebase->classOrInterfaceExists($parent_class)) {
-                continue;
-            }
-            $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
-            $properties_types = array_merge(
-                $properties_types,
-                $parent_class_storage->properties
+        if ($self_class) {
+            $return_type = $return_type->replaceClassLike('self', $self_class);
+            $return_type = $return_type->replaceClassLike(
+                'static',
+                is_string($static_class_type) ? $static_class_type : $self_class
             );
         }
 
-        // Filter only non-static properties, and check visibility filter
-        $properties_types = array_filter(
-            $properties_types,
-            function (PropertyStorage $property) use ($return_type): bool {
+        $class_storage = null;
+        if ($codebase->classExists($return_type->classlike_type->value)) {
+            $class_storage = $codebase->classlike_storage_provider->get($return_type->classlike_type->value);
+        } else {
+            foreach ($return_type->classlike_type->extra_types as $type) {
+                if ($type instanceof TNamedObject && $codebase->classExists($type->value)) {
+                    $class_storage = $codebase->classlike_storage_provider->get($type->value);
+                    break;
+                }
+            }
+        }
+
+        if (!$class_storage) {
+            return [$return_type];
+        }
+
+        $properties = [];
+        foreach ([$class_storage->name, ...array_values($class_storage->parent_classes)] as $class) {
+            if (!$codebase->classExists($class)) {
+                continue;
+            }
+            $storage = $codebase->classlike_storage_provider->get($class);
+            foreach ($storage->properties as $key => $property) {
+                if (isset($properties[$key])) {
+                    continue;
+                }
                 if ($return_type->visibility_filter !== null
                     && $property->visibility !== $return_type->visibility_filter
                 ) {
-                    return false;
+                    continue;
                 }
-                return !$property->is_static;
+                if ($property->is_static || !$property->type) {
+                    continue;
+                }
+                $type = $return_type->classlike_type instanceof TGenericObject
+                    ? AtomicPropertyFetchAnalyzer::localizePropertyType(
+                        $codebase,
+                        $property->type,
+                        $return_type->classlike_type,
+                        $storage,
+                        $storage
+                    )
+                    : $property->type
+                ;
+                $properties[$key] = $type;
             }
-        );
-
-        // Return property names as literal string
-        $properties = array_map(
-            function (PropertyStorage $property): ?Union {
-                return $property->type;
-            },
-            $properties_types
-        );
-        $properties = array_filter(
-            $properties,
-            function (?Union $property_type): bool {
-                return $property_type !== null;
-            }
-        );
+        }
 
         if ($properties === []) {
             return [$return_type];

@@ -2,7 +2,6 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
@@ -51,7 +50,7 @@ final class TDependentGetClass extends TString implements DependentType
         return $this->typeof;
     }
 
-    public function getReplacement(): Atomic
+    public function getReplacement(): TClassString
     {
         return new TClassString();
     }

@@ -81,14 +81,25 @@ final class TTemplateKeyOf extends Atomic
         return false;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->as = TemplateInferredTypeReplacer::replace(
+    ): self {
+        $as = TemplateInferredTypeReplacer::replace(
             $this->as,
             $template_result,
             $codebase
+        );
+        if ($as === $this->as) {
+            return $this;
+        }
+        return new static(
+            $this->param_name,
+            $this->defining_class,
+            $as
         );
     }
 }

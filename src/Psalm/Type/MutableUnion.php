@@ -212,11 +212,41 @@ final class MutableUnion implements TypeNode, Stringable
     public $different = false;
 
     /**
-     * @param non-empty-array<string, Atomic>  $types
+     * @param non-empty-array<Atomic>  $types
      */
-    public function replaceTypes(array $types): self
+    public function setTypes(array $types): self
     {
-        $this->types = $types;
+        $this->literal_float_types = [];
+        $this->literal_int_types = [];
+        $this->literal_string_types = [];
+        $this->typed_class_strings = [];
+
+        $from_docblock = false;
+
+        $keyed_types = [];
+
+        foreach ($types as $type) {
+            $key = $type->getKey();
+            $keyed_types[$key] = $type;
+
+            if ($type instanceof TLiteralInt) {
+                $this->literal_int_types[$key] = $type;
+            } elseif ($type instanceof TLiteralString) {
+                $this->literal_string_types[$key] = $type;
+            } elseif ($type instanceof TLiteralFloat) {
+                $this->literal_float_types[$key] = $type;
+            } elseif ($type instanceof TClassString
+                && ($type->as_type || $type instanceof TTemplateParamClass)
+            ) {
+                $this->typed_class_strings[$key] = $type;
+            }
+
+            $from_docblock = $from_docblock || $type->from_docblock;
+        }
+
+        $this->types = $keyed_types;
+        $this->from_docblock = $from_docblock;
+
         return $this;
     }
 
@@ -410,7 +440,7 @@ final class MutableUnion implements TypeNode, Stringable
     public function replaceClassLike(string $old, string $new): self
     {
         foreach ($this->types as $key => $atomic_type) {
-            $atomic_type->replaceClassLike($old, $new);
+            $atomic_type = $atomic_type->replaceClassLike($old, $new);
 
             $this->removeType($key);
             $this->addType($atomic_type);

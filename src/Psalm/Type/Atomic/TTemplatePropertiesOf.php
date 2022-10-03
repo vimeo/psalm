@@ -76,14 +76,30 @@ final class TTemplatePropertiesOf extends Atomic
         return false;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->as = TemplateInferredTypeReplacer::replace(
-            new Union([$this->as]),
-            $template_result,
-            $codebase
-        )->getSingleAtomic();
+    ): self {
+        $param = new TTemplateParam(
+            $this->as->param_name,
+            TemplateInferredTypeReplacer::replace(
+                new Union([$this->as]),
+                $template_result,
+                $codebase,
+            ),
+            $this->as->defining_class
+        );
+        if ($param->as === $this->as->as) {
+            return $this;
+        }
+        return new static(
+            $this->param_name,
+            $this->defining_class,
+            $param,
+            $this->visibility_filter
+        );
     }
 }

@@ -754,10 +754,7 @@ class InternalCallMapHandlerTest extends TestCase
         }
     }
 
-    /**
-     *
-     * @psalm-suppress UndefinedMethod
-     */
+    /** @psalm-suppress UndefinedMethod */
     public function assertEntryReturnType(ReflectionFunction $function, string $entryReturnType): void
     {
         if (version_compare(PHP_VERSION, '8.1.0', '>=')) {

@@ -511,7 +511,7 @@ class TypeCombiner
         ) {
             if ($type->extra_types) {
                 $combination->extra_types = array_merge(
-                    $combination->extra_types ?: [],
+                    $combination->extra_types,
                     $type->extra_types
                 );
             }
