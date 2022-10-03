@@ -88,7 +88,6 @@ class TypeCombiner
      * @param  non-empty-list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
-     *
      */
     public static function combine(
         array $types,
@@ -253,10 +252,7 @@ class TypeCombiner
             if ($generic_type === 'iterable') {
                 $new_types[] = new TIterable($generic_type_params);
             } else {
-                $generic_object = new TGenericObject($generic_type, $generic_type_params);
-
-                /** @psalm-suppress PropertyTypeCoercion */
-                $generic_object->extra_types = $combination->extra_types;
+                $generic_object = new TGenericObject($generic_type, $generic_type_params, false, false, $combination->extra_types);
                 $new_types[] = $generic_object;
 
                 if ($combination->named_object_types) {
@@ -268,14 +264,14 @@ class TypeCombiner
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
             $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
 
-            $generic_object = new TGenericObject($generic_type, $generic_type_params);
+            $generic_object = new TGenericObject(
+                $generic_type,
+                $generic_type_params,
+                false,
+                $combination->object_static[$generic_type] ?? false,
+                $combination->extra_types
+            );
 
-            if ($combination->object_static[$generic_type] ?? false) {
-                $generic_object->is_static = true;
-            }
-
-            /** @psalm-suppress PropertyTypeCoercion */
-            $generic_object->extra_types = $combination->extra_types;
             $new_types[] = $generic_object;
         }
 

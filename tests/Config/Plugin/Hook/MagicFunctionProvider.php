@@ -36,7 +36,7 @@ class MagicFunctionProvider implements
      */
     public static function getFunctionParams(FunctionParamsProviderEvent $event): ?array
     {
-        return [new FunctionLikeParameter('first', false, Type::getString())];
+        return [new FunctionLikeParameter('first', false, Type::getString(), Type::getString())];
     }
 
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union

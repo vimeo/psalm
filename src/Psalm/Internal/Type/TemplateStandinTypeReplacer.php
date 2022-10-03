@@ -94,6 +94,7 @@ class TemplateStandinTypeReplacer
      *
      * This method fills in the values in $template_result based on how the various atomic types
      * of $union_type match up to the types inside $input_type
+     *
      */
     public static function replace(
         Union $union_type,
@@ -374,7 +375,7 @@ class TemplateStandinTypeReplacer
             }
 
             $atomic_type = new TPropertiesOf(
-                clone $classlike_type,
+                $classlike_type,
                 $atomic_type->visibility_filter
             );
             return [$atomic_type];
@@ -869,10 +870,9 @@ class TemplateStandinTypeReplacer
                     || $atomic_type instanceof TIterable
                     || $atomic_type instanceof TObjectWithProperties
                 ) {
-                    $atomic_type->extra_types = $extra_types;
+                    $atomic_type = $atomic_type->setIntersectionTypes($extra_types);
                 } elseif ($atomic_type instanceof TObject && $extra_types) {
-                    $atomic_type = reset($extra_types);
-                    $atomic_type->extra_types = array_slice($extra_types, 1);
+                    $atomic_type = reset($extra_types)->setIntersectionTypes(array_slice($extra_types, 1));
                 }
             }
 

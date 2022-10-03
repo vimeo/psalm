@@ -167,7 +167,13 @@ class GenericTypeComparator
                             ) {
                                 // do nothing
                             } else {
-                                $all_types_contain = false;
+                                if ($container_param->hasMixed() || $container_param->isArrayKey()) {
+                                    if ($atomic_comparison_result) {
+                                        $atomic_comparison_result->type_coerced_from_mixed = true;
+                                    }
+                                } else {
+                                    $all_types_contain = false;
+                                }
 
                                 if ($atomic_comparison_result) {
                                     $atomic_comparison_result->type_coerced = false;

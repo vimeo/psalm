@@ -293,10 +293,6 @@ class AssertionReconciler extends Reconciler
 
         $old_var_type_string = $existing_var_type->getId();
 
-        if ($new_type_part instanceof TMixed) {
-            return $existing_var_type;
-        }
-
         $new_type_has_interface = false;
 
         if ($new_type_part->isObjectType()) {
@@ -344,9 +340,10 @@ class AssertionReconciler extends Reconciler
             }
 
             if ($acceptable_atomic_types) {
-                $new_type_part->as = new Union($acceptable_atomic_types);
-
-                return new Union([$new_type_part]);
+                $acceptable_atomic_types = count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
+                    ? $existing_var_type
+                    : new Union($acceptable_atomic_types);
+                return new Union([$new_type_part->replaceAs($acceptable_atomic_types)]);
             }
         }
 
@@ -623,10 +620,7 @@ class AssertionReconciler extends Reconciler
             && ($codebase->interfaceExists($type_1_atomic->value)
                 || $codebase->interfaceExists($type_2_atomic->value))
         ) {
-            $matching_atomic_type = clone $type_2_atomic;
-            $matching_atomic_type->extra_types[$type_1_atomic->getKey()] = $type_1_atomic;
-
-            return $matching_atomic_type;
+            return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
         if ($type_2_atomic instanceof TKeyedArray
@@ -687,11 +681,7 @@ class AssertionReconciler extends Reconciler
             && $type_2_atomic->as->hasObject()
             && $type_1_atomic->as->hasObject()
         ) {
-            $matching_atomic_type = clone $type_2_atomic;
-
-            $matching_atomic_type->extra_types[$type_1_atomic->getKey()] = $type_1_atomic;
-
-            return $matching_atomic_type;
+            return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
         //we filter both types of standard iterables
@@ -831,7 +821,6 @@ class AssertionReconciler extends Reconciler
             && $type_1_atomic instanceof TTemplateParam
             && $type_1_atomic->as->hasObjectType()
         ) {
-            $type_1_atomic = clone $type_1_atomic;
             $type_1_as = self::filterTypeWithAnother(
                 $codebase,
                 $type_1_atomic->as,
@@ -842,9 +831,7 @@ class AssertionReconciler extends Reconciler
                 return null;
             }
 
-            $type_1_atomic->as = $type_1_as;
-
-            return $type_1_atomic;
+            return $type_1_atomic->replaceAs($type_1_as);
         } else {
             return clone $type_2_atomic;
         }
@@ -1053,18 +1040,18 @@ class AssertionReconciler extends Reconciler
                     return $compatible_int_type;
                 }
 
-                $existing_var_atomic_type = clone $existing_var_atomic_type;
-
-                $existing_var_atomic_type->as = self::handleLiteralEquality(
-                    $statements_analyzer,
-                    $assertion,
-                    $assertion_type,
-                    $existing_var_atomic_type->as,
-                    $old_var_type_string,
-                    $var_id,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
+                $existing_var_atomic_type = $existing_var_atomic_type->replaceAs(
+                    self::handleLiteralEquality(
+                        $statements_analyzer,
+                        $assertion,
+                        $assertion_type,
+                        $existing_var_atomic_type->as,
+                        $old_var_type_string,
+                        $var_id,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    )
                 );
 
                 return new Union([$existing_var_atomic_type]);
@@ -1195,18 +1182,18 @@ class AssertionReconciler extends Reconciler
                     return $literal_asserted_type_string;
                 }
 
-                $existing_var_atomic_type = clone $existing_var_atomic_type;
-
-                $existing_var_atomic_type->as = self::handleLiteralEquality(
-                    $statements_analyzer,
-                    $assertion,
-                    $assertion_type,
-                    $existing_var_atomic_type->as,
-                    $old_var_type_string,
-                    $var_id,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
+                $existing_var_atomic_type = $existing_var_atomic_type->replaceAs(
+                    self::handleLiteralEquality(
+                        $statements_analyzer,
+                        $assertion,
+                        $assertion_type,
+                        $existing_var_atomic_type->as,
+                        $old_var_type_string,
+                        $var_id,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    )
                 );
 
                 return new Union([$existing_var_atomic_type]);
@@ -1337,18 +1324,18 @@ class AssertionReconciler extends Reconciler
                     return $literal_asserted_type;
                 }
 
-                $existing_var_atomic_type = clone $existing_var_atomic_type;
-
-                $existing_var_atomic_type->as = self::handleLiteralEquality(
-                    $statements_analyzer,
-                    $assertion,
-                    $assertion_type,
-                    $existing_var_atomic_type->as,
-                    $old_var_type_string,
-                    $var_id,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues
+                $existing_var_atomic_type = $existing_var_atomic_type->replaceAs(
+                    self::handleLiteralEquality(
+                        $statements_analyzer,
+                        $assertion,
+                        $assertion_type,
+                        $existing_var_atomic_type->as,
+                        $old_var_type_string,
+                        $var_id,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    )
                 );
 
                 return new Union([$existing_var_atomic_type]);

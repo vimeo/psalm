@@ -551,16 +551,18 @@ class ArgumentsAnalyzer
             $function_like_params = [];
 
             foreach ($template_result->lower_bounds as $template_name => $_) {
+                $t = new Union([
+                    new TTemplateParam(
+                        $template_name,
+                        Type::getMixed(),
+                        $method_id
+                    )
+                ]);
                 $function_like_params[] = new FunctionLikeParameter(
                     'function',
                     false,
-                    new Union([
-                        new TTemplateParam(
-                            $template_name,
-                            Type::getMixed(),
-                            $method_id
-                        )
-                    ])
+                    $t,
+                    $t
                 );
             }
 
@@ -724,7 +726,7 @@ class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($method_id) {
-            if (!$in_call_map && $method_id instanceof MethodIdentifier) {
+            if ($method_id instanceof MethodIdentifier) {
                 $fq_class_name = $method_id->fq_class_name;
             }
 

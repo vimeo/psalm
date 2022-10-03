@@ -259,20 +259,20 @@ class CallableTypeComparator
                     $params = [];
 
                     foreach ($function_storage->params as $param) {
-                        $param = clone $param;
-
                         if ($param->type) {
-                            $param->type = TypeExpander::expandUnion(
-                                $codebase,
-                                $param->type,
-                                null,
-                                null,
-                                null,
-                                true,
-                                true,
-                                false,
-                                false,
-                                true
+                            $param = $param->replaceType(
+                                TypeExpander::expandUnion(
+                                    $codebase,
+                                    $param->type,
+                                    null,
+                                    null,
+                                    null,
+                                    true,
+                                    true,
+                                    false,
+                                    false,
+                                    true
+                                )
                             );
                         }
 

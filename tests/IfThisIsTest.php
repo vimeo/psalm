@@ -219,7 +219,7 @@ class IfThisIsTest extends TestCase
             'ifThisIsResolveTemplateParams' => [
                 'code' => '<?php
                     /**
-                     * @template-covariant T
+                     * @template T
                      */
                     final class Option
                     {
@@ -228,8 +228,8 @@ class IfThisIsTest extends TestCase
                     }
 
                     /**
-                     * @template-covariant L
-                     * @template-covariant R
+                     * @template L
+                     * @template R
                      */
                     final class Either
                     {

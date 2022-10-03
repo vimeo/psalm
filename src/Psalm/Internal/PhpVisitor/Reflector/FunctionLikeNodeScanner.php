@@ -877,6 +877,7 @@ class FunctionLikeNodeScanner
             $param->var->name,
             $param->byRef,
             $param_type,
+            $param_type,
             new CodeLocation(
                 $this->file_scanner,
                 $fake_method ? $stmt : $param->var,

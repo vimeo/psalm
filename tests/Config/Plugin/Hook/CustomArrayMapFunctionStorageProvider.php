@@ -55,7 +55,8 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
         $custom_array_map_storage->params = [
             ...array_map(
                 function (TCallable $expected, int $offset) {
-                    $param = new FunctionLikeParameter('fn' . $offset, false, new Union([$expected]));
+                    $t = new Union([$expected]);
+                    $param = new FunctionLikeParameter('fn' . $offset, false, $t, $t);
                     $param->is_optional = false;
 
                     return $param;
@@ -71,10 +72,15 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
 
     private static function createLastArrayMapParam(Union $input_array_type): FunctionLikeParameter
     {
-        $last_array_map_param = new FunctionLikeParameter('input', false, $input_array_type);
-        $last_array_map_param->is_optional = false;
-
-        return $last_array_map_param;
+        return new FunctionLikeParameter(
+            'input',
+            false,
+            $input_array_type,
+            $input_array_type,
+            null,
+            null,
+            false
+        );
     }
 
     /**
@@ -107,7 +113,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
         int $return_template_offset = 0
     ): TCallable {
         $expected_callable = new TCallable('callable');
-        $expected_callable->params = [new FunctionLikeParameter('a', false, $input_type)];
+        $expected_callable->params = [new FunctionLikeParameter('a', false, $input_type, $input_type)];
         $expected_callable->return_type = new Union([
             $template_provider->createTemplate('T' . $return_template_offset)
         ]);

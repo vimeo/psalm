@@ -987,16 +987,15 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }
 
-                    /** @var SplObjectStorage<\stdClass, mixed> */
+                    /** @var SplObjectStorage<\stdClass, string> */
                     $storage = new SplObjectStorage();
                     new SomeService($storage);
 
                     $c = new \stdClass();
                     $storage[$c] = "hello";
-                    /** @psalm-suppress MixedAssignment */
                     $b = $storage->offsetGet($c);',
                 'assertions' => [
-                    '$b' => 'mixed',
+                    '$b' => 'string',
                 ],
             ],
             'extendsArrayIterator' => [

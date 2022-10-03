@@ -1045,11 +1045,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $non_object_types[] = new TCallableString();
                 $did_remove_type = true;
             } elseif ($type instanceof TIterable) {
-                $clone_type = clone $type;
-
-                self::refineArrayKey($clone_type->type_params[0]);
-
-                $non_object_types[] = new TArray($clone_type->type_params);
+                $params = $type->type_params;
+                $params[0] = self::refineArrayKey($params[0]);
+                $non_object_types[] = new TArray($params);
 
                 $did_remove_type = true;
             } elseif (!$type->isObjectType()) {

@@ -343,6 +343,7 @@ class Reflection
             $param_name,
             $param->isPassedByReference(),
             $param_type,
+            $param_type,
             null,
             null,
             $is_optional,

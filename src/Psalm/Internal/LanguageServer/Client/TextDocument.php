@@ -57,8 +57,6 @@ class TextDocument
      * @param TextDocumentIdentifier $textDocument The document to get the content for
      *
      * @return Promise<TextDocumentItem> The document's current content
-     *
-     * @psalm-suppress MixedReturnTypeCoercion due to Psalm bug
      */
     public function xcontent(TextDocumentIdentifier $textDocument): Promise
     {

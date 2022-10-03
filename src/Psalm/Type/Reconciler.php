@@ -50,7 +50,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use ReflectionProperty;
@@ -1137,13 +1136,11 @@ class Reconciler
                             [
                                 $array_key_offset => clone $result_type,
                             ],
-                            null
+                            null,
+                            false,
+                            $previous_key_type->isNever() ? null : $previous_key_type,
+                            $previous_value_type
                         );
-
-                        if (!$previous_key_type->isNever()) {
-                            $base_atomic_type->previous_key_type = $previous_key_type;
-                        }
-                        $base_atomic_type->previous_value_type = $previous_value_type;
                     } elseif ($base_atomic_type instanceof TList) {
                         $previous_key_type = Type::getInt();
                         $previous_value_type = clone $base_atomic_type->type_param;
@@ -1152,18 +1149,18 @@ class Reconciler
                             [
                                 $array_key_offset => clone $result_type,
                             ],
-                            null
+                            null,
+                            false,
+                            $previous_key_type,
+                            $previous_value_type,
+                            true
                         );
-
-                        $base_atomic_type->is_list = true;
-
-                        $base_atomic_type->previous_key_type = $previous_key_type;
-                        $base_atomic_type->previous_value_type = $previous_value_type;
                     } elseif ($base_atomic_type instanceof TClassStringMap) {
                         // do nothing
                     } else {
-                        $base_atomic_type = clone $base_atomic_type;
-                        $base_atomic_type->properties[$array_key_offset] = clone $result_type;
+                        $properties = $base_atomic_type->properties;
+                        $properties[$array_key_offset] = clone $result_type;
+                        $base_atomic_type = $base_atomic_type->setProperties($properties);
                     }
 
                     $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();
@@ -1186,26 +1183,34 @@ class Reconciler
         }
     }
 
-    protected static function refineArrayKey(Union &$key_type): void
+    protected static function refineArrayKey(Union $key_type): Union
     {
-        $key_type = $key_type->getBuilder();
-        foreach ($key_type->getAtomicTypes() as $key => $cat) {
+        return self::refineArrayKeyInner($key_type) ?? $key_type;
+    }
+    private static function refineArrayKeyInner(Union $key_type): ?Union
+    {
+        $refined = false;
+        $types = [];
+        foreach ($key_type->getAtomicTypes() as $cat) {
             if ($cat instanceof TTemplateParam) {
-                self::refineArrayKey($cat->as);
-                $key_type->bustCache();
-            } elseif ($cat instanceof TScalar || $cat instanceof TMixed) {
-                $key_type->removeType($key);
-                $key_type->addType(new TArrayKey());
-            } elseif (!$cat instanceof TString && !$cat instanceof TInt) {
-                $key_type->removeType($key);
-                $key_type->addType(new TArrayKey());
+                $as = self::refineArrayKeyInner($cat->as);
+                if ($as) {
+                    $refined = true;
+                    $types []= $cat->replaceAs($as);
+                } else {
+                    $types []= $cat;
+                }
+            } elseif ($cat instanceof TArrayKey || $cat instanceof TString || $cat instanceof TInt) {
+                $types []= $cat;
+            } else {
+                $refined = true;
+                $types []= new TArrayKey;
             }
         }
 
-        if ($key_type->isUnionEmpty()) {
-            // this should ideally prompt some sort of error
-            $key_type->addType(new TArrayKey());
+        if ($refined) {
+            return $key_type->getBuilder()->setTypes($types)->freeze();
         }
-        $key_type = $key_type->freeze();
+        return null;
     }
 }
