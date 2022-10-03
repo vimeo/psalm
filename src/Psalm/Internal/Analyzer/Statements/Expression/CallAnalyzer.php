@@ -770,8 +770,7 @@ class CallAnalyzer
                                     continue;
                                 }
 
-                                $assertion_rule = clone $assertion_rule;
-                                $assertion_rule->setAtomicType($atomic_type);
+                                $assertion_rule = $assertion_rule->setAtomicType($atomic_type);
                                 $orred_rules[] = $assertion_rule;
                             }
                         } elseif (isset($context->vars_in_scope[$assertion_var_id])) {

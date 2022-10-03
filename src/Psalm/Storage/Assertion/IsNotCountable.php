@@ -4,6 +4,9 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class IsNotCountable extends Assertion
 {
     public $is_negatable;
@@ -18,7 +21,6 @@ final class IsNotCountable extends Assertion
         return true;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new IsCountable();
@@ -29,7 +31,6 @@ final class IsNotCountable extends Assertion
         return '!countable';
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsCountable;

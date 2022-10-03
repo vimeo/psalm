@@ -4,6 +4,9 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class HasMethod extends Assertion
 {
     public string $method;
@@ -13,7 +16,6 @@ final class HasMethod extends Assertion
         $this->method = $method;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new DoesNotHaveMethod($this->method);
@@ -24,7 +26,6 @@ final class HasMethod extends Assertion
         return 'method-exists-' . $this->method;
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof DoesNotHaveMethod && $this->method === $assertion->method;

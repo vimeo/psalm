@@ -5,6 +5,9 @@ namespace Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-immutable
+ */
 final class InArray extends Assertion
 {
     public Union $type;
@@ -14,7 +17,6 @@ final class InArray extends Assertion
         $this->type = $type;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new NotInArray($this->type);
@@ -25,7 +27,6 @@ final class InArray extends Assertion
         return 'in-array-' . $this->type->getId();
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof NotInArray && $this->type->getId() === $assertion->type->getId();
