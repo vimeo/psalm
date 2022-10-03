@@ -35,6 +35,21 @@ class TNonEmptyList extends TList
         $this->min_count = $min_count;
     }
 
+    /**
+     * @param positive-int|null $count
+     *
+     * @return static
+     */
+    public function setCount(?int $count): self
+    {
+        if ($count === $this->count) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->count = $count;
+        return $cloned;
+    }
+
     public function getAssertionString(): string
     {
         return 'non-empty-list';

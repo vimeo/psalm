@@ -197,12 +197,13 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     array_map(
                         static fn(Union $_): Union => clone $mapping_return_type,
                         $array_arg_atomic_type->properties
-                    )
+                    ),
+                    null,
+                    $array_arg_atomic_type->sealed,
+                    $array_arg_atomic_type->previous_key_type,
+                    $mapping_return_type,
+                    $array_arg_atomic_type->is_list
                 );
-                $atomic_type->is_list = $array_arg_atomic_type->is_list;
-                $atomic_type->sealed = $array_arg_atomic_type->sealed;
-                $atomic_type->previous_key_type = $array_arg_atomic_type->previous_key_type;
-                $atomic_type->previous_value_type = $mapping_return_type;
 
                 return new Union([$atomic_type]);
             }

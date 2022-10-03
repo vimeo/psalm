@@ -139,8 +139,11 @@ class ConstantTypeResolver
                 }
 
                 if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
-                    $type = new TKeyedArray($left->properties + $right->properties);
-                    $type->sealed = true;
+                    $type = new TKeyedArray(
+                        $left->properties + $right->properties,
+                        null,
+                        true
+                    );
                     return $type;
                 }
 
@@ -263,10 +266,7 @@ class ConstantTypeResolver
                     new Union([new TNever()]),
                 ]);
             } else {
-                $resolved_type = new TKeyedArray($properties);
-
-                $resolved_type->is_list = $is_list;
-                $resolved_type->sealed = true;
+                $resolved_type = new TKeyedArray($properties, null, true, null, null, $is_list);
             }
 
             return $resolved_type;
@@ -352,9 +352,7 @@ class ConstantTypeResolver
             foreach ($value as $key => $val) {
                 $types[$key] = new Union([self::getLiteralTypeFromScalarValue($val, $sealed_array)]);
             }
-            $type = new TKeyedArray($types);
-            $type->sealed = $sealed_array;
-            return $type;
+            return new TKeyedArray($types, null, $sealed_array);
         }
 
         if (is_string($value)) {

@@ -88,8 +88,6 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             if (!isset($call_args[1]) && !$first_arg_array->previous_value_type) {
                 $had_one = count($first_arg_array->properties) === 1;
 
-                $first_arg_array = clone $first_arg_array;
-
                 $new_properties = array_filter(
                     array_map(
                         static function ($keyed_type) use ($statements_source, $context) {
@@ -119,12 +117,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     return Type::getEmptyArray();
                 }
 
-                $first_arg_array->properties = $new_properties;
-
-                $first_arg_array->is_list = $first_arg_array->is_list && $had_one;
-                $first_arg_array->sealed = false;
-
-                return new Union([$first_arg_array]);
+                return new Union([new TKeyedArray($new_properties, null, false, null, null, $first_arg_array->is_list && $had_one)]);
             }
         }
 

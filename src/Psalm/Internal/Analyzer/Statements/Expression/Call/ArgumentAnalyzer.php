@@ -58,6 +58,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
 use function count;
@@ -1351,20 +1352,29 @@ class ArgumentAnalyzer
         }
 
         if (!$input_type_changed && $param_type->from_docblock && !$input_type->hasMixed()) {
-            $input_type = clone $input_type;
-
+            $types = $input_type->getAtomicTypes();
             foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
                 if ($param_atomic_type instanceof TGenericObject) {
-                    foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
+                    foreach ($types as &$input_atomic_type) {
                         if ($input_atomic_type instanceof TGenericObject
                             && $input_atomic_type->value === $param_atomic_type->value
                         ) {
+                            $new_type_params = [];
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
                                 if ($type_param->isNever() && isset($param_atomic_type->type_params[$i])) {
                                     $input_type_changed = true;
 
-                                    $input_atomic_type->type_params[$i] = clone $param_atomic_type->type_params[$i];
+                                    $new_type_params[$i] = $param_atomic_type->type_params[$i];
                                 }
+                            }
+                            if ($new_type_params) {
+                                $input_atomic_type = new TGenericObject(
+                                    $input_atomic_type->value,
+                                    [...$input_atomic_type->type_params, ...$new_type_params],
+                                    $input_atomic_type->remapped_params,
+                                    false,
+                                    $input_atomic_type->extra_types
+                                );
                             }
                         }
                     }
@@ -1374,6 +1384,8 @@ class ArgumentAnalyzer
             if (!$input_type_changed) {
                 return;
             }
+
+            $input_type = new Union($types);
         }
 
         $var_id = ExpressionIdentifier::getVarId(
@@ -1429,20 +1441,24 @@ class ArgumentAnalyzer
 
             if ($unpack) {
                 if ($unpacked_atomic_array instanceof TList) {
-                    $unpacked_atomic_array = clone $unpacked_atomic_array;
-                    $unpacked_atomic_array->type_param = $input_type;
+                    $unpacked_atomic_array = $unpacked_atomic_array->replaceTypeParam($input_type);
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TArray) {
-                    $unpacked_atomic_array = clone $unpacked_atomic_array;
-                    $unpacked_atomic_array->type_params[1] = $input_type;
+                    $unpacked_atomic_array = $unpacked_atomic_array->replaceTypeParams([
+                        $unpacked_atomic_array->type_params[0],
+                        $input_type
+                    ]);
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TKeyedArray
                     && $unpacked_atomic_array->is_list
                 ) {
-                    $unpacked_atomic_array = $unpacked_atomic_array->getList();
-                    $unpacked_atomic_array->type_param = $input_type;
+                    if ($unpacked_atomic_array->isNonEmpty()) {
+                        $unpacked_atomic_array = new TNonEmptyList($input_type);
+                    } else {
+                        $unpacked_atomic_array = new TList($input_type);
+                    }
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } else {

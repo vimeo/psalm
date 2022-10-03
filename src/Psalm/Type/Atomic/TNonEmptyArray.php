@@ -41,4 +41,19 @@ class TNonEmptyArray extends TArray
         $this->min_count = $min_count;
         $this->value = $value;
     }
+
+    /**
+     * @param positive-int|null $count
+     *
+     * @return static
+     */
+    public function setCount(?int $count): self
+    {
+        if ($count === $this->count) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->count = $count;
+        return $cloned;
+    }
 }

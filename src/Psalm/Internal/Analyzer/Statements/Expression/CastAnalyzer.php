@@ -253,9 +253,7 @@ class CastAnalyzer
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $keyed_array = new TKeyedArray([new Union([$type])]);
-                        $keyed_array->is_list = true;
-                        $keyed_array->sealed = true;
+                        $keyed_array = new TKeyedArray([new Union([$type])], null, true, null, null, true);
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
                         $permissible_atomic_types[] = new TArray([Type::getNever(), Type::getNever()]);

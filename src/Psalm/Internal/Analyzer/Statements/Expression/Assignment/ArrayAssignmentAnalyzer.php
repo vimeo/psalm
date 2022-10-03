@@ -340,6 +340,11 @@ class ArrayAssignmentAnalyzer
                     && $key_value instanceof TLiteralInt
                     && count($key_values) === 1
                 ) {
+                    $count = ($type->count ?? $type->min_count) ?? 1;
+                    if ($key_value->value >= $count) {
+                        continue;
+                    }
+
                     $has_matching_objectlike_property = true;
 
                     $type->type_param = Type::combineUnionTypes(

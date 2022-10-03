@@ -430,19 +430,21 @@ class SimpleTypeInferer
                 return null;
             }
 
+            $new_types = [];
             foreach ($type_to_invert->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof TLiteralInt
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $type_part->value = -$type_part->value;
+                    $new_types []= new TLiteralInt(-$type_part->value);
                 } elseif ($type_part instanceof TLiteralFloat
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $type_part->value = -$type_part->value;
+                    $new_types []= new TLiteralFloat(-$type_part->value);
+                } else {
+                    $new_types []= $type_part;
                 }
             }
-
-            return $type_to_invert;
+            return new Union($new_types);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
@@ -574,10 +576,12 @@ class SimpleTypeInferer
         ) {
             $objectlike = new TKeyedArray(
                 $array_creation_info->property_types,
-                $array_creation_info->class_strings
+                $array_creation_info->class_strings,
+                true,
+                null,
+                null,
+                $array_creation_info->all_list
             );
-            $objectlike->sealed = true;
-            $objectlike->is_list = $array_creation_info->all_list;
             return new Union([$objectlike]);
         }
 

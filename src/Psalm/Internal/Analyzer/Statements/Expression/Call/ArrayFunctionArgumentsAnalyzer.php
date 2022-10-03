@@ -43,7 +43,6 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_shift;
-use function array_unshift;
 use function assert;
 use function count;
 use function explode;
@@ -300,9 +299,10 @@ class ArrayFunctionArgumentsAnalyzer
                     );
                 } else {
                     if ($objectlike_list) {
-                        array_unshift($objectlike_list->properties, $arg_value_type);
+                        $properties = $objectlike_list->properties;
+                        array_unshift($properties, $arg_value_type);
 
-                        $by_ref_type = new Union([$objectlike_list]);
+                        $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
                     } elseif ($array_type instanceof TList) {
                         $by_ref_type = Type::combineUnionTypes(
                             $by_ref_type,
@@ -844,9 +844,6 @@ class ArrayFunctionArgumentsAnalyzer
                 && $closure_type->return_type
                 && $closure_param_type->hasTemplate()
             ) {
-                $closure_param_type = clone $closure_param_type;
-                $closure_type->return_type = clone $closure_type->return_type;
-
                 $template_result = new TemplateResult(
                     [],
                     []

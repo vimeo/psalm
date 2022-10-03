@@ -525,10 +525,10 @@ class NewAnalyzer extends CallAnalyzer
             if ($generic_param_types) {
                 $result_atomic_type = new TGenericObject(
                     $fq_class_name,
-                    $generic_param_types
+                    $generic_param_types,
+                    false,
+                    $from_static
                 );
-
-                $result_atomic_type->is_static = $from_static;
 
                 $statements_analyzer->node_data->setType(
                     $stmt,
@@ -552,10 +552,10 @@ class NewAnalyzer extends CallAnalyzer
                         static fn($map) => clone reset($map),
                         $storage->template_types
                     )
-                )
+                ),
+                false,
+                $from_static
             );
-
-            $result_atomic_type->is_static = $from_static;
 
             $statements_analyzer->node_data->setType(
                 $stmt,
