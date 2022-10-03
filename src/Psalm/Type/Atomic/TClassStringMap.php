@@ -16,6 +16,7 @@ use function get_class;
 /**
  * Represents an array where the type of each value
  * is a function of its string key value
+ * @psalm-immutable
  */
 final class TClassStringMap extends Atomic
 {
@@ -24,10 +25,7 @@ final class TClassStringMap extends Atomic
      */
     public $param_name;
 
-    /**
-     * @var ?TNamedObject
-     */
-    public $as_type;
+    public ?TNamedObject $as_type;
 
     /**
      * @var Union
@@ -37,11 +35,16 @@ final class TClassStringMap extends Atomic
     /**
      * Constructs a new instance of a list
      */
-    public function __construct(string $param_name, ?TNamedObject $as_type, Union $value_param)
-    {
+    public function __construct(
+        string $param_name,
+        ?TNamedObject $as_type,
+        Union $value_param,
+        bool $from_docblock = false
+    ) {
         $this->param_name = $param_name;
         $this->as_type = $as_type;
         $this->value_param = $value_param;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -54,11 +57,6 @@ final class TClassStringMap extends Atomic
             . ', '
             . $this->value_param->getId($exact)
             . '>';
-    }
-
-    public function __clone()
-    {
-        $this->value_param = clone $this->value_param;
     }
 
     /**
@@ -118,6 +116,7 @@ final class TClassStringMap extends Atomic
     }
 
     /**
+     * @psalm-suppress InaccessibleProperty We're only acting on cloned instances
      * @return static
      */
     public function replaceTemplateTypesWithStandins(
@@ -204,9 +203,9 @@ final class TClassStringMap extends Atomic
         );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return [$this->value_param];
+        return ['value_param'];
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

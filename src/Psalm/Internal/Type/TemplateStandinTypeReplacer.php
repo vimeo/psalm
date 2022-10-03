@@ -599,7 +599,7 @@ class TemplateStandinTypeReplacer
      * @return list<Atomic>
      */
     private static function handleTemplateParamStandin(
-        TTemplateParam $atomic_type,
+        TTemplateParam &$atomic_type,
         string $key,
         ?Union $input_type,
         ?int $input_arg_offset,
@@ -762,7 +762,7 @@ class TemplateStandinTypeReplacer
 
             $matching_input_keys = [];
 
-            $atomic_type->as = TypeExpander::expandUnion(
+            $as = TypeExpander::expandUnion(
                 $codebase,
                 $atomic_type->as,
                 $calling_class,
@@ -770,8 +770,8 @@ class TemplateStandinTypeReplacer
                 null
             );
 
-            $atomic_type->as = self::replace(
-                $atomic_type->as,
+            $as = self::replace(
+                $as,
                 $template_result,
                 $codebase,
                 $statements_analyzer,
@@ -784,6 +784,8 @@ class TemplateStandinTypeReplacer
                 $bound_equality_classlike,
                 $depth + 1
             );
+
+            $atomic_type = $atomic_type->replaceAs($as);
 
             if ($input_type
                 && !$template_result->readonly
@@ -810,13 +812,11 @@ class TemplateStandinTypeReplacer
                         }
                     }
                 }
-                $generic_param = $generic_param->freeze();
-
                 if ($add_lower_bound) {
                     return array_values($generic_param->getAtomicTypes());
                 }
 
-                $generic_param->setFromDocblock();
+                $generic_param = $generic_param->setFromDocblock()->freeze();
 
                 if (isset(
                     $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class]
@@ -970,13 +970,18 @@ class TemplateStandinTypeReplacer
 
         $atomic_types = [];
 
+        $as_type = $atomic_type->as_type;
         if ($input_type && !$template_result->readonly) {
             $valid_input_atomic_types = [];
 
             foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
                 if ($input_atomic_type instanceof TLiteralClassString) {
                     $valid_input_atomic_types[] = new TNamedObject(
-                        $input_atomic_type->value
+                        $input_atomic_type->value,
+                        false,
+                        false,
+                        [],
+                        true
                     );
                 } elseif ($input_atomic_type instanceof TTemplateParamClass) {
                     $valid_input_atomic_types[] = new TTemplateParam(
@@ -986,20 +991,26 @@ class TemplateStandinTypeReplacer
                             : ($input_atomic_type->as === 'object'
                                 ? Type::getObject()
                                 : Type::getMixed()),
-                        $input_atomic_type->defining_class
+                        $input_atomic_type->defining_class,
+                        [],
+                        true
                     );
                 } elseif ($input_atomic_type instanceof TClassString) {
                     if ($input_atomic_type->as_type) {
-                        $valid_input_atomic_types[] = clone $input_atomic_type->as_type;
+                        $valid_input_atomic_types[] = $input_atomic_type->as_type->setFromDocblock(true);
                     } elseif ($input_atomic_type->as !== 'object') {
                         $valid_input_atomic_types[] = new TNamedObject(
-                            $input_atomic_type->as
+                            $input_atomic_type->as,
+                            false,
+                            false,
+                            [],
+                            true
                         );
                     } else {
-                        $valid_input_atomic_types[] = new TObject();
+                        $valid_input_atomic_types[] = new TObject(true);
                     }
                 } elseif ($input_atomic_type instanceof TDependentGetClass) {
-                    $valid_input_atomic_types[] = new TObject();
+                    $valid_input_atomic_types[] = new TObject(true);
                 }
             }
 
@@ -1007,16 +1018,15 @@ class TemplateStandinTypeReplacer
 
             if ($valid_input_atomic_types) {
                 $generic_param = new Union($valid_input_atomic_types);
-                $generic_param->setFromDocblock();
             } elseif ($was_single) {
                 $generic_param = Type::getMixed();
             }
 
-            if ($atomic_type->as_type) {
+            if ($as_type) {
                 // sometimes templated class-strings can contain nested templates
                 // in the as type that need to be resolved as well.
                 $as_type_union = self::replace(
-                    new Union([$atomic_type->as_type]),
+                    new Union([$as_type]),
                     $template_result,
                     $codebase,
                     $statements_analyzer,
@@ -1033,9 +1043,9 @@ class TemplateStandinTypeReplacer
                 $first = $as_type_union->getSingleAtomic();
 
                 if (count($as_type_union->getAtomicTypes()) === 1 && $first instanceof TNamedObject) {
-                    $atomic_type->as_type = $first;
+                    $as_type = $first;
                 } else {
-                    $atomic_type->as_type = null;
+                    $as_type = null;
                 }
             }
 
@@ -1080,7 +1090,7 @@ class TemplateStandinTypeReplacer
             }
         }
 
-        $class_string = new TClassString($atomic_type->as, $atomic_type->as_type);
+        $class_string = new TClassString($atomic_type->as, $as_type);
 
         if (!$atomic_types) {
             $atomic_types[] = $class_string;

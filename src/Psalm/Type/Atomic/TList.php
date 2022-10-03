@@ -19,6 +19,7 @@ use function get_class;
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
  *
+ * @psalm-immutable
  */
 class TList extends Atomic
 {
@@ -33,9 +34,10 @@ class TList extends Atomic
     /**
      * Constructs a new instance of a list
      */
-    public function __construct(Union $type_param)
+    public function __construct(Union $type_param, bool $from_docblock = false)
     {
         $this->type_param = $type_param;
+        $this->from_docblock = $from_docblock;
     }
 
     /**
@@ -54,11 +56,6 @@ class TList extends Atomic
     public function getId(bool $exact = true, bool $nested = false): string
     {
         return static::KEY . '<' . $this->type_param->getId($exact) . '>';
-    }
-
-    public function __clone()
-    {
-        $this->type_param = clone $this->type_param;
     }
 
     /**
@@ -115,6 +112,7 @@ class TList extends Atomic
     }
 
     /**
+     * @psalm-suppress InaccessibleProperty We're only acting on cloned instances
      * @return static
      */
     public function replaceTemplateTypesWithStandins(
@@ -215,8 +213,8 @@ class TList extends Atomic
         return $this->getId();
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return [$this->type_param];
+        return ['type_param'];
     }
 }

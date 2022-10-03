@@ -4,6 +4,7 @@ namespace Psalm\Type;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -212,6 +213,7 @@ final class MutableUnion implements TypeNode, Stringable
     public $different = false;
 
     /**
+     * @psalm-external-mutation-free
      * @param non-empty-array<Atomic>  $types
      */
     public function setTypes(array $types): self
@@ -222,7 +224,6 @@ final class MutableUnion implements TypeNode, Stringable
         $this->typed_class_strings = [];
 
         $from_docblock = false;
-
         $keyed_types = [];
 
         foreach ($types as $type) {
@@ -250,6 +251,9 @@ final class MutableUnion implements TypeNode, Stringable
         return $this;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addType(Atomic $type): self
     {
         $this->types[$type->getKey()] = $type;
@@ -290,6 +294,9 @@ final class MutableUnion implements TypeNode, Stringable
         return $this;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     public function removeType(string $type_string): bool
     {
         if (isset($this->types[$type_string])) {
@@ -339,6 +346,21 @@ final class MutableUnion implements TypeNode, Stringable
         return false;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function setFromDocblock(bool $fromDocblock = true): self
+    {
+        $this->from_docblock = $fromDocblock;
+
+        (new FromDocblockSetter($fromDocblock))->traverseArray($this->types);
+
+        return $this;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
     public function bustCache(): void
     {
         $this->id = null;
@@ -346,6 +368,7 @@ final class MutableUnion implements TypeNode, Stringable
     }
 
     /**
+     * @psalm-external-mutation-free
      * @param Union|MutableUnion $old_type
      * @param Union|MutableUnion|null $new_type
      */
@@ -436,23 +459,17 @@ final class MutableUnion implements TypeNode, Stringable
         return $this;
     }
 
-
-    public function replaceClassLike(string $old, string $new): self
-    {
-        foreach ($this->types as $key => $atomic_type) {
-            $atomic_type = $atomic_type->replaceClassLike($old, $new);
-
-            $this->removeType($key);
-            $this->addType($atomic_type);
-        }
-        return $this;
-    }
-
+    /**
+     * @psalm-mutation-free
+     */
     public function getBuilder(): self
     {
         return $this;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function freeze(): Union
     {
         $union = new Union($this->getAtomicTypes());

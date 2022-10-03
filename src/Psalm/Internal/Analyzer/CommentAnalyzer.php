@@ -159,7 +159,8 @@ class CommentAnalyzer
                         $var_type_tokens,
                         null,
                         $template_type_map ?: [],
-                        $type_aliases ?: []
+                        $type_aliases ?: [],
+                        true
                     );
                 } catch (TypeParseTreeException $e) {
                     throw new DocblockParseException(
@@ -172,8 +173,6 @@ class CommentAnalyzer
                         ')'
                     );
                 }
-
-                $defined_type->setFromDocblock();
 
                 $var_comment = new VarDocblockComment();
                 $var_comment->type = $defined_type;
@@ -375,7 +374,7 @@ class CommentAnalyzer
                 $remaining = trim(preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
-                    return array_merge([rtrim($type)], preg_split('/[ \s]+/', $remaining));
+                    return array_merge([rtrim($type)], preg_split('/[ \s]+/', $remaining) ?: []);
                 }
 
                 return [$type];

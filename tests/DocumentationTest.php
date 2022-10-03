@@ -437,6 +437,9 @@ class DocumentationTest extends TestCase
         }
 
         $issues_index_contents = file($issues_index, FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES);
+        if ($issues_index_contents === false) {
+            throw new UnexpectedValueException("Issues index returned false");
+        }
         array_shift($issues_index_contents); // Remove title
 
         $issues_index_list = array_map(function (string $issues_line) {

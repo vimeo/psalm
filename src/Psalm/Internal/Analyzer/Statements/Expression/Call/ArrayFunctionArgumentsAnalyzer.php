@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -35,7 +36,6 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
-use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
@@ -43,6 +43,7 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_shift;
+use function array_unshift;
 use function assert;
 use function count;
 use function explode;
@@ -516,33 +517,24 @@ class ArrayFunctionArgumentsAnalyzer
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {
-                $array_type = $context->vars_in_scope[$var_id]->getBuilder();
+                $array_atomic_types = [];
 
-                $array_atomic_types = $array_type->getAtomicTypes();
-
-                foreach ($array_atomic_types as $array_atomic_type) {
+                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
                     if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list) {
-                            $array_atomic_type = clone $array_atomic_type;
-
                             $array_properties = $array_atomic_type->properties;
 
                             array_shift($array_properties);
 
                             if (!$array_properties) {
-                                $array_atomic_type = new TList(
-                                    $array_atomic_type->previous_value_type ?: Type::getMixed()
-                                );
-
-                                $array_type->addType($array_atomic_type);
+                                $array_atomic_types []= new TList(Type::getNever());
                             } else {
-                                $array_atomic_type->properties = $array_properties;
+                                $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }
+                            continue;
                         }
 
-                        if ($array_atomic_type instanceof TKeyedArray) {
-                            $array_atomic_type = $array_atomic_type->getGenericArrayType();
-                        }
+                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
                     }
 
                     if ($array_atomic_type instanceof TNonEmptyArray) {
@@ -550,39 +542,39 @@ class ArrayFunctionArgumentsAnalyzer
                             if ($array_atomic_type->count === 1) {
                                 $array_atomic_type = new TArray(
                                     [
-                                        new Union([new TNever]),
-                                        new Union([new TNever]),
+                                        Type::getNever(),
+                                        Type::getNever(),
                                     ]
                                 );
                             } else {
-                                $array_atomic_type->count--;
+                                $array_atomic_type = $array_atomic_type->setCount($array_atomic_type->count-1);
                             }
                         } else {
                             $array_atomic_type = new TArray($array_atomic_type->type_params);
                         }
 
-                        $array_type->addType($array_atomic_type);
+                        $array_atomic_types[] = $array_atomic_type;
                     } elseif ($array_atomic_type instanceof TNonEmptyList) {
                         if (!$context->inside_loop && $array_atomic_type->count !== null) {
                             if ($array_atomic_type->count === 1) {
-                                $array_atomic_type = new TArray(
-                                    [
-                                        new Union([new TNever]),
-                                        new Union([new TNever]),
-                                    ]
-                                );
+                                $array_atomic_type = new TList(Type::getNever());
                             } else {
-                                $array_atomic_type->count--;
+                                $array_atomic_type = $array_atomic_type->setCount($array_atomic_type->count-1);
                             }
                         } else {
                             $array_atomic_type = new TList($array_atomic_type->type_param);
                         }
 
-                        $array_type->addType($array_atomic_type);
+                        $array_atomic_types[] = $array_atomic_type;
+                    } else {
+                        $array_atomic_types[] = $array_atomic_type;
                     }
                 }
 
-                $array_type = $array_type->freeze();
+                if (!$array_atomic_types) {
+                    throw new AssertionError("We must have some types here!");
+                }
+                $array_type = new Union($array_atomic_types);
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
             }

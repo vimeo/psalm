@@ -117,7 +117,14 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     return Type::getEmptyArray();
                 }
 
-                return new Union([new TKeyedArray($new_properties, null, false, null, null, $first_arg_array->is_list && $had_one)]);
+                return new Union([new TKeyedArray(
+                    $new_properties,
+                    null,
+                    false,
+                    null,
+                    null,
+                    $first_arg_array->is_list && $had_one
+                )]);
             }
         }
 

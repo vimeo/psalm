@@ -31,6 +31,7 @@ use function str_replace;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
+ * @psalm-immutable
  */
 class TKeyedArray extends Atomic
 {
@@ -83,7 +84,8 @@ class TKeyedArray extends Atomic
         bool $sealed = false,
         ?Union $previous_key_type = null,
         ?Union $previous_value_type = null,
-        bool $is_list = false
+        bool $is_list = false,
+        bool $from_docblock = false
     ) {
         $this->properties = $properties;
         $this->class_strings = $class_strings;
@@ -91,6 +93,7 @@ class TKeyedArray extends Atomic
         $this->previous_key_type = $previous_key_type;
         $this->previous_value_type = $previous_value_type;
         $this->is_list = $is_list;
+        $this->from_docblock = $from_docblock;
     }
 
     /**
@@ -106,18 +109,6 @@ class TKeyedArray extends Atomic
         $cloned = clone $this;
         $cloned->properties = $properties;
         return $cloned;
-    }
-
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $properties = $this->properties;
-        foreach ($properties as &$property_type) {
-            $property_type = $property_type->replaceClassLike($old, $new);
-        }
-        return $this->setProperties($properties);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -250,6 +241,9 @@ class TKeyedArray extends Atomic
         return $value_type;
     }
 
+    /**
+     * @return TArray|TNonEmptyArray
+     */
     public function getGenericArrayType(bool $allow_non_empty = true): TArray
     {
         $key_types = [];
@@ -300,13 +294,6 @@ class TKeyedArray extends Atomic
         return false;
     }
 
-    public function __clone()
-    {
-        foreach ($this->properties as &$property) {
-            $property = clone $property;
-        }
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         /** @var string */
@@ -330,7 +317,7 @@ class TKeyedArray extends Atomic
     ): self {
         $properties = $this->properties;
 
-        foreach ($properties as $offset => &$property) {
+        foreach ($properties as $offset => $property) {
             $input_type_param = null;
 
             if ($input_type instanceof TKeyedArray
@@ -339,7 +326,7 @@ class TKeyedArray extends Atomic
                 $input_type_param = $input_type->properties[$offset];
             }
 
-            $property = TemplateStandinTypeReplacer::replace(
+            $properties[$offset] = TemplateStandinTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
@@ -371,8 +358,8 @@ class TKeyedArray extends Atomic
         ?Codebase $codebase
     ): self {
         $properties = $this->properties;
-        foreach ($properties as &$property) {
-            $property = TemplateInferredTypeReplacer::replace(
+        foreach ($properties as $offset => $property) {
+            $properties[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
@@ -386,9 +373,9 @@ class TKeyedArray extends Atomic
         return $this;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return $this->properties;
+        return ['properties'];
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

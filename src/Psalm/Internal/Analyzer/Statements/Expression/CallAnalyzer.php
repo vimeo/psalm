@@ -578,16 +578,14 @@ class CallAnalyzer
             if ($type_part instanceof TNamedObject) {
                 $method_id = $type_part->value . '::' . $method_name_arg->value;
 
-                if ($type_part->extra_types) {
-                    foreach ($type_part->extra_types as $extra_type) {
-                        if ($extra_type instanceof TTemplateParam
-                            || $extra_type instanceof TObjectWithProperties
-                        ) {
-                            throw new UnexpectedValueException('Shouldn’t get a generic param here');
-                        }
-
-                        $method_id .= '&' . $extra_type->value . '::' . $method_name_arg->value;
+                foreach ($type_part->extra_types as $extra_type) {
+                    if ($extra_type instanceof TTemplateParam
+                        || $extra_type instanceof TObjectWithProperties
+                    ) {
+                        throw new UnexpectedValueException('Shouldn’t get a generic param here');
                     }
+
+                    $method_id .= '&' . $extra_type->value . '::' . $method_name_arg->value;
                 }
 
                 $method_ids[] = '$' . $method_id;
@@ -938,19 +936,7 @@ class CallAnalyzer
                         );
                     }
 
-                    $op_vars_in_scope[$var_id]->from_docblock = true;
-
-                    foreach ($op_vars_in_scope[$var_id]->getAtomicTypes() as $changed_atomic_type) {
-                        $changed_atomic_type->from_docblock = true;
-
-                        if ($changed_atomic_type instanceof TNamedObject
-                            && $changed_atomic_type->extra_types
-                        ) {
-                            foreach ($changed_atomic_type->extra_types as $extra_type) {
-                                $extra_type->from_docblock = true;
-                            }
-                        }
-                    }
+                    $op_vars_in_scope[$var_id] = $op_vars_in_scope[$var_id]->setFromDocblock(true);
                 }
             }
 

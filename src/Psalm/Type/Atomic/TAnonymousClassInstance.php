@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an anonymous class (i.e. `new class{}`) with potential methods
+ * @psalm-immutable
  */
 final class TAnonymousClassInstance extends TNamedObject
 {

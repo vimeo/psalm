@@ -9,14 +9,13 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_merge;
-use function array_values;
 use function count;
 use function implode;
 use function substr;
 
 /**
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
+ * @psalm-immutable
  */
 final class TIterable extends Atomic
 {
@@ -25,6 +24,11 @@ final class TIterable extends Atomic
      * @use GenericTrait<array{Union, Union}>
      */
     use GenericTrait;
+
+    /**
+     * @var array{Union, Union}
+     */
+    public array $type_params;
 
     /**
      * @var string
@@ -40,7 +44,7 @@ final class TIterable extends Atomic
      * @param array{Union, Union}|array<never, never> $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(array $type_params = [], array $extra_types = [])
+    public function __construct(array $type_params = [], array $extra_types = [], bool $from_docblock = false)
     {
         if (isset($type_params[0], $type_params[1])) {
             $this->has_docblock_params = true;
@@ -49,6 +53,7 @@ final class TIterable extends Atomic
             $this->type_params = [Type::getMixed(), Type::getMixed()];
         }
         $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -117,32 +122,11 @@ final class TIterable extends Atomic
         return true;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_merge($this->type_params, array_values($this->extra_types));
+        return ['type_params', 'extra_types'];
     }
 
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $type_params = $this->replaceTypeParamsClassLike(
-            $old,
-            $new
-        );
-        $intersection = $this->replaceIntersectionClassLike(
-            $old,
-            $new
-        );
-        if (!$type_params && !$intersection) {
-            return $this;
-        }
-        return new static(
-            $type_params ?? $this->type_params,
-            $intersection ?? $this->extra_types
-        );
-    }
     /**
      * @return static
      */

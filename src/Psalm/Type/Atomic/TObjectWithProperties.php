@@ -12,13 +12,12 @@ use Psalm\Type\Union;
 
 use function array_keys;
 use function array_map;
-use function array_merge;
-use function array_values;
 use function count;
 use function implode;
 
 /**
  * Denotes an object with specified member variables e.g. `object{foo:int, bar:string}`.
+ * @psalm-immutable
  */
 final class TObjectWithProperties extends TObject
 {
@@ -41,11 +40,42 @@ final class TObjectWithProperties extends TObject
      * @param array<string, string> $methods
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(array $properties, array $methods = [], array $extra_types = [])
-    {
+    public function __construct(
+        array $properties,
+        array $methods = [],
+        array $extra_types = [],
+        bool $from_docblock = false
+    ) {
         $this->properties = $properties;
         $this->methods = $methods;
         $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
+    }
+
+    /**
+     * @param array<string|int, Union> $properties
+     */
+    public function setProperties(array $properties): self
+    {
+        if ($properties === $this->properties) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->properties = $properties;
+        return $cloned;
+    }
+
+    /**
+     * @param array<string, string> $methods
+     */
+    public function setMethods(array $methods): self
+    {
+        if ($methods === $this->methods) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->methods = $methods;
+        return $cloned;
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -60,6 +90,7 @@ final class TObjectWithProperties extends TObject
             ', ',
             array_map(
                 /**
+                 * @psalm-pure
                  * @param  string|int $name
                  */
                 static fn($name, Union $type): string => $name . ($type->possibly_undefined ? '?' : '') . ':'
@@ -72,6 +103,9 @@ final class TObjectWithProperties extends TObject
         $methods_string = implode(
             ', ',
             array_map(
+                /**
+                 * @psalm-pure
+                 */
                 static fn(string $name): string => $name . '()',
                 array_keys($this->methods)
             )
@@ -102,6 +136,7 @@ final class TObjectWithProperties extends TObject
                     ', ',
                     array_map(
                         /**
+                         * @psalm-pure
                          * @param  string|int $name
                          */
                         static fn($name, Union $type): string =>
@@ -136,13 +171,6 @@ final class TObjectWithProperties extends TObject
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
-    }
-
-    public function __clone()
-    {
-        foreach ($this->properties as &$property) {
-            $property = clone $property;
-        }
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
@@ -235,32 +263,13 @@ final class TObjectWithProperties extends TObject
     /**
      * @return static
      */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $properties = $this->properties;
-        foreach ($properties as &$property) {
-            $property = $property->replaceClassLike($old, $new);
-        }
-        $intersection = $this->replaceIntersectionClassLike($old, $new);
-        if (!$intersection && $properties === $this->properties) {
-            return $this;
-        }
-        return new static(
-            $properties,
-            $this->methods,
-            $intersection ?? $this->extra_types
-        );
-    }
-    /**
-     * @return static
-     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
         $properties = $this->properties;
-        foreach ($this->properties as &$property) {
-            $property = TemplateInferredTypeReplacer::replace(
+        foreach ($properties as $offset => $property) {
+            $properties[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
@@ -280,9 +289,9 @@ final class TObjectWithProperties extends TObject
         );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_merge($this->properties, array_values($this->extra_types));
+        return ['properties', 'extra_types'];
     }
 
     public function getAssertionString(): string

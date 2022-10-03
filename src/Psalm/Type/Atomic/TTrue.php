@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `true` value type
+ * @psalm-immutable
  */
 final class TTrue extends TBool
 {

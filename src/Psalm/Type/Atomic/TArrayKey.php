@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `array-key` type, used for something that could be the offset of an `array`.
+ * @psalm-immutable
  */
 class TArrayKey extends Scalar
 {

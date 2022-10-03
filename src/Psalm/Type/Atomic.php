@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
+use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -75,8 +76,15 @@ use function is_numeric;
 use function strpos;
 use function strtolower;
 
+/**
+ * @psalm-immutable
+ */
 abstract class Atomic implements TypeNode
 {
+    public function __construct(bool $from_docblock = false)
+    {
+        $this->from_docblock = $from_docblock;
+    }
     /**
      * Whether or not the type has been checked yet
      *
@@ -107,6 +115,34 @@ abstract class Atomic implements TypeNode
     public $text;
 
     /**
+     * @return static
+     */
+    public function setFromDocblock(bool $from_docblock): self
+    {
+        if ($from_docblock === $this->from_docblock) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->from_docblock = $from_docblock;
+        return $cloned;
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
+    {
+        $type = $this;
+        (new ClasslikeReplacer(
+            $old,
+            $new
+        ))->traverse($type);
+        return $type;
+    }
+
+    /**
+     * @psalm-suppress InaccessibleProperty Allowed during construction
+     *
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
@@ -118,15 +154,19 @@ abstract class Atomic implements TypeNode
         array  $type_aliases = [],
         ?int   $offset_start = null,
         ?int   $offset_end = null,
-        ?string $text = null
+        ?string $text = null,
+        bool    $from_docblock = false
     ): Atomic {
         $result = self::createInner($value, $analysis_php_version_id, $template_type_map, $type_aliases);
         $result->offset_start = $offset_start;
         $result->offset_end = $offset_end;
         $result->text = $text;
+        $result->from_docblock = $from_docblock;
         return $result;
     }
     /**
+     * @psalm-suppress InaccessibleProperty Allowed during construction
+     *
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
@@ -135,7 +175,8 @@ abstract class Atomic implements TypeNode
         string $value,
         ?int   $analysis_php_version_id = null,
         array  $template_type_map = [],
-        array  $type_aliases = []
+        array  $type_aliases = [],
+        bool   $from_docblock = false
     ): Atomic {
         switch ($value) {
             case 'int':
@@ -197,19 +238,28 @@ abstract class Atomic implements TypeNode
 
             case 'array':
             case 'associative-array':
-                return new TArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TArray([
+                    new Union([new TArrayKey($from_docblock)]),
+                    new Union([new TMixed(false, $from_docblock)])
+                ]);
 
             case 'non-empty-array':
-                return new TNonEmptyArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TNonEmptyArray([
+                    new Union([new TArrayKey($from_docblock)]),
+                    new Union([new TMixed(false, $from_docblock)])
+                ]);
 
             case 'callable-array':
-                return new TCallableArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TCallableArray([
+                    new Union([new TArrayKey($from_docblock)]),
+                    new Union([new TMixed(false, $from_docblock)])
+                ]);
 
             case 'list':
-                return new TList(Type::getMixed());
+                return new TList(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-list':
-                return new TNonEmptyList(Type::getMixed());
+                return new TNonEmptyList(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-string':
                 return new TNonEmptyString();
@@ -531,41 +581,14 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
         return [];
-    }
-
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        return $this;
     }
 
     final public function __toString(): string
     {
         return $this->getId();
-    }
-
-    public function __clone()
-    {
-        if ($this instanceof TNamedObject
-            || $this instanceof TTemplateParam
-            || $this instanceof TIterable
-            || $this instanceof TObjectWithProperties
-        ) {
-            if ($this->extra_types) {
-                foreach ($this->extra_types as &$type) {
-                    $type = clone $type;
-                }
-            }
-        }
-
-        if ($this instanceof TTemplateParam) {
-            $this->as = clone $this->as;
-        }
     }
 
     /**

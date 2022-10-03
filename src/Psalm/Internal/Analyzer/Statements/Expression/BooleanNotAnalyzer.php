@@ -33,12 +33,11 @@ class BooleanNotAnalyzer
         $stmt_type = Type::getBool();
         if ($expr_type) {
             if ($expr_type->isAlwaysTruthy()) {
-                $stmt_type = Type::getFalse();
+                $stmt_type = Type::getFalse($expr_type->from_docblock);
             } elseif ($expr_type->isAlwaysFalsy()) {
-                $stmt_type = Type::getTrue();
+                $stmt_type = Type::getTrue($expr_type->from_docblock);
             }
 
-            $stmt_type->from_docblock = $expr_type->from_docblock;
             $stmt_type->parent_nodes = $expr_type->parent_nodes;
         }
 

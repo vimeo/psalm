@@ -8,12 +8,11 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_map;
-use function array_merge;
-use function array_values;
 use function implode;
 
 /**
  * denotes a template parameter that has been previously specified in a `@template` tag.
+ * @psalm-immutable
  */
 final class TTemplateParam extends Atomic
 {
@@ -37,12 +36,18 @@ final class TTemplateParam extends Atomic
     /**
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $param_name, Union $extends, string $defining_class, array $extra_types = [])
-    {
+    public function __construct(
+        string $param_name,
+        Union $extends,
+        string $defining_class,
+        array $extra_types = [],
+        bool $from_docblock = false
+    ) {
         $this->param_name = $param_name;
         $this->as = $extends;
         $this->defining_class = $defining_class;
         $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
     /**
@@ -132,30 +137,14 @@ final class TTemplateParam extends Atomic
         return $this->param_name . $intersection_types;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_merge([$this->as], array_values($this->extra_types));
+        return ['as', 'extra_types'];
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
-    }
-
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $intersection = $this->replaceIntersectionClassLike($old, $new);
-        $replaced = $this->as->replaceClassLike($old, $new);
-        if (!$intersection && $replaced === $this->as) {
-            return $this;
-        }
-        $cloned = clone $this;
-        $cloned->as = $replaced;
-        $cloned->extra_types = $intersection ?? $this->extra_types;
-        return $cloned;
     }
 
     /**

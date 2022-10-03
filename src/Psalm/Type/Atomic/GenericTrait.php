@@ -20,14 +20,10 @@ use function substr;
 
 /**
  * @template TTypeParams as array<Union>
+ * @psalm-immutable
  */
 trait GenericTrait
 {
-    /**
-     * @var TTypeParams
-     */
-    public array $type_params;
-
     /**
      * @param TTypeParams $type_params
      *
@@ -161,13 +157,6 @@ trait GenericTrait
                 '>' . $extra_types;
     }
 
-    public function __clone()
-    {
-        foreach ($this->type_params as &$type_param) {
-            $type_param = clone $type_param;
-        }
-    }
-
     /**
      * @return TTypeParams|null
      */
@@ -255,7 +244,7 @@ trait GenericTrait
         ?Codebase $codebase
     ): ?array {
         $type_params = $this->type_params;
-        foreach ($type_params as $offset => &$type_param) {
+        foreach ($type_params as $offset => $type_param) {
             $type_param = TemplateInferredTypeReplacer::replace(
                 $type_param,
                 $template_result,
@@ -265,20 +254,10 @@ trait GenericTrait
             if ($this instanceof TArray && $offset === 0 && $type_param->isMixed()) {
                 $type_param = Type::getArrayKey();
             }
+
+            $type_params[$offset] = $type_param;
         }
 
-        return $type_params === $this->type_params ? null : $type_params;
-    }
-
-    /**
-     * @return TTypeParams|null
-     */
-    protected function replaceTypeParamsClassLike(string $old, string $new): ?array
-    {
-        $type_params = $this->type_params;
-        foreach ($type_params as &$type_param) {
-            $type_param = $type_param->replaceClassLike($old, $new);
-        }
         return $type_params === $this->type_params ? null : $type_params;
     }
 }

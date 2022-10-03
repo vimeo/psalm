@@ -57,76 +57,90 @@ class UnsetAnalyzer
                     $statements_analyzer
                 );
 
-                if ($root_var_id && isset($context->vars_in_scope[$root_var_id])) {
-                    $root_type = $context->vars_in_scope[$root_var_id]->getBuilder();
+                $key_type = $statements_analyzer->node_data->getType($var->dim);
+                if ($root_var_id && isset($context->vars_in_scope[$root_var_id]) && $key_type) {
+                    $root_types = [];
 
-                    foreach ($root_type->getAtomicTypes() as $atomic_root_type) {
+                    foreach ($context->vars_in_scope[$root_var_id]->getAtomicTypes() as $atomic_root_type) {
                         if ($atomic_root_type instanceof TKeyedArray) {
-                            if ($var->dim instanceof PhpParser\Node\Scalar\String_
-                                || $var->dim instanceof PhpParser\Node\Scalar\LNumber
-                            ) {
-                                if (isset($atomic_root_type->properties[$var->dim->value])) {
-                                    if ($atomic_root_type->is_list
-                                        && $var->dim->value !== count($atomic_root_type->properties)-1
+                            $key_value = null;
+                            if ($key_type->isSingleIntLiteral()) {
+                                $key_value = $key_type->getSingleIntLiteral()->value;
+                            } elseif ($key_type->isSingleStringLiteral()) {
+                                $key_value = $key_type->getSingleStringLiteral()->value;
+                            }
+                            if ($key_value !== null) {
+                                $properties = $atomic_root_type->properties;
+                                $is_list = $atomic_root_type->is_list;
+                                if (isset($properties[$key_value])) {
+                                    if ($is_list
+                                        && $key_value !== count($properties)-1
                                     ) {
-                                        $atomic_root_type->is_list = false;
+                                        $is_list = false;
                                     }
-                                    unset($atomic_root_type->properties[$var->dim->value]);
-                                    $root_type->bustCache(); //remove id cache
+                                    unset($properties[$key_value]);
                                 }
 
-                                if (!$atomic_root_type->properties) {
+                                if (!$properties) {
                                     if ($atomic_root_type->previous_value_type) {
-                                        $root_type->addType(
+                                        $root_types [] =
                                             new TArray([
                                                 $atomic_root_type->previous_key_type
                                                     ? clone $atomic_root_type->previous_key_type
                                                     : new Union([new TArrayKey]),
                                                 clone $atomic_root_type->previous_value_type,
                                             ])
-                                        );
+                                        ;
                                     } else {
-                                        $root_type->addType(
+                                        $root_types [] =
                                             new TArray([
                                                 new Union([new TNever]),
                                                 new Union([new TNever]),
                                             ])
-                                        );
+                                        ;
                                     }
+                                } else {
+                                    $root_types []= new TKeyedArray(
+                                        $properties,
+                                        null,
+                                        $atomic_root_type->sealed,
+                                        $atomic_root_type->previous_key_type,
+                                        $atomic_root_type->previous_value_type,
+                                        $is_list
+                                    );
                                 }
                             } else {
+                                $properties = [];
                                 foreach ($atomic_root_type->properties as $key => $type) {
-                                    $atomic_root_type->properties[$key] = clone $type;
-                                    $atomic_root_type->properties[$key]->possibly_undefined = true;
+                                    $properties[$key] = clone $type;
+                                    $properties[$key]->possibly_undefined = true;
                                 }
-
-                                $atomic_root_type->sealed = false;
-
-                                $root_type->addType(
-                                    $atomic_root_type->getGenericArrayType(false)
+                                $root_types []= new TKeyedArray(
+                                    $properties,
+                                    null,
+                                    false,
+                                    $atomic_root_type->previous_key_type,
+                                    $atomic_root_type->previous_value_type,
+                                    false,
                                 );
-
-                                $atomic_root_type->is_list = false;
                             }
                         } elseif ($atomic_root_type instanceof TNonEmptyArray) {
-                            $root_type->addType(
-                                new TArray($atomic_root_type->type_params)
-                            );
+                            $root_types []= new TArray($atomic_root_type->type_params);
                         } elseif ($atomic_root_type instanceof TNonEmptyMixed) {
-                            $root_type->addType(
-                                new TMixed()
-                            );
+                            $root_types []= new TMixed();
                         } elseif ($atomic_root_type instanceof TList) {
-                            $root_type->addType(
+                            $root_types []=
                                 new TArray([
                                     Type::getInt(),
                                     $atomic_root_type->type_param
                                 ])
-                            );
+                            ;
+                        } else {
+                            $root_types []= $atomic_root_type;
                         }
                     }
 
-                    $context->vars_in_scope[$root_var_id] = $root_type->freeze();
+                    $context->vars_in_scope[$root_var_id] = new Union($root_types);
 
                     $context->removeVarFromConflictingClauses(
                         $root_var_id,

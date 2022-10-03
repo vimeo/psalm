@@ -5,6 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes the `literal-int` type, where the exact value is unknown but
  * we know that the int is not from user input
+ * @psalm-immutable
  */
 final class TNonspecificLiteralInt extends TInt
 {

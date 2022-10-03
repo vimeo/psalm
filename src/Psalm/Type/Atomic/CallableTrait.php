@@ -9,12 +9,14 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
-use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function count;
 use function implode;
 
+/**
+ * @psalm-immutable
+ */
 trait CallableTrait
 {
     /**
@@ -41,23 +43,14 @@ trait CallableTrait
         string $value = 'callable',
         ?array $params = null,
         ?Union $return_type = null,
-        ?bool $is_pure = null
+        ?bool $is_pure = null,
+        bool $from_docblock = false
     ) {
         $this->value = $value;
         $this->params = $params;
         $this->return_type = $return_type;
         $this->is_pure = $is_pure;
-    }
-
-    public function __clone()
-    {
-        if ($this->params) {
-            foreach ($this->params as &$param) {
-                $param = clone $param;
-            }
-        }
-
-        $this->return_type = $this->return_type ? clone $this->return_type : null;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -205,7 +198,7 @@ trait CallableTrait
         $replaced = false;
         $params = $this->params;
         if ($params) {
-            foreach ($params as $offset => &$param) {
+            foreach ($params as $offset => $param) {
                 if (!$param->type) {
                     continue;
                 }
@@ -233,7 +226,7 @@ trait CallableTrait
                     $depth
                 ));
                 $replaced = $replaced || $new_param !== $param;
-                $param = $new_param;
+                $params[$offset] = $new_param;
             }
         }
 
@@ -274,7 +267,7 @@ trait CallableTrait
 
         $params = $this->params;
         if ($params) {
-            foreach ($params as &$param) {
+            foreach ($params as $k => $param) {
                 if ($param->type) {
                     $new_param = $param->replaceType(TemplateInferredTypeReplacer::replace(
                         $param->type,
@@ -282,7 +275,7 @@ trait CallableTrait
                         $codebase
                     ));
                     $replaced = $replaced || $new_param !== $param;
-                    $param = $new_param;
+                    $params[$k] = $new_param;
                 }
             }
         }
@@ -303,53 +296,10 @@ trait CallableTrait
     }
 
     /**
-     * @return array{list<FunctionLikeParameter>|null, Union|null}|null
+     * @return list<string>
      */
-    protected function replaceCallableClassLike(string $old, string $new): ?array
+    protected function getCallableChildNodeKeys(): array
     {
-        $replaced = false;
-
-        $params = $this->params;
-        if ($params) {
-            foreach ($params as &$param) {
-                if ($param->type) {
-                    $new_param = $param->replaceType($param->type->replaceClassLike($old, $new));
-                    $replaced = $replaced || $new_param !== $param;
-                    $param = $new_param;
-                }
-            }
-        }
-
-        $return_type = $this->return_type;
-        if ($return_type) {
-            $return_type = $return_type->replaceClassLike($old, $new);
-            $replaced = $replaced || $return_type !== $this->return_type;
-        }
-        if ($replaced) {
-            return [$params, $return_type];
-        }
-        return null;
-    }
-
-    /**
-     * @return list<TypeNode>
-     */
-    protected function getCallableChildNodes(): array
-    {
-        $child_nodes = [];
-
-        if ($this->params) {
-            foreach ($this->params as $param) {
-                if ($param->type) {
-                    $child_nodes[] = $param->type;
-                }
-            }
-        }
-
-        if ($this->return_type) {
-            $child_nodes[] = $this->return_type;
-        }
-
-        return $child_nodes;
+        return ['params', 'return_type'];
     }
 }

@@ -623,7 +623,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 /**
                  * @var TClosure
                  */
-                $closure_atomic = $function_type->getSingleAtomic();
+                $closure_atomic = clone $function_type->getSingleAtomic();
 
                 if (($storage->return_type === $storage->signature_return_type)
                     && (!$storage->return_type
@@ -634,10 +634,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $storage->return_type
                         ))
                 ) {
+                    /** @psalm-suppress InaccessibleProperty Acting on clone */
                     $closure_atomic->return_type = $closure_return_type;
                 }
 
+                /** @psalm-suppress InaccessibleProperty Acting on clone */
                 $closure_atomic->is_pure = !$this->inferred_impure;
+
+                $statements_analyzer->node_data->setType($this->function, new Union([$closure_atomic]));
             }
         }
 

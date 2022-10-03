@@ -4,9 +4,10 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
-final class FunctionLikeParameter implements HasAttributesInterface
+final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 {
     use CustomMetadataTrait;
 
@@ -111,6 +112,7 @@ final class FunctionLikeParameter implements HasAttributesInterface
     public $description;
 
     /**
+     * @psalm-external-mutation-free
      * @param Union|UnresolvedConstantComponent|null $default_type
      */
     public function __construct(
@@ -140,6 +142,7 @@ final class FunctionLikeParameter implements HasAttributesInterface
         $this->out_type = $out_type;
     }
 
+    /** @psalm-mutation-free */
     public function getId(): string
     {
         return ($this->type ? $this->type->getId() : 'mixed')
@@ -147,6 +150,7 @@ final class FunctionLikeParameter implements HasAttributesInterface
             . ($this->is_optional ? '=' : '');
     }
 
+    /** @psalm-mutation-free */
     public function replaceType(Union $type): self
     {
         if ($this->type === $type) {
@@ -157,14 +161,18 @@ final class FunctionLikeParameter implements HasAttributesInterface
         return $cloned;
     }
 
-    public function __clone()
+    /** @psalm-mutation-free */
+    public function getChildNodeKeys(): array
     {
-        if ($this->type) {
-            $this->type = clone $this->type;
+        $result = ['type', 'signature_type', 'out_type'];
+        if ($this->default_type instanceof Union) {
+            $result []= 'default_type';
         }
+        return $result;
     }
 
     /**
+     * @psalm-mutation-free
      * @return list<AttributeStorage>
      */
     public function getAttributeStorages(): array

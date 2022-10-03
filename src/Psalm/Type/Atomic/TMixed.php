@@ -7,15 +7,17 @@ use Psalm\Type\Atomic;
 /**
  * Denotes the `mixed` type, used when you don’t know the type of an expression.
  *
+ * @psalm-immutable
  */
 class TMixed extends Atomic
 {
     /** @var bool */
     public $from_loop_isset = false;
 
-    public function __construct(bool $from_loop_isset = false)
+    public function __construct(bool $from_loop_isset = false, bool $from_docblock = false)
     {
         $this->from_loop_isset = $from_loop_isset;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

@@ -15,15 +15,17 @@ use function count;
 
 /**
  * Represents a value of an array or enum.
+ * @psalm-immutable
  */
 final class TValueOf extends Atomic
 {
     /** @var Union */
     public $type;
 
-    public function __construct(Union $type)
+    public function __construct(Union $type, bool $from_docblock = false)
     {
         $this->type = $type;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

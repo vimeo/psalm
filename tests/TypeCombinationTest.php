@@ -24,6 +24,7 @@ class TypeCombinationTest extends TestCase
 
         foreach ($types as $type) {
             $converted_type = self::getAtomic($type);
+            /** @psalm-suppress InaccessibleProperty */
             $converted_type->from_docblock = true;
             $converted_types[] = $converted_type;
         }

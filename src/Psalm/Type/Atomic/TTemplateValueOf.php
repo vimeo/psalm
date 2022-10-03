@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TValueOf when the type of the array or enum is a template
+ * @psalm-immutable
  */
 final class TTemplateValueOf extends Atomic
 {
@@ -31,11 +32,13 @@ final class TTemplateValueOf extends Atomic
     public function __construct(
         string $param_name,
         string $defining_class,
-        Union $as
+        Union $as,
+        bool $from_docblock = false
     ) {
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
         $this->as = $as;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

@@ -3,6 +3,7 @@
 namespace Psalm\Type;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -196,13 +197,24 @@ final class Union implements TypeNode, Stringable
      */
     public $different = false;
 
+    /**
+     * @psalm-mutation-free
+     * @param non-empty-array<Atomic>  $types
+     */
+    public function setTypes(array $types): self
+    {
+        if ($types === $this->types) {
+            return $this;
+        }
+        return $this->getBuilder()->setTypes($types)->freeze();
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
     public function getBuilder(): MutableUnion
     {
-        $types = [];
-        foreach ($this->getAtomicTypes() as $type) {
-            $types []= clone $type;
-        }
-        $union = new MutableUnion($types);
+        $union = new MutableUnion($this->getAtomicTypes());
         foreach (get_object_vars($this) as $key => $value) {
             if ($key === 'types') {
                 continue;
@@ -230,12 +242,13 @@ final class Union implements TypeNode, Stringable
         return $union;
     }
 
-    public function replaceClassLike(string $old, string $new): self
+    /**
+     * @psalm-mutation-free
+     */
+    public function setFromDocblock(bool $fromDocblock = true): self
     {
-        $types = $this->types;
-        foreach ($types as &$atomic_type) {
-            $atomic_type = $atomic_type->replaceClassLike($old, $new);
-        }
-        return $types === $this->types ? $this : $this->getBuilder()->setTypes($types)->freeze();
+        $cloned = clone $this;
+        (new FromDocblockSetter($fromDocblock))->traverse($cloned);
+        return $cloned;
     }
 }

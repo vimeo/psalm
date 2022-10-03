@@ -4,15 +4,17 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes a floating point value where the exact numeric value is known.
+ * @psalm-immutable
  */
 final class TLiteralFloat extends TFloat
 {
     /** @var float */
     public $value;
 
-    public function __construct(float $value)
+    public function __construct(float $value, bool $from_docblock = false)
     {
         $this->value = $value;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

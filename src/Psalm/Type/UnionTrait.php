@@ -5,9 +5,9 @@ namespace Psalm\Type;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
-use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
@@ -54,12 +54,12 @@ trait UnionTrait
     /**
      * Constructs an Union instance
      *
+     * @psalm-external-mutation-free
+     *
      * @param non-empty-array<Atomic>     $types
      */
-    public function __construct(array $types)
+    public function __construct(array $types, bool $from_docblock = false)
     {
-        $from_docblock = false;
-
         $keyed_types = [];
 
         foreach ($types as $type) {
@@ -86,30 +86,6 @@ trait UnionTrait
         $this->from_docblock = $from_docblock;
     }
 
-    public function __clone()
-    {
-        $this->literal_string_types = [];
-        $this->literal_int_types = [];
-        $this->literal_float_types = [];
-        $this->typed_class_strings = [];
-
-        foreach ($this->types as $key => &$type) {
-            $type = clone $type;
-
-            if ($type instanceof TLiteralInt) {
-                $this->literal_int_types[$key] = $type;
-            } elseif ($type instanceof TLiteralString) {
-                $this->literal_string_types[$key] = $type;
-            } elseif ($type instanceof TLiteralFloat) {
-                $this->literal_float_types[$key] = $type;
-            } elseif ($type instanceof TClassString
-                && ($type->as_type || $type instanceof TTemplateParamClass)
-            ) {
-                $this->typed_class_strings[$key] = $type;
-            }
-        }
-    }
-
     /**
      * @psalm-mutation-free
      * @return non-empty-array<string, Atomic>
@@ -119,6 +95,9 @@ trait UnionTrait
         return $this->types;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __toString(): string
     {
         $types = [];
@@ -155,6 +134,9 @@ trait UnionTrait
         return implode('|', $types);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getKey(): string
     {
         $types = [];
@@ -194,12 +176,9 @@ trait UnionTrait
         return implode('|', $types);
     }
 
-    public function bustCache(): void
-    {
-        $this->id = null;
-        $this->exact_id = null;
-    }
-
+    /**
+     * @psalm-mutation-free
+     */
     public function getId(bool $exact = true): string
     {
         if ($exact && $this->exact_id) {
@@ -226,8 +205,10 @@ trait UnionTrait
         $id = implode('|', $types);
 
         if ($exact) {
+            /** @psalm-suppress ImpurePropertyAssignment Cache */
             $this->exact_id = $id;
         } else {
+            /** @psalm-suppress ImpurePropertyAssignment Cache */
             $this->id = $id;
         }
 
@@ -236,7 +217,7 @@ trait UnionTrait
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
+     * @psalm-mutation-free
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -285,6 +266,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @param  array<lowercase-string, string> $aliased_classes
      */
     public function toPhpString(
@@ -356,6 +338,9 @@ trait UnionTrait
         return implode('|', array_unique($php_types));
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         if (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 8_00_00) {
@@ -378,31 +363,49 @@ trait UnionTrait
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasType(string $type_string): bool
     {
         return isset($this->types[$type_string]);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasArray(): bool
     {
         return isset($this->types['array']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasIterable(): bool
     {
         return isset($this->types['iterable']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasList(): bool
     {
         return isset($this->types['array']) && $this->types['array'] instanceof TList;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasClassStringMap(): bool
     {
         return isset($this->types['array']) && $this->types['array'] instanceof TClassStringMap;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isTemplatedClassString(): bool
     {
         return $this->isSingle()
@@ -414,6 +417,9 @@ trait UnionTrait
             ) === 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasArrayAccessInterface(Codebase $codebase): bool
     {
         return (bool)array_filter(
@@ -422,12 +428,16 @@ trait UnionTrait
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasCallableType(): bool
     {
         return $this->getCallableTypes() || $this->getClosureTypes();
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, TCallable>
      */
     public function getCallableTypes(): array
@@ -439,6 +449,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, TClosure>
      */
     public function getClosureTypes(): array
@@ -449,11 +460,17 @@ trait UnionTrait
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasObject(): bool
     {
         return isset($this->types['object']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasObjectType(): bool
     {
         foreach ($this->types as $type) {
@@ -465,6 +482,9 @@ trait UnionTrait
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isObjectType(): bool
     {
         foreach ($this->types as $type) {
@@ -476,6 +496,9 @@ trait UnionTrait
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasNamedObjectType(): bool
     {
         foreach ($this->types as $type) {
@@ -487,6 +510,9 @@ trait UnionTrait
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isStaticObject(): bool
     {
         foreach ($this->types as $type) {
@@ -500,6 +526,9 @@ trait UnionTrait
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasStaticObject(): bool
     {
         foreach ($this->types as $type) {
@@ -513,6 +542,9 @@ trait UnionTrait
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isNullable(): bool
     {
         if (isset($this->types['null'])) {
@@ -528,6 +560,9 @@ trait UnionTrait
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isFalsable(): bool
     {
         if (isset($this->types['false'])) {
@@ -543,11 +578,17 @@ trait UnionTrait
         return false;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasBool(): bool
     {
         return isset($this->types['bool']) || isset($this->types['false']) || isset($this->types['true']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasString(): bool
     {
         return isset($this->types['string'])
@@ -560,6 +601,9 @@ trait UnionTrait
             || $this->typed_class_strings;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasLowercaseString(): bool
     {
         return isset($this->types['string'])
@@ -567,37 +611,58 @@ trait UnionTrait
                 || $this->types['string'] instanceof TNonEmptyLowercaseString);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasLiteralClassString(): bool
     {
         return count($this->typed_class_strings) > 0;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasInt(): bool
     {
         return isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types
             || array_filter($this->types, static fn(Atomic $type): bool => $type instanceof TIntRange);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasArrayKey(): bool
     {
         return isset($this->types['array-key']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasFloat(): bool
     {
         return isset($this->types['float']) || $this->literal_float_types;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasScalar(): bool
     {
         return isset($this->types['scalar']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasNumeric(): bool
     {
         return isset($this->types['numeric']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasScalarType(): bool
     {
         return isset($this->types['int'])
@@ -616,6 +681,9 @@ trait UnionTrait
             || $this->typed_class_strings;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasTemplate(): bool
     {
         return (bool) array_filter(
@@ -631,6 +699,9 @@ trait UnionTrait
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasConditional(): bool
     {
         return (bool) array_filter(
@@ -639,6 +710,9 @@ trait UnionTrait
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasTemplateOrStatic(): bool
     {
         return (bool) array_filter(
@@ -657,16 +731,25 @@ trait UnionTrait
         );
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasMixed(): bool
     {
         return isset($this->types['mixed']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isMixed(): bool
     {
         return isset($this->types['mixed']) && count($this->types) === 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isEmptyMixed(): bool
     {
         return isset($this->types['mixed'])
@@ -674,6 +757,9 @@ trait UnionTrait
             && count($this->types) === 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isVanillaMixed(): bool
     {
         return isset($this->types['mixed'])
@@ -682,21 +768,33 @@ trait UnionTrait
             && count($this->types) === 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isArrayKey(): bool
     {
         return isset($this->types['array-key']) && count($this->types) === 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isNull(): bool
     {
         return count($this->types) === 1 && isset($this->types['null']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isFalse(): bool
     {
         return count($this->types) === 1 && isset($this->types['false']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isAlwaysFalsy(): bool
     {
         foreach ($this->getAtomicTypes() as $atomic_type) {
@@ -708,11 +806,17 @@ trait UnionTrait
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isTrue(): bool
     {
         return count($this->types) === 1 && isset($this->types['true']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isAlwaysTruthy(): bool
     {
         if ($this->possibly_undefined || $this->possibly_undefined_from_try) {
@@ -728,16 +832,25 @@ trait UnionTrait
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isVoid(): bool
     {
         return isset($this->types['void']) && count($this->types) === 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isNever(): bool
     {
         return isset($this->types['never']) && count($this->types) === 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isGenerator(): bool
     {
         return count($this->types) === 1
@@ -745,6 +858,9 @@ trait UnionTrait
             && ($single_type->value === 'Generator');
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isSingle(): bool
     {
         $type_count = count($this->types);
@@ -767,6 +883,9 @@ trait UnionTrait
         return $type_count === 1;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isSingleAndMaybeNullable(): bool
     {
         $is_nullable = isset($this->types['null']);
@@ -796,6 +915,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return bool true if this is an int
      */
     public function isInt(bool $check_templates = false): bool
@@ -813,6 +933,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return bool true if this is a float
      */
     public function isFloat(): bool
@@ -825,6 +946,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return bool true if this is a string
      */
     public function isString(bool $check_templates = false): bool
@@ -842,6 +964,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return bool true if this is a boolean
      */
     public function isBool(): bool
@@ -854,6 +977,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return bool true if this is an array
      */
     public function isArray(): bool
@@ -866,6 +990,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return bool true if this is a string literal with only one possible value
      */
     public function isSingleStringLiteral(): bool
@@ -875,7 +1000,7 @@ trait UnionTrait
 
     /**
      * @throws InvalidArgumentException if isSingleStringLiteral is false
-     *
+     * @psalm-mutation-free
      * @return TLiteralString the only string literal represented by this union type
      */
     public function getSingleStringLiteral(): TLiteralString
@@ -887,6 +1012,9 @@ trait UnionTrait
         return reset($this->literal_string_types);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allStringLiterals(): bool
     {
         foreach ($this->types as $atomic_key_type) {
@@ -898,6 +1026,9 @@ trait UnionTrait
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allIntLiterals(): bool
     {
         foreach ($this->types as $atomic_key_type) {
@@ -909,6 +1040,9 @@ trait UnionTrait
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function allFloatLiterals(): bool
     {
         foreach ($this->types as $atomic_key_type) {
@@ -921,6 +1055,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @psalm-assert-if-true array<
      *     array-key,
      *     TLiteralString|TLiteralInt|TLiteralFloat|TFalse|TTrue
@@ -943,6 +1078,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @psalm-assert-if-true array<
      *     array-key,
      *     TLiteralString|TLiteralInt|TLiteralFloat|TNonspecificLiteralString|TNonSpecificLiteralInt|TFalse|TTrue
@@ -966,6 +1102,9 @@ trait UnionTrait
         return true;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasLiteralValue(): bool
     {
         return $this->literal_int_types
@@ -975,6 +1114,9 @@ trait UnionTrait
             || isset($this->types['true']);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isSingleLiteral(): bool
     {
         return count($this->types) === 1
@@ -985,6 +1127,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return TLiteralInt|TLiteralString|TLiteralFloat
      */
     public function getSingleLiteral()
@@ -1001,17 +1144,24 @@ trait UnionTrait
         ;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasLiteralString(): bool
     {
         return count($this->literal_string_types) > 0;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasLiteralInt(): bool
     {
         return count($this->literal_int_types) > 0;
     }
 
     /**
+     * @psalm-mutation-free
      * @return bool true if this is a int literal with only one possible value
      */
     public function isSingleIntLiteral(): bool
@@ -1021,7 +1171,7 @@ trait UnionTrait
 
     /**
      * @throws InvalidArgumentException if isSingleIntLiteral is false
-     *
+     * @psalm-mutation-free
      * @return TLiteralInt the only int literal represented by this union type
      */
     public function getSingleIntLiteral(): TLiteralInt
@@ -1036,7 +1186,6 @@ trait UnionTrait
     /**
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
-     *
      */
     public function check(
         StatementsSource $source,
@@ -1072,7 +1221,6 @@ trait UnionTrait
 
     /**
      * @param  array<string, mixed> $phantom_classes
-     *
      */
     public function queueClassLikesForScanning(
         Codebase $codebase,
@@ -1090,6 +1238,7 @@ trait UnionTrait
 
     /**
      * @param  lowercase-string $fq_class_like_name
+     * @psalm-mutation-free
      */
     public function containsClassLike(string $fq_class_like_name): bool
     {
@@ -1100,6 +1249,20 @@ trait UnionTrait
         return $classlike_visitor->matches();
     }
 
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
+    {
+        $type = $this;
+        (new ClasslikeReplacer(
+            $old,
+            $new
+        ))->traverse($type);
+        return $type;
+    }
+
+    /** @psalm-mutation-free */
     public function containsAnyLiteral(): bool
     {
         $literal_visitor = new ContainsLiteralVisitor();
@@ -1110,6 +1273,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return list<TTemplateParam>
      */
     public function getTemplateTypes(): array
@@ -1121,13 +1285,9 @@ trait UnionTrait
         return $template_type_collector->getTemplateTypes();
     }
 
-    public function setFromDocblock(): void
-    {
-        $this->from_docblock = true;
-
-        (new FromDocblockSetter())->traverseArray($this->types);
-    }
-
+    /**
+     * @psalm-mutation-free
+     */
     public function equals(self $other_type, bool $ensure_source_equality = true): bool
     {
         if ($other_type === $this) {
@@ -1194,6 +1354,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, TLiteralString>
      */
     public function getLiteralStrings(): array
@@ -1202,6 +1363,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, TLiteralInt>
      */
     public function getLiteralInts(): array
@@ -1210,6 +1372,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, TIntRange>
      */
     public function getRangeInts(): array
@@ -1225,6 +1388,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, TLiteralFloat>
      */
     public function getLiteralFloats(): array
@@ -1233,14 +1397,16 @@ trait UnionTrait
     }
 
     /**
-     * @return array<string, Atomic>
+     * @psalm-mutation-free
+     * @return list<string>
      */
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return $this->types;
+        return ['types'];
     }
 
     /**
+     * @psalm-mutation-free
      * @return bool true if this is a float literal with only one possible value
      */
     public function isSingleFloatLiteral(): bool
@@ -1249,6 +1415,7 @@ trait UnionTrait
     }
 
     /**
+     * @psalm-mutation-free
      * @throws InvalidArgumentException if isSingleFloatLiteral is false
      *
      * @return TLiteralFloat the only float literal represented by this union type
@@ -1262,16 +1429,25 @@ trait UnionTrait
         return reset($this->literal_float_types);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function hasLiteralFloat(): bool
     {
         return count($this->literal_float_types) > 0;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getSingleAtomic(): Atomic
     {
         return reset($this->types);
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isEmptyArray(): bool
     {
         return count($this->types) === 1
@@ -1280,6 +1456,9 @@ trait UnionTrait
             && $this->types['array']->isEmptyArray();
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function isUnionEmpty(): bool
     {
         return $this->types === [];

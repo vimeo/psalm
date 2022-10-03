@@ -10,6 +10,7 @@ use Psalm\Type\Atomic;
  *
  * @psalm-type TokenName = 'properties-of'|'public-properties-of'|'protected-properties-of'|'private-properties-of'
  *
+ * @psalm-immutable
  */
 final class TPropertiesOf extends Atomic
 {
@@ -20,10 +21,7 @@ final class TPropertiesOf extends Atomic
     public const VISIBILITY_PROTECTED = 2;
     public const VISIBILITY_PRIVATE = 3;
 
-    /**
-     * @var TNamedObject
-     */
-    public $classlike_type;
+    public TNamedObject $classlike_type;
     /**
      * @var self::VISIBILITY_*|null
      */
@@ -47,10 +45,12 @@ final class TPropertiesOf extends Atomic
      */
     public function __construct(
         TNamedObject $classlike_type,
-        ?int $visibility_filter
+        ?int $visibility_filter,
+        bool $from_docblock = false
     ) {
         $this->classlike_type = $classlike_type;
         $this->visibility_filter = $visibility_filter;
+        $this->from_docblock = $from_docblock;
     }
 
     /**
@@ -72,6 +72,7 @@ final class TPropertiesOf extends Atomic
     }
 
     /**
+     * @psalm-pure
      * @return TokenName
      */
     public static function tokenNameForFilter(?int $visibility_filter): string
@@ -88,19 +89,9 @@ final class TPropertiesOf extends Atomic
         }
     }
 
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
+    public function getChildNodeKeys(): array
     {
-        $replaced = $this->classlike_type->replaceClassLike($old, $new);
-        if ($replaced === $this->classlike_type) {
-            return $this;
-        }
-        return new static(
-            $replaced,
-            $this->visibility_filter
-        );
+        return ['classlike_type'];
     }
 
     public function getKey(bool $include_extra = true): string

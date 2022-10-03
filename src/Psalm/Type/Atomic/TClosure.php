@@ -10,10 +10,10 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_merge;
-use function strtolower;
 
 /**
  * Represents a closure where we know the return type and params
+ * @psalm-immutable
  */
 final class TClosure extends TNamedObject
 {
@@ -33,7 +33,8 @@ final class TClosure extends TNamedObject
         ?Union $return_type = null,
         ?bool $is_pure = null,
         array $byref_uses = [],
-        array $extra_types = []
+        array $extra_types = [],
+        bool $from_docblock = false
     ) {
         $this->value = $value;
         $this->params = $params;
@@ -41,33 +42,13 @@ final class TClosure extends TNamedObject
         $this->is_pure = $is_pure;
         $this->byref_uses = $byref_uses;
         $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
-
-    /**
-     * @return static
-     */
-    public function replaceClassLike(string $old, string $new): self
-    {
-        $replaced = $this->replaceCallableClassLike($old, $new);
-        $intersection = $this->replaceIntersectionClassLike($old, $new);
-        if (!$replaced && !$intersection) {
-            return $this;
-        }
-        return new static(
-            strtolower($this->value) === $old ? $new : $this->value,
-            $replaced[0] ?? $this->params,
-            $replaced[1] ?? $this->return_type,
-            $this->is_pure,
-            $this->byref_uses,
-            $intersection ?? $this->extra_types
-        );
-    }
-
 
     /**
      * @return static
@@ -143,8 +124,8 @@ final class TClosure extends TNamedObject
         );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return array_merge(parent::getChildNodes(), $this->getCallableChildNodes());
+        return array_merge(parent::getChildNodeKeys(), $this->getCallableChildNodeKeys());
     }
 }

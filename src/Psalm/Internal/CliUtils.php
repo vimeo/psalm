@@ -12,6 +12,7 @@ use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Report;
+use RuntimeException;
 
 use function array_slice;
 use function assert;
@@ -30,6 +31,7 @@ use function is_array;
 use function is_dir;
 use function is_string;
 use function json_decode;
+use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -298,6 +300,9 @@ final class CliUtils
             stream_set_blocking(STDIN, false);
             if ($stdin = fgets(STDIN)) {
                 $filtered_input_paths = preg_split('/\s+/', trim($stdin));
+                if ($filtered_input_paths === false) {
+                    throw new RuntimeException('Invalid paths: '.preg_last_error_msg());
+                }
             }
             $blocked = $meta['blocked'];
             stream_set_blocking(STDIN, $blocked);
