@@ -62,6 +62,9 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Atomic\TNonPositiveInt;
+use Psalm\Type\Atomic\TNegativeInt;
+use Psalm\Type\Atomic\TNonNegativeInt;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
@@ -229,6 +232,15 @@ abstract class Atomic implements TypeNode
 
             case 'positive-int':
                 return new TPositiveInt();
+            
+            case 'non-positive-int':
+                return new TNonPositiveInt();
+
+            case 'negative-int':
+                return new TNegativeInt();
+
+            case 'non-negative-int':
+                return new TNonNegativeInt();
 
             case 'numeric':
                 return $php_version !== null ? new TNamedObject($value) : new TNumeric();
@@ -717,6 +729,18 @@ abstract class Atomic implements TypeNode
         }
 
         if ($this instanceof TPositiveInt) {
+            return true;
+        }
+
+        if ($this instanceof TNonPositiveInt) {
+            return true;
+        }
+
+        if ($this instanceof TNegativeInt) {
+            return true;
+        }
+
+        if ($this instanceof TNonNegativeInt) {
             return true;
         }
 
