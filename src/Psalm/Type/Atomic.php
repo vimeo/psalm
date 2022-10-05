@@ -229,6 +229,15 @@ abstract class Atomic implements TypeNode
 
             case 'positive-int':
                 return new TPositiveInt();
+            
+            case 'non-positive-int':
+                return new TIntRange(null, 0);
+
+            case 'negative-int':
+                return new TIntRange(null, -1);
+
+            case 'non-negative-int':
+                return new TIntRange(0, null);
 
             case 'numeric':
                 return $php_version !== null ? new TNamedObject($value) : new TNumeric();
