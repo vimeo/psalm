@@ -45,7 +45,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNegativeInt;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
@@ -55,8 +54,6 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
-use Psalm\Type\Atomic\TNonNegativeInt;
-use Psalm\Type\Atomic\TNonPositiveInt;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
@@ -234,13 +231,13 @@ abstract class Atomic implements TypeNode
                 return new TPositiveInt();
             
             case 'non-positive-int':
-                return new TNonPositiveInt();
+                return new TIntRange(null, -1);
 
             case 'negative-int':
-                return new TNegativeInt();
+                return new TIntRange(null, -1);
 
             case 'non-negative-int':
-                return new TNonNegativeInt();
+                return new TPositiveInt();
 
             case 'numeric':
                 return $php_version !== null ? new TNamedObject($value) : new TNumeric();
@@ -729,18 +726,6 @@ abstract class Atomic implements TypeNode
         }
 
         if ($this instanceof TPositiveInt) {
-            return true;
-        }
-
-        if ($this instanceof TNonPositiveInt) {
-            return true;
-        }
-
-        if ($this instanceof TNegativeInt) {
-            return true;
-        }
-
-        if ($this instanceof TNonNegativeInt) {
             return true;
         }
 
