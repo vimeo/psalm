@@ -270,8 +270,8 @@ return [
         'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
     ],
     'imap_delete' => [
-        'old' => ['bool', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
-        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+        'old' => ['bool', 'imap'=>'resource', 'message_nums'=>'string', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'flags='=>'int'],
     ],
     'imap_deletemailbox' => [
         'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string'],
@@ -450,8 +450,8 @@ return [
         'new' => ['int|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int'],
     ],
     'imap_undelete' => [
-        'old' => ['bool', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
-        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+        'old' => ['bool', 'imap'=>'resource', 'message_nums'=>'string', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'flags='=>'int'],
     ],
     'imap_unsubscribe' => [
         'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string'],
