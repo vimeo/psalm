@@ -508,6 +508,16 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $member_stmts[] = $stmt;
 
                 foreach ($stmt->consts as $const) {
+                    if ($const->name->toLowerString() === 'class') {
+                        IssueBuffer::maybeAdd(
+                            new ReservedWord(
+                                'A class constant cannot be named \'class\'',
+                                new CodeLocation($this, $this->class),
+                                $this->fq_class_name
+                            )
+                        );
+                    }
+                    
                     $const_id = strtolower($this->fq_class_name) . '::' . $const->name;
 
                     foreach ($codebase->class_constants_to_rename as $original_const_id => $new_const_name) {
