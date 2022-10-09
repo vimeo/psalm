@@ -226,8 +226,8 @@ return [
       'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'array{seed:scalar}'],
     ],
     'hash_file' => [
-      'old' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool'],
-      'new' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'array{seed:scalar}'],
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'array{seed:scalar}'],
     ],
     'hash_init' => [
       'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],

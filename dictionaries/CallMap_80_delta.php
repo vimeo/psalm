@@ -386,7 +386,7 @@ return [
       'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
     ],
     'hash_hmac' => [
-      'old' => ['string|false', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
       'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
     ],
     'hash_init' => [
