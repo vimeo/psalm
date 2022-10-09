@@ -222,16 +222,16 @@ return [
       'new' => ['mixed|false', 'ftp' => 'FTP\Connection', 'option' => 'int'],
     ],
     'hash' => [
-      'old' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
-      'new' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'array'],
+      'old' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'array{seed:scalar}'],
     ],
     'hash_file' => [
-      'old' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool'],
-      'new' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'array'],
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'array{seed:scalar}'],
     ],
     'hash_init' => [
       'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
-      'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array'],
+      'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array{seed:scalar}'],
     ],
     'imageinterlace' => [
       'old' => ['int|bool', 'image'=>'GdImage', 'enable='=>'bool|null'],

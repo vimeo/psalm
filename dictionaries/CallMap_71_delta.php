@@ -21,7 +21,7 @@ return [
     'curl_share_errno' => ['int|false', 'sh'=>'resource'],
     'curl_share_strerror' => ['?string', 'error_code'=>'int'],
     'getenv\'1' => ['array<string,string>'],
-    'hash_hkdf' => ['string|false', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
+    'hash_hkdf' => ['non-empty-string|false', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
     'is_iterable' => ['bool', 'value'=>'mixed'],
     'openssl_get_curve_names' => ['list<string>'],
     'pcntl_async_signals' => ['bool', 'enable='=>'bool'],

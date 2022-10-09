@@ -381,9 +381,21 @@ return [
       'old' => ['string|false', 'format'=>'string', 'timestamp='=>'int'],
       'new' => ['string|false', 'format'=>'string', 'timestamp='=>'?int'],
     ],
+    'hash' => [
+      'old' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
+    ],
+    'hash_hmac' => [
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
+    ],
     'hash_init' => [
       'old' => ['HashContext|false', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
       'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
+    ],
+    'hash_hkdf' => [
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
     ],
     'hash_update_file' => [
       'old' => ['bool', 'context'=>'HashContext', 'filename'=>'string', 'stream_context='=>'resource'],
