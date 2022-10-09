@@ -393,6 +393,10 @@ return [
       'old' => ['HashContext|false', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
       'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
     ],
+    'hash_hkdf' => [
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
+    ],
     'hash_update_file' => [
       'old' => ['bool', 'context'=>'HashContext', 'filename'=>'string', 'stream_context='=>'resource'],
       'new' => ['bool', 'context'=>'HashContext', 'filename'=>'string', 'stream_context='=>'?resource'],
