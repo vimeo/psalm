@@ -273,9 +273,15 @@ class Redis {
 
     public function move(string $key, int $index): bool;
 
-    public function mset(array $key_values): Redis|bool;
+    /**
+     * @param array<string, string>
+     */
+    public function mset($key_values): Redis|bool;
 
-    public function msetnx(array $key_values): Redis|bool;
+    /**
+     * @param array<string, string>
+     */
+    public function msetnx($key_values): Redis|bool;
 
     public function multi(int $value = Redis::MULTI): bool|Redis;
 
@@ -382,7 +388,7 @@ public function persist(string $key): bool;
     public function select(int $db): bool;
 
     /** @return bool|Redis */
-    public function set(string $key, mixed $value, mixed $opt = NULL);
+    public function set(string $key, string $value, mixed $opt = NULL);
 
 	/** @return false|int|Redis */
     public function setBit(string $key, int $idx, bool $value);
@@ -394,10 +400,10 @@ public function persist(string $key): bool;
     public function setOption(int $option, mixed $value): bool;
 
     /** @return bool|Redis */
-    public function setex(string $key, int $expire, mixed $value);
+    public function setex(string $key, int $expire, string $value);
 
 	/** @return bool|array|Redis */
-    public function setnx(string $key, mixed $value);
+    public function setnx(string $key, string $value);
 
     public function sismember(string $key, mixed $value): Redis|bool;
 
