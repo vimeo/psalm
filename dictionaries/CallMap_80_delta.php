@@ -383,7 +383,7 @@ return [
     ],
     'hash' => [
       'old' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
-      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'array'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
     ],
     'hash_hmac' => [
       'old' => ['string|false', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
