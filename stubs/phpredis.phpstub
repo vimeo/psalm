@@ -32,7 +32,7 @@ class Redis {
     public function acl(string $subcmd, ...$args);
 
 	/** @return false|int|Redis */
-    public function append(string $key, mixed $value);
+    public function append(string $key, string $value);
 
     public function auth(mixed $credentials): bool;
 
@@ -169,7 +169,7 @@ class Redis {
     public function getReadTimeout(): int;
 
 	/** @return false|string|Redis */
-    public function getset(string $key, mixed $value);
+    public function getset(string $key, string $value);
 
     public function getTimeout(): int;
 
@@ -193,7 +193,7 @@ class Redis {
 
     public function hMset(string $key, array $keyvals): Redis|bool|false;
 
-    public function hSet(string $key, string $member, mixed $value): Redis|int|false;
+    public function hSet(string $key, string $member, string $value): Redis|int|false;
 
     public function hSetNx(string $key, string $member, string $value): Redis|bool;
 
@@ -246,12 +246,12 @@ class Redis {
     public function rPush(string $key, ...$elements);
 
 	/** @return false|int|Redis */
-    public function lPushx(string $key, mixed $value);
+    public function lPushx(string $key, string $value);
 
 	/** @return false|int|Redis */
-    public function rPushx(string $key, mixed $value);
+    public function rPushx(string $key, string $value);
 
-    public function lSet(string $key, int $index, mixed $value): Redis|bool;
+    public function lSet(string $key, int $index, string $value): Redis|bool;
 
     public function lastSave(): int;
 
@@ -262,7 +262,7 @@ class Redis {
     /**
      * @return int|Redis|false
      */
-    public function lrem(string $key, mixed $value, int $count = 0);
+    public function lrem(string $key, string $value, int $count = 0);
 
     public function ltrim(string $key, int $start , int $end): Redis|bool;
 
@@ -319,7 +319,7 @@ public function persist(string $key): bool;
     public function popen(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
     /** @return bool|Redis */
-    public function psetex(string $key, int $expire, mixed $value);
+    public function psetex(string $key, int $expire, string $value);
 
     public function psubscribe(array $patterns): void;
 
@@ -351,7 +351,7 @@ public function persist(string $key): bool;
 
     public function rpoplpush(string $src, string $dst): Redis|string|false;
 
-    public function sAdd(string $key, mixed $value, mixed ...$other_values): Redis|int|false;
+    public function sAdd(string $key, string $value, mixed ...$other_values): Redis|int|false;
 
     public function sAddArray(string $key, array $values): int;
 
@@ -367,7 +367,7 @@ public function persist(string $key): bool;
 
     public function sMisMember(string $key, string $member, string ...$other_members): array|false;
 
-    public function sMove(string $src, string $dst, mixed $value): Redis|bool;
+    public function sMove(string $src, string $dst, string $value): Redis|bool;
 
     public function sPop(string $key, int $count = 0): Redis|string|array|false;
 
@@ -405,7 +405,7 @@ public function persist(string $key): bool;
 	/** @return bool|array|Redis */
     public function setnx(string $key, string $value);
 
-    public function sismember(string $key, mixed $value): Redis|bool;
+    public function sismember(string $key, string $value): Redis|bool;
 
     public function slaveof(string $host = null, int $port = 6379): bool;
 
@@ -433,7 +433,7 @@ public function persist(string $key): bool;
      */
     public function sortDescAlpha(string $key, ?string $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, ?string $store = null): array;
 
-    public function srem(string $key, mixed $value, mixed ...$other_values): Redis|int|false;
+    public function srem(string $key, string $value, mixed ...$other_values): Redis|int|false;
 
     public function sscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): array|false;
 
