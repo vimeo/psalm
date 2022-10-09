@@ -266,7 +266,7 @@ class Redis {
 
     public function ltrim(string $key, int $start , int $end): Redis|bool;
 
-	/** @return false|array|Redis */
+	/** @return false|list<false|string>|Redis */
     public function mget(array $keys);
 
     public function migrate(string $host, int $port, string $key, string $dst, int $timeout, bool $copy = false, bool $replace = false): bool;
