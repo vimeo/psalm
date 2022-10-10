@@ -746,7 +746,7 @@ class VariableFetchAnalyzer
                     new TNonEmptyList(Type::getString()),
                 ]),
                 'size' => new Union([
-                    new TInt(),
+                    new TIntRange(0, null),
                     new TNonEmptyList(Type::getInt()),
                 ]),
                 'tmp_name' => new Union([
@@ -754,7 +754,7 @@ class VariableFetchAnalyzer
                     new TNonEmptyList(Type::getString()),
                 ]),
                 'error' => new Union([
-                    new TInt(),
+                    new TIntRange(0, 8),
                     new TNonEmptyList(Type::getInt()),
                 ]),
             ];
