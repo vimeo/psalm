@@ -237,6 +237,7 @@ final class Union implements TypeNode, Stringable
             if ($key === 'literal_float_types') {
                 continue;
             }
+            /** @psalm-suppress ImpurePropertyAssignment Acting on clone */
             $union->{$key} = $value;
         }
         return $union;
@@ -248,6 +249,7 @@ final class Union implements TypeNode, Stringable
     public function setFromDocblock(bool $fromDocblock = true): self
     {
         $cloned = clone $this;
+        /** @psalm-suppress ImpureMethodCall Acting on clone */
         (new FromDocblockSetter($fromDocblock))->traverse($cloned);
         return $cloned;
     }

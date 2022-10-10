@@ -1244,6 +1244,7 @@ trait UnionTrait
     {
         $classlike_visitor = new ContainsClassLikeVisitor($fq_class_like_name);
 
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free */
         $classlike_visitor->traverseArray($this->types);
 
         return $classlike_visitor->matches();
@@ -1267,6 +1268,7 @@ trait UnionTrait
     {
         $literal_visitor = new ContainsLiteralVisitor();
 
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free */
         $literal_visitor->traverseArray($this->types);
 
         return $literal_visitor->matches();
@@ -1280,6 +1282,7 @@ trait UnionTrait
     {
         $template_type_collector = new TemplateTypeCollector();
 
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free */
         $template_type_collector->traverseArray($this->types);
 
         return $template_type_collector->getTemplateTypes();

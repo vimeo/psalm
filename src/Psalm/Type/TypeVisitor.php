@@ -22,6 +22,8 @@ abstract class TypeVisitor
      * @param T $node
      * @param-out T $node
      * @return bool - true if we want to continue traversal, false otherwise
+     *
+     * @psalm-suppress ReferenceConstraintViolation, ConflictingReferenceConstraint
      */
     public function traverse(TypeNode &$node): bool
     {

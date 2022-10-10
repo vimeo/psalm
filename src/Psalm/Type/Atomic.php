@@ -133,6 +133,7 @@ abstract class Atomic implements TypeNode
     public function replaceClassLike(string $old, string $new): self
     {
         $type = $this;
+        /** @psalm-suppress ImpureMethodCall ClasslikeReplacer will always clone */
         (new ClasslikeReplacer(
             $old,
             $new

@@ -130,7 +130,7 @@ class TypeExpander
      * @param-out Atomic $return_type
      * @return non-empty-list<Atomic>
      *
-     * @psalm-suppress ConflictingReferenceConstraint Ultimately, the output type is always an Atomic
+     * @psalm-suppress ConflictingReferenceConstraint, ReferenceConstraintViolation Ultimately, the output type is always an Atomic
      * @psalm-suppress ComplexMethod
      */
     public static function expandAtomic(
@@ -182,7 +182,6 @@ class TypeExpander
             }
 
             if ($return_type instanceof TNamedObject) {
-                /** @psalm-suppress ReferenceConstraintViolation */
                 $return_type = self::expandNamedObject(
                     $codebase,
                     $return_type,
@@ -215,7 +214,6 @@ class TypeExpander
             );
 
             if ($new_as_type instanceof TNamedObject && $new_as_type !== $return_type->as_type) {
-                /** @psalm-suppress ReferenceConstraintViolation Psalm bug */
                 $return_type = clone $return_type;
                 /** @psalm-suppress InaccessibleProperty Acting on clone */
                 $return_type->as_type = $new_as_type;
@@ -497,7 +495,6 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
-            /** @psalm-suppress ArgumentTypeCoercion */
             $return_type = $return_type->replaceTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;

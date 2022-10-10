@@ -346,9 +346,6 @@ final class MutableUnion implements TypeNode, Stringable
         return false;
     }
 
-    /**
-     * @psalm-external-mutation-free
-     */
     public function setFromDocblock(bool $fromDocblock = true): self
     {
         $this->from_docblock = $fromDocblock;
@@ -495,6 +492,7 @@ final class MutableUnion implements TypeNode, Stringable
             if ($key === 'literal_float_types') {
                 continue;
             }
+            /** @psalm-suppress ImpurePropertyAssignment Acting on clone */
             $union->{$key} = $value;
         }
         return $union;
