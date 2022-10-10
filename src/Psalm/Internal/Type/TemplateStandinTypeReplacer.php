@@ -4,6 +4,7 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -34,6 +35,7 @@ use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Union;
 use Throwable;
+use Traversable;
 
 use function array_fill;
 use function array_keys;
@@ -1163,114 +1165,29 @@ class TemplateStandinTypeReplacer
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null
     ): array {
-        if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
-            $input_type_params = $input_type_part->type_params;
+        if ($input_type_part instanceof TIterable) {
+            $input_class_storage = $codebase->classlike_storage_provider->get(Traversable::class);
         } else {
-            $class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
-
-            $container_class = $container_type_part->value;
-
-            if (strtolower($input_type_part->value) === strtolower($container_type_part->value)) {
-                $input_type_params = $class_storage->getClassTemplateTypes();
-            } elseif (!empty($class_storage->template_extended_params[$container_class])) {
-                $input_type_params = array_values($class_storage->template_extended_params[$container_class]);
-            } else {
-                $input_type_params = array_fill(0, count($class_storage->template_types ?? []), Type::getMixed());
-            }
-        }
-
-        try {
             $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
+        }
+        if ($container_type_part instanceof TIterable) {
+            $container_class_storage = $codebase->classlike_storage_provider->get(Traversable::class);
+        } else {
             $container_class_storage = $codebase->classlike_storage_provider->get($container_type_part->value);
-            $container_type_params_covariant = $container_class_storage->template_covariants;
-        } catch (Throwable $e) {
-            $input_class_storage = null;
+        }
+        $container_type_params_covariant = $container_class_storage->template_covariants;
+
+        $type_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $container_class_storage,
+            $input_class_storage,
+            null,
+            $input_type_part
+        );
+        if (!$type_params) {
+            return [];
         }
 
-        if ($input_type_part->value !== $container_type_part->value
-            && $input_class_storage
-        ) {
-            $input_template_types = $input_class_storage->template_types;
-            $i = 0;
-
-            $replacement_templates = [];
-
-            if ($input_template_types
-                && (!$input_type_part instanceof TGenericObject || !$input_type_part->remapped_params)
-                && (!$container_type_part instanceof TGenericObject || !$container_type_part->remapped_params)
-            ) {
-                foreach ($input_template_types as $template_name => $_) {
-                    if (!isset($input_type_params[$i])) {
-                        break;
-                    }
-
-                    $replacement_templates[$template_name][$input_type_part->value] = $input_type_params[$i];
-
-                    $i++;
-                }
-            }
-
-            $template_extends = $input_class_storage->template_extended_params;
-
-            if (isset($template_extends[$container_type_part->value])) {
-                $params = $template_extends[$container_type_part->value];
-
-                $new_input_params = [];
-
-                foreach ($params as $extended_input_param_type) {
-                    $new_input_param = null;
-
-                    foreach ($extended_input_param_type->getAtomicTypes() as $et) {
-                        if ($et instanceof TTemplateParam) {
-                            $ets = Methods::getExtendedTemplatedTypes(
-                                $et,
-                                $template_extends
-                            );
-                        } else {
-                            $ets = [];
-                        }
-
-                        if ($ets
-                            && $ets[0] instanceof TTemplateParam
-                            && isset(
-                                $input_class_storage->template_types
-                                    [$ets[0]->param_name]
-                                    [$ets[0]->defining_class]
-                            )
-                        ) {
-                            $old_params_offset = (int) array_search(
-                                $ets[0]->param_name,
-                                array_keys($input_class_storage->template_types)
-                            );
-
-                            $candidate_param_type = $input_type_params[$old_params_offset] ?? Type::getMixed();
-                        } else {
-                            $candidate_param_type = new Union([clone $et]);
-                        }
-
-                        $candidate_param_type->from_template_default = true;
-
-                        $new_input_param = Type::combineUnionTypes(
-                            $new_input_param,
-                            $candidate_param_type
-                        );
-                    }
-
-                    $new_input_param = clone $new_input_param;
-
-                    TemplateInferredTypeReplacer::replace(
-                        $new_input_param,
-                        new TemplateResult([], $replacement_templates),
-                        $codebase
-                    );
-
-                    $new_input_params[] = $new_input_param;
-                }
-
-                $input_type_params = $new_input_params;
-            }
-        }
-
-        return $input_type_params;
+        return array_column($type_params, $container_class_storage->name);
     }
 }
