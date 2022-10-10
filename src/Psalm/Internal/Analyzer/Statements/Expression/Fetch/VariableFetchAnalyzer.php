@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
@@ -22,6 +23,7 @@ use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -645,6 +647,9 @@ class VariableFetchAnalyzer
             $request_time_float_helper = Type::getFloat();
             $request_time_float_helper->possibly_undefined = true;
 
+            $bool_string_helper = new Union([new TBool(), new TString()]);
+            $bool_string_helper->possibly_undefined = true;
+
             $detailed_type = new TKeyedArray([
                 // https://www.php.net/manual/en/reserved.variables.server.php
                 'PHP_SELF'             => $non_empty_string_helper,
@@ -719,6 +724,9 @@ class VariableFetchAnalyzer
                 'HTTP_SEC_CH_UA_PLATFORM' => $non_empty_string_helper,
                 'HTTP_SEC_CH_UA_MOBILE'   => $non_empty_string_helper,
                 'HTTP_SEC_CH_UA'          => $non_empty_string_helper,
+                // phpunit
+                'APP_DEBUG' => $bool_string_helper,
+                'APP_ENV'   => $string_helper,
             ]);
 
             // generic case for all other elements
@@ -739,7 +747,7 @@ class VariableFetchAnalyzer
                     new TNonEmptyList(Type::getString()),
                 ]),
                 'size' => new Union([
-                    new TInt(),
+                    new TIntRange(0, null),
                     new TNonEmptyList(Type::getInt()),
                 ]),
                 'tmp_name' => new Union([
@@ -747,7 +755,7 @@ class VariableFetchAnalyzer
                     new TNonEmptyList(Type::getString()),
                 ]),
                 'error' => new Union([
-                    new TInt(),
+                    new TIntRange(0, 8),
                     new TNonEmptyList(Type::getInt()),
                 ]),
             ];
@@ -761,7 +769,14 @@ class VariableFetchAnalyzer
 
             $type = new TKeyedArray($values);
 
-            return new Union([$type]);
+            // $_FILES['userfile']['...'] case
+            $named_type = new TArray([Type::getNonEmptyString(), new Union([$type])]);
+
+            // by default $_FILES is an empty array
+            $default_type = new TArray([Type::getNever(), Type::getNever()]);
+
+            // ideally we would have 4 separate arrays with distinct types, but that isn't possible with psalm atm
+            return TypeCombiner::combine([$default_type, $type, $named_type]);
         }
 
         if ($var_id === '$_SESSION') {
