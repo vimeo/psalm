@@ -498,6 +498,7 @@ class CallableTypeComparator
                             }
 
                             if ($member_id) {
+                                /** @psalm-suppress PossiblyNullArgument Psalm bug */
                                 $codebase->analyzer->addMixedMemberName(
                                     strtolower($member_id) . '::',
                                     $calling_method_id ?: $file_name

@@ -899,6 +899,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
+        /** @psalm-suppress RedundantCondition Psalm bug */
         assert(!$existing_var_type->isUnionEmpty());
         return $existing_var_type->freeze();
     }

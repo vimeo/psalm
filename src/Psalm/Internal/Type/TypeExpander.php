@@ -182,6 +182,7 @@ class TypeExpander
             }
 
             if ($return_type instanceof TNamedObject) {
+                /** @psalm-suppress ReferenceConstraintViolation */
                 $return_type = self::expandNamedObject(
                     $codebase,
                     $return_type,
@@ -214,6 +215,7 @@ class TypeExpander
             );
 
             if ($new_as_type instanceof TNamedObject && $new_as_type !== $return_type->as_type) {
+                /** @psalm-suppress ReferenceConstraintViolation Psalm bug */
                 $return_type = clone $return_type;
                 /** @psalm-suppress InaccessibleProperty Acting on clone */
                 $return_type->as_type = $new_as_type;

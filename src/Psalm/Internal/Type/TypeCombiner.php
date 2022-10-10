@@ -87,6 +87,8 @@ class TypeCombiner
      *
      * @psalm-external-mutation-free
      *
+     * @psalm-suppress ImpurePropertyAssignment We're not actually mutating any external instance
+     *
      * @param  non-empty-list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
@@ -236,6 +238,7 @@ class TypeCombiner
             if ($generic_type === 'iterable') {
                 $new_types[] = new TIterable($generic_type_params);
             } else {
+                /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
                 $generic_object = new TGenericObject(
                     $generic_type,
                     $generic_type_params,
@@ -254,6 +257,7 @@ class TypeCombiner
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
             $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
 
+            /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
             $generic_object = new TGenericObject(
                 $generic_type,
                 $generic_type_params,
@@ -362,6 +366,9 @@ class TypeCombiner
         return $union_type;
     }
 
+    /**
+     * @psalm-suppress ComplexMethod Unavoidably complex method
+     */
     private static function scrapeTypeProperties(
         Atomic $type,
         TypeCombination $combination,

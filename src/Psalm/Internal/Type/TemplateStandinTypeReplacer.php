@@ -374,6 +374,7 @@ class TemplateStandinTypeReplacer
                 return [$atomic_type];
             }
 
+            /** @psalm-suppress ReferenceConstraintViolation Psalm bug */
             $atomic_type = new TPropertiesOf(
                 $classlike_type,
                 $atomic_type->visibility_filter
@@ -394,6 +395,7 @@ class TemplateStandinTypeReplacer
         }
 
         if (!$matching_atomic_types) {
+            /** @psalm-suppress ReferenceConstraintViolation Psalm bug */
             $atomic_type = $atomic_type->replaceTemplateTypesWithStandins(
                 $template_result,
                 $codebase,
@@ -864,15 +866,15 @@ class TemplateStandinTypeReplacer
                 }
             }
 
-            foreach ($atomic_types as &$atomic_type) {
-                if ($atomic_type instanceof TNamedObject
-                    || $atomic_type instanceof TTemplateParam
-                    || $atomic_type instanceof TIterable
-                    || $atomic_type instanceof TObjectWithProperties
+            foreach ($atomic_types as &$t) {
+                if ($t instanceof TNamedObject
+                    || $t instanceof TTemplateParam
+                    || $t instanceof TIterable
+                    || $t instanceof TObjectWithProperties
                 ) {
-                    $atomic_type = $atomic_type->setIntersectionTypes($extra_types);
-                } elseif ($atomic_type instanceof TObject && $extra_types) {
-                    $atomic_type = reset($extra_types)->setIntersectionTypes(array_slice($extra_types, 1));
+                    $t = $t->setIntersectionTypes($extra_types);
+                } elseif ($t instanceof TObject && $extra_types) {
+                    $t = reset($extra_types)->setIntersectionTypes(array_slice($extra_types, 1));
                 }
             }
 

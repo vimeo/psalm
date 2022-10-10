@@ -292,6 +292,8 @@ class ArithmeticOpAnalyzer
     /**
      * @param string[] $invalid_left_messages
      * @param string[] $invalid_right_messages
+     *
+     * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     private static function analyzeOperands(
         ?StatementsSource $statements_source,

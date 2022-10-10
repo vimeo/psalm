@@ -81,6 +81,7 @@ class UnsetAnalyzer
                                     unset($properties[$key_value]);
                                 }
 
+                                /** @psalm-suppress DocblockTypeContradiction https://github.com/vimeo/psalm/issues/8518 */
                                 if (!$properties) {
                                     if ($atomic_root_type->previous_value_type) {
                                         $root_types [] =
