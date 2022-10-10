@@ -646,8 +646,8 @@ class VariableFetchAnalyzer
             $request_time_float_helper = Type::getFloat();
             $request_time_float_helper->possibly_undefined = true;
 
-            $bool_helper = Type::getBool();
-            $bool_helper->possibly_undefined = true;
+            $bool_string_helper = new Union([new Bool(), new TString()]);
+            $bool_string_helper->possibly_undefined = true;
 
             $detailed_type = new TKeyedArray([
                 // https://www.php.net/manual/en/reserved.variables.server.php
@@ -724,7 +724,7 @@ class VariableFetchAnalyzer
                 'HTTP_SEC_CH_UA_MOBILE'   => $non_empty_string_helper,
                 'HTTP_SEC_CH_UA'          => $non_empty_string_helper,
                 // phpunit
-                'APP_DEBUG' => $bool_helper,
+                'APP_DEBUG' => $bool_string_helper,
                 'APP_ENV'   => $string_helper,
             ]);
 
