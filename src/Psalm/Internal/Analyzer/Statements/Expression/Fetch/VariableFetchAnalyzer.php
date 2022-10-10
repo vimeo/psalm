@@ -774,7 +774,7 @@ class VariableFetchAnalyzer
             // by default $_FILES is an empty array
             $default_type = new TArray([Type::getNever(), Type::getNever()]);
 
-            // ideally we would have 3 separate arrays with distinct types, but that isn't possible with psalm atm
+            // ideally we would have 4 separate arrays with distinct types, but that isn't possible with psalm atm
             return TypeCombiner::combine([$default_type, $type, $named_type]);
         }
 
