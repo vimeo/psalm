@@ -374,7 +374,7 @@ class TemplateStandinTypeReplacer
                 return [$atomic_type];
             }
 
-            /** @psalm-suppress ReferenceConstraintViolation Psalm bug */
+            /** @psalm-suppress ReferenceConstraintViolation Psalm bug, $atomic_type is not a reference */
             $atomic_type = new TPropertiesOf(
                 $classlike_type,
                 $atomic_type->visibility_filter
@@ -395,7 +395,7 @@ class TemplateStandinTypeReplacer
         }
 
         if (!$matching_atomic_types) {
-            /** @psalm-suppress ReferenceConstraintViolation Psalm bug */
+            /** @psalm-suppress ReferenceConstraintViolation Psalm bug, $atomic_type is not a reference */
             $atomic_type = $atomic_type->replaceTemplateTypesWithStandins(
                 $template_result,
                 $codebase,

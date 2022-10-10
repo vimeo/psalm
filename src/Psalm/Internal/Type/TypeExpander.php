@@ -495,6 +495,7 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            /** @psalm-suppress ArgumentTypeCoercion Psalm bug */
             $return_type = $return_type->replaceTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;
@@ -710,6 +711,7 @@ class TypeExpander
             }
         }
 
+        /** @psalm-suppress ReferenceConstraintViolation Psalm bug, we are never assigning a TTemplateParam to $return_type */
         return $return_type;
     }
 
