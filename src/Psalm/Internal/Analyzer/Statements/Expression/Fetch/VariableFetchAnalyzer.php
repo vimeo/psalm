@@ -646,7 +646,7 @@ class VariableFetchAnalyzer
             $request_time_float_helper = Type::getFloat();
             $request_time_float_helper->possibly_undefined = true;
 
-            $bool_string_helper = new Union([new Bool(), new TString()]);
+            $bool_string_helper = new Union([new TBool(), new TString()]);
             $bool_string_helper->possibly_undefined = true;
 
             $detailed_type = new TKeyedArray([
