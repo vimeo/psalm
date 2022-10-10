@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
@@ -767,7 +768,14 @@ class VariableFetchAnalyzer
 
             $type = new TKeyedArray($values);
 
-            return new Union([$type]);
+            // $_FILES['userfile']['...'] case
+            $named_type = new TArray([Type::getNonEmptyString(), new Union([$type])]);
+
+            // by default $_FILES is an empty array
+            $default_type = new TArray([Type::getNever(), Type::getNever()]);
+
+            // ideally we would have 3 separate arrays with distinct types, but that isn't possible with psalm atm
+            return TypeCombiner::combine([$default_type, $type, $named_type]);
         }
 
         if ($var_id === '$_SESSION') {
