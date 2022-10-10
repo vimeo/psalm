@@ -130,7 +130,7 @@ class TypeExpander
      * @param-out Atomic $return_type
      * @return non-empty-list<Atomic>
      *
-     * @psalm-suppress ConflictingReferenceConstraint, ReferenceConstraintViolation Ultimately, the output type is always an Atomic
+     * @psalm-suppress ConflictingReferenceConstraint, ReferenceConstraintViolation The output type is always Atomic
      * @psalm-suppress ComplexMethod
      */
     public static function expandAtomic(
