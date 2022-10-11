@@ -507,6 +507,7 @@ final class Codebase
         }
     }
 
+    /** @psalm-mutation-free */
     public function getFileContents(string $file_path): string
     {
         return $this->file_provider->getContents($file_path);

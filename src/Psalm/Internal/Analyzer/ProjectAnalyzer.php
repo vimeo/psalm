@@ -563,8 +563,10 @@ class ProjectAnalyzer
         }
     }
 
+    /** @psalm-mutation-free */
     public static function getInstance(): ProjectAnalyzer
     {
+        /** @psalm-suppress ImpureStaticProperty */
         return self::$instance;
     }
 

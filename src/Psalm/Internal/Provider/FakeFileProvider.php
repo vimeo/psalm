@@ -25,6 +25,7 @@ class FakeFileProvider extends FileProvider
         return isset($this->fake_files[$file_path]) || parent::fileExists($file_path);
     }
 
+    /** @psalm-external-mutation-free */
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[$file_path])) {

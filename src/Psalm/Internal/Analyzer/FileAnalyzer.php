@@ -465,12 +465,14 @@ class FileAnalyzer extends SourceAnalyzer
         return $class_analyzer_to_examine->getFunctionLikeAnalyzer($method_name);
     }
 
+    /** @psalm-mutation-free */
     public function getNamespace(): ?string
     {
         return null;
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(?string $namespace_name = null): array
@@ -483,6 +485,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, string>
      */
     public function getAliasedClassesFlippedReplaceable(?string $namespace_name = null): array
@@ -508,21 +511,25 @@ class FileAnalyzer extends SourceAnalyzer
         InternalCallMapHandler::clearCache();
     }
 
+    /** @psalm-mutation-free */
     public function getFileName(): string
     {
         return $this->file_name;
     }
 
+    /** @psalm-mutation-free */
     public function getFilePath(): string
     {
         return $this->file_path;
     }
 
+    /** @psalm-mutation-free */
     public function getRootFileName(): string
     {
         return $this->root_file_name ?: $this->file_name;
     }
 
+    /** @psalm-mutation-free */
     public function getRootFilePath(): string
     {
         return $this->root_file_path ?: $this->file_path;
@@ -544,17 +551,20 @@ class FileAnalyzer extends SourceAnalyzer
         $this->parent_file_paths[$file_path] = true;
     }
 
+    /** @psalm-mutation-free */
     public function hasParentFilePath(string $file_path): bool
     {
         return $this->file_path === $file_path || isset($this->parent_file_paths[$file_path]);
     }
 
+    /** @psalm-mutation-free */
     public function hasAlreadyRequiredFilePath(string $file_path): bool
     {
         return isset($this->required_file_paths[$file_path]);
     }
 
     /**
+     * @psalm-mutation-free
      * @return list<string>
      */
     public function getRequiredFilePaths(): array
@@ -563,6 +573,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
      * @return list<string>
      */
     public function getParentFilePaths(): array
@@ -570,12 +581,14 @@ class FileAnalyzer extends SourceAnalyzer
         return array_keys($this->parent_file_paths);
     }
 
+    /** @psalm-mutation-free */
     public function getRequireNesting(): int
     {
         return count($this->parent_file_paths);
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string>
      */
     public function getSuppressedIssues(): array
@@ -607,22 +620,26 @@ class FileAnalyzer extends SourceAnalyzer
         $this->suppressed_issues = array_diff_key($this->suppressed_issues, $new_issues);
     }
 
+    /** @psalm-mutation-free */
     public function getFQCLN(): ?string
     {
         return null;
     }
 
+    /** @psalm-mutation-free */
     public function getParentFQCLN(): ?string
     {
         return null;
     }
 
+    /** @psalm-mutation-free */
     public function getClassName(): ?string
     {
         return null;
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, array<string, Union>>|null
      */
     public function getTemplateTypeMap(): ?array
@@ -630,6 +647,7 @@ class FileAnalyzer extends SourceAnalyzer
         return null;
     }
 
+    /** @psalm-mutation-free */
     public function isStatic(): bool
     {
         return false;
@@ -651,16 +669,19 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->project_analyzer;
     }
 
+    /** @psalm-mutation-free */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
     }
 
+    /** @psalm-mutation-free */
     public function getFirstStatementOffset(): int
     {
         return $this->first_statement_offset;
     }
 
+    /** @psalm-mutation-free */
     public function getNodeTypeProvider(): NodeTypeProvider
     {
         if (!$this->node_data) {
@@ -670,6 +691,7 @@ class FileAnalyzer extends SourceAnalyzer
         return $this->node_data;
     }
 
+    /** @psalm-mutation-free */
     public function getReturnType(): ?Union
     {
         return $this->return_type;

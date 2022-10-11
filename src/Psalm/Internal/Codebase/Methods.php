@@ -992,6 +992,7 @@ class Methods
         );
     }
 
+    /** @psalm-mutation-free */
     public function getDeclaringMethodId(
         MethodIdentifier $method_id
     ): ?MethodIdentifier {
@@ -1115,6 +1116,7 @@ class Methods
         return $this->classlike_storage_provider->get($declaring_fq_class_name);
     }
 
+    /** @psalm-mutation-free */
     public function getStorage(MethodIdentifier $method_id): MethodStorage
     {
         try {
@@ -1134,6 +1136,7 @@ class Methods
         return $class_storage->methods[$method_name];
     }
 
+    /** @psalm-mutation-free */
     public function hasStorage(MethodIdentifier $method_id): bool
     {
         try {

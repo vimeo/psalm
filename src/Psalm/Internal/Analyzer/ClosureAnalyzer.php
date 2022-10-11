@@ -45,6 +45,8 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         parent::__construct($function, $source, $storage);
     }
 
+
+    /** @psalm-mutation-free */
     public function getTemplateTypeMap(): ?array
     {
         return $this->source->getTemplateTypeMap();

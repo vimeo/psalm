@@ -833,6 +833,7 @@ class ClassLikes
         $this->existing_classlike_aliases[$alias_name] = true;
     }
 
+    /** @psalm-mutation-free */
     public function getUnAliasedName(string $alias_name): string
     {
         $alias_name_lc = strtolower($alias_name);

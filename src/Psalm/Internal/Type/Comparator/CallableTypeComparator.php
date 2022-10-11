@@ -211,7 +211,9 @@ class CallableTypeComparator
                     return false;
                 }
 
-                $codebase->methods->getStorage($method_id);
+                if (!$codebase->methods->hasStorage($method_id)) {
+                    return false;
+                }
             } catch (Exception $e) {
                 return false;
             }

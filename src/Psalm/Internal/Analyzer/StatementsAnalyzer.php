@@ -1141,6 +1141,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         return $this->parsed_docblock;
     }
 
+    /** @psalm-mutation-free */
     public function getFQCLN(): ?string
     {
         if ($this->fake_this_class) {

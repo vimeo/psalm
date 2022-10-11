@@ -751,10 +751,11 @@ class FunctionLikeDocblockScanner
                     $function,
                     null,
                     true,
-                    CodeLocation::FUNCTION_PARAM_VAR
+                    CodeLocation::FUNCTION_PARAM_VAR,
+                    null,
+                    $docblock_param['line_number']
                 );
 
-                $param_location->setCommentLine($docblock_param['line_number']);
                 $unused_docblock_params[$param_name] = $param_location;
 
                 if (!$docblock_param_variadic || $storage->params || $file_scanner->will_analyze) {
@@ -950,7 +951,10 @@ class FunctionLikeDocblockScanner
                 !$fake_method
                     ? CodeLocation::FUNCTION_PHPDOC_RETURN_TYPE
                     : CodeLocation::FUNCTION_PHPDOC_METHOD,
-                $docblock_info->return_type
+                $docblock_info->return_type,
+                $docblock_info->return_type_line_number && !$fake_method
+                    ? $docblock_info->return_type_line_number
+                    : null
             );
         }
 
@@ -1049,10 +1053,6 @@ class FunctionLikeDocblockScanner
 
         if ($stmt->returnsByRef() && $storage->return_type) {
             $storage->return_type->by_ref = true;
-        }
-
-        if ($docblock_info->return_type_line_number && !$fake_method) {
-            $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
         }
 
         $storage->return_type_description = $docblock_info->return_type_description;
@@ -1480,8 +1480,15 @@ class FunctionLikeDocblockScanner
     ): void {
         foreach ($docblock_info->unexpected_tags as $tag => $details) {
             foreach ($details['lines'] as $line) {
-                $tag_location = new CodeLocation($file_scanner, $stmt, null, true);
-                $tag_location->setCommentLine($line);
+                $tag_location = new CodeLocation(
+                    $file_scanner,
+                    $stmt,
+                    null,
+                    true,
+                    null,
+                    null,
+                    $line
+                );
 
                 $message = 'Docblock tag @' . $tag . ' is not recognized in the function docblock '
                     . 'for ' . $cased_function_id;

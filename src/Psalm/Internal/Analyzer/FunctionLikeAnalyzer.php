@@ -1665,6 +1665,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array
@@ -1680,6 +1681,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, string>
      */
     public function getAliasedClassesFlippedReplaceable(): array
@@ -1695,6 +1697,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, array<string, Union>>|null
      */
     public function getTemplateTypeMap(): ?array

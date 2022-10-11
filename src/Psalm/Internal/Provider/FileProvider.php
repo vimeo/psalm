@@ -33,26 +33,32 @@ class FileProvider
      */
     protected static $open_files = [];
 
+    /** @psalm-mutation-free */
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[$file_path])) {
             return $this->temp_files[$file_path];
         }
 
+        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         if (isset(self::$open_files[$file_path])) {
             return self::$open_files[$file_path];
         }
 
+        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         if (!file_exists($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
         }
 
+        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         if (is_dir($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
+        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         $file_contents = (string) file_get_contents($file_path);
 
+        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         self::$open_files[$file_path] = $file_contents;
 
         return $file_contents;
