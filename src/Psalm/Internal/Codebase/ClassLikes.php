@@ -1658,6 +1658,7 @@ class ClassLikes
             }
 
             if ($constant_storage->unresolved_node) {
+                /** @psalm-suppress InaccessibleProperty Lazy resolution */
                 $constant_storage->inferred_type = new Union([ConstantTypeResolver::resolve(
                     $this,
                     $constant_storage->unresolved_node,
@@ -1665,6 +1666,7 @@ class ClassLikes
                     $visited_constant_ids
                 )]);
                 if ($constant_storage->type === null || !$constant_storage->type->from_docblock) {
+                    /** @psalm-suppress InaccessibleProperty Lazy resolution */
                     $constant_storage->type = $constant_storage->inferred_type;
                 }
             }

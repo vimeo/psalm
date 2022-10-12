@@ -4,8 +4,12 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 
+/**
+ * @psalm-immutable
+ */
 final class AttributeStorage
 {
+    use ImmutableNonCloneableTrait;
     /**
      * @var string
      */

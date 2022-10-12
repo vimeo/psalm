@@ -13,8 +13,12 @@ use Psalm\Type\Union;
 
 use function array_values;
 
+/**
+ * @psalm-immutable
+ */
 final class ClassLikeStorage implements HasAttributesInterface
 {
+    use ImmutableNonCloneableTrait;
     use CustomMetadataTrait;
 
     /**

@@ -9,7 +9,6 @@ use function mb_substr;
 /**
  * Denotes a string whose value is known.
  * @psalm-immutable
- * @psalm-suppress PossiblyUnusedMethod
  */
 class TLiteralString extends TString
 {
@@ -22,7 +21,10 @@ class TLiteralString extends TString
         $this->from_docblock = $from_docblock;
     }
 
-    /** @return static */
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     * @return static
+     */
     public function setValue(string $value): self
     {
         if ($value === $this->value) {
