@@ -82,6 +82,28 @@ class CloneTest extends TestCase
                     clone $a;',
                 'error_message' => 'InvalidClone',
             ],
+            'notVisibleCloneMethodSubClass' => [
+                'code' => '<?php
+                    class a {
+                        private function __clone() {}
+                    }
+                    class b extends a {}
+                    
+                    clone new b;',
+                'error_message' => 'InvalidClone',
+            ],
+            'notVisibleCloneMethodTrait' => [
+                'code' => '<?php
+                    trait a {
+                        private function __clone() {}
+                    }
+                    class b {
+                        use a;
+                    }
+                    
+                    clone new b;',
+                'error_message' => 'InvalidClone',
+            ],
             'invalidGenericClone' => [
                 'code' => '<?php
                     /**
