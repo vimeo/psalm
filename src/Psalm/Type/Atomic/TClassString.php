@@ -55,6 +55,18 @@ class TClassString extends TString
         $this->is_enum = $is_enum;
         $this->from_docblock = $from_docblock;
     }
+    /**
+     * @return static
+     */
+    public function setAs(string $as, ?TNamedObject $as_type): self {
+        if ($this->as === $as && $this->as_type === $as_type) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->as = $as;
+        $cloned->as_type = $as_type;
+        return $cloned;
+    }
     public function getKey(bool $include_extra = true): string
     {
         if ($this->is_interface) {

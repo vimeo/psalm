@@ -53,6 +53,20 @@ trait CallableTrait
         $this->from_docblock = $from_docblock;
     }
 
+    /**
+     * @param list<FunctionLikeParameter> $params
+     * @return static
+     */
+    public function replace(array $params, ?Union $return_type): self
+    {
+        if ($this->params === $params && $this->return_type === $return_type) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->params = $params;
+        $cloned->return_type = $return_type;
+        return $cloned;
+    }
     public function getKey(bool $include_extra = true): string
     {
         $param_string = '';

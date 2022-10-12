@@ -64,6 +64,9 @@ class TNamedObject extends Atomic
         $this->from_docblock = $from_docblock;
     }
 
+    /**
+     * @return static
+     */
     public function setIsStatic(bool $is_static, ?bool $is_static_resolved = null): self
     {
         $is_static_resolved ??= $this->is_static_resolved;
@@ -76,6 +79,41 @@ class TNamedObject extends Atomic
         return $cloned;
     }
 
+    /**
+     * @return static
+     */
+    public function setValue(string $value): self
+    {
+        if ($value[0] === '\\') {
+            $value = substr($value, 1);
+        }
+        if ($value === $this->value) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->value = $value;
+        return $cloned;
+    }
+    /**
+     * @return static
+     */
+    public function setValueIsStatic(string $value, bool $is_static, ?bool $is_static_resolved = null): self
+    {
+        $is_static_resolved ??= $this->is_static_resolved;
+        if ($value[0] === '\\') {
+            $value = substr($value, 1);
+        }
+        if ($value === $this->value 
+            && $this->is_static === $is_static
+            && $this->is_static_resolved === $is_static_resolved
+        ) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->value = $value;
+        $cloned->is_static = $is_static;
+        return $cloned;
+    }
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
