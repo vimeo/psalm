@@ -54,10 +54,10 @@ trait CallableTrait
     }
 
     /**
-     * @param list<FunctionLikeParameter> $params
+     * @param list<FunctionLikeParameter>|null $params
      * @return static
      */
-    public function replace(array $params, ?Union $return_type): self
+    public function replace(?array $params, ?Union $return_type): self
     {
         if ($this->params === $params && $this->return_type === $return_type) {
             return $this;
@@ -65,6 +65,16 @@ trait CallableTrait
         $cloned = clone $this;
         $cloned->params = $params;
         $cloned->return_type = $return_type;
+        return $cloned;
+    }
+    /** @return static */
+    public function setIsPure(bool $is_pure): self
+    {
+        if ($this->is_pure === $is_pure) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->is_pure = $is_pure;
         return $cloned;
     }
     public function getKey(bool $include_extra = true): string

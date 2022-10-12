@@ -337,14 +337,13 @@ class CallableTypeComparator
 
                     $must_use = false;
 
-                    /** @psalm-suppress InaccessibleProperty We just cloned this object */
-                    $matching_callable->is_pure = $codebase->functions->isCallMapFunctionPure(
+                    $matching_callable = $matching_callable->setIsPure($codebase->functions->isCallMapFunctionPure(
                         $codebase,
                         $statements_analyzer->node_data ?? null,
                         $input_type_part->value,
                         null,
                         $must_use
-                    );
+                    ));
 
                     return $matching_callable;
                 }

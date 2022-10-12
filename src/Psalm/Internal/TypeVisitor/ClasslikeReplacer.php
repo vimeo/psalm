@@ -27,9 +27,6 @@ class ClasslikeReplacer extends TypeVisitor
         $this->new = $new;
     }
 
-    /**
-     * @psalm-suppress InaccessibleProperty Acting on clones
-     */
     protected function enterNode(TypeNode &$type): ?int
     {
         if ($type instanceof TClassConstant) {
@@ -49,7 +46,7 @@ class ClasslikeReplacer extends TypeVisitor
                     $type->is_interface,
                     $type->is_enum,
                     $type->from_docblock
-                )
+                );
             }
         } elseif ($type instanceof TNamedObject || $type instanceof TLiteralClassString) {
             if (strtolower($type->value) === $this->old) {

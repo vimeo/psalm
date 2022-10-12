@@ -30,9 +30,12 @@ class FromDocblockSetter extends TypeVisitor
         if ($type->from_docblock === $this->from_docblock) {
             return null;
         }
-        $type = clone $type;
-        /** @psalm-suppress InaccessibleProperty Acting on clone */
-        $type->from_docblock = $this->from_docblock;
+        if (!$type instanceof Atomic) {
+            $type = clone $type;
+            $type->from_docblock = $this->from_docblock;
+        } else {
+            $type = $type->setFromDocblock($this->from_docblock);
+        }
 
         if ($type instanceof TTemplateParam
             && $type->as->isMixed()

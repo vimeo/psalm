@@ -58,7 +58,8 @@ class TClassString extends TString
     /**
      * @return static
      */
-    public function setAs(string $as, ?TNamedObject $as_type): self {
+    public function setAs(string $as, ?TNamedObject $as_type): self
+    {
         if ($this->as === $as && $this->as_type === $as_type) {
             return $this;
         }
