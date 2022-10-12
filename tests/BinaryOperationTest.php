@@ -145,6 +145,51 @@ class BinaryOperationTest extends TestCase
         $this->assertSame($assertions, $actual_vars);
     }
 
+    public function testMatchOnBoolean(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+        
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class a {}
+                class b {}
+                /** @var a|b */
+                $obj = new a;
+
+                $result1 = match (true) {
+                    $obj instanceof a => 123,
+                    $obj instanceof b => 321,
+                };
+                $result2 = match (false) {
+                    $obj instanceof a => 123,
+                    $obj instanceof b => 321,
+                };
+            '
+        );
+
+        $assertions = [
+            '$obj' => 'a|b',
+            '$result1' => '123|321',
+            '$result2' => '123|321',
+        ];
+
+        $context = new Context();
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile('somefile.php', $context);
+
+        $actual_vars = [];
+        foreach ($assertions as $var => $_) {
+            if (isset($context->vars_in_scope[$var])) {
+                $actual_vars[$var] = $context->vars_in_scope[$var]->getId(true);
+            }
+        }
+
+        $this->assertSame($assertions, $actual_vars);
+    }
+
     public function testStrictTrueEquivalence(): void
     {
         $config = Config::getInstance();

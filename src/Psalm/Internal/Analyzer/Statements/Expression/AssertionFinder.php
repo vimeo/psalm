@@ -36,6 +36,8 @@ use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
+use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
@@ -2195,6 +2197,7 @@ class AssertionFinder
                 && $var_type->isSingle()
                 && $var_type->hasBool()
                 && !$var_type->from_docblock
+                && !$conditional instanceof VirtualNotIdentical
             ) {
                 IssueBuffer::maybeAdd(
                     new RedundantIdentityWithTrue(
@@ -2897,6 +2900,7 @@ class AssertionFinder
                 && $var_type->isSingle()
                 && $var_type->hasBool()
                 && !$var_type->from_docblock
+                && !$conditional instanceof VirtualIdentical
             ) {
                 IssueBuffer::maybeAdd(
                     new RedundantIdentityWithTrue(
