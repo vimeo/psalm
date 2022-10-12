@@ -557,7 +557,11 @@ class FunctionLikeNodeScanner
                 = $classlike_storage->appearing_method_ids[$method_name_lc]
                 = $method_id;
 
-            if (!$stmt->isPrivate() || $method_name_lc === '__construct' || $method_name_lc === '__clone' || $classlike_storage->is_trait) {
+            if (!$stmt->isPrivate()
+                || $method_name_lc === '__construct'
+                || $method_name_lc === '__clone'
+                || $classlike_storage->is_trait
+            ) {
                 $classlike_storage->inheritable_method_ids[$method_name_lc] = $method_id;
             }
 
