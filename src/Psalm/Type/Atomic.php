@@ -88,6 +88,16 @@ abstract class Atomic implements TypeNode
     protected function __clone()
     {
     }
+
+    /**
+     * @internal Only used by the TypeVisitor, MUST NOT be used by plugins for performance reasons.
+     * @return static
+     */
+    public function copy(): self
+    {
+        return clone $this;
+    }
+
     /**
      * Whether or not the type has been checked yet
      *

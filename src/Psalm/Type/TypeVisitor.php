@@ -66,7 +66,11 @@ abstract class TypeVisitor
                 } else {
                     if (!$cloned) {
                         $cloned = true;
-                        $node = clone $node;
+                        if ($node instanceof Atomic) {
+                            $node = $node->copy();
+                        } else {
+                            $node = clone $node;
+                        }
                     }
                     if ($key === 'extra_types' && is_array($child_node)) {
                         $new = [];
