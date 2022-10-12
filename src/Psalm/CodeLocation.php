@@ -7,6 +7,7 @@ use LogicException;
 use PhpParser;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 use UnexpectedValueException;
 
 use function explode;
@@ -30,6 +31,8 @@ use const PREG_OFFSET_CAPTURE;
  */
 class CodeLocation
 {
+    use ImmutableNonCloneableTrait;
+
     /** @var string */
     public $file_path;
 

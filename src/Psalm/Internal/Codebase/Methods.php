@@ -676,7 +676,7 @@ class Methods
                     if ($atomic_type instanceof TCallable
                         || $atomic_type instanceof TClosure
                     ) {
-                        $callable_type = clone $atomic_type;
+                        $callable_type = $atomic_type;
 
                         return new Union([new TClosure(
                             'Closure',

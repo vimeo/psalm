@@ -434,10 +434,6 @@ final class Context
 
     public function __clone()
     {
-        foreach ($this->clauses as &$clause) {
-            $clause = clone $clause;
-        }
-
         foreach ($this->constants as &$constant) {
             $constant = clone $constant;
         }

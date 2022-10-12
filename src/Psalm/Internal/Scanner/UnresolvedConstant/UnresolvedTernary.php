@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
@@ -11,6 +12,8 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 class UnresolvedTernary extends UnresolvedConstantComponent
 {
+    use ImmutableNonCloneableTrait;
+
     /** @var UnresolvedConstantComponent */
     public $cond;
     /** @var UnresolvedConstantComponent|null */

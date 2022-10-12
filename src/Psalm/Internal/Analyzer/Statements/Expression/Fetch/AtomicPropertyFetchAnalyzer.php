@@ -260,7 +260,7 @@ class AtomicPropertyFetchAnalyzer
                         || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
                 ) {
                     $fq_class_name = $mixin->value;
-                    $lhs_type_part = clone $mixin;
+                    $lhs_type_part = $mixin;
                     $class_storage = $new_class_storage;
 
                     if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {

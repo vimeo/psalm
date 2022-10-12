@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal\FileManipulation;
 
+use Psalm\Storage\ImmutableNonCloneableTrait;
+
 /**
  * @psalm-immutable
  *
@@ -9,6 +11,7 @@ namespace Psalm\Internal\FileManipulation;
  */
 class CodeMigration
 {
+    use ImmutableNonCloneableTrait;
     /** @var string */
     public $source_file_path;
 

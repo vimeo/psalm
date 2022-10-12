@@ -252,7 +252,7 @@ class CastAnalyzer
                         || $type instanceof TList
                         || $type instanceof TKeyedArray
                     ) {
-                        $permissible_atomic_types[] = clone $type;
+                        $permissible_atomic_types[] = $type;
                     } else {
                         $all_permissible = false;
                         break;

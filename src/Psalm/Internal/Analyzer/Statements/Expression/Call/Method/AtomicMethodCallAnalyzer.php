@@ -768,13 +768,13 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 true,
                                 $context->insideUse()
                             )) {
-                                $lhs_type_part = clone $lhs_type_part_new;
+                                $lhs_type_part = $lhs_type_part_new;
                                 $class_storage = $mixin_class_storage;
 
                                 $naive_method_exists = true;
                                 $method_id = $new_method_id;
                             } elseif (isset($mixin_class_storage->pseudo_methods[$method_name_lc])) {
-                                $lhs_type_part = clone $lhs_type_part_new;
+                                $lhs_type_part = $lhs_type_part_new;
                                 $class_storage = $mixin_class_storage;
                                 $method_id = $new_method_id;
                             }

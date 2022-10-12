@@ -676,7 +676,7 @@ class TemplateStandinTypeReplacer
                 && !$atomic_type->as->hasMixed()
             ) {
                 foreach ($atomic_type->as->getAtomicTypes() as $as_atomic_type) {
-                    $atomic_types[] = clone $as_atomic_type;
+                    $atomic_types[] = $as_atomic_type;
                 }
             } else {
                 $replacement_type = TypeExpander::expandUnion(
@@ -734,7 +734,7 @@ class TemplateStandinTypeReplacer
                             $replacements_found = true;
 
                             foreach ($key_type->getAtomicTypes() as $key_type_atomic) {
-                                $atomic_types[] = clone $key_type_atomic;
+                                $atomic_types[] = $key_type_atomic;
                             }
 
                             $existing_lower_bound = reset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]);
@@ -749,13 +749,13 @@ class TemplateStandinTypeReplacer
                     ) {
                         foreach ($replacement_atomic_type->as->getAtomicTypes() as $nested_type_atomic) {
                             $replacements_found = true;
-                            $atomic_types[] = clone $nested_type_atomic;
+                            $atomic_types[] = $nested_type_atomic;
                         }
                     }
                     // @codingStandardsIgnoreEnd
 
                     if (!$replacements_found) {
-                        $atomic_types[] = clone $replacement_atomic_type;
+                        $atomic_types[] = $replacement_atomic_type;
                     }
 
                     $had_template = true;
@@ -1294,7 +1294,7 @@ class TemplateStandinTypeReplacer
 
                             $candidate_param_type = $input_type_params[$old_params_offset] ?? Type::getMixed();
                         } else {
-                            $candidate_param_type = new Union([clone $et]);
+                            $candidate_param_type = new Union([$et]);
                         }
 
                         $candidate_param_type->from_template_default = true;
@@ -1305,7 +1305,7 @@ class TemplateStandinTypeReplacer
                         );
                     }
 
-                    $new_input_param = clone $new_input_param;
+                    $new_input_param = $new_input_param;
 
                     $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,

@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal\Fork;
 
+use Psalm\Storage\ImmutableNonCloneableTrait;
+
 /**
  * @psalm-immutable
  *
@@ -9,6 +11,7 @@ namespace Psalm\Internal\Fork;
  */
 class ForkProcessDoneMessage implements ForkMessage
 {
+    use ImmutableNonCloneableTrait;
     /** @var mixed */
     public $data;
 

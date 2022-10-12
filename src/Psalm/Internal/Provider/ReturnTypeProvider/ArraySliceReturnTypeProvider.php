@@ -69,7 +69,7 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
 
             if ($atomic_type instanceof TArray) {
                 if (!$already_cloned) {
-                    $atomic_type = clone $atomic_type;
+                    $atomic_type = $atomic_type;
                 }
 
                 $return_atomic_type = new TArray($atomic_type->type_params);
@@ -77,7 +77,7 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             }
 
             if ($atomic_type instanceof TList) {
-                $return_atomic_type = new TArray([Type::getInt(), clone $atomic_type->type_param]);
+                $return_atomic_type = new TArray([Type::getInt(), $atomic_type->type_param]);
                 continue;
             }
 

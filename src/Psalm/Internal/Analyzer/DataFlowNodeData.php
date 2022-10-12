@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal\Analyzer;
 
+use Psalm\Storage\ImmutableNonCloneableTrait;
+
 /**
  * @psalm-immutable
  *
@@ -9,6 +11,8 @@ namespace Psalm\Internal\Analyzer;
  */
 class DataFlowNodeData
 {
+    use ImmutableNonCloneableTrait;
+
     /**
      * @var int
      */

@@ -328,7 +328,7 @@ class CallableTypeComparator
                         }
                     }
 
-                    $matching_callable = clone InternalCallMapHandler::getCallableFromCallMapById(
+                    $matching_callable = InternalCallMapHandler::getCallableFromCallMapById(
                         $codebase,
                         $input_type_part->value,
                         $args,
@@ -445,7 +445,7 @@ class CallableTypeComparator
 
                     if ($template_result) {
                         $callable = TemplateInferredTypeReplacer::replace(
-                            new Union([clone $callable]),
+                            new Union([$callable]),
                             $template_result,
                             $codebase
                         )->getSingleAtomic();

@@ -481,7 +481,7 @@ class SimpleAssertionReconciler extends Reconciler
                         || $atomic_type->as->hasObject()
                     ) {
                         unset($types[$k]);
-                        $atomic_type = $atomic_type->replaceAs(new Union([clone $assertion_type]));
+                        $atomic_type = $atomic_type->replaceAs(new Union([$assertion_type]));
                         $types[$atomic_type->getKey()] = $atomic_type;
                         return new Union($types);
                     }
@@ -1872,8 +1872,7 @@ class SimpleAssertionReconciler extends Reconciler
             if ($type->hasTraversableInterface($codebase)) {
                 $traversable_types[] = $type;
             } elseif ($type instanceof TIterable) {
-                $clone_type = clone $type;
-                $traversable_types[] = new TGenericObject('Traversable', $clone_type->type_params);
+                $traversable_types[] = new TGenericObject('Traversable', $type->type_params);
                 $did_remove_type = true;
             } elseif ($type instanceof TObject) {
                 $traversable_types[] = new TNamedObject('Traversable');
@@ -2072,8 +2071,7 @@ class SimpleAssertionReconciler extends Reconciler
 
                 $did_remove_type = true;
             } elseif ($type instanceof TIterable) {
-                $clone_type = clone $type;
-                $array_types[] = new TList($clone_type->type_params[1]);
+                $array_types[] = new TList($type->type_params[1]);
 
                 $did_remove_type = true;
             } else {
@@ -2287,17 +2285,14 @@ class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = $type;
                 $did_remove_type = true;
             } elseif ($type instanceof TArray) {
-                $type = clone $type;
                 $type = new TCallableArray($type->type_params);
                 $callable_types[] = $type;
                 $did_remove_type = true;
             } elseif ($type instanceof TList) {
-                $type = clone $type;
                 $type = new TCallableList($type->type_param);
                 $callable_types[] = $type;
                 $did_remove_type = true;
             } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
-                $type = clone $type;
                 $type = new TCallableKeyedArray($type->properties);
                 $callable_types[] = $type;
                 $did_remove_type = true;

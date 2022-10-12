@@ -44,7 +44,7 @@ final class Possibilities
             $assertion_type = $assertion->getAtomicType();
 
             if ($assertion_type) {
-                $union = new Union([clone $assertion_type]);
+                $union = new Union([$assertion_type]);
                 $union = TemplateInferredTypeReplacer::replace(
                     $union,
                     $template_result,

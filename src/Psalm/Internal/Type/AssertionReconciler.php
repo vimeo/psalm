@@ -196,7 +196,7 @@ class AssertionReconciler extends Reconciler
             if ($assertion instanceof IsClassEqual) {
                 $new_type_part = Atomic::create($assertion->type, null, $template_type_map);
             } elseif ($assertion_type = $assertion->getAtomicType()) {
-                $new_type_part = clone $assertion_type;
+                $new_type_part = $assertion_type;
             } else {
                 $new_type_part = new TMixed();
             }
@@ -262,7 +262,7 @@ class AssertionReconciler extends Reconciler
             $assertion_type = $assertion->getAtomicType();
 
             if ($assertion_type) {
-                return new Union([clone $assertion_type]);
+                return new Union([$assertion_type]);
             }
         }
 
@@ -331,14 +331,14 @@ class AssertionReconciler extends Reconciler
                 if ($existing_var_type_part instanceof TNamedObject
                     || $existing_var_type_part instanceof TTemplateParam
                 ) {
-                    $acceptable_atomic_types[] = clone $existing_var_type_part;
+                    $acceptable_atomic_types[] = $existing_var_type_part;
                 } else {
                     if (AtomicTypeComparator::isContainedBy(
                         $codebase,
                         $existing_var_type_part,
                         $new_as_atomic
                     )) {
-                        $acceptable_atomic_types[] = clone $existing_var_type_part;
+                        $acceptable_atomic_types[] = $existing_var_type_part;
                     }
                 }
             }
@@ -393,7 +393,7 @@ class AssertionReconciler extends Reconciler
                     $existing_var_type_part,
                     $new_type_part
                 )) {
-                    $acceptable_atomic_types[] = clone $existing_var_type_part;
+                    $acceptable_atomic_types[] = $existing_var_type_part;
                     continue;
                 }
 
@@ -852,7 +852,7 @@ class AssertionReconciler extends Reconciler
 
             return $type_1_atomic->replaceAs($type_1_as);
         } else {
-            return clone $type_2_atomic;
+            return $type_2_atomic;
         }
     }
 
@@ -1145,7 +1145,7 @@ class AssertionReconciler extends Reconciler
         $value = $assertion_type->value;
 
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
-        $literal_asserted_type_string = new Union([clone $assertion_type]);
+        $literal_asserted_type_string = new Union([$assertion_type]);
         $literal_asserted_type_string->from_docblock = $existing_var_type->from_docblock;
 
         $compatible_string_type = self::getCompatibleStringType(
@@ -1428,7 +1428,7 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                $assertion_type = new Union([clone $assertion_type]);
+                $assertion_type = new Union([$assertion_type]);
                 $assertion_type->from_docblock = $existing_var_type->from_docblock;
                 return $assertion_type;
             }
@@ -1455,7 +1455,7 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                $assertion_type = new Union([clone $assertion_type]);
+                $assertion_type = new Union([$assertion_type]);
                 $assertion_type->from_docblock = $existing_var_type->from_docblock;
                 return $assertion_type;
             }
@@ -1482,7 +1482,7 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                $assertion_type = new Union([clone $assertion_type]);
+                $assertion_type = new Union([$assertion_type]);
                 $assertion_type->from_docblock = $existing_var_type->from_docblock;
                 return $assertion_type;
             }
@@ -1510,15 +1510,15 @@ class AssertionReconciler extends Reconciler
 
         if ($existing_var_type->hasMixed()) {
             if (!$assertion_type instanceof TNamedObject) {
-                return [clone $assertion_type];
+                return [$assertion_type];
             }
 
-            $types = [clone $assertion_type];
+            $types = [$assertion_type];
 
             if ($allow_string_comparison) {
                 $types[] = new TClassString(
                     $assertion_type->value,
-                    clone $assertion_type
+                    $assertion_type
                 );
             }
 
@@ -1533,7 +1533,7 @@ class AssertionReconciler extends Reconciler
             if ($assertion_type instanceof TTemplateParamClass) {
                 return [new TTemplateParam(
                     $assertion_type->param_name,
-                    new Union([$assertion_type->as_type ? clone $assertion_type->as_type : new TObject()]),
+                    new Union([$assertion_type->as_type ? $assertion_type->as_type : new TObject()]),
                     $assertion_type->defining_class
                 )];
             }
@@ -1554,7 +1554,7 @@ class AssertionReconciler extends Reconciler
                 return [new TMixed()];
             } else {
                 if (!$assertion_type instanceof TNamedObject) {
-                    return [clone $assertion_type];
+                    return [$assertion_type];
                 }
 
                 $new_type_has_interface_string = $codebase->interfaceExists($assertion_type->value);
@@ -1590,7 +1590,7 @@ class AssertionReconciler extends Reconciler
                         )
                     )
                 ) {
-                    $new_type_part = clone $assertion_type;
+                    $new_type_part = $assertion_type;
 
                     $acceptable_atomic_types = [];
 
@@ -1614,7 +1614,7 @@ class AssertionReconciler extends Reconciler
                             $existing_var_type_part,
                             $new_type_part
                         )) {
-                            $acceptable_atomic_types[] = clone $existing_var_type_part;
+                            $acceptable_atomic_types[] = $existing_var_type_part;
                             continue;
                         }
 

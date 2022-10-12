@@ -57,11 +57,11 @@ class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         if ($first_arg_array instanceof TArray) {
             if (!$already_cloned) {
-                $first_arg_array = clone $first_arg_array;
+                $first_arg_array = $first_arg_array;
             }
             $array_type = new TArray($first_arg_array->type_params);
         } else {
-            $array_type = new TArray([Type::getInt(), clone $first_arg_array->type_param]);
+            $array_type = new TArray([Type::getInt(), $first_arg_array->type_param]);
         }
 
         if (!$array_type->type_params[0]->hasString()) {

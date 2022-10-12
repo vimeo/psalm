@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
@@ -11,6 +12,8 @@ use Psalm\Internal\Type\TypeAlias;
  */
 class InlineTypeAlias implements TypeAlias
 {
+    use ImmutableNonCloneableTrait;
+
     /**
      * @var list<array{0: string, 1: int}>
      */

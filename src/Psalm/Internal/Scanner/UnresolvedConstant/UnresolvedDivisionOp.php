@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
+use Psalm\Storage\ImmutableNonCloneableTrait;
+
 /**
  * @psalm-immutable
  *
@@ -9,4 +11,5 @@ namespace Psalm\Internal\Scanner\UnresolvedConstant;
  */
 class UnresolvedDivisionOp extends UnresolvedBinaryOp
 {
+    use ImmutableNonCloneableTrait;
 }

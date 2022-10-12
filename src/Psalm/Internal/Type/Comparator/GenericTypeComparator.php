@@ -60,7 +60,7 @@ class GenericTypeComparator
         $atomic_comparison_result_type_params = null;
         if ($atomic_comparison_result) {
             if (!$atomic_comparison_result->replacement_atomic_type) {
-                $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
+                $atomic_comparison_result->replacement_atomic_type = $input_type_part;
             }
 
             if ($atomic_comparison_result->replacement_atomic_type instanceof TGenericObject) {

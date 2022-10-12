@@ -49,7 +49,7 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
         }
 
         if ($first_arg_array instanceof TArray) {
-            return new Union([clone $first_arg_array]);
+            return new Union([$first_arg_array]);
         }
 
         if ($first_arg_array instanceof TList) {
@@ -60,10 +60,10 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
                     && $second_arg_type->isFalse()
                 )
             ) {
-                return new Union([clone $first_arg_array]);
+                return new Union([$first_arg_array]);
             }
 
-            return new Union([new TArray([Type::getInt(), clone $first_arg_array->type_param])]);
+            return new Union([new TArray([Type::getInt(), $first_arg_array->type_param])]);
         }
 
         return new Union([$first_arg_array->getGenericArrayType()]);

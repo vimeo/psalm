@@ -778,14 +778,14 @@ abstract class Type
                 && get_class($type_1_atomic) === TNamedObject::class
                 && get_class($type_2_atomic) !== TNamedObject::class)
             ) {
-                $intersection_atomic = clone $type_2_atomic;
+                $intersection_atomic = $type_2_atomic;
                 $wider_type = $type_1_atomic;
                 $intersection_performed = true;
             } elseif (($type_1_atomic->value === $type_2_atomic->value
                 && get_class($type_2_atomic) === TNamedObject::class
                 && get_class($type_1_atomic) !== TNamedObject::class)
             ) {
-                $intersection_atomic = clone $type_1_atomic;
+                $intersection_atomic = $type_1_atomic;
                 $wider_type = $type_2_atomic;
                 $intersection_performed = true;
             }
@@ -814,7 +814,7 @@ abstract class Type
                 $type_2_atomic,
                 $type_1_atomic
             )) {
-                $intersection_atomic = clone $type_2_atomic;
+                $intersection_atomic = $type_2_atomic;
                 $wider_type = $type_1_atomic;
                 $intersection_performed = true;
             } elseif (AtomicTypeComparator::isContainedBy(
@@ -822,7 +822,7 @@ abstract class Type
                 $type_1_atomic,
                 $type_2_atomic
             )) {
-                $intersection_atomic = clone $type_1_atomic;
+                $intersection_atomic = $type_1_atomic;
                 $wider_type = $type_2_atomic;
                 $intersection_performed = true;
             }
@@ -849,7 +849,7 @@ abstract class Type
                 }
             }
             if ($intersection_atomic === null && $wider_type === null) {
-                $intersection_atomic = clone $type_1_atomic;
+                $intersection_atomic = $type_1_atomic;
                 $wider_type = $type_2_atomic;
             }
             if ($intersection_atomic === null || $wider_type === null) {
@@ -881,7 +881,7 @@ abstract class Type
 
             foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
                 $final_intersection[$wider_type_intersection_type->getKey()]
-                    = clone $wider_type_intersection_type;
+                    = $wider_type_intersection_type;
             }
 
             return $intersection_atomic->setIntersectionTypes($final_intersection);

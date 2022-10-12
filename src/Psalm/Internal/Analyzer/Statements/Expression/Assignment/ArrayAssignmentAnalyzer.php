@@ -187,11 +187,11 @@ class ArrayAssignmentAnalyzer
 
             if (count($string_literals) + count($int_literals) === count($all_atomic_types)) {
                 foreach ($string_literals as $string_literal) {
-                    $key_values[] = clone $string_literal;
+                    $key_values[] = $string_literal;
                 }
 
                 foreach ($int_literals as $int_literal) {
-                    $key_values[] = clone $int_literal;
+                    $key_values[] = $int_literal;
                 }
             }
         }
@@ -622,7 +622,7 @@ class ArrayAssignmentAnalyzer
                     if ($atomic_root_types['array']->is_list
                         && $array_atomic_type instanceof TList
                     ) {
-                        $array_atomic_type = clone $atomic_root_types['array'];
+                        $array_atomic_type = $atomic_root_types['array'];
 
                         $new_child_type = new Union([$array_atomic_type]);
 
@@ -965,11 +965,11 @@ class ArrayAssignmentAnalyzer
 
                 if (count($string_literals) + count($int_literals) === count($all_atomic_types)) {
                     foreach ($string_literals as $string_literal) {
-                        $key_values[] = clone $string_literal;
+                        $key_values[] = $string_literal;
                     }
 
                     foreach ($int_literals as $int_literal) {
-                        $key_values[] = clone $int_literal;
+                        $key_values[] = $int_literal;
                     }
                 }
             }

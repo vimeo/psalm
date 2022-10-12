@@ -570,6 +570,7 @@ class ProjectAnalyzer
         return self::$instance;
     }
 
+    /** @psalm-mutation-free */
     public function canReportIssues(string $file_path): bool
     {
         return isset($this->project_files[$file_path]);

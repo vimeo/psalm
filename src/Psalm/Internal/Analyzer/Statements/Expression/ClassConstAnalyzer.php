@@ -427,7 +427,7 @@ class ClassConstAnalyzer
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_string_types[] = new TClassString(
                         $lhs_atomic_type->value,
-                        clone $lhs_atomic_type
+                        $lhs_atomic_type
                     );
                 } elseif ($lhs_atomic_type instanceof TTemplateParam
                     && $lhs_atomic_type->as->isSingle()) {

@@ -484,7 +484,7 @@ class ArgumentsAnalyzer
             return null;
         }
 
-        $replaced_container_hof_atomic = new Union([clone $container_hof_atomic]);
+        $replaced_container_hof_atomic = new Union([$container_hof_atomic]);
 
         // Replaces all input args in container function.
         //
@@ -1494,7 +1494,7 @@ class ArgumentsAnalyzer
                     $array_type = new TArray([Type::getInt(), $array_type->type_param]);
                 }
 
-                $by_ref_type = new Union([clone $array_type]);
+                $by_ref_type = new Union([$array_type]);
 
                 AssignmentAnalyzer::assignByRefParam(
                     $statements_analyzer,

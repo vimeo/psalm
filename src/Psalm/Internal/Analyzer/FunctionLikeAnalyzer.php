@@ -623,8 +623,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 /**
                  * @var TClosure
                  */
-                $closure_atomic = clone $function_type->getSingleAtomic();
+                $closure_atomic = $function_type->getSingleAtomic();
 
+                $new_closure_return_type = $closure_atomic->return_type;
                 if (($storage->return_type === $storage->signature_return_type)
                     && (!$storage->return_type
                         || $storage->return_type->hasMixed()
@@ -634,14 +635,25 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $storage->return_type
                         ))
                 ) {
-                    /** @psalm-suppress InaccessibleProperty Acting on clone */
-                    $closure_atomic->return_type = $closure_return_type;
+                    $new_closure_return_type = $closure_return_type;
                 }
 
-                /** @psalm-suppress InaccessibleProperty Acting on clone */
-                $closure_atomic->is_pure = !$this->inferred_impure;
+                $new_closure_is_pure = !$this->inferred_impure;
 
-                $statements_analyzer->node_data->setType($this->function, new Union([$closure_atomic]));
+                $statements_analyzer->node_data->setType(
+                    $this->function,
+                    new Union([
+                        new TClosure(
+                            $closure_atomic->value,
+                            $closure_atomic->params,
+                            $new_closure_return_type,
+                            $new_closure_is_pure,
+                            $closure_atomic->byref_uses,
+                            $closure_atomic->extra_types,
+                            $closure_atomic->from_docblock,
+                        )
+                    ])
+                );
             }
         }
 

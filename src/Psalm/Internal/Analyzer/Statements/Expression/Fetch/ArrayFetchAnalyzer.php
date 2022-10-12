@@ -581,7 +581,7 @@ class ArrayFetchAnalyzer
                     continue;
                 }
 
-                $type = clone $type->as->getSingleAtomic();
+                $type = $type->as->getSingleAtomic();
                 $original_type = $type;
             }
 

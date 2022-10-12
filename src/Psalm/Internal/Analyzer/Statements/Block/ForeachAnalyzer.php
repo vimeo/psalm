@@ -756,7 +756,7 @@ class ForeachAnalyzer
             ) {
                 $value_type = Type::combineUnionTypes(
                     $value_type,
-                    new Union([clone $iterator_atomic_type])
+                    new Union([$iterator_atomic_type])
                 );
 
                 $key_type = Type::combineUnionTypes(

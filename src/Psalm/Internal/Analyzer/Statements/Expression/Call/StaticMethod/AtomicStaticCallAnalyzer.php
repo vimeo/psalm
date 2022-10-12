@@ -413,11 +413,11 @@ class AtomicStaticCallAnalyzer
                 )) {
                     $mixin_candidates = [];
                     foreach ($class_storage->templatedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = clone $mixin_candidate;
+                        $mixin_candidates[] = $mixin_candidate;
                     }
 
                     foreach ($class_storage->namedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = clone $mixin_candidate;
+                        $mixin_candidates[] = $mixin_candidate;
                     }
 
                     $mixin_candidates_no_generic = array_filter(

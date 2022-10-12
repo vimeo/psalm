@@ -11,6 +11,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -84,6 +85,9 @@ abstract class Atomic implements TypeNode
     public function __construct(bool $from_docblock = false)
     {
         $this->from_docblock = $from_docblock;
+    }
+    protected function __clone()
+    {
     }
     /**
      * Whether or not the type has been checked yet

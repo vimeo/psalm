@@ -3,6 +3,7 @@
 namespace Psalm\Internal;
 
 use Psalm\Storage\Assertion;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -28,6 +29,7 @@ use const PHP_VERSION_ID;
  */
 class Clause
 {
+    use ImmutableNonCloneableTrait;
     /** @var int */
     public $creating_conditional_id;
 

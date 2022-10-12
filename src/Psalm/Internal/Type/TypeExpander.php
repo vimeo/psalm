@@ -686,7 +686,7 @@ class TypeExpander
 
             foreach ($extra_static as $extra_static_type) {
                 if ($extra_static_type->getKey(false) !== $return_type->getKey(false)) {
-                    $return_type_types[$extra_static_type->getKey()] = clone $extra_static_type;
+                    $return_type_types[$extra_static_type->getKey()] = $extra_static_type;
                 }
             }
             $return_type = $return_type->setIntersectionTypes($return_type_types)

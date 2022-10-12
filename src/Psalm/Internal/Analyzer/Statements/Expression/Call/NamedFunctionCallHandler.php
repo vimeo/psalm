@@ -546,7 +546,7 @@ class NamedFunctionCallHandler
 
                 foreach ($var_type->getAtomicTypes() as $class_type) {
                     if ($class_type instanceof TNamedObject) {
-                        $class_string_types[] = new TClassString($class_type->value, clone $class_type);
+                        $class_string_types[] = new TClassString($class_type->value, $class_type);
                     } elseif ($class_type instanceof TTemplateParam
                         && $class_type->as->isSingle()
                     ) {

@@ -50,7 +50,7 @@ class IntegerRangeComparator
         Union $container_type
     ): bool {
         $container_atomic_types = $container_type->getAtomicTypes();
-        $reduced_range = clone $input_type_part;
+        $reduced_range = $input_type_part;
 
         if (isset($container_atomic_types['int'])) {
             if (get_class($container_atomic_types['int']) === TInt::class) {

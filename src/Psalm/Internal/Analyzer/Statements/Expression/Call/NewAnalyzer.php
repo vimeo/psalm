@@ -769,7 +769,7 @@ class NewAnalyzer extends CallAnalyzer
                 if (!$statements_analyzer->node_data->getType($stmt)) {
                     if ($lhs_type_part instanceof TClassString) {
                         $generated_type = $lhs_type_part->as_type
-                            ? clone $lhs_type_part->as_type
+                            ? $lhs_type_part->as_type
                             : new TObject();
 
                         if ($lhs_type_part->as_type

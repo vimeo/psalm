@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
@@ -11,6 +12,8 @@ use Psalm\Internal\Type\TypeAlias;
  */
 class LinkableTypeAlias implements TypeAlias
 {
+    use ImmutableNonCloneableTrait;
+
     public $declaring_fq_classlike_name;
 
     public $alias_name;
