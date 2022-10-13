@@ -9,6 +9,7 @@ use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -21,6 +22,8 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
+
+use function array_values;
 
 /**
  * @internal
@@ -147,33 +150,69 @@ class YieldAnalyzer
         $yield_type = null;
 
         foreach ($expression_type->getAtomicTypes() as $expression_atomic_type) {
-            if ($expression_atomic_type instanceof TNamedObject) {
-                if (!$codebase->classlikes->classOrInterfaceExists($expression_atomic_type->value)) {
-                    continue;
-                }
-
-                $classlike_storage = $codebase->classlike_storage_provider->get($expression_atomic_type->value);
-
-                if ($classlike_storage->yield) {
-                    if ($expression_atomic_type instanceof TGenericObject) {
-                        $yield_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
-                            $codebase,
-                            clone $classlike_storage->yield,
-                            $expression_atomic_type,
-                            $classlike_storage,
-                            $classlike_storage
-                        );
-
-                        $yield_type = Type::combineUnionTypes(
-                            $yield_type,
-                            $yield_candidate_type,
-                            $codebase
-                        );
-                    } else {
-                        $yield_type = Type::getMixed();
-                    }
-                }
+            if (!$expression_atomic_type instanceof TNamedObject) {
+                continue;
             }
+            if (!$codebase->classlikes->classOrInterfaceExists($expression_atomic_type->value)) {
+                continue;
+            }
+
+            $classlike_storage = $codebase->classlike_storage_provider->get($expression_atomic_type->value);
+
+            if (!$classlike_storage->yield) {
+                continue;
+            }
+            $declaring_classlike_storage = $classlike_storage->declaring_yield_fqcn
+                ? $codebase->classlike_storage_provider->get($classlike_storage->declaring_yield_fqcn)
+                : $classlike_storage;
+                
+            $yield_candidate_type = clone $classlike_storage->yield;
+            $yield_candidate_type = !$yield_candidate_type->isMixed()
+                ? TypeExpander::expandUnion(
+                    $codebase,
+                    $yield_candidate_type,
+                    $expression_atomic_type->value,
+                    $expression_atomic_type->value,
+                    null,
+                    true,
+                    false,
+                )
+                : $yield_candidate_type;
+
+            $class_template_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $declaring_classlike_storage,
+                $classlike_storage,
+                null,
+                $expression_atomic_type,
+                true
+            );
+
+            if ($class_template_params) {
+                if (!$expression_atomic_type instanceof TGenericObject) {
+                    $type_params = [];
+
+                    foreach ($class_template_params as $type_map) {
+                        $type_params[] = clone array_values($type_map)[0];
+                    }
+
+                    $expression_atomic_type = new TGenericObject($expression_atomic_type->value, $type_params);
+                }
+
+                $yield_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
+                    $codebase,
+                    $yield_candidate_type,
+                    $expression_atomic_type,
+                    $classlike_storage,
+                    $declaring_classlike_storage
+                );
+            }
+
+            $yield_type = Type::combineUnionTypes(
+                $yield_type,
+                $yield_candidate_type,
+                $codebase
+            );
         }
 
         if ($yield_type) {

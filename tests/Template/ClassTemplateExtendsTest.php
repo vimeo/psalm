@@ -4044,6 +4044,64 @@ class ClassTemplateExtendsTest extends TestCase
                         return new Success("a");
                     }'
             ],
+            'yieldTemplatedComplex' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-yield T
+                     */
+                    class a {
+                    }
+                    
+                    /**
+                     * @template TT1
+                     * @template TT2
+                     * @extends a<TT2>
+                     */
+                    class b extends a {}
+                    
+                    /** @return Generator<int, b<"test1", "test2">, mixed, "test2"> */
+                    function bb(): \Generator {
+                        /** @var b<"test1", "test2"> */
+                        $b = new b;
+                        $result = yield $b;
+                        return $result;
+                    }'
+            ],
+            'yieldTemplatedComplexResolved' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-yield T
+                     */
+                    class a {
+                    }
+                    
+                    /**
+                     * @extends a<"test">
+                     */
+                    class b extends a {}
+                    
+                    /** @return Generator<int, b, mixed, "test"> */
+                    function bb(): \Generator {
+                        $b = new b;
+                        $result = yield $b;
+                        return $result;
+                    }'
+            ],
+            'yieldTernary' => [
+                'code' => '<?php
+
+                /** @psalm-yield int */
+                class a {}
+                
+                /**
+                 * @return Generator<int, a, mixed, int>
+                 */
+                function a(): Generator {
+                    return random_int(0, 1) ? 123 : yield new a;
+                }'
+            ],
             'multiLineTemplateExtends' => [
                 'code' => '<?php
                     interface IdInterface {}

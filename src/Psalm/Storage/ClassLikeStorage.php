@@ -378,6 +378,9 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public $yield;
 
+    /** @var ?string */
+    public $declaring_yield_fqcn;
+
     /**
      * @var array<string, int>|null
      */
