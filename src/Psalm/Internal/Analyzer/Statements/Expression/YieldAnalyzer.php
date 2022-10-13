@@ -184,7 +184,7 @@ class YieldAnalyzer
                 $declaring_classlike_storage,
                 $classlike_storage,
                 null,
-                new TNamedObject($expression_atomic_type->value),
+                $expression_atomic_type,
                 true
             );
 

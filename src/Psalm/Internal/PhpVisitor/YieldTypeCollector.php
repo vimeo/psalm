@@ -5,11 +5,13 @@ namespace Psalm\Internal\PhpVisitor;
 use PhpParser\Node;
 use PhpParser\Node\Expr\YieldFrom;
 use PhpParser\Node\Expr\Yield_;
+use PhpParser\Node\FunctionLike;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Union;
+use PhpParser\NodeTraverser;
 
 /**
  * @internal
@@ -26,17 +28,17 @@ class YieldTypeCollector extends NodeVisitorAbstract
         $this->nodes = $nodes;
     }
 
-    public function enterNode(Node $stmt): ?Node
+    public function enterNode(Node $node): ?int
     {
-        if ($stmt instanceof Yield_) {
+        if ($node instanceof Yield_) {
             $key_type = null;
 
-            if ($stmt->key && $stmt_key_type = $this->nodes->getType($stmt->key)) {
-                $key_type = $stmt_key_type;
+            if ($node->key && $node_key_type = $this->nodes->getType($node->key)) {
+                $key_type = $node_key_type;
             }
 
-            if ($stmt->value
-                && $value_type = $this->nodes->getType($stmt->value)
+            if ($node->value
+                && $value_type = $this->nodes->getType($node->value)
             ) {
                 $generator_type = new TGenericObject(
                     'Generator',
@@ -53,13 +55,15 @@ class YieldTypeCollector extends NodeVisitorAbstract
             }
 
             $this->yield_types []= Type::getMixed();
-        } elseif ($stmt instanceof YieldFrom) {
-            if ($stmt_expr_type = $this->nodes->getType($stmt->expr)) {
-                $this->yield_types []= $stmt_expr_type;
+        } elseif ($node instanceof YieldFrom) {
+            if ($node_expr_type = $this->nodes->getType($node->expr)) {
+                $this->yield_types []= $node_expr_type;
                 return null;
             }
 
             $this->yield_types []= Type::getMixed();
+        } elseif ($node instanceof FunctionLike) {
+            return NodeTraverser::DONT_TRAVERSE_CHILDREN;
         }
 
         return null;
