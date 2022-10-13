@@ -4,10 +4,9 @@
  * The SplDoublyLinkedList class provides the main functionalities of a doubly linked list.
  * @link https://php.net/manual/en/class.spldoublylinkedlist.php
  *
- * @template TKey
  * @template TValue
- * @template-implements Iterator<TKey, TValue>
- * @template-implements ArrayAccess<TKey, TValue>
+ * @template-implements Iterator<int, TValue>
+ * @template-implements ArrayAccess<int, TValue>
  */
 class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializable
 {
@@ -16,7 +15,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
     /**
      * Add/insert a new value at the specified index
      *
-     * @param TKey $index The index where the new value is to be inserted.
+     * @param int $index The index where the new value is to be inserted.
      * @param TValue $newval The new value for the index.
      * @return void
      *
@@ -111,7 +110,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * Returns whether the requested $index exists
      * @link https://php.net/manual/en/spldoublylinkedlist.offsetexists.php
      *
-     * @param TKey $index The index being checked.
+     * @param int $index The index being checked.
      * @return bool true if the requested index exists, otherwise false
      *
      * @since 5.3.0
@@ -122,7 +121,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * Returns the value at the specified $index
      * @link https://php.net/manual/en/spldoublylinkedlist.offsetget.php
      *
-     * @param TKey $index The index with the value.
+     * @param int $index The index with the value.
      * @return TValue The value at the specified index.
      *
      * @since 5.3.0
@@ -133,7 +132,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * Sets the value at the specified $index to $newval
      * @link https://php.net/manual/en/spldoublylinkedlist.offsetset.php
      *
-     * @param TKey $index The index being set.
+     * @param int $index The index being set.
      * @param TValue $newval The new value for the index.
      * @return void
      *
@@ -145,7 +144,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * Unsets the value at the specified $index
      * @link https://php.net/manual/en/spldoublylinkedlist.offsetunset.php
      *
-     * @param TKey $index The index being unset.
+     * @param int $index The index being unset.
      * @return void
      *
      * @since 5.3.0
@@ -166,7 +165,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * Return current node index
      * @link https://php.net/manual/en/spldoublylinkedlist.key.php
      *
-     * @return TKey The current node index.
+     * @return int The current node index.
      *
      * @since 5.3.0
      */
@@ -346,7 +345,7 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
  * @link https://php.net/manual/en/class.splstack.php
  *
  * @template TValue
- * @template-extends SplDoublyLinkedList<int, TValue>
+ * @template-extends SplDoublyLinkedList<TValue>
  */
 class SplStack extends SplDoublyLinkedList {
 }
@@ -356,7 +355,7 @@ class SplStack extends SplDoublyLinkedList {
  * @link https://php.net/manual/en/class.splqueue.php
  *
  * @template TValue
- * @template-extends SplDoublyLinkedList<int, TValue>
+ * @template-extends SplDoublyLinkedList<TValue>
  */
 class SplQueue extends SplDoublyLinkedList {
     /**
