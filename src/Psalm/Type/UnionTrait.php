@@ -67,6 +67,7 @@ trait UnionTrait
     {
         $keyed_types = [];
 
+        $from_docblock = $properties['from_docblock'] ?? false;
         foreach ($types as $type) {
             $key = $type->getKey();
             $keyed_types[$key] = $type;
@@ -86,6 +87,8 @@ trait UnionTrait
             $from_docblock = $from_docblock || $type->from_docblock;
         }
 
+        $properties['from_docblock'] = $from_docblock;
+        
         $this->types = $keyed_types;
         foreach ($properties as $key => $value) {
             if ($key === 'types') {
