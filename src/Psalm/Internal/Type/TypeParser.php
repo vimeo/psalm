@@ -142,7 +142,7 @@ class TypeParser
                     $from_docblock
                 );
 
-                return new Union([$atomic], $from_docblock);
+                return new Union([$atomic], ['from_docblock' => $from_docblock]);
             }
         }
 
@@ -158,7 +158,7 @@ class TypeParser
         );
 
         if (!($parsed_type instanceof Union)) {
-            $parsed_type = new Union([$parsed_type], $from_docblock);
+            $parsed_type = new Union([$parsed_type], ['from_docblock' => $from_docblock]);
         }
 
         return $parsed_type;
@@ -247,7 +247,7 @@ class TypeParser
 
             $callable_type->return_type = $return_type instanceof Union
                 ? $return_type
-                : new Union([$return_type], $from_docblock)
+                : new Union([$return_type], ['from_docblock' => $from_docblock])
             ;
 
             return $callable_type;
@@ -370,15 +370,15 @@ class TypeParser
             );
 
             if ($conditional_type instanceof Atomic) {
-                $conditional_type = new Union([$conditional_type], $from_docblock);
+                $conditional_type = new Union([$conditional_type], ['from_docblock' => $from_docblock]);
             }
 
             if ($if_type instanceof Atomic) {
-                $if_type = new Union([$if_type], $from_docblock);
+                $if_type = new Union([$if_type], ['from_docblock' => $from_docblock]);
             }
 
             if ($else_type instanceof Atomic) {
-                $else_type = new Union([$else_type], $from_docblock);
+                $else_type = new Union([$else_type], ['from_docblock' => $from_docblock]);
             }
 
             return new TConditional(
@@ -605,7 +605,7 @@ class TypeParser
                 }
             }
 
-            $generic_params[] = $tree_type instanceof Union ? $tree_type : new Union([$tree_type], $from_docblock);
+            $generic_params[] = $tree_type instanceof Union ? $tree_type : new Union([$tree_type], ['from_docblock' => $from_docblock]);
         }
 
         $generic_type_value = TypeTokenizer::fixScalarTerms($generic_type);
@@ -1426,7 +1426,7 @@ class TypeParser
             }
 
             if (!$property_type instanceof Union) {
-                $property_type = new Union([$property_type], $from_docblock);
+                $property_type = new Union([$property_type], ['from_docblock' => $from_docblock]);
             }
 
             if ($property_maybe_undefined) {

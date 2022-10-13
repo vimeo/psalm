@@ -101,7 +101,7 @@ class TypeCombiner
         int $literal_limit = 500
     ): Union {
         if (count($types) === 1) {
-            return new Union([$types[0]], $types[0]->from_docblock);
+            return new Union([$types[0]], ['from_docblock' => $types[0]->from_docblock]);
         }
 
         $combination = new TypeCombination();
