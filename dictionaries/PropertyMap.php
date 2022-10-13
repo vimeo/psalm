@@ -164,7 +164,7 @@ return [
     'domnode' => [
         'attributes' => 'DOMNamedNodeMap|null',
         'baseuri' => 'string|null',
-        'childnodes' => 'DomNodeList<DomNode>',
+        'childnodes' => 'DOMNodeList<DOMNode>',
         'firstchild' => 'DOMNode|null',
         'lastchild' => 'DOMNode|null',
         'localname' => 'string|null',
