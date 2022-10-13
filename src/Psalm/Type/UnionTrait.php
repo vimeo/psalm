@@ -49,6 +49,10 @@ use function reset;
 use function sort;
 use function strpos;
 
+/**
+ * @psalm-immutable
+ * @psalm-import-type TProperties from Union
+ */
 trait UnionTrait
 {
     /**
@@ -57,8 +61,9 @@ trait UnionTrait
      * @psalm-external-mutation-free
      *
      * @param non-empty-array<Atomic>     $types
+     * @param TProperties $properties
      */
-    public function __construct(array $types, bool $from_docblock = false)
+    public function __construct(array $types, array $properties = [])
     {
         $keyed_types = [];
 
@@ -82,8 +87,30 @@ trait UnionTrait
         }
 
         $this->types = $keyed_types;
-
-        $this->from_docblock = $from_docblock;
+        foreach ($properties as $key => $value) {
+            if ($key === 'types') {
+                continue;
+            }
+            if ($key === 'id') {
+                continue;
+            }
+            if ($key === 'exact_id') {
+                continue;
+            }
+            if ($key === 'literal_string_types') {
+                continue;
+            }
+            if ($key === 'typed_class_strings') {
+                continue;
+            }
+            if ($key === 'literal_int_types') {
+                continue;
+            }
+            if ($key === 'literal_float_types') {
+                continue;
+            }
+            $this->{$key} = $value;
+        }
     }
 
     /**

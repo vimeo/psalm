@@ -291,10 +291,10 @@ class ForeachAnalyzer
             );
         }
 
-        $value_type ??= Type::getMixed();
+        $value_type ??= new Union([new TMixed()], ['by_ref' => $stmt->byRef]);
 
         if ($stmt->byRef) {
-            $value_type->by_ref = true;
+            $value_type = $value_type->setProperties(['by_ref' => true]);
         }
 
         if ($stmt->byRef
@@ -342,7 +342,9 @@ class ForeachAnalyzer
 
             if (isset($foreach_context->vars_in_scope[$var_comment->var_id])) {
                 $existing_var_type = $foreach_context->vars_in_scope[$var_comment->var_id];
+                /** @psalm-suppress InaccessibleProperty We just created this type */
                 $comment_type->parent_nodes = $existing_var_type->parent_nodes;
+                /** @psalm-suppress InaccessibleProperty We just created this type */
                 $comment_type->by_ref = $existing_var_type->by_ref;
             }
 

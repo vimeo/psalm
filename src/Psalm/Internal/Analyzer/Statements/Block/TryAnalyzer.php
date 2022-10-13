@@ -114,10 +114,12 @@ class TryAnalyzer
 
         foreach ($context->vars_in_scope as $var_id => $type) {
             if (!isset($try_context->vars_in_scope[$var_id])) {
-                $try_context->vars_in_scope[$var_id] = clone $type;
+                $try_context->vars_in_scope[$var_id] = $type;
 
-                $context->vars_in_scope[$var_id]->possibly_undefined = true;
-                $context->vars_in_scope[$var_id]->possibly_undefined_from_try = true;
+                $context->vars_in_scope[$var_id] = $type->setProperties([
+                    'possibly_undefined' => true,
+                    'possibly_undefined_from_try' => true
+                ]);
             } else {
                 $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $try_context->vars_in_scope[$var_id],
@@ -164,8 +166,9 @@ class TryAnalyzer
 
             foreach ($catch_context->vars_in_scope as $var_id => $type) {
                 if (!isset($old_context->vars_in_scope[$var_id])) {
-                    $type = clone $type;
-                    $type->possibly_undefined_from_try = true;
+                    $type = $type->setProperties([
+                        'possibly_undefined_from_try' => true
+                    ]);
                     $catch_context->vars_in_scope[$var_id] = $type;
                 } else {
                     $catch_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
@@ -395,7 +398,7 @@ class TryAnalyzer
             }
 
             if ($try_context->finally_scope) {
-                foreach ($catch_context->vars_in_scope as $var_id => $type) {
+                foreach ($catch_context->vars_in_scope as $var_id => &$type) {
                     if (isset($try_context->finally_scope->vars_in_scope[$var_id])) {
                         if ($try_context->finally_scope->vars_in_scope[$var_id] !== $type) {
                             $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
@@ -406,8 +409,10 @@ class TryAnalyzer
                         }
                     } else {
                         $try_context->finally_scope->vars_in_scope[$var_id] = $type;
-                        $type->possibly_undefined = true;
-                        $type->possibly_undefined_from_try = true;
+                        $type = $type->setProperties([
+                            'possibly_undefined' => true,
+                            'possibly_undefined_from_try' => true
+                        ]);
                     }
                 }
             }
@@ -439,18 +444,20 @@ class TryAnalyzer
                     if (isset($context->vars_in_scope[$var_id])
                         && isset($finally_context->vars_in_scope[$var_id])
                     ) {
-                        if ($context->vars_in_scope[$var_id]->possibly_undefined
-                            && $context->vars_in_scope[$var_id]->possibly_undefined_from_try
-                        ) {
-                            $context->vars_in_scope[$var_id]->possibly_undefined = false;
-                            $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
-                        }
+                        $possibly_undefined = $context->vars_in_scope[$var_id]->possibly_undefined
+                            && $context->vars_in_scope[$var_id]->possibly_undefined_from_try;
 
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
                             $finally_context->vars_in_scope[$var_id],
                             $codebase
                         );
+                        if ($possibly_undefined) {
+                            /** @psalm-suppress InaccessibleProperty We just created this type */
+                            $context->vars_in_scope[$var_id]->possibly_undefined = false;
+                            /** @psalm-suppress InaccessibleProperty We just created this type */
+                            $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;    
+                        }
                     } elseif (isset($finally_context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = clone $finally_context->vars_in_scope[$var_id];
                     }
@@ -460,14 +467,13 @@ class TryAnalyzer
 
         foreach ($definitely_newly_assigned_var_ids as $var_id => $_) {
             if (isset($context->vars_in_scope[$var_id])) {
-                $new_type = clone $context->vars_in_scope[$var_id];
-
-                if ($new_type->possibly_undefined_from_try) {
-                    $new_type->possibly_undefined = false;
-                    $new_type->possibly_undefined_from_try = false;
+                if ($context->vars_in_scope[$var_id]->possibly_undefined_from_try) {
+                    $context->vars_in_scope[$var_id] = 
+                        $context->vars_in_scope[$var_id]->setProperties([
+                            'possibly_undefined' => false,
+                            'possibly_undefined_from_try' => false,
+                        ]);
                 }
-
-                $context->vars_in_scope[$var_id] = $new_type;
             }
         }
 

@@ -4,6 +4,7 @@ namespace Psalm\Type;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -12,6 +13,32 @@ use Stringable;
 
 use function get_object_vars;
 
+/**
+ * @psalm-immutable
+ * @psalm-type TProperties=array{
+ *      from_docblock?: bool,
+ *      from_calculation?: bool,
+ *      from_property?: bool,
+ *      from_static_property?: bool,
+ *      initialized?: bool,
+ *      initialized_class?: ?string,
+ *      checked?: bool,
+ *      failed_reconciliation?: bool,
+ *      ignore_nullable_issues?: bool,
+ *      ignore_falsable_issues?: bool,
+ *      ignore_isset?: bool,
+ *      possibly_undefined?: bool,
+ *      possibly_undefined_from_try?: bool,
+ *      had_template?: bool,
+ *      from_template_default?: bool,
+ *      by_ref?: bool,
+ *      reference_free?: bool,
+ *      allow_mutations?: bool,
+ *      has_mutations?: bool,
+ *      different?: bool,
+ *      parent_nodes?: array<string, DataFlowNode>
+ * }
+ */
 final class Union implements TypeNode, Stringable
 {
     use UnionTrait;
@@ -198,24 +225,13 @@ final class Union implements TypeNode, Stringable
     public $different = false;
 
     /**
-     * @psalm-mutation-free
-     * @param non-empty-array<Atomic>  $types
+     * @param TProperties $properties
+     * @return static
      */
-    public function setTypes(array $types): self
+    public function setProperties(array $properties): self
     {
-        if ($types === $this->types) {
-            return $this;
-        }
-        return $this->getBuilder()->setTypes($types)->freeze();
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function getBuilder(): MutableUnion
-    {
-        $union = new MutableUnion($this->getAtomicTypes());
-        foreach (get_object_vars($this) as $key => $value) {
+        $obj = null;
+        foreach ($properties as $key => $value) {
             if ($key === 'types') {
                 continue;
             }
@@ -237,10 +253,34 @@ final class Union implements TypeNode, Stringable
             if ($key === 'literal_float_types') {
                 continue;
             }
-            /** @psalm-suppress ImpurePropertyAssignment Acting on clone */
-            $union->{$key} = $value;
+            if ($this->{$key} !== $value) {
+                if ($obj === null) {
+                    $obj = clone $this;
+                }
+                $obj->{$key} = $value;
+            }
         }
-        return $union;
+        return $obj ?? $this;
+    }
+
+    /**
+     * @psalm-mutation-free
+     * @param non-empty-array<Atomic>  $types
+     */
+    public function setTypes(array $types): self
+    {
+        if ($types === $this->types) {
+            return $this;
+        }
+        return $this->getBuilder()->setTypes($types)->freeze();
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getBuilder(): MutableUnion
+    {
+        return new MutableUnion($this->getAtomicTypes(), get_object_vars($this));
     }
 
     /**

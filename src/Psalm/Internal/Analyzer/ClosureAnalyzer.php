@@ -13,6 +13,7 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -135,7 +136,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
                 if ($use->byRef && !$context->hasVariable($use_var_id)) {
-                    $context->vars_in_scope[$use_var_id] = Type::getMixed();
+                    $context->vars_in_scope[$use_var_id] = new Union([new TMixed()], ['by_ref' => true]);
                 }
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
@@ -158,7 +159,8 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     : Type::getMixed();
 
                 if ($use->byRef) {
-                    $use_context->vars_in_scope[$use_var_id]->by_ref = true;
+                    $use_context->vars_in_scope[$use_var_id] = 
+                        $use_context->vars_in_scope[$use_var_id]->setProperties(['by_ref' => true]);
                     $use_context->references_to_external_scope[$use_var_id] = true;
                 }
 
@@ -327,8 +329,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     continue;
                 }
             } elseif ($use->byRef) {
-                $new_type = Type::getMixed();
-                $new_type->parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
+                $new_type = new Union([new TMixed()], [
+                    'parent_nodes' => $context->vars_in_scope[$use_var_id]->parent_nodes
+                ]);
 
                 $context->remove($use_var_id);
 
