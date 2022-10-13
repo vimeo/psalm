@@ -6,12 +6,12 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\YieldFrom;
 use PhpParser\Node\Expr\Yield_;
 use PhpParser\Node\FunctionLike;
+use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Union;
-use PhpParser\NodeTraverser;
 
 /**
  * @internal
