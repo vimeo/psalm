@@ -611,6 +611,116 @@ class ClassTest extends TestCase
                         return $b;
                     }'
             ],
+            'preventDoubleStaticResolution1' => [
+                'code' => '<?php
+
+                    /**
+                     * @template TTKey
+                     * @template TTValue
+                     *
+                     * @extends ArrayObject<TTKey, TTValue>
+                     */
+                    class iter extends ArrayObject {
+                        /**
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function stabilize(): self {
+                            return $this;
+                        }
+                    }
+                    
+                    class a {
+                        /**
+                         * @return iter<int, static>
+                         */
+                        public function ret(): iter {
+                            return new iter([$this]);
+                        }
+                    }
+                    class b extends a {
+                    }
+                    
+                    $a = new b;
+                    $a = $a->ret();
+                    $a = $a->stabilize();',
+                'assertions' => [
+                    '$a===' => 'iter<int, b&static>'
+                ]
+            ],
+            'preventDoubleStaticResolution2' => [
+                'code' => '<?php
+                    /**
+                     * @template TTKey
+                     * @template TTValue
+                     *
+                     * @extends ArrayObject<TTKey, TTValue>
+                     */
+                    class iter extends ArrayObject {
+                        /**
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function stabilize(): self {
+                            return $this;
+                        }
+                    }
+                    
+                    interface a {
+                        /**
+                         * @return iter<int, static>
+                         */
+                        public function ret(): iter;
+                    }
+                    class b implements a {
+                        public function ret(): iter {
+                            return new iter([$this]);
+                        }
+                    }
+                    
+                    /** @var a */
+                    $a = new b;
+                    $a = $a->ret();
+                    $a = $a->stabilize();',
+                'assertions' => [
+                    '$a===' => 'iter<int, a&static>'
+                ]
+            ],
+            'preventDoubleStaticResolution3' => [
+                'code' => '<?php
+                    /**
+                     * @template TTKey
+                     * @template TTValue
+                     *
+                     * @extends ArrayObject<TTKey, TTValue>
+                     */
+                    class iter extends ArrayObject {
+                        /**
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function stabilize(): self {
+                            return $this;
+                        }
+                    }
+                    
+                    interface a {
+                        /**
+                         * @return iter<int, a&static>
+                         */
+                        public function ret(): iter;
+                    }
+                    class b implements a {
+                        public function ret(): iter {
+                            return new iter([$this]);
+                        }
+                    }
+                    
+                    /** @var a */
+                    $a = new b;
+                    $a = $a->ret();
+                    $a = $a->stabilize();',
+                'assertions' => [
+                    '$a===' => 'iter<int, a&static>'
+                ]
+            ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
                     /**

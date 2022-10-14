@@ -669,14 +669,12 @@ class TypeExpander
             if (!$final && $return_type instanceof TNamedObject) {
                 /** @psalm-suppress InaccessibleProperty Acting on a clone */
                 $return_type->is_static = true;
+                /** @psalm-suppress InaccessibleProperty Acting on a clone */
+                $return_type->is_static_resolved = true;
             }
-        } elseif ($return_type->is_static
-            && (($static_class_type instanceof TNamedObject
-                && $codebase->classlikes->classExtends(
-                    $static_class_type->value,
-                    $return_type->value
-                )
-            ) || $static_class_type instanceof TTemplateParam)
+        } elseif ($return_type->is_static && !$return_type->is_static_resolved
+            && ($static_class_type instanceof TNamedObject
+                || $static_class_type instanceof TTemplateParam)
         ) {
             $return_type_types = $return_type->getIntersectionTypes();
             $cloned_static = $static_class_type->setIntersectionTypes([]);
@@ -691,7 +689,8 @@ class TypeExpander
                     $return_type_types[$extra_static_type->getKey()] = clone $extra_static_type;
                 }
             }
-            $return_type = $return_type->setIntersectionTypes($return_type_types);
+            $return_type = $return_type->setIntersectionTypes($return_type_types)
+                ->setIsStatic(true, true);
         } elseif ($return_type->is_static && is_string($static_class_type) && $final) {
             $return_type = clone $return_type;
             /** @psalm-suppress InaccessibleProperty Acting on a clone */
