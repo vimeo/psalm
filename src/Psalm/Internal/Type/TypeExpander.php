@@ -671,8 +671,12 @@ class TypeExpander
                 $return_type->is_static = true;
             }
         } elseif ($return_type->is_static
-            && ($static_class_type instanceof TNamedObject
-                || $static_class_type instanceof TTemplateParam)
+            && (($static_class_type instanceof TNamedObject
+                && $codebase->classlikes->classExtends(
+                    $static_class_type->value,
+                    $return_type->value
+                )
+            ) || $static_class_type instanceof TTemplateParam)
         ) {
             $return_type_types = $return_type->getIntersectionTypes();
             $cloned_static = $static_class_type->setIntersectionTypes([]);
