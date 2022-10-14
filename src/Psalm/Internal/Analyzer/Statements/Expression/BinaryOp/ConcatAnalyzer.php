@@ -199,9 +199,6 @@ class ConcatAnalyzer
                     $numeric_type
                 );
 
-                $numeric_type = Type::getNumericString();
-                $numeric_type->addType(new TInt());
-                $numeric_type->addType(new TFloat());
                 $right_is_numeric = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $right_type,
