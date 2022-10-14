@@ -66,7 +66,7 @@ class TNamedObject extends Atomic
 
     public function setIsStatic(bool $is_static, ?bool $is_static_resolved = null): self
     {
-        $this->is_static_resolved ??= $this->is_static_resolved;
+        $is_static_resolved ??= $this->is_static_resolved;
         if ($this->is_static === $is_static && $this->is_static_resolved === $is_static_resolved) {
             return $this;
         }
