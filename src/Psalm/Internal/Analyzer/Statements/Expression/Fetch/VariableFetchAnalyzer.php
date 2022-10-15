@@ -160,7 +160,7 @@ class VariableFetchAnalyzer
             return true;
         }
 
-        if (is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name)) {
+        if (is_string($stmt->name) && self::isGlobalVariable('$' . $stmt->name, $codebase->analysis_php_version_id)) {
             $var_name = '$' . $stmt->name;
 
             if (isset($context->vars_in_scope[$var_name])) {
@@ -533,7 +533,17 @@ class VariableFetchAnalyzer
         );
     }
 
+    public static function isGlobalVariable(string $var_id, int $codebase_analysis_php_version_id): bool
+    {
+        return static::getGlobalTypeIfExists($var_id, $codebase_analysis_php_version_id) !== null;
+    }
+    
     public static function getGlobalType(string $var_id, int $codebase_analysis_php_version_id): Union
+    {
+        return static::getGlobalTypeIfExists($var_id, $codebase_analysis_php_version_id) ?? Type::getMixed();
+    }
+
+    public static function getGlobalTypeIfExists(string $var_id, int $codebase_analysis_php_version_id): ?Union
     {
         $config = Config::getInstance();
 
@@ -791,6 +801,6 @@ class VariableFetchAnalyzer
             return $type;
         }
 
-        return Type::getMixed();
+        return null;
     }
 }

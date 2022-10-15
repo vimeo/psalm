@@ -16,6 +16,12 @@ use const DIRECTORY_SEPARATOR;
 
 class TaintTest extends TestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->testConfig->globals['$mysqli_connection_global'] = 'mysqli';
+    }
+
     /**
      * @dataProvider providerValidCodeParse
      */
@@ -708,6 +714,12 @@ class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'typeDetectionForConfigGlobals' => [
+                'code' => '<?php
+                    $mysqli_connection_global->query($_GET["injection"]);
+                    ',
+                'error_message' => 'TaintedSql',
+            ],
             'taintedInputFromMethodReturnTypeSimple' => [
                 '<?php
                     class A {
