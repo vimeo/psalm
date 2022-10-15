@@ -199,6 +199,14 @@ class ConcatAnalyzer
                     $numeric_type
                 );
 
+                $right_is_numeric = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $right_type,
+                    $numeric_type
+                );
+
+                $has_numeric_type = $left_is_numeric || $right_is_numeric;
+
                 if ($left_is_numeric) {
                     $right_uint = Type::getPositiveInt();
                     $right_uint->addType(new TLiteralInt(0));
@@ -230,15 +238,22 @@ class ConcatAnalyzer
                 $non_empty_string = clone $numeric_type;
                 $non_empty_string->addType(new TNonEmptyString());
 
-                $has_non_empty = UnionTypeComparator::isContainedBy(
+                $left_non_empty = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $left_type,
                     $non_empty_string
-                ) || UnionTypeComparator::isContainedBy(
+                );
+
+                $right_non_empty = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $right_type,
                     $non_empty_string
                 );
+
+                $has_non_empty = $left_non_empty || $right_non_empty;
+                $all_non_empty = $left_non_empty && $right_non_empty;
+
+                $has_numeric_and_non_empty = $has_numeric_type && $has_non_empty;
 
                 $all_literals = $left_type->allLiterals() && $right_type->allLiterals();
 
@@ -248,7 +263,8 @@ class ConcatAnalyzer
                     } elseif ($all_lowercase) {
                         $result_type = Type::getNonEmptyLowercaseString();
                     } else {
-                        $result_type = Type::getNonEmptyString();
+                        $result_type = $all_non_empty || $has_numeric_and_non_empty ?
+                            Type::getNonFalsyString() : Type::getNonEmptyString();
                     }
                 } else {
                     if ($all_literals) {
