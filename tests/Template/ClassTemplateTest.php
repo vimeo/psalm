@@ -1039,9 +1039,9 @@ class ClassTemplateTest extends TestCase
                 'code' => '<?php
                     $list = new SplDoublyLinkedList();
                     $list->add(5, "hello");
-                    $list->add("hello", 5);
+                    $list->add(5, 1);
 
-                    /** @var SplDoublyLinkedList<int, string> */
+                    /** @var SplDoublyLinkedList<string> */
                     $templated_list = new SplDoublyLinkedList();
                     $templated_list->add(5, "hello");
                     $a = $templated_list->bottom();',
@@ -3937,7 +3937,7 @@ class ClassTemplateTest extends TestCase
             ],
             'doublyLinkedListBadParam' => [
                 'code' => '<?php
-                    /** @var SplDoublyLinkedList<int, string> */
+                    /** @var SplDoublyLinkedList<string> */
                     $templated_list = new SplDoublyLinkedList();
                     $templated_list->add(5, []);',
                 'error_message' => 'InvalidArgument',

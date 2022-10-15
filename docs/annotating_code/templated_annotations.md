@@ -448,5 +448,5 @@ Psalm has support for a number of builtin classes and interfaces that you can ex
 - `class ArrayObject<TKey, TValue> implements IteratorAggregate<TKey, TValue>, ArrayAccess<TKey, TValue>`
 - `class ArrayIterator<TKey of array-key, TValue> implements SeekableIterator<TKey, TValue>, ArrayAccess<TKey, TValue>`
 - `class DOMNodeList<TNode of DOMNode> implements Traversable<int, TNode>`
-- `class SplDoublyLinkedList<TKey, TValue> implements Iterator<TKey, TValue>, ArrayAccess<TKey, TValue>`
-- `class SplQueue<TValue> extends SplDoublyLinkedList<int, TValue>`
+- `class SplDoublyLinkedList<TValue> implements Iterator<TKey, TValue>, ArrayAccess<TKey, TValue>`
+- `class SplQueue<TValue> extends SplDoublyLinkedList<TValue>`
