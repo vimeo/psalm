@@ -58,10 +58,8 @@ class DateTimeImmutable implements DateTimeInterface
 
     /**
      * @psalm-mutation-free
-     * @return static|false this method can fail in case an {@see DateInterval} with relative
-     *                      week days is passed in.
-     *
-     * @see https://github.com/php/php-src/blob/534127d3b22b193ffb9511c4447584f0d2bd4e24/ext/date/php_date.c#L3157-L3160
+     * @return static
+
      */
     public function sub(DateInterval $interval) {}
 
