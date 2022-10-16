@@ -973,7 +973,7 @@ class MethodCallTest extends TestCase
 
                     class Datetime extends \DateTime
                     {
-                        public static function createFromInterface(\DatetimeInterface $datetime): static
+                        public static function createFromInterface(\DateTimeInterface $datetime): static
                         {
                             return parent::createFromInterface($datetime);
                         }
