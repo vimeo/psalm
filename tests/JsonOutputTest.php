@@ -131,6 +131,7 @@ class JsonOutputTest extends TestCase
                     $a = $_GET["hello"];
                     assert(is_string($a));
                     if (is_string($a)) {}',
+                'error_count' => 1,
                 'message' => 'Docblock-defined type string for $a is always string',
                 'line' => 4,
                 'error' => 'is_string($a)',
