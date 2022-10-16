@@ -6,7 +6,7 @@ cannot infer a type more specific than `mixed`.
 ```php
 <?php
 
-$a = $_GET['foo'];
+$a = $GLOBALS['foo'];
 ```
 
 ## How to fix
@@ -16,7 +16,7 @@ The above example can be fixed in a few ways – by adding an `assert` call:
 ```php
 <?php
 
-$a = $_GET['foo'];
+$a = $GLOBALS['foo'];
 assert(is_string($a));
 ```
 
@@ -25,7 +25,7 @@ or by adding an explicit cast:
 ```php
 <?php
 
-$a = (string) $_GET['foo'];
+$a = (string) $GLOBALS['foo'];
 ```
 
 or by adding a docblock
@@ -34,5 +34,5 @@ or by adding a docblock
 <?php
 
 /** @var string */
-$a = $_GET['foo'];
+$a = $GLOBALS['foo'];
 ```

@@ -22,6 +22,7 @@ Atomic types are the basic building block of all type information used in Psalm.
 ## [Object types](object_types.md)
 
 - [object](object_types.md)
+- [object{foo: string}](object_types.md)
 - [Exception, Foo\MyClass and Foo\MyClass<Bar>](object_types.md)
 - [Generator](object_types.md)
 

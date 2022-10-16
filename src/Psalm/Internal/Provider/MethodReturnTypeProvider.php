@@ -7,6 +7,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Provider\ReturnTypeProvider\ClosureFromCallableReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\DateTimeModifyReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DomNodeAppendChild;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImagickPixelColorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider;
@@ -41,6 +42,7 @@ class MethodReturnTypeProvider
         $this->registerClass(SimpleXmlElementAsXml::class);
         $this->registerClass(PdoStatementReturnTypeProvider::class);
         $this->registerClass(ClosureFromCallableReturnTypeProvider::class);
+        $this->registerClass(DateTimeModifyReturnTypeProvider::class);
     }
 
     /**

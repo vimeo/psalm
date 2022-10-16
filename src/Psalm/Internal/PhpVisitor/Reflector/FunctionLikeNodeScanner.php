@@ -615,6 +615,7 @@ class FunctionLikeNodeScanner
                 $doc_comment = $param->getDocComment();
                 $var_comment_type = null;
                 $var_comment_readonly = false;
+                $var_comment_allow_private_mutation = false;
                 if ($doc_comment) {
                     $var_comments = CommentAnalyzer::getTypeFromComment(
                         $doc_comment,
@@ -629,6 +630,7 @@ class FunctionLikeNodeScanner
                     if ($var_comment !== null) {
                         $var_comment_type = $var_comment->type;
                         $var_comment_readonly = $var_comment->readonly;
+                        $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
                     }
                 }
 
@@ -661,6 +663,7 @@ class FunctionLikeNodeScanner
                 $property_storage->has_default = (bool)$param->default;
                 $param_type_readonly = (bool)($param->flags & PhpParser\Node\Stmt\Class_::MODIFIER_READONLY);
                 $property_storage->readonly = $param_type_readonly ?: $var_comment_readonly;
+                $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
 

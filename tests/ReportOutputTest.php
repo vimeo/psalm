@@ -1271,6 +1271,26 @@ EOF;
         );
     }
 
+    public function testCountOutput(): void
+    {
+        $this->analyzeFileForReport();
+
+        $report_options = new ReportOptions();
+        $report_options->format = Report::TYPE_COUNT;
+        $expected_output = <<<'EOF'
+MixedInferredReturnType: 1
+MixedReturnStatement: 1
+PossiblyUndefinedGlobalVariable: 1
+UndefinedConstant: 1
+UndefinedVariable: 1
+
+EOF;
+        $this->assertSame(
+            $expected_output,
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $report_options)
+        );
+    }
+
     public function testEmptyReportIfNotError(): void
     {
         $this->addFile(

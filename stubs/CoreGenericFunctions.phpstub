@@ -344,6 +344,22 @@ function fclose(&$stream) : bool
 }
 
 /**
+ * @psalm-pure
+ * @template T as string
+ * @param T $string
+ * @return (T is non-empty-string ? non-empty-string : string)
+ */
+function sodium_bin2base64(string $string, int $id): string
+
+/**
+ * @psalm-pure
+ * @template T as string
+ * @param T $string
+ * @return (T is non-empty-string ? non-empty-string : string)
+ */
+function sodium_bin2hex(string $string): string {}
+
+/**
  * @param string $string
  * @param-out null $string
  */
@@ -559,6 +575,12 @@ function strpos($haystack, $needle, int $offset = 0) : int {}
 /**
  * @psalm-pure
  *
+ * @return (
+ *      $string is class-string
+ *          ? ($characters is '\\' ? class-string : string)
+ *          : ($string is lowercase-string ? lowercase-string : string)
+ * )
+ *
  * @psalm-flow ($string) -> return
  */
 function trim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
@@ -566,7 +588,11 @@ function trim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 /**
  * @psalm-pure
  *
- * @return ($string is class-string ? ($characters is '\\' ? class-string : string) : string)
+ * @return (
+ *      $string is class-string
+ *          ? ($characters is '\\' ? class-string : string)
+ *          : ($string is lowercase-string ? lowercase-string : string)
+ * )
  *
  * @psalm-flow ($string) -> return
  */
@@ -574,6 +600,8 @@ function ltrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
+ *
+ * @return ($string is lowercase-string ? lowercase-string : string)
  *
  * @psalm-flow ($string) -> return
  */
@@ -1290,7 +1318,7 @@ function pack(string $format, mixed ...$values) {}
  * @param string|int $out_codepage
  * @psalm-flow ($subject) -> return
  */
-function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : string {}
+function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : ?string {}
 
 /**
  * @psalm-pure
@@ -1323,8 +1351,20 @@ function base64_decode(string $string, bool $strict = false) {}
  * @psalm-pure
  *
  * @psalm-flow ($string) -> return
+ * @template T as string
+ * @param T $string
+ * @return (T is non-empty-string ? non-empty-string : string)
  */
 function base64_encode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @template T as string
+ * @param T $string
+ * @return (T is non-empty-string ? non-empty-string : string)
+ */
+function bin2hex(string $string): string {}
 
 /**
  * @psalm-pure

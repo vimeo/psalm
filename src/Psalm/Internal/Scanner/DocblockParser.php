@@ -113,7 +113,7 @@ class DocblockParser
                 // Strip the leading *, if present.
                 $text = $lines[$k];
                 $text = str_replace("\t", ' ', $text);
-                $text = preg_replace('/^ *\*/', '', $text);
+                $text = preg_replace('/^ *\*/', '', $text, 1);
                 $lines[$k] = $text;
             }
 
@@ -144,7 +144,7 @@ class DocblockParser
 
         // Trim any empty lines off the front, but leave the indent level if there
         // is one.
-        $docblock = preg_replace('/^\s*\n/', '', $docblock);
+        $docblock = preg_replace('/^\s*\n/', '', $docblock, 1);
 
         $parsed = new ParsedDocblock($docblock, $special, $first_line_padding ?: '');
 

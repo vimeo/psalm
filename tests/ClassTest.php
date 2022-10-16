@@ -1004,6 +1004,18 @@ class ClassTest extends TestCase
                 ',
                 'error_message' => 'MissingTemplateParam',
             ],
+            'cannotNameClassConstantClass' => [
+                '<?php
+                class Foo
+                {
+                    /** @var class-string<Bar> */
+                    protected const CLASS = Bar::class;
+                }
+                
+                class Bar {}
+                ',
+                'error_message' => 'ReservedWord',
+            ]
         ];
     }
 }

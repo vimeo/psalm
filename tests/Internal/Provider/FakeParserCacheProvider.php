@@ -33,6 +33,14 @@ class FakeParserCacheProvider extends ParserCacheProvider
     {
     }
 
+    public function deleteOldParserCaches(float $time_before): int
+    {
+        $this->existing_file_content_hashes = null;
+        $this->new_file_content_hashes = [];
+
+        return 0;
+    }
+
     public function saveFileContentHashes(): void
     {
     }

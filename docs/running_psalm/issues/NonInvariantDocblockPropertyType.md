@@ -42,7 +42,7 @@ You can either broaden the type or you could, in certain situations, use templat
 <?php
 
 /**
- * @template T as string|null
+ * @template T of string|null
  */
 abstract class A {
     /** @var T */

@@ -22,7 +22,7 @@ final class ReportOptions
     public $show_info = true;
 
     /**
-     * @var value-of<Report::SUPPORTED_OUTPUT_TYPES>
+     * @var Report::TYPE_*
      */
     public $format = Report::TYPE_CONSOLE;
 

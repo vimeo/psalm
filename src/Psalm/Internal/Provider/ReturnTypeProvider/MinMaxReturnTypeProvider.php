@@ -9,18 +9,17 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function array_filter;
 use function assert;
 use function count;
-use function get_class;
 use function in_array;
 use function max;
 use function min;
@@ -94,6 +93,9 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $max_bounds[] = $atomic_type->max_bound;
                         } elseif (get_class($atomic_type) === TInt::class) {
                             $min_bounds[] = null;
+                            $max_bounds[] = null;
+                        } elseif ($atomic_type instanceof TDependentListKey) {
+                            $min_bounds[] = 0;
                             $max_bounds[] = null;
                         } else {
                             throw new UnexpectedValueException('Unexpected type');

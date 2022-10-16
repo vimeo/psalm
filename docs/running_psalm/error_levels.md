@@ -186,6 +186,7 @@ These issues are treated as errors at level 3 and below.
  - [PossiblyUndefinedMethod](issues/PossiblyUndefinedMethod.md)
  - [PossiblyUndefinedVariable](issues/PossiblyUndefinedVariable.md)
  - [PropertyTypeCoercion](issues/PropertyTypeCoercion.md)
+ - [RiskyCast](issues/RiskyCast.md)
 
 ## Errors ignored at level 5 and higher
 

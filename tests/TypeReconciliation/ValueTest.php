@@ -917,6 +917,14 @@ class ValueTest extends TestCase
                     $interval = \DateInterval::createFromDateString("30 дней");
                     if ($interval === false) {}',
             ],
+            'literalInt' => [
+                '<?php
+                    $a = (int)"5";
+                ',
+                'assertions' => [
+                    '$a===' => '5',
+                ],
+            ],
         ];
     }
 

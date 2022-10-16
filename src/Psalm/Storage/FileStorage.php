@@ -86,7 +86,7 @@ final class FileStorage
     public $type_aliases = [];
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<string, string>
      */
     public $classlike_aliases = [];
 

@@ -124,6 +124,28 @@ class AssertionFinder
     public const ASSIGNMENT_TO_RIGHT = 1;
     public const ASSIGNMENT_TO_LEFT = -1;
 
+    public const IS_TYPE_CHECKS = [
+        'is_string' => ['string', [Type::class, 'getString']],
+        'is_int' => ['int', [Type::class, 'getInt']],
+        'is_integer' => ['int', [Type::class, 'getInt']],
+        'is_long' => ['int', [Type::class, 'getInt']],
+        'is_bool' => ['bool', [Type::class, 'getBool']],
+        'is_resource' => ['resource', [Type::class, 'getResource']],
+        'is_object' => ['object', [Type::class, 'getObject']],
+        'array_is_list' => ['list', [Type::class, 'getList']],
+        'is_array' => ['array', [Type::class, 'getArray']],
+        'is_numeric' => ['numeric', [Type::class, 'getNumeric']],
+        'is_null' => ['null', [Type::class, 'getNull']],
+        'is_float' => ['float', [Type::class, 'getFloat']],
+        'is_real' => ['float', [Type::class, 'getFloat']],
+        'is_double' => ['float', [Type::class, 'getFloat']],
+        'is_scalar' => ['scalar', [Type::class, 'getScalar']],
+        'is_iterable' => ['iterable'],
+        'is_countable' => ['countable'],
+        'ctype_digit' => ['=numeric-string', [Type::class, 'getNumericString']],
+        'ctype_lower' => ['non-empty-lowercase-string', [Type::class, 'getNonEmptyLowercaseString']],
+    ];
+
     /**
      * Gets all the type assertions in a conditional
      *
@@ -3724,8 +3746,8 @@ class AssertionFinder
             )
             : null;
 
-        if ($array_root) {
-            if ($first_var_name === null && isset($expr->getArgs()[0])) {
+        if ($array_root && isset($expr->getArgs()[0])) {
+            if ($first_var_name === null) {
                 $first_arg = $expr->getArgs()[0];
 
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
@@ -3756,7 +3778,10 @@ class AssertionFinder
                 } else {
                     $first_var_name = null;
                 }
-            } elseif ($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\Variable
+            } elseif (($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\Variable
+                    || $expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\PropertyFetch
+                    || $expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                )
                 && $source instanceof StatementsAnalyzer
                 && ($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
             ) {

@@ -260,8 +260,6 @@ class ExpressionScanner
                     $second_arg_value = substr($second_arg_value, 1);
                 }
 
-                $second_arg_value = strtolower($second_arg_value);
-
                 $codebase->classlikes->addClassAlias(
                     $first_arg_value,
                     $second_arg_value

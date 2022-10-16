@@ -40,7 +40,7 @@ You can also parameterize `class-string` with an object name e.g. [`class-string
 
 ### trait-string
 
-Psalm also supports a `trait-string` annotation denote a trait that exists.
+Psalm also supports a `trait-string` annotation denoting a trait that exists.
 
 ### enum-string
 

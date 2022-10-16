@@ -3,13 +3,14 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Storage\FileStorage;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function array_merge;
 use function dirname;
 use function file_exists;
-use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function get_class;
@@ -24,6 +25,7 @@ use function unlink;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
+use const LOCK_EX;
 use const PHP_VERSION_ID;
 
 /**
@@ -79,9 +81,9 @@ class FileStorageCacheProvider
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
         if ($this->config->use_igbinary) {
-            file_put_contents($cache_location, igbinary_serialize($storage));
+            file_put_contents($cache_location, igbinary_serialize($storage), LOCK_EX);
         } else {
-            file_put_contents($cache_location, serialize($storage));
+            file_put_contents($cache_location, serialize($storage), LOCK_EX);
         }
     }
 
@@ -135,7 +137,7 @@ class FileStorageCacheProvider
 
         if (file_exists($cache_location)) {
             if ($this->config->use_igbinary) {
-                $storage = igbinary_unserialize((string)file_get_contents($cache_location));
+                $storage = igbinary_unserialize(Providers::safeFileGetContents($cache_location));
 
                 if ($storage instanceof FileStorage) {
                     return $storage;
@@ -144,7 +146,7 @@ class FileStorageCacheProvider
                 return null;
             }
 
-            $storage = unserialize((string)file_get_contents($cache_location));
+            $storage = unserialize(Providers::safeFileGetContents($cache_location));
 
             if ($storage instanceof FileStorage) {
                 return $storage;
@@ -167,7 +169,21 @@ class FileStorageCacheProvider
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_STORAGE_CACHE_DIRECTORY;
 
         if ($create_directory && !is_dir($parser_cache_directory)) {
-            mkdir($parser_cache_directory, 0777, true);
+            try {
+                if (mkdir($parser_cache_directory, 0777, true) === false) {
+                    // any other error than directory already exists/permissions issue
+                    throw new RuntimeException(
+                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons'
+                    );
+                }
+            } catch (RuntimeException $e) {
+                // Race condition (#4483)
+                if (!is_dir($parser_cache_directory)) {
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
+                }
+            }
         }
 
         if (PHP_VERSION_ID >= 8_01_00) {

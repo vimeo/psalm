@@ -40,7 +40,7 @@ class ConditionalReturnTypeTest extends TestCase
                     $a = (new A)->getAttribute("colour", "red"); // typed as string
                     $b = (new A)->getAttribute(null); // typed as array<string, string>
                     /** @psalm-suppress MixedArgument */
-                    $c = (new A)->getAttribute($_GET["foo"]); // typed as string|array<string, string>',
+                    $c = (new A)->getAttribute($GLOBALS["foo"]); // typed as string|array<string, string>',
                 'assertions' => [
                     '$a' => 'string',
                     '$b' => 'array<string, string>',

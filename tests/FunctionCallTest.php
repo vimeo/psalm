@@ -31,7 +31,6 @@ class FunctionCallTest extends TestCase
                   }
                 '
             ],
-
             'typedArrayWithDefault' => [
                 'code' => '<?php
                     class A {}
@@ -128,7 +127,7 @@ class FunctionCallTest extends TestCase
             'noRedundantConditionAfterMixedOrEmptyArrayCountCheck' => [
                 'code' => '<?php
                     function foo(string $s) : void {
-                        $a = $_GET["s"] ?: [];
+                        $a = $GLOBALS["s"] ?: [];
                         if (count($a)) {}
                         if (!count($a)) {}
                     }',
@@ -1050,7 +1049,7 @@ class FunctionCallTest extends TestCase
                     /** @psalm-suppress InvalidScalarArgument */
                     $a = mktime("foo");
                     /** @psalm-suppress MixedArgument */
-                    $b = mktime($_GET["foo"]);
+                    $b = mktime($GLOBALS["foo"]);
                     $c = mktime(1, 2, 3);',
                 'assertions' => [
                     '$a' => 'false|int',
@@ -1494,14 +1493,14 @@ class FunctionCallTest extends TestCase
                     $y2 = date("Y", 10000);
                     $F2 = date("F", 10000);
                     /** @psalm-suppress MixedArgument */
-                    $F3 = date("F", $_GET["F3"]);',
+                    $F3 = date("F", $GLOBALS["F3"]);',
                 'assertions' => [
-                    '$y===' => 'numeric-string',
-                    '$m===' => 'numeric-string',
-                    '$F===' => 'string',
-                    '$y2===' => 'numeric-string',
-                    '$F2===' => 'string',
-                    '$F3===' => 'false|string',
+                    '$y' => 'numeric-string',
+                    '$m' => 'numeric-string',
+                    '$F' => 'string',
+                    '$y2' => 'numeric-string',
+                    '$F2' => 'string',
+                    '$F3' => 'false|string',
                 ]
             ],
             'sscanfReturnTypeWithTwoParameters' => [
@@ -1880,6 +1879,41 @@ class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'trimSavesLowercaseAttribute' => [
+                '<?php
+                    $a = random_bytes(2);
+                    $b = trim(strtolower($a));
+                ',
+                'assertions' => [
+                    '$b===' => 'lowercase-string',
+                ],
+            ],
+            'ltrimSavesLowercaseAttribute' => [
+                '<?php
+                    $a = random_bytes(2);
+                    $b = ltrim(strtolower($a));
+                ',
+                'assertions' => [
+                    '$b===' => 'lowercase-string',
+                ],
+            ],
+            'rtrimSavesLowercaseAttribute' => [
+                '<?php
+                    $a = random_bytes(2);
+                    $b = rtrim(strtolower($a));
+                ',
+                'assertions' => [
+                    '$b===' => 'lowercase-string',
+                ],
+            ],
+            'round_literalValue' => [
+                '<?php
+                    $a = round(10.363, 2);
+                ',
+                'assertions' => [
+                    '$a===' => 'float(10.36)',
+                ],
             ],
         ];
     }

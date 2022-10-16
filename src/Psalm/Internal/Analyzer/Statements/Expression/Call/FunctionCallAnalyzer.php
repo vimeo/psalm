@@ -753,7 +753,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         if (strpos($var_type_part->value, '::')) {
                             $parts = explode('::', strtolower($var_type_part->value));
                             $fq_class_name = $parts[0];
-                            $fq_class_name = preg_replace('/^\\\\/', '', $fq_class_name);
+                            $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name, 1);
                             $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
                         } else {
                             $function_call_info->new_function_name = new VirtualFullyQualified(
