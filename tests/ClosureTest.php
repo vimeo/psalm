@@ -566,7 +566,7 @@ class ClosureTest extends TestCase
                 ],
             ],
             'CallableWithArrayReduce' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return callable(int, int): int
                      */
@@ -768,7 +768,7 @@ class ClosureTest extends TestCase
                 'php_version' => '8.1'
             ],
             'FirstClassCallable:InheritedStaticMethod' => [
-                '<?php
+                'code' => '<?php
 
                     abstract class A
                     {
@@ -789,7 +789,7 @@ class ClosureTest extends TestCase
                 '8.1',
             ],
             'FirstClassCallable:InheritedStaticMethodWithStaticTypeParameter' => [
-                '<?php
+                'code' => '<?php
 
                     /** @template T */
                     class Holder

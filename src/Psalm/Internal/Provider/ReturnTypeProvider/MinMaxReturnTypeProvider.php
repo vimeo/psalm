@@ -16,6 +16,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_filter;
 use function assert;

@@ -1881,7 +1881,7 @@ class FunctionCallTest extends TestCase
                 'php_version' => '8.1',
             ],
             'trimSavesLowercaseAttribute' => [
-                '<?php
+                'code' => '<?php
                     $a = random_bytes(2);
                     $b = trim(strtolower($a));
                 ',
@@ -1890,7 +1890,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'ltrimSavesLowercaseAttribute' => [
-                '<?php
+                'code' => '<?php
                     $a = random_bytes(2);
                     $b = ltrim(strtolower($a));
                 ',
@@ -1899,7 +1899,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'rtrimSavesLowercaseAttribute' => [
-                '<?php
+                'code' => '<?php
                     $a = random_bytes(2);
                     $b = rtrim(strtolower($a));
                 ',
@@ -1908,7 +1908,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'round_literalValue' => [
-                '<?php
+                'code' => '<?php
                     $a = round(10.363, 2);
                 ',
                 'assertions' => [

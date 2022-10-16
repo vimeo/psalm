@@ -904,21 +904,13 @@ class ValueTest extends TestCase
                         if (empty($s)) {}
                     }',
             ],
-            'literalInt' => [
-                'code' => '<?php
-                    $a = (int)"5";
-                ',
-                'assertions' => [
-                    '$a===' => '5',
-                ],
-            ],
             'falseDateInterval' => [
                 'code' => '<?php
                     $interval = \DateInterval::createFromDateString("30 дней");
                     if ($interval === false) {}',
             ],
             'literalInt' => [
-                '<?php
+                'code' => '<?php
                     $a = (int)"5";
                 ',
                 'assertions' => [

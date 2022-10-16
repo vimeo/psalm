@@ -256,7 +256,7 @@ class AttributeTest extends TestCase
                 'php_version' => '8.1'
             ],
             'allowDynamicProperties' => [
-                '<?php
+                'code' => '<?php
 
                     namespace AllowDynamicPropertiesAttribute;
 
@@ -268,7 +268,7 @@ class AttributeTest extends TestCase
                 ',
             ],
             'sensitiveParameter' => [
-                '<?php
+                'code' => '<?php
 
                     namespace SensitiveParameter;
 
@@ -793,7 +793,7 @@ class AttributeTest extends TestCase
                 'php_version' => '8.1',
             ],
             'sensitiveParameterOnMethod' => [
-                '<?php
+                'code' => '<?php
 
                     namespace SensitiveParameter;
 

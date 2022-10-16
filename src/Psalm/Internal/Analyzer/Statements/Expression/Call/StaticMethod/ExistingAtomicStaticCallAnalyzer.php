@@ -630,7 +630,7 @@ class ExistingAtomicStaticCallAnalyzer
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
     {
-        if ($type instanceof TNamedObject && ($type->value === 'static' || $type->was_static)) {
+        if ($type instanceof TNamedObject && ($type->value === 'static' || $type->is_static)) {
             return true;
         }
 

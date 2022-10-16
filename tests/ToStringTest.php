@@ -490,7 +490,7 @@ class ToStringTest extends TestCase
                 'error_message' => 'ImplicitToStringCast'
             ],
             'toStringTypecastNonString' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         function __toString(): string {
                             return "ha";
@@ -502,12 +502,12 @@ class ToStringTest extends TestCase
                 'error_message' => 'InvalidCast',
             ],
             'riskyArrayToIntCast' => [
-                '<?php
+                'code' => '<?php
                     echo (int) array();',
                 'error_message' => 'RiskyCast',
             ],
             'riskyArrayToFloatCast' => [
-                '<?php
+                'code' => '<?php
                     echo (float) array(\'hello\');',
                 'error_message' => 'RiskyCast',
             ],

@@ -2865,7 +2865,7 @@ class ConditionalTest extends TestCase
                     }'
             ],
             'ctypeDigitMakesStringNumeric' => [
-                '<?php
+                'code' => '<?php
                     /** @param numeric-string $num */
                     function foo(string $num): void {}
 
@@ -2879,7 +2879,7 @@ class ConditionalTest extends TestCase
                     ',
             ],
             'ctypeDigitMakesStringNumericButDoesntProveOtherwise' => [
-                '<?php
+                'code' => '<?php
                     function bar(string $m): void
                     {
                         if (is_numeric($m)) {
@@ -2893,7 +2893,7 @@ class ConditionalTest extends TestCase
                     ',
             ],
             'SKIPPED-ctypeDigitNarrowsIntToARange' => [
-                '<?php
+                'code' => '<?php
                     $int = rand(-1000, 1000);
 
                     if (!ctype_digit($int)) {
@@ -2905,7 +2905,7 @@ class ConditionalTest extends TestCase
                 ]
             ],
             'ctypeLowerMakesStringLowercase' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-lowercase-string $num */
                     function foo(string $num): void {}
 
@@ -2919,7 +2919,7 @@ class ConditionalTest extends TestCase
                     ',
             ],
             'SKIPPED-ctypeLowerNarrowsIntToARange' => [
-                '<?php
+                'code' => '<?php
                     $int = rand(-1000, 1000);
 
                     if (!ctype_lower($int)) {

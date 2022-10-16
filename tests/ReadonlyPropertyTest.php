@@ -80,7 +80,7 @@ class ReadonlyPropertyTest extends TestCase
                     echo (new A)->bar;'
             ],
             'docblockReadonlyWithPrivateMutationsAllowedConstructorPropertySetInAnotherMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(
                             /**
@@ -98,7 +98,7 @@ class ReadonlyPropertyTest extends TestCase
                     echo (new A)->bar;'
             ],
             'readonlyPublicConstructorPropertySetInAnotherMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(
                             /**
