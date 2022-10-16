@@ -98,6 +98,11 @@ class ReflectionProperty implements Reflector
     * @since 8.0
     */
     public function isPromoted(): bool {}
+
+    /**
+    * @since 8.1
+    */
+    public function isReadOnly(): bool {}
 }
 
 class ReflectionMethod implements Reflector
