@@ -294,7 +294,7 @@ class ParserCacheProvider
 
         file_put_contents(
             $file_hashes_path,
-            json_encode($file_content_hashes, JSON_THROW_ON_ERROR)
+            json_encode($file_content_hashes, JSON_THROW_ON_ERROR),
             LOCK_EX
         );
     }
