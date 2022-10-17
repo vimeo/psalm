@@ -1098,7 +1098,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
             } else {
-                $param_type = new Union([new TMixed()], ['by_ref' => $function_param->by_ref])
+                $param_type = new Union([new TMixed()], ['by_ref' => $function_param->by_ref]);
             }
 
             $var_type = $param_type;
