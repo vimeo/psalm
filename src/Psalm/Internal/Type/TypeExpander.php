@@ -119,6 +119,7 @@ class TypeExpander
         $fleshed_out_type->from_static_property = $return_type->from_static_property;
         $fleshed_out_type->had_template = $return_type->had_template;
         $fleshed_out_type->parent_nodes = $return_type->parent_nodes;
+        $fleshed_out_type->explicit_never = $return_type->explicit_never;
 
         return $fleshed_out_type;
     }

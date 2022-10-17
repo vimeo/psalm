@@ -369,6 +369,10 @@ class TypeCombiner
             $union_type->from_docblock = true;
         }
 
+        if ($has_never) {
+            $union_type->explicit_never = true;
+        }
+
         return $union_type;
     }
 

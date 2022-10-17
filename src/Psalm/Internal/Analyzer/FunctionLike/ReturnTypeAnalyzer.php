@@ -46,13 +46,10 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function array_diff;
-use function array_filter;
-use function array_values;
 use function count;
 use function in_array;
 use function strpos;
@@ -237,25 +234,12 @@ class ReturnTypeAnalyzer
             return null;
         }
 
-        $number_of_types = count($inferred_return_type_parts);
-        // we filter TNever and TEmpty that have no bearing on the return type
-        if ($number_of_types > 1) {
-            $inferred_return_type_parts = array_filter(
-                $inferred_return_type_parts,
-                static function (Union $union_type): bool {
-                    return !($union_type->isNever() || $union_type->isEmpty());
-                }
-            );
-        }
-
-        $inferred_return_type_parts = array_values($inferred_return_type_parts);
-
         $inferred_return_type = $inferred_return_type_parts
             ? Type::combineUnionTypeArray($inferred_return_type_parts, $codebase)
             : Type::getVoid();
 
         if ($function_always_exits) {
-            $inferred_return_type = new Union([new TNever]);
+            $inferred_return_type = Type::getNever();
         }
 
         $inferred_yield_type = $inferred_yield_types
@@ -507,6 +491,56 @@ class ReturnTypeAnalyzer
             }
 
             $union_comparison_results = new TypeComparisonResult();
+
+            if ($declared_return_type->explicit_never === true && $inferred_return_type->explicit_never === false) {
+                if (IssueBuffer::accepts(
+                    new MoreSpecificReturnType(
+                        'The declared return type \'' . $declared_return_type->getId() . '|never\' for '
+                        . $cased_method_id . ' is more specific than the inferred return type '
+                        . '\'' . $inferred_return_type->getId() . '\'',
+                        $return_type_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    return false;
+                }
+            }
+
+            if (!$declared_return_type->isNever()
+                && $function_always_exits
+            ) {
+                if ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
+                    && !in_array('InvalidReturnType', $suppressed_issues)
+                ) {
+                    self::addOrUpdateReturnType(
+                        $function,
+                        $project_analyzer,
+                        Type::getNever(),
+                        $source,
+                        ($project_analyzer->only_replace_php_types_with_non_docblock_types
+                         || $unsafe_return_type)
+                        && $inferred_return_type->from_docblock,
+                        $function_like_storage
+                    );
+
+                    return null;
+                }
+
+                if (IssueBuffer::accepts(
+                    new InvalidReturnType(
+                        'The declared return type \''
+                        . $declared_return_type->getId()
+                        . '\' for ' . $cased_method_id
+                        . ' is incorrect, got \'never\'',
+                        $return_type_location
+                    ),
+                    $suppressed_issues,
+                    true
+                )) {
+                    return false;
+                }
+            }
 
             if (!UnionTypeComparator::isContainedBy(
                 $codebase,

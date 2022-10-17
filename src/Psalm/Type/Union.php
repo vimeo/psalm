@@ -159,6 +159,14 @@ class Union implements TypeNode
     public $possibly_undefined_from_try = false;
 
     /**
+     * whether this type had never set explicitly
+     * since it's the bottom type, it's combined into everything else and lost
+     *
+     * @var bool
+     */
+    public $explicit_never = false;
+
+    /**
      * Whether or not this union had a template, since replaced
      *
      * @var bool

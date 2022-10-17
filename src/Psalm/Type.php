@@ -328,8 +328,10 @@ abstract class Type
     public static function getNever(): Union
     {
         $type = new TNever();
+        $never = new Union([$type]);
+        $never->explicit_never = true;
 
-        return new Union([$type]);
+        return $never;
     }
 
     public static function getBool(): Union
@@ -561,6 +563,10 @@ abstract class Type
 
         if ($type_1->by_ref || $type_2->by_ref) {
             $combined_type->by_ref = true;
+        }
+
+        if ($type_1->explicit_never || $type_2->explicit_never) {
+            $combined_type->explicit_never = true;
         }
 
         return $combined_type;
