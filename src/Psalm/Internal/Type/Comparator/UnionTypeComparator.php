@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -68,7 +69,7 @@ class UnionTypeComparator
         $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
 
         while ($input_type_part = array_pop($input_atomic_types)) {
-            if ($input_type_part instanceof TNull && $ignore_null) {
+            if (($input_type_part instanceof TNull || $input_type_part instanceof TVoid) && $ignore_null) {
                 continue;
             }
 
@@ -83,7 +84,6 @@ class UnionTypeComparator
                 $input_atomic_types = array_merge($input_type_part->as->getAtomicTypes(), $input_atomic_types);
                 continue;
             }
-
 
             $type_match_found = false;
             $scalar_type_match_found = false;
@@ -121,8 +121,9 @@ class UnionTypeComparator
 
             foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
                 if ($ignore_null
-                    && $container_type_part instanceof TNull
+                    && ($container_type_part instanceof TNull || $container_type_part instanceof TVoid)
                     && !$input_type_part instanceof TNull
+                    && !$input_type_part instanceof TVoid
                 ) {
                     continue;
                 }
