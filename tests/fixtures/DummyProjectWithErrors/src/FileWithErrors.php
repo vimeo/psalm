@@ -24,5 +24,10 @@ function bang(string $s) : string {
 
 function boom(): void
 {
-    echo (string) ($_GET['abc'] ?? 'z');
+    echo (string) ($GLOBALS['abc'] ?? 'z');
+}
+
+function booom(): void
+{
+    echo isset($_GET['abc']) && is_string($_GET['abc']) ? $_GET['abc'] : 'z';
 }

@@ -1039,9 +1039,9 @@ class ClassTemplateTest extends TestCase
                 'code' => '<?php
                     $list = new SplDoublyLinkedList();
                     $list->add(5, "hello");
-                    $list->add("hello", 5);
+                    $list->add(5, 1);
 
-                    /** @var SplDoublyLinkedList<int, string> */
+                    /** @var SplDoublyLinkedList<string> */
                     $templated_list = new SplDoublyLinkedList();
                     $templated_list->add(5, "hello");
                     $a = $templated_list->bottom();',
@@ -1444,7 +1444,7 @@ class ClassTemplateTest extends TestCase
                     }
 
                     /** @psalm-suppress MixedArgument */
-                    $c = new ArrayCollection($_GET["a"]);',
+                    $c = new ArrayCollection($GLOBALS["a"]);',
                 'assertions' => [
                     '$c' => 'ArrayCollection<array-key, mixed>',
                 ],
@@ -3840,7 +3840,155 @@ class ClassTemplateTest extends TestCase
                     '$a===' => 'FutureB<123>',
                     '$r===' => 'ArrayObject<int, 123>'
                 ]
-            ]
+            ],
+            'return TemplatedClass<static>' => [
+                'code' => '<?php
+
+                    /**
+                     * @template-covariant A
+                     * @psalm-immutable
+                     */
+                    final class Maybe
+                    {
+                        /**
+                         * @param null|A $value
+                         */
+                        public function __construct(private $value = null) {}
+
+                        /**
+                         * @template B
+                         * @param B $value
+                         * @return Maybe<B>
+                         *
+                         * @psalm-pure
+                         */
+                        public static function just($value): self
+                        {
+                            return new self($value);
+                        }
+                    }
+
+                    abstract class Test
+                    {
+                        final private function __construct() {}
+
+                        /** @return Maybe<static> */
+                        final public static function create(): Maybe
+                        {
+                            return Maybe::just(new static());
+                        }
+                    }',
+            ],
+            'return list<static> created in a static method of another class' => [
+                'code' => '<?php
+
+                    final class Lister
+                    {
+                        /**
+                         * @template B
+                         * @param B $value
+                         * @return list<B>
+                         *
+                         * @psalm-pure
+                         */
+                        public static function mklist($value): array
+                        {
+                            return [ $value ];
+                        }
+                    }
+
+                    abstract class Test
+                    {
+                        final private function __construct() {}
+
+                        /** @return list<static> */
+                        final public static function create(): array
+                        {
+                            return Lister::mklist(new static());
+                        }
+                    }',
+            ],
+            'use TemplatedClass<static> as an intermediate variable inside a method' => [
+                'code' => '<?php
+
+                    /**
+                     * @template-covariant A
+                     * @psalm-immutable
+                     */
+                    final class Maybe
+                    {
+                        /**
+                         * @param A $value
+                         */
+                        public function __construct(public $value) {}
+
+                        /**
+                         * @template B
+                         * @param B $value
+                         * @return Maybe<B>
+                         *
+                         * @psalm-pure
+                         */
+                        public static function just($value): self
+                        {
+                            return new self($value);
+                        }
+                    }
+
+                    abstract class Test
+                    {
+                        final private function __construct() {}
+
+                        final public static function create(): static
+                        {
+                            $maybe = Maybe::just(new static());
+                            return $maybe->value;
+                        }
+                    }',
+            ],
+            'static is the return type of an analyzed static method' => [
+                'code' => '<?php
+
+                    abstract class A
+                    {
+                    }
+
+                    final class B extends A
+                    {
+                        public static function create(): static
+                        {
+                            return new self();
+                        }
+                    }
+
+                    final class Service
+                    {
+                        public function do(): void
+                        {
+                            $this->acceptA(B::create());
+                        }
+
+                        private function acceptA(A $_a): void
+                        {
+                        }
+                    }',
+            ],
+            'undefined class in function dockblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress UndefinedDocblockClass
+                     *
+                     * @param DoesNotExist<int> $baz
+                     */
+                    function foobar(DoesNotExist $baz): void {}
+
+                    /**
+                     * @psalm-suppress UndefinedDocblockClass, UndefinedClass
+                     * @var DoesNotExist
+                     */
+                    $baz = new DoesNotExist();
+                    foobar($baz);',
+            ],
         ];
     }
 
@@ -3951,7 +4099,7 @@ class ClassTemplateTest extends TestCase
                             type($closure);
                         }
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34 - Argument 1 of type expects string, callable(State):(T:AlmostFooMap as mixed)&Foo provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34 - Argument 1 of type expects string, but callable(State):(T:AlmostFooMap as mixed)&Foo provided',
             ],
             'templateWithNoReturn' => [
                 'code' => '<?php
@@ -3980,7 +4128,7 @@ class ClassTemplateTest extends TestCase
             ],
             'doublyLinkedListBadParam' => [
                 'code' => '<?php
-                    /** @var SplDoublyLinkedList<int, string> */
+                    /** @var SplDoublyLinkedList<string> */
                     $templated_list = new SplDoublyLinkedList();
                     $templated_list->add(5, []);',
                 'error_message' => 'InvalidArgument',
@@ -4133,7 +4281,7 @@ class ClassTemplateTest extends TestCase
                     $mario = new CharacterRow(["id" => 5, "name" => "Mario", "height" => 3.5]);
 
                     $mario->ame = "Luigi";',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . "somefile.php:47:29 - Argument 1 of CharacterRow::__set expects 'height'|'id'|'name', 'ame' provided",
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . "somefile.php:47:29 - Argument 1 of CharacterRow::__set expects 'height'|'id'|'name', but 'ame' provided",
             ],
             'specialiseTypeBeforeReturning' => [
                 'code' => '<?php

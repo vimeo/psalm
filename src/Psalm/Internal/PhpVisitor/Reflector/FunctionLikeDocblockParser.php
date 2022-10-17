@@ -81,7 +81,7 @@ class FunctionLikeDocblockParser
                     ) {
                         $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
-                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
+                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1], 1);
 
                         $end = $offset + strlen($line_parts[0]);
 
@@ -157,7 +157,7 @@ class FunctionLikeDocblockParser
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
-                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
+                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1], 1);
 
                         $info->params_out[] = [
                             'name' => trim($line_parts[1]),
@@ -357,7 +357,7 @@ class FunctionLikeDocblockParser
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
-                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
+                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1], 1);
 
                         $info->globals[] = [
                             'name' => $line_parts[1],

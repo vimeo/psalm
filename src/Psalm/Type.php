@@ -33,6 +33,7 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -218,6 +219,16 @@ abstract class Type
     public static function getNonEmptyString(): Union
     {
         $type = new TNonEmptyString();
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getNonFalsyString(): Union
+    {
+        $type = new TNonFalsyString();
 
         return new Union([$type]);
     }

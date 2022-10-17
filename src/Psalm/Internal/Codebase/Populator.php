@@ -618,6 +618,10 @@ class Populator
         ClassLikeStorage $parent_storage,
         bool $from_direct_parent
     ): void {
+        if ($parent_storage->yield && !$storage->yield) {
+            $storage->yield = $parent_storage->yield;
+            $storage->declaring_yield_fqcn ??= $parent_storage->name;
+        }
         if ($parent_storage->template_types) {
             $storage->template_extended_params[$parent_storage->name] = [];
 

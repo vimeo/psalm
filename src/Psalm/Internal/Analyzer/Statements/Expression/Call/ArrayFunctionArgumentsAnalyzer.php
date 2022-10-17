@@ -888,7 +888,8 @@ class ArrayFunctionArgumentsAnalyzer
                     IssueBuffer::maybeAdd(
                         new MixedArgumentTypeCoercion(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
+                                $closure_param_type->getId() .
+                                ', but parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
                         ),
@@ -898,7 +899,8 @@ class ArrayFunctionArgumentsAnalyzer
                     IssueBuffer::maybeAdd(
                         new ArgumentTypeCoercion(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
+                                $closure_param_type->getId() .
+                                ', but parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
                         ),
@@ -918,7 +920,7 @@ class ArrayFunctionArgumentsAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidScalarArgument(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
+                                $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
                         ),
@@ -928,7 +930,7 @@ class ArrayFunctionArgumentsAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArgument(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
-                                . $closure_param_type->getId() . ', possibly different type '
+                                . $closure_param_type->getId() . ', but possibly different type '
                                 . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id
@@ -938,7 +940,7 @@ class ArrayFunctionArgumentsAnalyzer
                 } elseif (IssueBuffer::accepts(
                     new InvalidArgument(
                         'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                            $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
+                            $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
                         new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                         $method_id
                     ),

@@ -1,6 +1,6 @@
 # PropertyTypeCoercion
 
-Emitted when setting a property with an value which has a less specific type than the property expects
+Emitted when setting a property with a value which has a less specific type than the property expects
 
 ```php
 <?php

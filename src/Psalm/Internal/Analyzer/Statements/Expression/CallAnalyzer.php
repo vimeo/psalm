@@ -520,7 +520,7 @@ class CallAnalyzer
         }
 
         if ($callable_arg instanceof PhpParser\Node\Scalar\String_) {
-            $potential_id = preg_replace('/^\\\/', '', $callable_arg->value);
+            $potential_id = preg_replace('/^\\\/', '', $callable_arg->value, 1);
 
             if (preg_match('/^[A-Za-z0-9_]+(\\\[A-Za-z0-9_]+)*(::[A-Za-z0-9_]+)?$/', $potential_id)) {
                 return [$potential_id];
@@ -550,7 +550,7 @@ class CallAnalyzer
         }
 
         if ($class_arg instanceof PhpParser\Node\Scalar\String_) {
-            return [preg_replace('/^\\\/', '', $class_arg->value) . '::' . $method_name_arg->value];
+            return [preg_replace('/^\\\/', '', $class_arg->value, 1) . '::' . $method_name_arg->value];
         }
 
         if ($class_arg instanceof PhpParser\Node\Expr\ClassConstFetch

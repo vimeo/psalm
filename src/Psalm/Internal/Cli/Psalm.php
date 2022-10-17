@@ -434,7 +434,7 @@ final class Psalm
         array_map(
             static function (string $arg): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
+                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if (!in_array($arg_name, self::LONG_OPTIONS)
                         && !in_array($arg_name . ':', self::LONG_OPTIONS)

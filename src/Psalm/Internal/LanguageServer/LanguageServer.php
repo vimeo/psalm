@@ -150,7 +150,6 @@ class LanguageServer extends Dispatcher
                          * @var Promise
                          */
                         $dispatched = $this->dispatch($msg->body);
-                        /** @psalm-suppress MixedAssignment */
                         $result = yield $dispatched;
                     } catch (Error $e) {
                         // If a ResponseError is thrown, send it back in the Response

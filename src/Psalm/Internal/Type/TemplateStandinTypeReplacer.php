@@ -1212,7 +1212,7 @@ class TemplateStandinTypeReplacer
     ): array {
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
-        } else {
+        } elseif ($codebase->classlike_storage_provider->has($input_type_part->value)) {
             $class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
 
             $container_class = $container_type_part->value;
@@ -1224,6 +1224,8 @@ class TemplateStandinTypeReplacer
             } else {
                 $input_type_params = array_fill(0, count($class_storage->template_types ?? []), Type::getMixed());
             }
+        } else {
+            $input_type_params = [];
         }
 
         try {

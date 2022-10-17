@@ -265,6 +265,7 @@ abstract class Atomic implements TypeNode
             case 'non-empty-string':
                 return new TNonEmptyString();
 
+            case 'truthy-string':
             case 'non-falsy-string':
                 return new TNonFalsyString();
 
@@ -283,6 +284,15 @@ abstract class Atomic implements TypeNode
 
             case 'positive-int':
                 return new TIntRange(1, null);
+            
+            case 'non-positive-int':
+                return new TIntRange(null, 0);
+
+            case 'negative-int':
+                return new TIntRange(null, -1);
+
+            case 'non-negative-int':
+                return new TIntRange(0, null);
 
             case 'numeric':
                 return $analysis_php_version_id !== null ? new TNamedObject($value) : new TNumeric();

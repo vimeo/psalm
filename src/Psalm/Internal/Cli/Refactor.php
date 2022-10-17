@@ -36,6 +36,7 @@ use function implode;
 use function in_array;
 use function ini_set;
 use function is_array;
+use function is_numeric;
 use function is_string;
 use function max;
 use function microtime;
@@ -87,7 +88,7 @@ final class Refactor
         array_map(
             static function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
+                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if ($arg_name === 'refactor') {
                         // valid option for psalm, ignored by psalter
@@ -291,7 +292,7 @@ final class Refactor
             chdir($current_dir);
         }
 
-        $threads = isset($options['threads'])
+        $threads = isset($options['threads']) && is_numeric($options['threads'])
             ? (int)$options['threads']
             : max(1, ProjectAnalyzer::getCpuCount() - 2);
 

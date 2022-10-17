@@ -129,12 +129,12 @@ class JsonOutputTest extends TestCase
             'assertCancelsMixedAssignment' => [
                 'code' => '<?php
                     $a = $_GET["hello"];
-                    assert(is_int($a));
-                    if (is_int($a)) {}',
+                    assert(is_string($a));
+                    if (is_string($a)) {}',
                 'error_count' => 1,
-                'message' => 'Docblock-defined type int for $a is always int',
+                'message' => 'Docblock-defined type string for $a is always string',
                 'line' => 4,
-                'error' => 'is_int($a)',
+                'error' => 'is_string($a)',
             ],
             'singleIssueForTypeDifference' => [
                 'code' => '<?php

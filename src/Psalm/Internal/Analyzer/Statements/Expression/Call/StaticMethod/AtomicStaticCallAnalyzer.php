@@ -57,6 +57,7 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function array_map;
+use function array_values;
 use function assert;
 use function count;
 use function in_array;
@@ -376,39 +377,15 @@ class AtomicStaticCallAnalyzer
         if (!$naive_method_exists
             && $codebase->methods->existence_provider->has($fq_class_name)
         ) {
-            $method_exists = $codebase->methods->existence_provider->doesMethodExist(
+            $fake_method_exists = $codebase->methods->existence_provider->doesMethodExist(
                 $fq_class_name,
                 $method_id->method_name,
                 $statements_analyzer,
                 null
-            );
-
-            if ($method_exists) {
-                $fake_method_exists = true;
-            }
+            ) ?? false;
         }
 
-        if ($stmt->isFirstClassCallable()) {
-            $method_storage = ($class_storage->methods[$method_name_lc] ??
-                ($class_storage->pseudo_static_methods[$method_name_lc] ?? null));
-
-            if ($method_storage) {
-                $return_type_candidate = new Union([new TClosure(
-                    'Closure',
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->pure
-                )]);
-            } else {
-                $return_type_candidate = Type::getClosure();
-            }
-
-            $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
-
-            return true;
-        }
-
-        $args = $stmt->getArgs();
+        $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
         if (!$naive_method_exists
             && $class_storage->mixin_declaring_fqcln
@@ -511,6 +488,53 @@ class AtomicStaticCallAnalyzer
             $class_storage,
             $method_name_lc
         );
+
+        if ($stmt->isFirstClassCallable()) {
+            if ($found_method_and_class_storage) {
+                [ $method_storage ] = $found_method_and_class_storage;
+
+                $return_type_candidate = new Union([new TClosure(
+                    'Closure',
+                    $method_storage->params,
+                    $method_storage->return_type,
+                    $method_storage->pure
+                )]);
+            } else {
+                $method_exists = $naive_method_exists
+                    || $fake_method_exists
+                    || isset($class_storage->methods[$method_name_lc])
+                    || isset($class_storage->pseudo_static_methods[$method_name_lc]);
+
+                if ($method_exists) {
+                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+
+                    $return_type_candidate = new Union([new TClosure(
+                        'Closure',
+                        array_values($codebase->getMethodParams($method_id)),
+                        $codebase->getMethodReturnType($method_id, $fq_class_name),
+                        $codebase->methods->getStorage($declaring_method_id)->pure
+                    )]);
+                } else {
+                    // FIXME: perhaps Psalm should complain about nonexisting method here, or throw a logic exception?
+                    $return_type_candidate = Type::getClosure();
+                }
+            }
+
+            $expanded_return_type = TypeExpander::expandUnion(
+                $codebase,
+                $return_type_candidate,
+                $context->self,
+                $class_storage->name,
+                $context->parent,
+                true,
+                false,
+                true
+            );
+
+            $statements_analyzer->node_data->setType($stmt, $expanded_return_type);
+
+            return true;
+        }
 
         if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(

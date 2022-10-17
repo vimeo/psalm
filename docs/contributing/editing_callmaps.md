@@ -41,7 +41,7 @@ version supported by Psalm, it needs to process delta files to arrive at a
 version of callmap matching the one that is used during analysis. Psalm uses
 the following process to do that:
 
-1. Read `CallMap.php` (Note: it's the one having latest signatures).
+1. Read `CallMap.php` (Note: it's the one having the latest signatures).
 2. If it matches configured PHP version, use it.
 3. If the callmap delta for previous PHP version exists, read that.
 4. Take previous callmap delta and apply it in reverse order. That is, entries
@@ -70,7 +70,7 @@ it exists in the latest PHP version). Here's [the PR that does it](https://githu
 
 ### Correcting the function signature
 
-Assume you found incorrect signature, the one that was always different to what
+Assume you found an incorrect signature, the one that was always different to what
 we currently have in Psalm. This will need a change to `CallMap_historical.php`
 (as the signature was always that way) and `CallMap.php` (as the signature is
 still valid). Here's [the PR that does it](https://github.com/vimeo/psalm/pull/6359/files).

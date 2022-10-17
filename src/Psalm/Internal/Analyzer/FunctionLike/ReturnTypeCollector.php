@@ -3,8 +3,10 @@
 namespace Psalm\Internal\Analyzer\FunctionLike;
 
 use PhpParser;
+use PhpParser\NodeTraverser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use Psalm\Internal\PhpVisitor\YieldTypeCollector;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -298,87 +300,19 @@ class ReturnTypeCollector
     }
 
     /**
-     * @return  list<Union>
+     * @return list<Union>
      */
-    protected static function getYieldTypeFromExpression(
+    private static function getYieldTypeFromExpression(
         PhpParser\Node\Expr $stmt,
         NodeDataProvider $nodes
     ): array {
-        if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
-            $key_type = null;
+        $collector = new YieldTypeCollector($nodes);
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(
+            $collector
+        );
+        $traverser->traverse([$stmt]);
 
-            if ($stmt->key && ($stmt_key_type = $nodes->getType($stmt->key))) {
-                $key_type = $stmt_key_type;
-            }
-
-            if ($stmt->value
-                && $value_type = $nodes->getType($stmt->value)
-            ) {
-                $generator_type = new TGenericObject(
-                    'Generator',
-                    [
-                        $key_type ? clone $key_type : Type::getInt(),
-                        clone $value_type,
-                        Type::getMixed(),
-                        Type::getMixed()
-                    ]
-                );
-
-                return [new Union([$generator_type])];
-            }
-
-            return [Type::getMixed()];
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
-            if ($stmt_expr_type = $nodes->getType($stmt->expr)) {
-                return [$stmt_expr_type];
-            }
-
-            return [Type::getMixed()];
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            return [
-                ...self::getYieldTypeFromExpression($stmt->left, $nodes),
-                ...self::getYieldTypeFromExpression($stmt->right, $nodes)
-            ];
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\Assign) {
-            return self::getYieldTypeFromExpression($stmt->expr, $nodes);
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\MethodCall
-            || $stmt instanceof PhpParser\Node\Expr\FuncCall
-            || $stmt instanceof PhpParser\Node\Expr\StaticCall
-            || $stmt instanceof PhpParser\Node\Expr\New_
-        ) {
-            if ($stmt->isFirstClassCallable()) {
-                return [];
-            }
-
-            $yield_types = [];
-
-            foreach ($stmt->getArgs() as $arg) {
-                $yield_types = [...$yield_types, ...self::getYieldTypeFromExpression($arg->value, $nodes)];
-            }
-
-            return $yield_types;
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\Array_) {
-            $yield_types = [];
-
-            foreach ($stmt->items as $item) {
-                if ($item instanceof PhpParser\Node\Expr\ArrayItem) {
-                    $yield_types = [...$yield_types, ...self::getYieldTypeFromExpression($item->value, $nodes)];
-                }
-            }
-
-            return $yield_types;
-        }
-
-        return [];
+        return $collector->getYieldTypes();
     }
 }

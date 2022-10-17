@@ -371,6 +371,14 @@ Useful in testing, this makes Psalm throw a regular-old exception when it encoun
 ```
 Whether or not to show issues in files that are used by your project files, but which are not included in `<projectFiles>`. Defaults to `false`.
 
+#### hideAllErrorsExceptPassedFiles
+```xml
+<psalm
+  hideAllErrorsExceptPassedFiles="[bool]"
+>
+```
+Whether or not to report issues only for files that were passed explicitly as arguments in CLI. This means any files that are loaded with require/include will not report either, if not set in CLI. Useful if you want to only check errors in a single or selected files. Defaults to `false`.
+
 #### cacheDirectory
 ```xml
 <psalm

@@ -181,7 +181,7 @@ class ArgumentAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidLiteralArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                . ' expects a non-literal value, ' . $arg_value_type->getId() . ' provided',
+                                . ' expects a non-literal value, but ' . $arg_value_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id
                         ),
@@ -977,7 +977,7 @@ class ArgumentAnalyzer
                 IssueBuffer::maybeAdd(
                     new MixedArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', parent type ' . $input_type->getId() . ' provided',
+                            ', but parent type ' . $input_type->getId() . ' provided',
                         $arg_location,
                         $cased_method_id,
                         $origin_location
@@ -988,7 +988,7 @@ class ArgumentAnalyzer
                 IssueBuffer::maybeAdd(
                     new ArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', parent type ' . $input_type->getId() . ' provided',
+                            ', but parent type ' . $input_type->getId() . ' provided',
                         $arg_location,
                         $cased_method_id
                     ),
@@ -1001,7 +1001,7 @@ class ArgumentAnalyzer
             IssueBuffer::maybeAdd(
                 new ImplicitToStringCast(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                        $param_type->getId() . ', ' . $input_type->getId() . ' provided with a __toString method',
+                        $param_type->getId() . ', but ' . $input_type->getId() . ' provided with a __toString method',
                     $arg_location
                 ),
                 $statements_analyzer->getSuppressedIssues()
@@ -1023,7 +1023,7 @@ class ArgumentAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidScalarArgument(
                             'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                                $param_type->getId() . ', ' . $type . ' provided',
+                                $param_type->getId() . ', but ' . $type . ' provided',
                             $arg_location,
                             $cased_method_id
                         ),
@@ -1034,7 +1034,7 @@ class ArgumentAnalyzer
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', possibly different type ' . $type . ' provided',
+                            ', but possibly different type ' . $type . ' provided',
                         $arg_location,
                         $cased_method_id
                     ),
@@ -1044,7 +1044,7 @@ class ArgumentAnalyzer
                 IssueBuffer::maybeAdd(
                     new InvalidArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', ' . $type . ' provided',
+                            ', but ' . $type . ' provided',
                         $arg_location,
                         $cased_method_id
                     ),

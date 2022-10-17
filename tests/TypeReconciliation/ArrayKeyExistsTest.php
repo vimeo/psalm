@@ -2,6 +2,8 @@
 
 namespace Psalm\Tests\TypeReconciliation;
 
+use Psalm\Config;
+use Psalm\Context;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -457,5 +459,57 @@ class ArrayKeyExistsTest extends TestCase
                 'error_message' => 'InvalidArrayOffset',
             ],
         ];
+    }
+
+    public function testAllowPropertyFetchAsNeedle(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+            class Foo {
+                /** @var self::STATE_* $status */
+                public int $status = self::STATE_A;
+                public const STATE_A = 0;
+                public const STATE_B = 1;
+            }
+
+            $foo = new Foo;
+
+            /** @var array<string> $bar */
+            $bar = [];
+
+            if (array_key_exists($foo->status, $bar)) {
+                echo $bar[$foo->status];
+            }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testAllowStaticPropertyFetchAsNeedle(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+            class Foo {
+                /** @var self::STATE_* $status */
+                public static int $status = self::STATE_A;
+                public const STATE_A = 0;
+                public const STATE_B = 1;
+            }
+
+            /** @var array<string> $bar */
+            $bar = [];
+
+            if (array_key_exists(Foo::$status, $bar)) {
+                echo $bar[Foo::$status];
+            }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
     }
 }

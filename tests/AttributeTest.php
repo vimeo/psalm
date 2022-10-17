@@ -255,6 +255,32 @@ class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
+            'allowDynamicProperties' => [
+                'code' => '<?php
+
+                    namespace AllowDynamicPropertiesAttribute;
+
+                    use AllowDynamicProperties;
+
+                    #[AllowDynamicProperties]
+                    class Foo
+                    {}
+                ',
+            ],
+            'sensitiveParameter' => [
+                'code' => '<?php
+
+                    namespace SensitiveParameter;
+
+                    use SensitiveParameter;
+
+                    class HelloWorld {
+                        public function __construct(
+                            #[SensitiveParameter] string $password
+                        ) {}
+                    }
+                ',
+            ],
             'createObjectAsAttributeArg' => [
                 'code' => '<?php
                     #[Attribute]
@@ -765,6 +791,22 @@ class AttributeTest extends TestCase
                 'error_message' => 'UndefinedConstant',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'sensitiveParameterOnMethod' => [
+                'code' => '<?php
+
+                    namespace SensitiveParameter;
+
+                    use SensitiveParameter;
+
+                    class HelloWorld {
+                        #[SensitiveParameter]
+                        public function __construct(
+                            string $password
+                        ) {}
+                    }
+                ',
+                'error_message' => 'Attribute SensitiveParameter cannot be used on a method',
             ],
         ];
     }

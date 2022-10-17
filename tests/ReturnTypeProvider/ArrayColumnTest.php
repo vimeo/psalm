@@ -3,10 +3,12 @@
 namespace Psalm\Tests\ReturnTypeProvider;
 
 use Psalm\Tests\TestCase;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class ArrayColumnTest extends TestCase
 {
+    use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
     public function providerValidCodeParse(): iterable
@@ -60,6 +62,96 @@ class ArrayColumnTest extends TestCase
                     return array_column([$shape], "id");
                 }
             ',
+        ];
+
+        yield 'arrayColumnWithObjectsAndColumnNameNull' => [
+            'code' => '<?php
+                class C {
+                    /** @var string */
+                    public $name = "";
+                    public function foo(): void {}
+                }
+
+                foreach (array_column([new C, new C], null, "name") as $instance) {
+                    $instance->foo();
+                }
+            ',
+        ];
+
+        yield 'arrayColumnWithIntersectionAndColumnNameNull' => [
+            'code' => '<?php
+                interface I {
+                    public function foo(): void;
+                }
+                abstract class A {
+                    /** @var string */
+                    public $name = "";
+                    abstract public function bar(): void;
+                }
+                class C extends A implements I {
+                    public function foo(): void {}
+                    public function bar(): void {}
+                }
+
+                /** @var (A&I)[] $instances */
+                $instances = [];
+                foreach (array_column($instances, null, "name") as $instance) {
+                    $instance->foo();
+                    $instance->bar();
+                }
+            ',
+        ];
+
+        yield 'arrayColumnWithArrayAndColumnNameNull' => [
+            'code' => '<?php
+                class C {
+                    /** @var string */
+                    public $name = "";
+                    public function foo(): void {}
+                }
+
+                foreach (array_column([["name" => "", "instance" => new C]], null, "name") as $array) {
+                    $array["instance"]->foo();
+                }
+            ',
+        ];
+
+        yield 'arrayColumnWithListOfObject' => [
+            'code' => '<?php
+                function foo(object $object): void {}
+
+                /** @var list<object> $instances */
+                $instances = [];
+                foreach (array_column($instances, null, "name") as $instance) {
+                    foo($instance);
+                }
+            ',
+        ];
+
+        yield 'arrayColumnWithListOfArrays' => [
+            'code' => '<?php
+                function foo(array $array): void {}
+
+                /** @var list<array> $arrays */
+                $arrays = [];
+                foreach (array_column($arrays, null, "name") as $array) {
+                    foo($array);
+                }
+            ',
+        ];
+    }
+
+    public function providerInvalidCodeParse(): iterable
+    {
+        yield 'arrayColumnWithArrayAndColumnNameNull' => [
+            'code' => '<?php
+                /** @var list<array{name: string, instance: object}> $arrays */
+                $arrays = [];
+                foreach (array_column($arrays, null, "name") as $array) {
+                    $array["instance"]->foo();
+                }
+            ',
+            'error_message' => 'MixedMethodCall',
         ];
     }
 }

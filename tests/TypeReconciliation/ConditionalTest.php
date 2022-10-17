@@ -783,10 +783,10 @@ class ConditionalTest extends TestCase
                         }
                     }',
             ],
-            'isStringServerVar' => [
+            'isStringSessionVar' => [
                 'code' => '<?php
-                    if (is_string($_SERVER["abc"])) {
-                        echo substr($_SERVER["abc"], 1, 2);
+                    if (is_string($_SESSION["abc"])) {
+                        echo substr($_SESSION["abc"], 1, 2);
                     }',
             ],
             'notObject' => [
@@ -2863,6 +2863,72 @@ class ConditionalTest extends TestCase
                         }
                         return true;
                     }'
+            ],
+            'ctypeDigitMakesStringNumeric' => [
+                'code' => '<?php
+                    /** @param numeric-string $num */
+                    function foo(string $num): void {}
+
+                    /** @param mixed $m */
+                    function bar(mixed $m): void
+                    {
+                        if (is_string($m) && ctype_digit($m)) {
+                            foo($m);
+                        }
+                    }
+                    ',
+            ],
+            'ctypeDigitMakesStringNumericButDoesntProveOtherwise' => [
+                'code' => '<?php
+                    function bar(string $m): void
+                    {
+                        if (is_numeric($m)) {
+                            if (ctype_digit($m)) {
+                                echo "I\'m an all-digit numeric-string";
+                            } else {
+                                echo "I\'m not an all-digit numeric-string";
+                            }
+                        }
+                    }
+                    ',
+            ],
+            'SKIPPED-ctypeDigitNarrowsIntToARange' => [
+                'code' => '<?php
+                    $int = rand(-1000, 1000);
+
+                    if (!ctype_digit($int)) {
+                        die;
+                    }
+                    ',
+                'assertions' => [
+                    '$int' => 'int<48, 57>|int<256, 1000>'
+                ]
+            ],
+            'ctypeLowerMakesStringLowercase' => [
+                'code' => '<?php
+                    /** @param non-empty-lowercase-string $num */
+                    function foo(string $num): void {}
+
+                    /** @param mixed $m */
+                    function bar($m): void
+                    {
+                        if (is_string($m) && ctype_lower($m)) {
+                            foo($m);
+                        }
+                    }
+                    ',
+            ],
+            'SKIPPED-ctypeLowerNarrowsIntToARange' => [
+                'code' => '<?php
+                    $int = rand(-1000, 1000);
+
+                    if (!ctype_lower($int)) {
+                        die;
+                    }
+                    ',
+                'assertions' => [
+                    '$int' => 'int<97, 122>'
+                ]
             ],
         ];
     }

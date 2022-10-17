@@ -15,7 +15,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function explode;
-use function preg_replace;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -83,8 +83,8 @@ class Properties
         ?Context $context = null,
         ?CodeLocation $code_location = null
     ): bool {
-        // remove trailing backslash if it exists
-        $property_id = preg_replace('/^\\\\/', '', $property_id);
+        // remove leading backslash if it exists
+        $property_id = ltrim($property_id, '\\');
 
         [$fq_class_name, $property_name] = explode('::$', $property_id);
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -248,8 +248,8 @@ class Properties
 
     public function getStorage(string $property_id): PropertyStorage
     {
-        // remove trailing backslash if it exists
-        $property_id = preg_replace('/^\\\\/', '', $property_id);
+        // remove leading backslash if it exists
+        $property_id = ltrim($property_id, '\\');
 
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -269,8 +269,8 @@ class Properties
 
     public function hasStorage(string $property_id): bool
     {
-        // remove trailing backslash if it exists
-        $property_id = preg_replace('/^\\\\/', '', $property_id);
+        // remove leading backslash if it exists
+        $property_id = ltrim($property_id, '\\');
 
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -291,8 +291,8 @@ class Properties
         ?StatementsSource $source = null,
         ?Context $context = null
     ): ?Union {
-        // remove trailing backslash if it exists
-        $property_id = preg_replace('/^\\\\/', '', $property_id);
+        // remove leading backslash if it exists
+        $property_id = ltrim($property_id, '\\');
 
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
