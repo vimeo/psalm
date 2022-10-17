@@ -136,11 +136,51 @@ function array_flip(array $array)
  *
  * @param TArray $array
  *
- * @return (TArray is array<empty, empty> ? null : TKey|null)
+ * @return (TArray is array<empty,empty> ? null : (TArray is non-empty-list ? int<0,max> : (TArray is non-empty-array ? TKey : TKey|null)))
  * @psalm-pure
  * @psalm-ignore-nullable-return
  */
 function key($array)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ * @psalm-template TArray as array<TKey, TValue>
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is array<empty,empty> ? false : (TArray is non-empty-array ? TValue : TValue|false))
+ * @psalm-pure
+ */
+function current($array)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ * @psalm-template TArray as array<TKey, TValue>
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is array<empty,empty> ? false : (TArray is non-empty-array ? TValue : TValue|false))
+ */
+function reset(&$array)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ * @psalm-template TArray as array<TKey, TValue>
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is array<empty,empty> ? false : (TArray is non-empty-array ? TValue : TValue|false))
+ */
+function end(&$array)
 {
 }
 
