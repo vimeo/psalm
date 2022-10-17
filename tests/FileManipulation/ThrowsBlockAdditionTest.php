@@ -119,7 +119,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 'safe_types' => true,
             ],
             'addThrowsAnnotationToFunctionInNamespace' => [
-                'input_type' => '<?php
+                'input' => '<?php
                     namespace Foo;
                     function foo(string $s): string {
                         if("" === $s) {
@@ -127,7 +127,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                'output_type' => '<?php
+                'output' => '<?php
                     namespace Foo;
                     /**
                      * @throws \InvalidArgumentException
@@ -143,7 +143,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 'safe_types' => true,
             ],
             'addThrowsAnnotationToFunctionFromFunctionFromOtherNamespace' => [
-                'input_type' => '<?php
+                'input' => '<?php
                     namespace Foo {
                         function foo(): void {
                             \Bar\bar();
@@ -158,7 +158,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                             throw new BarException();
                         }
                     }',
-                'output_type' => '<?php
+                'output' => '<?php
                     namespace Foo {
                         /**
                          * @throws \Bar\BarException
@@ -181,7 +181,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 'safe_types' => true,
             ],
             'addThrowsAnnotationAccountsForUseStatements' => [
-                'input_type' => '<?php
+                'input' => '<?php
                     namespace Foo {
                         use Bar\BarException;
                         function foo(): void {
@@ -197,7 +197,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                     namespace Bar {
                         class BarException extends \DomainException {}
                     }',
-                'output_type' => '<?php
+                'output' => '<?php
                     namespace Foo {
                         use Bar\BarException;
                         /**
