@@ -508,6 +508,7 @@ class ReturnTypeAnalyzer
 
             if (!$declared_return_type->isNever()
                 && $function_always_exits
+                && $codebase->analysis_php_version_id >= 80100
             ) {
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
