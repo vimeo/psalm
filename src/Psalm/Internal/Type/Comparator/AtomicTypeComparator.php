@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TVoid;
 
 use function array_merge;
 use function array_values;
@@ -57,7 +58,6 @@ class AtomicTypeComparator
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
     ): bool {
-
         if (($container_type_part instanceof TTemplateParam
                 || ($container_type_part instanceof TNamedObject
                     && isset($container_type_part->extra_types)))
@@ -112,7 +112,10 @@ class AtomicTypeComparator
         }
 
         if ($input_type_part instanceof TNull) {
-            if ($container_type_part instanceof TNull) {
+            // TypeCombiner sets void to null when combining, therefore both must be accepted here too
+            if ($container_type_part instanceof TNull
+                || $container_type_part instanceof TVoid
+            ) {
                 return true;
             }
 
