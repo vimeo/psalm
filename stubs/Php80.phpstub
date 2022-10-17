@@ -57,6 +57,8 @@ class ReflectionClassConstant
 
 class Attribute
 {
+    public int $flags;
+
     public const TARGET_CLASS = 1;
     public const TARGET_FUNCTION = 2;
     public const TARGET_METHOD = 4;
