@@ -9,7 +9,7 @@ class DateTimeTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return array<string, array{code: string, assertions?:array<string,string>, error_levels?: list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
