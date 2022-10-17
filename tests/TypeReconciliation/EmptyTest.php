@@ -200,7 +200,7 @@ class EmptyTest extends TestCase
                 'code' => '<?php
                     function foo($t) : void {
                         if (empty($t)) {
-                            foreach ($_GET["u"] as $a) {
+                            foreach ($GLOBALS["u"] as $a) {
                                 if (empty($t)) {
                                     $t = $a;
                                 }

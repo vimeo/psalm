@@ -4,20 +4,23 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
 use Psalm\Internal\Codebase\Analyzer;
+use Psalm\Internal\Provider\Providers;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function file_exists;
-use function file_get_contents;
 use function file_put_contents;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_array;
+use function is_dir;
 use function is_readable;
 use function mkdir;
 use function serialize;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
+use const LOCK_EX;
 
 /**
  * @psalm-import-type FileMapType from Analyzer
@@ -86,9 +89,9 @@ class FileReferenceCacheProvider
         }
 
         if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
         } else {
-            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
         }
 
         if (!is_array($reference_cache)) {
@@ -116,9 +119,9 @@ class FileReferenceCacheProvider
         }
 
         if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
         } else {
-            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
         }
 
         if (!is_array($reference_cache)) {
@@ -146,9 +149,9 @@ class FileReferenceCacheProvider
         }
 
         if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
         } else {
-            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
         }
 
         if (!is_array($reference_cache)) {
@@ -176,9 +179,9 @@ class FileReferenceCacheProvider
         }
 
         if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
         } else {
-            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
         }
 
         if (!is_array($reference_cache)) {
@@ -205,7 +208,7 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $class_member_reference_cache = (string) file_get_contents($class_member_cache_location);
+        $class_member_reference_cache = Providers::safeFileGetContents($class_member_cache_location);
         if ($this->config->use_igbinary) {
             $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
         } else {
@@ -237,7 +240,7 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $method_dependencies_cache = (string) file_get_contents($method_dependencies_cache_location);
+        $method_dependencies_cache = Providers::safeFileGetContents($method_dependencies_cache_location);
         if ($this->config->use_igbinary) {
             $method_dependencies_cache = igbinary_unserialize($method_dependencies_cache);
         } else {
@@ -268,7 +271,7 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $class_member_reference_cache = (string) file_get_contents($class_member_cache_location);
+        $class_member_reference_cache = Providers::safeFileGetContents($class_member_cache_location);
         if ($this->config->use_igbinary) {
             $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
         } else {
@@ -299,7 +302,7 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $class_member_reference_cache = (string) file_get_contents($class_member_cache_location);
+        $class_member_reference_cache = Providers::safeFileGetContents($class_member_cache_location);
         if ($this->config->use_igbinary) {
             $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
         } else {
@@ -330,7 +333,7 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $class_member_reference_cache = (string) file_get_contents($class_member_cache_location);
+        $class_member_reference_cache = Providers::safeFileGetContents($class_member_cache_location);
         if ($this->config->use_igbinary) {
             $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
         } else {
@@ -361,7 +364,7 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $file_class_member_reference_cache = (string) file_get_contents($file_class_member_cache_location);
+        $file_class_member_reference_cache = Providers::safeFileGetContents($file_class_member_cache_location);
         if ($this->config->use_igbinary) {
             $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
         } else {
@@ -394,7 +397,7 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $file_class_member_reference_cache = (string) file_get_contents($file_class_member_cache_location);
+        $file_class_member_reference_cache = Providers::safeFileGetContents($file_class_member_cache_location);
         if ($this->config->use_igbinary) {
             $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
         } else {
@@ -427,7 +430,7 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $file_class_member_reference_cache = (string) file_get_contents($file_class_member_cache_location);
+        $file_class_member_reference_cache = Providers::safeFileGetContents($file_class_member_cache_location);
         if ($this->config->use_igbinary) {
             $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
         } else {
@@ -459,7 +462,7 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $file_class_member_reference_cache = (string) file_get_contents($file_class_member_cache_location);
+        $file_class_member_reference_cache = Providers::safeFileGetContents($file_class_member_cache_location);
         if ($this->config->use_igbinary) {
             $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
         } else {
@@ -491,9 +494,9 @@ class FileReferenceCacheProvider
         }
 
         if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
         } else {
-            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
         }
 
         if (!is_array($reference_cache)) {
@@ -521,9 +524,9 @@ class FileReferenceCacheProvider
         }
 
         if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
         } else {
-            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
+            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
         }
 
         if (!is_array($reference_cache)) {
@@ -551,9 +554,9 @@ class FileReferenceCacheProvider
         }
 
         if ($this->config->use_igbinary) {
-            $issues_cache = igbinary_unserialize((string) file_get_contents($issues_cache_location));
+            $issues_cache = igbinary_unserialize(Providers::safeFileGetContents($issues_cache_location));
         } else {
-            $issues_cache = unserialize((string) file_get_contents($issues_cache_location));
+            $issues_cache = unserialize(Providers::safeFileGetContents($issues_cache_location));
         }
 
         if (!is_array($issues_cache)) {
@@ -574,9 +577,9 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($file_references));
+            file_put_contents($reference_cache_location, igbinary_serialize($file_references), LOCK_EX);
         } else {
-            file_put_contents($reference_cache_location, serialize($file_references));
+            file_put_contents($reference_cache_location, serialize($file_references), LOCK_EX);
         }
     }
 
@@ -591,9 +594,9 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASSLIKE_FILE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($file_references));
+            file_put_contents($reference_cache_location, igbinary_serialize($file_references), LOCK_EX);
         } else {
-            file_put_contents($reference_cache_location, serialize($file_references));
+            file_put_contents($reference_cache_location, serialize($file_references), LOCK_EX);
         }
     }
 
@@ -608,9 +611,9 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::NONMETHOD_CLASS_REFERENCE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($file_class_references));
+            file_put_contents($reference_cache_location, igbinary_serialize($file_class_references), LOCK_EX);
         } else {
-            file_put_contents($reference_cache_location, serialize($file_class_references));
+            file_put_contents($reference_cache_location, serialize($file_class_references), LOCK_EX);
         }
     }
 
@@ -625,9 +628,9 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_CLASS_REFERENCE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($method_class_references));
+            file_put_contents($reference_cache_location, igbinary_serialize($method_class_references), LOCK_EX);
         } else {
-            file_put_contents($reference_cache_location, serialize($method_class_references));
+            file_put_contents($reference_cache_location, serialize($method_class_references), LOCK_EX);
         }
     }
 
@@ -642,9 +645,9 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references));
+            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
         }
     }
 
@@ -659,9 +662,9 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_DEPENDENCIES_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references));
+            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
         }
     }
 
@@ -676,9 +679,9 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_PROPERTY_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($property_references));
+            file_put_contents($member_cache_location, igbinary_serialize($property_references), LOCK_EX);
         } else {
-            file_put_contents($member_cache_location, serialize($property_references));
+            file_put_contents($member_cache_location, serialize($property_references), LOCK_EX);
         }
     }
 
@@ -693,9 +696,9 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_RETURN_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($method_return_references));
+            file_put_contents($member_cache_location, igbinary_serialize($method_return_references), LOCK_EX);
         } else {
-            file_put_contents($member_cache_location, serialize($method_return_references));
+            file_put_contents($member_cache_location, serialize($method_return_references), LOCK_EX);
         }
     }
 
@@ -710,9 +713,9 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_MISSING_MEMBER_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references));
+            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
         }
     }
 
@@ -727,9 +730,9 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_MEMBER_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references));
+            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
         }
     }
 
@@ -744,9 +747,9 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_PROPERTY_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($property_references));
+            file_put_contents($member_cache_location, igbinary_serialize($property_references), LOCK_EX);
         } else {
-            file_put_contents($member_cache_location, serialize($property_references));
+            file_put_contents($member_cache_location, serialize($property_references), LOCK_EX);
         }
     }
 
@@ -761,9 +764,9 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_METHOD_RETURN_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($method_return_references));
+            file_put_contents($member_cache_location, igbinary_serialize($method_return_references), LOCK_EX);
         } else {
-            file_put_contents($member_cache_location, serialize($method_return_references));
+            file_put_contents($member_cache_location, serialize($method_return_references), LOCK_EX);
         }
     }
 
@@ -778,9 +781,9 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MISSING_MEMBER_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references));
+            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references));
+            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
         }
     }
 
@@ -795,9 +798,9 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($references));
+            file_put_contents($reference_cache_location, igbinary_serialize($references), LOCK_EX);
         } else {
-            file_put_contents($reference_cache_location, serialize($references));
+            file_put_contents($reference_cache_location, serialize($references), LOCK_EX);
         }
     }
 
@@ -812,9 +815,9 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($uses));
+            file_put_contents($reference_cache_location, igbinary_serialize($uses), LOCK_EX);
         } else {
-            file_put_contents($reference_cache_location, serialize($uses));
+            file_put_contents($reference_cache_location, serialize($uses), LOCK_EX);
         }
     }
 
@@ -829,9 +832,9 @@ class FileReferenceCacheProvider
         $issues_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ISSUES_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($issues_cache_location, igbinary_serialize($issues));
+            file_put_contents($issues_cache_location, igbinary_serialize($issues), LOCK_EX);
         } else {
-            file_put_contents($issues_cache_location, serialize($issues));
+            file_put_contents($issues_cache_location, serialize($issues), LOCK_EX);
         }
     }
 
@@ -849,10 +852,10 @@ class FileReferenceCacheProvider
         ) {
             if ($this->config->use_igbinary) {
                 /** @var array<string, array<string, int>> */
-                return igbinary_unserialize(file_get_contents($analyzed_methods_cache_location));
+                return igbinary_unserialize(Providers::safeFileGetContents($analyzed_methods_cache_location));
             } else {
                 /** @var array<string, array<string, int>> */
-                return unserialize(file_get_contents($analyzed_methods_cache_location));
+                return unserialize(Providers::safeFileGetContents($analyzed_methods_cache_location));
             }
         }
 
@@ -872,9 +875,9 @@ class FileReferenceCacheProvider
                 . self::ANALYZED_METHODS_CACHE_NAME;
 
             if ($this->config->use_igbinary) {
-                file_put_contents($analyzed_methods_cache_location, igbinary_serialize($analyzed_methods));
+                file_put_contents($analyzed_methods_cache_location, igbinary_serialize($analyzed_methods), LOCK_EX);
             } else {
-                file_put_contents($analyzed_methods_cache_location, serialize($analyzed_methods));
+                file_put_contents($analyzed_methods_cache_location, serialize($analyzed_methods), LOCK_EX);
             }
         }
     }
@@ -895,12 +898,12 @@ class FileReferenceCacheProvider
                 /**
                  * @var array<string, FileMapType>
                  */
-                $file_maps_cache = igbinary_unserialize(file_get_contents($file_maps_cache_location));
+                $file_maps_cache = igbinary_unserialize(Providers::safeFileGetContents($file_maps_cache_location));
             } else {
                 /**
                  * @var array<string, FileMapType>
                  */
-                $file_maps_cache = unserialize(file_get_contents($file_maps_cache_location));
+                $file_maps_cache = unserialize(Providers::safeFileGetContents($file_maps_cache_location));
             }
 
             return $file_maps_cache;
@@ -920,9 +923,9 @@ class FileReferenceCacheProvider
             $file_maps_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MAPS_CACHE_NAME;
 
             if ($this->config->use_igbinary) {
-                file_put_contents($file_maps_cache_location, igbinary_serialize($file_maps));
+                file_put_contents($file_maps_cache_location, igbinary_serialize($file_maps), LOCK_EX);
             } else {
-                file_put_contents($file_maps_cache_location, serialize($file_maps));
+                file_put_contents($file_maps_cache_location, serialize($file_maps), LOCK_EX);
             }
         }
     }
@@ -941,10 +944,14 @@ class FileReferenceCacheProvider
         ) {
             if ($this->config->use_igbinary) {
                 /** @var array<string, array{int, int}> */
-                $type_coverage_cache = igbinary_unserialize(file_get_contents($type_coverage_cache_location));
+                $type_coverage_cache = igbinary_unserialize(
+                    Providers::safeFileGetContents($type_coverage_cache_location)
+                );
             } else {
                 /** @var array<string, array{int, int}> */
-                $type_coverage_cache = unserialize(file_get_contents($type_coverage_cache_location));
+                $type_coverage_cache = unserialize(
+                    Providers::safeFileGetContents($type_coverage_cache_location)
+                );
             }
 
             return $type_coverage_cache;
@@ -964,9 +971,9 @@ class FileReferenceCacheProvider
             $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
 
             if ($this->config->use_igbinary) {
-                file_put_contents($type_coverage_cache_location, igbinary_serialize($mixed_counts));
+                file_put_contents($type_coverage_cache_location, igbinary_serialize($mixed_counts), LOCK_EX);
             } else {
-                file_put_contents($type_coverage_cache_location, serialize($mixed_counts));
+                file_put_contents($type_coverage_cache_location, serialize($mixed_counts), LOCK_EX);
             }
         }
     }
@@ -983,7 +990,7 @@ class FileReferenceCacheProvider
         if ($cache_directory
             && file_exists($config_hash_cache_location)
         ) {
-            return file_get_contents($config_hash_cache_location);
+            return Providers::safeFileGetContents($config_hash_cache_location);
         }
 
         return false;
@@ -993,17 +1000,34 @@ class FileReferenceCacheProvider
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
-        if ($cache_directory) {
-            if (!file_exists($cache_directory)) {
-                mkdir($cache_directory, 0777, true);
-            }
-
-            $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
-
-            file_put_contents(
-                $config_hash_cache_location,
-                $hash
-            );
+        if (!$cache_directory) {
+            return;
         }
+
+        if (!is_dir($cache_directory)) {
+            try {
+                if (mkdir($cache_directory, 0777, true) === false) {
+                    // any other error than directory already exists/permissions issue
+                    throw new RuntimeException(
+                        'Failed to create ' . $cache_directory . ' cache directory for unknown reasons'
+                    );
+                }
+            } catch (RuntimeException $e) {
+                // Race condition (#4483)
+                if (!is_dir($cache_directory)) {
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
+                }
+            }
+        }
+
+        $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
+
+        file_put_contents(
+            $config_hash_cache_location,
+            $hash,
+            LOCK_EX
+        );
     }
 }

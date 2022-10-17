@@ -21,6 +21,7 @@ use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CodeClimateReport;
 use Psalm\Report\CompactReport;
 use Psalm\Report\ConsoleReport;
+use Psalm\Report\CountReport;
 use Psalm\Report\EmacsReport;
 use Psalm\Report\GithubActionsReport;
 use Psalm\Report\JsonReport;
@@ -913,6 +914,13 @@ final class IssueBuffer
             case Report::TYPE_CODECLIMATE:
                 $output = new CodeClimateReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
+
+            case Report::TYPE_COUNT:
+                $output = new CountReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                break;
+
+            default:
+                throw new RuntimeException('Unexpected report format: ' . $report_options->format);
         }
 
         return $output->create();

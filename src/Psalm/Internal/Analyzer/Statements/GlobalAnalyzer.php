@@ -36,6 +36,7 @@ class GlobalAnalyzer
             );
         }
 
+        $codebase = $statements_analyzer->getCodebase();
         $source = $statements_analyzer->getSource();
         $function_storage = $source instanceof FunctionLikeAnalyzer
             ? $source->getFunctionLikeStorage($statements_analyzer)
@@ -47,7 +48,8 @@ class GlobalAnalyzer
                     $var_id = '$' . $var->name;
 
                     if ($var->name === 'argv' || $var->name === 'argc') {
-                        $context->vars_in_scope[$var_id] = VariableFetchAnalyzer::getGlobalType($var_id);
+                        $context->vars_in_scope[$var_id] =
+                            VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
                     } elseif (isset($function_storage->global_types[$var_id])) {
                         $context->vars_in_scope[$var_id] = clone $function_storage->global_types[$var_id];
                         $context->vars_possibly_in_scope[$var_id] = true;
@@ -55,7 +57,7 @@ class GlobalAnalyzer
                         $context->vars_in_scope[$var_id] =
                             $global_context && $global_context->hasVariable($var_id)
                                 ? clone $global_context->vars_in_scope[$var_id]
-                                : VariableFetchAnalyzer::getGlobalType($var_id);
+                                : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
 
                         $context->vars_possibly_in_scope[$var_id] = true;
 

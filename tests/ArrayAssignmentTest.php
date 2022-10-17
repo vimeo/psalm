@@ -727,7 +727,7 @@ class ArrayAssignmentTest extends TestCase
             'mixedSwallowsArrayAssignment' => [
                 'code' => '<?php
                     /** @psalm-suppress MixedAssignment */
-                    $a = $_GET["foo"];
+                    $a = $GLOBALS["foo"];
 
                     /** @psalm-suppress MixedArrayAssignment */
                     $a["bar"] = "cool";

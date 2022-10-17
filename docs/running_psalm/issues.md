@@ -221,6 +221,7 @@
  - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
  - [ReferenceReusedFromConfusingScope](issues/ReferenceReusedFromConfusingScope.md)
  - [ReservedWord](issues/ReservedWord.md)
+ - [RiskyCast](issues/RiskyCast.md)
  - [StringIncrement](issues/StringIncrement.md)
  - [TaintedCallable](issues/TaintedCallable.md)
  - [TaintedCookie](issues/TaintedCookie.md)

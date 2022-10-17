@@ -13,7 +13,7 @@ class CastTest extends TestCase
      */
     public function providerValidCodeParse(): iterable
     {
-        yield 'castFalseOrIntToInt' => [
+        yield 'SKIPPED-castFalseOrIntToInt' => [
             'code' => '<?php
                 /** @var false|int<10, 20> */
                 $intOrFalse = 10;
@@ -23,7 +23,7 @@ class CastTest extends TestCase
                 '$int===' => '0|int<10, 20>',
             ],
         ];
-        yield 'castTrueOrIntToInt' => [
+        yield 'SKIPPED-castTrueOrIntToInt' => [
             'code' => '<?php
                 /** @var true|int<10, 20> */
                 $intOrTrue = 10;
@@ -33,7 +33,7 @@ class CastTest extends TestCase
                 '$int===' => '1|int<10, 20>',
             ],
         ];
-        yield 'castBoolOrIntToInt' => [
+        yield 'SKIPPED-castBoolOrIntToInt' => [
             'code' => '<?php
                 /** @var bool|int<10, 20> */
                 $intOrBool = 10;

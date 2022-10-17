@@ -64,13 +64,48 @@ class ReadonlyPropertyTest extends TestCase
 
                     echo (new A)->bar;'
             ],
-            'readonlyPublicPropertySetInAnotherMEthod' => [
+            'readonlyPublicPropertySetInAnotherMethod' => [
                 'code' => '<?php
                     class A {
                         /**
                          * @psalm-readonly-allow-private-mutation
                          */
                         public ?string $bar = null;
+
+                        public function setBar(string $s) : void {
+                            $this->bar = $s;
+                        }
+                    }
+
+                    echo (new A)->bar;'
+            ],
+            'docblockReadonlyWithPrivateMutationsAllowedConstructorPropertySetInAnotherMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(
+                            /**
+                             * @readonly
+                             * @psalm-allow-private-mutation
+                             */
+                            public ?string $bar = null,
+                        ) {}
+
+                        public function setBar(string $s) : void {
+                            $this->bar = $s;
+                        }
+                    }
+
+                    echo (new A)->bar;'
+            ],
+            'readonlyPublicConstructorPropertySetInAnotherMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(
+                            /**
+                             * @psalm-readonly-allow-private-mutation
+                             */
+                            public ?string $bar = null,
+                        ) {}
 
                         public function setBar(string $s) : void {
                             $this->bar = $s;

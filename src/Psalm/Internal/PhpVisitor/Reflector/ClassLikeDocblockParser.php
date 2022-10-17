@@ -506,7 +506,7 @@ class ClassLikeDocblockParser
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
-                    $line_parts[1] = preg_replace('/,$/', '', $line_parts[1]);
+                    $line_parts[1] = preg_replace('/,$/', '', $line_parts[1], 1);
 
                     $end = $offset + strlen($line_parts[0]);
 

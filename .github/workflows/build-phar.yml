@@ -8,8 +8,13 @@ on:
     types:
       - published
 
+permissions:
+  contents: read
+
 jobs:
   pre_job:
+    permissions:
+      actions: write
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
@@ -24,6 +29,8 @@ jobs:
           paths: '["bin/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalter", "box.json.dist", "composer.json", "config.xsd", "keys.asc.gpg", "scoper.inc.php"]'
 
   build-phar:
+    permissions:
+      contents: write # for release
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest

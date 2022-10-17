@@ -2,6 +2,17 @@
 
 namespace Psalm\Internal\Provider;
 
+use RuntimeException;
+
+use function fclose;
+use function filesize;
+use function flock;
+use function fopen;
+use function fread;
+use function usleep;
+
+use const LOCK_SH;
+
 /**
  * @internal
  */
@@ -62,5 +73,39 @@ class Providers
             $file_storage_cache_provider
         );
         $this->file_reference_provider = new FileReferenceProvider($file_reference_cache_provider);
+    }
+
+    public static function safeFileGetContents(string $path): string
+    {
+        // no readable validation as that must be done in the caller
+        $fp = fopen($path, 'r');
+        if ($fp === false) {
+            return '';
+        }
+        $max_wait_cycles = 5;
+        $has_lock = false;
+        while ($max_wait_cycles > 0) {
+            if (flock($fp, LOCK_SH)) {
+                $has_lock = true;
+                break;
+            }
+            $max_wait_cycles--;
+            usleep(50_000);
+        }
+
+        if (!$has_lock) {
+            fclose($fp);
+            throw new RuntimeException('Could not acquire lock for ' . $path);
+        }
+
+        $file_size = filesize($path);
+        $content = '';
+        if ($file_size > 0) {
+            $content = (string) fread($fp, $file_size);
+        }
+
+        fclose($fp);
+
+        return $content;
     }
 }

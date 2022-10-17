@@ -966,6 +966,32 @@ class BinaryOperationTest extends TestCase
                 ',
                 'assertions' => ['$foo===' => 'float(3)'],
             ],
+            'concatNonEmptyReturnNonFalsyString' => [
+                'code' => '<?php
+                    /** @var  non-empty-string $s1 */
+                    $s1 = "0";
+                    /** @var  non-empty-string $s1 */
+                    $s2 = "0";
+
+                    $a = $s1.$s2;',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                ],
+            ],
+            'concatNumericWithNonEmptyReturnNonFalsyString' => [
+                'code' => '<?php
+                    /** @var  numeric-string $s1 */
+                    $s1 = "1";
+                    /** @var  non-empty-string $s2 */
+                    $s2 = "0";
+
+                    $a = $s1.$s2;
+                    $b = $s2.$s1;',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                ],
+            ],
         ];
     }
 

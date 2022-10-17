@@ -111,7 +111,7 @@ class AssertionReconciler extends Reconciler
             && is_string($key)
             && VariableFetchAnalyzer::isSuperGlobal($key)
         ) {
-            $existing_var_type = VariableFetchAnalyzer::getGlobalType($key);
+            $existing_var_type = VariableFetchAnalyzer::getGlobalType($key, $codebase->analysis_php_version_id);
         }
 
         if ($existing_var_type === null) {

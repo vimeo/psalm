@@ -565,6 +565,22 @@ class ClosureTest extends TestCase
                     '$result' => 'array{stdClass}<stdClass>'
                 ],
             ],
+            'CallableWithArrayReduce' => [
+                'code' => '<?php
+                    /**
+                     * @return callable(int, int): int
+                     */
+                    function maker() {
+                       return function(int $sum, int $e) {
+                          return $sum + $e;
+                       };
+                    }
+                    $maker = maker();
+                    $result = array_reduce([1, 2, 3], $maker, 0);',
+                'assertions' => [
+                    '$result' => 'int'
+                ],
+            ],
             'FirstClassCallable:NamedFunction:is_int' => [
                 'code' => '<?php
                     $closure = is_int(...);
@@ -750,6 +766,55 @@ class ClosureTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'
+            ],
+            'FirstClassCallable:InheritedStaticMethod' => [
+                'code' => '<?php
+
+                    abstract class A
+                    {
+                        public function foo(int $i): string
+                        {
+                            return (string) $i;
+                        }
+                    }
+
+                    class C extends A {}
+
+                    /** @param \Closure(int):string $_ */
+                    function takesIntToString(\Closure $_): void {}
+
+                    takesIntToString(C::foo(...));',
+                'assertions' => [],
+                [],
+                '8.1',
+            ],
+            'FirstClassCallable:InheritedStaticMethodWithStaticTypeParameter' => [
+                'code' => '<?php
+
+                    /** @template T */
+                    class Holder
+                    {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+                    }
+
+                    abstract class A
+                    {
+                        final public function __construct(public int $i) {}
+
+                        /** @return Holder<static> */
+                        public static function create(int $i): Holder
+                        {
+                            return new Holder(new static($i));
+                        }
+                    }
+
+                    class C extends A {}
+
+                    /** @param \Closure(int):Holder<C> $_ */
+                    function takesIntToHolder(\Closure $_): void {}
+
+                    takesIntToHolder(C::create(...));'
             ],
             'FirstClassCallable:WithArrayMap' => [
                 'code' => '<?php
@@ -1149,7 +1214,7 @@ class ClosureTest extends TestCase
 
                     takesA($getAButReallyB());
                     takesB($getAButReallyB());',
-                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:28 - Argument 1 of takesB expects B, parent type A provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:28 - Argument 1 of takesB expects B, but parent type A provided',
             ],
             'closureByRefUseToMixed' => [
                 'code' => '<?php

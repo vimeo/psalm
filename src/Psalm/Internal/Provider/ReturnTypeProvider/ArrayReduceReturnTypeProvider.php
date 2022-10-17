@@ -103,7 +103,9 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         $initial_type = $reduce_return_type;
 
-        if ($closure_types = $function_call_arg_type->getClosureTypes()) {
+        $closure_types = $function_call_arg_type->getClosureTypes() ?: $function_call_arg_type->getCallableTypes();
+
+        if ($closure_types) {
             $closure_atomic_type = reset($closure_types);
 
             $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();

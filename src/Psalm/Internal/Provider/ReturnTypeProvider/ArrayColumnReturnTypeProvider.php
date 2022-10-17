@@ -39,7 +39,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return Type::getMixed();
         }
 
-        $row_shape = null;
+        $row_type = $row_shape = null;
         $input_array_not_empty = false;
 
         // calculate row shape
@@ -48,7 +48,6 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             && $first_arg_type->hasArray()
         ) {
             $input_array = $first_arg_type->getAtomicTypes()['array'];
-            $row_type = null;
             if ($input_array instanceof TKeyedArray) {
                 $row_type = $input_array->getGenericArrayType()->type_params[1];
             } elseif ($input_array instanceof TArray) {
@@ -107,7 +106,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         }
 
         $result_key_type = Type::getArrayKey();
-        $result_element_type = null;
+        $result_element_type = null !== $row_type && $value_column_name_is_null ? $row_type : null;
         $have_at_least_one_res = false;
         // calculate results
         if ($row_shape instanceof TKeyedArray) {
@@ -119,9 +118,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 }
                 //array_column skips undefined elements so resulting type is necessarily defined
                 $result_element_type->possibly_undefined = false;
-            } elseif ($value_column_name_is_null) {
-                $result_element_type = new Union([$row_shape]);
-            } else {
+            } elseif (!$value_column_name_is_null) {
                 $result_element_type = Type::getMixed();
             }
 

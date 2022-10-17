@@ -1,11 +1,103 @@
 <?php
 
-/**
- * @psalm-immutable
- */
 class DateTimeImmutable implements DateTimeInterface
 {
     public function __construct(string $datetime = "now", DateTimeZone $timezone = null) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static|false
+     */
+    public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null) {}
+
+    /**
+     * @psalm-mutation-free
+     *
+     * @param string $format
+     *
+     * @return ($format is non-empty-string ? non-empty-string : string)
+     */
+    public function format($format) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return DateTimeZone
+     */
+    public function getTimezone() {}
+
+    /**
+     * @psalm-mutation-free
+     * @return int
+     */
+    public function getOffset() {}
+
+    /**
+     * @psalm-mutation-free
+     * @return int
+     */
+    public function getTimestamp() {}
+
+    /**
+     * @psalm-mutation-free
+     * @param bool $absolute
+     * @return DateInterval
+     */
+    public function diff(DateTimeInterface $targetObject, $absolute = false) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static|false
+     */
+    public function modify(string $modifier) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static
+     */
+    public function add(DateInterval $interval) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static
+
+     */
+    public function sub(DateInterval $interval) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static
+     */
+    public function setTimezone(DateTimeZone $timezone) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static
+     */
+    public function setTime(int $hour, int $minute, int $second = 0, int $microsecond = 0) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static
+     */
+    public function setDate(int $year, int $month, int $day) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static
+     */
+    public function setISODate(int $year, int $week, int $dayOfWeek = 1) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static
+     */
+    public function setTimestamp(int $unixtimestamp) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static
+     */
+    public static function createFromMutable(DateTime $object) {}
 }
 
 /**
@@ -14,6 +106,24 @@ class DateTimeImmutable implements DateTimeInterface
 class DateTimeZone
 {
     public function __construct(string $timezone) {}
+}
+
+/**
+ * @psalm-immutable
+ *
+ * @template-covariant Start of string|DateTimeInterface
+ * @implements Traversable<int, DateTimeInterface>
+ */
+class DatePeriod implements Traversable
+{
+    const EXCLUDE_START_DATE = 1;
+    /**
+     * @param Start $start
+     * @param (Start is string ? 0|self::EXCLUDE_START_DATE : DateInterval) $interval
+     * @param (Start is string ? never : DateTimeInterface|positive-int) $end
+     * @param (Start is string ? never : 0|self::EXCLUDE_START_DATE) $options
+     */
+    public function __construct($start, $interval = 0, $end = 1, $options = 0) {}
 }
 
 /**

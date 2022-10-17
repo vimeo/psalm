@@ -1893,6 +1893,10 @@ class AssertionFinder
                 return new IsType(new Atomic\TIterable());
             case 'is_countable':
                 return new IsCountable();
+            case 'ctype_digit':
+                return new IsType(new Atomic\TNumericString);
+            case 'ctype_lower':
+                return new IsType(new Atomic\TNonEmptyLowercaseString);
         }
 
         return null;
@@ -3724,8 +3728,8 @@ class AssertionFinder
             )
             : null;
 
-        if ($array_root) {
-            if ($first_var_name === null && isset($expr->getArgs()[0])) {
+        if ($array_root && isset($expr->getArgs()[0])) {
+            if ($first_var_name === null) {
                 $first_arg = $expr->getArgs()[0];
 
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
@@ -3756,7 +3760,10 @@ class AssertionFinder
                 } else {
                     $first_var_name = null;
                 }
-            } elseif ($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\Variable
+            } elseif (($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\Variable
+                    || $expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\PropertyFetch
+                    || $expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                )
                 && $source instanceof StatementsAnalyzer
                 && ($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
             ) {

@@ -554,6 +554,14 @@ class ExistingAtomicStaticCallAnalyzer
             ) {
                 $static_type = $context->self;
                 $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
+            } elseif ($context->calling_method_id !== null) {
+                // differentiate between these cases:
+                //   1. "static" comes from the CALLED static method - use $fq_class_name.
+                //   2. "static" in return type comes from return type of the
+                //   method CALLING the currently analyzed static method - use $context->self.
+                $static_type = self::hasStaticInType($return_type_candidate)
+                    ? $fq_class_name
+                    : $context->self;
             } else {
                 $static_type = $fq_class_name;
             }
@@ -615,5 +623,23 @@ class ExistingAtomicStaticCallAnalyzer
         }
 
         return $return_type_candidate;
+    }
+
+    /**
+     * Dumb way to determine whether a type contains "static" somewhere inside.
+     */
+    private static function hasStaticInType(Type\TypeNode $type): bool
+    {
+        if ($type instanceof TNamedObject && ($type->value === 'static' || $type->is_static)) {
+            return true;
+        }
+
+        foreach ($type->getChildNodes() as $child_type) {
+            if (self::hasStaticInType($child_type)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
