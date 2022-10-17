@@ -1493,7 +1493,7 @@ class FunctionCallTest extends TestCase
                     $y2 = date("Y", 10000);
                     $F2 = date("F", 10000);
                     /** @psalm-suppress MixedArgument */
-                    $F3 = date("F", $_GET["F3"]);',
+                    $F3 = date("F", $GLOBALS["F3"]);',
                 'assertions' => [
                     '$y===' => 'numeric-string',
                     '$m===' => 'numeric-string',
