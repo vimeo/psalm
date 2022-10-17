@@ -21,6 +21,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
@@ -630,16 +631,8 @@ class ExistingAtomicStaticCallAnalyzer
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
     {
-        if ($type instanceof TNamedObject && ($type->value === 'static' || $type->is_static)) {
-            return true;
-        }
-
-        foreach ($type->getChildNodes() as $child_type) {
-            if (self::hasStaticInType($child_type)) {
-                return true;
-            }
-        }
-
-        return false;
+        $visitor = new ContainsStaticVisitor;
+        $visitor->traverse($type);
+        return $visitor->matches();
     }
 }
