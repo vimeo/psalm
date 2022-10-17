@@ -49,6 +49,10 @@ return [
        'old' => ['int|false'],
        'new' => ['int'],
     ],
+    'DateTimeImmutable::format' => [
+      'old' => ['string|false', 'format'=>'string'],
+      'new' => ['string', 'format'=>'string'],
+    ],
     'DateTimeImmutable::getTimestamp' => [
         'old' => ['int|false'],
         'new' => ['int'],

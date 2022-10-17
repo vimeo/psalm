@@ -460,13 +460,6 @@ class TaintTest extends TestCase
 
                     echo $a[0]["b"];',
             ],
-            'intUntainted' => [
-                'code' => '<?php
-                    $input = $_GET[\'input\'];
-                    if (is_int($input)) {
-                        echo "$input";
-                    }',
-            ],
             'dontTaintSpecializedInstanceProperty' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
