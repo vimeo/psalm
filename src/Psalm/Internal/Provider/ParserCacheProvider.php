@@ -11,6 +11,8 @@ use RuntimeException;
 use UnexpectedValueException;
 
 use function clearstatcache;
+use function error_log;
+use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function gettype;
@@ -31,7 +33,6 @@ use function unlink;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
-use const E_USER_ERROR;
 use const JSON_THROW_ON_ERROR;
 use const LOCK_EX;
 use const PHP_VERSION_ID;
@@ -348,7 +349,7 @@ class ParserCacheProvider
 
     private function getParserCacheKey(string $file_path): string
     {
-        if (PHP_VERSION_ID >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00) {
             $hash = hash('xxh128', $file_path);
         } else {
             $hash = hash('md4', $file_path);

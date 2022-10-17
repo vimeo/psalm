@@ -21,6 +21,7 @@ use UnexpectedValueException;
 use function array_filter;
 use function assert;
 use function count;
+use function get_class;
 use function in_array;
 use function max;
 use function min;

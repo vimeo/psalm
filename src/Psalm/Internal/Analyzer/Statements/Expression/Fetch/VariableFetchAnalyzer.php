@@ -778,7 +778,7 @@ class VariableFetchAnalyzer
                 ]),
             ];
 
-            if ($codebase_analysis_php_version_id >= 81000) {
+            if ($codebase_analysis_php_version_id >= 8_10_00) {
                 $values['full_path'] = new Union([
                     new TString(),
                     new TNonEmptyList(Type::getString()),

@@ -139,7 +139,7 @@ class StatementsProvider
 
         $config = Config::getInstance();
 
-        if (PHP_VERSION_ID >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00) {
             $file_content_hash = hash('xxh128', $version . $file_contents);
         } else {
             $file_content_hash = hash('md4', $version . $file_contents);
