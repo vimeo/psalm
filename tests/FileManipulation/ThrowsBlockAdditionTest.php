@@ -5,20 +5,20 @@ namespace Psalm\Tests\FileManipulation;
 class ThrowsBlockAdditionTest extends FileManipulationTestCase
 {
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'addThrowsAnnotationToFunction' => [
-                '<?php
+                'input' => '<?php
                     function foo(string $s): string {
                         if("" === $s) {
                             throw new \InvalidArgumentException();
                         }
                         return $s;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @throws InvalidArgumentException
                      */
@@ -28,12 +28,12 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                '7.4',
-                ['MissingThrowsDocblock'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
             ],
             'addMultipleThrowsAnnotationToFunction' => [
-                '<?php
+                'input' => '<?php
                     function foo(string $s): string {
                         if("" === $s) {
                             throw new \InvalidArgumentException();
@@ -43,7 +43,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @throws InvalidArgumentException|DomainException
                      */
@@ -56,12 +56,12 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                '7.4',
-                ['MissingThrowsDocblock'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
             ],
             'preservesExistingThrowsAnnotationToFunction' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @throws InvalidArgumentException|DomainException
                      */
@@ -71,7 +71,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @throws InvalidArgumentException|DomainException
                      * @throws Exception
@@ -82,12 +82,12 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                '7.4',
-                ['MissingThrowsDocblock'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
             ],
             'doesNotAddDuplicateThrows' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @throws InvalidArgumentException
                      */
@@ -100,7 +100,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @throws InvalidArgumentException
                      * @throws DomainException
@@ -114,12 +114,12 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                '7.4',
-                ['MissingThrowsDocblock'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
             ],
             'addThrowsAnnotationToFunctionInNamespace' => [
-                '<?php
+                'input_type' => '<?php
                     namespace Foo;
                     function foo(string $s): string {
                         if("" === $s) {
@@ -127,7 +127,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                '<?php
+                'output_type' => '<?php
                     namespace Foo;
                     /**
                      * @throws \InvalidArgumentException
@@ -138,12 +138,12 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                         return $s;
                     }',
-                '7.4',
-                ['MissingThrowsDocblock'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
             ],
             'addThrowsAnnotationToFunctionFromFunctionFromOtherNamespace' => [
-                '<?php
+                'input_type' => '<?php
                     namespace Foo {
                         function foo(): void {
                             \Bar\bar();
@@ -158,7 +158,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                             throw new BarException();
                         }
                     }',
-                '<?php
+                'output_type' => '<?php
                     namespace Foo {
                         /**
                          * @throws \Bar\BarException
@@ -176,12 +176,12 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                             throw new BarException();
                         }
                     }',
-                '7.4',
-                ['MissingThrowsDocblock'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
             ],
             'addThrowsAnnotationAccountsForUseStatements' => [
-                '<?php
+                'input_type' => '<?php
                     namespace Foo {
                         use Bar\BarException;
                         function foo(): void {
@@ -197,7 +197,7 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                     namespace Bar {
                         class BarException extends \DomainException {}
                     }',
-                '<?php
+                'output_type' => '<?php
                     namespace Foo {
                         use Bar\BarException;
                         /**
@@ -216,9 +216,9 @@ class ThrowsBlockAdditionTest extends FileManipulationTestCase
                     namespace Bar {
                         class BarException extends \DomainException {}
                     }',
-                '7.4',
-                ['MissingThrowsDocblock'],
-                true,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
             ],
         ];
     }
