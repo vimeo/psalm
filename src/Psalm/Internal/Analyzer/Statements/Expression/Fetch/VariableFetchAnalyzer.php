@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -551,6 +552,9 @@ class VariableFetchAnalyzer
         );
     }
 
+    /** @var array<value-of<self::SUPER_GLOBALS>, Union> */
+    private static array $globalCache = [];
+
     public static function getGlobalType(string $var_id, int $codebase_analysis_php_version_id): Union
     {
         $config = Config::getInstance();
@@ -559,6 +563,34 @@ class VariableFetchAnalyzer
             return Type::parseString($config->globals[$var_id]);
         }
 
+        if (!self::$globalCache) {
+            foreach (self::SUPER_GLOBALS as $v) {
+                self::$globalCache[$v] = self::getGlobalTypeInner($v, false);
+            }
+            self::$globalCache['$_FILES full path'] = self::getGlobalTypeInner(
+                '$_FILES',
+                true
+            );
+        }
+
+        if ($codebase_analysis_php_version_id >= 8_10_00 && $var_id === '$_FILES') {
+            $var_id = '$_FILES full path';
+        }
+
+        if (isset(self::$globalCache[$var_id])) {
+            return self::$globalCache[$var_id];
+        }
+        
+        return Type::getMixed();
+    }
+    
+    /**
+     * @psalm-suppress InaccessibleProperty Always acting on new types
+     * 
+     * @param value-of<self::SUPER_GLOBALS> $var_id
+     */
+    private static function getGlobalTypeInner(string $var_id, bool $files_full_path): Union
+    {
         if ($var_id === '$argv') {
             // only in CLI, null otherwise
             $argv_nullable = new Union([
@@ -583,10 +615,6 @@ class VariableFetchAnalyzer
             // $argc_nullable->possibly_undefined = true;
             $argc_nullable->ignore_nullable_issues = true;
             return $argc_nullable;
-        }
-
-        if (!self::isSuperGlobal($var_id)) {
-            return Type::getMixed();
         }
 
         if ($var_id === '$http_response_header') {
@@ -780,7 +808,7 @@ class VariableFetchAnalyzer
                 ]),
             ];
 
-            if ($codebase_analysis_php_version_id >= 8_10_00) {
+            if ($files_full_path) {
                 $values['full_path'] = new Union([
                     new TString(),
                     new TNonEmptyList(Type::getString()),
@@ -810,7 +838,5 @@ class VariableFetchAnalyzer
             $type->possibly_undefined = true;
             return $type;
         }
-
-        return Type::getMixed();
     }
 }

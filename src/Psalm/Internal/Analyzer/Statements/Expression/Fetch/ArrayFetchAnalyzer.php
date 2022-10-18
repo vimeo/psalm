@@ -328,7 +328,7 @@ class ArrayFetchAnalyzer
                 );
             }
 
-            $stmt_type->possibly_undefined = false;
+            $stmt_type = $stmt_type->setPossiblyUndefined(false);
         }
 
         if ($context->inside_isset && $dim_var_id && $new_offset_type && !$new_offset_type->isUnionEmpty()) {

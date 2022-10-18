@@ -829,7 +829,7 @@ class ArgumentAnalyzer
 
         if ($function_param->by_ref || $function_param->is_optional) {
             //if the param is optional or a ref, we'll allow the input to be possibly_undefined
-            $param_type->possibly_undefined = true;
+            $param_type = $param_type->setPossiblyUndefined(true);
         }
 
         if ($param_type->hasCallableType() && $param_type->isSingle()) {
