@@ -86,16 +86,6 @@ class TryAnalyzer
         }
         $context->inside_try = $was_inside_try;
 
-        if ($try_context->finally_scope) {
-            foreach ($context->vars_in_scope as $var_id => $type) {
-                $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                    $try_context->finally_scope->vars_in_scope[$var_id] ?? null,
-                    $type,
-                    $statements_analyzer->getCodebase()
-                );
-            }
-        }
-
         $context->has_returned = false;
 
         $try_block_control_actions = ScopeAnalyzer::getControlActions(
@@ -124,6 +114,16 @@ class TryAnalyzer
                 $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $try_context->vars_in_scope[$var_id],
                     $type
+                );
+            }
+        }
+
+        if ($try_context->finally_scope) {
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $try_context->finally_scope->vars_in_scope[$var_id] ?? null,
+                    $type,
+                    $statements_analyzer->getCodebase()
                 );
             }
         }
