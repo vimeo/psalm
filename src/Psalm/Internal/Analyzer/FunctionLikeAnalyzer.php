@@ -1157,7 +1157,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context->vars_possibly_in_scope[$function_param_id] = true;
 
             if ($function_param->by_ref) {
-                $context->vars_in_scope[$function_param_id] = 
+                $context->vars_in_scope[$function_param_id] =
                     $context->vars_in_scope[$function_param_id]->setProperties(['by_ref' => true]);
                 $context->references_to_external_scope[$function_param_id] = true;
             }

@@ -702,10 +702,9 @@ class TypeCombiner
                 $value_type = $combination->objectlike_entries[$candidate_property_name] ?? null;
 
                 if (!$value_type) {
-                    $combination->objectlike_entries[$candidate_property_name] = clone $candidate_property_type;
-                    // it's possibly undefined if there are existing objectlike entries and
-                    $combination->objectlike_entries[$candidate_property_name]->possibly_undefined
-                        = $existing_objectlike_entries || $candidate_property_type->possibly_undefined;
+                    $combination->objectlike_entries[$candidate_property_name] = clone $candidate_property_type
+                        ->setPossiblyUndefined($existing_objectlike_entries
+                            || $candidate_property_type->possibly_undefined);
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,

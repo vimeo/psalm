@@ -165,23 +165,23 @@ class TemplateStandinTypeReplacer
             }
 
             if (count($atomic_types) > 1) {
-                $new_union_type = TypeCombiner::combine(
+                return TypeCombiner::combine(
                     $atomic_types,
                     $codebase
-                );
-            } else {
-                $new_union_type = new Union($atomic_types);
+                )->setProperties([
+                    'ignore_nullable_issues' => $union_type->ignore_nullable_issues,
+                    'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
+                    'possibly_undefined' => $union_type->possibly_undefined,
+                    'had_template' => $had_template
+                ]);
             }
-
-            $new_union_type->ignore_nullable_issues = $union_type->ignore_nullable_issues;
-            $new_union_type->ignore_falsable_issues = $union_type->ignore_falsable_issues;
-            $new_union_type->possibly_undefined = $union_type->possibly_undefined;
-
-            if ($had_template) {
-                $new_union_type->had_template = true;
-            }
-
-            return $new_union_type;
+            
+            return new Union($atomic_types, [
+                'ignore_nullable_issues' => $union_type->ignore_nullable_issues,
+                'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
+                'possibly_undefined' => $union_type->possibly_undefined,
+                'had_template' => $had_template
+            ]);
         }
 
         return $union_type;

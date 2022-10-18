@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
-use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -586,7 +585,7 @@ class VariableFetchAnalyzer
 
     /**
      * @psalm-suppress InaccessibleProperty Always acting on new types
-     * 
+     *
      * @param value-of<self::SUPER_GLOBALS> $var_id
      */
     private static function getGlobalTypeInner(string $var_id, bool $files_full_path): Union

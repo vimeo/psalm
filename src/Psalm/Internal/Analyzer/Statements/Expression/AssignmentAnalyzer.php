@@ -1418,7 +1418,7 @@ class AssignmentAnalyzer
                             || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
                             && isset($assign_value_atomic_type->properties[$assign_var_item->key->value])
                         ) {
-                            $new_assign_type = 
+                            $new_assign_type =
                                 $assign_value_atomic_type->properties[$assign_var_item->key->value];
 
                             if ($new_assign_type->possibly_undefined) {

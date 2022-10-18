@@ -20,6 +20,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function addslashes;
+use function assert;
 use function count;
 use function get_class;
 use function implode;

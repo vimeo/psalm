@@ -1601,7 +1601,8 @@ class SimpleAssertionReconciler extends Reconciler
                 }
 
                 if (isset($atomic_type->properties[$assertion])) {
-                    $atomic_type->properties[$assertion]->possibly_undefined = false;
+                    $atomic_type->properties[$assertion] =
+                        $atomic_type->properties[$assertion]->setPossiblyUndefined(false);
                 } else {
                     $atomic_type = new TKeyedArray(
                         array_merge(
@@ -2527,11 +2528,11 @@ class SimpleAssertionReconciler extends Reconciler
         }
         $new = $existing_var_type->setTypes($types);
         if ($new === $existing_var_type && ($new->possibly_undefined || $new->possibly_undefined_from_try)) {
-            $new = clone $existing_var_type;
-            $new->possibly_undefined = false;
-            $new->possibly_undefined_from_try = false;
+            $new = $existing_var_type->setPossiblyUndefined(false, false);
         } else {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $new->possibly_undefined = false;
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $new->possibly_undefined_from_try = false;
         }
         return $new;

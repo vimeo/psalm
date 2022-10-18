@@ -103,7 +103,7 @@ class TNamedObject extends Atomic
         if ($value[0] === '\\') {
             $value = substr($value, 1);
         }
-        if ($value === $this->value 
+        if ($value === $this->value
             && $this->is_static === $is_static
             && $this->is_static_resolved === $is_static_resolved
         ) {

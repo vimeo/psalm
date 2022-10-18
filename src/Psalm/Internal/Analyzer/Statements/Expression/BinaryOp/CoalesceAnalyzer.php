@@ -59,7 +59,6 @@ class CoalesceAnalyzer
                 }
             } else {
                 $condition_type = $statements_analyzer->node_data->getType($left_expr) ?? Type::getMixed();
-
             }
 
             $context->vars_in_scope[$left_var_id] = $condition_type;

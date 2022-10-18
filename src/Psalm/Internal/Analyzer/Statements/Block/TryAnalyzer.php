@@ -452,7 +452,7 @@ class TryAnalyzer
                             /** @psalm-suppress InaccessibleProperty We just created this type */
                             $context->vars_in_scope[$var_id]->possibly_undefined = false;
                             /** @psalm-suppress InaccessibleProperty We just created this type */
-                            $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;    
+                            $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
                         }
                     } elseif (isset($finally_context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = clone $finally_context->vars_in_scope[$var_id];
@@ -464,7 +464,7 @@ class TryAnalyzer
         foreach ($definitely_newly_assigned_var_ids as $var_id => $_) {
             if (isset($context->vars_in_scope[$var_id])) {
                 if ($context->vars_in_scope[$var_id]->possibly_undefined_from_try) {
-                    $context->vars_in_scope[$var_id] = 
+                    $context->vars_in_scope[$var_id] =
                         $context->vars_in_scope[$var_id]->setPossiblyUndefined(
                             false,
                             false
