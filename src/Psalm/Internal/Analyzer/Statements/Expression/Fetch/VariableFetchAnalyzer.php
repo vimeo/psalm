@@ -552,7 +552,7 @@ class VariableFetchAnalyzer
         );
     }
 
-    /** @var array<value-of<self::SUPER_GLOBALS>, Union> */
+    /** @var array<value-of<self::SUPER_GLOBALS>|'$_FILES full path', Union> */
     private static array $globalCache = [];
 
     public static function getGlobalType(string $var_id, int $codebase_analysis_php_version_id): Union
@@ -583,7 +583,7 @@ class VariableFetchAnalyzer
         
         return Type::getMixed();
     }
-    
+
     /**
      * @psalm-suppress InaccessibleProperty Always acting on new types
      * 

@@ -117,7 +117,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     $have_at_least_one_res = true;
                 }
                 //array_column skips undefined elements so resulting type is necessarily defined
-                $result_element_type->possibly_undefined = false;
+                $result_element_type = $result_element_type->setPossiblyUndefined(false);
             } elseif (!$value_column_name_is_null) {
                 $result_element_type = Type::getMixed();
             }

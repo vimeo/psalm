@@ -129,9 +129,7 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($assertion instanceof ArrayKeyExists) {
-            $existing_var_type->possibly_undefined = false;
-
-            return $existing_var_type;
+            return $existing_var_type->setPossiblyUndefined(false);
         }
 
         if ($assertion instanceof InArray) {

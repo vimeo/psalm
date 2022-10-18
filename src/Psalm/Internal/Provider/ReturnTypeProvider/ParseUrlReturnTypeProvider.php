@@ -137,19 +137,20 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
         }
 
-        $component_types = [
-            'scheme' => Type::getString(),
-            'user' => Type::getString(),
-            'pass' => Type::getString(),
-            'host' => Type::getString(),
-            'port' => Type::getInt(),
-            'path' => Type::getString(),
-            'query' => Type::getString(),
-            'fragment' => Type::getString(),
+        $component_type_keys = [
+            'scheme',
+            'user',
+            'pass',
+            'host',
+            'port',
+            'path',
+            'query',
+            'fragment',
         ];
 
-        foreach ($component_types as $component_type) {
-            $component_type->possibly_undefined = true;
+        $component_types = [];
+        foreach ($component_type_keys as $key) {
+            $component_types[$key] = new Union([new TString()], ['possibly_undefined' => true]);
         }
 
         $return_type = new Union([

@@ -104,9 +104,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                                 $statements_source->getSuppressedIssues()
                             );
 
-                            $keyed_type->possibly_undefined = !$prev_keyed_type->isAlwaysTruthy();
-
-                            return $keyed_type;
+                            return $keyed_type->setPossiblyUndefined(!$prev_keyed_type->isAlwaysTruthy());
                         },
                         $first_arg_array->properties
                     ),

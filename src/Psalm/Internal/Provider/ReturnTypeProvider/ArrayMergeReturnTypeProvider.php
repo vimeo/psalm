@@ -130,10 +130,12 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                                     $generic_properties[$key] = Type::combineUnionTypes(
                                         $generic_properties[$key],
                                         $type,
-                                        $codebase
+                                        $codebase,
+                                        false,
+                                        true,
+                                        500,
+                                        $was_possibly_undefined
                                     );
-
-                                    $generic_properties[$key]->possibly_undefined = $was_possibly_undefined;
                                 }
                             }
 

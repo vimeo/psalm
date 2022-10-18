@@ -113,8 +113,7 @@ class UnsetAnalyzer
                             } else {
                                 $properties = [];
                                 foreach ($atomic_root_type->properties as $key => $type) {
-                                    $properties[$key] = clone $type;
-                                    $properties[$key]->possibly_undefined = true;
+                                    $properties[$key] = $type->setPossiblyUndefined(true);
                                 }
                                 $root_types []= new TKeyedArray(
                                     $properties,

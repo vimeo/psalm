@@ -64,8 +64,7 @@ class ArrayTypeComparator
 
             foreach ($input_type_part->type_params[0]->getAtomicTypes() as $atomic_key_type) {
                 if ($atomic_key_type instanceof TLiteralString || $atomic_key_type instanceof TLiteralInt) {
-                    $properties[$atomic_key_type->value] = clone $input_type_part->type_params[1];
-                    $properties[$atomic_key_type->value]->possibly_undefined = true;
+                    $properties[$atomic_key_type->value] = $input_type_part->type_params[1]->setPossiblyUndefined(true);
                 } else {
                     $all_string_int_literals = false;
                 }
