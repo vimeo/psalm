@@ -530,7 +530,8 @@ abstract class Type
         ?Codebase $codebase = null,
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
-        int $literal_limit = 500
+        int $literal_limit = 500,
+        bool $possibly_undefined = false
     ): Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
@@ -613,7 +614,7 @@ abstract class Type
             }
         }
 
-        if ($type_1->possibly_undefined || $type_2->possibly_undefined) {
+        if ($type_1->possibly_undefined || $type_2->possibly_undefined || $possibly_undefined) {
             $combined_type->possibly_undefined = true;
         }
 

@@ -567,10 +567,12 @@ class ArithmeticOpAnalyzer
                         $properties[$key] = Type::combineUnionTypes(
                             $properties[$key],
                             $type,
-                            $codebase
+                            $codebase,
+                            false,
+                            true,
+                            500,
+                            false
                         );
-
-                        $properties[$key]->possibly_undefined = $type->possibly_undefined;
                     }
                 }
 

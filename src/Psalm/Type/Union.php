@@ -270,7 +270,7 @@ final class Union implements TypeNode, Stringable
         if ($this->possibly_undefined === $possibly_undefined
             && $this->possibly_undefined_from_try == $from_try
         ) {
-            return true;
+            return $this;
         }
         $cloned = clone $this;
         $cloned->possibly_undefined = $possibly_undefined;
