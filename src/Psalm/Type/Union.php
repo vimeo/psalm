@@ -263,6 +263,21 @@ final class Union implements TypeNode, Stringable
         return $obj ?? $this;
     }
 
+    /** @return static */
+    public function setPossiblyUndefined(bool $possibly_undefined, ?bool $from_try = null)
+    {
+        $from_try ??= $this->possibly_undefined_from_try;
+        if ($this->possibly_undefined === $possibly_undefined
+            && $this->possibly_undefined_from_try == $from_try
+        ) {
+            return true;
+        }
+        $cloned = clone $this;
+        $cloned->possibly_undefined = $possibly_undefined;
+        $cloned->possibly_undefined_from_try = $from_try;
+        return $cloned;
+    }
+
     /**
      * @psalm-mutation-free
      * @param non-empty-array<Atomic>  $types

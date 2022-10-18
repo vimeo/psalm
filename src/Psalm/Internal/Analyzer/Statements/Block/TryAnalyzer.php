@@ -106,10 +106,7 @@ class TryAnalyzer
             if (!isset($try_context->vars_in_scope[$var_id])) {
                 $try_context->vars_in_scope[$var_id] = $type;
 
-                $context->vars_in_scope[$var_id] = $type->setProperties([
-                    'possibly_undefined' => true,
-                    'possibly_undefined_from_try' => true
-                ]);
+                $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true, true);
             } else {
                 $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $try_context->vars_in_scope[$var_id],
@@ -166,9 +163,10 @@ class TryAnalyzer
 
             foreach ($catch_context->vars_in_scope as $var_id => $type) {
                 if (!isset($old_context->vars_in_scope[$var_id])) {
-                    $catch_context->vars_in_scope[$var_id] = $type->setProperties([
-                        'possibly_undefined_from_try' => true
-                    ]);
+                    $catch_context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(
+                        $catch_context->vars_in_scope[$var_id]->possibly_undefined,
+                        true
+                    );
                 } else {
                     $catch_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
@@ -407,10 +405,10 @@ class TryAnalyzer
                             );
                         }
                     } else {
-                        $try_context->finally_scope->vars_in_scope[$var_id] = $type->setProperties([
-                            'possibly_undefined' => true,
-                            'possibly_undefined_from_try' => true
-                        ]);
+                        $try_context->finally_scope->vars_in_scope[$var_id] = $type->setPossiblyUndefined(
+                            true,
+                            true
+                        );
                     }
                 }
             }
@@ -467,10 +465,10 @@ class TryAnalyzer
             if (isset($context->vars_in_scope[$var_id])) {
                 if ($context->vars_in_scope[$var_id]->possibly_undefined_from_try) {
                     $context->vars_in_scope[$var_id] = 
-                        $context->vars_in_scope[$var_id]->setProperties([
-                            'possibly_undefined' => false,
-                            'possibly_undefined_from_try' => false,
-                        ]);
+                        $context->vars_in_scope[$var_id]->setPossiblyUndefined(
+                            false,
+                            false
+                        );
                 }
             }
         }

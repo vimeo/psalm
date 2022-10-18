@@ -1229,9 +1229,7 @@ class AssignmentAnalyzer
                                 $statements_analyzer->getSuppressedIssues()
                             );
 
-                            $value_type = $value_type->setProperties([
-                                'possibly_undefined' => false
-                            ]);
+                            $value_type = $value_type->setPossiblyUndefined(false);
                         }
 
                         if ($statements_analyzer->data_flow_graph
@@ -1432,9 +1430,7 @@ class AssignmentAnalyzer
                                     $statements_analyzer->getSuppressedIssues()
                                 );
 
-                                $new_assign_type = $new_assign_type->setProperties([
-                                    'possibly_undefined' => false
-                                ]);
+                                $new_assign_type = $new_assign_type->setPossiblyUndefined(false);
                             }
                         }
 

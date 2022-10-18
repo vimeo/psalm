@@ -86,10 +86,7 @@ class ContinueAnalyzer
                             $statements_analyzer->getCodebase()
                         );
                     } else {
-                        $type = $type->setProperties([
-                            'possibly_undefined' => true,
-                            'possibly_undefined_from_try' => true,
-                        ]);
+                        $type = $type->setPossiblyUndefined(true, true);
                         $context->finally_scope->vars_in_scope[$var_id] = $type;
                     }
                 }

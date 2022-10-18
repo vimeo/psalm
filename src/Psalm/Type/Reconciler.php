@@ -706,7 +706,7 @@ class Reconciler
                                 return null;
                             }
 
-                            $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
+                            $new_base_type_candidate = $existing_key_type_part->type_params[1];
 
                             if ($new_base_type_candidate->isMixed() && !$has_isset && !$has_inverted_isset) {
                                 return $new_base_type_candidate;
@@ -716,27 +716,28 @@ class Reconciler
                                 if ($has_inverted_isset && $new_base_key === $key) {
                                     $new_base_type_candidate = $new_base_type_candidate->getBuilder();
                                     $new_base_type_candidate->addType(new TNull);
+                                    $new_base_type_candidate->possibly_undefined = true;
                                     $new_base_type_candidate = $new_base_type_candidate->freeze();
+                                } else {
+                                    $new_base_type_candidate = $new_base_type_candidate->setPossiblyUndefined(true);
                                 }
-
-                                $new_base_type_candidate->possibly_undefined = true;
                             }
                         } elseif ($existing_key_type_part instanceof TList) {
                             if ($has_empty) {
                                 return null;
                             }
 
-                            $new_base_type_candidate = clone $existing_key_type_part->type_param;
+                            $new_base_type_candidate = $existing_key_type_part->type_param;
 
                             if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
                                 if ($has_inverted_isset && $new_base_key === $key) {
-                                    $new_base_type_candidate = $new_base_type_candidate
-                                        ->getBuilder()
-                                        ->addType(new TNull)
-                                        ->freeze();
+                                    $new_base_type_candidate = $new_base_type_candidate->getBuilder();
+                                    $new_base_type_candidate->addType(new TNull);
+                                    $new_base_type_candidate->possibly_undefined = true;
+                                    $new_base_type_candidate = $new_base_type_candidate->freeze();
+                                } else {
+                                    $new_base_type_candidate = $new_base_type_candidate->setPossiblyUndefined(true);
                                 }
-
-                                $new_base_type_candidate->possibly_undefined = true;
                             }
                         } elseif ($existing_key_type_part instanceof TNull
                             || $existing_key_type_part instanceof TFalse
@@ -744,6 +745,7 @@ class Reconciler
                             $new_base_type_candidate = Type::getNull();
 
                             if ($existing_keys[$base_key]->ignore_nullable_issues) {
+                                /** @psalm-suppress InaccessibleProperty We just created this type */
                                 $new_base_type_candidate->ignore_nullable_issues = true;
                             }
                         } elseif ($existing_key_type_part instanceof TClassStringMap) {
