@@ -531,21 +531,30 @@ abstract class Type
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500,
-        bool $possibly_undefined = false
+        ?bool $possibly_undefined = null
     ): Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
         }
 
         if ($type_1 === null) {
+            if ($possibly_undefined !== null) {
+                return $type_2->setPossiblyUndefined($possibly_undefined);
+            }
             return $type_2;
         }
 
         if ($type_2 === null) {
+            if ($possibly_undefined !== null) {
+                return $type_1->setPossiblyUndefined($possibly_undefined);
+            }
             return $type_1;
         }
 
         if ($type_1 === $type_2) {
+            if ($possibly_undefined !== null) {
+                return $type_1->setPossiblyUndefined($possibly_undefined);
+            }
             return $type_1;
         }
 
@@ -558,16 +567,16 @@ abstract class Type
                 if ($type_2->failed_reconciliation) {
                     $both_failed_reconciliation = true;
                 } else {
-                    $type_2 = clone $type_2;
-                    $type_2->parent_nodes += $type_1->parent_nodes;
-
-                    return $type_2;
+                    return $type_2->setProperties([
+                        'parent_nodes' => [...$type_2->parent_nodes, ...$type_1->parent_nodes],
+                        'possibly_undefined' => $possibly_undefined ?? $type_2->possibly_undefined
+                    ]);
                 }
             } elseif ($type_2->failed_reconciliation) {
-                $type_1 = clone $type_1;
-                $type_1->parent_nodes += $type_2->parent_nodes;
-
-                return $type_1;
+                return $type_1->setProperties([
+                    'parent_nodes' => [...$type_1->parent_nodes, ...$type_2->parent_nodes],
+                    'possibly_undefined' => $possibly_undefined ?? $type_1->possibly_undefined
+                ]);
             }
 
             $combined_type = TypeCombiner::combine(
@@ -614,7 +623,9 @@ abstract class Type
             }
         }
 
-        if ($type_1->possibly_undefined || $type_2->possibly_undefined || $possibly_undefined) {
+        if ($possibly_undefined !== null) {
+            $combined_type->possibly_undefined = $possibly_undefined;
+        } elseif ($type_1->possibly_undefined || $type_2->possibly_undefined) {
             $combined_type->possibly_undefined = true;
         }
 

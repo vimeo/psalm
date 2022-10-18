@@ -58,6 +58,7 @@ use function substr;
 class TypeExpander
 {
     /**
+     * @psalm-suppress InaccessibleProperty We just created the type
      * @param string|TNamedObject|TTemplateParam|null $static_class_type
      */
     public static function expandUnion(
@@ -73,8 +74,6 @@ class TypeExpander
         bool $expand_templates = false,
         bool $throw_on_unresolvable_constant = false
     ): Union {
-        $return_type = clone $return_type;
-
         $new_return_type_parts = [];
 
         $had_split_values = false;

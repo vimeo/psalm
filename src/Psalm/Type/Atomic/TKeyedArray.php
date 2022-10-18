@@ -236,8 +236,15 @@ class TKeyedArray extends Atomic
             $value_type = Type::combineUnionTypes($property, $value_type);
         }
 
-        $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
-        $value_type = $value_type->setPossiblyUndefined($possibly_undefined);
+        $value_type = Type::combineUnionTypes(
+            $this->previous_value_type,
+            $value_type,
+            null,
+            false,
+            true,
+            500,
+            $possibly_undefined
+        );
 
         return $value_type;
     }
