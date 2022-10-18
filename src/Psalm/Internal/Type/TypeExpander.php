@@ -699,9 +699,7 @@ class TypeExpander
             $return_type = $return_type->setValue($parent_class);
         } else {
             $new_value = $codebase->classlikes->getUnAliasedName($return_type->value);
-            if ($return_type->value !== $new_value) {
-                $return_type = $return_type->setValue($new_value);
-            }
+            $return_type = $return_type->setValue($new_value);
         }
 
         return $return_type;
