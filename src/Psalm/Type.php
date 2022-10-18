@@ -522,7 +522,7 @@ abstract class Type
      *
      * @psalm-external-mutation-free
      *
-     * @psalm-suppress ImpurePropertyAssignment We're not mutating external instances
+     * @psalm-suppress ImpurePropertyAssignment, InaccessibleProperty We're not mutating external instances
      */
     public static function combineUnionTypes(
         ?Union $type_1,
