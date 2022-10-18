@@ -198,12 +198,9 @@ class AssignmentAnalyzer
                     $var_id,
                     $comment_type,
                     $comment_type_location,
-                    $not_ignored_docblock_var_ids
+                    $not_ignored_docblock_var_ids,
+                    $var_id === $var_comment->var_id && $assign_value_type && $comment_type && $assign_value_type->by_ref
                 );
-
-                if ($var_id === $var_comment->var_id && $assign_value_type && $comment_type) {
-                    $comment_type->by_ref = $assign_value_type->by_ref;
-                }
             }
         }
 
@@ -302,10 +299,11 @@ class AssignmentAnalyzer
             }
 
             if ($assign_value_type) {
-                $assign_value_type = clone $assign_value_type;
-                $assign_value_type->from_property = false;
-                $assign_value_type->from_static_property = false;
-                $assign_value_type->ignore_isset = false;
+                $assign_value_type = $assign_value_type->setProperties([
+                    'from_property' => false,
+                    'from_static_property' => false,
+                    'ignore_isset' => false,
+                ]);
             } else {
                 $assign_value_type = Type::getMixed();
             }
@@ -699,7 +697,8 @@ class AssignmentAnalyzer
         ?string $var_id = null,
         ?Union &$comment_type = null,
         ?DocblockTypeLocation &$comment_type_location = null,
-        array $not_ignored_docblock_var_ids = []
+        array $not_ignored_docblock_var_ids = [],
+        bool $by_ref = false
     ): void {
         if (!$var_comment->type) {
             return;
@@ -716,7 +715,10 @@ class AssignmentAnalyzer
                 $statements_analyzer->getParentFQCLN()
             );
 
-            $var_comment_type = $var_comment_type->setFromDocblock();
+            $var_comment_type = $var_comment_type->setProperties([
+                'from_docblock' => true,
+                'by_ref' => $by_ref
+            ]);
 
             $var_comment_type->check(
                 $statements_analyzer,

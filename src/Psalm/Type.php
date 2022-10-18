@@ -568,13 +568,13 @@ abstract class Type
                     $both_failed_reconciliation = true;
                 } else {
                     return $type_2->setProperties([
-                        'parent_nodes' => [...$type_2->parent_nodes, ...$type_1->parent_nodes],
+                        'parent_nodes' => array_merge($type_2->parent_nodes, $type_1->parent_nodes),
                         'possibly_undefined' => $possibly_undefined ?? $type_2->possibly_undefined
                     ]);
                 }
             } elseif ($type_2->failed_reconciliation) {
                 return $type_1->setProperties([
-                    'parent_nodes' => [...$type_1->parent_nodes, ...$type_2->parent_nodes],
+                    'parent_nodes' => array_merge($type_1->parent_nodes, $type_2->parent_nodes),
                     'possibly_undefined' => $possibly_undefined ?? $type_1->possibly_undefined
                 ]);
             }
