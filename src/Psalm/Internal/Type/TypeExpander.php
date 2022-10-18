@@ -668,7 +668,7 @@ class TypeExpander
                         $is_static,
                         $is_static_resolved
                     );
-                } elseif ($return_type instanceof TNamedObject) {
+                } elseif ($static_class_type instanceof TNamedObject) {
                     $return_type = $static_class_type->setIsStatic(
                         $is_static,
                         $is_static_resolved
