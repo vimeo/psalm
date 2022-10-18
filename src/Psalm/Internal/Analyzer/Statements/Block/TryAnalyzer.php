@@ -166,10 +166,9 @@ class TryAnalyzer
 
             foreach ($catch_context->vars_in_scope as $var_id => $type) {
                 if (!isset($old_context->vars_in_scope[$var_id])) {
-                    $type = $type->setProperties([
+                    $catch_context->vars_in_scope[$var_id] = $type->setProperties([
                         'possibly_undefined_from_try' => true
                     ]);
-                    $catch_context->vars_in_scope[$var_id] = $type;
                 } else {
                     $catch_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
@@ -269,17 +268,17 @@ class TryAnalyzer
                 $catch_context->vars_in_scope[$catch_var_id] = new Union(
                     array_map(
                         static function (string $fq_catch_class) use ($codebase): TNamedObject {
-                            $catch_class_type = new TNamedObject($fq_catch_class);
-
-                            if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
-                                && strtolower($fq_catch_class) !== 'throwable'
-                                && $codebase->interfaceExists($fq_catch_class)
-                                && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
-                            ) {
-                                return $catch_class_type->addIntersectionType(new TNamedObject('Throwable'));
-                            }
-
-                            return $catch_class_type;
+                            return new TNamedObject(
+                                $fq_catch_class,
+                                false,
+                                false,
+                                version_compare(PHP_VERSION, '7.0.0dev', '>=')
+                                    && strtolower($fq_catch_class) !== 'throwable'
+                                    && $codebase->interfaceExists($fq_catch_class)
+                                    && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
+                                    ? [new TNamedObject('Throwable')]
+                                    : []
+                            );
                         },
                         $fq_catch_classes
                     )
@@ -408,8 +407,7 @@ class TryAnalyzer
                             );
                         }
                     } else {
-                        $try_context->finally_scope->vars_in_scope[$var_id] = $type;
-                        $type = $type->setProperties([
+                        $try_context->finally_scope->vars_in_scope[$var_id] = $type->setProperties([
                             'possibly_undefined' => true,
                             'possibly_undefined_from_try' => true
                         ]);
