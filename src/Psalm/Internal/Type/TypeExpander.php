@@ -648,26 +648,34 @@ class TypeExpander
 
         if ($static_class_type && ($return_type_lc === 'static' || $return_type_lc === '$this')) {
             $is_static = $return_type->is_static;
+            $is_static_resolved = null;
             if (!$final) {
                 $is_static = true;
+                $is_static_resolved = true;
             }
             if (is_string($static_class_type)) {
-                $return_type = $return_type->setValueIsStatic($static_class_type, $is_static);
+                $return_type = $return_type->setValueIsStatic(
+                    $static_class_type,
+                    $is_static,
+                    $is_static_resolved
+                );
             } else {
                 if ($return_type instanceof TGenericObject
                     && $static_class_type instanceof TGenericObject
                 ) {
-                    $return_type = $return_type->setValueIsStatic($static_class_type->value, $is_static);
+                    $return_type = $return_type->setValueIsStatic(
+                        $static_class_type->value,
+                        $is_static,
+                        $is_static_resolved
+                    );
+                } elseif ($return_type instanceof TNamedObject) {
+                    $return_type = $static_class_type->setIsStatic(
+                        $is_static,
+                        $is_static_resolved
+                    );
                 } else {
                     $return_type = $static_class_type;
                 }
-            }
-
-            if (!$final && $return_type instanceof TNamedObject) {
-                /** @psalm-suppress InaccessibleProperty Acting on a clone */
-                $return_type->is_static = true;
-                /** @psalm-suppress InaccessibleProperty Acting on a clone */
-                $return_type->is_static_resolved = true;
             }
         } elseif ($return_type->is_static && !$return_type->is_static_resolved
             && ($static_class_type instanceof TNamedObject
