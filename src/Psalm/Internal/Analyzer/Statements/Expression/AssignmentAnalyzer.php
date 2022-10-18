@@ -1229,8 +1229,9 @@ class AssignmentAnalyzer
                                 $statements_analyzer->getSuppressedIssues()
                             );
 
-                            $value_type = clone $value_type;
-                            $value_type->possibly_undefined = false;
+                            $value_type = $value_type->setProperties([
+                                'possibly_undefined' => false
+                            ]);
                         }
 
                         if ($statements_analyzer->data_flow_graph
@@ -1419,8 +1420,8 @@ class AssignmentAnalyzer
                             || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
                             && isset($assign_value_atomic_type->properties[$assign_var_item->key->value])
                         ) {
-                            $new_assign_type =
-                                clone $assign_value_atomic_type->properties[$assign_var_item->key->value];
+                            $new_assign_type = 
+                                $assign_value_atomic_type->properties[$assign_var_item->key->value];
 
                             if ($new_assign_type->possibly_undefined) {
                                 IssueBuffer::maybeAdd(
@@ -1431,7 +1432,9 @@ class AssignmentAnalyzer
                                     $statements_analyzer->getSuppressedIssues()
                                 );
 
-                                $new_assign_type->possibly_undefined = false;
+                                $new_assign_type = $new_assign_type->setProperties([
+                                    'possibly_undefined' => false
+                                ]);
                             }
                         }
 

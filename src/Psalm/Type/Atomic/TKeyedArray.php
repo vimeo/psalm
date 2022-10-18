@@ -205,7 +205,7 @@ class TKeyedArray extends Atomic
         return false;
     }
 
-    public function getGenericKeyType(): Union
+    public function getGenericKeyType(bool $possibly_undefined = false): Union
     {
         $key_types = [];
 
@@ -221,7 +221,7 @@ class TKeyedArray extends Atomic
 
         $key_type = TypeCombiner::combine($key_types);
 
-        $key_type->possibly_undefined = false;
+        $key_type->possibly_undefined = $possibly_undefined;
 
         return Type::combineUnionTypes($this->previous_key_type, $key_type);
     }

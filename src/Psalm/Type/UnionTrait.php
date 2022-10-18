@@ -235,10 +235,10 @@ trait UnionTrait
         $id = implode('|', $types);
 
         if ($exact) {
-            /** @psalm-suppress ImpurePropertyAssignment Cache */
+            /** @psalm-suppress ImpurePropertyAssignment, InaccessibleProperty Cache */
             $this->exact_id = $id;
         } else {
-            /** @psalm-suppress ImpurePropertyAssignment Cache */
+            /** @psalm-suppress ImpurePropertyAssignment, InaccessibleProperty Cache */
             $this->id = $id;
         }
 
@@ -1244,6 +1244,7 @@ trait UnionTrait
 
         $checker->traverseArray($this->types);
 
+        /** @psalm-suppress InaccessibleProperty Does not affect anything else */
         $this->checked = true;
 
         return !$checker->hasErrors();

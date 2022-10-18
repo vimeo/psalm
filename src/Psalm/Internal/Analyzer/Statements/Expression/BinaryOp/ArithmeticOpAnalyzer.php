@@ -377,8 +377,10 @@ class ArithmeticOpAnalyzer
             if ($left_type_part instanceof TNumericString ||
                 ($left_type_part instanceof TLiteralString && is_numeric($left_type_part->value))
             ) {
-                $new_result_type = new Union([new TFloat(), new TInt()]);
-                $new_result_type->from_calculation = true;
+                $new_result_type = new Union(
+                    [new TFloat(), new TInt()],
+                    ['from_calculation' => true]
+                );
             } else {
                 $new_result_type = Type::getNonEmptyString();
                 $has_string_increment = true;
@@ -1295,8 +1297,10 @@ class ArithmeticOpAnalyzer
             } elseif ($right_type_part->isNegative()) {
                 $new_result_type = Type::getFloat();
             } else {
-                $new_result_type = new Union([new TFloat(), new TLiteralInt(0), new TLiteralInt(1)]);
-                $new_result_type->from_calculation = true;
+                $new_result_type = new Union(
+                    [new TFloat(), new TLiteralInt(0), new TLiteralInt(1)],
+                    ['from_calculation' => true]
+                );
             }
         } else {
             //$left_type_part may be a mix of positive, negative and 0
