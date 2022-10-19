@@ -1413,7 +1413,7 @@ class ArgumentAnalyzer
                 $parent_nodes = $input_type->parent_nodes;
                 $by_ref = $input_type->by_ref;
                 $input_type = $signature_param_type->setProperties([
-                    'ignore_nullable_issues' => $input_type->isNullable(),
+                    'ignore_nullable_issues' => $signature_param_type->isNullable(),
                     'parent_nodes' => $parent_nodes,
                     'by_ref' => $by_ref
                 ]);
