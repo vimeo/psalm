@@ -231,27 +231,6 @@ final class Union implements TypeNode, Stringable
     {
         $obj = null;
         foreach ($properties as $key => $value) {
-            if ($key === 'types') {
-                continue;
-            }
-            if ($key === 'id') {
-                continue;
-            }
-            if ($key === 'exact_id') {
-                continue;
-            }
-            if ($key === 'literal_string_types') {
-                continue;
-            }
-            if ($key === 'typed_class_strings') {
-                continue;
-            }
-            if ($key === 'literal_int_types') {
-                continue;
-            }
-            if ($key === 'literal_float_types') {
-                continue;
-            }
             if ($this->{$key} !== $value) {
                 if ($obj === null) {
                     $obj = clone $this;

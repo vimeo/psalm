@@ -447,6 +447,7 @@ class FunctionLikeNodeScanner
             );
 
             if ($stmt->returnsByRef()) {
+                /** @psalm-suppress InaccessibleProperty We just created this type */
                 $storage->return_type->by_ref = true;
             }
 

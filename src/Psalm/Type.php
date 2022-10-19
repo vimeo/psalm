@@ -673,8 +673,10 @@ abstract class Type
         $type_1_mixed = $type_1->isMixed();
         $type_2_mixed = $type_2->isMixed();
 
+        $possibly_undefined = $type_1->possibly_undefined && $type_2->possibly_undefined;
+
         if ($type_1_mixed && $type_2_mixed) {
-            $combined_type = self::getMixed();
+            $combined_type = new Union([new TMixed()], ['possibly_undefined' => $possibly_undefined]);
         } else {
             $both_failed_reconciliation = false;
 
@@ -689,10 +691,10 @@ abstract class Type
             }
 
             if ($type_1_mixed) {
-                $combined_type = clone $type_2;
+                $combined_type = $type_2->getBuilder();
                 $intersection_performed = true;
             } elseif ($type_2_mixed) {
-                $combined_type = clone $type_1;
+                $combined_type = $type_1->getBuilder();
                 $intersection_performed = true;
             } else {
                 $combined_type = null;
@@ -714,9 +716,6 @@ abstract class Type
                         }
                     }
                 }
-                if ($combined_type) {
-                    $combined_type = $combined_type->freeze();
-                }
             }
 
             //if a type is contained by the other, the intersection is the narrowest type
@@ -725,10 +724,10 @@ abstract class Type
                 $type_2_in_1 = UnionTypeComparator::isContainedBy($codebase, $type_2, $type_1);
                 if ($type_1_in_2) {
                     $intersection_performed = true;
-                    $combined_type = $type_1;
+                    $combined_type = $type_1->getBuilder();
                 } elseif ($type_2_in_1) {
                     $intersection_performed = true;
-                    $combined_type = $type_2;
+                    $combined_type = $type_2->getBuilder();
                 }
             }
 
@@ -760,15 +759,15 @@ abstract class Type
                 if ($both_failed_reconciliation) {
                     $combined_type->failed_reconciliation = true;
                 }
+
+                $combined_type->possibly_undefined = $possibly_undefined;
+
+                $combined_type = $combined_type->freeze();
             }
         }
 
         if (!$intersection_performed && $type_1->getId() !== $type_2->getId()) {
             return null;
-        }
-
-        if ($type_1->possibly_undefined && $type_2->possibly_undefined && $combined_type !== null) {
-            $combined_type->possibly_undefined = true;
         }
 
         return $combined_type;

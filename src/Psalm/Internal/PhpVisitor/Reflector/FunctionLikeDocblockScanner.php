@@ -147,6 +147,7 @@ class FunctionLikeDocblockScanner
                 || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->ignore_nullable_issues = true;
         }
 
@@ -157,6 +158,7 @@ class FunctionLikeDocblockScanner
                 || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->ignore_falsable_issues = true;
         }
 
@@ -881,6 +883,7 @@ class FunctionLikeDocblockScanner
                         && $type instanceof TArray
                         && $type->type_params[0]->hasArrayKey()
                     ) {
+                        /** @psalm-suppress InaccessibleProperty We just created this type */
                         $type->type_params[0]->from_docblock = false;
                     }
                 } else {
@@ -889,6 +892,7 @@ class FunctionLikeDocblockScanner
             }
 
             if ($all_typehint_types_match) {
+                /** @psalm-suppress InaccessibleProperty We just created this type */
                 $new_param_type->from_docblock = false;
             }
 
@@ -996,6 +1000,7 @@ class FunctionLikeDocblockScanner
                 }
 
                 if ($all_typehint_types_match) {
+                    /** @psalm-suppress InaccessibleProperty We just created this type */
                     $storage->return_type->from_docblock = false;
 
                     if ($storage instanceof MethodStorage) {
@@ -1038,6 +1043,7 @@ class FunctionLikeDocblockScanner
                 || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->ignore_nullable_issues = true;
         }
 
@@ -1048,10 +1054,12 @@ class FunctionLikeDocblockScanner
                 || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->ignore_falsable_issues = true;
         }
 
         if ($stmt->returnsByRef() && $storage->return_type) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->by_ref = true;
         }
 
