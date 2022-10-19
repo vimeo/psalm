@@ -32,6 +32,11 @@ class TNamedObject extends Atomic
     public $is_static = false;
 
     /**
+     * @var bool
+     */
+    public $is_static_resolved = false;
+
+    /**
      * Whether or not this type can represent a child of the class named in $value
      * @var bool
      */
@@ -59,13 +64,15 @@ class TNamedObject extends Atomic
         $this->from_docblock = $from_docblock;
     }
 
-    public function setIsStatic(bool $is_static): self
+    public function setIsStatic(bool $is_static, ?bool $is_static_resolved = null): self
     {
-        if ($this->is_static === $is_static) {
+        $is_static_resolved ??= $this->is_static_resolved;
+        if ($this->is_static === $is_static && $this->is_static_resolved === $is_static_resolved) {
             return $this;
         }
         $cloned = clone $this;
         $cloned->is_static = $is_static;
+        $cloned->is_static_resolved = $is_static_resolved;
         return $cloned;
     }
 
