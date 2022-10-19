@@ -10,15 +10,17 @@ use function array_values;
 
 /**
  * Represents an offset of an array.
+ * @psalm-immutable
  */
 final class TKeyOf extends TArrayKey
 {
     /** @var Union */
     public $type;
 
-    public function __construct(Union $type)
+    public function __construct(Union $type, bool $from_docblock = false)
     {
         $this->type = $type;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

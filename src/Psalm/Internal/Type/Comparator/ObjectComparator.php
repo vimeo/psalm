@@ -100,8 +100,7 @@ class ObjectComparator
                     // T1 as T2 as object becomes (T1 as object) & (T2 as object)
                     if ($as_atomic_type instanceof TTemplateParam) {
                         $intersection_types += self::getIntersectionTypes($as_atomic_type);
-                        $type_part = clone $type_part;
-                        $type_part->as = $as_atomic_type->as;
+                        $type_part = $type_part->replaceAs($as_atomic_type->as);
                         $intersection_types[$type_part->getKey()] = $type_part;
 
                         return $intersection_types;
@@ -112,10 +111,8 @@ class ObjectComparator
             return [$type_part->getKey() => $type_part];
         }
 
-        $type_part = clone $type_part;
-
         $extra_types = $type_part->extra_types;
-        $type_part->extra_types = null;
+        $type_part = $type_part->setIntersectionTypes([]);
 
         $extra_types[$type_part->getKey()] = $type_part;
 
@@ -199,11 +196,14 @@ class ObjectComparator
         }
 
         if ($intersection_input_type instanceof TTemplateParam) {
-            $intersection_container_type = clone $intersection_container_type;
-
-            if ($intersection_container_type instanceof TNamedObject) {
+            if ($intersection_container_type instanceof TNamedObject && $intersection_container_type->is_static) {
                 // this is extra check is redundant since we're comparing to a template as type
-                $intersection_container_type->is_static = false;
+                $intersection_container_type = new TNamedObject(
+                    $intersection_container_type->value,
+                    false,
+                    $intersection_container_type->definite_class,
+                    $intersection_container_type->extra_types,
+                );
             }
 
             return UnionTypeComparator::isContainedBy(

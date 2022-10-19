@@ -4,6 +4,9 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class HasAtLeastCount extends Assertion
 {
     /** @var positive-int */
@@ -15,7 +18,6 @@ final class HasAtLeastCount extends Assertion
         $this->count = $count;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new DoesNotHaveAtLeastCount($this->count);
@@ -26,7 +28,6 @@ final class HasAtLeastCount extends Assertion
         return 'has-at-least-' . $this->count;
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof DoesNotHaveAtLeastCount && $this->count === $assertion->count;

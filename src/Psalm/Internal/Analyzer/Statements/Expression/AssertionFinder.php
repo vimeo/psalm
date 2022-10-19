@@ -68,6 +68,7 @@ use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -805,10 +806,7 @@ class AssertionFinder
             }
         } elseif ($class_exists_check_type = self::hasClassExistsCheck($expr)) {
             if ($first_var_name) {
-                $class_string_type = new TClassString();
-                if ($class_exists_check_type === 1) {
-                    $class_string_type->is_loaded = true;
-                }
+                $class_string_type = new TClassString('object', null, $class_exists_check_type === 1);
                 $if_types[$first_var_name] = [[new IsType($class_string_type)]];
             }
         } elseif ($class_exists_check_type = self::hasTraitExistsCheck($expr)) {
@@ -821,14 +819,12 @@ class AssertionFinder
             }
         } elseif (self::hasEnumExistsCheck($expr)) {
             if ($first_var_name) {
-                $class_string = new TClassString();
-                $class_string->is_enum = true;
+                $class_string = new TClassString('object', null, false, false, true);
                 $if_types[$first_var_name] = [[new IsType($class_string)]];
             }
         } elseif (self::hasInterfaceExistsCheck($expr)) {
             if ($first_var_name) {
-                $class_string = new TClassString();
-                $class_string->is_interface = true;
+                $class_string = new TClassString('object', null, false, true, false);
                 $if_types[$first_var_name] = [[new IsType($class_string)]];
             }
         } elseif (self::hasFunctionExistsCheck($expr)) {
@@ -962,15 +958,15 @@ class AssertionFinder
             foreach ($if_true_assertions as $assertion) {
                 $if_types = [];
 
-                $assertion = clone $assertion;
+                $newRules = [];
 
-                foreach ($assertion->rule as $i => $rule) {
+                foreach ($assertion->rule as $rule) {
                     $rule_type = $rule->getAtomicType();
 
                     if ($rule_type instanceof TClassConstant) {
                         $codebase = $source->getCodebase();
 
-                        $assertion->rule[$i]->setAtomicType(
+                        $newRules[] = $rule->setAtomicType(
                             TypeExpander::expandAtomic(
                                 $codebase,
                                 $rule_type,
@@ -979,8 +975,12 @@ class AssertionFinder
                                 null
                             )[0]
                         );
+                    } else {
+                        $newRules []= $rule;
                     }
                 }
+
+                $assertion = new Possibilities($assertion->var_id, $newRules);
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -994,7 +994,7 @@ class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [[clone $assertion->rule[0]]];
+                        $if_types[$var_name] = [[$assertion->rule[0]]];
                     }
                 } elseif ($assertion->var_id === '$this') {
                     if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
@@ -1014,7 +1014,7 @@ class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [[clone $assertion->rule[0]]];
+                        $if_types[$var_id] = [[$assertion->rule[0]]];
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = substr($assertion->var_id, -2) === '()';
@@ -1083,7 +1083,7 @@ class AssertionFinder
                         );
                         continue;
                     }
-                    $if_types[$assertion_var_id] = [[clone $assertion->rule[0]]];
+                    $if_types[$assertion_var_id] = [[$assertion->rule[0]]];
                 }
 
                 if ($if_types) {
@@ -1096,15 +1096,15 @@ class AssertionFinder
             foreach ($if_false_assertions as $assertion) {
                 $if_types = [];
 
-                $assertion = clone $assertion;
+                $newRules = [];
 
-                foreach ($assertion->rule as $i => $rule) {
+                foreach ($assertion->rule as $rule) {
                     $rule_type = $rule->getAtomicType();
 
                     if ($rule_type instanceof TClassConstant) {
                         $codebase = $source->getCodebase();
 
-                        $assertion->rule[$i]->setAtomicType(
+                        $newRules []= $rule->setAtomicType(
                             TypeExpander::expandAtomic(
                                 $codebase,
                                 $rule_type,
@@ -1113,8 +1113,12 @@ class AssertionFinder
                                 null
                             )[0]
                         );
+                    } else {
+                        $newRules []= $rule;
                     }
                 }
+
+                $assertion = new Possibilities($assertion->var_id, $newRules);
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1128,7 +1132,7 @@ class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [[clone $assertion->rule[0]->getNegation()]];
+                        $if_types[$var_name] = [[$assertion->rule[0]->getNegation()]];
                     }
                 } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
                     $var_id = ExpressionIdentifier::getExtendedVarId(
@@ -1138,7 +1142,7 @@ class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [[clone $assertion->rule[0]->getNegation()]];
+                        $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = substr($assertion->var_id, -2) === '()';
@@ -1190,7 +1194,7 @@ class AssertionFinder
                             }
                         }
 
-                        $rule = clone $assertion->rule[0]->getNegation();
+                        $rule = $assertion->rule[0]->getNegation();
 
                         $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
 
@@ -1200,7 +1204,7 @@ class AssertionFinder
                         if (strpos($var_id, 'self::') === 0) {
                             $var_id = $this_class_name.'::'.substr($var_id, 6);
                         }
-                        $if_types[$var_id] = [[clone $assertion->rule[0]->getNegation()]];
+                        $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
@@ -1245,10 +1249,10 @@ class AssertionFinder
 
             if ($this_class_name
                 && (in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true))) {
-                $named_object =new TNamedObject($this_class_name);
+                $is_static = $stmt->class->parts[0] === 'static';
+                $named_object = new TNamedObject($this_class_name, $is_static);
 
-                if ($stmt->class->parts[0] === 'static') {
-                    $named_object->is_static = true;
+                if ($is_static) {
                     return [new IsIdentical($named_object)];
                 }
 
@@ -3345,7 +3349,7 @@ class AssertionFinder
                             new IsIdentical(new TTemplateParam(
                                 $type_part->param_name,
                                 $type_part->as_type
-                                    ? new Union([clone $type_part->as_type])
+                                    ? new Union([$type_part->as_type])
                                     : Type::getObject(),
                                 $type_part->defining_class
                             ))
@@ -3533,8 +3537,7 @@ class AssertionFinder
 
                     if ($class_node->parts === ['static']) {
                         if ($this_class_name) {
-                            $object = new TNamedObject($this_class_name);
-                            $object->is_static = true;
+                            $object = new TNamedObject($this_class_name, true);
 
                             $if_types[$first_var_name] = [[new IsAClass($object, $third_arg_value === 'true')]];
                         }

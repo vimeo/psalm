@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `int` type, where the exact value is unknown.
+ * @psalm-immutable
  */
 class TInt extends Scalar
 {

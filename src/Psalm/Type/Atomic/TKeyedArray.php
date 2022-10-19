@@ -31,6 +31,7 @@ use function str_replace;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
+ * @psalm-immutable
  */
 class TKeyedArray extends Atomic
 {
@@ -77,10 +78,37 @@ class TKeyedArray extends Atomic
      * @param non-empty-array<string|int, Union> $properties
      * @param array<string, bool> $class_strings
      */
-    public function __construct(array $properties, ?array $class_strings = null)
-    {
+    public function __construct(
+        array $properties,
+        ?array $class_strings = null,
+        bool $sealed = false,
+        ?Union $previous_key_type = null,
+        ?Union $previous_value_type = null,
+        bool $is_list = false,
+        bool $from_docblock = false
+    ) {
         $this->properties = $properties;
         $this->class_strings = $class_strings;
+        $this->sealed = $sealed;
+        $this->previous_key_type = $previous_key_type;
+        $this->previous_value_type = $previous_value_type;
+        $this->is_list = $is_list;
+        $this->from_docblock = $from_docblock;
+    }
+
+    /**
+     * @param non-empty-array<string|int, Union> $properties
+     *
+     * @return static
+     */
+    public function setProperties(array $properties): self
+    {
+        if ($properties === $this->properties) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->properties = $properties;
+        return $cloned;
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
@@ -213,6 +241,9 @@ class TKeyedArray extends Atomic
         return $value_type;
     }
 
+    /**
+     * @return TArray|TNonEmptyArray
+     */
     public function getGenericArrayType(bool $allow_non_empty = true): TArray
     {
         $key_types = [];
@@ -263,19 +294,15 @@ class TKeyedArray extends Atomic
         return false;
     }
 
-    public function __clone()
-    {
-        foreach ($this->properties as &$property) {
-            $property = clone $property;
-        }
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         /** @var string */
         return static::KEY;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -287,10 +314,10 @@ class TKeyedArray extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $object_like = clone $this;
+    ): self {
+        $properties = $this->properties;
 
-        foreach ($this->properties as $offset => $property) {
+        foreach ($properties as $offset => $property) {
             $input_type_param = null;
 
             if ($input_type instanceof TKeyedArray
@@ -299,7 +326,7 @@ class TKeyedArray extends Atomic
                 $input_type_param = $input_type->properties[$offset];
             }
 
-            $object_like->properties[$offset] = TemplateStandinTypeReplacer::replace(
+            $properties[$offset] = TemplateStandinTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
@@ -315,25 +342,40 @@ class TKeyedArray extends Atomic
             );
         }
 
-        return $object_like;
+        if ($properties === $this->properties) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->properties = $properties;
+        return $cloned;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        foreach ($this->properties as $property) {
-            TemplateInferredTypeReplacer::replace(
+    ): self {
+        $properties = $this->properties;
+        foreach ($properties as $offset => $property) {
+            $properties[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
             );
         }
+        if ($properties !== $this->properties) {
+            $cloned = clone $this;
+            $cloned->properties = $properties;
+            return $cloned;
+        }
+        return $this;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return $this->properties;
+        return ['properties'];
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

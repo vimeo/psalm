@@ -4,9 +4,10 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
-final class FunctionLikeParameter implements HasAttributesInterface
+final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 {
     use CustomMetadataTrait;
 
@@ -111,23 +112,26 @@ final class FunctionLikeParameter implements HasAttributesInterface
     public $description;
 
     /**
+     * @psalm-external-mutation-free
      * @param Union|UnresolvedConstantComponent|null $default_type
      */
     public function __construct(
         string $name,
         bool $by_ref,
         ?Union $type = null,
+        ?Union $signature_type = null,
         ?CodeLocation $location = null,
         ?CodeLocation $type_location = null,
         bool $is_optional = true,
         bool $is_nullable = false,
         bool $is_variadic = false,
-        $default_type = null
+        $default_type = null,
+        ?Union $out_type = null
     ) {
         $this->name = $name;
         $this->by_ref = $by_ref;
         $this->type = $type;
-        $this->signature_type = $type;
+        $this->signature_type = $signature_type;
         $this->is_optional = $is_optional;
         $this->is_nullable = $is_nullable;
         $this->is_variadic = $is_variadic;
@@ -135,8 +139,10 @@ final class FunctionLikeParameter implements HasAttributesInterface
         $this->type_location = $type_location;
         $this->signature_type_location = $type_location;
         $this->default_type = $default_type;
+        $this->out_type = $out_type;
     }
 
+    /** @psalm-mutation-free */
     public function getId(): string
     {
         return ($this->type ? $this->type->getId() : 'mixed')
@@ -144,14 +150,29 @@ final class FunctionLikeParameter implements HasAttributesInterface
             . ($this->is_optional ? '=' : '');
     }
 
-    public function __clone()
+    /** @psalm-mutation-free */
+    public function replaceType(Union $type): self
     {
-        if ($this->type) {
-            $this->type = clone $this->type;
+        if ($this->type === $type) {
+            return $this;
         }
+        $cloned = clone $this;
+        $cloned->type = $type;
+        return $cloned;
+    }
+
+    /** @psalm-mutation-free */
+    public function getChildNodeKeys(): array
+    {
+        $result = ['type', 'signature_type', 'out_type'];
+        if ($this->default_type instanceof Union) {
+            $result []= 'default_type';
+        }
+        return $result;
     }
 
     /**
+     * @psalm-mutation-free
      * @return list<AttributeStorage>
      */
     public function getAttributeStorages(): array

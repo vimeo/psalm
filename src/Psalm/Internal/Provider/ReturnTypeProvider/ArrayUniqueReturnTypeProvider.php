@@ -51,10 +51,8 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         }
 
         if ($first_arg_array instanceof TArray) {
-            $first_arg_array = clone $first_arg_array;
-
             if ($first_arg_array instanceof TNonEmptyArray) {
-                $first_arg_array->count = null;
+                $first_arg_array = $first_arg_array->setCount(null);
             }
 
             return new Union([$first_arg_array]);

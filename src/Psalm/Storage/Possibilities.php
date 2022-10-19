@@ -45,15 +45,14 @@ final class Possibilities
 
             if ($assertion_type) {
                 $union = new Union([clone $assertion_type]);
-                TemplateInferredTypeReplacer::replace(
+                $union = TemplateInferredTypeReplacer::replace(
                     $union,
                     $template_result,
                     $codebase
                 );
 
                 foreach ($union->getAtomicTypes() as $atomic_type) {
-                    $assertion = clone $assertion;
-                    $assertion->setAtomicType($atomic_type);
+                    $assertion = $assertion->setAtomicType($atomic_type);
                     $assertion_rules[] = $assertion;
                 }
             } else {

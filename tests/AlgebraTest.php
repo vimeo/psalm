@@ -83,7 +83,7 @@ class AlgebraTest extends TestCase
         $a1 = new IsType(new TInt());
         $formula = [
             new Clause(['$a' => [(string)$a1 => $a1]], 1, 1),
-            new Clause(['$b' => [(string)$a1 => clone $a1]], 1, 2, false, false),
+            new Clause(['$b' => [(string)$a1 => $a1]], 1, 2, false, false),
         ];
 
         $negated_formula = Algebra::negateFormula($formula);

@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TKeyOf when the type of the array is a template
+ * @psalm-immutable
  */
 final class TTemplateKeyOf extends Atomic
 {
@@ -31,11 +32,13 @@ final class TTemplateKeyOf extends Atomic
     public function __construct(
         string $param_name,
         string $defining_class,
-        Union $as
+        Union $as,
+        bool $from_docblock = false
     ) {
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
         $this->as = $as;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -81,14 +84,25 @@ final class TTemplateKeyOf extends Atomic
         return false;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        TemplateInferredTypeReplacer::replace(
+    ): self {
+        $as = TemplateInferredTypeReplacer::replace(
             $this->as,
             $template_result,
             $codebase
+        );
+        if ($as === $this->as) {
+            return $this;
+        }
+        return new static(
+            $this->param_name,
+            $this->defining_class,
+            $as
         );
     }
 }

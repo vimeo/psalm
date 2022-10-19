@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `false` value type
+ * @psalm-immutable
  */
 final class TFalse extends TBool
 {

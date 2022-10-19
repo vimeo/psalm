@@ -3,6 +3,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -14,6 +15,7 @@ use function substr;
 
 /**
  * Denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`
+ * @psalm-immutable
  */
 class TNamedObject extends Atomic
 {
@@ -37,9 +39,15 @@ class TNamedObject extends Atomic
 
     /**
      * @param string $value the name of the object
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $value, bool $is_static = false, bool $definite_class = false)
-    {
+    public function __construct(
+        string $value,
+        bool $is_static = false,
+        bool $definite_class = false,
+        array $extra_types = [],
+        bool $from_docblock = false
+    ) {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
         }
@@ -47,6 +55,18 @@ class TNamedObject extends Atomic
         $this->value = $value;
         $this->is_static = $is_static;
         $this->definite_class = $definite_class;
+        $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
+    }
+
+    public function setIsStatic(bool $is_static): self
+    {
+        if ($this->is_static === $is_static) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->is_static = $is_static;
+        return $cloned;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -134,15 +154,58 @@ class TNamedObject extends Atomic
         return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+    ): self {
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        if (!$intersection) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->extra_types = $intersection;
+        return $cloned;
     }
 
-    public function getChildNodes(): array
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithStandins(
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer = null,
+        ?Atomic $input_type = null,
+        ?int $input_arg_offset = null,
+        ?string $calling_class = null,
+        ?string $calling_function = null,
+        bool $replace = true,
+        bool $add_lower_bound = false,
+        int $depth = 0
+    ): self {
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth
+        );
+        if ($intersection) {
+            $cloned = clone $this;
+            $cloned->extra_types = $intersection;
+            return $cloned;
+        }
+        return $this;
+    }
+    public function getChildNodeKeys(): array
     {
-        return $this->extra_types ?? [];
+        return ['extra_types'];
     }
 }

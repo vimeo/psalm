@@ -25,8 +25,10 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\NodeVisitor;
+use Psalm\Type\ImmutableTypeVisitor;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -40,7 +42,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeChecker extends NodeVisitor
+class TypeChecker extends ImmutableTypeVisitor
 {
     /**
      * @var StatementsSource
@@ -107,15 +109,16 @@ class TypeChecker extends NodeVisitor
     }
 
     /**
-     * @psalm-suppress MoreSpecificImplementedParamType
-     *
-     * @param  Atomic|Union $type
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     protected function enterNode(TypeNode $type): ?int
     {
+        if (!$type instanceof Atomic && !$type instanceof Union && !$type instanceof MutableUnion) {
+            return null;
+        }
+
         if ($type->checked) {
-            return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+            return TypeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
         if ($type instanceof TNamedObject) {
@@ -128,6 +131,7 @@ class TypeChecker extends NodeVisitor
             $this->checkResource($type);
         }
 
+        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
         $type->checked = true;
 
         return null;

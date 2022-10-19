@@ -84,6 +84,8 @@ class IntegerRangeComparator
      * This method receives an array of atomics from the container and a range.
      * The goal is to use values in atomics in order to reduce the range.
      * Once the range is empty, it means that every value in range was covered by some atomics combination
+     *
+     * @psalm-suppress InaccessibleProperty $reduced_range was already cloned
      * @param array<string, Atomic> $container_atomic_types
      */
     private static function reduceRangeIncrementally(array &$container_atomic_types, TIntRange $reduced_range): ?bool

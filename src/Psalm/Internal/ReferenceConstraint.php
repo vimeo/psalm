@@ -18,19 +18,21 @@ class ReferenceConstraint
     public function __construct(?Union $type = null)
     {
         if ($type) {
-            $this->type = clone $type;
+            $type = $type->getBuilder();
 
-            if ($this->type->getLiteralStrings()) {
-                $this->type->addType(new TString);
+            if ($type->getLiteralStrings()) {
+                $type->addType(new TString);
             }
 
-            if ($this->type->getLiteralInts()) {
-                $this->type->addType(new TInt);
+            if ($type->getLiteralInts()) {
+                $type->addType(new TInt);
             }
 
-            if ($this->type->getLiteralFloats()) {
-                $this->type->addType(new TFloat);
+            if ($type->getLiteralFloats()) {
+                $type->addType(new TFloat);
             }
+
+            $this->type = $type->freeze();
         }
     }
 }

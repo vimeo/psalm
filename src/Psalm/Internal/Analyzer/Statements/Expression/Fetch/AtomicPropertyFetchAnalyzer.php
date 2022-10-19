@@ -77,6 +77,8 @@ class AtomicPropertyFetchAnalyzer
 {
     /**
      * @param array<string> $invalid_fetch_types $invalid_fetch_types
+     *
+     * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -743,7 +745,7 @@ class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            TemplateInferredTypeReplacer::replace(
+            $class_property_type = TemplateInferredTypeReplacer::replace(
                 $class_property_type,
                 new TemplateResult([], $template_types),
                 $codebase

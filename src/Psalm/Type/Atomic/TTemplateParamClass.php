@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
+ * @psalm-immutable
  */
 final class TTemplateParamClass extends TClassString
 {
@@ -21,12 +22,14 @@ final class TTemplateParamClass extends TClassString
         string $param_name,
         string $as,
         ?TNamedObject $as_type,
-        string $defining_class
+        string $defining_class,
+        bool $from_docblock = false
     ) {
         $this->param_name = $param_name;
         $this->as = $as;
         $this->as_type = $as_type;
         $this->defining_class = $defining_class;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string

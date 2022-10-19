@@ -9,8 +9,10 @@ use Psalm\Type\Atomic;
  * their apropriate types as values.
  *
  * @psalm-type TokenName = 'properties-of'|'public-properties-of'|'protected-properties-of'|'private-properties-of'
+ *
+ * @psalm-immutable
  */
-class TPropertiesOf extends Atomic
+final class TPropertiesOf extends Atomic
 {
     // These should match the values of
     // `Psalm\Internal\Analyzer\ClassLikeAnalyzer::VISIBILITY_*`, as they are
@@ -19,14 +21,7 @@ class TPropertiesOf extends Atomic
     public const VISIBILITY_PROTECTED = 2;
     public const VISIBILITY_PRIVATE = 3;
 
-    /**
-     * @var string
-     */
-    public $fq_classlike_name;
-    /**
-     * @var TNamedObject
-     */
-    public $classlike_type;
+    public TNamedObject $classlike_type;
     /**
      * @var self::VISIBILITY_*|null
      */
@@ -43,6 +38,19 @@ class TPropertiesOf extends Atomic
             'protected-properties-of',
             'private-properties-of'
         ];
+    }
+
+    /**
+     * @param self::VISIBILITY_*|null $visibility_filter
+     */
+    public function __construct(
+        TNamedObject $classlike_type,
+        ?int $visibility_filter,
+        bool $from_docblock = false
+    ) {
+        $this->classlike_type = $classlike_type;
+        $this->visibility_filter = $visibility_filter;
+        $this->from_docblock = $from_docblock;
     }
 
     /**
@@ -64,6 +72,7 @@ class TPropertiesOf extends Atomic
     }
 
     /**
+     * @psalm-pure
      * @return TokenName
      */
     public static function tokenNameForFilter(?int $visibility_filter): string
@@ -80,17 +89,9 @@ class TPropertiesOf extends Atomic
         }
     }
 
-    /**
-     * @param self::VISIBILITY_*|null $visibility_filter
-     */
-    public function __construct(
-        string $fq_classlike_name,
-        TNamedObject $classlike_type,
-        ?int $visibility_filter
-    ) {
-        $this->fq_classlike_name = $fq_classlike_name;
-        $this->classlike_type = $classlike_type;
-        $this->visibility_filter = $visibility_filter;
+    public function getChildNodeKeys(): array
+    {
+        return ['classlike_type'];
     }
 
     public function getKey(bool $include_extra = true): string

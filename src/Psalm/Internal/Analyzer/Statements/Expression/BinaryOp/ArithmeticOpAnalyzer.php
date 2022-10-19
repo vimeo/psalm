@@ -292,6 +292,8 @@ class ArithmeticOpAnalyzer
     /**
      * @param string[] $invalid_left_messages
      * @param string[] $invalid_right_messages
+     *
+     * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     private static function analyzeOperands(
         ?StatementsSource $statements_source,
@@ -576,8 +578,11 @@ class ArithmeticOpAnalyzer
                     }
                 }
 
-                $new_keyed_array = new TKeyedArray($properties);
-                $new_keyed_array->sealed = $left_type_part->sealed && $right_type_part->sealed;
+                $new_keyed_array = new TKeyedArray(
+                    $properties,
+                    null,
+                    $left_type_part->sealed && $right_type_part->sealed
+                );
                 $result_type_member = new Union([$new_keyed_array]);
             } else {
                 $result_type_member = TypeCombiner::combine(

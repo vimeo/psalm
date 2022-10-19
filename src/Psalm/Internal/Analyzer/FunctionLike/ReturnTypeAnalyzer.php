@@ -168,8 +168,7 @@ class ReturnTypeAnalyzer
             // only add null if we have a return statement elsewhere and it wasn't void
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
                 if (!$inferred_return_type_part->isVoid()) {
-                    $atomic_null = new TNull();
-                    $atomic_null->from_docblock = true;
+                    $atomic_null = new TNull(true);
                     $inferred_return_type_parts[] = new Union([$atomic_null]);
                     break;
                 }
@@ -577,15 +576,13 @@ class ReturnTypeAnalyzer
                         return false;
                     }
                 }
-            } elseif (!$inferred_return_type->hasMixed()
-                && !UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $declared_return_type,
-                    $inferred_return_type,
-                    false,
-                    false
-                )
-            ) {
+            } elseif (!UnionTypeComparator::isContainedBy(
+                $codebase,
+                $declared_return_type,
+                $inferred_return_type,
+                false,
+                false
+            )) {
                 if ($codebase->alter_code) {
                     if (isset($project_analyzer->getIssuesToFix()['LessSpecificReturnType'])
                         && !in_array('LessSpecificReturnType', $suppressed_issues)

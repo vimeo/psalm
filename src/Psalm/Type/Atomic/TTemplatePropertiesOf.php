@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TPropertiesOf when the type of the array is a template
+ * @psalm-immutable
  */
 final class TTemplatePropertiesOf extends Atomic
 {
@@ -37,12 +38,14 @@ final class TTemplatePropertiesOf extends Atomic
         string $param_name,
         string $defining_class,
         TTemplateParam $as,
-        ?int $visibility_filter
+        ?int $visibility_filter,
+        bool $from_docblock = false
     ) {
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
         $this->as = $as;
         $this->visibility_filter = $visibility_filter;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -76,14 +79,30 @@ final class TTemplatePropertiesOf extends Atomic
         return false;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        TemplateInferredTypeReplacer::replace(
-            new Union([$this->as]),
-            $template_result,
-            $codebase
+    ): self {
+        $param = new TTemplateParam(
+            $this->as->param_name,
+            TemplateInferredTypeReplacer::replace(
+                new Union([$this->as]),
+                $template_result,
+                $codebase,
+            ),
+            $this->as->defining_class
+        );
+        if ($param->as === $this->as->as) {
+            return $this;
+        }
+        return new static(
+            $this->param_name,
+            $this->defining_class,
+            $param,
+            $this->visibility_filter
         );
     }
 }

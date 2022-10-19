@@ -4,9 +4,11 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class Any extends Assertion
 {
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return $this;
@@ -17,7 +19,6 @@ final class Any extends Assertion
         return 'mixed';
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return false;

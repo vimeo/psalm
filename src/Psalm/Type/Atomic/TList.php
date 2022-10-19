@@ -18,6 +18,8 @@ use function get_class;
  * - its keys are integers
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
+ *
+ * @psalm-immutable
  */
 class TList extends Atomic
 {
@@ -32,19 +34,28 @@ class TList extends Atomic
     /**
      * Constructs a new instance of a list
      */
-    public function __construct(Union $type_param)
+    public function __construct(Union $type_param, bool $from_docblock = false)
     {
         $this->type_param = $type_param;
+        $this->from_docblock = $from_docblock;
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceTypeParam(Union $type_param): self
+    {
+        if ($type_param === $this->type_param) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->type_param = $type_param;
+        return $cloned;
     }
 
     public function getId(bool $exact = true, bool $nested = false): string
     {
         return static::KEY . '<' . $this->type_param->getId($exact) . '>';
-    }
-
-    public function __clone()
-    {
-        $this->type_param = clone $this->type_param;
     }
 
     /**
@@ -100,6 +111,10 @@ class TList extends Atomic
         return 'array';
     }
 
+    /**
+     * @psalm-suppress InaccessibleProperty We're only acting on cloned instances
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -111,10 +126,10 @@ class TList extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $list = clone $this;
+    ): self {
+        $cloned = null;
 
-        foreach ([Type::getInt(), $list->type_param] as $offset => $type_param) {
+        foreach ([Type::getInt(), $this->type_param] as $offset => $type_param) {
             $input_type_param = null;
 
             if (($input_type instanceof TGenericObject
@@ -153,23 +168,27 @@ class TList extends Atomic
                 $depth + 1
             );
 
-            if ($offset === 1) {
-                $list->type_param = $type_param;
+            if ($offset === 1 && ($cloned || $this->type_param !== $type_param)) {
+                $cloned ??= clone $this;
+                $cloned->type_param = $type_param;
             }
         }
 
-        return $list;
+        return $cloned ?? $this;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        TemplateInferredTypeReplacer::replace(
+    ): self {
+        return $this->replaceTypeParam(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
             $codebase
-        );
+        ));
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
@@ -194,8 +213,8 @@ class TList extends Atomic
         return $this->getId();
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return [$this->type_param];
+        return ['type_param'];
     }
 }

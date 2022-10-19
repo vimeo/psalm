@@ -295,8 +295,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
             $union = new Union($mixins);
 
-            $static_self = new TNamedObject($storage->name);
-            $static_self->is_static = true;
+            $static_self = new TNamedObject($storage->name, true);
 
             $union = TypeExpander::expandUnion(
                 $codebase,
@@ -768,7 +767,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     // Get actual types used for templates (to support @template-covariant)
                     $template_standins = new TemplateResult($lower_bounds, []);
-                    TemplateStandinTypeReplacer::replace(
+                    TemplateStandinTypeReplacer::fillTemplateResult(
                         $guide_property_type,
                         $template_standins,
                         $codebase,
@@ -801,12 +800,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     $template_result = new TemplateResult([], $lower_bounds);
 
-                    TemplateInferredTypeReplacer::replace(
+                    $guide_property_type = TemplateInferredTypeReplacer::replace(
                         $guide_property_type,
                         $template_result,
                         $codebase
                     );
-                    TemplateInferredTypeReplacer::replace(
+                    $property_type = TemplateInferredTypeReplacer::replace(
                         $property_type,
                         $template_result,
                         $codebase
@@ -1233,8 +1232,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
             $method_context->self = $fq_class_name;
 
-            $this_atomic_object_type = new TNamedObject($fq_class_name);
-            $this_atomic_object_type->is_static = !$storage->final;
+            $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
 
             $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
@@ -1304,8 +1302,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     } elseif (!$property_storage->has_default) {
                         if (isset($this->inferred_property_types[$property_name])) {
-                            $this->inferred_property_types[$property_name]->addType(new TNull());
-                            $this->inferred_property_types[$property_name]->setFromDocblock();
+                            $this->inferred_property_types[$property_name] =
+                                $this->inferred_property_types[$property_name]
+                                    ->getBuilder()
+                                    ->addType(new TNull())
+                                    ->setFromDocblock(true)
+                                    ->freeze();
                         }
                     }
                 }
@@ -1553,7 +1555,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($suggested_type && !$property_storage->has_default && $property_storage->is_static) {
-            $suggested_type->addType(new TNull());
+            $suggested_type = $suggested_type->getBuilder()->addType(new TNull())->freeze();
         }
 
         if ($suggested_type && !$suggested_type->isNull()) {

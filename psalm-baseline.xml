@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@f7fc28bf5c23969ef1d9c8fd26f020ade0a2db9e">
+<files psalm-version="dev-master@53e3889745852409b704e0035d93e0819d522912">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -68,7 +68,7 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssertionFinder.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="34">
+    <PossiblyUndefinedIntArrayOffset occurrences="28">
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
@@ -82,12 +82,6 @@
       <code>$count_expr-&gt;getArgs()[0]</code>
       <code>$count_expr-&gt;getArgs()[0]</code>
       <code>$counted_expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
       <code>$expr-&gt;getArgs()[0]</code>
       <code>$expr-&gt;getArgs()[0]</code>
       <code>$expr-&gt;getArgs()[0]</code>
@@ -112,6 +106,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentAnalyzer.php">
+    <ComplexMethod occurrences="1">
+      <code>verifyType</code>
+    </ComplexMethod>
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$non_existent_method_ids[0]</code>
       <code>$parts[1]</code>
@@ -119,9 +116,8 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentsAnalyzer.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="2">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$arg_function_params[$argument_offset][0]</code>
-      <code>$array_type-&gt;getGenericArrayType()-&gt;getChildNodes()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArrayFunctionArgumentsAnalyzer.php">
@@ -253,10 +249,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="3">
+    <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$l[4]</code>
       <code>$r[4]</code>
-      <code>$var_line_parts[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionScanner.php">
@@ -289,6 +284,26 @@
       <code>$cs[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Type/Comparator/CallableTypeComparator.php">
+    <LessSpecificReturnStatement occurrences="1">
+      <code>$callable</code>
+    </LessSpecificReturnStatement>
+    <MoreSpecificReturnType occurrences="1">
+      <code>TCallable|TClosure|null</code>
+    </MoreSpecificReturnType>
+  </file>
+  <file src="src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php">
+    <ImpureMethodCall occurrences="5">
+      <code>get</code>
+      <code>get</code>
+      <code>get</code>
+      <code>getClassTemplateTypes</code>
+      <code>has</code>
+    </ImpureMethodCall>
+    <ImpurePropertyAssignment occurrences="1">
+      <code>$candidate_param_type-&gt;from_template_default</code>
+    </ImpurePropertyAssignment>
+  </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
     <PossiblyUndefinedIntArrayOffset occurrences="6">
       <code>$combination-&gt;array_type_params[1]</code>
@@ -311,46 +326,152 @@
       <code>array_keys($template_type_map[$template_param_name])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Node/Stmt/VirtualClass.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualClass</code>
-    </PropertyNotSetInConstructor>
-  </file>
-  <file src="src/Psalm/Node/Stmt/VirtualFunction.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualFunction</code>
-    </PropertyNotSetInConstructor>
-  </file>
-  <file src="src/Psalm/Node/Stmt/VirtualInterface.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualInterface</code>
-    </PropertyNotSetInConstructor>
-  </file>
-  <file src="src/Psalm/Node/Stmt/VirtualTrait.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualTrait</code>
-    </PropertyNotSetInConstructor>
-  </file>
-  <file src="src/Psalm/Node/VirtualConst.php">
-    <PropertyNotSetInConstructor occurrences="1">
-      <code>VirtualConst</code>
-    </PropertyNotSetInConstructor>
-  </file>
   <file src="src/Psalm/Type/Atomic.php">
+    <ImpureMethodCall occurrences="10">
+      <code>classExtendsOrImplements</code>
+      <code>classExtendsOrImplements</code>
+      <code>classExtendsOrImplements</code>
+      <code>classOrInterfaceExists</code>
+      <code>classOrInterfaceExists</code>
+      <code>classOrInterfaceExists</code>
+      <code>getMappedGenericTypeParams</code>
+      <code>interfaceExtends</code>
+      <code>interfaceExtends</code>
+      <code>interfaceExtends</code>
+    </ImpureMethodCall>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>array_keys($template_type_map[$value])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Type/Atomic/CallableTrait.php">
+    <ImpureMethodCall occurrences="4">
+      <code>replace</code>
+      <code>replace</code>
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
   <file src="src/Psalm/Type/Atomic/GenericTrait.php">
+    <ImpureMethodCall occurrences="3">
+      <code>getMappedGenericTypeParams</code>
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$this-&gt;type_params[1]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Type/Atomic/HasIntersectionTrait.php">
+    <ImpureMethodCall occurrences="1">
+      <code>getMostSpecificTypeFromBounds</code>
+    </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TClassString.php">
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TClassStringMap.php">
+    <ImpureMethodCall occurrences="4">
+      <code>getString</code>
+      <code>getString</code>
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+    <ImpurePropertyAssignment occurrences="1">
+      <code>$cloned-&gt;value_param</code>
+    </ImpurePropertyAssignment>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TConditional.php">
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TKeyedArray.php">
+    <ImpureMethodCall occurrences="10">
+      <code>combine</code>
+      <code>combine</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>combineUnionTypes</code>
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+    <ImpurePropertyAssignment occurrences="3">
+      <code>$key_type-&gt;possibly_undefined</code>
+      <code>$value_type-&gt;possibly_undefined</code>
+      <code>$value_type-&gt;possibly_undefined</code>
+    </ImpurePropertyAssignment>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TList.php">
+    <ImpureMethodCall occurrences="2">
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+    <ImpurePropertyAssignment occurrences="1">
+      <code>$cloned-&gt;type_param</code>
+    </ImpurePropertyAssignment>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TObjectWithProperties.php">
+    <ImpureMethodCall occurrences="2">
+      <code>replace</code>
+      <code>replace</code>
+    </ImpureMethodCall>
+    <ImpurePropertyFetch occurrences="2">
+      <code>$type-&gt;possibly_undefined</code>
+      <code>$type-&gt;possibly_undefined</code>
+    </ImpurePropertyFetch>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TTemplateKeyOf.php">
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TTemplatePropertiesOf.php">
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TTemplateValueOf.php">
+    <ImpureMethodCall occurrences="1">
+      <code>replace</code>
+    </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/MutableUnion.php">
+    <PossiblyUnusedProperty occurrences="7">
+      <code>$allow_mutations</code>
+      <code>$by_ref</code>
+      <code>$failed_reconciliation</code>
+      <code>$from_template_default</code>
+      <code>$has_mutations</code>
+      <code>$initialized_class</code>
+      <code>$reference_free</code>
+    </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Type/Reconciler.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$type[0]</code>
       <code>$type[0][0]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Type/Union.php">
+    <PossiblyUnusedProperty occurrences="1">
+      <code>$ignore_isset</code>
+    </PossiblyUnusedProperty>
+  </file>
+  <file src="src/Psalm/Type/UnionTrait.php">
+    <PossiblyUnusedMethod occurrences="2">
+      <code>allFloatLiterals</code>
+      <code>allFloatLiterals</code>
+    </PossiblyUnusedMethod>
+  </file>
+  <file src="tests/Internal/Codebase/InternalCallMapHandlerTest.php">
+    <UnusedPsalmSuppress occurrences="1">
+      <code>UndefinedMethod</code>
+    </UnusedPsalmSuppress>
   </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <PossiblyUndefinedStringArrayOffset occurrences="1">

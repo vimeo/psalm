@@ -91,18 +91,20 @@ class NegatedAssertionReconciler extends Reconciler
         }
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
+        $existing_var_type = $existing_var_type->getBuilder();
 
         if ($assertion_type instanceof TFalse && isset($existing_var_atomic_types['bool'])) {
             $existing_var_type->removeType('bool');
             $existing_var_type->addType(new TTrue);
         } elseif ($assertion_type instanceof TTrue && isset($existing_var_atomic_types['bool'])) {
+            $existing_var_type = $existing_var_type->getBuilder();
             $existing_var_type->removeType('bool');
             $existing_var_type->addType(new TFalse);
         } else {
             $simple_negated_type = SimpleNegatedAssertionReconciler::reconcile(
                 $statements_analyzer->getCodebase(),
                 $assertion,
-                $existing_var_type,
+                $existing_var_type->freeze(),
                 $key,
                 $negated,
                 $code_location,
@@ -142,7 +144,7 @@ class NegatedAssertionReconciler extends Reconciler
 
             $existing_var_type->from_calculation = false;
 
-            return $existing_var_type;
+            return $existing_var_type->freeze();
         }
 
         if (!$is_equality
@@ -158,7 +160,7 @@ class NegatedAssertionReconciler extends Reconciler
                 $existing_var_type->addType(new TNamedObject('DateTime'));
             }
 
-            return $existing_var_type;
+            return $existing_var_type->freeze();
         }
 
         if (!$is_equality && $assertion_type instanceof TNamedObject) {
@@ -251,6 +253,8 @@ class NegatedAssertionReconciler extends Reconciler
             }
         }
 
+        $existing_var_type = $existing_var_type->freeze();
+
         if ($assertion instanceof IsNotIdentical
             && ($key !== '$this'
                 || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer))
@@ -322,6 +326,7 @@ class NegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues
     ): Union {
+        $existing_var_type = $existing_var_type->getBuilder();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $did_remove_type = false;
@@ -442,6 +447,8 @@ class NegatedAssertionReconciler extends Reconciler
                 }
             }
         }
+
+        $existing_var_type = $existing_var_type->freeze();
 
         if ($key && $code_location) {
             if ($did_match_literal_type

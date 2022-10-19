@@ -104,7 +104,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                                 $options_array->properties['default']
                             );
                         } else {
-                            $filter_type->addType(new TFalse);
+                            $filter_type = $filter_type->getBuilder()->addType(new TFalse)->freeze();
                         }
 
                         if (isset($atomic_type->properties['flags'])
@@ -116,20 +116,20 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             if ($filter_type->hasBool()
                                 && $filter_flag_type->value === FILTER_NULL_ON_FAILURE
                             ) {
-                                $filter_type->addType(new TNull);
+                                $filter_type = $filter_type->getBuilder()->addType(new TNull)->freeze();
                             }
                         }
                     } elseif ($atomic_type instanceof TLiteralInt) {
                         if ($atomic_type->value === FILTER_NULL_ON_FAILURE) {
                             $filter_null = true;
-                            $filter_type->addType(new TNull);
+                            $filter_type = $filter_type->getBuilder()->addType(new TNull)->freeze();
                         }
                     }
                 }
             }
 
             if (!$has_object_like && !$filter_null && $filter_type) {
-                $filter_type->addType(new TFalse);
+                $filter_type = $filter_type->getBuilder()->addType(new TFalse)->freeze();
             }
         }
 

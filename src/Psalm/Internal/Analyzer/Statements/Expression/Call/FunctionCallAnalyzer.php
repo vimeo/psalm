@@ -564,7 +564,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 } catch (UnexpectedValueException $e) {
                     $function_call_info->function_params = [
-                        new FunctionLikeParameter('args', false, null, null, null, false, false, true)
+                        new FunctionLikeParameter('args', false, null, null, null, null, false, false, true)
                     ];
                 }
             } else {

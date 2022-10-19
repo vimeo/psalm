@@ -4,9 +4,11 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class Empty_ extends Assertion
 {
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new NonEmpty();
@@ -22,7 +24,6 @@ final class Empty_ extends Assertion
         return '!non-empty';
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof NonEmpty;

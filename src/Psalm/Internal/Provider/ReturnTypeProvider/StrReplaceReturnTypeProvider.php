@@ -7,6 +7,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function count;
@@ -50,7 +51,7 @@ class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             $return_type = Type::getString();
 
             if (in_array($function_id, ['preg_replace', 'preg_replace_callback'], true)) {
-                $return_type->addType(new TNull());
+                $return_type = new Union([new TString, new TNull()]);
 
                 $codebase = $statements_source->getCodebase();
 

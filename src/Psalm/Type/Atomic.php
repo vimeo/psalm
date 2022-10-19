@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
+use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -20,7 +21,6 @@ use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
@@ -76,8 +76,15 @@ use function is_numeric;
 use function strpos;
 use function strtolower;
 
+/**
+ * @psalm-immutable
+ */
 abstract class Atomic implements TypeNode
 {
+    public function __construct(bool $from_docblock = false)
+    {
+        $this->from_docblock = $from_docblock;
+    }
     /**
      * Whether or not the type has been checked yet
      *
@@ -108,6 +115,35 @@ abstract class Atomic implements TypeNode
     public $text;
 
     /**
+     * @return static
+     */
+    public function setFromDocblock(bool $from_docblock): self
+    {
+        if ($from_docblock === $this->from_docblock) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->from_docblock = $from_docblock;
+        return $cloned;
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceClassLike(string $old, string $new): self
+    {
+        $type = $this;
+        /** @psalm-suppress ImpureMethodCall ClasslikeReplacer will always clone */
+        (new ClasslikeReplacer(
+            $old,
+            $new
+        ))->traverse($type);
+        return $type;
+    }
+
+    /**
+     * @psalm-suppress InaccessibleProperty Allowed during construction
+     *
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
@@ -116,7 +152,32 @@ abstract class Atomic implements TypeNode
         string $value,
         ?int   $analysis_php_version_id = null,
         array  $template_type_map = [],
-        array  $type_aliases = []
+        array  $type_aliases = [],
+        ?int   $offset_start = null,
+        ?int   $offset_end = null,
+        ?string $text = null,
+        bool    $from_docblock = false
+    ): Atomic {
+        $result = self::createInner($value, $analysis_php_version_id, $template_type_map, $type_aliases);
+        $result->offset_start = $offset_start;
+        $result->offset_end = $offset_end;
+        $result->text = $text;
+        $result->from_docblock = $from_docblock;
+        return $result;
+    }
+    /**
+     * @psalm-suppress InaccessibleProperty Allowed during construction
+     *
+     * @param int $analysis_php_version_id contains php version when the type comes from signature
+     * @param array<string, array<string, Union>> $template_type_map
+     * @param array<string, TypeAlias> $type_aliases
+     */
+    private static function createInner(
+        string $value,
+        ?int   $analysis_php_version_id = null,
+        array  $template_type_map = [],
+        array  $type_aliases = [],
+        bool   $from_docblock = false
     ): Atomic {
         switch ($value) {
             case 'int':
@@ -178,19 +239,28 @@ abstract class Atomic implements TypeNode
 
             case 'array':
             case 'associative-array':
-                return new TArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TArray([
+                    new Union([new TArrayKey($from_docblock)]),
+                    new Union([new TMixed(false, $from_docblock)])
+                ]);
 
             case 'non-empty-array':
-                return new TNonEmptyArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TNonEmptyArray([
+                    new Union([new TArrayKey($from_docblock)]),
+                    new Union([new TMixed(false, $from_docblock)])
+                ]);
 
             case 'callable-array':
-                return new TCallableArray([new Union([new TArrayKey]), new Union([new TMixed])]);
+                return new TCallableArray([
+                    new Union([new TArrayKey($from_docblock)]),
+                    new Union([new TMixed(false, $from_docblock)])
+                ]);
 
             case 'list':
-                return new TList(Type::getMixed());
+                return new TList(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-list':
-                return new TNonEmptyList(Type::getMixed());
+                return new TNonEmptyList(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-string':
                 return new TNonEmptyString();
@@ -364,7 +434,7 @@ abstract class Atomic implements TypeNode
             || ($this instanceof TTemplateParam
                 && ($this->as->hasNamedObjectType()
                     || array_filter(
-                        $this->extra_types ?: [],
+                        $this->extra_types,
                         static fn($extra_type): bool => $extra_type->isNamedObjectType()
                     )
                 )
@@ -522,106 +592,14 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
         return [];
-    }
-
-    public function replaceClassLike(string $old, string $new): void
-    {
-        if ($this instanceof TNamedObject) {
-            if (strtolower($this->value) === $old) {
-                $this->value = $new;
-            }
-        }
-
-        if ($this instanceof TNamedObject
-            || $this instanceof TIterable
-            || $this instanceof TTemplateParam
-        ) {
-            if ($this->extra_types) {
-                foreach ($this->extra_types as $extra_type) {
-                    $extra_type->replaceClassLike($old, $new);
-                }
-            }
-        }
-
-        if ($this instanceof TClassConstant) {
-            if (strtolower($this->fq_classlike_name) === $old) {
-                $this->fq_classlike_name = $new;
-            }
-        }
-
-        if ($this instanceof TClassString && $this->as !== 'object') {
-            if (strtolower($this->as) === $old) {
-                $this->as = $new;
-            }
-        }
-
-        if ($this instanceof TTemplateParam) {
-            $this->as->replaceClassLike($old, $new);
-        }
-
-        if ($this instanceof TLiteralClassString) {
-            if (strtolower($this->value) === $old) {
-                $this->value = $new;
-            }
-        }
-
-        if ($this instanceof TArray
-            || $this instanceof TGenericObject
-            || $this instanceof TIterable
-        ) {
-            foreach ($this->type_params as $type_param) {
-                $type_param->replaceClassLike($old, $new);
-            }
-        }
-
-        if ($this instanceof TKeyedArray) {
-            foreach ($this->properties as $property_type) {
-                $property_type->replaceClassLike($old, $new);
-            }
-        }
-
-        if ($this instanceof TClosure
-            || $this instanceof TCallable
-        ) {
-            if ($this->params) {
-                foreach ($this->params as $param) {
-                    if ($param->type) {
-                        $param->type->replaceClassLike($old, $new);
-                    }
-                }
-            }
-
-            if ($this->return_type) {
-                $this->return_type->replaceClassLike($old, $new);
-            }
-        }
     }
 
     final public function __toString(): string
     {
         return $this->getId();
-    }
-
-    public function __clone()
-    {
-        if ($this instanceof TNamedObject
-            || $this instanceof TTemplateParam
-            || $this instanceof TIterable
-            || $this instanceof TObjectWithProperties
-        ) {
-            if ($this->extra_types) {
-                foreach ($this->extra_types as &$type) {
-                    $type = clone $type;
-                }
-            }
-        }
-
-        if ($this instanceof TTemplateParam) {
-            $this->as = clone $this->as;
-        }
     }
 
     /**
@@ -670,6 +648,9 @@ abstract class Atomic implements TypeNode
 
     abstract public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool;
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
@@ -682,14 +663,19 @@ abstract class Atomic implements TypeNode
         bool $add_lower_bound = false,
         int $depth = 0
     ): self {
+        // do nothing
         return $this;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
+    ): self {
         // do nothing
+        return $this;
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool

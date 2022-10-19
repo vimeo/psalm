@@ -52,6 +52,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                         'mode',
                         false,
                         Type::getInt(),
+                        Type::getInt(),
                         null,
                         null,
                         false
@@ -66,6 +67,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                             'colno',
                             false,
                             Type::getInt(),
+                            Type::getInt(),
                             null,
                             null,
                             false
@@ -77,6 +79,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                             'classname',
                             false,
                             Type::getClassString(),
+                            Type::getClassString(),
                             null,
                             null,
                             false
@@ -85,6 +88,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                         $params[] = new FunctionLikeParameter(
                             'ctorargs',
                             false,
+                            Type::getArray(),
                             Type::getArray(),
                             null,
                             null,
@@ -96,6 +100,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                         $params[] = new FunctionLikeParameter(
                             'object',
                             false,
+                            Type::getObject(),
                             Type::getObject(),
                             null,
                             null,

@@ -8,6 +8,9 @@ use function json_encode;
 
 use const JSON_THROW_ON_ERROR;
 
+/**
+ * @psalm-immutable
+ */
 final class NotNestedAssertions extends Assertion
 {
     /** @var array<string, list<list<Assertion>>> */
@@ -24,7 +27,6 @@ final class NotNestedAssertions extends Assertion
         return true;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new NestedAssertions($this->assertions);
@@ -35,7 +37,6 @@ final class NotNestedAssertions extends Assertion
         return '!@' . json_encode($this->assertions, JSON_THROW_ON_ERROR);
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return false;

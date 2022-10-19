@@ -875,6 +875,8 @@ class InstancePropertyAssignmentAnalyzer
 
     /**
      * @param list<string> $invalid_assignment_types
+     *
+     * @psalm-suppress ComplexMethod Unavoidably complex method
      */
     private static function analyzeAtomicAssignment(
         StatementsAnalyzer $statements_analyzer,

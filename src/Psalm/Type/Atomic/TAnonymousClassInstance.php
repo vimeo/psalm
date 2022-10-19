@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an anonymous class (i.e. `new class{}`) with potential methods
+ * @psalm-immutable
  */
 final class TAnonymousClassInstance extends TNamedObject
 {
@@ -14,10 +15,15 @@ final class TAnonymousClassInstance extends TNamedObject
 
     /**
      * @param string $value the name of the object
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $value, bool $is_static = false, ?string $extends = null)
-    {
-        parent::__construct($value, $is_static);
+    public function __construct(
+        string $value,
+        bool $is_static = false,
+        ?string $extends = null,
+        array $extra_types = []
+    ) {
+        parent::__construct($value, $is_static, false, $extra_types);
 
         $this->extends = $extends;
     }

@@ -5,7 +5,7 @@ namespace Psalm\Type;
 interface TypeNode
 {
     /**
-     * @return array<TypeNode>
+     * @return list<string>
      */
-    public function getChildNodes(): array;
+    public function getChildNodeKeys(): array;
 }

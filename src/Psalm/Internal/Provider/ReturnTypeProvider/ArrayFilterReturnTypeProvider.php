@@ -88,8 +88,6 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             if (!isset($call_args[1]) && !$first_arg_array->previous_value_type) {
                 $had_one = count($first_arg_array->properties) === 1;
 
-                $first_arg_array = clone $first_arg_array;
-
                 $new_properties = array_filter(
                     array_map(
                         static function ($keyed_type) use ($statements_source, $context) {
@@ -119,12 +117,14 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     return Type::getEmptyArray();
                 }
 
-                $first_arg_array->properties = $new_properties;
-
-                $first_arg_array->is_list = $first_arg_array->is_list && $had_one;
-                $first_arg_array->sealed = false;
-
-                return new Union([$first_arg_array]);
+                return new Union([new TKeyedArray(
+                    $new_properties,
+                    null,
+                    false,
+                    null,
+                    null,
+                    $first_arg_array->is_list && $had_one
+                )]);
             }
         }
 
@@ -153,11 +153,11 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             }
 
             if ($key_type->getLiteralStrings()) {
-                $key_type->addType(new TString);
+                $key_type = $key_type->getBuilder()->addType(new TString)->freeze();
             }
 
             if ($key_type->getLiteralInts()) {
-                $key_type->addType(new TInt);
+                $key_type = $key_type->getBuilder()->addType(new TInt)->freeze();
             }
 
             if ($inner_type->isUnionEmpty()) {

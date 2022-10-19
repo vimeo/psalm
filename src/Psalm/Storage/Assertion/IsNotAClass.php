@@ -5,6 +5,9 @@ namespace Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Atomic;
 
+/**
+ * @psalm-immutable
+ */
 final class IsNotAClass extends Assertion
 {
     /** @var Atomic\TTemplateParamClass|Atomic\TNamedObject */
@@ -23,7 +26,6 @@ final class IsNotAClass extends Assertion
         return true;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new IsAClass($this->type, $this->allow_string);
@@ -34,7 +36,6 @@ final class IsNotAClass extends Assertion
         return 'isa-' . ($this->allow_string ? 'string-' : '') . $this->type;
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsAClass

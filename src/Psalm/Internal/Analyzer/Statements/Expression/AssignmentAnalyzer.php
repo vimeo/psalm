@@ -716,7 +716,7 @@ class AssignmentAnalyzer
                 $statements_analyzer->getParentFQCLN()
             );
 
-            $var_comment_type->setFromDocblock();
+            $var_comment_type = $var_comment_type->setFromDocblock();
 
             $var_comment_type->check(
                 $statements_analyzer,
@@ -1497,7 +1497,7 @@ class AssignmentAnalyzer
                                 $statements_analyzer->getParentFQCLN()
                             );
 
-                            $var_comment_type->setFromDocblock();
+                            $var_comment_type = $var_comment_type->setFromDocblock();
 
                             $new_assign_type = $var_comment_type;
                             break;
@@ -1561,7 +1561,10 @@ class AssignmentAnalyzer
                 if (($context->error_suppressing && ($offset || $can_be_empty))
                     || $has_null
                 ) {
-                    $context->vars_in_scope[$list_var_id]->addType(new TNull);
+                    $context->vars_in_scope[$list_var_id] = $context->vars_in_scope[$list_var_id]
+                        ->getBuilder()
+                        ->addType(new TNull)
+                        ->freeze();
                 }
             }
         }

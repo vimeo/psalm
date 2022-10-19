@@ -8,6 +8,7 @@ use Psalm\Type\Atomic;
  * Represents the type that is the result of a bitmask combination of its parameters.
  * This is the same concept as TIntMask but TIntMaskOf is used with a reference to constants in code
  * `int-mask-of<MyClass::CLASS_CONSTANT_*>` will corresponds to `0|1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
+ * @psalm-immutable
  */
 final class TIntMaskOf extends TInt
 {
@@ -17,9 +18,10 @@ final class TIntMaskOf extends TInt
     /**
      * @param TClassConstant|TKeyOf|TValueOf $value
      */
-    public function __construct(Atomic $value)
+    public function __construct(Atomic $value, bool $from_docblock = false)
     {
         $this->value = $value;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -43,6 +45,11 @@ final class TIntMaskOf extends TInt
         return 'int-mask-of<'
             . $this->value->toNamespacedString($namespace, $aliased_classes, $this_class, false)
             . '>';
+    }
+
+    public function getChildNodeKeys(): array
+    {
+        return ['value'];
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

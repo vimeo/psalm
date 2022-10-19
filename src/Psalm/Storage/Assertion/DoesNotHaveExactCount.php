@@ -4,6 +4,9 @@ namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
 
+/**
+ * @psalm-immutable
+ */
 final class DoesNotHaveExactCount extends Assertion
 {
     /** @var positive-int */
@@ -20,7 +23,6 @@ final class DoesNotHaveExactCount extends Assertion
         return true;
     }
 
-    /** @psalm-mutation-free */
     public function getNegation(): Assertion
     {
         return new HasExactCount($this->count);
@@ -31,7 +33,6 @@ final class DoesNotHaveExactCount extends Assertion
         return '!has-exact-count-' . $this->count;
     }
 
-    /** @psalm-mutation-free */
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof HasExactCount && $assertion->count === $this->count;

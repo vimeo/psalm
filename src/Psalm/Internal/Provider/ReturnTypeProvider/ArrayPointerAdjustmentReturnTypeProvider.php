@@ -86,7 +86,7 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
         if ($value_type->isNever()) {
             $value_type = Type::getFalse();
         } elseif (($function_id !== 'reset' && $function_id !== 'end') || !$definitely_has_items) {
-            $value_type->addType(new TFalse);
+            $value_type = $value_type->getBuilder()->addType(new TFalse)->freeze();
 
             $codebase = $statements_source->getCodebase();
 

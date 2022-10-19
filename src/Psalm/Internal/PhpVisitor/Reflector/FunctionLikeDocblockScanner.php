@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use AssertionError;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -52,6 +53,7 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -765,6 +767,7 @@ class FunctionLikeDocblockScanner
                     null,
                     null,
                     null,
+                    null,
                     false,
                     false,
                     true,
@@ -785,7 +788,8 @@ class FunctionLikeDocblockScanner
                     ),
                     null,
                     $function_template_types + $class_template_types,
-                    $type_aliases
+                    $type_aliases,
+                    true
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -797,7 +801,6 @@ class FunctionLikeDocblockScanner
             }
 
             $storage_param->has_docblock_type = true;
-            $new_param_type->setFromDocblock();
 
             $new_param_type->queueClassLikesForScanning(
                 $codebase,
@@ -846,7 +849,7 @@ class FunctionLikeDocblockScanner
                     && !$new_param_type->isNullable()
                     && !$new_param_type->hasTemplate()
                 ) {
-                    $new_param_type->addType(new TNull());
+                    $new_param_type = $new_param_type->getBuilder()->addType(new TNull())->freeze();
                 }
 
                 $config = Config::getInstance();
@@ -870,6 +873,7 @@ class FunctionLikeDocblockScanner
 
             foreach ($new_param_type->getAtomicTypes() as $key => $type) {
                 if (isset($storage_param_atomic_types[$key])) {
+                    /** @psalm-suppress InaccessibleProperty We just created this type */
                     $type->from_docblock = false;
 
                     if ($storage_param_atomic_types[$key] instanceof TArray
@@ -888,7 +892,7 @@ class FunctionLikeDocblockScanner
             }
 
             if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                $new_param_type->addType(new TNull());
+                $new_param_type = $new_param_type->getBuilder()->addType(new TNull())->freeze();
             }
 
             $storage_param->type = $new_param_type;
@@ -966,10 +970,9 @@ class FunctionLikeDocblockScanner
                 array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
-                $type_aliases
+                $type_aliases,
+                true
             );
-
-            $storage->return_type->setFromDocblock();
 
             if ($storage instanceof MethodStorage) {
                 $storage->has_docblock_return_type = true;
@@ -981,6 +984,7 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->return_type->getAtomicTypes() as $key => $type) {
                     if (isset($signature_return_atomic_types[$key])) {
+                        /** @psalm-suppress InaccessibleProperty We just created this atomic type */
                         $type->from_docblock = false;
                     } else {
                         $all_typehint_types_match = false;
@@ -1010,7 +1014,7 @@ class FunctionLikeDocblockScanner
                             $storage->signature_return_type
                         )
                     ) {
-                        $storage->return_type->addType(new TNull());
+                        $storage->return_type = $storage->return_type->getBuilder()->addType(new TNull())->freeze();
                     }
                 }
             }
@@ -1079,6 +1083,9 @@ class FunctionLikeDocblockScanner
 
                     if ($source_param_string[0] === '(' && substr($source_param_string, -1) === ')') {
                         $source_params = preg_split('/, ?/', substr($source_param_string, 1, -1));
+                        if ($source_params === false) {
+                            throw new AssertionError(preg_last_error_msg());
+                        }
 
                         foreach ($source_params as $source_param) {
                             $source_param = substr($source_param, 1);

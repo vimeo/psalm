@@ -268,7 +268,7 @@ class ArgumentsAnalyzer
             if (null !== $inferred_arg_type && null !== $template_result && null !== $param && null !== $param->type) {
                 $codebase = $statements_analyzer->getCodebase();
 
-                TemplateStandinTypeReplacer::replace(
+                TemplateStandinTypeReplacer::fillTemplateResult(
                     clone $param->type,
                     $template_result,
                     $codebase,
@@ -308,19 +308,6 @@ class ArgumentsAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $generic_param_type = new Union([
-            new TArray([
-                Type::getArrayKey(),
-                new Union([
-                    new TTemplateParam(
-                        'ArrayValue' . $argument_offset,
-                        Type::getMixed(),
-                        $method_id
-                    )
-                ])
-            ])
-        ]);
-
         $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
         $replace_template_result = new TemplateResult(
@@ -330,8 +317,19 @@ class ArgumentsAnalyzer
 
         $existing_type = $statements_analyzer->node_data->getType($arg->value);
 
-        TemplateStandinTypeReplacer::replace(
-            $generic_param_type,
+        TemplateStandinTypeReplacer::fillTemplateResult(
+            new Union([
+                new TArray([
+                    Type::getArrayKey(),
+                    new Union([
+                        new TTemplateParam(
+                            'ArrayValue' . $argument_offset,
+                            Type::getMixed(),
+                            $method_id
+                        )
+                    ])
+                ])
+            ]),
             $replace_template_result,
             $codebase,
             $statements_analyzer,
@@ -494,7 +492,7 @@ class ArgumentsAnalyzer
         // The map function expects callable(A):B as second param
         // We know that previous arg type is list<int> where the int is the A template.
         // Then we can replace callable(A): B to callable(int):B using $inferred_template_result.
-        TemplateInferredTypeReplacer::replace(
+        $replaced_container_hof_atomic = TemplateInferredTypeReplacer::replace(
             $replaced_container_hof_atomic,
             $inferred_template_result,
             $codebase
@@ -515,7 +513,7 @@ class ArgumentsAnalyzer
                 $actual_func_param->type->getTemplateTypes() &&
                 isset($container_hof_atomic->params[$offset])
             ) {
-                TemplateStandinTypeReplacer::replace(
+                TemplateStandinTypeReplacer::fillTemplateResult(
                     clone $actual_func_param->type,
                     $high_order_template_result,
                     $codebase,
@@ -553,16 +551,18 @@ class ArgumentsAnalyzer
             $function_like_params = [];
 
             foreach ($template_result->lower_bounds as $template_name => $_) {
+                $t = new Union([
+                    new TTemplateParam(
+                        $template_name,
+                        Type::getMixed(),
+                        $method_id
+                    )
+                ]);
                 $function_like_params[] = new FunctionLikeParameter(
                     'function',
                     false,
-                    new Union([
-                        new TTemplateParam(
-                            $template_name,
-                            Type::getMixed(),
-                            $method_id
-                        )
-                    ])
+                    $t,
+                    $t
                 );
             }
 
@@ -601,7 +601,7 @@ class ArgumentsAnalyzer
             $context->calling_method_id ?: $context->calling_function_id
         );
 
-        TemplateInferredTypeReplacer::replace(
+        $replaced_type = TemplateInferredTypeReplacer::replace(
             $replaced_type,
             $replace_template_result,
             $codebase
@@ -726,7 +726,7 @@ class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($method_id) {
-            if (!$in_call_map && $method_id instanceof MethodIdentifier) {
+            if ($method_id instanceof MethodIdentifier) {
                 $fq_class_name = $method_id->fq_class_name;
             }
 
@@ -769,7 +769,7 @@ class ArgumentsAnalyzer
             }
         }
 
-        if ($function_params) {
+        if ($function_params && !$is_variadic) {
             foreach ($function_params as $function_param) {
                 $is_variadic = $is_variadic || $function_param->is_variadic;
             }
@@ -897,7 +897,8 @@ class ArgumentsAnalyzer
                     $array_type = $arg_value_type->getAtomicTypes()['array'];
 
                     if ($array_type instanceof TKeyedArray) {
-                        $key_types = $array_type->getGenericArrayType()->getChildNodes()[0]->getChildNodes();
+                        $array_type = $array_type->getGenericArrayType();
+                        $key_types = $array_type->type_params[0]->getAtomicTypes();
 
                         foreach ($key_types as $key_type) {
                             if (!$key_type instanceof TLiteralString
@@ -1234,7 +1235,7 @@ class ArgumentsAnalyzer
                     );
 
                     if ($template_result->lower_bounds) {
-                        TemplateInferredTypeReplacer::replace(
+                        $original_by_ref_type = TemplateInferredTypeReplacer::replace(
                             $original_by_ref_type,
                             $template_result,
                             $codebase
@@ -1259,7 +1260,7 @@ class ArgumentsAnalyzer
                     );
 
                     if ($template_result->lower_bounds) {
-                        TemplateInferredTypeReplacer::replace(
+                        $original_by_ref_out_type = TemplateInferredTypeReplacer::replace(
                             $original_by_ref_out_type,
                             $template_result,
                             $codebase
@@ -1386,16 +1387,18 @@ class ArgumentsAnalyzer
                     $statements_analyzer
                 );
 
-                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $type) {
+                $t = $context->vars_in_scope[$var_id]->getBuilder();
+                foreach ($t->getAtomicTypes() as $type) {
                     if ($type instanceof TArray && $type->isEmptyArray()) {
-                        $context->vars_in_scope[$var_id]->removeType('array');
-                        $context->vars_in_scope[$var_id]->addType(
+                        $t->removeType('array');
+                        $t->addType(
                             new TArray(
                                 [Type::getArrayKey(), Type::getMixed()]
                             )
                         );
                     }
                 }
+                $context->vars_in_scope[$var_id] = $t->freeze();
             }
         }
 
@@ -1614,7 +1617,7 @@ class ArgumentsAnalyzer
                 $calling_class_storage->final ?? false
             );
 
-            TemplateStandinTypeReplacer::replace(
+            TemplateStandinTypeReplacer::fillTemplateResult(
                 $fleshed_out_param_type,
                 $template_result,
                 $codebase,
@@ -1794,7 +1797,7 @@ class ArgumentsAnalyzer
                         $default_type = new Union([$default_type_atomic]);
                     }
 
-                    TemplateStandinTypeReplacer::replace(
+                    TemplateStandinTypeReplacer::fillTemplateResult(
                         clone $param->type,
                         $template_result,
                         $codebase,

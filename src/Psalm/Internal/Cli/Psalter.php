@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Cli;
 
+use AssertionError;
 use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Config;
 use Psalm\Exception\UnsupportedIssueToFixException;
@@ -48,6 +49,7 @@ use function is_numeric;
 use function is_string;
 use function microtime;
 use function pathinfo;
+use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
@@ -499,6 +501,9 @@ final class Psalter
         $codeowner_lines = array_map(
             static function (string $line): array {
                 $line_parts = preg_split('/\s+/', $line);
+                if ($line_parts === false) {
+                    throw new AssertionError("An error occurred: ".preg_last_error_msg());
+                }
 
                 $file_selector = substr(array_shift($line_parts), 1);
                 return [$file_selector, $line_parts];

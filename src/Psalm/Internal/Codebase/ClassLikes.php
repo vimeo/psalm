@@ -1455,9 +1455,10 @@ class ClassLikes
 
             foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
                 if ($type->containsClassLike($old_fq_class_name)) {
-                    $type = clone $type;
-
-                    $type->replaceClassLike($old_fq_class_name, $new_fq_class_name);
+                    $type = $type->replaceClassLike(
+                        $old_fq_class_name,
+                        $new_fq_class_name
+                    );
 
                     $bounds = $type_location->getSelectionBounds();
 
@@ -1495,9 +1496,10 @@ class ClassLikes
             $destination_class = $codebase->classes_to_move[$fq_class_name_lc];
 
             if ($type->containsClassLike($fq_class_name_lc)) {
-                $type = clone $type;
-
-                $type->replaceClassLike($fq_class_name_lc, $destination_class);
+                $type = $type->replaceClassLike(
+                    $fq_class_name_lc,
+                    $destination_class
+                );
             }
 
             $this->airliftClassDefinedDocblockType(

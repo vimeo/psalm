@@ -2,10 +2,9 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-
 /**
  * Represents a list key created from foreach ($list as $key => $value)
+ * @psalm-immutable
  */
 final class TDependentListKey extends TInt implements DependentType
 {
@@ -39,7 +38,7 @@ final class TDependentListKey extends TInt implements DependentType
         return 'int';
     }
 
-    public function getReplacement(): Atomic
+    public function getReplacement(): TInt
     {
         return new TInt();
     }

@@ -2,7 +2,9 @@
 
 namespace Psalm\Type;
 
-abstract class NodeVisitor
+use function is_array;
+
+abstract class ImmutableTypeVisitor
 {
     public const STOP_TRAVERSAL = 1;
     public const DONT_TRAVERSE_CHILDREN = 2;
@@ -27,8 +29,22 @@ abstract class NodeVisitor
             return false;
         }
 
-        foreach ($node->getChildNodes() as $child_node) {
-            if ($this->traverse($child_node) === false) {
+        foreach ($node->getChildNodeKeys() as $key) {
+            if ($node instanceof Union || $node instanceof MutableUnion) {
+                $child_node = $node->getAtomicTypes();
+            } else {
+                /** @var TypeNode|non-empty-array<TypeNode>|null */
+                $child_node = $node->{$key};
+            }
+            if ($child_node === null) {
+                continue;
+            }
+            if (is_array($child_node)) {
+                $visitor_result = $this->traverseArray($child_node);
+            } else {
+                $visitor_result = $this->traverse($child_node);
+            }
+            if ($visitor_result === false) {
                 return false;
             }
         }
@@ -37,14 +53,15 @@ abstract class NodeVisitor
     }
 
     /**
-     * @param array<TypeNode> $nodes
+     * @param non-empty-array<TypeNode> $nodes
      */
-    public function traverseArray(array $nodes): void
+    public function traverseArray(array $nodes): bool
     {
         foreach ($nodes as $node) {
             if ($this->traverse($node) === false) {
-                return;
+                return false;
             }
         }
+        return true;
     }
 }

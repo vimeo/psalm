@@ -1,5 +1,14 @@
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
+- [BC] `Psalm\Type\Union`s are now partially immutable, mutator methods were removed and moved into `Psalm\Type\MutableUnion`.  
+  To modify a union type, use the new `Psalm\Type\Union::getBuilder` method to turn a `Psalm\Type\Union` into a `Psalm\Type\MutableUnion`: once you're done, use `Psalm\Type\MutableUnion::freeze` to get a new `Psalm\Type\Union`.
+  Methods removed from `Psalm\Type\Union` and moved into `Psalm\Type\MutableUnion`:
+   - `replaceTypes`
+   - `addType`
+   - `removeType`
+   - `substitute`
+   - `replaceClassLike`
+
 - [BC] TPositiveInt has been removed and replaced by TIntRange
 
 - [BC] The parameter `$php_version` of `Psalm\Type\Atomic::create()` renamed

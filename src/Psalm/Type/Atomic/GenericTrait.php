@@ -9,7 +9,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -19,8 +18,27 @@ use function implode;
 use function strpos;
 use function substr;
 
+/**
+ * @template TTypeParams as array<Union>
+ * @psalm-immutable
+ */
 trait GenericTrait
 {
+    /**
+     * @param TTypeParams $type_params
+     *
+     * @return static
+     */
+    public function replaceTypeParams(array $type_params): self
+    {
+        if ($this->type_params === $type_params) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->type_params = $type_params;
+        return $cloned;
+    }
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
@@ -139,22 +157,10 @@ trait GenericTrait
                 '>' . $extra_types;
     }
 
-    public function __clone()
-    {
-        foreach ($this->type_params as &$type_param) {
-            $type_param = clone $type_param;
-        }
-    }
-
     /**
-     * @return array<TypeNode>
+     * @return TTypeParams|null
      */
-    public function getChildNodes(): array
-    {
-        return $this->type_params;
-    }
-
-    public function replaceTemplateTypesWithStandins(
+    protected function replaceTypeParamsTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
@@ -165,7 +171,7 @@ trait GenericTrait
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
+    ): ?array {
         if ($input_type instanceof TList) {
             $input_type = new TArray([Type::getInt(), $input_type->type_param]);
         }
@@ -185,9 +191,9 @@ trait GenericTrait
             );
         }
 
-        $atomic = clone $this;
+        $type_params = $this->type_params;
 
-        foreach ($atomic->type_params as $offset => $type_param) {
+        foreach ($type_params as $offset => $type_param) {
             $input_type_param = null;
 
             if (($input_type instanceof TIterable
@@ -208,7 +214,7 @@ trait GenericTrait
                 $input_type_param = $input_object_type_params[$offset];
             }
 
-            $atomic->type_params[$offset] = TemplateStandinTypeReplacer::replace(
+            $type_params[$offset] = TemplateStandinTypeReplacer::replace(
                 $type_param,
                 $template_result,
                 $codebase,
@@ -227,31 +233,31 @@ trait GenericTrait
             );
         }
 
-        return $atomic;
+        return $type_params === $this->type_params ? null : $type_params;
     }
 
-    public function replaceTemplateTypesWithArgTypes(
+    /**
+     * @return TTypeParams|null
+     */
+    protected function replaceTypeParamsTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        foreach ($this->type_params as $offset => $type_param) {
-            TemplateInferredTypeReplacer::replace(
+    ): ?array {
+        $type_params = $this->type_params;
+        foreach ($type_params as $offset => $type_param) {
+            $type_param = TemplateInferredTypeReplacer::replace(
                 $type_param,
                 $template_result,
                 $codebase
             );
 
             if ($this instanceof TArray && $offset === 0 && $type_param->isMixed()) {
-                $this->type_params[0] = Type::getArrayKey();
+                $type_param = Type::getArrayKey();
             }
+
+            $type_params[$offset] = $type_param;
         }
 
-        if ($this instanceof TGenericObject) {
-            $this->remapped_params = true;
-        }
-
-        if ($this instanceof TGenericObject || $this instanceof TIterable) {
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
-        }
+        return $type_params === $this->type_params ? null : $type_params;
     }
 }

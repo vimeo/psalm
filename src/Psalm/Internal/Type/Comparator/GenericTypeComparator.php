@@ -57,6 +57,16 @@ class GenericTypeComparator
             $container_type_params_covariant
         );
 
+        $atomic_comparison_result_type_params = null;
+        if ($atomic_comparison_result) {
+            if (!$atomic_comparison_result->replacement_atomic_type) {
+                $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
+            }
+
+            if ($atomic_comparison_result->replacement_atomic_type instanceof TGenericObject) {
+                $atomic_comparison_result_type_params = $atomic_comparison_result->replacement_atomic_type->type_params;
+            }
+        }
         foreach ($input_type_params as $i => $input_param) {
             if (!isset($container_type_part->type_params[$i])) {
                 break;
@@ -65,16 +75,8 @@ class GenericTypeComparator
             $container_param = $container_type_part->type_params[$i];
 
             if ($input_param->isNever()) {
-                if ($atomic_comparison_result) {
-                    if (!$atomic_comparison_result->replacement_atomic_type) {
-                        $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
-                    }
-
-                    if ($atomic_comparison_result->replacement_atomic_type instanceof TGenericObject) {
-                        /** @psalm-suppress PropertyTypeCoercion */
-                        $atomic_comparison_result->replacement_atomic_type->type_params[$i]
-                            = clone $container_param;
-                    }
+                if ($atomic_comparison_result_type_params !== null) {
+                    $atomic_comparison_result_type_params[$i] = clone $container_param;
                 }
 
                 continue;
@@ -136,16 +138,8 @@ class GenericTypeComparator
                 && !$input_param->hasTemplate()
             ) {
                 if ($input_param->containsAnyLiteral()) {
-                    if ($atomic_comparison_result) {
-                        if (!$atomic_comparison_result->replacement_atomic_type) {
-                            $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
-                        }
-
-                        if ($atomic_comparison_result->replacement_atomic_type instanceof TGenericObject) {
-                            /** @psalm-suppress PropertyTypeCoercion */
-                            $atomic_comparison_result->replacement_atomic_type->type_params[$i]
-                                = clone $container_param;
-                        }
+                    if ($atomic_comparison_result_type_params !== null) {
+                        $atomic_comparison_result_type_params[$i] = clone $container_param;
                     }
                 } else {
                     if (!($container_type_params_covariant[$i] ?? false)
@@ -177,6 +171,16 @@ class GenericTypeComparator
                     }
                 }
             }
+        }
+
+        if ($atomic_comparison_result
+            && $atomic_comparison_result->replacement_atomic_type instanceof TGenericObject
+            && $atomic_comparison_result_type_params
+        ) {
+            /** @psalm-suppress ArgumentTypeCoercion Psalm bug */
+            $atomic_comparison_result->replacement_atomic_type =
+                $atomic_comparison_result->replacement_atomic_type
+                    ->replaceTypeParams($atomic_comparison_result_type_params);
         }
 
         if ($all_types_contain) {
