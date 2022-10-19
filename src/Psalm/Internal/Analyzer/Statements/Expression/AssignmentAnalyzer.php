@@ -590,8 +590,9 @@ class AssignmentAnalyzer
                             );
                         }
 
-                        $assign_value_type = clone $assign_value_type;
-                        $assign_value_type->parent_nodes = [$new_parent_node->id => $new_parent_node];
+                        $assign_value_type = $assign_value_type->setParentNodes(
+                            [$new_parent_node->id => $new_parent_node]
+                        );
                     }
                 }
             }
@@ -1104,11 +1105,9 @@ class AssignmentAnalyzer
                     $statements_analyzer
                 );
 
-                $by_ref_out_type = clone $by_ref_out_type;
-
-                if ($existing_type->parent_nodes) {
-                    $by_ref_out_type->parent_nodes += $existing_type->parent_nodes;
-                }
+                $by_ref_out_type = $by_ref_out_type->addParentNodes(
+                    $existing_type->parent_nodes
+                );
 
                 if (!$context->inside_conditional) {
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;

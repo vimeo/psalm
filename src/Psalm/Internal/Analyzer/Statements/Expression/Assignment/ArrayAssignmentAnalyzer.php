@@ -624,9 +624,9 @@ class ArrayAssignmentAnalyzer
                     ) {
                         $array_atomic_type = $atomic_root_types['array'];
 
-                        $new_child_type = new Union([$array_atomic_type]);
-
-                        $new_child_type->parent_nodes = $root_type->parent_nodes;
+                        $new_child_type = new Union([$array_atomic_type], [
+                            'parent_nodes' => $root_type->parent_nodes
+                        ]);
                     }
                 } elseif ($array_atomic_type instanceof TList) {
                     $array_atomic_type = new TNonEmptyList(

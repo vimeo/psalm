@@ -893,8 +893,7 @@ class ArgumentAnalyzer
             );
 
             if ($function_param->assert_untainted) {
-                $input_type = clone $input_type;
-                $input_type->parent_nodes = [];
+                $input_type = $input_type->setParentNodes([]);
                 $replace_input_type = true;
             }
         }

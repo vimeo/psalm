@@ -129,11 +129,9 @@ class ArrayAnalyzer
                 $array_creation_info->all_list
             );
 
-            $stmt_type = new Union([$atomic_type]);
-
-            if ($array_creation_info->parent_taint_nodes) {
-                $stmt_type->parent_nodes = $array_creation_info->parent_taint_nodes;
-            }
+            $stmt_type = new Union([$atomic_type], [
+                'parent_nodes' => $array_creation_info->parent_taint_nodes
+            ]);
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -155,11 +153,9 @@ class ArrayAnalyzer
 
             $stmt_type = new Union([
                 $array_type,
+            ], [
+                'parent_nodes' => $array_creation_info->parent_taint_nodes
             ]);
-
-            if ($array_creation_info->parent_taint_nodes) {
-                $stmt_type->parent_nodes = $array_creation_info->parent_taint_nodes;
-            }
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -240,11 +236,9 @@ class ArrayAnalyzer
 
         $stmt_type = new Union([
             $array_type,
+        ], [
+            'parent_nodes' => $array_creation_info->parent_taint_nodes
         ]);
-
-        if ($array_creation_info->parent_taint_nodes) {
-            $stmt_type->parent_nodes = $array_creation_info->parent_taint_nodes;
-        }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 

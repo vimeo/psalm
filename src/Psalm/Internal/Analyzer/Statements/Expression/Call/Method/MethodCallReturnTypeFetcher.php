@@ -447,10 +447,10 @@ class MethodCallReturnTypeFetcher
 
                 $return_type_candidate->parent_nodes = $method_call_nodes;
 
-                $stmt_var_type = clone $context->vars_in_scope[$var_id];
-
-                $stmt_var_type->parent_nodes = $var_nodes;
-
+                $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
+                    $var_nodes
+                );
+                
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
             } else {
                 $method_call_node = DataFlowNode::getForMethodReturn(

@@ -523,15 +523,15 @@ class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                $stmt_var_type = clone $context->vars_in_scope[$var_id];
+                $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
+                    [$var_node->id => $var_node]
+                );
 
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
                     foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath($parent_node, $var_node, '=', $added_taints, $removed_taints);
                     }
                 }
-
-                $stmt_var_type->parent_nodes = [$var_node->id => $var_node];
 
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
             }

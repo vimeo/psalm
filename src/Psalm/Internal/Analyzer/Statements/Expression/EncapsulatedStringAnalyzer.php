@@ -123,7 +123,7 @@ class EncapsulatedStringAnalyzer
 
         if ($non_empty) {
             if ($literal_string !== null) {
-                $new_type = Type::getString($literal_string);
+                $new_type = new Union([new TLiteralString($literal_string)]);
             } elseif ($all_literals) {
                 $new_type = new Union([new TNonEmptyNonspecificLiteralString()]);
             } else {
@@ -134,6 +134,7 @@ class EncapsulatedStringAnalyzer
         }
         if (isset($new_type)) {
             assert($new_type instanceof Union);
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $new_type->parent_nodes = $stmt_type->parent_nodes;
             $stmt_type = $new_type;
         }

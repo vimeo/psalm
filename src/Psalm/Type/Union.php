@@ -262,6 +262,32 @@ final class Union implements TypeNode, Stringable
         return $obj ?? $this;
     }
 
+    /**
+     * @param array<string, DataFlowNode> $parent_nodes
+     * @return static
+     */
+    public function setParentNodes(array $parent_nodes): self
+    {
+        if ($parent_nodes === $this->parent_nodes) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->parent_nodes = $parent_nodes;
+        return $cloned;
+    }
+    
+
+    /**
+     * @param array<string, DataFlowNode> $parent_nodes
+     * @return static
+     */
+    public function addParentNodes(array $parent_nodes): self
+    {
+        $cloned = clone $this;
+        $cloned->parent_nodes += $parent_nodes;
+        return $cloned;
+    }
+    
     /** @return static */
     public function setPossiblyUndefined(bool $possibly_undefined, ?bool $from_try = null): self
     {
