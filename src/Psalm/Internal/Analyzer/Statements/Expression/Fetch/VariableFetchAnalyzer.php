@@ -551,7 +551,7 @@ class VariableFetchAnalyzer
         );
     }
 
-    /** @var array<value-of<self::SUPER_GLOBALS>|'$_FILES full path', Union> */
+    /** @var array<value-of<self::SUPER_GLOBALS>|'$_FILES full path'|'$argv'|'$argc', Union> */
     private static array $globalCache = [];
 
     public static function getGlobalType(string $var_id, int $codebase_analysis_php_version_id): Union
@@ -564,15 +564,17 @@ class VariableFetchAnalyzer
 
         if (!self::$globalCache) {
             foreach (self::SUPER_GLOBALS as $v) {
-                self::$globalCache[$v] = self::getGlobalTypeInner($v, false);
+                self::$globalCache[$v] = self::getGlobalTypeInner($v);
             }
             self::$globalCache['$_FILES full path'] = self::getGlobalTypeInner(
                 '$_FILES',
                 true
             );
+            self::$globalCache['$argv'] = self::getGlobalTypeInner('$argv');
+            self::$globalCache['$argc'] = self::getGlobalTypeInner('$argc');
         }
 
-        if ($codebase_analysis_php_version_id >= 8_10_00 && $var_id === '$_FILES') {
+        if ($codebase_analysis_php_version_id >= 8_01_00 && $var_id === '$_FILES') {
             $var_id = '$_FILES full path';
         }
 
@@ -586,9 +588,9 @@ class VariableFetchAnalyzer
     /**
      * @psalm-suppress InaccessibleProperty Always acting on new types
      *
-     * @param value-of<self::SUPER_GLOBALS> $var_id
+     * @param value-of<self::SUPER_GLOBALS>|'$argv'|'$argc' $var_id
      */
-    private static function getGlobalTypeInner(string $var_id, bool $files_full_path): Union
+    private static function getGlobalTypeInner(string $var_id, bool $files_full_path = false): Union
     {
         if ($var_id === '$argv') {
             // only in CLI, null otherwise
