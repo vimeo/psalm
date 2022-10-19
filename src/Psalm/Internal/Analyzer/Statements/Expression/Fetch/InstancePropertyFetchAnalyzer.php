@@ -378,7 +378,10 @@ class InstancePropertyFetchAnalyzer
                         && $context->vars_in_scope[$var_id]->isNullable()
                     )
                 ) {
-                    $stmt_type->initialized = true;
+                    $stmt_type->setProperties([
+                        'initialized' => true
+                    ]);
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 } else {
                     IssueBuffer::maybeAdd(
                         new UninitializedProperty(

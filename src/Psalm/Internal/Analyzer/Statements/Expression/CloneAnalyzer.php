@@ -149,7 +149,7 @@ class CloneAnalyzer
             if ($immutable_cloned) {
                 $stmt_expr_type = $stmt_expr_type->setProperties([
                     'reference_free' => true,
-                    'allow_mutatons' => true,
+                    'allow_mutations' => true,
                 ]);
             }
             $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
