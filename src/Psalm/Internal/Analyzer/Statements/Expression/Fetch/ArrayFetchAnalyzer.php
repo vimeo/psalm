@@ -873,7 +873,7 @@ class ArrayFetchAnalyzer
         }
 
         if ($array_type->by_ref) {
-            $array_access_type->by_ref = true;
+            return $array_access_type->setByRef(true);
         }
 
         return $array_access_type;

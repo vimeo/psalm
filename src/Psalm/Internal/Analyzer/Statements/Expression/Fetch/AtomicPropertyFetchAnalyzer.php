@@ -477,7 +477,9 @@ class AtomicPropertyFetchAnalyzer
         );
 
         if ($class_storage->mutation_free) {
-            $class_property_type->has_mutations = false;
+            $class_property_type = $class_property_type->setProperties([
+                'has_mutations' => false
+            ]);
         }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);

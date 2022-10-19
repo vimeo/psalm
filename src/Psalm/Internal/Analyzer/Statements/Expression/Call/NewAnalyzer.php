@@ -512,13 +512,13 @@ class NewAnalyzer extends CallAnalyzer
                         if ($fq_class_name === 'SplObjectStorage') {
                             $generic_param_type = Type::getNever();
                         } else {
-                            $generic_param_type = clone array_values($base_type)[0];
+                            $generic_param_type = array_values($base_type)[0];
                         }
                     }
 
-                    $generic_param_type->had_template = true;
-
-                    $generic_param_types[] = $generic_param_type;
+                    $generic_param_types[] = $generic_param_type->setProperties([
+                        'had_template' => true
+                    ]);
                 }
             }
 
@@ -568,7 +568,10 @@ class NewAnalyzer extends CallAnalyzer
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
             if ($stmt_type) {
-                $stmt_type->reference_free = true;
+                $stmt_type->setProperties([
+                    'reference_free' => true
+                ]);
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
             }
         }
 

@@ -363,7 +363,7 @@ class MethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
             }
 
-            $stmt_type->by_ref = $result->returns_by_ref;
+            $stmt_type = $stmt_type->setByRef($result->returns_by_ref);
         }
 
         if ($codebase->store_node_types
