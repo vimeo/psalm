@@ -216,8 +216,9 @@ class MethodCallAnalyzer extends CallAnalyzer
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = clone $context->vars_in_scope[$method_var_id];
                 } elseif ($result->return_type !== null) {
-                    $context->vars_in_scope[$method_var_id] = $result->return_type;
-                    $context->vars_in_scope[$method_var_id]->has_mutations = false;
+                    $context->vars_in_scope[$method_var_id] = $result->return_type->setProperties([
+                        'has_mutations' => false
+                    ]);
                 }
 
                 if ($result->can_memoize) {

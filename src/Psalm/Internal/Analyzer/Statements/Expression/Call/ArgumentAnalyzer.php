@@ -1412,14 +1412,11 @@ class ArgumentAnalyzer
                 $was_cloned = true;
                 $parent_nodes = $input_type->parent_nodes;
                 $by_ref = $input_type->by_ref;
-                $input_type = clone $signature_param_type;
-
-                if ($input_type->isNullable()) {
-                    $input_type->ignore_nullable_issues = true;
-                }
-
-                $input_type->parent_nodes = $parent_nodes;
-                $input_type->by_ref = $by_ref;
+                $input_type = $signature_param_type->setProperties([
+                    'ignore_nullable_issues' => $input_type->isNullable(),
+                    'parent_nodes' => $parent_nodes,
+                    'by_ref' => $by_ref
+                ]);
             }
 
             if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {

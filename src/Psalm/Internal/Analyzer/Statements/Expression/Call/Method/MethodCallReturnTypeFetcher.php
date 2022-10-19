@@ -139,7 +139,7 @@ class MethodCallReturnTypeFetcher
                 && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
                 && $method_storage->return_type
             ) {
-                $return_type_candidate = clone $method_storage->return_type;
+                $return_type_candidate = $method_storage->return_type;
 
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
@@ -159,7 +159,9 @@ class MethodCallReturnTypeFetcher
             }
 
             if ($return_type_candidate->isFalsable()) {
-                $return_type_candidate->ignore_falsable_issues = true;
+                $return_type_candidate = $return_type_candidate->setProperties([
+                    'ignore_falsable_issues' => true
+                ]);
             }
 
             $return_type_candidate = TypeExpander::expandUnion(

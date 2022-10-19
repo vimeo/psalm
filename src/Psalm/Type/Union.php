@@ -263,7 +263,7 @@ final class Union implements TypeNode, Stringable
     }
 
     /** @return static */
-    public function setPossiblyUndefined(bool $possibly_undefined, ?bool $from_try = null)
+    public function setPossiblyUndefined(bool $possibly_undefined, ?bool $from_try = null): self
     {
         $from_try ??= $this->possibly_undefined_from_try;
         if ($this->possibly_undefined === $possibly_undefined
@@ -274,6 +274,17 @@ final class Union implements TypeNode, Stringable
         $cloned = clone $this;
         $cloned->possibly_undefined = $possibly_undefined;
         $cloned->possibly_undefined_from_try = $from_try;
+        return $cloned;
+    }
+
+    /** @return static */
+    public function setByRef(bool $by_ref)
+    {
+        if ($by_ref === $this->by_ref) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->by_ref = $by_ref;
         return $cloned;
     }
 
