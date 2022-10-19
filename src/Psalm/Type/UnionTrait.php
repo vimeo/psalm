@@ -1432,15 +1432,6 @@ trait UnionTrait
 
     /**
      * @psalm-mutation-free
-     * @return list<string>
-     */
-    public function getChildNodeKeys(): array
-    {
-        return ['types'];
-    }
-
-    /**
-     * @psalm-mutation-free
      * @return bool true if this is a float literal with only one possible value
      */
     public function isSingleFloatLiteral(): bool
@@ -1496,5 +1487,16 @@ trait UnionTrait
     public function isUnionEmpty(): bool
     {
         return $this->types === [];
+    }
+
+    public function visit(ImmutableTypeVisitor $visitor): bool
+    {
+        foreach ($this->types as $type) {
+            if ($type->visit($visitor) === false) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

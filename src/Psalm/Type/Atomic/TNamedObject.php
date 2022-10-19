@@ -250,7 +250,7 @@ class TNamedObject extends Atomic
         }
         return $this;
     }
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['extra_types'];
     }

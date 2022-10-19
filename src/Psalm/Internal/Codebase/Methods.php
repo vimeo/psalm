@@ -714,7 +714,7 @@ class Methods
             if ($return_type_candidate->isFalsable()) {
                 return $return_type_candidate->setProperties([
                     'ignore_falsable_issues' => true
-                ]),
+                ]);
             }
 
             return $return_type_candidate;

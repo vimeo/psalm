@@ -135,7 +135,7 @@ final class TConditional extends Atomic
         return '';
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['conditional_type', 'if_type', 'else_type'];
     }

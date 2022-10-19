@@ -20,7 +20,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function addslashes;
-use function assert;
 use function count;
 use function get_class;
 use function implode;
@@ -381,7 +380,7 @@ class TKeyedArray extends Atomic
         return $this;
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['properties'];
     }
