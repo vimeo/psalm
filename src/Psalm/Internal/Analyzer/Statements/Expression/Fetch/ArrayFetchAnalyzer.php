@@ -329,6 +329,7 @@ class ArrayFetchAnalyzer
             }
 
             $stmt_type = $stmt_type->setPossiblyUndefined(false);
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
 
         if ($context->inside_isset && $dim_var_id && $new_offset_type && !$new_offset_type->isUnionEmpty()) {
