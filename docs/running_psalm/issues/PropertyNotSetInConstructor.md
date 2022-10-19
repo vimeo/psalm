@@ -1,6 +1,6 @@
 # PropertyNotSetInConstructor
 
-Unitialized properties are hard to statically analyze. To prevent mistakes, Psalm will enforce that all properties should be initialized.
+Uninitialized properties are hard to statically analyze. To prevent mistakes, Psalm will enforce that all properties should be initialized.
 
 It does that through [MissingConstructor](./MissingConstructor.md) and this issue.
 
