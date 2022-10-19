@@ -280,9 +280,7 @@ class TKeyedArray extends Atomic
         $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
         $key_type = Type::combineUnionTypes($this->previous_key_type, $key_type);
 
-        assert($value_type !== $this->previous_value_type);
-        /** @psalm-suppress InaccessibleProperty We just created this type */
-        $value_type->possibly_undefined = false;
+        $value_type = $value_type->setPossiblyUndefined(false);
 
         if ($allow_non_empty && ($this->previous_value_type || $has_defined_keys)) {
             $array_type = new TNonEmptyArray([$key_type, $value_type]);
