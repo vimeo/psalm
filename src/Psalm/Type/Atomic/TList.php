@@ -43,7 +43,7 @@ class TList extends Atomic
     /**
      * @return static
      */
-    public function replaceTypeParam(Union $type_param): self
+    public function setTypeParam(Union $type_param): self
     {
         if ($type_param === $this->type_param) {
             return $this;
@@ -184,7 +184,7 @@ class TList extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
-        return $this->replaceTypeParam(TemplateInferredTypeReplacer::replace(
+        return $this->setTypeParam(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
             $codebase

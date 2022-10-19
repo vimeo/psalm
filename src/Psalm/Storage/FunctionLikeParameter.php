@@ -151,7 +151,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     }
 
     /** @psalm-mutation-free */
-    public function replaceType(Union $type): self
+    public function setType(Union $type): self
     {
         if ($this->type === $type) {
             return $this;

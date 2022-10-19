@@ -640,7 +640,7 @@ class AssertionReconciler extends Reconciler
                     $type_2_value,
                     $any_scalar_type_match_found
                 );
-                $type_1_atomic = $type_1_atomic->replaceTypeParam($type_1_type_param);
+                $type_1_atomic = $type_1_atomic->setTypeParam($type_1_type_param);
 
                 if ($type_2_value === null) {
                     return null;
@@ -754,9 +754,9 @@ class AssertionReconciler extends Reconciler
             }
 
             if ($type_1_param->getId() !== $type_2_param->getId()) {
-                $type_1_atomic = $type_1_atomic->replaceTypeParam($type_2_param);
+                $type_1_atomic = $type_1_atomic->setTypeParam($type_2_param);
             } elseif ($type_1_param !== $type_1_atomic->type_param) {
-                $type_1_atomic = $type_1_atomic->replaceTypeParam($type_1_param);
+                $type_1_atomic = $type_1_atomic->setTypeParam($type_1_param);
             }
 
             $matching_atomic_type = $type_1_atomic;
@@ -1004,9 +1004,9 @@ class AssertionReconciler extends Reconciler
         $value = $assertion_type->value;
 
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
-        $literal_asserted_type = new Union([new TLiteralInt($value)]);
-        $literal_asserted_type->from_docblock = $existing_var_type->from_docblock;
-
+        $literal_asserted_type = new Union([new TLiteralInt($value)], [
+            'from_docblock' => $existing_var_type->from_docblock
+        ]);
         $compatible_int_type = self::getCompatibleIntType(
             $existing_var_type,
             $existing_var_atomic_types,
@@ -1145,8 +1145,9 @@ class AssertionReconciler extends Reconciler
         $value = $assertion_type->value;
 
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
-        $literal_asserted_type_string = new Union([$assertion_type]);
-        $literal_asserted_type_string->from_docblock = $existing_var_type->from_docblock;
+        $literal_asserted_type_string = new Union([$assertion_type], [
+            'from_docblock' => $existing_var_type->from_docblock
+        ]);
 
         $compatible_string_type = self::getCompatibleStringType(
             $existing_var_type,
@@ -1287,8 +1288,9 @@ class AssertionReconciler extends Reconciler
         $value = $assertion_type->value;
 
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
-        $literal_asserted_type = new Union([new TLiteralFloat($value)]);
-        $literal_asserted_type->from_docblock = $existing_var_type->from_docblock;
+        $literal_asserted_type = new Union([new TLiteralFloat($value)], [
+            'from_docblock' => $existing_var_type->from_docblock
+        ]);
 
         $compatible_float_type = self::getCompatibleFloatType(
             $existing_var_type,
@@ -1428,9 +1430,9 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                $assertion_type = new Union([$assertion_type]);
-                $assertion_type->from_docblock = $existing_var_type->from_docblock;
-                return $assertion_type;
+                return new Union([$assertion_type], [
+                    'from_docblock' => $existing_var_type->from_docblock
+                ]);
             }
         }
 
@@ -1455,9 +1457,9 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                $assertion_type = new Union([$assertion_type]);
-                $assertion_type->from_docblock = $existing_var_type->from_docblock;
-                return $assertion_type;
+                return new Union([$assertion_type], [
+                    'from_docblock' => $existing_var_type->from_docblock
+                ]);
             }
         }
 
@@ -1482,9 +1484,9 @@ class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                $assertion_type = new Union([$assertion_type]);
-                $assertion_type->from_docblock = $existing_var_type->from_docblock;
-                return $assertion_type;
+                return new Union([$assertion_type], [
+                    'from_docblock' => $existing_var_type->from_docblock
+                ]);
             }
         }
 

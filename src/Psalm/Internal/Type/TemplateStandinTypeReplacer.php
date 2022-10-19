@@ -1293,11 +1293,12 @@ class TemplateStandinTypeReplacer
                             );
 
                             $candidate_param_type = $input_type_params[$old_params_offset] ?? Type::getMixed();
+                            $candidate_param_type = $candidate_param_type->setProperties([
+                                'from_template_default' => true
+                            ]);
                         } else {
-                            $candidate_param_type = new Union([$et]);
+                            $candidate_param_type = new Union([$et], ['from_template_default' => true]);
                         }
-
-                        $candidate_param_type->from_template_default = true;
 
                         $new_input_param = Type::combineUnionTypes(
                             $new_input_param,

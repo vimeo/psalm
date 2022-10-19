@@ -2058,7 +2058,7 @@ class ClassLikes
                                     );
 
                                 if ($has_variable_calls) {
-                                    $possible_type->from_docblock = true;
+                                    $possible_type = $possible_type->setProperties(['from_docblock' => true]);
                                 }
 
                                 if ($function_analyzer) {

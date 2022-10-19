@@ -349,7 +349,7 @@ class ArrayAssignmentAnalyzer
                     $has_matching_objectlike_property = true;
 
                     $changed = true;
-                    $type = $type->replaceTypeParam(Type::combineUnionTypes(
+                    $type = $type->setTypeParam(Type::combineUnionTypes(
                         clone $current_type,
                         $type->type_param,
                         $codebase,

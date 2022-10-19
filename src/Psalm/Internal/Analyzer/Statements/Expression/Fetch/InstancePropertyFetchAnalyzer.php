@@ -262,12 +262,13 @@ class InstancePropertyFetchAnalyzer
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
         if ($stmt_var_type->isNullable() && !$context->inside_isset && $stmt_type) {
-            $stmt_type = $stmt_type->getBuilder()->addType(new TNull)->freeze();
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            $stmt_type = $stmt_type->getBuilder()->addType(new TNull);
 
             if ($stmt_var_type->ignore_nullable_issues) {
                 $stmt_type->ignore_nullable_issues = true;
             }
+            $stmt_type = $stmt_type->freeze();
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
 
         if ($codebase->store_node_types
@@ -378,9 +379,7 @@ class InstancePropertyFetchAnalyzer
                         && $context->vars_in_scope[$var_id]->isNullable()
                     )
                 ) {
-                    $stmt_type->setProperties([
-                        'initialized' => true
-                    ]);
+                    $stmt_type = $stmt_type->setProperties(['initialized' => true]);
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 } else {
                     IssueBuffer::maybeAdd(

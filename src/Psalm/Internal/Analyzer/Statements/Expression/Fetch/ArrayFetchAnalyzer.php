@@ -1750,7 +1750,7 @@ class ArrayFetchAnalyzer
         }
 
         if ($in_assignment && $replacement_type) {
-            $type = $type->replaceTypeParam(Type::combineUnionTypes(
+            $type = $type->setTypeParam(Type::combineUnionTypes(
                 $type->type_param,
                 $replacement_type,
                 $codebase

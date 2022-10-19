@@ -17,13 +17,15 @@ use function strtolower;
  */
 class DomDocumentPropertyTypeProvider implements PropertyTypeProviderInterface
 {
+    private static ?Union $cache = null;
     public static function getPropertyType(PropertyTypeProviderEvent $event): ?Union
     {
         if (strtolower($event->getPropertyName()) === 'documentelement') {
-            $type = new Union([new TNamedObject('DOMElement'), new TNull()]);
-            $type->ignore_nullable_issues = true;
+            self::$cache ??= new Union([new TNamedObject('DOMElement'), new TNull()], [
+                'ignore_nullable_issues' => true
+            ]);
 
-            return $type;
+            return self::$cache;
         }
 
         return null;

@@ -863,7 +863,7 @@ class InstancePropertyAssignmentAnalyzer
             if ($context->collect_initializations
                 && $lhs_var_id === '$this'
             ) {
-                $context_type->initialized_class = $context->self;
+                $context_type = $context_type->setProperties(['initialized_class' => $context->self]);
             }
 
             // because we don't want to be assigning for property declarations

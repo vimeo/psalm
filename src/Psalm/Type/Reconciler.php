@@ -318,7 +318,7 @@ class Reconciler
             }
 
             if ($before_adjustment && $before_adjustment->by_ref) {
-                $result_type->by_ref = true;
+                $result_type = $result_type->setByRef(true);
             }
 
             $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
@@ -379,7 +379,7 @@ class Reconciler
             }
 
             if ($failed_reconciliation === self::RECONCILIATION_EMPTY) {
-                $result_type->failed_reconciliation = true;
+                $result_type = $result_type->setProperties(['failed_reconciliation' => true]);
             }
 
             if (!$has_object_array_access) {

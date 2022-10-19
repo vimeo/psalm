@@ -85,13 +85,15 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         if ($nullable) {
-            $value_type = $value_type->getBuilder()->addType(new TNull)->freeze();
+            $value_type = $value_type->getBuilder()->addType(new TNull);
 
             $codebase = $statements_source->getCodebase();
 
             if ($codebase->config->ignore_internal_nullable_issues) {
                 $value_type->ignore_nullable_issues = true;
             }
+            
+            $value_type = $value_type->freeze();
         }
 
         return $value_type;

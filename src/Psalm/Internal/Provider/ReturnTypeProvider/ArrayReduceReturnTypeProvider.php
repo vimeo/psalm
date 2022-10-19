@@ -17,6 +17,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function count;
@@ -87,8 +88,9 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         }
 
         if (!isset($call_args[2])) {
-            $reduce_return_type = Type::getNull();
-            $reduce_return_type->ignore_nullable_issues = true;
+            $reduce_return_type = new Union([new TNull()], [
+                'ignore_nullable_issues' => true,
+            ]);
         } else {
             $reduce_return_type = $statements_source->node_data->getType($call_args[2]->value);
 

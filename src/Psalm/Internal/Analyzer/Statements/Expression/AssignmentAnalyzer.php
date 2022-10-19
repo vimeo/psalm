@@ -350,7 +350,7 @@ class AssignmentAnalyzer
                     $statements_analyzer->getSource()->inferred_has_mutation = true;
                 }
 
-                $assign_value_type->by_ref = true;
+                $assign_value_type = $assign_value_type->setByRef(true);
             }
 
             // removes dependent vars from $context
@@ -1721,7 +1721,7 @@ class AssignmentAnalyzer
                 }
 
                 if (isset($context->byref_constraints[$var_id])) {
-                    $assign_value_type->by_ref = true;
+                    $assign_value_type = $assign_value_type->setByRef(true);
                 }
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph

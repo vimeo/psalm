@@ -37,15 +37,11 @@ class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if (!($call_arg_type = $statements_source->node_data->getType($call_arg->value))
                 || !$call_arg_type->isInt()
             ) {
-                $value_type = new Union([new TInt, new TFalse]);
-
                 $codebase = $statements_source->getCodebase();
 
-                if ($codebase->config->ignore_internal_falsable_issues) {
-                    $value_type->ignore_falsable_issues = true;
-                }
-
-                return $value_type;
+                return new Union([new TInt, new TFalse], [
+                    'ignore_falsable_issues' => $codebase->config->ignore_internal_falsable_issues
+                ]);
             }
         }
 

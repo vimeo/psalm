@@ -83,11 +83,9 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             ? new TList($inner_type)
                             : new TNonEmptyList($inner_type),
                         new TFalse
+                    ], [
+                        'ignore_falsable_issues' => $statements_source->getCodebase()->config->ignore_internal_falsable_issues
                     ]);
-
-                    if ($statements_source->getCodebase()->config->ignore_internal_falsable_issues) {
-                        $array_type->ignore_falsable_issues = true;
-                    }
                 } else {
                     $array_type = new Union([
                         $can_return_empty

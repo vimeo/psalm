@@ -998,7 +998,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if (isset($op_vars_in_scope[$var_id])) {
-                    $op_vars_in_scope[$var_id]->from_docblock = true;
+                    $op_vars_in_scope[$var_id] = $op_vars_in_scope[$var_id]->setProperties(['from_docblock' => true]);
                 }
             }
 

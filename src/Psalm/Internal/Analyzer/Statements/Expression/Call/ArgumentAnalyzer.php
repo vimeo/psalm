@@ -1429,7 +1429,7 @@ class ArgumentAnalyzer
 
             if ($unpack) {
                 if ($unpacked_atomic_array instanceof TList) {
-                    $unpacked_atomic_array = $unpacked_atomic_array->replaceTypeParam($input_type);
+                    $unpacked_atomic_array = $unpacked_atomic_array->setTypeParam($input_type);
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TArray) {

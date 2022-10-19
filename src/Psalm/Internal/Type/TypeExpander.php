@@ -514,7 +514,7 @@ class TypeExpander
             }
             $return_type = $return_type->setProperties($properties);
         } elseif ($return_type instanceof TList) {
-            $return_type = $return_type->replaceTypeParam(self::expandUnion(
+            $return_type = $return_type->setTypeParam(self::expandUnion(
                 $codebase,
                 $return_type->type_param,
                 $self_class,
@@ -556,7 +556,7 @@ class TypeExpander
             if ($params) {
                 foreach ($params as &$param) {
                     if ($param->type) {
-                        $param = $param->replaceType(self::expandUnion(
+                        $param = $param->setType(self::expandUnion(
                             $codebase,
                             $param->type,
                             $self_class,

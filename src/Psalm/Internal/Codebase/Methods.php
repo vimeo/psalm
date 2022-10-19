@@ -712,7 +712,9 @@ class Methods
             $return_type_candidate = $callmap_callables[0]->return_type;
 
             if ($return_type_candidate->isFalsable()) {
-                $return_type_candidate->ignore_falsable_issues = true;
+                return $return_type_candidate->setProperties([
+                    'ignore_falsable_issues' => true
+                ]),
             }
 
             return $return_type_candidate;

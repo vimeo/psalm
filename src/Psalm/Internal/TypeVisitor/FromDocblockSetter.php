@@ -31,8 +31,7 @@ class FromDocblockSetter extends TypeVisitor
             return null;
         }
         if (!$type instanceof Atomic) {
-            $type = clone $type;
-            $type->from_docblock = $this->from_docblock;
+            $type = $type->setProperties(['from_docblock' => $this->from_docblock]);
         } else {
             $type = $type->setFromDocblock($this->from_docblock);
         }

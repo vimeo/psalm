@@ -51,13 +51,11 @@ class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             $return_type = Type::getString();
 
             if (in_array($function_id, ['preg_replace', 'preg_replace_callback'], true)) {
-                $return_type = new Union([new TString, new TNull()]);
-
                 $codebase = $statements_source->getCodebase();
 
-                if ($codebase->config->ignore_internal_nullable_issues) {
-                    $return_type->ignore_nullable_issues = true;
-                }
+                $return_type = new Union([new TString, new TNull()], [
+                    'ignore_nullable_issues' => $codebase->config->ignore_internal_nullable_issues
+                ]);
             }
 
             return $return_type;

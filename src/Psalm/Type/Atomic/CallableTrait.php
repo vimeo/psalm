@@ -235,7 +235,7 @@ trait CallableTrait
                     $input_param_type = $input_type->params[$offset]->type;
                 }
 
-                $new_param = $param->replaceType(TemplateStandinTypeReplacer::replace(
+                $new_param = $param->setType(TemplateStandinTypeReplacer::replace(
                     $param->type,
                     $template_result,
                     $codebase,
@@ -293,7 +293,7 @@ trait CallableTrait
         if ($params) {
             foreach ($params as $k => $param) {
                 if ($param->type) {
-                    $new_param = $param->replaceType(TemplateInferredTypeReplacer::replace(
+                    $new_param = $param->setType(TemplateInferredTypeReplacer::replace(
                         $param->type,
                         $template_result,
                         $codebase

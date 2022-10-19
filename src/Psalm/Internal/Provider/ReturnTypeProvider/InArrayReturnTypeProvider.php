@@ -41,6 +41,7 @@ class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         $false = Type::getFalse();
+        /** @psalm-suppress InaccessibleProperty We just created these types */
         $false->from_docblock = $bool->from_docblock = $needle_type->from_docblock || $haystack_type->from_docblock;
 
         if (!isset($call_args[2])) {

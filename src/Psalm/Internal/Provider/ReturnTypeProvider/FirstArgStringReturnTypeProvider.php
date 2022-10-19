@@ -41,9 +41,8 @@ class FirstArgStringReturnTypeProvider implements FunctionReturnTypeProviderInte
             return new Union([new TString]);
         }
 
-        $return_type = new Union([new TString, new TNull]);
-        $return_type->ignore_nullable_issues = true;
-
-        return $return_type;
+        return new Union([new TString, new TNull], [
+            'ignore_nullable_issues' => true
+        ]);
     }
 }

@@ -86,13 +86,15 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
         if ($value_type->isNever()) {
             $value_type = Type::getFalse();
         } elseif (($function_id !== 'reset' && $function_id !== 'end') || !$definitely_has_items) {
-            $value_type = $value_type->getBuilder()->addType(new TFalse)->freeze();
+            $value_type = $value_type->getBuilder()->addType(new TFalse);
 
             $codebase = $statements_source->getCodebase();
 
             if ($codebase->config->ignore_internal_falsable_issues) {
                 $value_type->ignore_falsable_issues = true;
             }
+
+            $value_type = $value_type->freeze();
         }
 
         ArrayFetchAnalyzer::taintArrayFetch(

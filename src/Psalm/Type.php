@@ -182,15 +182,13 @@ abstract class Type
     public static function getInt(bool $from_calculation = false, ?int $value = null): Union
     {
         if ($value !== null) {
-            $union = new Union([new TLiteralInt($value)]);
-        } else {
-            $union = new Union([new TInt()]);
+            return new Union([new TLiteralInt($value)], [
+                'from_calculation' => $from_calculation
+            ]);
         }
-
-        /** @psalm-suppress ImpurePropertyAssignment We just created this object */
-        $union->from_calculation = $from_calculation;
-
-        return $union;
+        return new Union([new TInt()], [
+            'from_calculation' => $from_calculation
+        ]);
     }
 
     /**
@@ -522,7 +520,8 @@ abstract class Type
      *
      * @psalm-external-mutation-free
      *
-     * @psalm-suppress ImpurePropertyAssignment, InaccessibleProperty We're not mutating external instances
+     * @psalm-suppress ImpurePropertyAssignment We're not mutating external instances
+     * @psalm-suppress InaccessibleProperty We're not mutating external instances
      */
     public static function combineUnionTypes(
         ?Union $type_1,

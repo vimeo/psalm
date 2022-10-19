@@ -262,7 +262,7 @@ class CallableTypeComparator
 
                     foreach ($function_storage->params as $param) {
                         if ($param->type) {
-                            $param = $param->replaceType(
+                            $param = $param->setType(
                                 TypeExpander::expandUnion(
                                     $codebase,
                                     $param->type,

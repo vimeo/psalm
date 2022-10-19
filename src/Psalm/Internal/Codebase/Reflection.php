@@ -159,6 +159,7 @@ class Reflection
             $type = Type::parseString($type_string);
 
             if ($property_id === 'DateInterval::$days') {
+                /** @psalm-suppress InaccessibleProperty We just parsed this type */
                 $type->ignore_falsable_issues = true;
             }
 
