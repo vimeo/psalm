@@ -571,7 +571,7 @@ class ArithmeticOpAnalyzer
                             false,
                             true,
                             500,
-                            false
+                            $type->possibly_undefined
                         );
                     }
                 }
