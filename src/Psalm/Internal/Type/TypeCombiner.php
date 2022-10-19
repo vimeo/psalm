@@ -742,7 +742,7 @@ class TypeCombiner
             }
 
             foreach ($possibly_undefined_entries as &$possibly_undefined_type) {
-                $possibly_undefined_type = $possibly_undefined_type->setPossiblyUndefined(true);
+                $possibly_undefined_type->possibly_undefined = true;
             }
 
             if (!$type->is_list) {
