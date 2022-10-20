@@ -122,7 +122,7 @@ class TypeCombiner
 
             if ($result) {
                 if ($from_docblock) {
-                    return $result->setFromDocblock(true);
+                    return $result->setProperties(['from_docblock' => true]);
                 }
 
                 return $result;
@@ -360,7 +360,7 @@ class TypeCombiner
         }
 
         if ($from_docblock) {
-            return $union_type->setFromDocblock(true);
+            return $union_type->setProperties(['from_docblock' => true]);
         }
 
         return $union_type;
