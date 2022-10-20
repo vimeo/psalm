@@ -568,7 +568,7 @@ class NewAnalyzer extends CallAnalyzer
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
             if ($stmt_type) {
-                $stmt_type->setProperties([
+                $stmt_type = $stmt_type->setProperties([
                     'reference_free' => true
                 ]);
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
