@@ -741,8 +741,8 @@ class TypeCombiner
                 $combination->array_min_counts[$min_prop_count] = true;
             }
 
-            foreach ($possibly_undefined_entries as &$possibly_undefined_type) {
-                $possibly_undefined_type = $possibly_undefined_type->setPossiblyUndefined(true);
+            foreach ($possibly_undefined_entries as $k => $possibly_undefined_type) {
+                $combination->objectlike_entries[$k] = $possibly_undefined_type->setPossiblyUndefined(true);
             }
 
             if (!$type->is_list) {
