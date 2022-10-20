@@ -1601,7 +1601,7 @@ class SimpleAssertionReconciler extends Reconciler
                 }
 
                 if (isset($atomic_type->properties[$assertion])) {
-                    $atomic_type->setProperties(array_merge(
+                    $atomic_type = $atomic_type->setProperties(array_merge(
                         $atomic_type->properties,
                         [
                             $assertion => $atomic_type->properties[$assertion]->setPossiblyUndefined(false)
