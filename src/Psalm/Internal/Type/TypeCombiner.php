@@ -675,7 +675,7 @@ class TypeCombiner
             }
 
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
-            $possibly_undefined_entries = $combination->objectlike_entries;
+            $missing_entries = $combination->objectlike_entries;
             $combination->objectlike_sealed = $combination->objectlike_sealed && $type->sealed;
 
             if ($type->previous_value_type) {
@@ -698,29 +698,29 @@ class TypeCombiner
 
             $has_defined_keys = false;
 
+            $possibly_undefined = (bool)$type->previous_value_type;
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = $combination->objectlike_entries[$candidate_property_name] ?? null;
 
                 if (!$value_type) {
                     $combination->objectlike_entries[$candidate_property_name] = $candidate_property_type
                         ->setPossiblyUndefined($existing_objectlike_entries
-                            || $candidate_property_type->possibly_undefined);
+                            || $candidate_property_type->possibly_undefined
+                            || $possibly_undefined);
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
                         $candidate_property_type,
                         $codebase,
                         $overwrite_empty_array
-                    );
-                }
-
-                if (!$type->previous_value_type) {
-                    unset($possibly_undefined_entries[$candidate_property_name]);
+                    )->setPossiblyUndefined($possibly_undefined);
                 }
 
                 if (!$candidate_property_type->possibly_undefined) {
                     $has_defined_keys = true;
                 }
+
+                unset($missing_entries[$candidate_property_name]);
             }
 
             if (!$has_defined_keys) {
@@ -741,7 +741,7 @@ class TypeCombiner
                 $combination->array_min_counts[$min_prop_count] = true;
             }
 
-            foreach ($possibly_undefined_entries as $k => $_) {
+            foreach ($missing_entries as $k => $_) {
                 $combination->objectlike_entries[$k] = $combination->objectlike_entries[$k]
                     ->setPossiblyUndefined(true);
             }
