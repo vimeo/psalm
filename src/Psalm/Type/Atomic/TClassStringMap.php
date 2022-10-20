@@ -203,7 +203,7 @@ final class TClassStringMap extends Atomic
         );
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['value_param'];
     }

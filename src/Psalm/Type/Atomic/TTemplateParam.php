@@ -137,7 +137,7 @@ final class TTemplateParam extends Atomic
         return $this->param_name . $intersection_types;
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['as', 'extra_types'];
     }
