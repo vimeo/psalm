@@ -705,15 +705,18 @@ class TypeCombiner
                 if (!$value_type) {
                     $combination->objectlike_entries[$candidate_property_name] = $candidate_property_type
                         ->setPossiblyUndefined($existing_objectlike_entries
-                            || $candidate_property_type->possibly_undefined
-                            || $possibly_undefined);
+                            || $candidate_property_type->possibly_undefined);
                 } else {
-                    $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
+                    $new_property_type = Type::combineUnionTypes(
                         $value_type,
                         $candidate_property_type,
                         $codebase,
                         $overwrite_empty_array
-                    )->setPossiblyUndefined($possibly_undefined);
+                    );
+                    if ($candidate_property_type === $new_property_type) {
+                        $new_property_type = $new_property_type->setPossiblyUndefined($possibly_undefined);
+                    }
+                    $combination->objectlike_entries[$candidate_property_name] = $new_property_type;
                 }
 
                 if (!$candidate_property_type->possibly_undefined) {
