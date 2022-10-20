@@ -89,7 +89,7 @@ final class TPropertiesOf extends Atomic
         }
     }
 
-    protected function getChildNodeKeys(): array
+    public function getChildNodeKeys(): array
     {
         return ['classlike_type'];
     }

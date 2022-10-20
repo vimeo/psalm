@@ -121,7 +121,7 @@ final class TGenericObject extends TNamedObject
         return $this->value;
     }
 
-    protected function getChildNodeKeys(): array
+    public function getChildNodeKeys(): array
     {
         return array_merge(parent::getChildNodeKeys(), ['type_params']);
     }

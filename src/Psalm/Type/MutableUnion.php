@@ -497,24 +497,4 @@ final class MutableUnion implements TypeNode, Stringable
         }
         return $union;
     }
-
-    public static function visitMutable(TypeVisitor $visitor, &$node, bool $cloned): bool
-    {
-        $result = true;
-        $changed = false;
-        foreach ($node->types as &$type) {
-            $type_orig = $type;
-            $result = $visitor->traverse($type);
-            $changed = $changed || $type_orig !== $type;
-            if (!$result) {
-                break;
-            }
-        }
-
-        if ($changed) {
-            $node->setTypes($node->types);
-        }
-
-        return $result;
-    }
 }

@@ -213,7 +213,7 @@ class TList extends Atomic
         return $this->getId();
     }
 
-    protected function getChildNodeKeys(): array
+    public function getChildNodeKeys(): array
     {
         return ['type_param'];
     }

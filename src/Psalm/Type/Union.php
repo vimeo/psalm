@@ -323,25 +323,4 @@ final class Union implements TypeNode, Stringable
         (new FromDocblockSetter($fromDocblock))->traverse($cloned);
         return $cloned;
     }
-
-    public static function visitMutable(TypeVisitor $visitor, &$node, bool $cloned): bool
-    {
-        $result = true;
-        $changed = false;
-        $types = $node->types;
-        foreach ($types as &$type) {
-            $type_orig = $type;
-            $result = $visitor->traverse($type);
-            $changed = $changed || $type_orig !== $type;
-            if (!$result) {
-                break;
-            }
-        }
-
-        if ($changed) {
-            $node = $node->setTypes($types);
-        }
-
-        return $result;
-    }
 }

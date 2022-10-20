@@ -157,7 +157,7 @@ class TArray extends Atomic
         return $this;
     }
 
-    protected function getChildNodeKeys(): array
+    public function getChildNodeKeys(): array
     {
         return ['type_params'];
     }

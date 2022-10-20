@@ -72,7 +72,6 @@ use Psalm\Type\Atomic\TVoid;
 use function array_filter;
 use function array_keys;
 use function get_class;
-use function is_array;
 use function is_numeric;
 use function strpos;
 use function strtolower;
@@ -88,6 +87,15 @@ abstract class Atomic implements TypeNode
     }
     protected function __clone()
     {
+    }
+
+    /**
+     * @internal Only used by the TypeVisitor, MUST NOT be used by plugins for performance reasons.
+     * @return static
+     */
+    public function copy(): self
+    {
+        return clone $this;
     }
 
     /**
@@ -597,75 +605,7 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    public function visit(ImmutableTypeVisitor $visitor): bool
-    {
-        foreach ($this->getChildNodeKeys() as $key) {
-            $value = $this->{$key};
-            if (is_array($value)) {
-                foreach ($value as $type) {
-                    if (!$type instanceof TypeNode) {
-                        continue;
-                    }
-
-                    if ($visitor->traverse($type) === false) {
-                        return false;
-                    }
-                }
-            } elseif ($value instanceof TypeNode) {
-                if ($visitor->traverse($value) === false) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    public static function visitMutable(TypeVisitor $visitor, &$node, bool $cloned): bool
-    {
-        foreach ($node->getChildNodeKeys() as $key) {
-            $value = $node->{$key};
-            $result = true;
-            $changed = false;
-            if (is_array($value)) {
-                foreach ($value as &$type) {
-                    if (!$type instanceof TypeNode) {
-                        continue;
-                    }
-
-                    $type_orig = $type;
-                    $result = $visitor->traverse($type);
-                    $changed = $changed || $type !== $type_orig;
-                }
-            } elseif ($value instanceof TypeNode) {
-                $value_orig = $value;
-                $result = $visitor->traverse($value);
-                $changed = $changed || $value !== $value_orig;
-            } else {
-                continue;
-            }
-
-            if ($changed) {
-                if (!$cloned) {
-                    $node = clone $node;
-                    $cloned = true;
-                }
-                if ($key === 'extra_types') {
-                    $new = [];
-                    foreach ($value as $type) {
-                        $new[$type->getKey()] = $type;
-                    }
-                    $value = $new;
-                }
-                $node->{$key} = $value;
-            }
-            if ($result === false) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    protected function getChildNodeKeys(): array
+    public function getChildNodeKeys(): array
     {
         return [];
     }

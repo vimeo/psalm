@@ -4,9 +4,7 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
-use Psalm\Type\ImmutableTypeVisitor;
 use Psalm\Type\TypeNode;
-use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 
 final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
@@ -163,51 +161,14 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         return $cloned;
     }
 
-    /**
-     * @internal Should only be used by the TypeVisitor.
-     * @psalm-mutation-free
-     */
-    public function visit(ImmutableTypeVisitor $visitor): bool
+    /** @psalm-mutation-free */
+    public function getChildNodeKeys(): array
     {
-        if ($this->type && !$visitor->traverse($this->type)) {
-            return false;
+        $result = ['type', 'signature_type', 'out_type'];
+        if ($this->default_type instanceof Union) {
+            $result []= 'default_type';
         }
-        if ($this->signature_type && !$visitor->traverse($this->signature_type)) {
-            return false;
-        }
-        if ($this->out_type && !$visitor->traverse($this->out_type)) {
-            return false;
-        }
-        if ($this->default_type instanceof Union && !$visitor->traverse($this->default_type)) {
-            return false;
-        }
-
-        return true;
-    }
-    public static function visitMutable(TypeVisitor $visitor, &$node, bool $cloned): bool
-    {
-        foreach (['type', 'signature_type', 'out_type', 'default_type'] as $key) {
-            if (!$node->{$key} instanceof TypeNode) {
-                continue;
-            }
-
-            $value = $node->{$key};
-            $value_orig = $value;
-            $result = $visitor->traverse($value);
-            if ($value !== $value_orig) {
-                if (!$cloned) {
-                    $node = clone $node;
-                    $cloned = true;
-                }
-                $node->{$key} = $value;
-            }
-
-            if (!$result) {
-                return false;
-            }
-        }
-
-        return true;
+        return $result;
     }
 
     /**
