@@ -713,7 +713,7 @@ class TypeCombiner
                         $codebase,
                         $overwrite_empty_array
                     );
-                    if ($candidate_property_type === $new_property_type) {
+                    if ($candidate_property_type === $new_property_type && $possibly_undefined) {
                         $new_property_type = $new_property_type->setPossiblyUndefined($possibly_undefined);
                     }
                     $combination->objectlike_entries[$candidate_property_name] = $new_property_type;
