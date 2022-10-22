@@ -636,6 +636,7 @@ abstract class Atomic implements TypeNode
                     $result = $visitor->traverse($type);
                     $changed = $changed || $type !== $type_orig;
                 }
+                unset($type);
             } elseif ($value instanceof TypeNode) {
                 $value_orig = $value;
                 $result = $visitor->traverse($value);

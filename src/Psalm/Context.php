@@ -432,13 +432,6 @@ final class Context
         $this->case_scope = null;
     }
 
-    public function __clone()
-    {
-        foreach ($this->constants as &$constant) {
-            $constant = clone $constant;
-        }
-    }
-
     /**
      * Updates the parent context, looking at the changes within a block and then applying those changes, where
      * necessary, to the parent context

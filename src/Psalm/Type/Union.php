@@ -337,6 +337,7 @@ final class Union implements TypeNode, Stringable
                 break;
             }
         }
+        unset($type);
 
         if ($changed) {
             $node = $node->setTypes($types);

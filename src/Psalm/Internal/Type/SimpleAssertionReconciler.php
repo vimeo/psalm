@@ -1625,6 +1625,7 @@ class SimpleAssertionReconciler extends Reconciler
                 }
             }
         }
+        unset($atomic_type);
         return $existing_var_type->setTypes($types);
     }
 

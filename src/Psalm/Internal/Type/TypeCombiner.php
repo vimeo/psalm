@@ -1354,6 +1354,7 @@ class TypeCombiner
                 foreach ($combination->objectlike_entries as &$objectlike_entry) {
                     $objectlike_entry = $objectlike_entry->setPossiblyUndefined(true);
                 }
+                unset($objectlike_entry);
             }
 
             if ($combination->objectlike_value_type

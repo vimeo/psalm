@@ -73,6 +73,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             foreach ($node->implements as &$interface) {
                 $interface = $this->resolveClassName($interface);
             }
+            unset($interface);
             $this->resolveAttrGroups($node);
             if (null !== $node->name) {
                 $this->addNamespacedName($node);
@@ -114,6 +115,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             foreach ($node->types as &$type) {
                 $type = $this->resolveClassName($type);
             }
+            unset($type);
         } elseif ($node instanceof Expr\FuncCall) {
             if ($node->name instanceof Name) {
                 $node->name = $this->resolveName($node->name, Stmt\Use_::TYPE_FUNCTION);
@@ -126,6 +128,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             foreach ($node->traits as &$trait) {
                 $trait = $this->resolveClassName($trait);
             }
+            unset($trait);
 
             foreach ($node->adaptations as $adaptation) {
                 if (null !== $adaptation->trait) {
@@ -136,6 +139,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
                     foreach ($adaptation->insteadof as &$insteadof) {
                         $insteadof = $this->resolveClassName($insteadof);
                     }
+                    unset($insteadof);
                 }
             }
         }

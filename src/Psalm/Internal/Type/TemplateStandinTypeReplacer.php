@@ -877,6 +877,7 @@ class TemplateStandinTypeReplacer
                     $t = reset($extra_types)->setIntersectionTypes(array_slice($extra_types, 1));
                 }
             }
+            unset($t);
 
             return $atomic_types;
         }

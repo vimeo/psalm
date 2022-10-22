@@ -510,6 +510,7 @@ final class MutableUnion implements TypeNode, Stringable
                 break;
             }
         }
+        unset($type);
 
         if ($changed) {
             $node->setTypes($node->types);

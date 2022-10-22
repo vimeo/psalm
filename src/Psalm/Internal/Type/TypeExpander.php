@@ -493,6 +493,7 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            unset($type_param);
             /** @psalm-suppress ArgumentTypeCoercion Psalm bug */
             $return_type = $return_type->replaceTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
@@ -512,6 +513,7 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            unset($property_type);
             $return_type = $return_type->setProperties($properties);
         } elseif ($return_type instanceof TList) {
             $return_type = $return_type->setTypeParam(self::expandUnion(
@@ -546,6 +548,7 @@ class TypeExpander
                     $throw_on_unresolvable_constant,
                 );
             }
+            unset($property_type);
             $return_type = $return_type->setProperties($properties);
         }
 
@@ -571,6 +574,7 @@ class TypeExpander
                         ));
                     }
                 }
+                unset($param);
             }
             $sub_return_type = $return_type->return_type;
             if ($sub_return_type) {

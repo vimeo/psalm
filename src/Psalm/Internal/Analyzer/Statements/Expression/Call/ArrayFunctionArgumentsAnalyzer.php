@@ -743,6 +743,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $array_arg_types
             );
         }
+        unset($closure_type);
     }
 
     /**

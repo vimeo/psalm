@@ -1377,6 +1377,7 @@ class ArgumentAnalyzer
                             }
                         }
                     }
+                    unset($input_atomic_type);
                 }
             }
 

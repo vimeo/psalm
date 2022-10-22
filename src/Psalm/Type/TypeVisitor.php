@@ -50,5 +50,6 @@ abstract class TypeVisitor
                 return;
             }
         }
+        unset($node);
     }
 }

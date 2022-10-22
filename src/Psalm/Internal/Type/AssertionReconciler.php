@@ -549,6 +549,7 @@ class AssertionReconciler extends Reconciler
                     $matching_atomic_types[] = $matching_atomic_type;
                 }
             }
+            unset($existing_type_part);
         }
         $existing_type = $existing_type->setTypes($existing_types);
 
@@ -786,6 +787,7 @@ class AssertionReconciler extends Reconciler
                     $type_1_param = $type_2_param;
                 }
             }
+            unset($type_1_param);
 
             $matching_atomic_type = $type_1_atomic->setProperties($type_1_properties);
             $atomic_comparison_results->type_coerced = true;
