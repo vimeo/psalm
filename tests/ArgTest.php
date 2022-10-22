@@ -312,6 +312,40 @@ class ArgTest extends TestCase
                     }
                 ',
             ],
+            'variadicCallbackArgsCountMatch' => [
+                '<?php
+                /**
+                 * @param callable(string, string):void $callback
+                 * @return void
+                 */
+                function caller($callback) {}
+
+                /**
+                 * @param string ...$bar
+                 * @return void
+                 */
+                function foo(...$bar) {}
+
+                caller("foo");',
+            ],
+            'variadicCallableArgsCountMatch' => [
+                '<?php
+                    /**
+                     * @param callable(string, ...int):void $callback
+                     * @return void
+                     */
+                    function var_caller($callback) {}
+
+                    /**
+                     * @param string $a
+                     * @param int $b
+                     * @param int $c
+                     * @return void
+                     */
+                    function foo($a, $b, $c) {}
+
+                    var_caller("foo");',
+            ],
         ];
     }
 
@@ -732,6 +766,41 @@ class ArgTest extends TestCase
                 );
                 ',
                 'error_message' => 'TooFewArguments',
+            ],
+            'callbackArgsCountMismatch' => [
+                '<?php
+                    /**
+                     * @param callable(string, string):void $callback
+                     * @return void
+                     */
+                    function caller($callback) {}
+
+                    /**
+                     * @param string $a
+                     * @return void
+                     */
+                    function foo($a) {}
+
+                    caller("foo");',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'callableArgsCountMismatch' => [
+                '<?php
+                    /**
+                     * @param callable(string):void $callback
+                     * @return void
+                     */
+                    function caller($callback) {}
+
+                    /**
+                     * @param string $a
+                     * @param string $b
+                     * @return void
+                     */
+                    function foo($a, $b) {}
+
+                    caller("foo");',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }
