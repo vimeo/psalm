@@ -4,9 +4,9 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
-use Psalm\Type\ImmutableTypeVisitor;
-use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
+use Psalm\Type\TypeNode;
+use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\Union;
 
 final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
@@ -164,10 +164,10 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     }
 
     /**
-     * @internal Should only be used by the TypeVisitor.
+     * @internal Should only be used by the MutableTypeVisitor.
      * @psalm-mutation-free
      */
-    public function visit(ImmutableTypeVisitor $visitor): bool
+    public function visit(TypeVisitor $visitor): bool
     {
         if ($this->type && !$visitor->traverse($this->type)) {
             return false;
@@ -184,7 +184,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 
         return true;
     }
-    public static function visitMutable(TypeVisitor $visitor, &$node, bool $cloned): bool
+    public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         foreach (['type', 'signature_type', 'out_type', 'default_type'] as $key) {
             if (!$node->{$key} instanceof TypeNode) {

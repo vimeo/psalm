@@ -3,14 +3,14 @@
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\ImmutableTypeVisitor;
-use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
+use Psalm\Type\TypeNode;
+use Psalm\Type\MutableTypeVisitor;
 
 /**
  * @internal
  */
-class ContainsStaticVisitor extends ImmutableTypeVisitor
+class ContainsStaticVisitor extends TypeVisitor
 {
     private bool $contains_static = false;
 
@@ -18,7 +18,7 @@ class ContainsStaticVisitor extends ImmutableTypeVisitor
     {
         if ($type instanceof TNamedObject && ($type->value === 'static' || $type->is_static)) {
             $this->contains_static = true;
-            return TypeVisitor::STOP_TRAVERSAL;
+            return self::STOP_TRAVERSAL;
         }
         return null;
     }

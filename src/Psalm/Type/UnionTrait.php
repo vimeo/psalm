@@ -1468,7 +1468,7 @@ trait UnionTrait
         return $this->types === [];
     }
 
-    public function visit(ImmutableTypeVisitor $visitor): bool
+    public function visit(TypeVisitor $visitor): bool
     {
         foreach ($this->types as $type) {
             if ($visitor->traverse($type) === false) {

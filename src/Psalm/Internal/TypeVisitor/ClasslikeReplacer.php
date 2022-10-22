@@ -7,14 +7,14 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TypeNode;
-use Psalm\Type\TypeVisitor;
+use Psalm\Type\MutableTypeVisitor;
 
 use function strtolower;
 
 /**
  * @internal
  */
-class ClasslikeReplacer extends TypeVisitor
+class ClasslikeReplacer extends MutableTypeVisitor
 {
     private string $old;
     private string $new;

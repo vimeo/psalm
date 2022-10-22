@@ -7,7 +7,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\ImmutableTypeVisitor;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
 
 use function strtolower;
@@ -15,7 +15,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeScanner extends ImmutableTypeVisitor
+class TypeScanner extends TypeVisitor
 {
     private Scanner $scanner;
 

@@ -8,48 +8,36 @@ abstract class TypeVisitor
     public const DONT_TRAVERSE_CHILDREN = 2;
 
     /**
-     * @template T as TypeNode
-     * @param T $type
-     * @param-out T $type
+     * @internal Can only be called by a TypeNode
+     *
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
-    abstract protected function enterNode(TypeNode &$type): ?int;
+    abstract protected function enterNode(TypeNode $type): ?int;
 
-    /**
-     * @template T as TypeNode
-     * @param T $node
-     * @param-out T $node
-     *
-     * @psalm-suppress ReferenceConstraintViolation, ConflictingReferenceConstraint
-     */
-    public function traverse(TypeNode &$node): bool
+    public function traverse(TypeNode $node): bool
     {
-        $nodeOrig = $node;
         $result = $this->enterNode($node);
 
-        if ($result === ImmutableTypeVisitor::DONT_TRAVERSE_CHILDREN) {
+        if ($result === self::DONT_TRAVERSE_CHILDREN) {
             return true;
         }
 
-        if ($result === ImmutableTypeVisitor::STOP_TRAVERSAL) {
+        if ($result === self::STOP_TRAVERSAL) {
             return false;
         }
 
-        return $node::visitMutable($this, $node, $node !== $nodeOrig);
+        return $node->visit($this);
     }
 
     /**
-     * @template T as array<TypeNode>
-     * @param T $nodes
-     * @param-out T $nodes
+     * @param non-empty-array<TypeNode> $nodes
      */
-    public function traverseArray(array &$nodes): void
+    public function traverseArray(array $nodes): void
     {
-        foreach ($nodes as &$node) {
+        foreach ($nodes as $node) {
             if ($this->traverse($node) === false) {
                 return;
             }
         }
-        unset($node);
     }
 }

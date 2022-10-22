@@ -8,14 +8,14 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TTrue;
-use Psalm\Type\ImmutableTypeVisitor;
-use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
+use Psalm\Type\TypeNode;
+use Psalm\Type\MutableTypeVisitor;
 
 /**
  * @internal
  */
-class ContainsLiteralVisitor extends ImmutableTypeVisitor
+class ContainsLiteralVisitor extends TypeVisitor
 {
     /**
      * @var bool
@@ -31,12 +31,12 @@ class ContainsLiteralVisitor extends ImmutableTypeVisitor
             || $type instanceof TFalse
         ) {
             $this->contains_literal = true;
-            return TypeVisitor::STOP_TRAVERSAL;
+            return self::STOP_TRAVERSAL;
         }
 
         if ($type instanceof TArray && $type->isEmptyArray()) {
             $this->contains_literal = true;
-            return TypeVisitor::STOP_TRAVERSAL;
+            return self::STOP_TRAVERSAL;
         }
 
         return null;

@@ -8,7 +8,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
-use Psalm\Type\TypeVisitor;
+use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\Union;
 
 use function array_values;
@@ -17,7 +17,7 @@ use function count;
 /**
  * @internal
  */
-class TypeLocalizer extends TypeVisitor
+class TypeLocalizer extends MutableTypeVisitor
 {
     /**
      * @var array<string, array<string, Union>>

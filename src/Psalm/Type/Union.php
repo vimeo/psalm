@@ -324,7 +324,7 @@ final class Union implements TypeNode, Stringable
         return $cloned;
     }
 
-    public static function visitMutable(TypeVisitor $visitor, &$node, bool $cloned): bool
+    public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         $result = true;
         $changed = false;

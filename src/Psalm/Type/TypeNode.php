@@ -4,12 +4,12 @@ namespace Psalm\Type;
 
 interface TypeNode
 {
-    /** @internal Should only be used by the ImmutableTypeVisitor */
-    public function visit(ImmutableTypeVisitor $visitor): bool;
+    /** @internal Should only be used by the TypeVisitor */
+    public function visit(TypeVisitor $visitor): bool;
     /**
      * @param static $node
      * @param-out static $node
-     * @internal Should only be used by the TypeVisitor
+     * @internal Should only be used by the MutableTypeVisitor
      */
-    public static function visitMutable(TypeVisitor $visitor, &$node, bool $cloned): bool;
+    public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool;
 }

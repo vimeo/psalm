@@ -597,7 +597,7 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    public function visit(ImmutableTypeVisitor $visitor): bool
+    public function visit(TypeVisitor $visitor): bool
     {
         foreach ($this->getChildNodeKeys() as $key) {
             $value = $this->{$key};
@@ -620,7 +620,7 @@ abstract class Atomic implements TypeNode
         return true;
     }
 
-    public static function visitMutable(TypeVisitor $visitor, &$node, bool $cloned): bool
+    public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         foreach ($node->getChildNodeKeys() as $key) {
             $value = $node->{$key};

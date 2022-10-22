@@ -6,13 +6,13 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
-use Psalm\Type\TypeVisitor;
+use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\Union;
 
 /**
  * @internal
  */
-class FromDocblockSetter extends TypeVisitor
+class FromDocblockSetter extends MutableTypeVisitor
 {
     private bool $from_docblock;
     public function __construct(bool $from_docblock)
@@ -39,7 +39,7 @@ class FromDocblockSetter extends TypeVisitor
         if ($type instanceof TTemplateParam
             && $type->as->isMixed()
         ) {
-            return TypeVisitor::DONT_TRAVERSE_CHILDREN;
+            return self::DONT_TRAVERSE_CHILDREN;
         }
 
         return null;
