@@ -144,10 +144,15 @@ class UnionTypeComparator
                     && is_array($container_type_part->params)
                     && $input_type_part instanceof TCallable
                 ) {
+                    $container_all_param_count = count($container_type_part->params);
                     $container_required_param_count = 0;
                     foreach ($container_type_part->params as $index => $container_param) {
                         if ($container_param->is_optional === false) {
                             $container_required_param_count = $index + 1;
+                        }
+
+                        if ($container_param->is_variadic === true) {
+                            $container_all_param_count = PHP_INT_MAX;
                         }
                     }
 
@@ -161,12 +166,16 @@ class UnionTypeComparator
                             if ($input_param->is_optional === false) {
                                 $input_required_param_count = $index + 1;
                             }
+
+                            if ($input_param->is_variadic === true) {
+                                $input_all_param_count = PHP_INT_MAX;
+                            }
                         }
                     }
 
                     // too few or too many non-optional params provided in callback
                     if ($container_required_param_count > $input_all_param_count
-                        || count($container_type_part->params) < $input_required_param_count
+                        || $container_all_param_count < $input_required_param_count
                     ) {
                         return false;
                     }
