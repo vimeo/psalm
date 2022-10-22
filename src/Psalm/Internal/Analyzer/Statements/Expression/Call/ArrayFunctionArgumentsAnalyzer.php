@@ -309,7 +309,7 @@ class ArrayFunctionArgumentsAnalyzer
                             $by_ref_type,
                             new Union(
                                 [
-                                    new TNonEmptyList(clone $arg_value_type),
+                                    new TNonEmptyList($arg_value_type),
                                 ]
                             )
                         );
@@ -321,7 +321,7 @@ class ArrayFunctionArgumentsAnalyzer
                                     new TNonEmptyArray(
                                         [
                                             $new_offset_type,
-                                            clone $arg_value_type
+                                            $arg_value_type
                                         ]
                                     ),
                                 ]

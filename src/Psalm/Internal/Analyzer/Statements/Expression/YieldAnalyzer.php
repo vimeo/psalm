@@ -137,9 +137,9 @@ class YieldAnalyzer
             $context->inside_call = false;
 
             if ($var_comment_type) {
-                $expression_type = clone $var_comment_type;
+                $expression_type = $var_comment_type;
             } elseif ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->value)) {
-                $expression_type = clone $stmt_var_type;
+                $expression_type = $stmt_var_type;
             } else {
                 $expression_type = Type::getMixed();
             }
@@ -166,7 +166,7 @@ class YieldAnalyzer
                 ? $codebase->classlike_storage_provider->get($classlike_storage->declaring_yield_fqcn)
                 : $classlike_storage;
                 
-            $yield_candidate_type = clone $classlike_storage->yield;
+            $yield_candidate_type = $classlike_storage->yield;
             $yield_candidate_type = !$yield_candidate_type->isMixed()
                 ? TypeExpander::expandUnion(
                     $codebase,
@@ -193,7 +193,7 @@ class YieldAnalyzer
                     $type_params = [];
 
                     foreach ($class_template_params as $type_map) {
-                        $type_params[] = clone array_values($type_map)[0];
+                        $type_params[] = array_values($type_map)[0];
                     }
 
                     $expression_atomic_type = new TGenericObject($expression_atomic_type->value, $type_params);
@@ -239,7 +239,7 @@ class YieldAnalyzer
                             if (!$atomic_return_type->type_params[2]->isVoid()) {
                                 $statements_analyzer->node_data->setType(
                                     $stmt,
-                                    clone $atomic_return_type->type_params[2]
+                                    $atomic_return_type->type_params[2]
                                 );
                             }
                         } else {

@@ -118,7 +118,7 @@ class OrAnalyzer
             foreach ($left_context->vars_in_scope as $var_id => $type) {
                 if (!isset($context->vars_in_scope[$var_id])) {
                     if (isset($left_context->assigned_var_ids[$var_id])) {
-                        $context->vars_in_scope[$var_id] = clone $type;
+                        $context->vars_in_scope[$var_id] = $type;
                     }
                 } else {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
@@ -335,7 +335,7 @@ class OrAnalyzer
             if ($var_id && isset($left_context->vars_in_scope[$var_id])) {
                 $left_inferred_reconciled = AssertionReconciler::reconcile(
                     new Truthy(),
-                    clone $left_context->vars_in_scope[$var_id],
+                    $left_context->vars_in_scope[$var_id],
                     '',
                     $statements_analyzer,
                     $context->inside_loop,

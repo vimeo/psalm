@@ -138,7 +138,7 @@ class TList extends Atomic
                 &&
                     isset($input_type->type_params[$offset])
             ) {
-                $input_type_param = clone $input_type->type_params[$offset];
+                $input_type_param = $input_type->type_params[$offset];
             } elseif ($input_type instanceof TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
@@ -150,7 +150,7 @@ class TList extends Atomic
                     continue;
                 }
 
-                $input_type_param = clone $input_type->type_param;
+                $input_type_param = $input_type->type_param;
             }
 
             $type_param = TemplateStandinTypeReplacer::replace(

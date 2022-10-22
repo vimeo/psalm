@@ -87,9 +87,9 @@ class UnsetAnalyzer
                                         $root_types [] =
                                             new TArray([
                                                 $atomic_root_type->previous_key_type
-                                                    ? clone $atomic_root_type->previous_key_type
+                                                    ? $atomic_root_type->previous_key_type
                                                     : new Union([new TArrayKey]),
-                                                clone $atomic_root_type->previous_value_type,
+                                                $atomic_root_type->previous_value_type,
                                             ])
                                         ;
                                     } else {

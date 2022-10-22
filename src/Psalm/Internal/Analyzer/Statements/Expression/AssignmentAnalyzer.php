@@ -547,8 +547,6 @@ class AssignmentAnalyzer
                 $data_flow_graph = $statements_analyzer->data_flow_graph;
 
                 if ($context->vars_in_scope[$var_id]->parent_nodes) {
-                    $context->vars_in_scope[$var_id] = clone $context->vars_in_scope[$var_id];
-
                     if ($data_flow_graph instanceof TaintFlowGraph
                         && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     ) {
@@ -1115,7 +1113,7 @@ class AssignmentAnalyzer
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
                         || $stmt_type->isNever()
                     ) {
-                        $statements_analyzer->node_data->setType($stmt, clone $by_ref_type);
+                        $statements_analyzer->node_data->setType($stmt, $by_ref_type);
                     }
 
                     return;
@@ -1129,7 +1127,7 @@ class AssignmentAnalyzer
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
             if (!$stmt_type || $stmt_type->isNever()) {
-                $statements_analyzer->node_data->setType($stmt, clone $by_ref_type);
+                $statements_analyzer->node_data->setType($stmt, $by_ref_type);
             }
 
             if ($var_not_in_scope && $stmt instanceof PhpParser\Node\Expr\Variable) {
@@ -1341,7 +1339,7 @@ class AssignmentAnalyzer
                     }
 
                     $array_value_type = $assign_value_atomic_type instanceof TArray
-                        ? clone $assign_value_atomic_type->type_params[1]
+                        ? $assign_value_atomic_type->type_params[1]
                         : Type::getMixed();
 
                     self::analyze(
@@ -1385,7 +1383,7 @@ class AssignmentAnalyzer
                     }
 
                     if ($assign_value_atomic_type instanceof TArray) {
-                        $new_assign_type = clone $assign_value_atomic_type->type_params[1];
+                        $new_assign_type = $assign_value_atomic_type->type_params[1];
 
                         if ($statements_analyzer->data_flow_graph
                             && $assign_value
@@ -1401,7 +1399,7 @@ class AssignmentAnalyzer
 
                         $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyArray;
                     } elseif ($assign_value_atomic_type instanceof TList) {
-                        $new_assign_type = clone $assign_value_atomic_type->type_param;
+                        $new_assign_type = $assign_value_atomic_type->type_param;
 
                         if ($statements_analyzer->data_flow_graph && $assign_value) {
                             ArrayFetchAnalyzer::taintArrayFetch(

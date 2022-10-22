@@ -311,7 +311,7 @@ class IfElseAnalyzer
         ) {
             $context->clauses = $else_context->clauses;
             foreach ($else_context->vars_in_scope as $var_id => $type) {
-                $context->vars_in_scope[$var_id] = clone $type;
+                $context->vars_in_scope[$var_id] = $type;
             }
 
             foreach ($pre_assignment_else_redefined_vars as $var_id => $reconciled_type) {

@@ -83,7 +83,7 @@ class TemplateInferredTypeReplacer
                 }
             } elseif ($atomic_type instanceof TTemplateParamClass) {
                 $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                    ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                         $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
                         $codebase
                     )
@@ -152,7 +152,7 @@ class TemplateInferredTypeReplacer
                                 || $offset_template_type instanceof TLiteralInt)
                             && isset($array_template_type->properties[$offset_template_type->value])
                         ) {
-                            $template_type = clone $array_template_type->properties[$offset_template_type->value];
+                            $template_type = $array_template_type->properties[$offset_template_type->value];
                         }
                     }
                 }
@@ -311,7 +311,7 @@ class TemplateInferredTypeReplacer
                                     $template_name = (string) $param_map[$key];
                                     if (isset($inferred_lower_bounds[$template_name][$template_class])) {
                                         $template_type
-                                            = clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                            = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                                                 $inferred_lower_bounds[$template_name][$template_class],
                                                 $codebase
                                             );
@@ -341,7 +341,7 @@ class TemplateInferredTypeReplacer
             return null;
         }
 
-        $template_type = clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+        $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
             $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
             $codebase
         );
@@ -349,13 +349,13 @@ class TemplateInferredTypeReplacer
         if ($atomic_type instanceof TTemplateKeyOf
             && TKeyOf::isViableTemplateType($template_type)
         ) {
-            return new TKeyOf(clone $template_type);
+            return new TKeyOf($template_type);
         }
 
         if ($atomic_type instanceof TTemplateValueOf
             && TValueOf::isViableTemplateType($template_type)
         ) {
-            return new TValueOf(clone $template_type);
+            return new TValueOf($template_type);
         }
 
         return null;
@@ -373,7 +373,7 @@ class TemplateInferredTypeReplacer
             return null;
         }
 
-        $template_type = clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+        $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
             $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
             $codebase
         );
@@ -399,7 +399,7 @@ class TemplateInferredTypeReplacer
         array $inferred_lower_bounds
     ): Union {
         $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-            ? clone TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+            ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                 $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
                 $codebase
             )
@@ -471,7 +471,7 @@ class TemplateInferredTypeReplacer
                     false
                 )
             ) {
-                $if_template_type = clone $if_type;
+                $if_template_type = $if_type;
 
                 $refined_template_result = clone $template_result;
 
@@ -501,7 +501,7 @@ class TemplateInferredTypeReplacer
                     false
                 )
             ) {
-                $else_template_type = clone $else_type;
+                $else_template_type = $else_type;
 
                 $refined_template_result = clone $template_result;
 

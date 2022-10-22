@@ -1080,8 +1080,6 @@ class MethodComparator
                 }
 
                 if ($new_bases) {
-                    $mapped_type = clone $mapped_type;
-
                     foreach ($new_bases as $new_base_class_name) {
                         self::transformTemplates(
                             $template_extended_params,

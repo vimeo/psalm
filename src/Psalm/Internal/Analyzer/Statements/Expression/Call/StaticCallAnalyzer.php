@@ -90,7 +90,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 } elseif ($context->self) {
                     if ($stmt->class->parts[0] === 'static' && isset($context->vars_in_scope['$this'])) {
                         $fq_class_name = (string) $context->vars_in_scope['$this'];
-                        $lhs_type = clone $context->vars_in_scope['$this'];
+                        $lhs_type = $context->vars_in_scope['$this'];
                     } else {
                         $fq_class_name = $context->self;
                     }
@@ -299,7 +299,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         if ($method_storage && $template_result) {
             foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
                 $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
-                    clone $conditionally_removed_taint,
+                    $conditionally_removed_taint,
                     $template_result,
                     $codebase
                 );

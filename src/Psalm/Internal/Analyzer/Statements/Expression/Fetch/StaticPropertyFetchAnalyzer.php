@@ -376,7 +376,7 @@ class StaticPropertyFetchAnalyzer
             if ($property->type) {
                 $context->vars_in_scope[$var_id] = TypeExpander::expandUnion(
                     $codebase,
-                    clone $property->type,
+                    $property->type,
                     $class_storage->name,
                     $class_storage->name,
                     $class_storage->parent_class
@@ -385,7 +385,7 @@ class StaticPropertyFetchAnalyzer
                 $context->vars_in_scope[$var_id] = Type::getMixed();
             }
 
-            $stmt_type = clone $context->vars_in_scope[$var_id];
+            $stmt_type = $context->vars_in_scope[$var_id];
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 

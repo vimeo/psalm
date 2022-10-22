@@ -193,7 +193,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($global_context) {
             foreach ($global_context->constants as $const_name => $var_type) {
                 if (!$context->hasVariable($const_name)) {
-                    $context->vars_in_scope[$const_name] = clone $var_type;
+                    $context->vars_in_scope[$const_name] = $var_type;
                 }
             }
         }
@@ -1053,7 +1053,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($function_param->type) {
-                $param_type = clone $function_param->type;
+                $param_type = $function_param->type;
 
                 try {
                     $param_type = TypeExpander::expandUnion(
@@ -1253,8 +1253,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($has_template_types) {
-                $substituted_type = clone $param_type;
-                if ($substituted_type->check(
+                if ($param_type->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,

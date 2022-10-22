@@ -65,9 +65,13 @@ trait UnionTrait
      */
     public function __construct(array $types, array $properties = [])
     {
+        foreach ($properties as $key => $value) {
+            $this->{$key} = $value;
+        }
+
         $keyed_types = [];
 
-        $from_docblock = $properties['from_docblock'] ?? false;
+        $from_docblock = $this->from_docblock ?? false;
         foreach ($types as $type) {
             $key = $type->getKey();
             $keyed_types[$key] = $type;
@@ -87,12 +91,9 @@ trait UnionTrait
             $from_docblock = $from_docblock || $type->from_docblock;
         }
 
-        $properties['from_docblock'] = $from_docblock;
-        
+        $this->from_docblock = $from_docblock;
         $this->types = $keyed_types;
-        foreach ($properties as $key => $value) {
-            $this->{$key} = $value;
-        }
+        $this->checked = false;
     }
 
     /**

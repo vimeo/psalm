@@ -1050,7 +1050,7 @@ class CallAnalyzer
                     } else {
                         $template_result->lower_bounds[$template_name][$defining_id] = [
                             new TemplateBound(
-                                clone $upper_bound->type
+                                $upper_bound->type
                             )
                         ];
                     }

@@ -455,7 +455,7 @@ class TryAnalyzer
                             $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
                         }
                     } elseif (isset($finally_context->vars_in_scope[$var_id])) {
-                        $context->vars_in_scope[$var_id] = clone $finally_context->vars_in_scope[$var_id];
+                        $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
                     }
                 }
             }

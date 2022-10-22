@@ -1595,7 +1595,7 @@ class ClassLikeNodeScanner
                 if ($doc_var_group_type) {
                     $property_storage->type = count($stmt->props) === 1
                         ? $doc_var_group_type
-                        : clone $doc_var_group_type;
+                        : $doc_var_group_type;
                 }
             }
 

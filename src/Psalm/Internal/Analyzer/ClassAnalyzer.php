@@ -750,11 +750,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         continue;
                     }
 
-                    $property_type = clone $property_storage->type;
+                    $property_type = $property_storage->type;
 
                     $guide_property_type = $guide_property_storage->type === null
                         ? Type::getMixed()
-                        : clone $guide_property_storage->type;
+                        : $guide_property_storage->type;
 
                     // Set upper bounds for all templates
                     $lower_bounds = [];
@@ -892,7 +892,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $type_params = [];
 
                     foreach ($class_template_params as $type_map) {
-                        $type_params[] = clone array_values($type_map)[0];
+                        $type_params[] = array_values($type_map)[0];
                     }
 
                     $this_object_type = new TGenericObject($this_object_type->value, $type_params);
@@ -1781,7 +1781,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $method_context = clone $class_context;
 
         foreach ($method_context->vars_in_scope as $context_var_id => $context_type) {
-            $method_context->vars_in_scope[$context_var_id] = clone $context_type;
+            $method_context->vars_in_scope[$context_var_id] = $context_type;
 
             if ($context_type->from_property && $stmt->name->name !== '__construct') {
                 $method_context->vars_in_scope[$context_var_id] =

@@ -314,7 +314,7 @@ class SimpleTypeInferer
                     && $existing_class_constants[$stmt->name->name]->type
                 ) {
                     if ($stmt->class->parts === ['self']) {
-                        return clone $existing_class_constants[$stmt->name->name]->type;
+                        return $existing_class_constants[$stmt->name->name]->type;
                     }
                 }
 
@@ -331,7 +331,7 @@ class SimpleTypeInferer
                     && isset($existing_class_constants[$stmt->name->name])
                     && $existing_class_constants[$stmt->name->name]->type
                 ) {
-                    return clone $existing_class_constants[$stmt->name->name]->type;
+                    return $existing_class_constants[$stmt->name->name]->type;
                 }
 
                 if (strtolower($stmt->name->name) === 'class') {
@@ -350,7 +350,7 @@ class SimpleTypeInferer
                         );
 
                         if ($foreign_class_constant) {
-                            return clone $foreign_class_constant;
+                            return $foreign_class_constant;
                         }
 
                         return null;
@@ -483,7 +483,7 @@ class SimpleTypeInferer
                     foreach ($array_type->getAtomicTypes() as $array_atomic_type) {
                         if ($array_atomic_type instanceof TKeyedArray) {
                             if (isset($array_atomic_type->properties[$dim_value])) {
-                                return clone $array_atomic_type->properties[$dim_value];
+                                return $array_atomic_type->properties[$dim_value];
                             }
 
                             return null;

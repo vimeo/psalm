@@ -82,7 +82,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             } elseif ($array_arg_atomic_type instanceof TList) {
                 $array_arg_atomic_type = new TArray([
                     Type::getInt(),
-                    clone $array_arg_atomic_type->type_param
+                    $array_arg_atomic_type->type_param
                 ]);
             }
         }

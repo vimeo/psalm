@@ -229,7 +229,7 @@ class StaticPropertyAssignmentAnalyzer
                     );
                 }
             } else {
-                $class_property_type = clone $class_property_type;
+                $class_property_type = $class_property_type;
             }
 
             if ($assignment_value_type->hasMixed()) {

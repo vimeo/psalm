@@ -222,6 +222,7 @@ final class MutableUnion implements TypeNode, Stringable
         $this->literal_int_types = [];
         $this->literal_string_types = [];
         $this->typed_class_strings = [];
+        $this->checked = false;
 
         $from_docblock = false;
         $keyed_types = [];

@@ -1125,7 +1125,7 @@ class TypeParser
             foreach ($intersection_types as $intersection_type) {
                 foreach ($intersection_type->properties as $property => $property_type) {
                     if (!array_key_exists($property, $properties)) {
-                        $properties[$property] = clone $property_type;
+                        $properties[$property] = $property_type;
                         continue;
                     }
 

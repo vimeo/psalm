@@ -465,11 +465,11 @@ class FunctionCallReturnTypeFetcher
                                 }
 
                                 if ($array_type instanceof TArray) {
-                                    return clone $array_type->type_params[1];
+                                    return $array_type->type_params[1];
                                 }
 
                                 if ($array_type instanceof TList) {
-                                    return clone $array_type->type_param;
+                                    return $array_type->type_param;
                                 }
                             } elseif ($first_arg_type->hasScalarType()
                                 && ($second_arg = ($call_args[1]->value ?? null))
@@ -599,7 +599,7 @@ class FunctionCallReturnTypeFetcher
 
         foreach ($function_storage->conditionally_removed_taints as $conditionally_removed_taint) {
             $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
-                clone $conditionally_removed_taint,
+                $conditionally_removed_taint,
                 $template_result,
                 $codebase
             );

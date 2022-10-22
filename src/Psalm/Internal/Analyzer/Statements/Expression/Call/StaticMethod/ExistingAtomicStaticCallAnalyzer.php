@@ -165,7 +165,7 @@ class ExistingAtomicStaticCallAnalyzer
             foreach ($self_class_storage->template_extended_params as $template_fq_class_name => $extended_types) {
                 foreach ($extended_types as $type_key => $extended_type) {
                     if (isset($found_generic_params[$type_key][$template_fq_class_name])) {
-                        $found_generic_params[$type_key][$template_fq_class_name] = clone $extended_type;
+                        $found_generic_params[$type_key][$template_fq_class_name] = $extended_type;
                         continue;
                     }
 
@@ -177,7 +177,7 @@ class ExistingAtomicStaticCallAnalyzer
                                 = $found_generic_params[$t->param_name][$t->defining_class];
                         } else {
                             $found_generic_params[$type_key][$template_fq_class_name]
-                                = clone $extended_type;
+                                = $extended_type;
                             break;
                         }
                     }
@@ -486,8 +486,6 @@ class ExistingAtomicStaticCallAnalyzer
         );
 
         if ($return_type_candidate) {
-            $return_type_candidate = clone $return_type_candidate;
-
             if ($template_result->template_types) {
                 $bindable_template_types = $return_type_candidate->getTemplateTypes();
 

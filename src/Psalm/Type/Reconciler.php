@@ -129,7 +129,7 @@ class Reconciler
             $cloned_referenceds = [];
             foreach ($existing_references as $reference => $referenced) {
                 if (!isset($cloned_referenceds[$referenced])) {
-                    $existing_types[$referenced] = clone $old_existing_types[$referenced];
+                    $existing_types[$referenced] = $old_existing_types[$referenced];
                     $cloned_referenceds[$referenced] = true;
                 }
                 $existing_types[$reference] = &$existing_types[$referenced];
@@ -210,7 +210,7 @@ class Reconciler
             $has_object_array_access = false;
 
             $result_type = isset($existing_types[$key])
-                ? clone $existing_types[$key]
+                ? $existing_types[$key]
                 : self::getValueForKey(
                     $codebase,
                     $key,
@@ -228,7 +228,7 @@ class Reconciler
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
-            $before_adjustment = $result_type ? clone $result_type : null;
+            $before_adjustment = $result_type ? $result_type : null;
 
             $failed_reconciliation = self::RECONCILIATION_OK;
 
@@ -266,7 +266,7 @@ class Reconciler
 
                     $result_type_candidate = AssertionReconciler::reconcile(
                         $new_type_part_part,
-                        $result_type ? clone $result_type : null,
+                        $result_type ? $result_type : null,
                         $key,
                         $statements_analyzer,
                         $inside_loop,
@@ -644,7 +644,7 @@ class Reconciler
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
-            return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;
+            return isset($existing_keys[$key_parts[0]]) ? $existing_keys[$key_parts[0]] : null;
         }
 
         $base_key = array_shift($key_parts);
@@ -670,7 +670,7 @@ class Reconciler
                 );
 
                 if ($class_constant) {
-                    $existing_keys[$base_key] = clone $class_constant;
+                    $existing_keys[$base_key] = $class_constant;
                 } else {
                     return null;
                 }
@@ -787,7 +787,7 @@ class Reconciler
                                     return null;
                                 }
                             } else {
-                                $new_base_type_candidate = clone $array_properties[$key_parts_key];
+                                $new_base_type_candidate = $array_properties[$key_parts_key];
                             }
                         }
 
@@ -861,7 +861,7 @@ class Reconciler
                                     if ($method_return_type) {
                                         $class_property_type = TypeExpander::expandUnion(
                                             $codebase,
-                                            clone $method_return_type,
+                                            $method_return_type,
                                             $declaring_class,
                                             $declaring_class,
                                             null
@@ -930,7 +930,7 @@ class Reconciler
             );
 
             if (isset($declaring_class_storage->pseudo_property_get_types['$' . $property_name])) {
-                return clone $declaring_class_storage->pseudo_property_get_types['$' . $property_name];
+                return $declaring_class_storage->pseudo_property_get_types['$' . $property_name];
             }
 
             return null;
@@ -959,7 +959,7 @@ class Reconciler
         if ($class_property_type) {
             return TypeExpander::expandUnion(
                 $codebase,
-                clone $class_property_type,
+                $class_property_type,
                 $declaring_class_storage->name,
                 $declaring_class_storage->name,
                 null
@@ -1129,15 +1129,15 @@ class Reconciler
                     || $base_atomic_type instanceof TList
                     || $base_atomic_type instanceof TClassStringMap
                 ) {
-                    $new_base_type = clone $existing_types[$base_key];
+                    $new_base_type = $existing_types[$base_key];
 
                     if ($base_atomic_type instanceof TArray) {
-                        $previous_key_type = clone $base_atomic_type->type_params[0];
-                        $previous_value_type = clone $base_atomic_type->type_params[1];
+                        $previous_key_type = $base_atomic_type->type_params[0];
+                        $previous_value_type = $base_atomic_type->type_params[1];
 
                         $base_atomic_type = new TKeyedArray(
                             [
-                                $array_key_offset => clone $result_type,
+                                $array_key_offset => $result_type,
                             ],
                             null,
                             false,
@@ -1146,11 +1146,11 @@ class Reconciler
                         );
                     } elseif ($base_atomic_type instanceof TList) {
                         $previous_key_type = Type::getInt();
-                        $previous_value_type = clone $base_atomic_type->type_param;
+                        $previous_value_type = $base_atomic_type->type_param;
 
                         $base_atomic_type = new TKeyedArray(
                             [
-                                $array_key_offset => clone $result_type,
+                                $array_key_offset => $result_type,
                             ],
                             null,
                             false,
@@ -1162,7 +1162,7 @@ class Reconciler
                         // do nothing
                     } else {
                         $properties = $base_atomic_type->properties;
-                        $properties[$array_key_offset] = clone $result_type;
+                        $properties[$array_key_offset] = $result_type;
                         $base_atomic_type = $base_atomic_type->setProperties($properties);
                     }
 

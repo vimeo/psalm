@@ -82,7 +82,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $call_arg_type = $statements_source->node_data->getType($call_arg->value);
 
                 if ($call_arg_type) {
-                    $array_arg_types[] = clone $call_arg_type;
+                    $array_arg_types[] = $call_arg_type;
                 } else {
                     $array_arg_types[] = Type::getMixed();
                     break;
@@ -134,7 +134,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     $closure_return_type = Type::getNull();
                 }
 
-                $mapping_return_type = clone $closure_return_type;
+                $mapping_return_type = $closure_return_type;
             } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\Array_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
@@ -195,7 +195,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($array_arg_atomic_type instanceof TKeyedArray && count($call_args) === 2) {
                 $atomic_type = new TKeyedArray(
                     array_map(
-                        static fn(Union $_): Union => clone $mapping_return_type,
+                        static fn(Union $_): Union => $mapping_return_type,
                         $array_arg_atomic_type->properties
                     ),
                     null,
@@ -416,7 +416,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                                     && count($atomic_type->properties) === 2
                                     && isset($atomic_type->properties[0])
                                 ) {
-                                    $lhs_instance_type = clone $atomic_type->properties[0];
+                                    $lhs_instance_type = $atomic_type->properties[0];
                                 }
                             }
                         }

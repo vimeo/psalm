@@ -460,14 +460,12 @@ final class Context
 
                 if (!$existing_type) {
                     if ($new_type) {
-                        $this->vars_in_scope[$var_id] = clone $new_type;
+                        $this->vars_in_scope[$var_id] = $new_type;
                         $updated_vars[$var_id] = true;
                     }
 
                     continue;
                 }
-
-                $existing_type = clone $existing_type;
 
                 // if the type changed within the block of statements, process the replacement
                 // also never allow ourselves to remove all types from a union
@@ -709,7 +707,7 @@ final class Context
 
                     $result_type = AssertionReconciler::reconcile(
                         $assertion,
-                        clone $new_type,
+                        $new_type,
                         null,
                         $statements_analyzer,
                         false,

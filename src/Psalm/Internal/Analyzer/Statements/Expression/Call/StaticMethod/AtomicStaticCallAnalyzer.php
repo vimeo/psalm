@@ -969,7 +969,7 @@ class AtomicStaticCallAnalyzer
         }
 
         if ($pseudo_method_storage->return_type) {
-            $return_type_candidate = clone $pseudo_method_storage->return_type;
+            $return_type_candidate = $pseudo_method_storage->return_type;
 
             $return_type_candidate = TypeExpander::expandUnion(
                 $statements_analyzer->getCodebase(),

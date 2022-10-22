@@ -635,7 +635,7 @@ class SimpleAssertionReconciler extends Reconciler
                             $properties = $array_atomic_type->properties;
                             for ($i = $prop_count; $i < $assertion->count; $i++) {
                                 $properties[$i]
-                                    = clone ($array_atomic_type->previous_value_type ?: Type::getMixed());
+                                    = ($array_atomic_type->previous_value_type ?: Type::getMixed());
                             }
                             $array_atomic_type = $array_atomic_type->setProperties($properties);
                             $existing_var_type->removeType('array');
@@ -1552,7 +1552,7 @@ class SimpleAssertionReconciler extends Reconciler
         array $suppressed_issues,
         int &$failed_reconciliation
     ): Union {
-        $new_var_type = clone $assertion->type;
+        $new_var_type = $assertion->type;
 
         if ($new_var_type->isSingle() && $new_var_type->getSingleAtomic() instanceof TClassConstant) {
             // Can't do assertion on const with non-literal type

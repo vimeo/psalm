@@ -308,7 +308,7 @@ class TernaryAnalyzer
         } elseif ($stmt_cond_type) {
             $if_return_type_reconciled = AssertionReconciler::reconcile(
                 new Truthy(),
-                clone $stmt_cond_type,
+                $stmt_cond_type,
                 '',
                 $statements_analyzer,
                 $context->inside_loop,

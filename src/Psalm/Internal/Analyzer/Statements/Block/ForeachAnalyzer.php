@@ -266,7 +266,7 @@ class ForeachAnalyzer
         $foreach_context = clone $context;
 
         foreach ($foreach_context->vars_in_scope as $context_var_id => $context_type) {
-            $foreach_context->vars_in_scope[$context_var_id] = clone $context_type;
+            $foreach_context->vars_in_scope[$context_var_id] = $context_type;
         }
 
         $foreach_context->inside_loop = true;
@@ -493,7 +493,7 @@ class ForeachAnalyzer
                     $always_non_empty_array = false;
                 }
 
-                $value_type = Type::combineUnionTypes($value_type, clone $iterator_atomic_type->type_params[1]);
+                $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
 
                 $key_type_part = $iterator_atomic_type->type_params[0];
 

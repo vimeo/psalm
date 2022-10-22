@@ -270,8 +270,8 @@ class ReturnTypeCollector
             if ($type instanceof TArray) {
                 [$key_type_param, $value_type_param] = $type->type_params;
 
-                $key_type = Type::combineUnionTypes(clone $key_type_param, $key_type);
-                $value_type = Type::combineUnionTypes(clone $value_type_param, $value_type);
+                $key_type = Type::combineUnionTypes($key_type_param, $key_type);
+                $value_type = Type::combineUnionTypes($value_type_param, $value_type);
             } elseif ($type instanceof TIterable
                 || $type instanceof TNamedObject
             ) {

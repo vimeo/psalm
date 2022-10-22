@@ -549,7 +549,7 @@ class NewAnalyzer extends CallAnalyzer
                 $fq_class_name,
                 array_values(
                     array_map(
-                        static fn($map) => clone reset($map),
+                        static fn($map) => reset($map),
                         $storage->template_types
                     )
                 ),

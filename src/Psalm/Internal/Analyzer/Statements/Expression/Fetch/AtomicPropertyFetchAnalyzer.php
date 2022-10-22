@@ -569,7 +569,7 @@ class AtomicPropertyFetchAnalyzer
             if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
                 $stmt_type = TypeExpander::expandUnion(
                     $codebase,
-                    clone $class_storage->pseudo_property_get_types['$' . $prop_name],
+                    $class_storage->pseudo_property_get_types['$' . $prop_name],
                     $class_storage->name,
                     $class_storage->name,
                     $class_storage->parent_class
@@ -1128,7 +1128,7 @@ class AtomicPropertyFetchAnalyzer
         if ($config->use_phpdoc_property_without_magic_or_parent
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
         ) {
-            $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+            $stmt_type = $class_storage->pseudo_property_get_types['$' . $prop_name];
 
             if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
                 if (!$lhs_type_part instanceof TGenericObject) {
@@ -1218,7 +1218,7 @@ class AtomicPropertyFetchAnalyzer
         } else {
             $class_property_type = TypeExpander::expandUnion(
                 $codebase,
-                clone $class_property_type,
+                $class_property_type,
                 $declaring_class_storage->name,
                 $declaring_class_storage->name,
                 $declaring_class_storage->parent_class

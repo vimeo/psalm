@@ -184,8 +184,8 @@ class NegatedAssertionReconciler extends Reconciler
                 [
                     $iterable->type_params[0]->hasMixed()
                         ? Type::getArrayKey()
-                        : clone $iterable->type_params[0],
-                    clone $iterable->type_params[1],
+                        : $iterable->type_params[0],
+                    $iterable->type_params[1],
                 ]
             ));
         } elseif ($assertion_type !== null && get_class($assertion_type) === TInt::class

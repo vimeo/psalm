@@ -2025,7 +2025,7 @@ class ClassLikes
 
                             if ($method_storage->params[$offset]->default_type) {
                                 if ($method_storage->params[$offset]->default_type instanceof Union) {
-                                    $default_type = clone $method_storage->params[$offset]->default_type;
+                                    $default_type = $method_storage->params[$offset]->default_type;
                                 } else {
                                     $default_type_atomic = ConstantTypeResolver::resolve(
                                         $codebase->classlikes,

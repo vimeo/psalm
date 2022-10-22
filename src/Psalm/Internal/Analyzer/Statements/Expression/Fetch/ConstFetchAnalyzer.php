@@ -88,7 +88,7 @@ class ConstFetchAnalyzer
                 );
 
                 if ($const_type) {
-                    $statements_analyzer->node_data->setType($stmt, clone $const_type);
+                    $statements_analyzer->node_data->setType($stmt, $const_type);
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(

@@ -108,7 +108,7 @@ class VariableFetchAnalyzer
                 return true;
             }
 
-            $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope['$this']);
+            $statements_analyzer->node_data->setType($stmt, $context->vars_in_scope['$this']);
 
             if ($codebase->store_node_types
                     && !$context->collect_initializations
@@ -150,7 +150,7 @@ class VariableFetchAnalyzer
                     $context->vars_possibly_in_scope[$var_name] = true;
                     $statements_analyzer->node_data->setType($stmt, Type::getMixed());
                 } else {
-                    $stmt_type = clone $context->vars_in_scope[$var_name];
+                    $stmt_type = $context->vars_in_scope[$var_name];
 
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -167,7 +167,7 @@ class VariableFetchAnalyzer
             $var_name = '$' . $stmt->name;
 
             if (isset($context->vars_in_scope[$var_name])) {
-                $type = clone $context->vars_in_scope[$var_name];
+                $type = $context->vars_in_scope[$var_name];
 
                 self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
 
@@ -181,7 +181,7 @@ class VariableFetchAnalyzer
             self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
 
             $statements_analyzer->node_data->setType($stmt, $type);
-            $context->vars_in_scope[$var_name] = clone $type;
+            $context->vars_in_scope[$var_name] = $type;
             $context->vars_possibly_in_scope[$var_name] = true;
 
             $codebase->analyzer->addNodeReference(
@@ -372,7 +372,7 @@ class VariableFetchAnalyzer
                 return true;
             }
         } else {
-            $stmt_type = clone $context->vars_in_scope[$var_name];
+            $stmt_type = $context->vars_in_scope[$var_name];
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 

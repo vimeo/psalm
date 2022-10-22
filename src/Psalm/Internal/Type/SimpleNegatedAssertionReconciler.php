@@ -155,7 +155,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($assertion instanceof NotInArray) {
-            $new_var_type = clone $assertion->type;
+            $new_var_type = $assertion->type;
 
             $intersection = Type::intersectUnionTypes(
                 $new_var_type,

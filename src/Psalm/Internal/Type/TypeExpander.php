@@ -221,7 +221,7 @@ class TypeExpander
         } elseif ($return_type instanceof TTemplateParam) {
             $new_as_type = self::expandUnion(
                 $codebase,
-                clone $return_type->as,
+                $return_type->as,
                 $self_class,
                 $static_class_type,
                 $parent_class,
@@ -295,7 +295,7 @@ class TypeExpander
 
                     if ($class_constant) {
                         if ($class_constant->isSingle()) {
-                            $class_constant = clone $class_constant;
+                            $class_constant = $class_constant;
 
                             $matching_constant_types = array_merge(
                                 array_values($class_constant->getAtomicTypes()),
@@ -636,7 +636,7 @@ class TypeExpander
                     $return_type->value,
                     array_values(
                         array_map(
-                            static fn($type_map) => clone reset($type_map),
+                            static fn($type_map) => reset($type_map),
                             $container_class_storage->template_types
                         )
                     )

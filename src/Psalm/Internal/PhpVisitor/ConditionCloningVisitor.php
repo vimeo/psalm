@@ -34,7 +34,7 @@ class ConditionCloningVisitor extends NodeVisitorAbstract
         $node_type = $this->type_provider->getType($origNode);
 
         if ($node_type) {
-            $this->type_provider->setType($node, clone $node_type);
+            $this->type_provider->setType($node, $node_type);
         }
 
         return $node;

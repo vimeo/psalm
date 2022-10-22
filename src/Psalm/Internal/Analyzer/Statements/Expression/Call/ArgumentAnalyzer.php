@@ -248,7 +248,7 @@ class ArgumentAnalyzer
 
             $param_type = Type::getMixed();
         } else {
-            $param_type = clone $function_param->type;
+            $param_type = $function_param->type;
         }
 
         $bindable_template_params = [];
@@ -386,7 +386,7 @@ class ArgumentAnalyzer
                     )) {
                         $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
                             new TemplateBound(
-                                clone $template_result->upper_bounds
+                                $template_result->upper_bounds
                                     [$template_type->param_name]
                                     [$template_type->defining_class]->type
                             )
@@ -394,7 +394,7 @@ class ArgumentAnalyzer
                     } else {
                         $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
                             new TemplateBound(
-                                clone $template_type->as
+                                $template_type->as
                             )
                         ];
                     }
@@ -488,11 +488,11 @@ class ArgumentAnalyzer
                         && $allow_named_args
                         && isset($unpacked_atomic_array->properties[$function_param->name])
                     ) {
-                        $arg_value_type = clone $unpacked_atomic_array->properties[$function_param->name];
+                        $arg_value_type = $unpacked_atomic_array->properties[$function_param->name];
                     } elseif ($unpacked_atomic_array->is_list
                         && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])
                     ) {
-                        $arg_value_type = clone $unpacked_atomic_array->properties[$unpacked_argument_offset];
+                        $arg_value_type = $unpacked_atomic_array->properties[$unpacked_argument_offset];
                     } elseif ($function_param->is_optional && $function_param->default_type) {
                         if ($function_param->default_type instanceof Union) {
                             $arg_value_type = $function_param->default_type;
@@ -696,7 +696,7 @@ class ArgumentAnalyzer
                     $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset]
                         = Type::combineUnionTypes(
                             $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset] ?? null,
-                            clone $input_type,
+                            $input_type,
                             $codebase
                         );
                 }

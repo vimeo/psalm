@@ -772,7 +772,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     }
 
                     if (!$template_type->isMixed()) {
-                        $template_type_copy = clone $template_type;
+                        $template_type_copy = $template_type;
 
                         $template_result = new TemplateResult(
                             $previous_extended ?: [],

@@ -533,8 +533,6 @@ class AssertionReconciler extends Reconciler
     ): ?Union {
         $matching_atomic_types = [];
 
-        $new_type = clone $new_type;
-
         $existing_types = $existing_type->getAtomicTypes();
         foreach ($new_type->getAtomicTypes() as $new_type_part) {
             foreach ($existing_types as &$existing_type_part) {

@@ -287,7 +287,7 @@ class TemplateStandinTypeReplacer
                             $include_first = false;
 
                             $replacement_type
-                                = clone $array_template_type->properties[$offset_template_type->value];
+                                = $array_template_type->properties[$offset_template_type->value];
 
                             foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
                                 $atomic_types[] = $replacement_atomic_type;
@@ -333,15 +333,15 @@ class TemplateStandinTypeReplacer
                         } elseif ($template_atomic instanceof TList) {
                             $template_atomic = Type::getInt();
                         } else {
-                            $template_atomic = clone $template_atomic->type_params[0];
+                            $template_atomic = $template_atomic->type_params[0];
                         }
                     } else {
                         if ($template_atomic instanceof TKeyedArray) {
                             $template_atomic = $template_atomic->getGenericValueType();
                         } elseif ($template_atomic instanceof TList) {
-                            $template_atomic = clone $template_atomic->type_param;
+                            $template_atomic = $template_atomic->type_param;
                         } else {
-                            $template_atomic = clone $template_atomic->type_params[1];
+                            $template_atomic = $template_atomic->type_params[1];
                         }
                     }
 
@@ -739,7 +739,7 @@ class TemplateStandinTypeReplacer
 
                             $existing_lower_bound = reset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]);
 
-                            $existing_lower_bound->type = clone $key_type;
+                            $existing_lower_bound->type = $key_type;
                         }
                     }
 

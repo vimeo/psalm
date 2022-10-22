@@ -284,7 +284,7 @@ class ReturnAnalyzer
                             }
 
                             $local_return_type = TemplateInferredTypeReplacer::replace(
-                                clone $local_return_type,
+                                $local_return_type,
                                 new TemplateResult([], $found_generic_params),
                                 $codebase
                             );

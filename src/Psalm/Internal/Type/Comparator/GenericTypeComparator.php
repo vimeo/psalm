@@ -76,7 +76,7 @@ class GenericTypeComparator
 
             if ($input_param->isNever()) {
                 if ($atomic_comparison_result_type_params !== null) {
-                    $atomic_comparison_result_type_params[$i] = clone $container_param;
+                    $atomic_comparison_result_type_params[$i] = $container_param;
                 }
 
                 continue;
@@ -139,7 +139,7 @@ class GenericTypeComparator
             ) {
                 if ($input_param->containsAnyLiteral()) {
                     if ($atomic_comparison_result_type_params !== null) {
-                        $atomic_comparison_result_type_params[$i] = clone $container_param;
+                        $atomic_comparison_result_type_params[$i] = $container_param;
                     }
                 } else {
                     if (!($container_type_params_covariant[$i] ?? false)

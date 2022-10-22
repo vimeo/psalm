@@ -93,7 +93,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 )
             ) {
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                $use_context->vars_in_scope['$this'] = clone $context->vars_in_scope['$this'];
+                $use_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
             } elseif ($context->self) {
                 $this_atomic = new TNamedObject($context->self, true);
 
@@ -103,7 +103,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         foreach ($context->vars_in_scope as $var => $type) {
             if (strpos($var, '$this->') === 0) {
-                $use_context->vars_in_scope[$var] = clone $type;
+                $use_context->vars_in_scope[$var] = $type;
             }
         }
 
@@ -155,7 +155,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 $use_context->vars_in_scope[$use_var_id] =
                     $context->hasVariable($use_var_id) && !$use->byRef
-                    ? clone $context->vars_in_scope[$use_var_id]
+                    ? $context->vars_in_scope[$use_var_id]
                     : Type::getMixed();
 
                 if ($use->byRef) {
@@ -168,7 +168,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
-                        $use_context->vars_in_scope[$var_id] = clone $type;
+                        $use_context->vars_in_scope[$var_id] = $type;
                         $use_context->vars_possibly_in_scope[$var_id] = true;
                     }
                 }
@@ -183,7 +183,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
             foreach ($short_closure_visitor->getUsedVariables() as $use_var_id => $_) {
                 if ($context->hasVariable($use_var_id)) {
-                    $use_context->vars_in_scope[$use_var_id] = clone $context->vars_in_scope[$use_var_id];
+                    $use_context->vars_in_scope[$use_var_id] = $context->vars_in_scope[$use_var_id];
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;

@@ -1055,7 +1055,7 @@ class InstancePropertyAssignmentAnalyzer
                 if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
                     $class_property_type = TypeExpander::expandUnion(
                         $codebase,
-                        clone $class_storage->pseudo_property_set_types['$' . $prop_name],
+                        $class_storage->pseudo_property_set_types['$' . $prop_name],
                         $fq_class_name,
                         $fq_class_name,
                         $class_storage->parent_class
@@ -1362,7 +1362,7 @@ class InstancePropertyAssignmentAnalyzer
 
             $class_property_type = TypeExpander::expandUnion(
                 $codebase,
-                clone $class_property_type,
+                $class_property_type,
                 $fq_class_name,
                 $lhs_type_part,
                 $declaring_class_storage->parent_class,
@@ -1489,7 +1489,7 @@ class InstancePropertyAssignmentAnalyzer
             return null;
         }
 
-        $property_type = clone $property_storage->type;
+        $property_type = $property_storage->type;
 
         $fleshed_out_type = !$property_type->isMixed()
             ? TypeExpander::expandUnion(

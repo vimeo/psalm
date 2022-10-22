@@ -43,8 +43,8 @@ class YieldTypeCollector extends NodeVisitorAbstract
                 $generator_type = new TGenericObject(
                     'Generator',
                     [
-                        $key_type ? clone $key_type : Type::getInt(),
-                        clone $value_type,
+                        $key_type ? $key_type : Type::getInt(),
+                        $value_type,
                         Type::getMixed(),
                         Type::getMixed()
                     ]

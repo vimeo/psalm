@@ -134,7 +134,7 @@ class PhpStormMetaScanner
 
                             if ($mapped_type = $map[$offset_arg_value] ?? null) {
                                 if ($mapped_type instanceof Union) {
-                                    return clone $mapped_type;
+                                    return $mapped_type;
                                 }
                             }
 
@@ -185,7 +185,7 @@ class PhpStormMetaScanner
                             && ($call_arg_type
                                 = $statements_analyzer->node_data->getType($call_args[$type_offset]->value))
                         ) {
-                            return clone $call_arg_type;
+                            return $call_arg_type;
                         }
 
                         return null;
@@ -237,7 +237,7 @@ class PhpStormMetaScanner
                                 return $array_atomic_type->type_param;
                             }
 
-                            return clone $array_atomic_type->type_params[1];
+                            return $array_atomic_type->type_params[1];
                         }
 
                         return null;
@@ -284,7 +284,7 @@ class PhpStormMetaScanner
 
                             if ($mapped_type = $map[$offset_arg_value] ?? null) {
                                 if ($mapped_type instanceof Union) {
-                                    return clone $mapped_type;
+                                    return $mapped_type;
                                 }
                             }
 
@@ -332,7 +332,7 @@ class PhpStormMetaScanner
                             && ($call_arg_type
                                 = $statements_analyzer->node_data->getType($call_args[$type_offset]->value))
                         ) {
-                            return clone $call_arg_type;
+                            return $call_arg_type;
                         }
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
@@ -381,7 +381,7 @@ class PhpStormMetaScanner
                                 return $array_atomic_type->type_param;
                             }
 
-                            return clone $array_atomic_type->type_params[1];
+                            return $array_atomic_type->type_params[1];
                         }
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(

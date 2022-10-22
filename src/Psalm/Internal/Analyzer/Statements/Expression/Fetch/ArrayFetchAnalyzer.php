@@ -170,7 +170,7 @@ class ArrayFetchAnalyzer
             && $stmt_var_type
             && !$stmt_var_type->hasClassStringMap()
         ) {
-            $stmt_type = clone $context->vars_in_scope[$keyed_array_var_id];
+            $stmt_type = $context->vars_in_scope[$keyed_array_var_id];
 
             $statements_analyzer->node_data->setType(
                 $stmt,
@@ -593,7 +593,7 @@ class ArrayFetchAnalyzer
 
                 if ($in_assignment) {
                     if ($replacement_type) {
-                        $array_access_type = Type::combineUnionTypes($array_access_type, clone $replacement_type);
+                        $array_access_type = Type::combineUnionTypes($array_access_type, $replacement_type);
                     } else {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAssignment(
@@ -1536,14 +1536,14 @@ class ArrayFetchAnalyzer
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
-                        clone $properties[$key_value->value]
+                        $properties[$key_value->value]
                     );
                 } elseif ($in_assignment) {
                     $properties[$key_value->value] = new Union([new TNever]);
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
-                        clone $properties[$key_value->value]
+                        $properties[$key_value->value]
                     );
                 } elseif ($type->previous_value_type) {
                     if ($codebase->config->ensure_array_string_offsets_exist) {
@@ -1568,9 +1568,9 @@ class ArrayFetchAnalyzer
                         );
                     }
 
-                    $properties[$key_value->value] = clone $type->previous_value_type;
+                    $properties[$key_value->value] = $type->previous_value_type;
 
-                    $array_access_type = clone $type->previous_value_type;
+                    $array_access_type = $type->previous_value_type;
                 } elseif ($hasMixed) {
                     $has_valid_offset = true;
 
@@ -1670,7 +1670,7 @@ class ArrayFetchAnalyzer
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
-                        clone $generic_params
+                        $generic_params
                     );
                 } else {
                     $array_access_type = Type::combineUnionTypes(

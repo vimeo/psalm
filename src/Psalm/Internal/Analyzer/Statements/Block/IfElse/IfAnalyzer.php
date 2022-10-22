@@ -394,7 +394,7 @@ class IfAnalyzer
 
         foreach ($assigned_in_conditional_var_ids as $var_id => $_) {
             if (isset($post_leaving_if_context->vars_in_scope[$var_id])) {
-                $post_if_context->vars_in_scope[$var_id] = clone $post_leaving_if_context->vars_in_scope[$var_id];
+                $post_if_context->vars_in_scope[$var_id] = $post_leaving_if_context->vars_in_scope[$var_id];
             }
         }
     }

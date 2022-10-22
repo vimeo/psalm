@@ -309,8 +309,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         foreach ($function_call_info->defined_constants as $const_name => $const_type) {
-            $context->constants[$const_name] = clone $const_type;
-            $context->vars_in_scope[$const_name] = clone $const_type;
+            $context->constants[$const_name] = $const_type;
+            $context->vars_in_scope[$const_name] = $const_type;
         }
 
         foreach ($function_call_info->global_variables as $var_id => $_) {

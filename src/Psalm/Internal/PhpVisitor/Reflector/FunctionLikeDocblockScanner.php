@@ -467,7 +467,7 @@ class FunctionLikeDocblockScanner
                                 $param_type_mapping[$token_body] = $template_name;
                             } else {
                                 $template_as_type = $param_storage->type
-                                    ? clone $param_storage->type
+                                    ? $param_storage->type
                                     : Type::getMixed();
 
                                 $storage->template_types[$template_name] = [
