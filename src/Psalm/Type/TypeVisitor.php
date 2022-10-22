@@ -14,6 +14,7 @@ abstract class TypeVisitor
      */
     abstract protected function enterNode(TypeNode $type): ?int;
 
+    /** @psalm-external-mutation-free */
     public function traverse(TypeNode $node): bool
     {
         $result = $this->enterNode($node);
@@ -30,6 +31,7 @@ abstract class TypeVisitor
     }
 
     /**
+     * @psalm-external-mutation-free
      * @param non-empty-array<TypeNode> $nodes
      */
     public function traverseArray(array $nodes): void

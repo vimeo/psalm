@@ -608,7 +608,8 @@ class NewAnalyzer extends CallAnalyzer
 
             $statements_analyzer->data_flow_graph->addNode($method_source);
 
-            $stmt_type->parent_nodes = [$method_source->id => $method_source];
+            $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
     }
 

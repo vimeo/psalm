@@ -165,7 +165,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 'arg'
             );
 
-            $filter_type->parent_nodes = [$function_return_sink->id => $function_return_sink];
+            return $filter_type->setParentNodes([$function_return_sink->id => $function_return_sink]);
         }
 
         return $filter_type;

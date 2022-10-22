@@ -57,6 +57,7 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
@@ -354,8 +355,9 @@ class ArgumentAnalyzer
                 }
 
                 if (!$arg_type_param) {
-                    $arg_type_param = Type::getMixed();
-                    $arg_type_param->parent_nodes = $arg_value_type->parent_nodes;
+                    $arg_type_param = new Union([
+                        new TMixed()
+                    ], ['parent_nodes' => $arg_value_type->parent_nodes]);
                 }
             }
 

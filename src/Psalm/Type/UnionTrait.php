@@ -68,6 +68,13 @@ trait UnionTrait
         foreach ($properties as $key => $value) {
             $this->{$key} = $value;
         }
+        $this->literal_int_types = [];
+        $this->literal_string_types = [];
+        $this->literal_float_types = [];
+        $this->typed_class_strings = [];
+        $this->checked = false;
+        $this->id = null;
+        $this->exact_id = null;
 
         $keyed_types = [];
 
@@ -93,7 +100,6 @@ trait UnionTrait
 
         $this->from_docblock = $from_docblock;
         $this->types = $keyed_types;
-        $this->checked = false;
     }
 
     /**

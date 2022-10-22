@@ -608,6 +608,7 @@ class ExistingAtomicStaticCallAnalyzer
 
             // only check the type locally if it's defined externally
             if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
+                /** @psalm-suppress UnusedMethodCall Actually generates issues */
                 $return_type_candidate->check(
                     $statements_analyzer,
                     new CodeLocation($statements_analyzer, $stmt),

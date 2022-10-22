@@ -97,12 +97,13 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
             $value_type = $value_type->freeze();
         }
 
+        $temp = Type::getMixed();
         ArrayFetchAnalyzer::taintArrayFetch(
             $statements_source,
             $first_arg,
             null,
             $value_type,
-            Type::getMixed()
+            $temp
         );
 
         return $value_type;

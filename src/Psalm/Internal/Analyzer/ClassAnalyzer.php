@@ -307,6 +307,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 null
             );
 
+            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
             $union->check(
                 $this,
                 new CodeLocation(
@@ -322,6 +323,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         if ($storage->template_extended_params) {
             foreach ($storage->template_extended_params as $type_map) {
                 foreach ($type_map as $atomic_type) {
+                    /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
                     $atomic_type->check(
                         $this,
                         new CodeLocation(
@@ -930,6 +932,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
+                /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
                 $fleshed_out_type->check(
                     $statements_source,
                     $property_type_location,

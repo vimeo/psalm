@@ -381,6 +381,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 }
 
                 $var_type = $var_comment->type;
+                /** @psalm-suppress UnusedMethodCall */
                 $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             }
         }

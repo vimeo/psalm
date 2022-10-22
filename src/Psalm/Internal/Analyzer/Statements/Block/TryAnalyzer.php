@@ -274,7 +274,7 @@ class TryAnalyzer
                                     && strtolower($fq_catch_class) !== 'throwable'
                                     && $codebase->interfaceExists($fq_catch_class)
                                     && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
-                                    ? [new TNamedObject('Throwable')]
+                                    ? ['Throwable' => new TNamedObject('Throwable')]
                                     : []
                             );
                         },
@@ -310,9 +310,11 @@ class TryAnalyzer
                 if ($statements_analyzer->data_flow_graph) {
                     $catch_var_node = DataFlowNode::getForAssignment($catch_var_id, $location);
 
-                    $catch_context->vars_in_scope[$catch_var_id]->parent_nodes = [
-                        $catch_var_node->id => $catch_var_node
-                    ];
+                    $catch_context->vars_in_scope[$catch_var_id] =
+                        $catch_context->vars_in_scope[$catch_var_id]->addParentNodes([
+                            $catch_var_node->id => $catch_var_node
+                        ])
+                    ;
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         $statements_analyzer->data_flow_graph->addPath(
@@ -411,6 +413,7 @@ class TryAnalyzer
                         );
                     }
                 }
+                unset($type);
             }
         }
 

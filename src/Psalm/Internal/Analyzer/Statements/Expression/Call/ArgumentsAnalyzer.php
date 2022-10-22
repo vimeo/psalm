@@ -684,12 +684,13 @@ class ArgumentsAnalyzer
             }
 
             if ($param_storage->type && ($method_id === 'array_map' || $method_id === 'array_filter')) {
+                $temp = Type::getMixed();
                 ArrayFetchAnalyzer::taintArrayFetch(
                     $statements_analyzer,
                     $args[1 - $argument_offset]->value,
                     null,
                     $param_storage->type,
-                    Type::getMixed()
+                    $temp
                 );
             }
         }

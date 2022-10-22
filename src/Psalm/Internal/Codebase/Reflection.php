@@ -305,6 +305,7 @@ class Reflection
 
             foreach ($callables[0]->params as $param) {
                 if ($param->type) {
+                    /** @psalm-suppress UnusedMethodCall */
                     $param->type->queueClassLikesForScanning($this->codebase);
                 }
             }
@@ -312,6 +313,7 @@ class Reflection
             $storage->setParams($callables[0]->params);
 
             $storage->return_type = $callables[0]->return_type;
+            /** @psalm-suppress UnusedMethodCall */
             $storage->return_type->queueClassLikesForScanning($this->codebase);
         } else {
             $params = $method->getParameters();

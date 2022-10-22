@@ -252,7 +252,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\StaticCall $stmt,
         MethodIdentifier $method_id,
         string $cased_method_id,
-        Union $return_type_candidate,
+        Union &$return_type_candidate,
         ?MethodStorage $method_storage,
         ?TemplateResult $template_result,
         ?Context $context = null
@@ -345,9 +345,9 @@ class StaticCallAnalyzer extends CallAnalyzer
                 [...$conditionally_removed_taints, ...$removed_taints]
             );
 
-            $return_type_candidate->parent_nodes[$assignment_node->id] = $assignment_node;
+            $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {
-            $return_type_candidate->parent_nodes = [$method_source->id => $method_source];
+            $return_type_candidate = $return_type_candidate->setParentNodes([$method_source->id => $method_source]);
         }
 
         if ($method_storage

@@ -212,6 +212,7 @@ class ForeachAnalyzer
                 }
 
                 if (isset($context->vars_in_scope[$var_comment->var_id])) {
+                    /** @psalm-suppress InaccessibleProperty We just created this type */
                     $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
                 }
 
@@ -388,6 +389,9 @@ class ForeachAnalyzer
 
     /**
      * @param PhpParser\Node\Stmt\Foreach_|PhpParser\Node\Expr\YieldFrom $stmt
+     * 
+     * @psalm-suppress ComplexMethod
+     * 
      * @return false|null
      */
     public static function checkIteratorType(

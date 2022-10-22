@@ -453,7 +453,7 @@ class InstancePropertyAssignmentAnalyzer
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $property_id,
         ClassLikeStorage $class_storage,
-        Union $assignment_value_type,
+        Union &$assignment_value_type,
         Context $context
     ): void {
         if (!$statements_analyzer->data_flow_graph) {
@@ -481,7 +481,8 @@ class InstancePropertyAssignmentAnalyzer
                 if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                     && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
-                    $context->vars_in_scope[$var_id]->parent_nodes = [];
+                    $context->vars_in_scope[$var_id] = 
+                        $context->vars_in_scope[$var_id]->setParentNodes([]);
                     return;
                 }
 
@@ -539,7 +540,7 @@ class InstancePropertyAssignmentAnalyzer
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
-                $assignment_value_type->parent_nodes = [];
+                $assignment_value_type = $assignment_value_type->setParentNodes([]);
                 return;
             }
 

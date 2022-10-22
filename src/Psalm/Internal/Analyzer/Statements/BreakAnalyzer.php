@@ -69,6 +69,7 @@ class BreakAnalyzer
                         $context->finally_scope->vars_in_scope[$var_id] = $type;
                     }
                 }
+                unset($type);
             }
         }
 

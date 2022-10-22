@@ -222,6 +222,7 @@ class FunctionCallReturnTypeFetcher
                             !$is_stubbed && // makes lookups or array_* functions quicker
                             !$config->isInProjectDirs($return_type_location->file_path)
                         ) {
+                            /** @psalm-suppress UnusedMethodCall Actually generates issues */
                             $return_type->check(
                                 $statements_analyzer,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -560,7 +561,7 @@ class FunctionCallReturnTypeFetcher
         PhpParser\Node\Expr\FuncCall $stmt,
         string $function_id,
         FunctionLikeStorage $function_storage,
-        Union $stmt_type,
+        Union &$stmt_type,
         TemplateResult $template_result,
         Context $context
     ): ?DataFlowNode {
@@ -636,9 +637,9 @@ class FunctionCallReturnTypeFetcher
                 [...$removed_taints, ...$conditionally_removed_taints]
             );
 
-            $stmt_type->parent_nodes[$assignment_node->id] = $assignment_node;
+            $stmt_type = $stmt_type->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {
-            $stmt_type->parent_nodes[$function_call_node->id] = $function_call_node;
+            $stmt_type = $stmt_type->addParentNodes([$function_call_node->id => $function_call_node]);
         }
 
         if ($function_storage->return_source_params

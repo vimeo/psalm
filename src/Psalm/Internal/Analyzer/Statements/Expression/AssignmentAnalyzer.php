@@ -74,9 +74,11 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -291,8 +293,7 @@ class AssignmentAnalyzer
 
             $parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
 
-            $assign_value_type = $comment_type;
-            $assign_value_type->parent_nodes = $parent_nodes;
+            $assign_value_type = $comment_type->setParentNodes($parent_nodes);
         } elseif (!$assign_value_type) {
             if ($assign_value) {
                 $assign_value_type = $statements_analyzer->node_data->getType($assign_value);
@@ -321,7 +322,7 @@ class AssignmentAnalyzer
                 $assignment_node = new DataFlowNode('unknown-origin', 'unknown origin', null);
             }
 
-            $assign_value_type->parent_nodes = [
+            $parent_nodes = [
                 $assignment_node->id => $assignment_node
             ];
 
@@ -329,9 +330,11 @@ class AssignmentAnalyzer
                 // Copy previous assignment's parent nodes inside a try. Since an exception could be thrown at any
                 // point this is a workaround to ensure that use of a variable also uses all previous assignments.
                 if (isset($context->vars_in_scope[$extended_var_id])) {
-                    $assign_value_type->parent_nodes += $context->vars_in_scope[$extended_var_id]->parent_nodes;
+                    $parent_nodes += $context->vars_in_scope[$extended_var_id]->parent_nodes;
                 }
             }
+
+            $assign_value_type = $assign_value_type->setParentNodes($parent_nodes);
         }
 
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
@@ -550,7 +553,7 @@ class AssignmentAnalyzer
                     if ($data_flow_graph instanceof TaintFlowGraph
                         && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                     ) {
-                        $context->vars_in_scope[$var_id]->parent_nodes = [];
+                        $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setParentNodes([]);
                     } else {
                         $var_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
 
@@ -719,6 +722,7 @@ class AssignmentAnalyzer
                 'by_ref' => $by_ref
             ]);
 
+            /** @psalm-suppress UnusedMethodCall This actually has the side effect of generating issues */
             $var_comment_type->check(
                 $statements_analyzer,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -787,7 +791,7 @@ class AssignmentAnalyzer
             }
 
             $parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes ?? [];
-            $var_comment_type->parent_nodes = $parent_nodes;
+            $var_comment_type = $var_comment_type->setParentNodes($parent_nodes);
 
             $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
         } catch (UnexpectedValueException $e) {
@@ -805,7 +809,7 @@ class AssignmentAnalyzer
      * @param  array<string> $added_taints
      */
     private static function taintAssignment(
-        Union $type,
+        Union &$type,
         DataFlowGraph $data_flow_graph,
         string $var_id,
         CodeLocation $var_location,
@@ -828,7 +832,7 @@ class AssignmentAnalyzer
             );
         }
 
-        $type->parent_nodes = $new_parent_nodes;
+        $type = $type->setParentNodes($new_parent_nodes);
     }
 
     public static function analyzeAssignmentOperation(
@@ -995,7 +999,8 @@ class AssignmentAnalyzer
 
         $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
 
-        $context->vars_in_scope[$lhs_var_id]->parent_nodes[$lhs_node->id] = $lhs_node;
+        $context->vars_in_scope[$lhs_var_id] = 
+            $context->vars_in_scope[$lhs_var_id]->addParentNodes([$lhs_node->id => $lhs_node]);
 
         if ($stmt->var instanceof ArrayDimFetch && $stmt->var->dim !== null) {
             // Analyze offset so that variables in the offset get marked as used
@@ -1246,12 +1251,13 @@ class AssignmentAnalyzer
                                 $keyed_array_var_id = $assign_value_id . '[\'' . $offset_value . '\']';
                             }
 
+                            $temp = Type::getString((string) $offset_value);
                             ArrayFetchAnalyzer::taintArrayFetch(
                                 $statements_analyzer,
                                 $assign_value,
                                 $keyed_array_var_id,
                                 $value_type,
-                                Type::getString((string)$offset_value)
+                                $temp
                             );
                         }
 
@@ -1388,12 +1394,13 @@ class AssignmentAnalyzer
                         if ($statements_analyzer->data_flow_graph
                             && $assign_value
                         ) {
+                            $temp = Type::getArrayKey();
                             ArrayFetchAnalyzer::taintArrayFetch(
                                 $statements_analyzer,
                                 $assign_value,
                                 null,
                                 $new_assign_type,
-                                Type::getArrayKey()
+                                $temp
                             );
                         }
 
@@ -1402,12 +1409,13 @@ class AssignmentAnalyzer
                         $new_assign_type = $assign_value_atomic_type->type_param;
 
                         if ($statements_analyzer->data_flow_graph && $assign_value) {
+                            $temp = Type::getArrayKey();
                             ArrayFetchAnalyzer::taintArrayFetch(
                                 $statements_analyzer,
                                 $assign_value,
                                 null,
                                 $new_assign_type,
-                                Type::getArrayKey()
+                                $temp
                             );
                         }
 
@@ -1434,12 +1442,13 @@ class AssignmentAnalyzer
                         }
 
                         if ($statements_analyzer->data_flow_graph && $assign_value && $new_assign_type) {
+                            $temp = Type::getArrayKey();
                             ArrayFetchAnalyzer::taintArrayFetch(
                                 $statements_analyzer,
                                 $assign_value,
                                 null,
                                 $new_assign_type,
-                                Type::getArrayKey()
+                                $temp
                             );
                         }
 
@@ -1524,14 +1533,17 @@ class AssignmentAnalyzer
                                 $var_location
                             );
 
-                            $context->vars_in_scope[$list_var_id]->parent_nodes = [
-                                $assignment_node->id => $assignment_node
-                            ];
+                            $context->vars_in_scope[$list_var_id] =
+                                $context->vars_in_scope[$list_var_id]->setParentNodes([
+                                    $assignment_node->id => $assignment_node
+                                ])
+                            ;
                         } else {
                             if ($data_flow_graph instanceof TaintFlowGraph
                                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                             ) {
-                                $context->vars_in_scope[$list_var_id]->parent_nodes = [];
+                                $context->vars_in_scope[$list_var_id] = 
+                                    $context->vars_in_scope[$list_var_id]->setParentNodes([]);
                             } else {
                                 $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
 

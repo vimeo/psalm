@@ -101,6 +101,7 @@ class StaticAnalyzer
 
                         $var_comment_type = $var_comment_type->setFromDocblock();
 
+                        /** @psalm-suppress UnusedMethodCall */
                         $var_comment_type->check(
                             $statements_analyzer,
                             new CodeLocation($statements_analyzer->getSource(), $var),

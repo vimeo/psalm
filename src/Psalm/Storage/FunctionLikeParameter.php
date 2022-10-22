@@ -191,6 +191,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
                 continue;
             }
 
+            /** @var TypeNode */
             $value = $node->{$key};
             $value_orig = $value;
             $result = $visitor->traverse($value);

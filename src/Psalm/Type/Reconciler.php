@@ -309,11 +309,11 @@ class Reconciler
                 || $statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
-                    $result_type->parent_nodes = $before_adjustment->parent_nodes;
+                    $result_type = $result_type->setParentNodes($before_adjustment->parent_nodes);
                 } elseif (!$did_type_exist && $code_location) {
-                    $result_type->parent_nodes = $statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
+                    $result_type = $result_type->setParentNodes($statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
                         $key
-                    );
+                    ));
                 }
             }
 

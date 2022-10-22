@@ -410,7 +410,7 @@ class ArrayAssignmentAnalyzer
     private static function taintArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $expr,
-        Union $stmt_type,
+        Union &$stmt_type,
         Union $child_stmt_type,
         ?string $var_var_id,
         array $key_values
@@ -430,7 +430,7 @@ class ArrayAssignmentAnalyzer
 
             $old_parent_nodes = $stmt_type->parent_nodes;
 
-            $stmt_type->parent_nodes = [$parent_node->id => $parent_node];
+            $stmt_type = $stmt_type->setParentNodes([$parent_node->id => $parent_node]);
 
             foreach ($old_parent_nodes as $old_parent_node) {
                 $statements_analyzer->data_flow_graph->addPath(
@@ -929,14 +929,18 @@ class ArrayAssignmentAnalyzer
             }
 
             if ($statements_analyzer->data_flow_graph) {
+                $t = $statements_analyzer->node_data->getType($child_stmt->var) ?? Type::getMixed();
                 self::taintArrayAssignment(
                     $statements_analyzer,
                     $child_stmt,
-                    $statements_analyzer->node_data->getType($child_stmt->var) ?? Type::getMixed(),
+                    $t,
                     $new_child_type,
                     $parent_array_var_id,
                     $child_stmt->dim ? self::getDimKeyValues($statements_analyzer, $child_stmt->dim) : [],
                 );
+                if ($statements_analyzer->node_data->getType($child_stmt->var)) {
+                    $statements_analyzer->node_data->setType($child_stmt->var, $t);
+                }
             }
         }
     }

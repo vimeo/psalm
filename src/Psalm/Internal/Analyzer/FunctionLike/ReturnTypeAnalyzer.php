@@ -785,6 +785,7 @@ class ReturnTypeAnalyzer
                 $parent_class
             );
 
+            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
             $fleshed_out_return_type->check(
                 $function_like_analyzer,
                 $storage->return_type_location,

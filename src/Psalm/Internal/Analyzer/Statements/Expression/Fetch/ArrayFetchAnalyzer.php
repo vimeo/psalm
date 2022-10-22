@@ -172,11 +172,6 @@ class ArrayFetchAnalyzer
         ) {
             $stmt_type = $context->vars_in_scope[$keyed_array_var_id];
 
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                $stmt_type
-            );
-
             self::taintArrayFetch(
                 $statements_analyzer,
                 $stmt->var,
@@ -184,6 +179,11 @@ class ArrayFetchAnalyzer
                 $stmt_type,
                 $used_key_type,
                 $context
+            );
+
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                $stmt_type
             );
 
             return true;
@@ -363,8 +363,8 @@ class ArrayFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $var,
         ?string $keyed_array_var_id,
-        Union $stmt_type,
-        Union $offset_type,
+        Union &$stmt_type,
+        Union &$offset_type,
         ?Context $context = null
     ): void {
         if ($statements_analyzer->data_flow_graph
@@ -374,7 +374,7 @@ class ArrayFetchAnalyzer
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
-                $stmt_var_type->parent_nodes = [];
+                $statements_analyzer->node_data->setType($var, $stmt_var_type->setParentNodes([]));
                 return;
             }
 
@@ -445,10 +445,10 @@ class ArrayFetchAnalyzer
                 }
             }
 
-            $stmt_type->parent_nodes = [$new_parent_node->id => $new_parent_node];
+            $stmt_type = $stmt_type->setParentNodes([$new_parent_node->id => $new_parent_node]);
 
             if ($array_key_node) {
-                $offset_type->parent_nodes = [$array_key_node->id => $array_key_node];
+                $offset_type = $offset_type->setParentNodes([$array_key_node->id => $array_key_node]);
             }
         }
     }
@@ -1070,9 +1070,9 @@ class ArrayFetchAnalyzer
                     );
                 }
 
-                $stmt_var_type->parent_nodes = [
+                $statements_analyzer->node_data->setType($stmt->var, $stmt_var_type->setParentNodes([
                     $new_parent_node->id => $new_parent_node
-                ];
+                ]));
             }
         }
 

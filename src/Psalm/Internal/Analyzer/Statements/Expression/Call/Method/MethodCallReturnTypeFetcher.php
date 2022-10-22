@@ -235,6 +235,7 @@ class MethodCallReturnTypeFetcher
 
                 // only check the type locally if it's defined externally
                 if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
+                    /** @psalm-suppress UnusedMethodCall Actually generates issues */
                     $return_type_candidate->check(
                         $statements_analyzer,
                         new CodeLocation($statements_analyzer, $stmt),
@@ -277,7 +278,7 @@ class MethodCallReturnTypeFetcher
      */
     public static function taintMethodCallResult(
         StatementsAnalyzer $statements_analyzer,
-        Union $return_type_candidate,
+        Union &$return_type_candidate,
         PhpParser\Node $name_expr,
         PhpParser\Node\Expr $var_expr,
         array $args,
@@ -443,7 +444,7 @@ class MethodCallReturnTypeFetcher
                     }
                 }
 
-                $return_type_candidate->parent_nodes = $method_call_nodes;
+                $return_type_candidate = $return_type_candidate->setParentNodes($method_call_nodes);
 
                 $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
                     $var_nodes
@@ -482,9 +483,9 @@ class MethodCallReturnTypeFetcher
 
                 $statements_analyzer->data_flow_graph->addNode($method_call_node);
 
-                $return_type_candidate->parent_nodes = [
+                $return_type_candidate = $return_type_candidate->setParentNodes([
                     $method_call_node->id => $method_call_node
-                ];
+                ]);
             }
         } else {
             $method_call_node = DataFlowNode::getForMethodReturn(
@@ -520,9 +521,9 @@ class MethodCallReturnTypeFetcher
 
             $statements_analyzer->data_flow_graph->addNode($method_call_node);
 
-            $return_type_candidate->parent_nodes = [
+            $return_type_candidate = $return_type_candidate->setParentNodes([
                 $method_call_node->id => $method_call_node
-            ];
+            ]);
         }
 
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {

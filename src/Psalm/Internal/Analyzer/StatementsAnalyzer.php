@@ -1002,7 +1002,8 @@ class StatementsAnalyzer extends SourceAnalyzer
         $stmt_type = $this->node_data->getType($stmt);
 
         if ($stmt_type) {
-            $stmt_type->parent_nodes[$use_node->id] = $use_node;
+            $stmt_type = $stmt_type->addParentNodes([$use_node->id => $use_node]);
+            $this->node_data->setType($stmt, $stmt_type);
         }
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {

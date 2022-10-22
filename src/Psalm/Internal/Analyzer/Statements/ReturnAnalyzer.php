@@ -132,7 +132,7 @@ class ReturnAnalyzer
                 }
 
                 if (isset($context->vars_in_scope[$var_comment->var_id])) {
-                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                    $comment_type = $comment_type->setParentNodes($context->vars_in_scope[$var_comment->var_id]->parent_nodes);
                 }
 
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
@@ -165,7 +165,7 @@ class ReturnAnalyzer
                 $stmt_type = $var_comment_type;
 
                 if ($stmt_expr_type && $stmt_expr_type->parent_nodes) {
-                    $stmt_type->parent_nodes = $stmt_expr_type->parent_nodes;
+                    $stmt_type = $stmt_type->setParentNodes($stmt_expr_type->parent_nodes);
                 }
 
                 $statements_analyzer->node_data->setType($stmt, $var_comment_type);

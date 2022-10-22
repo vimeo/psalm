@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function assert;
@@ -33,7 +34,7 @@ class EncapsulatedStringAnalyzer
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
     ): bool {
-        $stmt_type = Type::getString();
+        $stmt_type = new Union([new TString()]);
 
         $non_empty = false;
 
@@ -90,6 +91,7 @@ class EncapsulatedStringAnalyzer
                     $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
                     $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
+                    /** @psalm-suppress InaccessibleProperty We just created this type */
                     $stmt_type->parent_nodes[$new_parent_node->id] = $new_parent_node;
 
                     $codebase = $statements_analyzer->getCodebase();

@@ -286,6 +286,7 @@ class Scanner
 
                 foreach ($public_mapped_properties as $public_mapped_property) {
                     $property_type = Type::parseString($public_mapped_property);
+                    /** @psalm-suppress UnusedMethodCall */
                     $property_type->queueClassLikesForScanning(
                         $this->codebase,
                         null,
