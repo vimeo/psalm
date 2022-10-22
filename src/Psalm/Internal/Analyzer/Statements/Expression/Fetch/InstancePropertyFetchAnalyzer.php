@@ -425,6 +425,9 @@ class InstancePropertyFetchAnalyzer
                         $class_storage,
                         $in_assignment
                     );
+                    
+                    $context->vars_in_scope[$var_id] = $stmt_type;
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                     $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
                         $property_id,

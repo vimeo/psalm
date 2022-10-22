@@ -181,6 +181,11 @@ class ArrayFetchAnalyzer
                 $context
             );
 
+            if ($stmt->dim && $statements_analyzer->node_data->getType($stmt->dim)) {
+                $statements_analyzer->node_data->setType($stmt->dim, $used_key_type);
+            }
+
+            $context->vars_in_scope[$keyed_array_var_id] = $stmt_type;
             $statements_analyzer->node_data->setType(
                 $stmt,
                 $stmt_type
@@ -311,7 +316,6 @@ class ArrayFetchAnalyzer
 
         if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))) {
             $stmt_type = Type::getMixed();
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
         } else {
             if ($stmt_type->possibly_undefined
                 && !$context->inside_isset
@@ -329,19 +333,10 @@ class ArrayFetchAnalyzer
             }
 
             $stmt_type = $stmt_type->setPossiblyUndefined(false);
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
 
         if ($context->inside_isset && $dim_var_id && $new_offset_type && !$new_offset_type->isUnionEmpty()) {
             $context->vars_in_scope[$dim_var_id] = $new_offset_type;
-        }
-
-        if ($keyed_array_var_id && !$context->inside_isset && $can_store_result) {
-            $context->vars_in_scope[$keyed_array_var_id] = $stmt_type;
-            $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
-
-            // reference the variable too
-            $context->hasVariable($keyed_array_var_id);
         }
 
         self::taintArrayFetch(
@@ -352,6 +347,20 @@ class ArrayFetchAnalyzer
             $used_key_type,
             $context
         );
+
+        $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+        if ($stmt->dim && $statements_analyzer->node_data->getType($stmt->dim)) {
+            $statements_analyzer->node_data->setType($stmt->dim, $used_key_type);
+        }
+
+        if ($keyed_array_var_id && !$context->inside_isset && $can_store_result) {
+            $context->vars_in_scope[$keyed_array_var_id] = $stmt_type;
+            $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
+
+            // reference the variable too
+            $context->hasVariable($keyed_array_var_id);
+        }
 
         return true;
     }

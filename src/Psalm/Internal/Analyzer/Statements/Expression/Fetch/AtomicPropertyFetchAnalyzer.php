@@ -592,8 +592,6 @@ class AtomicPropertyFetchAnalyzer
                     );
                 }
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
                 self::processTaints(
                     $statements_analyzer,
                     $stmt,
@@ -603,6 +601,8 @@ class AtomicPropertyFetchAnalyzer
                     $in_assignment,
                     $context
                 );
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                 return false;
             }
@@ -1147,8 +1147,6 @@ class AtomicPropertyFetchAnalyzer
                 );
             }
 
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
             self::processTaints(
                 $statements_analyzer,
                 $stmt,
@@ -1158,6 +1156,8 @@ class AtomicPropertyFetchAnalyzer
                 $in_assignment,
                 $context
             );
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             return;
         }
