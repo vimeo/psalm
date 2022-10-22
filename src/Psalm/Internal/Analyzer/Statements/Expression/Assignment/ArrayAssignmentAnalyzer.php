@@ -777,20 +777,6 @@ class ArrayAssignmentAnalyzer
                 $child_stmt_type
             );
 
-            $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
-
-            if ($root_var_id) {
-                if (!$parent_var_id) {
-                    $rooted_parent_id = $root_var_id;
-                    $root_type = $array_type;
-                } else {
-                    $rooted_parent_id = $parent_var_id;
-                }
-
-                $context->vars_in_scope[$rooted_parent_id] = $array_type;
-                $context->possibly_assigned_var_ids[$rooted_parent_id] = true;
-            }
-
             if ($is_last) {
                 // we need this slight hack as the type we're putting it has to be
                 // different from the type we're getting out
@@ -815,6 +801,20 @@ class ArrayAssignmentAnalyzer
                         $offset_type !== null ? [$offset_type] : []
                     );
                 }
+            }
+
+            $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
+
+            if ($root_var_id) {
+                if (!$parent_var_id) {
+                    $rooted_parent_id = $root_var_id;
+                    $root_type = $array_type;
+                } else {
+                    $rooted_parent_id = $parent_var_id;
+                }
+
+                $context->vars_in_scope[$rooted_parent_id] = $array_type;
+                $context->possibly_assigned_var_ids[$rooted_parent_id] = true;
             }
 
             $current_type = $child_stmt_type;
