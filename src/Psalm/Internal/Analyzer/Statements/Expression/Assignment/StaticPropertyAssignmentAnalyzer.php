@@ -228,8 +228,6 @@ class StaticPropertyAssignmentAnalyzer
                         $source_analyzer->inferred_property_types[$prop_name_name] ?? null
                     );
                 }
-            } else {
-                $class_property_type = $class_property_type;
             }
 
             if ($assignment_value_type->hasMixed()) {

@@ -186,8 +186,6 @@ class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
-                $return_type_candidate = $return_type_candidate;
-
                 if ($template_result->lower_bounds) {
                     $return_type_candidate = TypeExpander::expandUnion(
                         $codebase,

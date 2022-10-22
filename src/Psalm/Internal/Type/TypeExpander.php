@@ -295,8 +295,6 @@ class TypeExpander
 
                     if ($class_constant) {
                         if ($class_constant->isSingle()) {
-                            $class_constant = $class_constant;
-
                             $matching_constant_types = array_merge(
                                 array_values($class_constant->getAtomicTypes()),
                                 $matching_constant_types

@@ -264,6 +264,9 @@ final class Union implements TypeNode, Stringable
      */
     public function addParentNodes(array $parent_nodes): self
     {
+        if (!$parent_nodes) {
+            return $this;
+        }
         $cloned = clone $this;
         $cloned->parent_nodes += $parent_nodes;
         return $cloned;

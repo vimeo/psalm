@@ -1052,6 +1052,46 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
+
+            $parent_nodes = [];
+            if ($statements_analyzer->data_flow_graph
+                && $function_param->location
+            ) {
+                //don't add to taint flow graph if the type can't transmit taints
+                if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                    || $function_param->type === null
+                    || !$function_param->type->isSingle()
+                    || (!$function_param->type->isInt()
+                        && !$function_param->type->isFloat()
+                        && !$function_param->type->isBool())
+                ) {
+                    $param_assignment = DataFlowNode::getForAssignment(
+                        $function_param_id,
+                        $function_param->location
+                    );
+
+                    $statements_analyzer->data_flow_graph->addNode($param_assignment);
+
+                    if ($cased_method_id) {
+                        $type_source = DataFlowNode::getForMethodArgument(
+                            $cased_method_id,
+                            $cased_method_id,
+                            $offset,
+                            $function_param->location,
+                            null
+                        );
+
+                        $statements_analyzer->data_flow_graph->addPath($type_source, $param_assignment, 'param');
+                    }
+
+                    if ($storage->variadic) {
+                        $this->param_nodes += [$param_assignment->id => $param_assignment];
+                    }
+
+                    $parent_nodes = [$param_assignment->id => $param_assignment];
+                }
+            }
+
             if ($function_param->type) {
                 $param_type = $function_param->type;
 
@@ -1097,8 +1137,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $check_stmts = false;
                     }
                 }
+
+                $param_type = $param_type->addParentNodes($parent_nodes);
             } else {
-                $param_type = new Union([new TMixed()], ['by_ref' => $function_param->by_ref]);
+                $param_type = new Union([new TMixed()], [
+                    'by_ref' => $function_param->by_ref,
+                    'parent_nodes' => $parent_nodes
+                ]);
             }
 
             $var_type = $param_type;
@@ -1107,49 +1152,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($storage->allow_named_arg_calls) {
                     $var_type = new Union([
                         new TArray([Type::getArrayKey(), $param_type]),
-                    ], ['by_ref' => $function_param->by_ref]);
+                    ], [
+                        'by_ref' => $function_param->by_ref,
+                        'parent_nodes' => $parent_nodes
+                    ]);
                 } else {
                     $var_type = new Union([
                         new TList($param_type),
-                    ], ['by_ref' => $function_param->by_ref]);
-                }
-            }
-
-            if ($statements_analyzer->data_flow_graph
-                && $function_param->location
-            ) {
-                //don't add to taint flow graph if the type can't transmit taints
-                if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                    || $function_param->type === null
-                    || !$function_param->type->isSingle()
-                    || (!$function_param->type->isInt()
-                        && !$function_param->type->isFloat()
-                        && !$function_param->type->isBool())
-                ) {
-                    $param_assignment = DataFlowNode::getForAssignment(
-                        $function_param_id,
-                        $function_param->location
-                    );
-
-                    $statements_analyzer->data_flow_graph->addNode($param_assignment);
-
-                    if ($cased_method_id) {
-                        $type_source = DataFlowNode::getForMethodArgument(
-                            $cased_method_id,
-                            $cased_method_id,
-                            $offset,
-                            $function_param->location,
-                            null
-                        );
-
-                        $statements_analyzer->data_flow_graph->addPath($type_source, $param_assignment, 'param');
-                    }
-
-                    if ($storage->variadic) {
-                        $this->param_nodes += [$param_assignment->id => $param_assignment];
-                    }
-
-                    $var_type->parent_nodes += [$param_assignment->id => $param_assignment];
+                    ], [
+                        'by_ref' => $function_param->by_ref,
+                        'parent_nodes' => $parent_nodes
+                    ]);
                 }
             }
 

@@ -60,18 +60,11 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 continue;
             }
 
-            $already_cloned = false;
-
             if ($atomic_type instanceof TKeyedArray) {
-                $already_cloned = true;
                 $atomic_type = $atomic_type->getGenericArrayType();
             }
 
             if ($atomic_type instanceof TArray) {
-                if (!$already_cloned) {
-                    $atomic_type = $atomic_type;
-                }
-
                 $return_atomic_type = new TArray($atomic_type->type_params);
                 continue;
             }

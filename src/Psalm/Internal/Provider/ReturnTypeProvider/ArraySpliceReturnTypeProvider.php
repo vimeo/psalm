@@ -48,17 +48,11 @@ class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return Type::getArray();
         }
 
-        $already_cloned = false;
-
         if ($first_arg_array instanceof TKeyedArray) {
-            $already_cloned = true;
             $first_arg_array = $first_arg_array->getGenericArrayType();
         }
 
         if ($first_arg_array instanceof TArray) {
-            if (!$already_cloned) {
-                $first_arg_array = $first_arg_array;
-            }
             $array_type = new TArray($first_arg_array->type_params);
         } else {
             $array_type = new TArray([Type::getInt(), $first_arg_array->type_param]);

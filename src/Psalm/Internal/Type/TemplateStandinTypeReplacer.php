@@ -1307,8 +1307,6 @@ class TemplateStandinTypeReplacer
                         );
                     }
 
-                    $new_input_param = $new_input_param;
-
                     $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,
                         new TemplateResult([], $replacement_templates),
