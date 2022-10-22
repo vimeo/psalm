@@ -1952,9 +1952,9 @@ final class Codebase
         string $taint_id,
         array $taints = TaintKindGroup::ALL_INPUT,
         ?CodeLocation $code_location = null
-    ): void {
+    ): Union {
         if (!$this->taint_flow_graph) {
-            return;
+            return $expr_type;
         }
 
         $source = new TaintSource(
@@ -1967,7 +1967,7 @@ final class Codebase
 
         $this->taint_flow_graph->addSource($source);
 
-        $expr_type->parent_nodes[$source->id] = $source;
+        return $expr_type->addParentNodes([$source->id => $source]);
     }
 
     /**
