@@ -203,7 +203,17 @@ class StaticPropertyFetchAnalyzer
         if ($var_id && $context->hasVariable($var_id)) {
             $stmt_type = $context->vars_in_scope[$var_id];
 
-            // we don't need to check anything
+            AtomicPropertyFetchAnalyzer::processUnspecialTaints(
+                $statements_analyzer,
+                $stmt,
+                $stmt_type,
+                $property_id,
+                false,
+                [],
+                []
+            );
+
+            $context->vars_in_scope[$var_id] = $stmt_type;
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($codebase->collect_references) {
@@ -222,7 +232,6 @@ class StaticPropertyFetchAnalyzer
             if ($codebase->store_node_types
                 && !$context->collect_initializations
                 && !$context->collect_mutations
-                && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
@@ -230,16 +239,6 @@ class StaticPropertyFetchAnalyzer
                     $stmt_type->getId()
                 );
             }
-
-            AtomicPropertyFetchAnalyzer::processUnspecialTaints(
-                $statements_analyzer,
-                $stmt,
-                $stmt_type,
-                $property_id,
-                false,
-                [],
-                []
-            );
 
             return true;
         }
@@ -387,6 +386,17 @@ class StaticPropertyFetchAnalyzer
 
             $stmt_type = $context->vars_in_scope[$var_id];
 
+            AtomicPropertyFetchAnalyzer::processUnspecialTaints(
+                $statements_analyzer,
+                $stmt,
+                $stmt_type,
+                $property_id,
+                false,
+                [],
+                []
+            );
+
+            $context->vars_in_scope[$var_id] = $stmt_type;
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($codebase->store_node_types
@@ -399,16 +409,6 @@ class StaticPropertyFetchAnalyzer
                     $stmt_type->getId()
                 );
             }
-
-            AtomicPropertyFetchAnalyzer::processUnspecialTaints(
-                $statements_analyzer,
-                $stmt,
-                $stmt_type,
-                $property_id,
-                false,
-                [],
-                []
-            );
         } else {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         }

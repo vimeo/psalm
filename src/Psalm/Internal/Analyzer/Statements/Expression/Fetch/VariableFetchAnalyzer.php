@@ -153,9 +153,10 @@ class VariableFetchAnalyzer
                 } else {
                     $stmt_type = $context->vars_in_scope[$var_name];
 
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
                     self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+
+                    $context->vars_in_scope[$var_name] = $stmt_type;
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -171,7 +172,8 @@ class VariableFetchAnalyzer
                 $type = $context->vars_in_scope[$var_name];
 
                 self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
-
+                
+                $context->vars_in_scope[$var_name] = $type;
                 $statements_analyzer->node_data->setType($stmt, $type);
 
                 return true;
@@ -364,9 +366,9 @@ class VariableFetchAnalyzer
 
                 $stmt_type = Type::getMixed();
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
                 self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_name, $stmt);
 
@@ -375,9 +377,10 @@ class VariableFetchAnalyzer
         } else {
             $stmt_type = $context->vars_in_scope[$var_name];
 
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+
+            $context->vars_in_scope[$var_name] = $stmt_type;
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
                 if ($context->is_global) {
