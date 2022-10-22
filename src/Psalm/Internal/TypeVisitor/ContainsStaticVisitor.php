@@ -3,9 +3,8 @@
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\TypeVisitor;
 use Psalm\Type\TypeNode;
-use Psalm\Type\MutableTypeVisitor;
+use Psalm\Type\TypeVisitor;
 
 /**
  * @internal

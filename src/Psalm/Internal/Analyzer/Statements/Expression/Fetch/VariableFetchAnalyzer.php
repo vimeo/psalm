@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
-use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;

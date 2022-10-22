@@ -4,9 +4,9 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
-use Psalm\Type\TypeVisitor;
-use Psalm\Type\TypeNode;
 use Psalm\Type\MutableTypeVisitor;
+use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 
 final class FunctionLikeParameter implements HasAttributesInterface, TypeNode

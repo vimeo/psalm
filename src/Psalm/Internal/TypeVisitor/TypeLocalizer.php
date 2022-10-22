@@ -6,9 +6,9 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
-use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\Union;
 
 use function array_values;

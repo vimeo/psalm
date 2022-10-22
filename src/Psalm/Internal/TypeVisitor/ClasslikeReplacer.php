@@ -6,8 +6,8 @@ use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\TypeNode;
 use Psalm\Type\MutableTypeVisitor;
+use Psalm\Type\TypeNode;
 
 use function strtolower;
 

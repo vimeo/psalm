@@ -269,7 +269,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     $statements_analyzer->data_flow_graph->addNode($use_assignment);
 
-                    $context->vars_in_scope[$use_var_id] = 
+                    $context->vars_in_scope[$use_var_id] =
                         $context->vars_in_scope[$use_var_id]->addParentNodes(
                             [$use_assignment->id => $use_assignment]
                         );

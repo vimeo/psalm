@@ -74,11 +74,9 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -999,7 +997,7 @@ class AssignmentAnalyzer
 
         $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
 
-        $context->vars_in_scope[$lhs_var_id] = 
+        $context->vars_in_scope[$lhs_var_id] =
             $context->vars_in_scope[$lhs_var_id]->addParentNodes([$lhs_node->id => $lhs_node]);
 
         if ($stmt->var instanceof ArrayDimFetch && $stmt->var->dim !== null) {
@@ -1542,7 +1540,7 @@ class AssignmentAnalyzer
                             if ($data_flow_graph instanceof TaintFlowGraph
                                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                             ) {
-                                $context->vars_in_scope[$list_var_id] = 
+                                $context->vars_in_scope[$list_var_id] =
                                     $context->vars_in_scope[$list_var_id]->setParentNodes([]);
                             } else {
                                 $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);

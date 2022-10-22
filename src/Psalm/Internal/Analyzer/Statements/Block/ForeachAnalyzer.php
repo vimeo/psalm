@@ -389,9 +389,9 @@ class ForeachAnalyzer
 
     /**
      * @param PhpParser\Node\Stmt\Foreach_|PhpParser\Node\Expr\YieldFrom $stmt
-     * 
+     *
      * @psalm-suppress ComplexMethod
-     * 
+     *
      * @return false|null
      */
     public static function checkIteratorType(

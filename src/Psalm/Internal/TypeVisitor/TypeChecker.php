@@ -25,10 +25,9 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\TypeVisitor;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
-use Psalm\Type\MutableTypeVisitor;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 use ReflectionProperty;
 

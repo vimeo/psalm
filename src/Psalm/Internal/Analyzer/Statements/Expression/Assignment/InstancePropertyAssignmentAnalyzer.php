@@ -481,7 +481,7 @@ class InstancePropertyAssignmentAnalyzer
                 if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                     && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
-                    $context->vars_in_scope[$var_id] = 
+                    $context->vars_in_scope[$var_id] =
                         $context->vars_in_scope[$var_id]->setParentNodes([]);
                     return;
                 }

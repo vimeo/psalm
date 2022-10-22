@@ -754,9 +754,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     $property_type = $property_storage->type;
 
-                    $guide_property_type = $guide_property_storage->type === null
-                        ? Type::getMixed()
-                        : $guide_property_storage->type;
+                    $guide_property_type = $guide_property_storage->type ?? Type::getMixed();
 
                     // Set upper bounds for all templates
                     $lower_bounds = [];

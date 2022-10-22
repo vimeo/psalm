@@ -209,20 +209,18 @@ class Reconciler
 
             $has_object_array_access = false;
 
-            $result_type = isset($existing_types[$key])
-                ? $existing_types[$key]
-                : self::getValueForKey(
-                    $codebase,
-                    $key,
-                    $existing_types,
-                    $new_types,
-                    $code_location,
-                    $has_isset,
-                    $has_inverted_isset,
-                    $has_empty,
-                    $inside_loop,
-                    $has_object_array_access
-                );
+            $result_type = $existing_types[$key] ?? self::getValueForKey(
+                $codebase,
+                $key,
+                $existing_types,
+                $new_types,
+                $code_location,
+                $has_isset,
+                $has_inverted_isset,
+                $has_empty,
+                $inside_loop,
+                $has_object_array_access
+            );
 
             if ($result_type && $result_type->isUnionEmpty()) {
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
@@ -644,7 +642,7 @@ class Reconciler
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
-            return isset($existing_keys[$key_parts[0]]) ? $existing_keys[$key_parts[0]] : null;
+            return $existing_keys[$key_parts[0]] ?? null;
         }
 
         $base_key = array_shift($key_parts);
