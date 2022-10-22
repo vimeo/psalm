@@ -269,7 +269,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     $statements_analyzer->data_flow_graph->addNode($use_assignment);
 
-                    $context->vars_in_scope[$use_var_id]->parent_nodes += [$use_assignment->id => $use_assignment];
+                    $context->vars_in_scope[$use_var_id] = 
+                        $context->vars_in_scope[$use_var_id]->addParentNodes(
+                            [$use_assignment->id => $use_assignment]
+                        );
                 }
 
                 if ($use->byRef) {
@@ -1882,12 +1885,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($storage->external_mutation_free
                     && !$storage->mutation_free_inferred
                 ) {
-                    $props = [
-                        'reference_free' => true
-                    ];
+                    $props = ['reference_free' => true];
                     if ($this->function->name->name !== '__construct') {
                         $props['allow_mutations'] = false;
                     }
+                }
+
+                if ($codebase->taint_flow_graph
+                    && $storage->specialize_call
+                    && $storage->location
+                ) {
+                    $new_parent_node = DataFlowNode::getForAssignment('$this in ' . $method_id, $storage->location);
+
+                    $codebase->taint_flow_graph->addNode($new_parent_node);
+                    $props['parent_nodes'] = [$new_parent_node->id => $new_parent_node];
                 }
 
                 if ($this->storage instanceof MethodStorage && $this->storage->if_this_is_type) {
@@ -1911,16 +1922,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         ->setProperties($props);
                 } else {
                     $context->vars_in_scope['$this'] = new Union([$this_object_type], $props);
-                }
-
-                if ($codebase->taint_flow_graph
-                    && $storage->specialize_call
-                    && $storage->location
-                ) {
-                    $new_parent_node = DataFlowNode::getForAssignment('$this in ' . $method_id, $storage->location);
-
-                    $codebase->taint_flow_graph->addNode($new_parent_node);
-                    $context->vars_in_scope['$this']->parent_nodes += [$new_parent_node->id => $new_parent_node];
                 }
 
                 $context->vars_possibly_in_scope['$this'] = true;
