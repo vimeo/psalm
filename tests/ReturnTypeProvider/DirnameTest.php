@@ -5,24 +5,37 @@ namespace Psalm\Tests\ReturnTypeProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 class DirnameTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
     public function providerValidCodeParse(): iterable
     {
-        yield 'dirnameReturnsLiteralString' => [
-            '<?php
-                $dir = dirname(__FILE__);
+        $input = 'a' . DIRECTORY_SEPARATOR . 'b' . DIRECTORY_SEPARATOR . 'c';
+
+        yield 'dirnameOfLiteralStringPathReturnsLiteralString' => [
+            'code' => '<?php
+                $dir = dirname("' . $input . '");
             ',
             'assertions' => [
-                '$dir===' => 'literal-string',
+                '$dir===' => "'a" . addslashes(DIRECTORY_SEPARATOR) . "b'",
             ],
         ];
 
-        yield 'dirnameReturnsString' => [
-            '<?php
+        yield 'dirnameOfStringPathReturnsString' => [
+            'code' => '<?php
                 $dir = dirname(implode("", range("a", "c")));
+            ',
+            'assertions' => [
+                '$dir===' => 'string',
+            ],
+        ];
+
+        yield 'dirnameOfIntLevelReturnsString' => [
+            'code' => '<?php
+                $dir = dirname("' . $input . '", 0);
             ',
             'assertions' => [
                 '$dir===' => 'string',

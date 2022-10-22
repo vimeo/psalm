@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
-use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
 
+use function array_values;
 use function count;
 use function dirname;
 
@@ -34,34 +35,38 @@ class DirnameReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return null;
         }
 
-        $dir_level = 1;
+        $statements_source = $event->getStatementsSource();
+        $node_type_provider = $statements_source->getNodeTypeProvider();
 
+        $dir_level = 1;
         if (isset($call_args[1])) {
-            if ($call_args[1]->value instanceof PhpParser\Node\Scalar\LNumber) {
-                $dir_level = $call_args[1]->value->value;
-            } else {
-                return null;
+            $type = $node_type_provider->getType($call_args[1]->value);
+
+            if ($type !== null && $type->isSingle()) {
+                $atomic_type = array_values($type->getAtomicTypes())[0];
+                if ($atomic_type instanceof TLiteralInt &&
+                    $atomic_type->value > 0) {
+                    $dir_level = $atomic_type->value;
+                } else {
+                    return Type::getString();
+                }
             }
         }
-
-        $statement_source = $event->getStatementsSource();
 
         $evaled_path = IncludeAnalyzer::getPathTo(
             $call_args[0]->value,
             null,
             null,
-            $statement_source->getFileName(),
-            $statement_source->getCodebase()->config
+            $statements_source->getFileName(),
+            $statements_source->getCodebase()->config
         );
 
-        if (!$evaled_path) {
-            return null;
+        if ($evaled_path === null) {
+            return Type::getString();
         }
 
         $path_to_file = dirname($evaled_path, $dir_level);
 
-        return new Union([
-            new TLiteralString($path_to_file),
-        ]);
+        return Type::getString($path_to_file);
     }
 }
