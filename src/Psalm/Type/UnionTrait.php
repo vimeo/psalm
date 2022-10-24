@@ -605,6 +605,14 @@ trait UnionTrait
     /**
      * @psalm-mutation-free
      */
+    public function hasNull(): bool
+    {
+        return isset($this->types['null']);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
     public function hasString(): bool
     {
         return isset($this->types['string'])
