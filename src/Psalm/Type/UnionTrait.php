@@ -78,7 +78,7 @@ trait UnionTrait
 
         $keyed_types = [];
 
-        $from_docblock = $this->from_docblock ?? false;
+        $from_docblock = $this->from_docblock;
         foreach ($types as $type) {
             $key = $type->getKey();
             $keyed_types[$key] = $type;
@@ -1238,7 +1238,7 @@ trait UnionTrait
 
         $checker->traverseArray($this->types);
 
-        /** @psalm-suppress InaccessibleProperty Does not affect anything else */
+        /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Does not affect anything else */
         $this->checked = true;
 
         return !$checker->hasErrors();

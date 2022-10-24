@@ -20,7 +20,7 @@ abstract class MutableTypeVisitor
      * @param T $node
      * @param-out T $node
      *
-     * @psalm-suppress ReferenceConstraintViolation, ConflictingReferenceConstraint
+     * @psalm-suppress ReferenceConstraintViolation
      */
     public function traverse(TypeNode &$node): bool
     {

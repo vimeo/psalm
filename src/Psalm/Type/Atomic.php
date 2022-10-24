@@ -628,8 +628,8 @@ abstract class Atomic implements TypeNode
             /** @psalm-suppress MixedAssignment */
             $value = $node->{$key};
             $result = true;
-            $changed = false;
             if (is_array($value)) {
+                $changed = false;
                 /** @psalm-suppress MixedAssignment */
                 foreach ($value as &$type) {
                     if (!$type instanceof TypeNode) {
@@ -644,7 +644,7 @@ abstract class Atomic implements TypeNode
             } elseif ($value instanceof TypeNode) {
                 $value_orig = $value;
                 $result = $visitor->traverse($value);
-                $changed = $changed || $value !== $value_orig;
+                $changed = $value !== $value_orig;
             } else {
                 continue;
             }
@@ -655,7 +655,7 @@ abstract class Atomic implements TypeNode
                     $cloned = true;
                 }
                 if ($key === 'extra_types') {
-                    /** @var array<TypeNode> $value */
+                    /** @var array<Atomic> $value */
                     $new = [];
                     foreach ($value as $type) {
                         $new[$type->getKey()] = $type;
