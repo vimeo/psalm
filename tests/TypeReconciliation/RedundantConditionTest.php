@@ -906,6 +906,14 @@ class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'noDocblockTypeContradictionOnTheSecondEmpty' => [
+                'code' => '<?php
+                    /** @var stdClass[] $a */
+                    $a = [];
+
+                    if (empty($a["a"]) || empty($a["b"])) {
+                    }',
+            ],
         ];
     }
 
