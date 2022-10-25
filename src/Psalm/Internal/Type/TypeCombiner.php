@@ -707,16 +707,12 @@ class TypeCombiner
                         ->setPossiblyUndefined($existing_objectlike_entries
                             || $candidate_property_type->possibly_undefined);
                 } else {
-                    $new_property_type = Type::combineUnionTypes(
+                    $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
                         $candidate_property_type,
                         $codebase,
                         $overwrite_empty_array
                     );
-                    if ($candidate_property_type === $new_property_type && $possibly_undefined) {
-                        $new_property_type = $new_property_type->setPossiblyUndefined($possibly_undefined);
-                    }
-                    $combination->objectlike_entries[$candidate_property_name] = $new_property_type;
                 }
 
                 if (!$candidate_property_type->possibly_undefined) {
