@@ -1265,7 +1265,7 @@ class ArrayFetchAnalyzer
         // if we're assigning to an empty array with a key offset, refashion that array
         if ($in_assignment) {
             if ($type->isEmptyArray()) {
-                $type = $type->replaceTypeParams([
+                $type = $type->setTypeParams([
                     $offset_type->isMixed()
                         ? Type::getArrayKey()
                         : $offset_type->freeze(),
@@ -1293,7 +1293,7 @@ class ArrayFetchAnalyzer
                         && $offset_as->param_name === $original_type->param_name
                         && $offset_as->defining_class === $original_type->defining_class
                     ) {
-                        $type = $type->replaceTypeParams([
+                        $type = $type->setTypeParams([
                             $type->type_params[0],
                             new Union([
                                 new TTemplateIndexedAccess(

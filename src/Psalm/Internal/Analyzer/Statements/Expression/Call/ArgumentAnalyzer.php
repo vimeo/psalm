@@ -1435,7 +1435,7 @@ class ArgumentAnalyzer
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TArray) {
-                    $unpacked_atomic_array = $unpacked_atomic_array->replaceTypeParams([
+                    $unpacked_atomic_array = $unpacked_atomic_array->setTypeParams([
                         $unpacked_atomic_array->type_params[0],
                         $input_type
                     ]);

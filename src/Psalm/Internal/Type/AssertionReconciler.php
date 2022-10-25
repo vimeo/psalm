@@ -725,7 +725,7 @@ class AssertionReconciler extends Reconciler
             }
 
             /** @psalm-suppress ArgumentTypeCoercion */
-            $type_1_atomic = $type_1_atomic->replaceTypeParams(
+            $type_1_atomic = $type_1_atomic->setTypeParams(
                 $type_1_params
             );
 

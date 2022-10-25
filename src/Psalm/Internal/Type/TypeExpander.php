@@ -493,7 +493,7 @@ class TypeExpander
             }
             unset($type_param);
             /** @psalm-suppress ArgumentTypeCoercion Psalm bug */
-            $return_type = $return_type->replaceTypeParams($type_params);
+            $return_type = $return_type->setTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;
             foreach ($properties as &$property_type) {
