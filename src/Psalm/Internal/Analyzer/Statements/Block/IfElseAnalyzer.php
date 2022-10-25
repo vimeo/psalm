@@ -424,13 +424,13 @@ class IfElseAnalyzer
                             $codebase
                         );
 
-                        if (!$combined_type->equals($context->vars_in_scope[$var_id])) {
+                        if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)) {
                             $context->removeDescendents($var_id, $combined_type);
                         }
 
                         $context->vars_in_scope[$var_id] = $combined_type;
                     } else {
-                        $context->vars_in_scope[$var_id] =
+                        $context->vars_in_scope[$var_id] = 
                             $context->vars_in_scope[$var_id]->addParentNodes($type->parent_nodes);
                     }
                 }

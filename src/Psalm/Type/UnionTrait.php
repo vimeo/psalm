@@ -1316,7 +1316,7 @@ trait UnionTrait
     /**
      * @psalm-mutation-free
      */
-    public function equals(self $other_type, bool $ensure_source_equality = true): bool
+    public function equals(self $other_type, bool $ensure_source_equality = true, bool $ensure_parent_node_equality = true): bool
     {
         if ($other_type === $this) {
             return true;
@@ -1358,7 +1358,7 @@ trait UnionTrait
             return false;
         }
 
-        if ($this->parent_nodes !== $other_type->parent_nodes) {
+        if ($ensure_parent_node_equality && $this->parent_nodes !== $other_type->parent_nodes) {
             return false;
         }
 

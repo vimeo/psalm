@@ -698,7 +698,6 @@ class TypeCombiner
 
             $has_defined_keys = false;
 
-            $possibly_undefined = (bool)$type->previous_value_type;
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = $combination->objectlike_entries[$candidate_property_name] ?? null;
 
