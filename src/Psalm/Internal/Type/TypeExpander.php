@@ -876,13 +876,13 @@ class TypeExpander
                     $codebase
                 );
 
-                $return_type = $return_type->replaceTypes($new_as_type);
+                $return_type = $return_type->setTypes($new_as_type);
 
                 return array_values($combined->getAtomicTypes());
             }
         }
 
-        $return_type = $return_type->replaceTypes(
+        $return_type = $return_type->setTypes(
             $new_as_type,
             self::expandUnion(
                 $codebase,

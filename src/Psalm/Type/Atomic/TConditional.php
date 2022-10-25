@@ -62,7 +62,7 @@ final class TConditional extends Atomic
         $this->from_docblock = $from_docblock;
     }
 
-    public function replaceTypes(
+    public function setTypes(
         ?Union $as_type,
         ?Union $conditional_type = null,
         ?Union $if_type = null,

@@ -546,7 +546,7 @@ class TemplateInferredTypeReplacer
             );
         }
 
-        $atomic_type = $atomic_type->replaceTypes(
+        $atomic_type = $atomic_type->setTypes(
             $as_type,
             $conditional_type,
             $if_type,
