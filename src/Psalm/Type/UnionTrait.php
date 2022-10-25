@@ -1362,10 +1362,6 @@ trait UnionTrait
             return false;
         }
 
-        if ($this->different || $other_type->different) {
-            return false;
-        }
-
         $other_atomic_types = $other_type->types;
 
         foreach ($this->types as $key => $atomic_type) {

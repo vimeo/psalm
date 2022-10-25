@@ -246,7 +246,7 @@ class NegatedAssertionReconciler extends Reconciler
                             false,
                             false
                         )) {
-                            $existing_var_type->different = true;
+                            //$existing_var_type->different = true;
                         }
                     }
                 }
