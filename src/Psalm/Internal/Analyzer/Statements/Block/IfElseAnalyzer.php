@@ -430,7 +430,7 @@ class IfElseAnalyzer
 
                         $context->vars_in_scope[$var_id] = $combined_type;
                     } else {
-                        $context->vars_in_scope[$var_id] = 
+                        $context->vars_in_scope[$var_id] =
                             $context->vars_in_scope[$var_id]->addParentNodes($type->parent_nodes);
                     }
                 }

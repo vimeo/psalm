@@ -13,7 +13,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
-use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
@@ -789,46 +788,23 @@ class VariableFetchAnalyzer
         }
 
         if ($var_id === '$_FILES') {
+            $str = Type::getString();
             $values = [
-                'name' => new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]),
-                'type' => new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]),
-                'size' => new Union([
-                    new TIntRange(0, null),
-                    new TNonEmptyList(Type::getInt()),
-                ]),
-                'tmp_name' => new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]),
-                'error' => new Union([
-                    new TIntRange(0, 8),
-                    new TNonEmptyList(Type::getInt()),
-                ]),
+                'name' => $str,
+                'type' => $str,
+                'tmp_name' => $str,
+                'size' => new Union([new TIntRange(0, null)]),
+                'error' => new Union([new TIntRange(0, 8)]),
             ];
 
             if ($files_full_path) {
-                $values['full_path'] = new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]);
+                $values['full_path'] = $str;
             }
+            
+            $type = new Union([new TKeyedArray($values)]);
+            $parent = new TArray([Type::getNonEmptyString(), $type]);
 
-            $type = new TKeyedArray($values);
-
-            // $_FILES['userfile']['...'] case
-            $named_type = new TArray([Type::getNonEmptyString(), new Union([$type])]);
-
-            // by default $_FILES is an empty array
-            $default_type = new TArray([Type::getNever(), Type::getNever()]);
-
-            // ideally we would have 4 separate arrays with distinct types, but that isn't possible with psalm atm
-            return TypeCombiner::combine([$default_type, $type, $named_type]);
+            return new Union([$parent]);
         }
 
         // $var_id === $_SESSION
