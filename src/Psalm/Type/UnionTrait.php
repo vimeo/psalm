@@ -1358,8 +1358,8 @@ trait UnionTrait
             return false;
         }
 
-        if ($ensure_parent_node_equality && $this->parent_nodes !== $other_type->parent_nodes) {
-            return false;
+        if ($this->parent_nodes !== $other_type->parent_nodes) {
+            return !$ensure_parent_node_equality;
         }
 
         if ($this->different || $other_type->different) {
