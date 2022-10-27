@@ -1,6 +1,6 @@
 # PossiblyFalseReference
 
-Emitted when making a method call on a value than might be `false`
+Emitted when making a method call on a value that might be `false`
 
 ```php
 <?php

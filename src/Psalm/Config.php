@@ -593,6 +593,7 @@ class Config
      *     simplexml: bool,
      *     soap: bool,
      *     xdebug: bool,
+     *     ffi: bool,
      * }
      */
     public $php_extensions = [
@@ -607,6 +608,7 @@ class Config
         "simplexml" => false,
         "soap" => false,
         "xdebug" => false,
+        "ffi" => false,
     ];
 
     /**
