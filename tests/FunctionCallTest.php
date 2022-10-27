@@ -1957,6 +1957,30 @@ class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'noNeverReturnError' => [
+                'code' => '<?php
+                    /**
+                     * @return string
+                     */
+                    function foo() {
+                        if (random_int(0, 1)) {
+                            exit;
+                        }
+
+                        return "foobar";
+                    }
+                '
+            ],
+            'noNeverReturnErrorOnlyThrows' => [
+                'code' => '<?php
+                    /**
+                     * https://3v4l.org/vCSF4#v8.1.12
+                     */
+                    function foo(): string {
+                         throw new \Exception("foo");
+                    }
+                '
+            ],
         ];
     }
 
@@ -2535,6 +2559,53 @@ class FunctionCallTest extends TestCase
                     acceptsStringableObject(new stdClass);
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'shouldReturnNeverNotString' => [
+                'code' => '<?php
+                    /**
+                     * @return string
+                     */
+                    function finalFunc() {
+                        exit;
+                    }
+
+                    finalFunc();',
+                'error_message' => 'InvalidReturnType'
+            ],
+            'shouldReturnNeverNotStringCaller' => [
+                'code' => '<?php
+                    /**
+                     * @return string
+                     */
+                    function foo() {
+                       finalFunc();
+                    }
+
+                    /**
+                     * @return never
+                     */
+                    function finalFunc() {
+                        exit;
+                    }
+
+                    foo();',
+                'error_message' => 'InvalidReturnType'
+            ],
+            'shouldReturnNeverNotStringNoDocblockCaller' => [
+                'code' => '<?php
+                    /**
+                     * @return string
+                     */
+                    function foo() {
+                       finalFunc();
+                    }
+
+                    function finalFunc() {
+                        exit;
+                    }
+
+                    foo();',
+                'error_message' => 'InvalidReturnType'
             ],
         ];
     }

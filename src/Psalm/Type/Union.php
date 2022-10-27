@@ -29,6 +29,7 @@ use function get_object_vars;
  *      ignore_isset?: bool,
  *      possibly_undefined?: bool,
  *      possibly_undefined_from_try?: bool,
+ *      explicit_never?: bool,
  *      had_template?: bool,
  *      from_template_default?: bool,
  *      by_ref?: bool,
@@ -143,6 +144,14 @@ final class Union implements TypeNode, Stringable
      * @var bool
      */
     public $possibly_undefined_from_try = false;
+
+    /**
+     * whether this type had never set explicitly
+     * since it's the bottom type, it's combined into everything else and lost
+     *
+     * @var bool
+     */
+    public $explicit_never = false;
 
     /**
      * Whether or not this union had a template, since replaced
