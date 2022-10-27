@@ -245,6 +245,19 @@ final class Union implements TypeNode, Stringable
     }
 
     /**
+     * @return static
+     */
+    public function setDifferent(bool $different): self
+    {
+        if ($different === $this->different) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->different = $different;
+        return $cloned;
+    }
+    
+    /**
      * @param array<string, DataFlowNode> $parent_nodes
      * @return static
      */

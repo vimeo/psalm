@@ -778,9 +778,7 @@ class Reconciler
 
                             if (!isset($array_properties[$key_parts_key])) {
                                 if ($existing_key_type_part->previous_value_type) {
-                                    $new_base_type_candidate = $existing_key_type_part->previous_value_type->setProperties([
-                                        'different' => true
-                                    ]);
+                                    $new_base_type_candidate = $existing_key_type_part->previous_value_type->setDifferent(true);
                                 } else {
                                     return null;
                                 }
