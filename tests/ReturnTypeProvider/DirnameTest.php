@@ -5,6 +5,8 @@ namespace Psalm\Tests\ReturnTypeProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function addslashes;
+
 use const DIRECTORY_SEPARATOR;
 
 class DirnameTest extends TestCase
