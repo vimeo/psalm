@@ -220,6 +220,8 @@ final class Union implements TypeNode, Stringable
      */
     public $parent_nodes = [];
 
+    public bool $propagate_parent_nodes = false;
+
     /**
      * @var bool
      */
@@ -256,21 +258,22 @@ final class Union implements TypeNode, Stringable
         $cloned->different = $different;
         return $cloned;
     }
-    
+
     /**
      * @param array<string, DataFlowNode> $parent_nodes
      * @return static
      */
-    public function setParentNodes(array $parent_nodes): self
+    public function setParentNodes(array $parent_nodes, bool $propagate_changes = true): self
     {
         if ($parent_nodes === $this->parent_nodes) {
             return $this;
         }
         $cloned = clone $this;
         $cloned->parent_nodes = $parent_nodes;
+        $cloned->propagate_parent_nodes = $propagate_changes;
         return $cloned;
     }
-    
+
 
     /**
      * @param array<string, DataFlowNode> $parent_nodes
@@ -289,7 +292,7 @@ final class Union implements TypeNode, Stringable
         $cloned->parent_nodes = $parent_nodes;
         return $cloned;
     }
-    
+
     /** @return static */
     public function setPossiblyUndefined(bool $possibly_undefined, ?bool $from_try = null): self
     {

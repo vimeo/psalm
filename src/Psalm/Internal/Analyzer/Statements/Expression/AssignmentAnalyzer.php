@@ -830,7 +830,7 @@ class AssignmentAnalyzer
             );
         }
 
-        $type = $type->setParentNodes($new_parent_nodes);
+        $type = $type->setParentNodes($new_parent_nodes, false);
     }
 
     public static function analyzeAssignmentOperation(
