@@ -60,6 +60,7 @@ class TypeTokenizer
         'lowercase-string' => true,
         'non-empty-lowercase-string' => true,
         'positive-int' => true,
+        'non-negative-int' => true,
         'literal-int' => true,
         'boolean' => true,
         'integer' => true,
