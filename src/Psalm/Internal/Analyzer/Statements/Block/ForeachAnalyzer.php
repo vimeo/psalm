@@ -292,10 +292,10 @@ class ForeachAnalyzer
             );
         }
 
-        $value_type ??= new Union([new TMixed()], ['by_ref' => $stmt->byRef]);
-
-        if ($stmt->byRef) {
-            $value_type = $value_type->setProperties(['by_ref' => true]);
+        if ($value_type !== null) {
+            $value_type = $value_type->setProperties(['by_ref' => $stmt->byRef]);
+        } else {
+            $value_type = new Union([new TMixed()], ['by_ref' => $stmt->byRef]);
         }
 
         if ($stmt->byRef
