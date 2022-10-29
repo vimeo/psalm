@@ -37,9 +37,9 @@ use Psalm\Progress\VoidProgress;
 use RuntimeException;
 use SimpleXMLElement;
 use SimpleXMLIterator;
+use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
-use Webmozart\PathUtil\Path;
 use XdgBaseDir\Xdg;
 use stdClass;
 
