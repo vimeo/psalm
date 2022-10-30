@@ -302,7 +302,7 @@ class CallAnalyzer
             $context,
             $lhs_type_part instanceof Type\Atomic\TGenericObject
                 ? $lhs_type_part->type_params
-                : null,
+                : null
         );
 
         $fq_class_name = $method_id->fq_class_name;
