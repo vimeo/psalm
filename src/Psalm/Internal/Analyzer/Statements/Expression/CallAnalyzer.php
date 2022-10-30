@@ -278,7 +278,8 @@ class CallAnalyzer
         ?TemplateResult $class_template_result,
         Context $context,
         CodeLocation $code_location,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
+        ?Type\Atomic $lhs_type_part = null
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -294,7 +295,15 @@ class CallAnalyzer
             ) !== false;
         }
 
-        $method_params = $codebase->methods->getMethodParams($method_id, $statements_analyzer, $args, $context);
+        $method_params = $codebase->methods->getMethodParams(
+            $method_id,
+            $statements_analyzer,
+            $args,
+            $context,
+            $lhs_type_part instanceof Type\Atomic\TGenericObject
+                ? $lhs_type_part->type_params
+                : null,
+        );
 
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;

@@ -237,7 +237,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result,
             $context,
             new CodeLocation($source, $stmt_name),
-            $statements_analyzer
+            $statements_analyzer,
+            $lhs_type_part
         ) === false) {
             return Type::getMixed();
         }

@@ -12,6 +12,7 @@ use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
 use Psalm\Plugin\Hook\MethodParamsProviderInterface as LegacyMethodParamsProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Type\Union;
 
 use function array_values;
 use function is_subclass_of;
@@ -100,9 +101,10 @@ class MethodParamsProvider
     }
 
     /**
-     * @param ?list<Arg>  $call_args
+     * @param ?list<Arg> $call_args
+     * @param ?list<Union> $templates
      *
-     * @return  ?list<FunctionLikeParameter>
+     * @return ?list<FunctionLikeParameter>
      */
     public function getMethodParams(
         string $fq_classlike_name,
@@ -110,7 +112,8 @@ class MethodParamsProvider
         ?array $call_args = null,
         ?StatementsSource $statements_source = null,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
+        ?array $templates = null
     ): ?array {
         foreach (self::$legacy_handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
             $result = $class_handler(
@@ -134,7 +137,8 @@ class MethodParamsProvider
                 $call_args,
                 $statements_source,
                 $context,
-                $code_location
+                $code_location,
+                $templates
             );
             $result = $class_handler($event);
 

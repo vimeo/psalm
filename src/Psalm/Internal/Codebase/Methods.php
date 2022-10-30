@@ -359,7 +359,8 @@ class Methods
     }
 
     /**
-     * @param  list<PhpParser\Node\Arg> $args
+     * @param list<PhpParser\Node\Arg> $args
+     * @param ?list<Union> $templates
      *
      * @return list<FunctionLikeParameter>
      */
@@ -367,7 +368,8 @@ class Methods
         MethodIdentifier $method_id,
         ?StatementsSource $source = null,
         ?array $args = null,
-        ?Context $context = null
+        ?Context $context = null,
+        ?array $templates = null
     ): array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -378,7 +380,9 @@ class Methods
                 $method_name,
                 $args,
                 $source,
-                $context
+                $context,
+                null,
+                $templates
             );
 
             if ($method_params !== null) {

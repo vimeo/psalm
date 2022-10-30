@@ -6,6 +6,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
+use Psalm\Type\Union;
 
 class MethodParamsProviderEvent
 {
@@ -34,8 +35,12 @@ class MethodParamsProviderEvent
      */
     private $code_location;
 
+    /** @var ?list<Union> */
+    private $templates;
+
     /**
-     * @param  list<PhpParser\Node\Arg>    $call_args
+     * @param list<PhpParser\Node\Arg> $call_args
+     * @param ?list<Union> $templates
      */
     public function __construct(
         string $fq_classlike_name,
@@ -43,7 +48,8 @@ class MethodParamsProviderEvent
         ?array $call_args = null,
         ?StatementsSource $statements_source = null,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
+        ?array $templates = null
     ) {
         $this->fq_classlike_name = $fq_classlike_name;
         $this->method_name_lowercase = $method_name_lowercase;
@@ -51,6 +57,15 @@ class MethodParamsProviderEvent
         $this->statements_source = $statements_source;
         $this->context = $context;
         $this->code_location = $code_location;
+        $this->templates = $templates;
+    }
+
+    /**
+     * @return ?list<Union>
+     */
+    public function getTemplates(): ?array
+    {
+        return $this->templates;
     }
 
     public function getFqClasslikeName(): string
