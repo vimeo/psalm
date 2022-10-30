@@ -30,4 +30,7 @@ return [
        'new' => ['list<string>', 'string'=>'string', 'length='=>'positive-int'],
     ],
   ],
+
+  'removed' => [
+  ],
 ];
