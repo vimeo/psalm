@@ -1560,13 +1560,13 @@ class FunctionTemplateTest extends TestCase
                      * @template TNewKey of array-key
                      * @template TNewValue
                      * @psalm-param iterable<TKey, TValue> $iterable
-                     * @psalm-param callable(TKey, TValue): iterable<TNewKey, TNewValue> $mapper
+                     * @psalm-param callable(TKey): iterable<TNewKey, TNewValue> $mapper
                      * @psalm-return \Generator<TNewKey, TNewValue>
                      */
                     function map(iterable $iterable, callable $mapper): Generator
                     {
-                        foreach ($iterable as $key => $value) {
-                            yield from $mapper($key, $value);
+                        foreach ($iterable as $key => $_) {
+                            yield from $mapper($key);
                         }
                     }
 

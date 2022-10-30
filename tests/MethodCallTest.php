@@ -264,7 +264,6 @@ class MethodCallTest extends TestCase
             ],
             'dateTimeImmutableStatic' => [
                 '<?php
-                    /** @psalm-immutable */
                     final class MyDate extends DateTimeImmutable {}
 
                     $today = new MyDate();
@@ -272,7 +271,7 @@ class MethodCallTest extends TestCase
 
                     $b = (new DateTimeImmutable())->modify("+3 hours");',
                 'assertions' => [
-                    '$yesterday' => 'MyDate|false',
+                    '$yesterday' => 'MyDate',
                     '$b' => 'DateTimeImmutable',
                 ],
             ],
@@ -980,7 +979,7 @@ class MethodCallTest extends TestCase
 
                     class Datetime extends \DateTime
                     {
-                        public static function createFromInterface(\DatetimeInterface $datetime): \DateTime
+                        public static function createFromInterface(\DateTimeInterface $datetime): \DateTime
                         {
                             return parent::createFromInterface($datetime);
                         }

@@ -8,14 +8,19 @@ on:
     types:
       - published
 
+permissions:
+  contents: read
+
 jobs:
   pre_job:
+    permissions:
+      actions: write
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
       - id: skip_check
-        uses: fkirc/skip-duplicate-actions@v3.4.0
+        uses: fkirc/skip-duplicate-actions@v4.0.0
         with:
           concurrent_skipping: always
           cancel_others: true
@@ -24,6 +29,8 @@ jobs:
           paths: '["bin/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalter", "box.json.dist", "composer.json", "config.xsd", "keys.asc.gpg", "scoper.inc.php"]'
 
   build-phar:
+    permissions:
+      contents: write # for release
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -35,7 +42,7 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -44,7 +51,7 @@ jobs:
           echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
 
       - name: Cache composer cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

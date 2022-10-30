@@ -1,6 +1,9 @@
 digraph Taints {
-	"$_GET:src/FileWithErrors.php:345" -> "$_GET['abc']-src/FileWithErrors.php:345-349"
-	"$_GET['abc']-src/FileWithErrors.php:345-349" -> "coalesce-src/FileWithErrors.php:345-363"
+	"$_GET:src/FileWithErrors.php:413" -> "$_GET['abc']-src/FileWithErrors.php:413-417"
+	"$_GET:src/FileWithErrors.php:440" -> "$_GET['abc']-src/FileWithErrors.php:440-444"
+	"$_GET:src/FileWithErrors.php:456" -> "$_GET['abc']-src/FileWithErrors.php:456-460"
+	"$_GET['abc']-src/FileWithErrors.php:440-444" -> "call to is_string-src/FileWithErrors.php:440-451"
+	"$_GET['abc']-src/FileWithErrors.php:456-460" -> "call to echo-src/FileWithErrors.php:407-473"
 	"$s-src/FileWithErrors.php:109-110" -> "variable-use" -> "acme\sampleproject\bar"
 	"$s-src/FileWithErrors.php:162-163" -> "variable-use" -> "acme\sampleproject\baz"
 	"$s-src/FileWithErrors.php:215-216" -> "variable-use" -> "acme\sampleproject\bat"
@@ -10,6 +13,8 @@ digraph Taints {
 	"acme\sampleproject\bat#1" -> "$s-src/FileWithErrors.php:215-216"
 	"acme\sampleproject\baz#1" -> "$s-src/FileWithErrors.php:162-163"
 	"acme\sampleproject\foo#1" -> "$s-src/FileWithErrors.php:57-58"
-	"call to echo-src/FileWithErrors.php:335-364" -> "echo#1-src/filewitherrors.php:330"
-	"coalesce-src/FileWithErrors.php:345-363" -> "call to echo-src/FileWithErrors.php:335-364"
+	"call to echo-src/FileWithErrors.php:335-367" -> "echo#1-src/filewitherrors.php:330"
+	"call to echo-src/FileWithErrors.php:407-473" -> "echo#1-src/filewitherrors.php:402"
+	"call to is_string-src/FileWithErrors.php:440-451" -> "is_string#1-src/filewitherrors.php:430"
+	"coalesce-src/FileWithErrors.php:345-366" -> "call to echo-src/FileWithErrors.php:335-367"
 }

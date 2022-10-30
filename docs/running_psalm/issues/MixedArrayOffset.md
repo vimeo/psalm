@@ -5,5 +5,5 @@ Emitted when attempting to access an array offset where Psalm cannot determine t
 ```php
 <?php
 
-echo [1, 2, 3][$_GET['foo']];
+echo [1, 2, 3][$GLOBALS['foo']];
 ```

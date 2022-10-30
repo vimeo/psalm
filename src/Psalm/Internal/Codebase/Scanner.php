@@ -605,7 +605,7 @@ class Scanner
             }
 
             foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-                $this->codebase->exhumeClassLikeStorage(strtolower($fq_classlike_name), $file_path);
+                $this->codebase->exhumeClassLikeStorage($fq_classlike_name, $file_path);
             }
 
             foreach ($file_storage->required_classes as $fq_classlike_name) {
@@ -736,7 +736,7 @@ class Scanner
         $new_fq_class_name_lc = strtolower($new_fq_class_name);
 
         if ($new_fq_class_name_lc !== $fq_class_name_lc) {
-            $classlikes->addClassAlias($new_fq_class_name, $fq_class_name_lc);
+            $classlikes->addClassAlias($new_fq_class_name, $fq_class_name);
             $fq_class_name_lc = $new_fq_class_name_lc;
         }
 
