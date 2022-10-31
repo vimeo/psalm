@@ -20,7 +20,6 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
-use function assert;
 use function in_array;
 
 /**
@@ -33,7 +32,7 @@ class EncapsulatedStringAnalyzer
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
     ): bool {
-        $stmt_type = new Union([new TString()]);
+        $parent_nodes = [];
 
         $non_empty = false;
 
@@ -90,8 +89,7 @@ class EncapsulatedStringAnalyzer
                     $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
                     $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
-                    /** @psalm-suppress InaccessibleProperty We just created this type */
-                    $stmt_type->parent_nodes[$new_parent_node->id] = $new_parent_node;
+                    $parent_nodes[$new_parent_node->id] = $new_parent_node;
 
                     $codebase = $statements_analyzer->getCodebase();
                     $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -124,20 +122,31 @@ class EncapsulatedStringAnalyzer
 
         if ($non_empty) {
             if ($literal_string !== null) {
-                $new_type = new Union([new TLiteralString($literal_string)]);
+                $stmt_type = new Union(
+                    [new TLiteralString($literal_string)],
+                    ['parent_nodes' => $parent_nodes]
+                );
             } elseif ($all_literals) {
-                $new_type = new Union([new TNonEmptyNonspecificLiteralString()]);
+                $stmt_type = new Union(
+                    [new TNonEmptyNonspecificLiteralString()],
+                    ['parent_nodes' => $parent_nodes]
+                );
             } else {
-                $new_type = new Union([new TNonEmptyString()]);
+                $stmt_type = new Union(
+                    [new TNonEmptyString()],
+                    ['parent_nodes' => $parent_nodes]
+                );
             }
         } elseif ($all_literals) {
-            $new_type = new Union([new TNonspecificLiteralString()]);
-        }
-        if (isset($new_type)) {
-            assert($new_type instanceof Union);
-            /** @psalm-suppress InaccessibleProperty We just created this type */
-            $new_type->parent_nodes = $stmt_type->parent_nodes;
-            $stmt_type = $new_type;
+            $stmt_type = new Union(
+                [new TNonspecificLiteralString()],
+                ['parent_nodes' => $parent_nodes]
+            );
+        } else {
+            $stmt_type = new Union(
+                [new TString()],
+                ['parent_nodes' => $parent_nodes]
+            );
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
