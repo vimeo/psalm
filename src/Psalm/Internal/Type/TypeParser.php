@@ -605,7 +605,10 @@ class TypeParser
                 }
             }
 
-            $generic_params[] = $tree_type instanceof Union ? $tree_type : new Union([$tree_type], ['from_docblock' => $from_docblock]);
+            $generic_params[] = $tree_type instanceof Union
+                ? $tree_type
+                : new Union([$tree_type], ['from_docblock' => $from_docblock])
+            ;
         }
 
         $generic_type_value = TypeTokenizer::fixScalarTerms($generic_type);

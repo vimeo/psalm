@@ -114,7 +114,9 @@ class YieldAnalyzer
                 }
 
                 if (isset($context->vars_in_scope[$var_comment->var_id])) {
-                    $comment_type = $comment_type->setParentNodes($context->vars_in_scope[$var_comment->var_id]->parent_nodes);
+                    $comment_type = $comment_type->setParentNodes(
+                        $context->vars_in_scope[$var_comment->var_id]->parent_nodes
+                    );
                 }
 
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
@@ -165,7 +167,7 @@ class YieldAnalyzer
             $declaring_classlike_storage = $classlike_storage->declaring_yield_fqcn
                 ? $codebase->classlike_storage_provider->get($classlike_storage->declaring_yield_fqcn)
                 : $classlike_storage;
-                
+
             $yield_candidate_type = $classlike_storage->yield;
             $yield_candidate_type = !$yield_candidate_type->isMixed()
                 ? TypeExpander::expandUnion(

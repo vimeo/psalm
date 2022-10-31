@@ -41,6 +41,7 @@ use function array_pop;
 use function array_reverse;
 use function array_shift;
 use function array_slice;
+use function assert;
 use function count;
 use function end;
 use function implode;
@@ -948,9 +949,10 @@ class ArrayAssignmentAnalyzer
                         $rooted_parent_id = $root_var_id;
                         $root_type = $array_type;
                     } else {
+                        assert($parent_array_var_id !== null);
                         $rooted_parent_id = $parent_array_var_id;
                     }
-    
+
                     $context->vars_in_scope[$rooted_parent_id] = $array_type;
                 }
             }

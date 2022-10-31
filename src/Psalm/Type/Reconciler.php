@@ -309,9 +309,11 @@ class Reconciler
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
                     $result_type = $result_type->setParentNodes($before_adjustment->parent_nodes);
                 } elseif (!$did_type_exist && $code_location) {
-                    $result_type = $result_type->setParentNodes($statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
-                        $key
-                    ));
+                    $result_type = $result_type->setParentNodes(
+                        $statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
+                            $key
+                        )
+                    );
                 }
             }
 
@@ -778,7 +780,8 @@ class Reconciler
 
                             if (!isset($array_properties[$key_parts_key])) {
                                 if ($existing_key_type_part->previous_value_type) {
-                                    $new_base_type_candidate = $existing_key_type_part->previous_value_type->setDifferent(true);
+                                    $new_base_type_candidate = $existing_key_type_part
+                                        ->previous_value_type->setDifferent(true);
                                 } else {
                                     return null;
                                 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@aea40efb222f6a1eeabbbc322d89f82235da9fe6">
+<files psalm-version="dev-master@53e3889745852409b704e0035d93e0819d522912">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -102,11 +102,6 @@
       <code>$gettype_expr-&gt;getArgs()[0]</code>
       <code>$gettype_expr-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/ArrayAssignmentAnalyzer.php">
-    <PossiblyNullArrayOffset occurrences="1">
-      <code>$context-&gt;vars_in_scope</code>
-    </PossiblyNullArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/ArithmeticOpAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">

@@ -199,7 +199,8 @@ class AssignmentAnalyzer
                     $comment_type,
                     $comment_type_location,
                     $not_ignored_docblock_var_ids,
-                    $var_id === $var_comment->var_id && $assign_value_type && $comment_type && $assign_value_type->by_ref
+                    $var_id === $var_comment->var_id
+                        && $assign_value_type && $comment_type && $assign_value_type->by_ref
                 );
             }
         }
