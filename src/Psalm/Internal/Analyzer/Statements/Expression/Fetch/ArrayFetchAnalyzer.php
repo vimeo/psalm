@@ -185,7 +185,6 @@ class ArrayFetchAnalyzer
                 $statements_analyzer->node_data->setType($stmt->dim, $used_key_type);
             }
 
-            $context->vars_in_scope[$keyed_array_var_id] = $stmt_type;
             $statements_analyzer->node_data->setType(
                 $stmt,
                 $stmt_type
