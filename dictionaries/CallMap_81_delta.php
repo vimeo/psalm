@@ -17,7 +17,7 @@
 return [
   'added' => [
     'array_is_list' => ['bool', 'array' => 'array'],
-    'enum_exists' => ['bool', 'class' => 'class-string', 'autoload=' => 'bool'],
+    'enum_exists' => ['bool', 'enum' => 'class-string', 'autoload=' => 'bool'],
     'fsync' => ['bool', 'stream' => 'resource'],
     'fdatasync' => ['bool', 'stream' => 'resource'],
     'imageavif' => ['bool', 'image'=>'GdImage', 'file='=>'resource|string|null', 'quality='=>'int', 'speed='=>'int'],
@@ -46,6 +46,8 @@ return [
     'ReflectionEnumUnitCase::getEnum' => ['ReflectionEnum'],
     'ReflectionEnumUnitCase::getValue' => ['UnitEnum'],
     'ReflectionEnumBackedCase::getBackingValue' => ['string|int'],
+    'ReflectionFunctionAbstract::getTentativeReturnType' => ['?ReflectionType'],
+    'ReflectionFunctionAbstract::hasTentativeReturnType' => ['bool'],
     'ReflectionFunctionAbstract::isStatic' => ['bool'],
     'ReflectionObject::isEnum' => ['bool'],
   ],
@@ -70,6 +72,10 @@ return [
     'finfo_set_flags' => [
         'old' => ['bool', 'finfo'=>'resource', 'flags'=>'int'],
         'new' => ['bool', 'finfo'=>'finfo', 'flags'=>'int'],
+    ],
+    'fputcsv' => [
+        'old' => ['int|false', 'stream'=>'resource', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+        'new' => ['int|false', 'stream'=>'resource', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
     ],
     'ftp_connect' => [
       'old' => ['resource|false', 'hostname' => 'string', 'port=' => 'int', 'timeout=' => 'int'],
@@ -100,8 +106,8 @@ return [
       'new' => ['bool', 'ftp' => 'FTP\Connection', 'command' => 'string'],
     ],
     'ftp_raw' => [
-      'old' => ['array', 'ftp' => 'resource', 'command' => 'string'],
-      'new' => ['array', 'ftp' => 'FTP\Connection', 'command' => 'string'],
+      'old' => ['?array', 'ftp' => 'resource', 'command' => 'string'],
+      'new' => ['?array', 'ftp' => 'FTP\Connection', 'command' => 'string'],
     ],
     'ftp_mkdir' => [
       'old' => ['string|false', 'ftp' => 'resource', 'directory' => 'string'],
@@ -216,16 +222,20 @@ return [
       'new' => ['mixed|false', 'ftp' => 'FTP\Connection', 'option' => 'int'],
     ],
     'hash' => [
-      'old' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
-      'new' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'array'],
+      'old' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'array{seed:scalar}'],
     ],
     'hash_file' => [
-      'old' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool'],
-      'new' => ['string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'array'],
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'array{seed:scalar}'],
     ],
     'hash_init' => [
       'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
-      'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array'],
+      'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array{seed:scalar}'],
+    ],
+    'imageinterlace' => [
+      'old' => ['int|bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
+      'new' => ['bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
     ],
     'imap_append' => [
         'old' => ['bool', 'imap'=>'resource', 'folder'=>'string', 'message'=>'string', 'options='=>'string', 'internal_date='=>'string'],
@@ -260,8 +270,8 @@ return [
         'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
     ],
     'imap_delete' => [
-        'old' => ['bool', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
-        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+        'old' => ['bool', 'imap'=>'resource', 'message_nums'=>'string', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'flags='=>'int'],
     ],
     'imap_deletemailbox' => [
         'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string'],
@@ -440,12 +450,16 @@ return [
         'new' => ['int|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int'],
     ],
     'imap_undelete' => [
-        'old' => ['bool', 'imap'=>'resource', 'message_num'=>'int', 'flags='=>'int'],
-        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'flags='=>'int'],
+        'old' => ['bool', 'imap'=>'resource', 'message_nums'=>'string', 'flags='=>'int'],
+        'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'flags='=>'int'],
     ],
     'imap_unsubscribe' => [
         'old' => ['bool', 'imap'=>'resource', 'mailbox'=>'string'],
         'new' => ['bool', 'imap'=>'IMAP\Connection', 'mailbox'=>'string'],
+    ],
+    'ini_set' => [
+        'old' => ['string|false', 'option'=>'string', 'value'=>'string'],
+        'new' => ['string|false', 'option'=>'string', 'value'=>'string|int|float|bool|null'],
     ],
     'ldap_add' => [
       'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],

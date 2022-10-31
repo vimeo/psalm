@@ -8,17 +8,16 @@ use Psalm\Internal\Type\ArrayType;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function array_filter;
 use function assert;
 use function count;
-use function get_class;
 use function in_array;
 use function max;
 use function min;
@@ -72,11 +71,12 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     } elseif ($atomic_type instanceof TPositiveInt) {
                         $min_bounds[] = 1;
                         $max_bounds[] = null;
-                    } elseif (get_class($atomic_type) === TInt::class) {
+                    } elseif ($atomic_type instanceof TDependentListKey) {
+                        $min_bounds[] = 0;
+                        $max_bounds[] = null;
+                    } else {//already guarded by the `instanceof TInt` check above
                         $min_bounds[] = null;
                         $max_bounds[] = null;
-                    } else {
-                        throw new UnexpectedValueException('Unexpected type');
                     }
                 }
             } else {

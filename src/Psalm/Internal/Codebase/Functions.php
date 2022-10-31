@@ -84,8 +84,9 @@ class Functions
             $function_id = substr($function_id, 1);
         }
 
+        $from_stubs = false;
         if (isset(self::$stubbed_functions[$function_id])) {
-            return self::$stubbed_functions[$function_id];
+            $from_stubs = self::$stubbed_functions[$function_id];
         }
 
         $file_storage = null;
@@ -117,6 +118,10 @@ class Functions
                 return $this->reflection->getFunctionStorage($function_id);
             }
 
+            if ($from_stubs) {
+                return $from_stubs;
+            }
+
             throw new UnexpectedValueException(
                 'Expecting non-empty $root_file_path and $checked_file_path'
             );
@@ -135,6 +140,10 @@ class Functions
                 }
             }
 
+            if ($from_stubs) {
+                return $from_stubs;
+            }
+
             throw new UnexpectedValueException(
                 'Expecting ' . $function_id . ' to have storage in ' . $checked_file_path
             );
@@ -145,6 +154,10 @@ class Functions
         $declaring_file_storage = $this->file_storage_provider->get($declaring_file_path);
 
         if (!isset($declaring_file_storage->functions[$function_id])) {
+            if ($from_stubs) {
+                return $from_stubs;
+            }
+
             throw new UnexpectedValueException(
                 'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path
             );

@@ -14,7 +14,9 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
+use function array_key_exists;
 use function array_merge;
+use function array_reduce;
 use function count;
 use function is_string;
 use function ltrim;
@@ -95,6 +97,9 @@ class FunctionDocblockManipulator
 
     /** @var bool */
     private $is_pure = false;
+
+    /** @var list<string> */
+    private $throwsExceptions = [];
 
     /**
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
@@ -395,6 +400,21 @@ class FunctionDocblockManipulator
             $modified_docblock = true;
             $parsed_docblock->tags['psalm-pure'] = [''];
         }
+        if (count($this->throwsExceptions) > 0) {
+            $modified_docblock = true;
+            $inferredThrowsClause = array_reduce(
+                $this->throwsExceptions,
+                function (string $throwsClause, string $exception) {
+                    return $throwsClause === '' ? $exception : $throwsClause.'|'.$exception;
+                },
+                ''
+            );
+            if (array_key_exists('throws', $parsed_docblock->tags)) {
+                $parsed_docblock->tags['throws'][] = $inferredThrowsClause;
+            } else {
+                $parsed_docblock->tags['throws'] = [$inferredThrowsClause];
+            }
+        }
 
 
         if ($this->new_phpdoc_return_type && $this->new_phpdoc_return_type !== $old_phpdoc_return_type) {
@@ -526,6 +546,14 @@ class FunctionDocblockManipulator
     public function makePure(): void
     {
         $this->is_pure = true;
+    }
+
+    /**
+     * @param list<string> $exceptions
+     */
+    public function addThrowsDocblock(array $exceptions): void
+    {
+        $this->throwsExceptions = $exceptions;
     }
 
     public static function clearCache(): void

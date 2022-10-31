@@ -205,6 +205,11 @@ class ProjectAnalyzer
     public $provide_completion = false;
 
     /**
+     * @var list<string>
+     */
+    public $check_paths_files = [];
+
+    /**
      * @var array<string,string>
      */
     private $project_files = [];
@@ -397,6 +402,7 @@ class ProjectAnalyzer
             '.pylint' => Report::TYPE_PYLINT,
             '.console' => Report::TYPE_CONSOLE,
             '.sarif' => Report::TYPE_SARIF,
+            'count.txt' => Report::TYPE_COUNT,
         ];
 
         foreach ($report_file_paths as $report_file_path) {
@@ -1177,6 +1183,7 @@ class ProjectAnalyzer
             if (is_dir($path)) {
                 $this->checkDirWithConfig($path, $this->config, true);
             } elseif (is_file($path)) {
+                $this->check_paths_files[] = $path;
                 $this->codebase->addFilesToAnalyze([$path => $path]);
                 $this->config->hide_external_errors = $this->config->isInProjectDirs($path);
             }
@@ -1322,6 +1329,7 @@ class ProjectAnalyzer
 
         $supported_issues_to_fix[] = 'MissingImmutableAnnotation';
         $supported_issues_to_fix[] = 'MissingPureAnnotation';
+        $supported_issues_to_fix[] = 'MissingThrowsDocblock';
 
         $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
 

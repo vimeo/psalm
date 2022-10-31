@@ -18,7 +18,7 @@ Let's suppose we want to make a userland implementation of PHP's numeric additio
 <?php
 
 /**
- * @template T as int|float
+ * @template T of int|float
  * @param T $a
  * @param T $b
  * @return int|float
@@ -57,7 +57,7 @@ class A {
     const TYPE_INT = 1;
 
     /**
-     * @template T as int
+     * @template T of int
      * @param T $i
      * @psalm-return (
      *     T is self::TYPE_STRING

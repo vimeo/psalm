@@ -793,9 +793,9 @@ class Codebase
         return $this->classlikes->interfaceHasCorrectCasing($fq_interface_name);
     }
 
-    public function traitHasCorrectCase(string $fq_trait_name): bool
+    public function traitHasCorrectCasing(string $fq_trait_name): bool
     {
-        return $this->classlikes->traitHasCorrectCase($fq_trait_name);
+        return $this->classlikes->traitHasCorrectCasing($fq_trait_name);
     }
 
     /**
@@ -1088,7 +1088,7 @@ class Codebase
             }
 
             if (strpos($symbol, '$') === 0) {
-                $type = VariableFetchAnalyzer::getGlobalType($symbol);
+                $type = VariableFetchAnalyzer::getGlobalType($symbol, $this->analysis_php_version_id);
                 if (!$type->isMixed()) {
                     return ['type' => '<?php ' . $type];
                 }
@@ -1669,7 +1669,7 @@ class Codebase
             ) {
                 $file_contents = $this->getFileContents($file_path);
 
-                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name);
+                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name, 1);
 
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);

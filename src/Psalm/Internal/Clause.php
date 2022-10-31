@@ -10,14 +10,16 @@ use function array_map;
 use function array_unique;
 use function array_values;
 use function count;
+use function hash;
 use function implode;
 use function ksort;
-use function md5;
 use function reset;
 use function serialize;
 use function sort;
 use function strpos;
 use function substr;
+
+use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -106,11 +108,15 @@ class Clause
         } else {
             ksort($possibilities);
 
-            foreach ($possibilities as $i => $_) {
+            foreach ($possibilities as $i => $v) {
+                if (count($v) < 2) {
+                    continue;
+                }
                 sort($possibilities[$i]);
             }
 
-            $this->hash = md5(serialize($possibilities));
+            $data = serialize($possibilities);
+            $this->hash = PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
         }
     }
 
@@ -120,8 +126,14 @@ class Clause
             return false;
         }
 
+        foreach ($other_clause->possibilities as $var => $_) {
+            if (!isset($this->possibilities[$var])) {
+                return false;
+            }
+        }
+
         foreach ($other_clause->possibilities as $var => $possible_types) {
-            if (!isset($this->possibilities[$var]) || count(array_diff($possible_types, $this->possibilities[$var]))) {
+            if (count(array_diff($possible_types, $this->possibilities[$var]))) {
                 return false;
             }
         }

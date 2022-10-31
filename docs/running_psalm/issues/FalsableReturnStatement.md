@@ -28,7 +28,7 @@ function getCommaPosition(string $a) : int {
 }
 ```
 
-Alternatively you may chose to throw an exception:
+Alternatively you may choose to throw an exception:
 
 ```php
 <?php

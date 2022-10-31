@@ -375,7 +375,7 @@ class AssertAnnotationTest extends TestCase
                         echo "Ma chaine " . $myString;
                     }',
             ],
-            'assertServerVar' => [
+            'assertSessionVar' => [
                 '<?php
                     namespace Bar;
 
@@ -388,8 +388,8 @@ class AssertAnnotationTest extends TestCase
                         return is_string($a);
                     }
 
-                    if (my_is_string($_SERVER["abc"])) {
-                        $i = substr($_SERVER["abc"], 1, 2);
+                    if (my_is_string($_SESSION["abc"])) {
+                        $i = substr($_SESSION["abc"], 1, 2);
                     }',
             ],
             'dontBleedBadAssertVarIntoContext' => [
@@ -513,7 +513,7 @@ class AssertAnnotationTest extends TestCase
                     }
 
                     /** @psalm-suppress MixedAssignment */
-                    $a = $_GET["a"];
+                    $a = $GLOBALS["a"];
 
                     assertIntOrFoo($a);
 

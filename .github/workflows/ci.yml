@@ -1,6 +1,9 @@
 name: Run unit tests
 
 on: [push, pull_request]
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Check PHP syntax
@@ -13,7 +16,7 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -22,7 +25,7 @@ jobs:
           echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
 
       - name: Cache composer cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}
@@ -42,6 +45,8 @@ jobs:
       - run: |
           git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
   chunk-matrix:
+    permissions:
+      contents: none
     name: Generate Chunk Matrix
 
     runs-on: ubuntu-latest
@@ -86,7 +91,7 @@ jobs:
           coverage: none
           extensions: decimal
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -95,7 +100,7 @@ jobs:
           echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
 
       - name: Cache composer cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

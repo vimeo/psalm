@@ -24,7 +24,7 @@ Psalm will probably find a number of issues - find out how to deal with them in 
 
 ## Installing plugins
 
-While Psalm can figure out the types used by various libraries based on the
+While Psalm can figure out the types used by various libraries based on
 their source code and docblocks, it works even better with custom-tailored types
 provided by Psalm plugins.
 

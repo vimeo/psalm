@@ -131,7 +131,12 @@ class ClassLikes
     /**
      * @var array<lowercase-string, string>
      */
-    private $classlike_aliases = [];
+    private $classlike_aliases_map = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    private $existing_classlike_aliases = [];
 
     /**
      * @var array<string, PhpParser\Node\Stmt\Trait_>
@@ -185,7 +190,7 @@ class ClassLikes
         $predefined_classes = get_declared_classes();
 
         foreach ($predefined_classes as $predefined_class) {
-            $predefined_class = preg_replace('/^\\\/', '', $predefined_class);
+            $predefined_class = preg_replace('/^\\\/', '', $predefined_class, 1);
             /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new ReflectionClass($predefined_class);
 
@@ -201,7 +206,7 @@ class ClassLikes
         $predefined_interfaces = get_declared_interfaces();
 
         foreach ($predefined_interfaces as $predefined_interface) {
-            $predefined_interface = preg_replace('/^\\\/', '', $predefined_interface);
+            $predefined_interface = preg_replace('/^\\\/', '', $predefined_interface, 1);
             /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new ReflectionClass($predefined_interface);
 
@@ -750,7 +755,7 @@ class ClassLikes
             return true;
         }
 
-        if (isset($this->classlike_aliases[strtolower($fq_class_name)])) {
+        if (isset($this->existing_classlike_aliases[$fq_class_name])) {
             return true;
         }
 
@@ -759,7 +764,7 @@ class ClassLikes
 
     public function interfaceHasCorrectCasing(string $fq_interface_name): bool
     {
-        if (isset($this->classlike_aliases[strtolower($fq_interface_name)])) {
+        if (isset($this->existing_classlike_aliases[$fq_interface_name])) {
             return true;
         }
 
@@ -768,28 +773,20 @@ class ClassLikes
 
     public function enumHasCorrectCasing(string $fq_enum_name): bool
     {
-        if (isset($this->classlike_aliases[strtolower($fq_enum_name)])) {
+        if (isset($this->existing_classlike_aliases[$fq_enum_name])) {
             return true;
         }
 
         return isset($this->existing_enums[$fq_enum_name]);
     }
 
-    public function traitHasCorrectCase(string $fq_trait_name): bool
+    public function traitHasCorrectCasing(string $fq_trait_name): bool
     {
-        if (isset($this->classlike_aliases[strtolower($fq_trait_name)])) {
+        if (isset($this->existing_classlike_aliases[$fq_trait_name])) {
             return true;
         }
 
         return isset($this->existing_traits[$fq_trait_name]);
-    }
-
-    /**
-     * @param  lowercase-string  $fq_class_name
-     */
-    public function isUserDefined(string $fq_class_name): bool
-    {
-        return $this->classlike_storage_provider->get($fq_class_name)->user_defined;
     }
 
     public function getTraitNode(string $fq_trait_name): PhpParser\Node\Stmt\Trait_
@@ -828,12 +825,10 @@ class ClassLikes
         throw new UnexpectedValueException('Could not locate trait statement');
     }
 
-    /**
-     * @param lowercase-string $alias_name
-     */
     public function addClassAlias(string $fq_class_name, string $alias_name): void
     {
-        $this->classlike_aliases[$alias_name] = $fq_class_name;
+        $this->classlike_aliases_map[strtolower($alias_name)] = $fq_class_name;
+        $this->existing_classlike_aliases[$alias_name] = true;
     }
 
     public function getUnAliasedName(string $alias_name): string
@@ -843,7 +838,7 @@ class ClassLikes
             return $alias_name;
         }
 
-        $result = $this->classlike_aliases[$alias_name_lc] ?? $alias_name;
+        $result = $this->classlike_aliases_map[$alias_name_lc] ?? $alias_name;
         if ($result === $alias_name) {
             return $result;
         }

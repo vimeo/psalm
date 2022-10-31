@@ -3,13 +3,14 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Storage\ClassLikeStorage;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function array_merge;
 use function dirname;
 use function file_exists;
-use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function get_class;
@@ -17,6 +18,7 @@ use function hash;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 use function is_dir;
+use function is_null;
 use function mkdir;
 use function serialize;
 use function strtolower;
@@ -24,6 +26,7 @@ use function unlink;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
+use const LOCK_EX;
 use const PHP_VERSION_ID;
 
 /**
@@ -75,13 +78,19 @@ class ClassLikeStorageCacheProvider
     {
         $fq_classlike_name_lc = strtolower($storage->name);
 
-        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path, true);
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
+        // check if we have it in cache already
+        $cached_value = $this->loadFromCache($fq_classlike_name_lc, $file_path);
+        if (!is_null($cached_value) && $cached_value->hash === $storage->hash) {
+            return;
+        }
+
+        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path, true);
         if ($this->config->use_igbinary) {
-            file_put_contents($cache_location, igbinary_serialize($storage));
+            file_put_contents($cache_location, igbinary_serialize($storage), LOCK_EX);
         } else {
-            file_put_contents($cache_location, serialize($storage));
+            file_put_contents($cache_location, serialize($storage), LOCK_EX);
         }
     }
 
@@ -110,9 +119,9 @@ class ClassLikeStorageCacheProvider
         return $cached_value;
     }
 
-    private function getCacheHash(?string $file_path, ?string $file_contents): string
+    private function getCacheHash(?string $_unused_file_path, ?string $file_contents): string
     {
-        $data = ($file_path ? $file_contents : '') . $this->modified_timestamps;
+        $data = $file_contents ? $file_contents : $this->modified_timestamps;
         return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
@@ -125,7 +134,7 @@ class ClassLikeStorageCacheProvider
 
         if (file_exists($cache_location)) {
             if ($this->config->use_igbinary) {
-                $storage = igbinary_unserialize((string)file_get_contents($cache_location));
+                $storage = igbinary_unserialize(Providers::safeFileGetContents($cache_location));
 
                 if ($storage instanceof ClassLikeStorage) {
                     return $storage;
@@ -134,7 +143,7 @@ class ClassLikeStorageCacheProvider
                 return null;
             }
 
-            $storage = unserialize((string)file_get_contents($cache_location));
+            $storage = unserialize(Providers::safeFileGetContents($cache_location));
 
             if ($storage instanceof ClassLikeStorage) {
                 return $storage;
@@ -160,7 +169,21 @@ class ClassLikeStorageCacheProvider
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::CLASS_CACHE_DIRECTORY;
 
         if ($create_directory && !is_dir($parser_cache_directory)) {
-            mkdir($parser_cache_directory, 0777, true);
+            try {
+                if (mkdir($parser_cache_directory, 0777, true) === false) {
+                    // any other error than directory already exists/permissions issue
+                    throw new RuntimeException(
+                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons'
+                    );
+                }
+            } catch (RuntimeException $e) {
+                // Race condition (#4483)
+                if (!is_dir($parser_cache_directory)) {
+                    // rethrow the error with default message
+                    // it contains the reason why creation failed
+                    throw $e;
+                }
+            }
         }
 
         $data = $file_path ? strtolower($file_path) . ' ' : '';
