@@ -37,7 +37,7 @@ use function version_compare;
 class InternalCallMapHandler
 {
     private const PHP_MAJOR_VERSION = 8;
-    private const PHP_MINOR_VERSION = 1;
+    private const PHP_MINOR_VERSION = 2;
     private const LOWEST_AVAILABLE_DELTA = 71;
 
     /**
