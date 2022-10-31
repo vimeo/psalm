@@ -9,13 +9,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
-use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 
 use function get_class;
@@ -23,65 +16,47 @@ use function get_class;
 /**
  * Represents an array where the type of each value
  * is a function of its string key value
+ * @psalm-immutable
  */
-class TClassStringMap extends Atomic
+final class TClassStringMap extends Atomic
 {
     /**
      * @var string
      */
     public $param_name;
 
-    /**
-     * @var ?TNamedObject
-     */
-    public $as_type;
+    public ?TNamedObject $as_type;
 
     /**
      * @var Union
      */
     public $value_param;
 
-    public const KEY = 'class-string-map';
-
     /**
      * Constructs a new instance of a list
      */
-    public function __construct(string $param_name, ?TNamedObject $as_type, Union $value_param)
-    {
-        $this->value_param = $value_param;
+    public function __construct(
+        string $param_name,
+        ?TNamedObject $as_type,
+        Union $value_param,
+        bool $from_docblock = false
+    ) {
         $this->param_name = $param_name;
         $this->as_type = $as_type;
+        $this->value_param = $value_param;
+        $this->from_docblock = $from_docblock;
     }
 
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
-        /** @psalm-suppress MixedOperand */
-        return static::KEY
+        return 'class-string-map'
             . '<'
             . $this->param_name
             . ' as '
-            . ($this->as_type ? (string) $this->as_type : 'object')
+            . ($this->as_type ? $this->as_type->getId($exact) : 'object')
             . ', '
-            . ((string) $this->value_param)
+            . $this->value_param->getId($exact)
             . '>';
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        /** @psalm-suppress MixedOperand */
-        return static::KEY
-            . '<'
-            . $this->param_name
-            . ' as '
-            . ($this->as_type ? (string) $this->as_type : 'object')
-            . ', '
-            . $this->value_param->getId()
-            . '>';
-    }
-
-    public function __clone()
-    {
-        $this->value_param = clone $this->value_param;
     }
 
     /**
@@ -104,8 +79,7 @@ class TClassStringMap extends Atomic
                 );
         }
 
-        /** @psalm-suppress MixedOperand */
-        return static::KEY
+        return 'class-string-map'
             . '<'
             . $this->param_name
             . ($this->as_type ? ' as ' . $this->as_type : '')
@@ -126,13 +100,12 @@ class TClassStringMap extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): string {
         return 'array';
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
@@ -142,9 +115,13 @@ class TClassStringMap extends Atomic
         return 'array';
     }
 
+    /**
+     * @psalm-suppress InaccessibleProperty We're only acting on cloned instances
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        ?Codebase $codebase = null,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
@@ -153,10 +130,10 @@ class TClassStringMap extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $map = clone $this;
+    ): self {
+        $cloned = null;
 
-        foreach ([Type::getString(), $map->value_param] as $offset => $type_param) {
+        foreach ([Type::getString(), $this->value_param] as $offset => $type_param) {
             $input_type_param = null;
 
             if (($input_type instanceof TGenericObject
@@ -195,28 +172,40 @@ class TClassStringMap extends Atomic
                 $depth + 1
             );
 
-            if ($offset === 1) {
-                $map->value_param = $value_param;
+            if ($offset === 1 && ($cloned || $this->value_param !== $value_param)) {
+                $cloned ??= clone $this;
+                $cloned->value_param = $value_param;
             }
         }
 
-        return $map;
+        return $cloned ?? $this;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        TemplateInferredTypeReplacer::replace(
+    ): self {
+        $value_param = TemplateInferredTypeReplacer::replace(
             $this->value_param,
             $template_result,
             $codebase
         );
+        if ($value_param === $this->value_param) {
+            return $this;
+        }
+        return new static(
+            $this->param_name,
+            $this->as_type,
+            $value_param
+        );
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return [$this->value_param];
+        return ['value_param'];
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
@@ -232,7 +221,7 @@ class TClassStringMap extends Atomic
         return true;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return $this->getKey();
     }

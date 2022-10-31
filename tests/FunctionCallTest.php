@@ -15,13 +15,13 @@ class FunctionCallTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'preg_grep' => [
-                '<?php
+                'code' => '<?php
                   /**
                    * @param array<int,string> $strings
                    * @return array<int,string>
@@ -32,7 +32,7 @@ class FunctionCallTest extends TestCase
                 '
             ],
             'typedArrayWithDefault' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /** @param array<A> $a */
@@ -41,20 +41,20 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'abs' => [
-                '<?php
+                'code' => '<?php
                     $a = abs(-5);
                     $b = abs(-7.5);
                     $c = $_GET["c"];
                     $c = is_numeric($c) ? abs($c) : null;',
                 'assertions' => [
-                    '$a' => 'int|positive-int',
+                    '$a' => 'int<0, max>',
                     '$b' => 'float',
-                    '$c' => 'float|int|null|positive-int',
+                    '$c' => 'float|int<0, max>|null',
                 ],
-                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
             ],
             'validDocblockParamDefault' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  int|false $p
                      * @return void
@@ -62,12 +62,12 @@ class FunctionCallTest extends TestCase
                     function f($p = false) {}',
             ],
             'byRefNewString' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(?string &$v): void {}
                     fooFoo($a);',
             ],
             'byRefVariableFunctionExistingArray' => [
-                '<?php
+                'code' => '<?php
                     $arr = [];
                     function fooFoo(array &$v): void {}
                     $function = "fooFoo";
@@ -75,7 +75,7 @@ class FunctionCallTest extends TestCase
                     if ($arr) {}',
             ],
             'byRefProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public $foo = "hello";
@@ -88,7 +88,7 @@ class FunctionCallTest extends TestCase
                     fooFoo($a->foo);',
             ],
             'namespaced' => [
-                '<?php
+                'code' => '<?php
                     namespace A;
 
                     /** @return void */
@@ -96,7 +96,7 @@ class FunctionCallTest extends TestCase
                     f(5);',
             ],
             'namespacedRootFunctionCall' => [
-                '<?php
+                'code' => '<?php
                     namespace {
                         /** @return void */
                         function foo() { }
@@ -106,7 +106,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'namespacedAliasedFunctionCall' => [
-                '<?php
+                'code' => '<?php
                     namespace Aye {
                         /** @return void */
                         function foo() { }
@@ -118,24 +118,24 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'noRedundantConditionAfterArrayObjectCountCheck' => [
-                '<?php
+                'code' => '<?php
                     /** @var ArrayObject<int, int> */
                     $a = [];
                     $b = 5;
                     if (count($a)) {}',
             ],
             'noRedundantConditionAfterMixedOrEmptyArrayCountCheck' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : void {
                         $a = $GLOBALS["s"] ?: [];
                         if (count($a)) {}
                         if (!count($a)) {}
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
             ],
             'objectLikeArrayAssignmentInConditional' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
 
                     if (rand(0, 1)) {
@@ -146,14 +146,14 @@ class FunctionCallTest extends TestCase
                     if (!count($a)) {}',
             ],
             'noRedundantConditionAfterCheckingExplodeLength' => [
-                '<?php
+                'code' => '<?php
                     /** @var string */
                     $s = "hello";
                     $segments = explode(".", $s);
                     if (count($segments) === 1) {}',
             ],
             'arrayPopNonEmptyAfterThreeAssertions' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                         /** @var array<int, string> */
@@ -176,7 +176,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'countMoreThan0CanBeInverted' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
 
                     if (rand(0, 1)) {
@@ -187,11 +187,18 @@ class FunctionCallTest extends TestCase
                         exit;
                     }',
                     'assertions' => [
-                        '$a' => 'array<empty, empty>',
+                        '$a' => 'array<never, never>',
                     ],
             ],
+            'countCheckOnNonEmptyArray' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string> $arr */
+                    function foo(array $arr): void {
+                        if (count($arr) > 5) {}
+                    }',
+            ],
             'byRefAfterCallable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable $callback
                      * @return void
@@ -202,14 +209,14 @@ class FunctionCallTest extends TestCase
                       if ($b[0]) {}
                     }',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
                 ],
             ],
             'ignoreNullablePregReplace' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s): string {
                         $s = preg_replace("/hello/", "", $s);
                         if ($s === null) {
@@ -227,7 +234,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'extractVarCheck' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $str): void {}
 
                     $foo = null;
@@ -235,14 +242,14 @@ class FunctionCallTest extends TestCase
                     extract($a);
                     takesString($foo);',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                     'MixedArrayAccess',
                     'MixedArgument',
                 ],
             ],
             'compact' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array<string, mixed>
                      */
@@ -251,7 +258,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'objectLikeKeyChecksAgainstGeneric' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<string, string> $b
                      */
@@ -263,7 +270,7 @@ class FunctionCallTest extends TestCase
                     a(["a" => "hello"]);',
             ],
             'objectLikeKeyChecksAgainstTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{a: string} $b
                      */
@@ -275,7 +282,7 @@ class FunctionCallTest extends TestCase
                     a(["a" => "hello"]);',
             ],
             'getenv' => [
-                '<?php
+                'code' => '<?php
                     $a = getenv();
                     $b = getenv("some_key");',
                 'assertions' => [
@@ -284,7 +291,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'ignoreFalsableFileGetContents' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s): string {
                         return file_get_contents($s);
                     }
@@ -303,7 +310,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'validCallables' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function b() : void {}
                     }
@@ -315,7 +322,7 @@ class FunctionCallTest extends TestCase
                     "c"();',
             ],
             'noInvalidOperandForCoreFunctions' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a, string $b) : int {
                         $aTime = strtotime($a);
                         $bTime = strtotime($b);
@@ -324,24 +331,24 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'strposIntSecondParam' => [
-                '<?php
+                'code' => '<?php
                     function hasZeroByteOffset(string $s) : bool {
                         return strpos($s, 0) !== false;
                     }',
             ],
             'functionCallInGlobalScope' => [
-                '<?php
+                'code' => '<?php
                     $a = function() use ($argv) : void {};',
             ],
             'varExport' => [
-                '<?php
+                'code' => '<?php
                     $a = var_export(["a"], true);',
                 'assertions' => [
                     '$a' => 'string',
                 ],
             ],
             'varExportConstFetch' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         const BOOL_VAR_EXPORT_RETURN = true;
 
@@ -354,7 +361,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'explode' => [
-                '<?php
+                'code' => '<?php
                     /** @var string $string */
                     $elements = explode(" ", $string);',
                 'assertions' => [
@@ -362,7 +369,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithPositiveLimit' => [
-                '<?php
+                'code' => '<?php
                     /** @var string $string */
                     $elements = explode(" ", $string, 5);',
                 'assertions' => [
@@ -370,7 +377,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithNegativeLimit' => [
-                '<?php
+                'code' => '<?php
                     /** @var string $string */
                     $elements = explode(" ", $string, -5);',
                 'assertions' => [
@@ -378,7 +385,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithDynamicLimit' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var string $string
                      * @var int $limit
@@ -389,7 +396,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithDynamicDelimiter' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var string $delim
                      * @var string $string
@@ -400,7 +407,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithDynamicDelimiterAndPositiveLimit' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var string $delim
                      * @var string $string
@@ -411,7 +418,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithDynamicDelimiterAndNegativeLimit' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var string $delim
                      * @var string $string
@@ -422,7 +429,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithDynamicDelimiterAndLimit' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var string $delim
                      * @var string $string
@@ -434,7 +441,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithDynamicNonEmptyDelimiter' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var non-empty-string $delim
                      * @var string $string
@@ -445,7 +452,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithLiteralNonEmptyDelimiter' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var string $string
                      */
@@ -455,7 +462,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithLiteralEmptyDelimiter' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var string $string
                      */
@@ -465,28 +472,28 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'explodeWithPossiblyFalse' => [
-                '<?php
+                'code' => '<?php
                     /** @return non-empty-list<string> */
                     function exploder(string $d, string $s) : array {
                         return explode($d, $s);
                     }',
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
-                '<?php
+                'code' => '<?php
                     if (class_exists(Foo::class)) {}',
             ],
             'allowConstructorAfterClassExists' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : void {
                         if (class_exists($s)) {
                             new $s();
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedMethodCall'],
+                'ignored_issues' => ['MixedMethodCall'],
             ],
             'next' => [
-                '<?php
+                'code' => '<?php
                     $arr = ["one", "two", "three"];
                     $n = next($arr);',
                 'assertions' => [
@@ -494,7 +501,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'iteratorToArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return Generator<stdClass>
                      */
@@ -508,7 +515,10 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'iteratorToArrayWithGetIterator' => [
-                '<?php
+                'code' => '<?php
+                    /**
+                     * @implements IteratorAggregate<int, string>
+                     */
                     class C implements IteratorAggregate {
                         /**
                          * @return Traversable<int,string>
@@ -523,10 +533,13 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'iteratorToArrayWithGetIteratorReturningList' => [
-                '<?php
+                'code' => '<?php
+                    /**
+                     * @implements IteratorAggregate<int, string>
+                     */
                     class C implements IteratorAggregate {
                         /**
-                         * @return Traversable<int,string>
+                         * @return Traversable<int, string>
                          */
                         public function getIterator() {
                             yield 1 => "1";
@@ -538,7 +551,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'strtrWithPossiblyFalseFirstArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param false|string $str
                      * @param array<string, string> $replace_pairs
@@ -550,7 +563,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'versionCompare' => [
-                '<?php
+                'code' => '<?php
                     /** @return "="|"==" */
                     function getString() : string {
                         return rand(0, 1) ? "==" : "=";
@@ -567,7 +580,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'getTimeOfDay' => [
-                '<?php
+                'code' => '<?php
                     $a = gettimeofday(true) - gettimeofday(true);
                     $b = gettimeofday();
                     $c = gettimeofday(false);',
@@ -578,7 +591,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'parseUrlArray' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : string {
                         $parts = parse_url($s);
                         return $parts["host"] ?? "";
@@ -626,10 +639,10 @@ class FunctionCallTest extends TestCase
                     '$porta' => 'false|int|null',
                     '$porte' => 'false|int|null',
                 ],
-                'error_levels' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'parseUrlComponent' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : string {
                         return parse_url($s, PHP_URL_HOST) ?? "";
                     }
@@ -649,7 +662,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'parseUrlTypes' => [
-                '<?php
+                'code' => '<?php
                     $url = "foo";
                     $components = parse_url($url);
                     $scheme = parse_url($url, PHP_URL_SCHEME);
@@ -673,7 +686,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'parseUrlDefaultComponent' => [
-                '<?php
+                'code' => '<?php
                     $component = -1;
                     $url = "foo";
                     $a = parse_url($url, -1);
@@ -686,7 +699,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'triggerUserError' => [
-                '<?php
+                'code' => '<?php
                     function mightLeave() : string {
                         if (rand(0, 1)) {
                             trigger_error("bad", E_USER_ERROR);
@@ -696,7 +709,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'getParentClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
 
@@ -704,21 +717,21 @@ class FunctionCallTest extends TestCase
                     if ($b === false) {}
                     $c = new $b();',
                 'assertions' => [],
-                'error_levels' => ['MixedMethodCall'],
+                'ignored_issues' => ['MixedMethodCall'],
             ],
             'suppressError' => [
-                '<?php
+                'code' => '<?php
                     $a = @file_get_contents("foo");',
                 'assertions' => [
                     '$a' => 'false|string',
                 ],
             ],
             'echo' => [
-                '<?php
+                'code' => '<?php
                 echo false;',
             ],
             'printrOutput' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : void {
                         echo $s;
                     }
@@ -726,7 +739,7 @@ class FunctionCallTest extends TestCase
                     foo(print_r(1, true));',
             ],
             'microtime' => [
-                '<?php
+                'code' => '<?php
                     $a = microtime(true);
                     $b = microtime();
                     /** @psalm-suppress InvalidScalarArgument */
@@ -740,7 +753,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'filterVar' => [
-                '<?php
+                'code' => '<?php
                     function filterInt(string $s) : int {
                         $filtered = filter_var($s, FILTER_VALIDATE_INT);
                         if ($filtered === false) {
@@ -775,7 +788,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'callVariableVar' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public static function someInt(): int
@@ -794,14 +807,14 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'expectsIterable' => [
-                '<?php
+                'code' => '<?php
                     function foo(iterable $i) : void {}
                     function bar(array $a) : void {
                         foo($a);
                     }',
             ],
             'getTypeHasValues' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $maybe
                      */
@@ -811,7 +824,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'getTypeSwitchClosedResource' => [
-                '<?php
+                'code' => '<?php
                     $data = "foo";
                     switch (gettype($data)) {
                         case "resource (closed)":
@@ -820,13 +833,13 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'functionResolutionInNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
                     function sort(int $_) : void {}
                     sort(5);',
             ],
             'rangeWithIntStep' => [
-                '<?php
+                'code' => '<?php
 
                     function foo(int $bar) : string {
                         return (string) $bar;
@@ -837,7 +850,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'rangeWithNoStep' => [
-                '<?php
+                'code' => '<?php
 
                     function foo(int $bar) : string {
                         return (string) $bar;
@@ -848,7 +861,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'rangeWithNoStepAndString' => [
-                '<?php
+                'code' => '<?php
 
                     function foo(string $bar) : void {}
 
@@ -857,7 +870,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'rangeWithFloatStep' => [
-                '<?php
+                'code' => '<?php
 
                     function foo(float $bar) : string {
                         return (string) $bar;
@@ -868,7 +881,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'rangeWithFloatStart' => [
-                '<?php
+                'code' => '<?php
 
                     function foo(float $bar) : string {
                         return (string) $bar;
@@ -879,7 +892,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'rangeWithIntOrFloatStep' => [
-                '<?php
+                'code' => '<?php
                     /** @var int|float */
                     $step = 1;
                     $a = range(1, 10, $step);
@@ -899,20 +912,20 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'duplicateNamespacedFunction' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     function sort() : void {}',
             ],
             'arrayMapAfterFunctionMissingFile' => [
-                '<?php
+                'code' => '<?php
                     require_once(FOO);
                     $urls = array_map("strval", [1, 2, 3]);',
-                [],
-                'error_levels' => ['UndefinedConstant', 'UnresolvableInclude'],
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedConstant', 'UnresolvableInclude'],
             ],
             'noNamespaceClash' => [
-                '<?php
+                'code' => '<?php
                     namespace FunctionNamespace {
                         function foo() : void {}
                     }
@@ -931,52 +944,52 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'hashInit70' => [
-                '<?php
+                'code' => '<?php
                     $h = hash_init("sha256");',
-                [
+                'assertions' => [
                     '$h' => 'resource',
                 ],
-                [],
-                '7.1',
+                'ignored_issues' => [],
+                'php_version' => '7.1',
             ],
             'hashInit71' => [
-                '<?php
+                'code' => '<?php
                     $h = hash_init("sha256");',
-                [
+                'assertions' => [
                     '$h' => 'resource',
                 ],
-                [],
-                '7.1',
+                'ignored_issues' => [],
+                'php_version' => '7.1',
             ],
             'hashInit72' => [
-                '<?php
+                'code' => '<?php
                     $h = hash_init("sha256");',
-                [
+                'assertions' => [
                     '$h' => 'HashContext|false',
                 ],
-                [],
-                '7.2',
+                'ignored_issues' => [],
+                'php_version' => '7.2',
             ],
             'hashInit73' => [
-                '<?php
+                'code' => '<?php
                     $h = hash_init("sha256");',
-                [
+                'assertions' => [
                     '$h' => 'HashContext|false',
                 ],
-                [],
-                '7.3',
+                'ignored_issues' => [],
+                'php_version' => '7.3',
             ],
             'hashInit80' => [
-                '<?php
+                'code' => '<?php
                     $h = hash_init("sha256");',
-                [
+                'assertions' => [
                     '$h' => 'HashContext',
                 ],
-                [],
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nullableByRef' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string &$s) : void {}
 
                     function bar() : void {
@@ -984,7 +997,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'getClassNewInstance' => [
-                '<?php
+                'code' => '<?php
                     interface I {}
                     class C implements I {}
 
@@ -996,7 +1009,7 @@ class FunctionCallTest extends TestCase
                     (new Props)->arr[] = get_class(new C);',
             ],
             'getClassVariable' => [
-                '<?php
+                'code' => '<?php
                     interface I {}
                     class C implements I {}
                     $c_instance = new C;
@@ -1009,7 +1022,7 @@ class FunctionCallTest extends TestCase
                     (new Props)->arr[] = get_class($c_instance);',
             ],
             'getClassAnonymousNewInstance' => [
-                '<?php
+                'code' => '<?php
                     interface I {}
 
                     class Props {
@@ -1020,7 +1033,7 @@ class FunctionCallTest extends TestCase
                     (new Props)->arr[] = get_class(new class implements I{});',
             ],
             'getClassAnonymousVariable' => [
-                '<?php
+                'code' => '<?php
                     interface I {}
                     $anon_instance = new class implements I {};
 
@@ -1032,7 +1045,7 @@ class FunctionCallTest extends TestCase
                     (new Props)->arr[] = get_class($anon_instance);',
             ],
             'mktime' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress InvalidScalarArgument */
                     $a = mktime("foo");
                     /** @psalm-suppress MixedArgument */
@@ -1044,8 +1057,8 @@ class FunctionCallTest extends TestCase
                     '$c' => 'int',
                 ],
             ],
-            'PHP73-hrtime' => [
-                '<?php
+            'hrtime' => [
+                'code' => '<?php
                     $a = hrtime(true);
                     $b = hrtime();
                     /** @psalm-suppress InvalidScalarArgument */
@@ -1058,15 +1071,15 @@ class FunctionCallTest extends TestCase
                     '$d' => 'array{int, int}',
                 ],
             ],
-            'PHP73-hrtimeCanBeFloat' => [
-                '<?php
+            'hrtimeCanBeFloat' => [
+                'code' => '<?php
                     $a = hrtime(true);
 
                     if (is_int($a)) {}
                     if (is_float($a)) {}',
             ],
             'min' => [
-                '<?php
+                'code' => '<?php
                     $a = min(0, 1);
                     $b = min([0, 1]);
                     $c = min("a", "b");
@@ -1083,14 +1096,14 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'minUnpackedArg' => [
-                '<?php
+                'code' => '<?php
                     $f = min(...[1, 2, 3]);',
                 'assertions' => [
                     '$f' => 'int',
                 ],
             ],
             'sscanf' => [
-                '<?php
+                'code' => '<?php
                     sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);',
                 'assertions' => [
                     '$hours' => 'float|int|null|string',
@@ -1099,7 +1112,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'noImplicitAssignmentToStringFromMixedWithDocblockTypes' => [
-                '<?php
+                'code' => '<?php
                     /** @param string $s */
                     function takesString($s) : void {}
                     function takesInt(int $i) : void {}
@@ -1114,7 +1127,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'ignoreNullableIssuesAfterMixedCoercion' => [
-                '<?php
+                'code' => '<?php
                     function takesNullableString(?string $s) : void {}
                     function takesString(string $s) : void {}
 
@@ -1128,12 +1141,12 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'countableSimpleXmlElement' => [
-                '<?php
+                'code' => '<?php
                     $xml = new SimpleXMLElement("<?xml version=\"1.0\"?><a><b></b><b></b></a>");
                     echo count($xml);',
             ],
             'countableCallableArray' => [
-                '<?php
+                'code' => '<?php
                     /** @param callable|false $x */
                     function example($x) : void {
                         if (is_array($x)) {
@@ -1142,7 +1155,7 @@ class FunctionCallTest extends TestCase
                     }'
             ],
             'countNonEmptyArrayShouldBePositiveInt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      * @param non-empty-list $x
@@ -1153,7 +1166,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'countListShouldBeZeroOrPositive' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      * @param list $x
@@ -1164,7 +1177,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'countArrayShouldBeZeroOrPositive' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      * @param array $x
@@ -1175,10 +1188,10 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'countEmptyArrayShouldBeZero' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @param array<empty, empty> $x
+                     * @param array<never, never> $x
                      * @return 0
                      */
                     function example($x) : int {
@@ -1186,7 +1199,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'countConstantSizeArrayShouldBeConstantInteger' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      * @param array{int, int, string} $x
@@ -1197,7 +1210,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'countCallableArrayShouldBe2' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-pure
                      * @return 2
@@ -1208,7 +1221,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'countOnPureObjectIsPure' => [
-                '<?php
+                'code' => '<?php
                     class PureCountable implements \Countable {
                         /** @psalm-pure */
                         public function count(): int { return 1; }
@@ -1219,7 +1232,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'refineWithTraitExists' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : void {
                         if (trait_exists($s)) {
                             new ReflectionClass($s);
@@ -1227,7 +1240,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'refineWithClassExistsOrTraitExists' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : void {
                         if (trait_exists($s) || class_exists($s)) {
                             new ReflectionClass($s);
@@ -1247,12 +1260,12 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'minSingleArg' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress TooFewArguments */
                     min(0);',
             ],
-            'PHP73-allowIsCountableToInformType' => [
-                '<?php
+            'allowIsCountableToInformType' => [
+                'code' => '<?php
                     function getObject() : iterable{
                        return [];
                     }
@@ -1264,12 +1277,12 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'versionCompareAsCallable' => [
-                '<?php
+                'code' => '<?php
                     $a = ["1.0", "2.0"];
                     usort($a, "version_compare");',
             ],
             'coerceToObjectAfterBeingCalled' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public function bar() : void {}
                     }
@@ -1287,7 +1300,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'functionExists' => [
-                '<?php
+                'code' => '<?php
                     if (!function_exists("in_array")) {
                         function in_array($a, $b) {
                             return true;
@@ -1295,20 +1308,20 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'pregMatch' => [
-                '<?php
+                'code' => '<?php
                     function takesInt(int $i) : void {}
 
                     takesInt(preg_match("{foo}", "foo"));',
             ],
             'pregMatch2' => [
-                '<?php
+                'code' => '<?php
                     $r = preg_match("{foo}", "foo");',
                 'assertions' => [
                     '$r===' => '0|1|false',
                 ],
             ],
             'pregMatchWithMatches' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] $matches */
                     function takesMatches(array $matches) : void {}
 
@@ -1317,7 +1330,7 @@ class FunctionCallTest extends TestCase
                     takesMatches($matches);',
             ],
             'pregMatchWithMatches2' => [
-                '<?php
+                'code' => '<?php
                     $r = preg_match("{foo}", "foo", $matches);',
                 'assertions' => [
                     '$r===' => '0|1|false',
@@ -1325,7 +1338,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'pregMatchWithOffset' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] $matches */
                     function takesMatches(array $matches) : void {}
 
@@ -1334,7 +1347,7 @@ class FunctionCallTest extends TestCase
                     takesMatches($matches);',
             ],
             'pregMatchWithOffset2' => [
-                '<?php
+                'code' => '<?php
                     $r = preg_match("{foo}", "foo", $matches, 0, 10);',
                 'assertions' => [
                     '$r===' => '0|1|false',
@@ -1342,7 +1355,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'pregMatchWithFlags' => [
-                '<?php
+                'code' => '<?php
                     function takesInt(int $i) : void {}
 
                     if (preg_match("{foo}", "this is foo", $matches, PREG_OFFSET_CAPTURE)) {
@@ -1350,31 +1363,31 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'pregMatchWithFlagOffsetCapture' => [
-                '<?php
+                'code' => '<?php
                     $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE);',
                 'assertions' => [
                     '$r===' => '0|1|false',
-                    '$matches===' => 'array<array-key, array{string, int}>',
+                    '$matches===' => 'array<array-key, array{string, int<-1, max>}>',
                 ],
             ],
-            'PHP72-pregMatchWithFlagUnmatchedAsNull' => [
-                '<?php
+            'pregMatchWithFlagUnmatchedAsNull' => [
+                'code' => '<?php
                     $r = preg_match("{foo}", "foo", $matches, PREG_UNMATCHED_AS_NULL);',
                 'assertions' => [
                     '$r===' => '0|1|false',
                     '$matches===' => 'array<array-key, null|string>',
                 ],
             ],
-            'PHP72-pregMatchWithFlagOffsetCaptureAndUnmatchedAsNull' => [
-                '<?php
+            'pregMatchWithFlagOffsetCaptureAndUnmatchedAsNull' => [
+                'code' => '<?php
                     $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL);',
                 'assertions' => [
                     '$r===' => '0|1|false',
-                    '$matches===' => 'array<array-key, array{null|string, int}>',
+                    '$matches===' => 'array<array-key, array{null|string, int<-1, max>}>',
                 ],
             ],
             'pregReplaceCallback' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : string {
                         return preg_replace_callback(
                             \'/<files (psalm-version="[^"]+") (?:php-version="(.+)">\n)/\',
@@ -1387,7 +1400,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'pregReplaceCallbackWithArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string[] $ids
                      */
@@ -1399,11 +1412,11 @@ class FunctionCallTest extends TestCase
                         );
                     };',
                     'assertions' => [],
-                    'error_levels' => [],
+                    'ignored_issues' => [],
                     '7.4'
             ],
             'compactDefinedVariable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array<string, mixed>
                      */
@@ -1411,8 +1424,8 @@ class FunctionCallTest extends TestCase
                         return compact("a", "b", "c");
                     }',
             ],
-            'PHP73-setCookiePhp73' => [
-                '<?php
+            'setCookiePhp73' => [
+                'code' => '<?php
                     setcookie(
                         "name",
                         "value",
@@ -1426,13 +1439,13 @@ class FunctionCallTest extends TestCase
                     );',
             ],
             'printrBadArg' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress InvalidScalarArgument */
                     $a = print_r([], 1);
                     echo $a;',
             ],
             'dontCoerceCallMapArgs' => [
-                '<?php
+                'code' => '<?php
                     function getStr() : ?string {
                         return rand(0,1) ? "test" : null;
                     }
@@ -1446,34 +1459,34 @@ class FunctionCallTest extends TestCase
                     }'
             ],
             'mysqliRealConnectFunctionAllowsNullParameters' => [
-                '<?php
+                'code' => '<?php
                     $mysqli = mysqli_init();
                     mysqli_real_connect($mysqli, null, \'test\', null);',
             ],
             'callUserFunc' => [
-                '<?php
+                'code' => '<?php
                     $func = function(int $arg1, int $arg2) : int {
                         return $arg1 * $arg2;
                     };
 
                     $a = call_user_func($func, 2, 4);',
-                [
+                'assertions' => [
                     '$a' => 'int',
                 ]
             ],
             'callUserFuncArray' => [
-                '<?php
+                'code' => '<?php
                     $func = function(int $arg1, int $arg2) : int {
                         return $arg1 * $arg2;
                     };
 
                     $a = call_user_func_array($func, [2, 4]);',
-                [
+                'assertions' => [
                     '$a' => 'int',
                 ]
             ],
             'dateTest' => [
-                '<?php
+                'code' => '<?php
                     $y = date("Y");
                     $m = date("m");
                     $F = date("F");
@@ -1481,33 +1494,33 @@ class FunctionCallTest extends TestCase
                     $F2 = date("F", 10000);
                     /** @psalm-suppress MixedArgument */
                     $F3 = date("F", $GLOBALS["F3"]);',
-                [
-                    '$y' => 'numeric-string',
-                    '$m' => 'numeric-string',
-                    '$F' => 'string',
-                    '$y2' => 'numeric-string',
-                    '$F2' => 'string',
-                    '$F3' => 'false|string',
+                'assertions' => [
+                    '$y===' => 'numeric-string',
+                    '$m===' => 'numeric-string',
+                    '$F===' => 'string',
+                    '$y2===' => 'numeric-string',
+                    '$F2===' => 'string',
+                    '$F3===' => 'false|string',
                 ]
             ],
             'sscanfReturnTypeWithTwoParameters' => [
-                '<?php
+                'code' => '<?php
                     $data = sscanf("42 psalm road", "%s %s");',
-                [
+                'assertions' => [
                     '$data' => 'list<float|int|null|string>|null',
                 ]
             ],
             'sscanfReturnTypeWithMoreThanTwoParameters' => [
-                '<?php
+                'code' => '<?php
                     $n = sscanf("42 psalm road", "%s %s", $p1, $p2);',
-                [
+                'assertions' => [
                     '$n' => 'int',
                     '$p1' => 'float|int|null|string',
                     '$p2' => 'float|int|null|string',
                 ],
             ],
             'writeArgsAllowed' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param 0|256|512|768 $flags
                      * @return false|int
@@ -1519,7 +1532,7 @@ class FunctionCallTest extends TestCase
                     safeMatch("/a/", "b");'
             ],
             'fgetcsv' => [
-                '<?php
+                'code' => '<?php
                     $headers = fgetcsv(fopen("test.txt", "r"));
                     if (empty($headers)) {
                         throw new Exception("invalid headers");
@@ -1527,14 +1540,14 @@ class FunctionCallTest extends TestCase
                     print_r(array_map("strval", $headers));'
             ],
             'allowListEqualToRange' => [
-                '<?php
+                'code' => '<?php
                     /** @param array<int, int> $two */
                     function collectCommit(array $one, array $two) : void {
                         if ($one && array_values($one) === array_values($two)) {}
                     }'
             ],
             'pregMatchAll' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array<list<string>>
                      */
@@ -1545,7 +1558,7 @@ class FunctionCallTest extends TestCase
                     }'
             ],
             'pregMatchAllOffsetCapture' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $input): array {
                         preg_match_all(\'/([a-zA-Z])*/\', $input, $matches, PREG_OFFSET_CAPTURE);
 
@@ -1553,7 +1566,7 @@ class FunctionCallTest extends TestCase
                     }'
             ],
             'pregMatchAllReturnsFalse' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return int|false
                      */
@@ -1562,35 +1575,35 @@ class FunctionCallTest extends TestCase
                     }'
             ],
             'strposAllowDictionary' => [
-                '<?php
+                'code' => '<?php
                     function sayHello(string $format): void {
                         if (strpos("abcdefghijklmno", $format)) {}
                     }',
             ],
             'curlInitIsResourceAllowedIn7x' => [
-                '<?php
+                'code' => '<?php
                     $ch = curl_init();
                     if (!is_resource($ch)) {}',
-                [],
-                [],
-                '7.4'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4'
             ],
             'pregSplit' => [
-                '<?php
+                'code' => '<?php
                     /** @return non-empty-list */
                     function foo(string $s) {
                         return preg_split("/ /", $s);
                     }'
             ],
             'pregSplitWithFlags' => [
-                '<?php
+                'code' => '<?php
                     /** @return list<string> */
                     function foo(string $s) {
                         return preg_split("/ /", $s, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
                     }'
             ],
             'mbConvertEncodingWithArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<int, string> $str
                      * @return array<int, string>
@@ -1600,7 +1613,7 @@ class FunctionCallTest extends TestCase
                     }'
             ],
             'getDebugType' => [
-                '<?php
+                'code' => '<?php
                     function foo(mixed $var) : void {
                         switch (get_debug_type($var)) {
                             case "string":
@@ -1612,12 +1625,12 @@ class FunctionCallTest extends TestCase
                                 break;
                         }
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'getTypeDoubleThenInt' => [
-                '<?php
+                'code' => '<?php
                     function safe_float(mixed $val): bool {
                         switch (gettype($val)) {
                             case "double":
@@ -1628,19 +1641,19 @@ class FunctionCallTest extends TestCase
                                 return false;
                         }
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'maxWithFloats' => [
-                '<?php
+                'code' => '<?php
                     function foo(float $_float): void
                     {}
 
                     foo(max(1.1, 1.2));',
             ],
             'maxWithObjects' => [
-                '<?php
+                'code' => '<?php
                     function foo(DateTimeImmutable $fooDate): string
                     {
                         return $fooDate->format("Y");
@@ -1649,14 +1662,44 @@ class FunctionCallTest extends TestCase
                     foo(max(new DateTimeImmutable(), new DateTimeImmutable()));',
             ],
             'maxWithMisc' => [
-                '<?php
+                'code' => '<?php
                     $a = max(new DateTimeImmutable(), 1.2);',
-                [
+                'assertions' => [
                     '$a' => 'DateTimeImmutable|float',
                 ],
             ],
+            'maxUnpackArray' => [
+                'code' => '<?php
+                    $files = [
+                        __FILE__,
+                        __FILE__,
+                        __FILE__,
+                        __FILE__,
+                    ];
+
+                    $a = array_map("filemtime", $files);
+                    $b = array_map(
+                        function (string $file): int {
+                            return filemtime($file);
+                        },
+                        $files,
+                    );
+                    $A = max(filemtime(__FILE__), ...$a);
+                    $B = max(filemtime(__FILE__), ...$b);
+
+                    echo date("c", $A), "\n", date("c", $B);
+                ',
+            ],
+            'maxUnpackArrayWithNonInt' => [
+                'code' => '<?php
+                    $max = max(1, 2, ...[new DateTime(), 3, 4]);
+                ',
+                'assertions' => [
+                    '$max===' => '1|2|3|4|DateTime',
+                ],
+            ],
             'strtolowerEmptiness' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-string $s */
                     function foo(string $s) : void {
                         $s = strtolower($s);
@@ -1665,7 +1708,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'preventObjectLeakingFromCallmapReference' => [
-                '<?php
+                'code' => '<?php
                     function one(): void
                     {
                         try {
@@ -1681,7 +1724,7 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'array_is_list' => [
-                '<?php
+                'code' => '<?php
                     function getArray() : array {
                         return [];
                     }
@@ -1691,22 +1734,22 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$s' => 'list<mixed>',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'array_is_list_on_empty_array' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     if(array_is_list($a)) {
                         //$a is still empty array
                     }
                     ',
-                [],
-                [],
-                '8.1',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'possiblyUndefinedArrayDestructurationOnOptionalArg' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                     }
@@ -1725,7 +1768,7 @@ class FunctionCallTest extends TestCase
                     ',
             ],
             'is_aWithStringableClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-var class-string<Throwable> $exceptionType
                      */
@@ -1733,13 +1776,13 @@ class FunctionCallTest extends TestCase
                     ',
             ],
             'strposFirstParamAllowClassString' => [
-                '<?php
+                'code' => '<?php
                     function sayHello(string $needle): void {
                         if (strpos(DateTime::class, $needle)) {}
                     }',
             ],
             'mb_strtolowerProducesStringWithSecondArgument' => [
-                '<?php
+                'code' => '<?php
                     $r = mb_strtolower("École", "BASE64");
                 ',
                 'assertions' => [
@@ -1747,7 +1790,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'mb_strtolowerProducesLowercaseStringWithNullOrAbsentEncoding' => [
-                '<?php
+                'code' => '<?php
                     $a = mb_strtolower("AAA");
                     $b = mb_strtolower("AAA", null);
                 ',
@@ -1755,11 +1798,11 @@ class FunctionCallTest extends TestCase
                     '$a===' => 'lowercase-string',
                     '$b===' => 'lowercase-string',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'count_charsProducesArrayOrString' => [
-                '<?php
+                'code' => '<?php
                     $a = count_chars("foo");
                     $b = count_chars("foo", 1);
                     $c = count_chars("foo", 2);
@@ -1773,19 +1816,72 @@ class FunctionCallTest extends TestCase
                     '$d===' => 'string',
                     '$e===' => 'string',
                 ],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'number_formatNamedArgument' => [
-                '<?php
+                'code' => '<?php
                     echo number_format(10.363, 1, thousands_separator: " ");
                 ',
-                [],
-                [],
-                '8.0',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'round_literalValue' => [
+                'code' => '<?php
+                    $a = round(10.363, 2);
+                ',
+                'assertions' => [
+                    '$a===' => 'float(10.36)',
+                ],
+            ],
+            'allowConstructorAfterEnumExists' => [
+                'code' => '<?php
+                    function foo(string $s) : void {
+                        if (enum_exists($s)) {
+                            new $s();
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedMethodCall'],
+                'php_version' => '8.1',
+            ],
+            'refineWithEnumExists' => [
+                'code' => '<?php
+                    function foo(string $s) : void {
+                        if (enum_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'refineWithClassExistsOrEnumExists' => [
+                'code' => '<?php
+                    function foo(string $s) : void {
+                        if (trait_exists($s) || enum_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }
+
+                    function bar(string $s) : void {
+                        if (enum_exists($s) || trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }
+
+                    function baz(string $s) : void {
+                        if (enum_exists($s) || interface_exists($s) || trait_exists($s)) {
+                            new ReflectionClass($s);
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'trimSavesLowercaseAttribute' => [
-                '<?php
+                'code' => '<?php
                     $a = random_bytes(2);
                     $b = trim(strtolower($a));
                 ',
@@ -1794,7 +1890,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'ltrimSavesLowercaseAttribute' => [
-                '<?php
+                'code' => '<?php
                     $a = random_bytes(2);
                     $b = ltrim(strtolower($a));
                 ',
@@ -1803,7 +1899,7 @@ class FunctionCallTest extends TestCase
                 ],
             ],
             'rtrimSavesLowercaseAttribute' => [
-                '<?php
+                'code' => '<?php
                     $a = random_bytes(2);
                     $b = rtrim(strtolower($a));
                 ',
@@ -1811,47 +1907,39 @@ class FunctionCallTest extends TestCase
                     '$b===' => 'lowercase-string',
                 ],
             ],
-            'round_literalValue' => [
-                '<?php
-                    $a = round(10.363, 2);
-                ',
-                'assertions' => [
-                    '$a===' => 'float(10.36)',
-                ],
-            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidScalarArgument' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(int $a): void {}
                     fooFoo("string");',
                 'error_message' => 'InvalidScalarArgument',
             ],
             'invalidArgumentWithDeclareStrictTypes' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
                     function fooFoo(int $a): void {}
                     fooFoo("string");',
                 'error_message' => 'InvalidArgument',
             ],
             'builtinFunctioninvalidArgumentWithWeakTypes' => [
-                '<?php
+                'code' => '<?php
                     $s = substr(5, 4);',
                 'error_message' => 'InvalidScalarArgument',
             ],
             'builtinFunctioninvalidArgumentWithDeclareStrictTypes' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
                     $s = substr(5, 4);',
                 'error_message' => 'InvalidArgument',
             ],
             'builtinFunctioninvalidArgumentWithDeclareStrictTypesInClass' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
                     class A {
                         public function foo() : void {
                             $s = substr(5, 4);
@@ -1860,41 +1948,41 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'mixedArgument' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(int $a): void {}
                     /** @var mixed */
                     $a = "hello";
                     fooFoo($a);',
                 'error_message' => 'MixedArgument',
-                'error_levels' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'nullArgument' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(int $a): void {}
                     fooFoo(null);',
                 'error_message' => 'NullArgument',
             ],
             'tooFewArguments' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(int $a): void {}
                     fooFoo();',
                 'error_message' => 'TooFewArguments',
             ],
             'tooManyArguments' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(int $a): void {}
                     fooFoo(5, "dfd");',
                 'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Too many arguments for fooFoo '
                     . '- expecting 1 but saw 2',
             ],
             'tooManyArgumentsForConstructor' => [
-                '<?php
+                'code' => '<?php
                   class A { }
                   new A("hello");',
                 'error_message' => 'TooManyArguments',
             ],
             'typeCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A{}
 
@@ -1903,7 +1991,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'arrayTypeCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A{}
 
@@ -1916,21 +2004,21 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'duplicateParam' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return void
                      */
                     function f($p, $p) {}',
                 'error_message' => 'DuplicateParam',
-                'error_levels' => ['MissingParamType'],
+                'ignored_issues' => ['MissingParamType'],
             ],
             'invalidParamDefault' => [
-                '<?php
+                'code' => '<?php
                     function f(int $p = false) {}',
                 'error_message' => 'InvalidParamDefault',
             ],
             'invalidDocblockParamDefault' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  int $p
                      * @return void
@@ -1939,19 +2027,19 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidParamDefault',
             ],
             'badByRef' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(string &$v): void {}
                     fooFoo("a");',
                 'error_message' => 'InvalidPassByReference',
             ],
             'badArrayByRef' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(array &$a): void {}
                     fooFoo([1, 2, 3]);',
                 'error_message' => 'InvalidPassByReference',
             ],
             'invalidArgAfterCallable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable $callback
                      * @return void
@@ -1963,14 +2051,14 @@ class FunctionCallTest extends TestCase
 
                     function takes_int(int $i) {}',
                 'error_message' => 'InvalidScalarArgument',
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
                 ],
             ],
             'undefinedFunctionInArrayMap' => [
-                '<?php
+                'code' => '<?php
                     array_map(
                         "undefined_function",
                         [1, 2, 3]
@@ -1978,7 +2066,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'UndefinedFunction',
             ],
             'objectLikeKeyChecksAgainstDifferentGeneric' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<string, int> $b
                      */
@@ -1988,10 +2076,10 @@ class FunctionCallTest extends TestCase
                     }
 
                     a(["a" => "hello"]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'objectLikeKeyChecksAgainstDifferentTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{a: int} $b
                      */
@@ -2004,31 +2092,31 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'possiblyNullFunctionCall' => [
-                '<?php
+                'code' => '<?php
                     $a = rand(0, 1) ? function(): void {} : null;
                     $a();',
                 'error_message' => 'PossiblyNullFunctionCall',
             ],
             'possiblyInvalidFunctionCall' => [
-                '<?php
+                'code' => '<?php
                     $a = rand(0, 1) ? function(): void {} : 23515;
                     $a();',
                 'error_message' => 'PossiblyInvalidFunctionCall',
             ],
             'varExportAssignmentToVoid' => [
-                '<?php
+                'code' => '<?php
                     $a = var_export(["a"]);',
                 'error_message' => 'AssignmentToVoid',
             ],
             'explodeWithEmptyString' => [
-                '<?php
+                'code' => '<?php
                     function exploder(string $s) : array {
                         return explode("", $s);
                     }',
                 'error_message' => 'FalsableReturnStatement',
             ],
             'complainAboutArrayToIterable' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
                     /**
@@ -2040,7 +2128,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'complainAboutArrayToIterableSingleParam' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
                     /**
@@ -2052,13 +2140,13 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'putInvalidTypeMessagesFirst' => [
-                '<?php
+                'code' => '<?php
                     $q = rand(0,1) ? new stdClass : false;
                     strlen($q);',
                 'error_message' => 'InvalidArgument',
             ],
             'getTypeInvalidValue' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $maybe
                      */
@@ -2069,7 +2157,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'rangeWithFloatStep' => [
-                '<?php
+                'code' => '<?php
 
                     function foo(int $bar) : string {
                         return (string) $bar;
@@ -2081,7 +2169,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'rangeWithFloatStart' => [
-                '<?php
+                'code' => '<?php
 
                     function foo(int $bar) : string {
                         return (string) $bar;
@@ -2093,18 +2181,18 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'duplicateFunction' => [
-                '<?php
+                'code' => '<?php
                     function f() : void {}
                     function f() : void {}',
                 'error_message' => 'DuplicateFunction',
             ],
             'duplicateCoreFunction' => [
-                '<?php
+                'code' => '<?php
                     function sort() : void {}',
                 'error_message' => 'DuplicateFunction',
             ],
             'functionCallOnMixed' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var mixed $s
                      * @psalm-suppress MixedAssignment
@@ -2114,7 +2202,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'MixedFunctionCall',
             ],
             'iterableOfObjectCannotAcceptIterableOfInt' => [
-                '<?php
+                'code' => '<?php
                     /** @param iterable<string,object> $_p */
                     function accepts(iterable $_p): void {}
 
@@ -2125,7 +2213,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'iterableOfObjectCannotAcceptTraversableOfInt' => [
-                '<?php
+                'code' => '<?php
                     /** @param iterable<string,object> $_p */
                     function accepts(iterable $_p): void {}
 
@@ -2136,7 +2224,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'iterableOfObjectCannotAcceptGeneratorOfInt' => [
-                '<?php
+                'code' => '<?php
                     /** @param iterable<string,object> $_p */
                     function accepts(iterable $_p): void {}
 
@@ -2147,7 +2235,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'iterableOfObjectCannotAcceptArrayOfInt' => [
-                '<?php
+                'code' => '<?php
                     /** @param iterable<string,object> $_p */
                     function accepts(iterable $_p): void {}
 
@@ -2158,7 +2246,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'nonNullableByRef' => [
-                '<?php
+                'code' => '<?php
                     function foo(string &$s) : void {}
 
                     function bar() : void {
@@ -2167,7 +2255,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'NullReference',
             ],
             'intCastByRef' => [
-                '<?php
+                'code' => '<?php
                     function foo(int &$i) : void {}
 
                     $a = rand(0, 1) ? null : 5;
@@ -2176,7 +2264,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidPassByReference',
             ],
             'implicitAssignmentToStringFromMixed' => [
-                '<?php
+                'code' => '<?php
                     /** @param "a"|"b" $s */
                     function takesString(string $s) : void {}
                     function takesInt(int $i) : void {}
@@ -2192,12 +2280,12 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'tooFewArgsAccurateCount' => [
-                '<?php
+                'code' => '<?php
                     preg_match(\'/adsf/\');',
                 'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting subject to be passed',
             ],
             'compactUndefinedVariable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array<string, mixed>
                      */
@@ -2207,7 +2295,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'UndefinedVariable',
             ],
             'countCallableArrayShouldBeTwo' => [
-                '<?php
+                'code' => '<?php
                     /** @param callable|false $x */
                     function example($x) : void {
                         if (is_array($x)) {
@@ -2218,7 +2306,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'countOnObjectCannotBePositive' => [
-                '<?php
+                'code' => '<?php
                     /** @return positive-int|0 */
                     function example(\Countable $x) : int {
                         return count($x);
@@ -2226,7 +2314,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
             'countOnUnknownObjectCannotBePure' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-pure */
                     function example(\Countable $x) : int {
                         return count($x);
@@ -2234,7 +2322,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'ImpureFunctionCall',
             ],
             'coerceCallMapArgsInStrictMode' => [
-                '<?php
+                'code' => '<?php
                     declare(strict_types=1);
 
                     function getStr() : ?string {
@@ -2251,22 +2339,22 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'noCrashOnEmptyArrayPush' => [
-                '<?php
+                'code' => '<?php
                     array_push();',
                 'error_message' => 'TooFewArguments',
             ],
             'printOnlyString' => [
-                '<?php
+                'code' => '<?php
                     print [];',
                 'error_message' => 'InvalidArgument',
             ],
             'printReturns1' => [
-                '<?php
+                'code' => '<?php
                     (print "test") === 2;',
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'sodiumMemzeroNullifyString' => [
-                '<?php
+                'code' => '<?php
                     function returnsStr(): string {
                         $str = "x";
                         sodium_memzero($str);
@@ -2275,14 +2363,14 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'NullableReturnStatement'
             ],
             'noCrashWithPattern' => [
-                '<?php
+                'code' => '<?php
                     echo !\is_callable($loop_callback)
                         || (\is_array($loop_callback)
                             && !\method_exists(...$loop_callback));',
                 'error_message' => 'UndefinedGlobalVariable'
             ],
             'parseUrlPossiblyUndefined' => [
-                '<?php
+                'code' => '<?php
                     function bar(string $s) : string {
                         $parsed = parse_url($s);
 
@@ -2291,7 +2379,7 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'parseUrlPossiblyUndefined2' => [
-                '<?php
+                'code' => '<?php
                     function bag(string $s) : string {
                         $parsed = parse_url($s);
 
@@ -2304,30 +2392,29 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'strposNoSetFirstParam' => [
-                '<?php
+                'code' => '<?php
                     function sayHello(string $format): void {
                         if (strpos("u", $format)) {}
                     }',
                 'error_message' => 'InvalidLiteralArgument',
             ],
             'curlInitIsResourceFailsIn8x' => [
-                '<?php
+                'code' => '<?php
                     $ch = curl_init();
                     if (!is_resource($ch)) {}',
                 'error_message' => 'RedundantCondition',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'maxCallWithArray' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $a) {
                         max($a);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'pregSplitNoEmpty' => [
-                '<?php
+                'code' => '<?php
                     /** @return non-empty-list */
                     function foo(string $s) {
                         return preg_split("/ /", $s, -1, PREG_SPLIT_NO_EMPTY);
@@ -2335,14 +2422,14 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidReturnStatement'
             ],
             'maxWithMixed' => [
-                '<?php
+                'code' => '<?php
                     /** @var mixed $b */;
                     /** @var mixed $c */;
                     $a = max($b, $c);',
                 'error_message' => 'MixedAssignment'
             ],
             'literalFalseArgument' => [
-                '<?php
+                'code' => '<?php
                     function takesAString(string $s): void{
                         echo $s;
                     }
@@ -2351,13 +2438,13 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument'
             ],
             'getClassWithoutArgsOutsideClass' => [
-                '<?php
+                'code' => '<?php
 
                     echo get_class();',
                 'error_message' => 'TooFewArguments',
             ],
             'count_charsWithInvalidMode' => [
-                '<?php
+                'code' => '<?php
                     function scope(int $mode){
                         $a = count_chars("foo", $mode);
                     }',

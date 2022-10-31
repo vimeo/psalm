@@ -6,20 +6,11 @@ use Psalm\Type\Atomic;
 
 /**
  * Denotes the `resource` type that has been closed (e.g. a file handle through `fclose()`).
+ * @psalm-immutable
  */
-class TClosedResource extends Atomic
+final class TClosedResource extends Atomic
 {
-    public function __toString(): string
-    {
-        return 'closed-resource';
-    }
-
     public function getKey(bool $include_extra = true): string
-    {
-        return 'closed-resource';
-    }
-
-    public function getId(bool $nested = false): string
     {
         return 'closed-resource';
     }
@@ -31,13 +22,12 @@ class TClosedResource extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }

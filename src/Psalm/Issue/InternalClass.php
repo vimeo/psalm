@@ -7,7 +7,7 @@ use function count;
 use function implode;
 use function reset;
 
-class InternalClass extends ClassIssue
+final class InternalClass extends ClassIssue
 {
     public const ERROR_LEVEL = 4;
     public const SHORTCODE = 174;

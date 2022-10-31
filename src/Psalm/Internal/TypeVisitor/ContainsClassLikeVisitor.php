@@ -5,12 +5,16 @@ namespace Psalm\Internal\TypeVisitor;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\NodeVisitor;
+use Psalm\Type\ImmutableTypeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 
 use function strtolower;
 
-class ContainsClassLikeVisitor extends NodeVisitor
+/**
+ * @internal
+ */
+class ContainsClassLikeVisitor extends ImmutableTypeVisitor
 {
     /**
      * @var lowercase-string
@@ -23,6 +27,7 @@ class ContainsClassLikeVisitor extends NodeVisitor
     private $contains_classlike = false;
 
     /**
+     * @psalm-external-mutation-free
      * @param lowercase-string $fq_classlike_name
      */
     public function __construct(string $fq_classlike_name)
@@ -30,32 +35,38 @@ class ContainsClassLikeVisitor extends NodeVisitor
         $this->fq_classlike_name = $fq_classlike_name;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {
             if (strtolower($type->value) === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
-                return NodeVisitor::STOP_TRAVERSAL;
+                return TypeVisitor::STOP_TRAVERSAL;
             }
         }
 
         if ($type instanceof TClassConstant) {
             if (strtolower($type->fq_classlike_name) === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
-                return NodeVisitor::STOP_TRAVERSAL;
+                return TypeVisitor::STOP_TRAVERSAL;
             }
         }
 
         if ($type instanceof TLiteralClassString) {
             if (strtolower($type->value) === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
-                return NodeVisitor::STOP_TRAVERSAL;
+                return TypeVisitor::STOP_TRAVERSAL;
             }
         }
 
         return null;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function matches(): bool
     {
         return $this->contains_classlike;

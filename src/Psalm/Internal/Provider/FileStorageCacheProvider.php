@@ -125,7 +125,7 @@ class FileStorageCacheProvider
         // the timestamp is only needed if we don't have file contents
         // as same contents should give same results, independent of when file was modified
         $data = $file_contents ? $file_contents : $this->modified_timestamps;
-        return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
+        return PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
     /**
@@ -186,7 +186,7 @@ class FileStorageCacheProvider
             }
         }
 
-        if (PHP_VERSION_ID >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00) {
             $hash = hash('xxh128', $file_path);
         } else {
             $hash = hash('md4', $file_path);

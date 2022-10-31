@@ -2,7 +2,9 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use AssertionError;
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
@@ -16,6 +18,9 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 
+/**
+ * @internal
+ */
 class ClassTemplateParamCollector
 {
     /**
@@ -32,8 +37,6 @@ class ClassTemplateParamCollector
         ?Atomic $lhs_type_part = null,
         bool $self_call = false
     ): ?array {
-        $static_fq_class_name = $static_class_storage->name;
-
         $non_trait_class_storage = $class_storage->is_trait
             ? $static_class_storage
             : $class_storage;
@@ -106,6 +109,23 @@ class ClassTemplateParamCollector
                 }
             }
 
+            $template_result = null;
+            if ($class_storage !== $static_class_storage && $static_class_storage->template_types) {
+                $templates = self::collect(
+                    $codebase,
+                    $static_class_storage,
+                    $static_class_storage,
+                    null,
+                    $lhs_type_part
+                );
+                if ($templates === null) {
+                    throw new AssertionError("Could not collect templates!");
+                }
+                $template_result = new TemplateResult(
+                    $static_class_storage->template_types,
+                    $templates
+                );
+            }
             foreach ($template_types as $type_name => $_) {
                 if (isset($class_template_params[$type_name])) {
                     continue;
@@ -117,19 +137,18 @@ class ClassTemplateParamCollector
                     $input_type_extends = $e[$class_storage->name][$type_name];
 
                     $output_type_extends = self::resolveTemplateParam(
+                        $codebase,
                         $input_type_extends,
                         $static_class_storage,
-                        $lhs_type_part
+                        $lhs_type_part,
+                        $template_result
                     );
-                    if (!$self_call || $static_fq_class_name !== $class_storage->name) {
-                        $class_template_params[$type_name][$class_storage->name]
-                            = $output_type_extends ?? Type::getMixed();
-                    }
+
+                    $class_template_params[$type_name][$class_storage->name]
+                        = $output_type_extends ?? Type::getMixed();
                 }
 
-                if ((!$self_call || $static_fq_class_name !== $class_storage->name)
-                    && !isset($class_template_params[$type_name])
-                ) {
+                if (!isset($class_template_params[$type_name][$class_storage->name])) {
                     $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
                 }
             }
@@ -165,10 +184,12 @@ class ClassTemplateParamCollector
         return $class_template_params;
     }
 
-    public static function resolveTemplateParam(
+    private static function resolveTemplateParam(
+        Codebase $codebase,
         Union $input_type_extends,
         ClassLikeStorage $static_class_storage,
-        TGenericObject $lhs_type_part
+        TGenericObject $lhs_type_part,
+        ?TemplateResult $template_result = null
     ): ?Union {
         $output_type_extends = null;
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
@@ -201,12 +222,14 @@ class ClassTemplateParamCollector
                             [$type_extends_atomic->param_name]
                 )) {
                     $nested_output_type = self::resolveTemplateParam(
+                        $codebase,
                         $static_class_storage
                         ->template_extended_params
                             [$type_extends_atomic->defining_class]
                             [$type_extends_atomic->param_name],
                         $static_class_storage,
-                        $lhs_type_part
+                        $lhs_type_part,
+                        $template_result
                     );
                     if ($nested_output_type !== null) {
                         $output_type_extends = Type::combineUnionTypes(
@@ -216,6 +239,12 @@ class ClassTemplateParamCollector
                     }
                 }
             } else {
+                if ($template_result !== null) {
+                    $type_extends_atomic = $type_extends_atomic->replaceTemplateTypesWithArgTypes(
+                        $template_result,
+                        $codebase
+                    );
+                }
                 $output_type_extends = Type::combineUnionTypes(
                     new Union([$type_extends_atomic]),
                     $output_type_extends
@@ -244,16 +273,13 @@ class ClassTemplateParamCollector
                     || !isset($static_template_types[$type_extends_atomic->param_name]))
                 && isset($e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name])
             ) {
-                $output_type_extends = array_merge(
-                    $output_type_extends,
-                    self::expandType(
-                        $codebase,
-                        $e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name],
-                        $e,
-                        $static_fq_class_name,
-                        $static_template_types
-                    )
-                );
+                $output_type_extends = [...$output_type_extends, ...self::expandType(
+                    $codebase,
+                    $e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name],
+                    $e,
+                    $static_fq_class_name,
+                    $static_template_types
+                )];
             } elseif ($type_extends_atomic instanceof TClassConstant) {
                 $expanded = TypeExpander::expandAtomic(
                     $codebase,
@@ -265,12 +291,8 @@ class ClassTemplateParamCollector
                     true
                 );
 
-                if ($expanded instanceof Atomic) {
-                    $output_type_extends[] = $expanded;
-                } else {
-                    foreach ($expanded as $type) {
-                        $output_type_extends[] = $type;
-                    }
+                foreach ($expanded as $type) {
+                    $output_type_extends[] = $type;
                 }
             } else {
                 $output_type_extends[] = $type_extends_atomic;

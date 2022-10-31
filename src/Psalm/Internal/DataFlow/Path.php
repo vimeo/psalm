@@ -4,6 +4,8 @@ namespace Psalm\Internal\DataFlow;
 
 /**
  * @psalm-immutable
+ *
+ * @internal
  */
 class Path
 {

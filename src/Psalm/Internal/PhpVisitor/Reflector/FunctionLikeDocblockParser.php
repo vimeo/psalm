@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\DocComment;
@@ -20,6 +21,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -33,6 +35,9 @@ use function substr;
 use function substr_count;
 use function trim;
 
+/**
+ * @internal
+ */
 class FunctionLikeDocblockParser
 {
     /**
@@ -226,6 +231,9 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-taint-sink'])) {
             foreach ($parsed_docblock->tags['psalm-taint-sink'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
+                if ($param_parts === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 if (count($param_parts) >= 2) {
                     $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $param_parts[0]];
@@ -237,6 +245,9 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['param-taint'])) {
             foreach ($parsed_docblock->tags['param-taint'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
+                if ($param_parts === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 if (count($param_parts) === 2) {
                     $taint_type = $param_parts[1];
@@ -261,6 +272,9 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-taint-source'])) {
             foreach ($parsed_docblock->tags['psalm-taint-source'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
+                if ($param_parts === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 if ($param_parts[0]) {
                     $info->taint_source_types[] = $param_parts[0];
@@ -270,6 +284,9 @@ class FunctionLikeDocblockParser
             // support for MediaWiki taint plugin
             foreach ($parsed_docblock->tags['return-taint'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
+                if ($param_parts === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 if ($param_parts[0]) {
                     if ($param_parts[0] === 'tainted') {
@@ -426,6 +443,9 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->combined_tags['template'])) {
             foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
+                if ($template_type === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 $template_name = array_shift($template_type);
 

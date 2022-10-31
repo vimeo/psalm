@@ -12,13 +12,13 @@ class FunctionTemplateTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'validTemplatedType' => [
-                '<?php
+                'code' => '<?php
                     namespace FooFoo;
 
                     /**
@@ -35,7 +35,7 @@ class FunctionTemplateTest extends TestCase
                     bar(foo("string"));',
             ],
             'validPsalmTemplatedFunctionType' => [
-                '<?php
+                'code' => '<?php
                     namespace FooFoo;
 
                     /**
@@ -52,7 +52,7 @@ class FunctionTemplateTest extends TestCase
                     bar(foo("string"));',
             ],
             'validTemplatedStaticMethodType' => [
-                '<?php
+                'code' => '<?php
                     namespace FooFoo;
 
                     class A {
@@ -71,7 +71,7 @@ class FunctionTemplateTest extends TestCase
                     bar(A::foo("string"));',
             ],
             'validTemplatedInstanceMethodType' => [
-                '<?php
+                'code' => '<?php
                     namespace FooFoo;
 
                     class A {
@@ -90,7 +90,7 @@ class FunctionTemplateTest extends TestCase
                     bar((new A())->foo("string"));',
             ],
             'genericArrayKeys' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as array-key
                      *
@@ -107,7 +107,7 @@ class FunctionTemplateTest extends TestCase
                 ],
             ],
             'genericNonEmptyArrayKeys' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as array-key
                      *
@@ -124,7 +124,7 @@ class FunctionTemplateTest extends TestCase
                 ],
             ],
             'genericArrayFlip' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey as array-key
                      * @template TValue as array-key
@@ -142,7 +142,7 @@ class FunctionTemplateTest extends TestCase
                 ],
             ],
             'byRefKeyValueArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      * @template TKey as array-key
@@ -158,7 +158,7 @@ class FunctionTemplateTest extends TestCase
                 ],
             ],
             'byRefMixedKeyArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      *
@@ -173,7 +173,7 @@ class FunctionTemplateTest extends TestCase
                 ],
             ],
             'mixedArrayPop' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      *
@@ -191,10 +191,10 @@ class FunctionTemplateTest extends TestCase
                     '$a' => 'mixed',
                     '$b' => 'array<array-key, mixed>',
                 ],
-                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
             ],
             'genericArrayPop' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      * @template TKey as array-key
@@ -214,7 +214,7 @@ class FunctionTemplateTest extends TestCase
                 ],
             ],
             'templateCallableReturnType' => [
-                '<?php
+                'code' => '<?php
                     namespace NS;
 
                     /**
@@ -231,7 +231,7 @@ class FunctionTemplateTest extends TestCase
                     takesInt(retry(1, function(): int { return 1; }));',
             ],
             'templateClosureReturnType' => [
-                '<?php
+                'code' => '<?php
                     namespace NS;
 
                     /**
@@ -248,7 +248,7 @@ class FunctionTemplateTest extends TestCase
                     takesInt(retry(1, function(): int { return 1; }));',
             ],
             'replaceChildTypeWithGenerator' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey as array-key
                      * @template TValue
@@ -271,7 +271,7 @@ class FunctionTemplateTest extends TestCase
             ],
 
             'splatTemplateParam' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey as array-key
                      * @template TValue
@@ -295,7 +295,7 @@ class FunctionTemplateTest extends TestCase
                 ],
             ],
             'passArrayByRef' => [
-                '<?php
+                'code' => '<?php
                     function acceptsStdClass(stdClass $_p): void {}
 
                     $q = [new stdClass];
@@ -329,7 +329,7 @@ class FunctionTemplateTest extends TestCase
             ],
 
             'classTemplateAsCorrect' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
                     class FooChild extends Foo {}
 
@@ -346,7 +346,7 @@ class FunctionTemplateTest extends TestCase
                     bar(new FooChild());',
             ],
             'classTemplateOfCorrect' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
                     class FooChild extends Foo {}
 
@@ -363,7 +363,7 @@ class FunctionTemplateTest extends TestCase
                     bar(new FooChild());',
             ],
             'classTemplateAsInterface' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {}
                     interface FooChild extends Foo {}
                     class FooImplementer implements Foo {}
@@ -390,7 +390,7 @@ class FunctionTemplateTest extends TestCase
                     }',
             ],
             'templateFunctionVar' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B;
 
                     class C {
@@ -419,10 +419,10 @@ class FunctionTemplateTest extends TestCase
                         return $a;
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MissingParamType'],
+                'ignored_issues' => ['MixedAssignment', 'MissingParamType'],
             ],
             'bindFirstTemplatedClosureParameterValid' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      *
@@ -441,7 +441,7 @@ class FunctionTemplateTest extends TestCase
                     apply(function(A $_i) : void {}, new AChild());',
             ],
             'callableReturnsItself' => [
-                '<?php
+                'code' => '<?php
                     $a =
                       /**
                        * @param callable():string $s
@@ -461,7 +461,7 @@ class FunctionTemplateTest extends TestCase
                     takesReturnTCallable($a);',
             ],
             'nonBindingParamReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      *
@@ -477,9 +477,12 @@ class FunctionTemplateTest extends TestCase
                     );',
             ],
             'templatedInterfaceMethodInheritReturnType' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class SomeIterator implements IteratorAggregate
                     {
                         public function getIterator() {
@@ -488,12 +491,12 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     $i = (new SomeIterator())->getIterator();',
-                [
+                'assertions' => [
                     '$i' => 'Traversable<mixed, mixed>',
                 ],
             ],
             'upcastArrayToIterable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template K
                      * @template V
@@ -504,12 +507,12 @@ class FunctionTemplateTest extends TestCase
                     function first($collection) {}
 
                     $one = first([1,2,3]);',
-                [
+                'assertions' => [
                     '$one' => 'int',
                 ],
             ],
             'templateIntersectionLeft' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {}
                     interface I2 {}
 
@@ -520,7 +523,7 @@ class FunctionTemplateTest extends TestCase
                     function templatedBar(I1 $a) : void {}',
             ],
             'templateIntersectionRight' => [
-                '<?php
+                'code' => '<?php
                     interface I1 {}
                     interface I2 {}
 
@@ -531,7 +534,7 @@ class FunctionTemplateTest extends TestCase
                     function templatedBar(I2 $b) : void {}',
             ],
             'matchMostSpecificTemplate' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TReturn
                      * @param callable():(\Generator<mixed, mixed, mixed, TReturn>|TReturn) $gen
@@ -553,12 +556,12 @@ class FunctionTemplateTest extends TestCase
                             return "hello";
                         }
                     );',
-                [
+                'assertions' => [
                     '$arr' => 'array<int, string>',
                 ],
             ],
             'templateOfWithSpace' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of array<int, mixed>
                      */
@@ -572,7 +575,7 @@ class FunctionTemplateTest extends TestCase
                     function bar(Foo $a) : void {}',
             ],
             'allowUnionTypeParam' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param callable(T) $x
@@ -589,7 +592,7 @@ class FunctionTemplateTest extends TestCase
                     );',
             ],
             'functionTemplateUnionType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T0 as int|string
                      * @param T0 $t
@@ -607,7 +610,7 @@ class FunctionTemplateTest extends TestCase
                 ],
             ],
             'reconcileTraversableTemplatedAndNormal' => [
-                '<?php
+                'code' => '<?php
                     function foo(Traversable $t): void {
                         if ($t instanceof IteratorAggregate) {
                             $a = $t->getIterator();
@@ -624,7 +627,7 @@ class FunctionTemplateTest extends TestCase
                     }',
             ],
             'keyOfTemplate' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as array
                      * @template K as key-of<T>
@@ -642,13 +645,13 @@ class FunctionTemplateTest extends TestCase
 
                     $b = getOffset($a, "foo");
                     $c = getOffset($a, "bar");',
-                [
+                'assertions' => [
                     '$b' => 'string',
                     '$c' => 'int',
                 ],
             ],
             'dontGeneraliseBoundParamWithWiderCallable' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         public function foo() : void {}
                     }
@@ -665,12 +668,12 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     $c = makeConcrete(new C(), function (?C $c) : void {});',
-                [
+                'assertions' => [
                     '$c' => 'C',
                 ],
             ],
             'allowTemplateTypeBeingUsedInsideFunction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of DateTime
                      * @param callable(T) $callable
@@ -681,7 +684,7 @@ class FunctionTemplateTest extends TestCase
                     }',
             ],
             'callFindAnother' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as Foo
                      * @param T $foo
@@ -702,7 +705,7 @@ class FunctionTemplateTest extends TestCase
                     }',
             ],
             'templatedVarOnReturn' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     class A {}
@@ -724,7 +727,7 @@ class FunctionTemplateTest extends TestCase
                     }',
             ],
             'assertOnTemplatedValue' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template I
                      * @param I $foo
@@ -747,7 +750,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'interpretFunctionCallableReturnValue' => [
-                '<?php
+                'code' => '<?php
                     final class Id
                     {
                         /**
@@ -786,7 +789,7 @@ class FunctionTemplateTest extends TestCase
                     client($staticIdGenerator());'
             ],
             'noCrashWhenTemplatedClassIsStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -807,7 +810,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'unboundVariableIsEmpty' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TE
                      * @template TR
@@ -830,7 +833,7 @@ class FunctionTemplateTest extends TestCase
                     echo collect("a");'
             ],
             'paramOutDontLeak' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey as array-key
                      * @template TValue
@@ -853,7 +856,7 @@ class FunctionTemplateTest extends TestCase
                     }',
             ],
             'narrowTemplateTypeWithIsObject' => [
-                '<?php
+                'code' => '<?php
                     function takesObject(object $object): void {}
 
                     /**
@@ -867,7 +870,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'falseDefault' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param T $v
@@ -878,7 +881,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'nullDefault' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param T $v
@@ -889,7 +892,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'uasortCallable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of object
                      * @psalm-param array<T> $collection
@@ -903,7 +906,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'callableInference' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
                     class FooChild extends Foo {}
                     class Bar {}
@@ -929,7 +932,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'templateFlipIntersection' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      * @template S as object
@@ -941,7 +944,7 @@ class FunctionTemplateTest extends TestCase
                     }',
             ],
             'splatIntoTemplatedArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param array<T> ...$iterators
@@ -970,7 +973,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'allowTemplatedCast' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-template Tk of array-key
                      * @psalm-param Tk $key
@@ -980,7 +983,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'uksortNoNamespace' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template Tk of array-key
                      * @template Tv
@@ -997,7 +1000,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'uksortNamespaced' => [
-                '<?php
+                'code' => '<?php
                     namespace Psl\Arr;
 
                     /**
@@ -1016,7 +1019,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'mockObject' => [
-                '<?php
+                'code' => '<?php
                     class MockObject {}
 
                     /**
@@ -1041,7 +1044,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'testStringCallableInference' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function dup(string $a): string {
                             return $a . $a;
@@ -1080,12 +1083,12 @@ class FunctionTemplateTest extends TestCase
                     /** @param list<string> $strings */
                     function _test(array $strings): void {}
                     $a =  map([A::class, "dup"])(["a", "b", "c"]);',
-                [
+                'assertions' => [
                     '$a' => 'iterable<int, string>'
                 ]
             ],
             'testClosureCallableInference' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param iterable<T> $iter
@@ -1123,12 +1126,12 @@ class FunctionTemplateTest extends TestCase
                             return $a . $a;
                         }
                     )(["a", "b", "c"]);',
-                [
+                'assertions' => [
                     '$a' => 'iterable<int, string>'
                 ]
             ],
             'possiblyNullMatchesTemplateType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      * @param T $o
@@ -1142,12 +1145,12 @@ class FunctionTemplateTest extends TestCase
 
                     /** @psalm-suppress PossiblyNullArgument */
                     $a = takesObject(rand(0, 1) ? new A() : null);',
-                [
+                'assertions' => [
                     '$a' => 'A',
                 ]
             ],
             'possiblyNullMatchesAnotherTemplateType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-template RealObjectType of object
                      *
@@ -1166,7 +1169,7 @@ class FunctionTemplateTest extends TestCase
                     createProxy(Foo::class, function (?Foo $f) : void {});'
             ],
             'assertIntersectionsOnTemplatedTypes' => [
-                '<?php
+                'code' => '<?php
                     interface Input {}
                     interface HasFoo {}
                     interface HasBar {}
@@ -1201,7 +1204,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'bottomTypeInClosureShouldNotBind' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param class-string<T> $className
@@ -1225,7 +1228,7 @@ class FunctionTemplateTest extends TestCase
                     createProxy(A::class, function(object $o):void {})->bar();'
             ],
             'bottomTypeInNamespacedCallableShouldMatch' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /**
@@ -1253,7 +1256,7 @@ class FunctionTemplateTest extends TestCase
                     createProxy(A::class, \'Ns\foo\')->bar();',
             ],
             'compareToEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      *
@@ -1266,7 +1269,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'compareToFalse' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as int|false
                      * @param T $value
@@ -1280,7 +1283,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'refineTemplateTypeNotEmpty' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of Iterator|null
                      * @param T $iterator
@@ -1295,7 +1298,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'manyGenericParams' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TArg1
                      * @template TArg2
@@ -1323,12 +1326,12 @@ class FunctionTemplateTest extends TestCase
                     function foo(Closure $fn, $arg): void {
                         $a = partial($fn, $arg);
                     }',
-                [],
-                [],
-                '7.4'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4'
             ],
             'mixedDoesntSwallowNull' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template E
                      * @param E $e
@@ -1351,7 +1354,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'mixedDoesntSwallowNullProgressive' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template E
                      * @param E $e
@@ -1374,7 +1377,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'inferIterableArrayKeyAfterIsArrayCheck' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template Key
                      * @template Element
@@ -1393,7 +1396,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'doublyNestedFunctionTemplates' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-template Tk
                      * @psalm-template Tv
@@ -1424,7 +1427,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'allowClosureParamLowerBoundAndUpperBound' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
 
                     /**
@@ -1447,7 +1450,7 @@ class FunctionTemplateTest extends TestCase
                     $value = takesClosure(function(Foo $foo) : void {})(new Foo());'
             ],
             'subtractTemplatedNull' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param T|null $var
@@ -1466,7 +1469,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'subtractTemplatedInt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param T|int $var
@@ -1483,12 +1486,12 @@ class FunctionTemplateTest extends TestCase
                     function takesNullableString(string|int $s) : string {
                         return notNull($s);
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'templateChildClass' => [
-                '<?php
+                'code' => '<?php
                     /** @template T */
                     class Collection {
                         /**
@@ -1511,7 +1514,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'isArrayCheckOnTemplated' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TIterable of iterable
                      */
@@ -1520,7 +1523,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'transformNestedTemplateWherePossible' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      * @template TArray of non-empty-array<TValue>
@@ -1532,7 +1535,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'callTemplatedFunctionWithTemplatedClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template Ta of object
                      * @psalm-param Ta $obj
@@ -1552,7 +1555,7 @@ class FunctionTemplateTest extends TestCase
                     function deserialize_object(string $data, string $type) {}'
             ],
             'arrayKeyInTemplateOfArrayKey' => [
-                '<?php
+                'code' => '<?php
 
                     /**
                      * @template TKey of array-key
@@ -1591,7 +1594,7 @@ class FunctionTemplateTest extends TestCase
                     map(iter(), "mapper");'
             ],
             'dontScreamForArithmeticsOnIntTemplates' => [
-                '<?php
+                'code' => '<?php
 
                     /**
                      * @template T of int|string
@@ -1604,8 +1607,7 @@ class FunctionTemplateTest extends TestCase
                     }'
             ],
             'dontScreamForArithmeticsOnFloatTemplates' => [
-                '<?php
-
+                'code' => '<?php
                     /**
                      * @template T of ?float
                      * @param T $p
@@ -1623,13 +1625,13 @@ class FunctionTemplateTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidTemplatedType' => [
-                '<?php
+                'code' => '<?php
                     namespace FooFoo;
 
                     /**
@@ -1647,7 +1649,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'invalidTemplatedStaticMethodType' => [
-                '<?php
+                'code' => '<?php
                     namespace FooFoo;
 
                     class A {
@@ -1667,7 +1669,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'invalidTemplatedInstanceMethodType' => [
-                '<?php
+                'code' => '<?php
                     namespace FooFoo;
 
                     class A {
@@ -1687,7 +1689,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'replaceChildTypeNoHint' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey as array-key
                      * @template TValue
@@ -1709,7 +1711,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'classTemplateAsIncorrectClass' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
                     class NotFoo {}
 
@@ -1726,7 +1728,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'classTemplateAsIncorrectInterface' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {}
                     interface NotFoo {}
 
@@ -1745,7 +1747,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'templateFunctionMethodCallWithoutMethod' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B;
 
                     class C {}
@@ -1760,7 +1762,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'PossiblyUndefinedMethod',
             ],
             'templateFunctionMethodCallWithoutAsType' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B;
 
                     /**
@@ -1773,7 +1775,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'MixedMethodCall',
             ],
             'bindFirstTemplatedClosureParameterInvalidScalar' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      *
@@ -1789,7 +1791,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'bindFirstTemplatedClosureParameterTypeCoercion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      *
@@ -1809,7 +1811,7 @@ class FunctionTemplateTest extends TestCase
             ],
 
             'callableDoesNotReturnItself' => [
-                '<?php
+                'code' => '<?php
                     $b =
                       /**
                        * @param callable():int $s
@@ -1827,10 +1829,10 @@ class FunctionTemplateTest extends TestCase
                     function takesReturnTCallable(callable $s) {}
 
                     takesReturnTCallable($b);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'multipleArgConstraintWithMoreRestrictiveFirstArg' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class AChild extends A {}
 
@@ -1853,7 +1855,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'multipleArgConstraintWithMoreRestrictiveSecondArg' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class AChild extends A {}
 
@@ -1876,7 +1878,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'multipleArgConstraintWithLessRestrictiveThirdArg' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class AChild extends A {}
 
@@ -1899,7 +1901,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'possiblyInvalidArgumentWithUnionFirstArg' => [
-                '<?php
+                'code' => '<?php
 
                     /**
                      * @template T
@@ -1915,7 +1917,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'PossiblyInvalidArgument',
             ],
             'possiblyInvalidArgumentWithUnionSecondArg' => [
-                '<?php
+                'code' => '<?php
 
                     /**
                      * @template T
@@ -1931,7 +1933,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'PossiblyInvalidArgument',
             ],
             'preventTemplateTypeAsBeingUsedInsideFunction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of DateTime
                      * @param callable(T) $callable
@@ -1942,7 +1944,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'preventWrongTemplateBeingPassed' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of DateTime
                      * @template T2 of DateTime
@@ -1957,7 +1959,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'preventTemplateTypeReturnMoreGeneral' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of DateTimeInterface
                      * @param T $x
@@ -1970,7 +1972,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'preventReturningString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @psalm-param T $t
@@ -1982,7 +1984,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'unTemplatedVarOnReturn' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     class A {}
@@ -2003,7 +2005,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'templateReturnTypeOfCallableWithIncompatibleType' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {
@@ -2027,7 +2029,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'templateInvokeArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param callable(T):void $c
@@ -2055,13 +2057,13 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument'
             ],
             'invalidTemplateDocblock' => [
-                '<?php
+                'code' => '<?php
                     /** @template */
                     function f():void {}',
                 'error_message' => 'MissingDocblockType'
             ],
             'returnNamedObjectWhereTemplateIsExpected' => [
-                '<?php
+                'code' => '<?php
                     class Bar {}
 
                     /**
@@ -2075,7 +2077,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'returnIntersectionWhenTemplateIsExpectedForward' => [
-                '<?php
+                'code' => '<?php
                     interface Baz {}
 
                     /**
@@ -2086,10 +2088,10 @@ class FunctionTemplateTest extends TestCase
                     function returnsTemplatedIntersection(object $t) {
                         return $t;
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'returnIntersectionWhenTemplateIsExpectedBackward' => [
-                '<?php
+                'code' => '<?php
                     interface Baz {}
 
                     /**
@@ -2100,10 +2102,10 @@ class FunctionTemplateTest extends TestCase
                     function returnsTemplatedIntersection(object $t) {
                         return $t;
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'bottomTypeInClosureShouldClash' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @param class-string<T> $className
@@ -2130,7 +2132,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument'
             ],
             'bottomTypeInNamespacedCallableShouldClash' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /**
@@ -2161,7 +2163,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument'
             ],
             'preventBadArraySubtyping' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as array{a: int}
                      * @return T
@@ -2173,7 +2175,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidReturnStatement'
             ],
             'modifyTemplatedShape' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as array{a: int}
                      * @param T $s
@@ -2186,7 +2188,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidReturnStatement'
             ],
             'preventArrayOverwriting' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @return T
@@ -2197,7 +2199,7 @@ class FunctionTemplateTest extends TestCase
                 'error_message' => 'InvalidReturnStatement'
             ],
             'catchIssueInTemplatedFunctionInsideClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */

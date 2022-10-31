@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\BitwiseNot;
 use Psalm\Node\VirtualNode;
 
-class VirtualBitwiseNot extends BitwiseNot implements VirtualNode
+final class VirtualBitwiseNot extends BitwiseNot implements VirtualNode
 {
 
 }

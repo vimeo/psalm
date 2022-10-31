@@ -6,7 +6,7 @@ use Psalm\Report;
 
 use function sprintf;
 
-class CheckstyleReport extends Report
+final class CheckstyleReport extends Report
 {
     public function create(): string
     {

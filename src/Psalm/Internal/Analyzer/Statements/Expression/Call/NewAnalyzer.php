@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -33,6 +34,8 @@ use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
 use Psalm\Type\Atomic\TClassString;
@@ -48,6 +51,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -443,15 +447,13 @@ class NewAnalyzer extends CallAnalyzer
                     }
                 }
 
-                $generic_params = $template_result->lower_bounds;
-
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
                     self::applyAssertionsToContext(
                         $stmt->class,
                         null,
                         $method_storage->assertions,
                         $stmt->getArgs(),
-                        $generic_params,
+                        $template_result,
                         $context,
                         $statements_analyzer
                     );
@@ -461,9 +463,8 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setIfTrueAssertions(
                         $stmt,
                         array_map(
-                            function ($assertion) use ($generic_params, $codebase) {
-                                return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
-                            },
+                            static fn(Possibilities $assertion): Possibilities
+                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $method_storage->if_true_assertions
                         )
                     );
@@ -473,9 +474,8 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data->setIfFalseAssertions(
                         $stmt,
                         array_map(
-                            function ($assertion) use ($generic_params, $codebase) {
-                                return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
-                            },
+                            static fn(Possibilities $assertion): Possibilities
+                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $method_storage->if_false_assertions
                         )
                     );
@@ -497,23 +497,20 @@ class NewAnalyzer extends CallAnalyzer
                             $template_name,
                             $storage->template_extended_params,
                             array_map(
-                                function ($type_map) use ($codebase) {
-                                    return array_map(
-                                        function ($bounds) use ($codebase) {
-                                            return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                                                $bounds,
-                                                $codebase
-                                            );
-                                        },
-                                        $type_map
-                                    );
-                                },
+                                static fn(array $type_map): array => array_map(
+                                    static fn(array $bounds): Union
+                                        => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                            $bounds,
+                                            $codebase
+                                        ),
+                                    $type_map
+                                ),
                                 $template_result->lower_bounds
                             )
                         );
                     } else {
                         if ($fq_class_name === 'SplObjectStorage') {
-                            $generic_param_type = Type::getEmpty();
+                            $generic_param_type = Type::getNever();
                         } else {
                             $generic_param_type = clone array_values($base_type)[0];
                         }
@@ -528,10 +525,10 @@ class NewAnalyzer extends CallAnalyzer
             if ($generic_param_types) {
                 $result_atomic_type = new TGenericObject(
                     $fq_class_name,
-                    $generic_param_types
+                    $generic_param_types,
+                    false,
+                    $from_static
                 );
-
-                $result_atomic_type->was_static = $from_static;
 
                 $statements_analyzer->node_data->setType(
                     $stmt,
@@ -552,15 +549,13 @@ class NewAnalyzer extends CallAnalyzer
                 $fq_class_name,
                 array_values(
                     array_map(
-                        function ($map) {
-                            return clone reset($map);
-                        },
+                        static fn($map) => clone reset($map),
                         $storage->template_types
                     )
-                )
+                ),
+                false,
+                $from_static
             );
-
-            $result_atomic_type->was_static = $from_static;
 
             $statements_analyzer->node_data->setType(
                 $stmt,
@@ -649,10 +644,44 @@ class NewAnalyzer extends CallAnalyzer
         if ($has_single_class) {
             $fq_class_name = $stmt_class_type->getSingleStringLiteral()->value;
         } else {
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                && $stmt_class_type->parent_nodes
+                && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            ) {
+                $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt_class);
+
+                $custom_call_sink = TaintSink::getForMethodArgument(
+                    'variable-call',
+                    'variable-call',
+                    0,
+                    $arg_location,
+                    $arg_location
+                );
+
+                $custom_call_sink->taints = [TaintKind::INPUT_CALLABLE];
+
+                $statements_analyzer->data_flow_graph->addSink($custom_call_sink);
+
+                $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                foreach ($stmt_class_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        $custom_call_sink,
+                        'call',
+                        $added_taints,
+                        $removed_taints
+                    );
+                }
+            }
+
             if (self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
-                null,
+                new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer

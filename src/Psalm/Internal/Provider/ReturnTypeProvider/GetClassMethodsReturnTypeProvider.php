@@ -8,6 +8,9 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class GetClassMethodsReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

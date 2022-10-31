@@ -188,7 +188,7 @@ class ConfigTest extends TestCase
                     <projectFiles>
                         <directory name="tests" />
                         <ignoreFiles>
-                            <directory name="tests/fixtures/symlinktest/ignored" />
+                            <directory name="tests/fixtures/symlinktest/ignored" resolveSymlinks="true" />
                         </ignoreFiles>
                     </projectFiles>
                 </psalm>'
@@ -473,6 +473,11 @@ class ConfigTest extends TestCase
                                 <referencedVariable name="a" />
                             </errorLevel>
                         </UndefinedGlobalVariable>
+                        <InvalidConstantAssignmentValue>
+                            <errorLevel type="suppress">
+                                <referencedConstant name="Psalm\Bodger::FOO" />
+                            </errorLevel>
+                        </InvalidConstantAssignmentValue>
                     </issueHandlers>
                 </psalm>'
             )
@@ -617,6 +622,14 @@ class ConfigTest extends TestCase
             $config->getReportingLevelForVariable(
                 'UndefinedGlobalVariable',
                 'b'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForClassConstant(
+                'InvalidConstantAssignmentValue',
+                'Psalm\Bodger::FOO'
             )
         );
     }
@@ -856,9 +869,7 @@ class ConfigTest extends TestCase
                  *
                  * @return string
                  */
-                function ($issue_name): string {
-                    return '<' . $issue_name . ' errorLevel="suppress" />' . "\n";
-                },
+                fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
                 IssueHandler::getAllIssueTypes()
             )
         );
@@ -928,73 +939,6 @@ class ConfigTest extends TestCase
                 $a = new MyMockClass();
                 $a->foo($b = 5);
                 echo $b;'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testExitFunctions(): void
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2),
-                '<?xml version="1.0"?>
-                <psalm>
-                    <exitFunctions>
-                        <function name="leave" />
-                        <function name="Foo\namespacedLeave" />
-                        <function name="Foo\Bar::staticLeave" />
-                    </exitFunctions>
-                </psalm>'
-            )
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                namespace {
-                    function leave() : void {
-                        exit();
-                    }
-
-                    function mightLeave() : string {
-                        if (rand(0, 1)) {
-                            leave();
-                        } else {
-                            return "here";
-                        }
-                    }
-
-                    function mightLeaveWithNamespacedFunction() : string {
-                        if (rand(0, 1)) {
-                            \Foo\namespacedLeave();
-                        } else {
-                            return "here";
-                        }
-                    }
-
-                    function mightLeaveWithStaticMethod() : string {
-                        if (rand(0, 1)) {
-                            Foo\Bar::staticLeave();
-                        } else {
-                            return "here";
-                        }
-                    }
-                }
-
-                namespace Foo {
-                    function namespacedLeave() : void {
-                        exit();
-                    }
-
-                    class Bar {
-                        public static function staticLeave() : void {
-                            exit();
-                        }
-                    }
-                }'
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1486,10 +1430,10 @@ class ConfigTest extends TestCase
     {
         return [
             'regular' => [0, null], // flags, expected exception code
-            'invalid scanner class' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_INVALID, 1622727271],
-            'invalid analyzer class' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_INVALID, 1622727281],
-            'override scanner' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_TWICE, 1622727272],
-            'override analyzer' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_TWICE, 1622727282],
+            'invalid scanner class' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_INVALID, 1_622_727_271],
+            'invalid analyzer class' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_INVALID, 1_622_727_281],
+            'override scanner' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_TWICE, 1_622_727_272],
+            'override analyzer' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_TWICE, 1_622_727_282],
         ];
     }
 
@@ -1502,7 +1446,7 @@ class ConfigTest extends TestCase
         $extension = uniqid('test');
         $names = [
             'scanner' => uniqid('PsalmTestFileTypeScanner'),
-            'analyzer' => uniqid('PsalmTestFileTypeAnaylzer'),
+            'analyzer' => uniqid('PsalmTestFileTypeAnalyzer'),
             'extension' => $extension,
         ];
         $scannerMock = $this->getMockBuilder(FileScanner::class)
@@ -1523,12 +1467,11 @@ class ConfigTest extends TestCase
             <psalm><plugins><pluginClass class="%s"/></plugins></psalm>',
             FileTypeSelfRegisteringPlugin::class
         );
-        $projectAnalyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(dirname(__DIR__, 2), $xml)
-        );
-
 
         try {
+            $projectAnalyzer = $this->getProjectAnalyzerWithConfig(
+                TestConfig::loadFromXML(dirname(__DIR__, 2), $xml)
+            );
             $config = $projectAnalyzer->getConfig();
             $config->initializePlugins($projectAnalyzer);
         } catch (ConfigException $exception) {

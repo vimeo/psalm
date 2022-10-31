@@ -43,7 +43,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function count;
 use function explode;
 use function reset;
@@ -155,6 +154,8 @@ class ReturnAnalyzer
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 $context->inside_return = false;
+                $context->has_returned = true;
+
                 return;
             }
 
@@ -180,7 +181,7 @@ class ReturnAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     );
 
-                    $stmt_type = Type::getEmpty();
+                    $stmt_type = Type::getNever();
                 }
 
                 if ($stmt_type->isVoid()) {
@@ -212,6 +213,8 @@ class ReturnAnalyzer
                 }
             }
         }
+
+        $context->has_returned = true;
 
         if ($source instanceof FunctionLikeAnalyzer
             && !($source->getSource() instanceof TraitAnalyzer)
@@ -281,10 +284,8 @@ class ReturnAnalyzer
                                 unset($found_generic_params[$template_name][$fq_class_name]);
                             }
 
-                            $local_return_type = clone $local_return_type;
-
-                            TemplateInferredTypeReplacer::replace(
-                                $local_return_type,
+                            $local_return_type = TemplateInferredTypeReplacer::replace(
+                                clone $local_return_type,
                                 new TemplateResult([], $found_generic_params),
                                 $codebase
                             );
@@ -321,10 +322,10 @@ class ReturnAnalyzer
 
                             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                                 foreach ($stmt_type->parent_nodes as $parent_node) {
-                                    $origin_locations = array_merge(
-                                        $origin_locations,
-                                        $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                                    );
+                                    $origin_locations = [
+                                        ...$origin_locations,
+                                        ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                                    ];
                                 }
                             }
 

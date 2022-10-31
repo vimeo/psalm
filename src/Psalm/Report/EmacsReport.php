@@ -7,7 +7,7 @@ use Psalm\Report;
 
 use function sprintf;
 
-class EmacsReport extends Report
+final class EmacsReport extends Report
 {
     public function create(): string
     {

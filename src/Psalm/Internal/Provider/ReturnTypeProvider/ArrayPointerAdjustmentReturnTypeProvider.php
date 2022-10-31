@@ -21,6 +21,9 @@ use function array_merge;
 use function array_shift;
 use function in_array;
 
+/**
+ * @internal
+ */
 class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -90,10 +93,10 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
             throw new UnexpectedValueException('This should never happen');
         }
 
-        if ($value_type->isEmpty()) {
+        if ($value_type->isNever()) {
             $value_type = Type::getFalse();
-        } elseif (!$definitely_has_items || self::isFunctionAlreadyHandledByStub($function_id)) {
-            $value_type->addType(new TFalse);
+        } elseif (($function_id !== 'reset' && $function_id !== 'end') || !$definitely_has_items) {
+            $value_type = $value_type->getBuilder()->addType(new TFalse)->freeze();
 
             $codebase = $statements_source->getCodebase();
 

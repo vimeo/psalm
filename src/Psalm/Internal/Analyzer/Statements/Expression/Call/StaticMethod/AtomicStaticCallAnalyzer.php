@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -62,6 +63,9 @@ use function count;
 use function in_array;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class AtomicStaticCallAnalyzer
 {
     public static function analyze(
@@ -72,7 +76,8 @@ class AtomicStaticCallAnalyzer
         bool $ignore_nullable_issues,
         bool &$moved_call,
         bool &$has_mock,
-        bool &$has_existing_method
+        bool &$has_existing_method,
+        ?TemplateResult $inferred_template_result = null
     ): void {
         $intersection_types = [];
 
@@ -207,7 +212,8 @@ class AtomicStaticCallAnalyzer
                 $intersection_types ?: [],
                 $fq_class_name,
                 $moved_call,
-                $has_existing_method
+                $has_existing_method,
+                $inferred_template_result
             );
         } else {
             if ($stmt->name instanceof PhpParser\Node\Expr) {
@@ -305,7 +311,8 @@ class AtomicStaticCallAnalyzer
         array $intersection_types,
         string $fq_class_name,
         bool &$moved_call,
-        bool &$has_existing_method
+        bool &$has_existing_method,
+        ?TemplateResult $inferred_template_result = null
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -413,9 +420,10 @@ class AtomicStaticCallAnalyzer
                         $mixin_candidates[] = clone $mixin_candidate;
                     }
 
-                    $mixin_candidates_no_generic = array_filter($mixin_candidates, function ($check): bool {
-                        return !($check instanceof TGenericObject);
-                    });
+                    $mixin_candidates_no_generic = array_filter(
+                        $mixin_candidates,
+                        static fn(Atomic $check): bool => !($check instanceof TGenericObject)
+                    );
 
                     // $mixin_candidates_no_generic will only be empty when there are TGenericObject entries.
                     // In that case, Union will be initialized with an empty array but
@@ -438,13 +446,13 @@ class AtomicStaticCallAnalyzer
                             $tGenericMixin,
                             $class_storage,
                             $mixin_declaring_class_storage
-                        );
+                        )->getBuilder();
 
                         foreach ($mixin_candidate_type->getAtomicTypes() as $type) {
                             $new_mixin_candidate_type->addType($type);
                         }
 
-                        $mixin_candidate_type = $new_mixin_candidate_type;
+                        $mixin_candidate_type = $new_mixin_candidate_type->freeze();
                     }
 
                     $new_lhs_type = TypeExpander::expandUnion(
@@ -583,7 +591,7 @@ class AtomicStaticCallAnalyzer
                         CallAnalyzer::checkMethodArgs(
                             $method_id,
                             $stmt->getArgs(),
-                            null,
+                            new TemplateResult([], []),
                             $context,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $statements_analyzer
@@ -659,14 +667,12 @@ class AtomicStaticCallAnalyzer
                 }
 
                 $array_values = array_map(
-                    function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
-                        return new VirtualArrayItem(
-                            $arg->value,
-                            null,
-                            false,
-                            $arg->getAttributes()
-                        );
-                    },
+                    static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
+                        $arg->value,
+                        null,
+                        false,
+                        $arg->getAttributes()
+                    ),
                     $args
                 );
 
@@ -738,17 +744,17 @@ class AtomicStaticCallAnalyzer
                 if (isset($context->vars_in_scope['$this'])
                     && $method_call_type = $statements_analyzer->node_data->getType($stmt)
                 ) {
-                    $method_call_type = clone $method_call_type;
+                    $method_call_type = $method_call_type->getBuilder();
 
                     foreach ($method_call_type->getAtomicTypes() as $name => $type) {
-                        if ($type instanceof TNamedObject && $type->was_static && $type->value === $fq_class_name) {
+                        if ($type instanceof TNamedObject && $type->is_static && $type->value === $fq_class_name) {
                             // Replace parent&static type to actual static type
                             $method_call_type->removeType($name);
                             $method_call_type->addType($context->vars_in_scope['$this']->getSingleAtomic());
                         }
                     }
 
-                    $statements_analyzer->node_data->setType($stmt, $method_call_type);
+                    $statements_analyzer->node_data->setType($stmt, $method_call_type->freeze());
                 }
 
                 return true;
@@ -883,7 +889,8 @@ class AtomicStaticCallAnalyzer
             $method_id,
             $cased_method_id,
             $class_storage,
-            $moved_call
+            $moved_call,
+            $inferred_template_result
         );
 
         return true;
@@ -923,7 +930,7 @@ class AtomicStaticCallAnalyzer
             $pseudo_method_storage->params,
             $pseudo_method_storage,
             null,
-            null,
+            new TemplateResult([], []),
             new CodeLocation($statements_analyzer, $stmt),
             $context
         ) === false) {
@@ -952,7 +959,7 @@ class AtomicStaticCallAnalyzer
                     $method_storage->params,
                     $method_storage,
                     null,
-                    null,
+                    new TemplateResult([], []),
                     new CodeLocation($statements_analyzer, $stmt),
                     $context
                 );

@@ -7,7 +7,7 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 
-class BeforeFileAnalysisEvent
+final class BeforeFileAnalysisEvent
 {
     /**
      * @var StatementsSource
@@ -28,6 +28,7 @@ class BeforeFileAnalysisEvent
 
     /**
      * Called before a file has been checked
+     * @internal
      */
     public function __construct(
         StatementsSource $statements_source,

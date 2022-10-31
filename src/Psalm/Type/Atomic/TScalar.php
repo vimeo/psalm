@@ -5,14 +5,10 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes the `scalar` super type (which can also result from an `is_scalar` check).
  * This type encompasses `float`, `int`, `bool` and `string`.
+ * @psalm-immutable
  */
 class TScalar extends Scalar
 {
-    public function __toString(): string
-    {
-        return 'scalar';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'scalar';
@@ -25,18 +21,17 @@ class TScalar extends Scalar
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'scalar';
     }

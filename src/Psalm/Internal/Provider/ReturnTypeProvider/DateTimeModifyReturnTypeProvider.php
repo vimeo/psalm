@@ -10,6 +10,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array

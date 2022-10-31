@@ -19,6 +19,9 @@ use function substr;
 use function token_get_all;
 use function trim;
 
+/**
+ * @internal
+ */
 class UnusedAssignmentRemover
 {
     /**

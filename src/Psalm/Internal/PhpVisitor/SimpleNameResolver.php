@@ -174,7 +174,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
      * @template T of Node|null
      * @param T $node
      * @return ($node is NullableType ? NullableType : ($node is Name ? Name : T))
-     * @psalm-suppress LessSpecificReturnType
      */
     private function resolveType(?Node $node): ?Node
     {

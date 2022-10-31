@@ -21,6 +21,9 @@ use const E_USER_ERROR;
 use const E_USER_NOTICE;
 use const E_USER_WARNING;
 
+/**
+ * @internal
+ */
 class TriggerErrorReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

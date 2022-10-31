@@ -43,6 +43,8 @@ use const PHP_INT_MAX;
 
 /**
  * This class takes a statement and return its type by analyzing each part of the statement if necessary
+ *
+ * @internal
  */
 class SimpleTypeInferer
 {
@@ -198,6 +200,63 @@ class SimpleTypeInferer
                 && ($stmt_right_type->hasInt() || $stmt_right_type->hasFloat())
             ) {
                 return Type::combineUnionTypes(Type::getFloat(), Type::getInt());
+            }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BitwiseNot) {
+            $stmt_expr_type = self::infer(
+                $codebase,
+                $nodes,
+                $stmt->expr,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name
+            );
+
+            if ($stmt_expr_type === null) {
+                return null;
+            }
+
+            $invalidTypes = $stmt_expr_type->getBuilder();
+            $invalidTypes->removeType('string');
+            $invalidTypes->removeType('int');
+            $invalidTypes->removeType('float');
+
+            if (!$invalidTypes->isUnionEmpty()) {
+                return null;
+            }
+
+            $types = [];
+            if ($stmt_expr_type->hasString()) {
+                $types[] = Type::getString();
+            }
+            if ($stmt_expr_type->hasInt() || $stmt_expr_type->hasFloat()) {
+                $types[] = Type::getInt();
+            }
+
+            return $types ? Type::combineUnionTypeArray($types, null) : null;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
+            $stmt_expr_type = self::infer(
+                $codebase,
+                $nodes,
+                $stmt->expr,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name
+            );
+
+            if ($stmt_expr_type === null) {
+                return null;
+            } elseif ($stmt_expr_type->isAlwaysFalsy()) {
+                return Type::getTrue();
+            } elseif ($stmt_expr_type->isAlwaysTruthy()) {
+                return Type::getFalse();
+            } else {
+                return Type::getBool();
             }
         }
 
@@ -371,19 +430,21 @@ class SimpleTypeInferer
                 return null;
             }
 
+            $new_types = [];
             foreach ($type_to_invert->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof TLiteralInt
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $type_part->value = -$type_part->value;
+                    $new_types []= new TLiteralInt(-$type_part->value);
                 } elseif ($type_part instanceof TLiteralFloat
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $type_part->value = -$type_part->value;
+                    $new_types []= new TLiteralFloat(-$type_part->value);
+                } else {
+                    $new_types []= $type_part;
                 }
             }
-
-            return $type_to_invert;
+            return new Union($new_types);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
@@ -515,10 +576,12 @@ class SimpleTypeInferer
         ) {
             $objectlike = new TKeyedArray(
                 $array_creation_info->property_types,
-                $array_creation_info->class_strings
+                $array_creation_info->class_strings,
+                true,
+                null,
+                null,
+                $array_creation_info->all_list
             );
-            $objectlike->sealed = true;
-            $objectlike->is_list = $array_creation_info->all_list;
             return new Union([$objectlike]);
         }
 
@@ -720,7 +783,7 @@ class SimpleTypeInferer
                     $array_creation_info->property_types[$new_offset] = $property_value;
                 }
             } elseif ($unpacked_atomic_type instanceof TArray) {
-                if ($unpacked_atomic_type->type_params[1]->isEmpty()) {
+                if ($unpacked_atomic_type->isEmptyArray()) {
                     continue;
                 }
                 $array_creation_info->can_create_objectlike = false;
@@ -742,7 +805,7 @@ class SimpleTypeInferer
                     )
                 );
             } elseif ($unpacked_atomic_type instanceof TList) {
-                if ($unpacked_atomic_type->type_param->isEmpty()) {
+                if ($unpacked_atomic_type->type_param->isNever()) {
                     continue;
                 }
                 $array_creation_info->can_create_objectlike = false;

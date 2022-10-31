@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class UnsafeGenericInstantiation extends CodeIssue
+final class UnsafeGenericInstantiation extends CodeIssue
 {
     public const ERROR_LEVEL = 2;
     public const SHORTCODE = 269;

@@ -13,7 +13,7 @@ class ReflectionClass implements Reflector {
     public $name;
 
     /**
-     * @param T|class-string<T>|interface-string<T>|trait-string $argument
+     * @param T|class-string<T>|interface-string<T>|trait-string|enum-string<T> $argument
      */
     public function __construct($argument) {}
 
@@ -70,6 +70,18 @@ class ReflectionFunction implements Reflector
 class ReflectionProperty implements Reflector
 {
     /**
+     * @var string
+     * @readonly
+     */
+    public $name;
+
+    /**
+     * @var class-string
+     * @readonly
+     */
+    public $class;
+
+    /**
      * @since 8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
@@ -108,6 +120,18 @@ class ReflectionProperty implements Reflector
 class ReflectionMethod implements Reflector
 {
     /**
+     * @var string
+     * @readonly
+     */
+    public $name;
+
+    /**
+     * @var class-string
+     * @readonly
+     */
+    public $class;
+
+    /**
      * @since 8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
@@ -121,6 +145,25 @@ class ReflectionMethod implements Reflector
 class ReflectionClassConstant implements Reflector
 {
     /**
+     * @var string
+     * @readonly
+     */
+    public $name;
+
+    /**
+     * @var class-string
+     * @readonly
+     */
+    public $class;
+
+    /**
+     * @var bool
+     * @since 8.1
+     * @readonly
+     */
+    public $isFinal;
+
+    /**
      * @since 8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
@@ -133,6 +176,12 @@ class ReflectionClassConstant implements Reflector
  * @psalm-immutable
  */
 class ReflectionParameter implements Reflector {
+    /**
+     * @var string
+     * @readonly
+     */
+    public $name;
+
     /**
      * @psalm-assert-if-true ReflectionType $this->getType()
      */

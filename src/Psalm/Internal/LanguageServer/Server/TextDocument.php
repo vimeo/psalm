@@ -34,6 +34,8 @@ use function substr_count;
 
 /**
  * Provides method handlers for all textDocument/* methods
+ *
+ * @internal
  */
 class TextDocument
 {
@@ -257,7 +259,7 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position
-     * @psalm-return Promise<array<empty, empty>>|Promise<CompletionList>
+     * @psalm-return Promise<array<never, never>>|Promise<CompletionList>
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
@@ -378,6 +380,15 @@ class TextDocument
                     $indentation = $matches[1] ?? '';
                 }
 
+                /**
+                 * Suppress Psalm because ther are bugs in how
+                 * LanguageServer's signature of WorkspaceEdit is declared:
+                 *
+                 * See:
+                 * https://github.com/felixfbecker/php-language-server-protocol
+                 * See:
+                 * https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#workspaceEdit
+                 */
                 $edit = new WorkspaceEdit([
                     $textDocument->uri => [
                         new TextEdit(

@@ -11,6 +11,9 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

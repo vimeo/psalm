@@ -5,6 +5,9 @@ namespace Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Type\Atomic;
 
+/**
+ * @internal
+ */
 class ClassTypeAlias implements TypeAlias
 {
     /**

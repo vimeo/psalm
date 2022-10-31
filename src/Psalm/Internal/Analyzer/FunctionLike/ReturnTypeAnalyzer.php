@@ -11,6 +11,7 @@ use PhpParser\Node\Stmt\Function_;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InterfaceAnalyzer;
@@ -40,6 +41,7 @@ use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\MoreSpecificReturnType;
+use Psalm\Issue\UnresolvableConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
@@ -157,7 +159,6 @@ class ReturnTypeAnalyzer
             && ScopeAnalyzer::getControlActions(
                 $function_stmts,
                 $type_provider,
-                $codebase->config->exit_functions,
                 []
             ) !== [ScopeAnalyzer::ACTION_END]
             && !$inferred_yield_types
@@ -167,8 +168,7 @@ class ReturnTypeAnalyzer
             // only add null if we have a return statement elsewhere and it wasn't void
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
                 if (!$inferred_return_type_part->isVoid()) {
-                    $atomic_null = new TNull();
-                    $atomic_null->from_docblock = true;
+                    $atomic_null = new TNull(true);
                     $inferred_return_type_parts[] = new Union([$atomic_null]);
                     break;
                 }
@@ -178,7 +178,6 @@ class ReturnTypeAnalyzer
         $control_actions = ScopeAnalyzer::getControlActions(
             $function_stmts,
             $type_provider,
-            $codebase->config->exit_functions,
             [],
             false
         );
@@ -238,13 +237,11 @@ class ReturnTypeAnalyzer
         }
 
         $number_of_types = count($inferred_return_type_parts);
-        // we filter TNever and TEmpty that have no bearing on the return type
+        // we filter TNever that have no bearing on the return type
         if ($number_of_types > 1) {
             $inferred_return_type_parts = array_filter(
                 $inferred_return_type_parts,
-                static function (Union $union_type): bool {
-                    return !($union_type->isNever() || $union_type->isEmpty());
-                }
+                static fn(Union $union_type): bool => !$union_type->isNever()
             );
         }
 
@@ -491,7 +488,7 @@ class ReturnTypeAnalyzer
                 return null;
             }
 
-            if ($inferred_return_type->hasMixed() || $inferred_return_type->isEmpty()) {
+            if ($inferred_return_type->hasMixed()) {
                 if (IssueBuffer::accepts(
                     new MixedInferredReturnType(
                         'Could not verify return type \'' . $declared_return_type . '\' for ' .
@@ -579,15 +576,13 @@ class ReturnTypeAnalyzer
                         return false;
                     }
                 }
-            } elseif (!$inferred_return_type->hasMixed()
-                && !UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $declared_return_type,
-                    $inferred_return_type,
-                    false,
-                    false
-                )
-            ) {
+            } elseif (!UnionTypeComparator::isContainedBy(
+                $codebase,
+                $declared_return_type,
+                $inferred_return_type,
+                false,
+                false
+            )) {
                 if ($codebase->alter_code) {
                     if (isset($project_analyzer->getIssuesToFix()['LessSpecificReturnType'])
                         && !in_array('LessSpecificReturnType', $suppressed_issues)
@@ -825,15 +820,31 @@ class ReturnTypeAnalyzer
             return null;
         }
 
-        $fleshed_out_return_type = TypeExpander::expandUnion(
-            $codebase,
-            $storage->return_type,
-            $classlike_storage->name ?? null,
-            $classlike_storage->name ?? null,
-            $parent_class,
-            true,
-            true
-        );
+        try {
+            $fleshed_out_return_type = TypeExpander::expandUnion(
+                $codebase,
+                $storage->return_type,
+                $classlike_storage->name ?? null,
+                $classlike_storage->name ?? null,
+                $parent_class,
+                true,
+                true,
+                false,
+                false,
+                false,
+                true,
+            );
+        } catch (UnresolvableConstantException $e) {
+            IssueBuffer::maybeAdd(
+                new UnresolvableConstant(
+                    "Could not resolve constant {$e->class_name}::{$e->const_name}",
+                    $storage->return_type_location
+                ),
+                $storage->suppressed_issues,
+                true
+            );
+            $fleshed_out_return_type = $storage->return_type;
+        }
 
         if ($fleshed_out_return_type->check(
             $function_like_analyzer,
@@ -943,7 +954,7 @@ class ReturnTypeAnalyzer
         }
 
         $allow_native_type = !$docblock_only
-            && $codebase->php_major_version >= 7
+            && $codebase->analysis_php_version_id >= 7_00_00
             && (
                 $codebase->allow_backwards_incompatible_changes
                 || $is_final
@@ -956,8 +967,7 @@ class ReturnTypeAnalyzer
                     $source->getNamespace(),
                     $source->getAliasedClassesFlipped(),
                     $source->getFQCLN(),
-                    $codebase->php_major_version,
-                    $codebase->php_minor_version
+                    $codebase->analysis_php_version_id
                 ) : null,
             $inferred_return_type->toNamespacedString(
                 $source->getNamespace(),
@@ -971,7 +981,7 @@ class ReturnTypeAnalyzer
                 $source->getFQCLN(),
                 true
             ),
-            $inferred_return_type->canBeFullyExpressedInPhp($codebase->php_major_version, $codebase->php_minor_version),
+            $inferred_return_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id),
             $function_like_storage->return_type_description ?? null
         );
     }

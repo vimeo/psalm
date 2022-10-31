@@ -20,6 +20,9 @@ use const DIRECTORY_SEPARATOR;
 require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 
+/**
+ * @internal
+ */
 final class Plugin
 {
     public static function run(): void

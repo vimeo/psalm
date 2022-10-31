@@ -6,7 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class MethodVisibilityProviderEvent
+final class MethodVisibilityProviderEvent
 {
     /**
      * @var StatementsSource
@@ -29,6 +29,7 @@ class MethodVisibilityProviderEvent
      */
     private $code_location;
 
+    /** @internal */
     public function __construct(
         StatementsSource $source,
         string $fq_classlike_name,

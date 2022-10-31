@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Block\DoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForAnalyzer;
@@ -23,7 +24,7 @@ use Psalm\Internal\Analyzer\Statements\ContinueAnalyzer;
 use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ClassConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
@@ -42,6 +43,8 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\CheckType;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
 use Psalm\Issue\InvalidDocblock;
@@ -56,6 +59,7 @@ use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeStatementAnalysisEvent;
 use Psalm\Type;
 use UnexpectedValueException;
 
@@ -63,10 +67,11 @@ use function array_change_key_case;
 use function array_column;
 use function array_combine;
 use function array_keys;
-use function array_merge;
+use function array_map;
 use function array_search;
 use function assert;
 use function count;
+use function explode;
 use function fwrite;
 use function get_class;
 use function in_array;
@@ -132,9 +137,9 @@ class StatementsAnalyzer extends SourceAnalyzer
     private $unused_var_locations = [];
 
     /**
-     * @var ?array<string, bool>
+     * @var array<string, true>
      */
-    public $byref_uses;
+    public $byref_uses = [];
 
     /**
      * @var ParsedDocblock|null
@@ -215,7 +220,6 @@ class StatementsAnalyzer extends SourceAnalyzer
             && $codebase->find_unused_variables
             && $context->check_variables
         ) {
-            //var_dump($this->data_flow_graph);
             $this->checkUnreferencedVars($stmts, $context);
         }
 
@@ -355,6 +359,10 @@ class StatementsAnalyzer extends SourceAnalyzer
         Context $context,
         ?Context $global_context
     ): ?bool {
+        if (self::dispatchBeforeStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
+            return false;
+        }
+
         $ignore_variable_property = false;
         $ignore_variable_method = false;
 
@@ -367,6 +375,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         $new_issues = null;
         $traced_variables = [];
 
+        $checked_types = [];
         if ($docblock = $stmt->getDocComment()) {
             $statements_analyzer->parseStatementDocblock($docblock, $stmt, $context);
 
@@ -379,9 +388,16 @@ class StatementsAnalyzer extends SourceAnalyzer
                         PREG_SPLIT_NO_EMPTY
                     );
                     if ($possible_traced_variable_names) {
-                        $traced_variables = array_merge($traced_variables, $possible_traced_variable_names);
+                        $traced_variables = [...$traced_variables, ...$possible_traced_variable_names];
                     }
                 }
+            }
+
+            foreach ($statements_analyzer->parsed_docblock->tags['psalm-check-type'] ?? [] as $inexact_check) {
+                $checked_types[] = [$inexact_check, false];
+            }
+            foreach ($statements_analyzer->parsed_docblock->tags['psalm-check-type-exact'] ?? [] as $exact_check) {
+                $checked_types[] = [$exact_check, true];
             }
 
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-ignore-variable-method'])) {
@@ -544,10 +560,8 @@ class StatementsAnalyzer extends SourceAnalyzer
             UnsetAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
             ReturnAnalyzer::analyze($statements_analyzer, $stmt, $context);
-            $context->has_returned = true;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
             ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
-            $context->has_returned = true;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
             SwitchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
@@ -580,7 +594,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
             InstancePropertyAssignmentAnalyzer::analyzeStatement($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-            ClassConstFetchAnalyzer::analyzeClassConstAssignment($statements_analyzer, $stmt, $context);
+            ClassConstAnalyzer::analyzeAssignment($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             try {
                 $class_analyzer = new ClassAnalyzer(
@@ -625,23 +639,8 @@ class StatementsAnalyzer extends SourceAnalyzer
             }
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-
-        $event = new AfterStatementAnalysisEvent(
-            $stmt,
-            $context,
-            $statements_analyzer,
-            $codebase,
-            []
-        );
-
-        if ($codebase->config->eventDispatcher->dispatchAfterStatementAnalysis($event) === false) {
+        if (self::dispatchAfterStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
-        }
-
-        $file_manipulations = $event->getFileReplacements();
-        if ($file_manipulations) {
-            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
         }
 
         if ($new_issues) {
@@ -676,6 +675,118 @@ class StatementsAnalyzer extends SourceAnalyzer
             }
         }
 
+        foreach ($checked_types as [$check_type_line, $is_exact]) {
+            /** @var string|null $check_type_string (incorrectly inferred) */
+            [$checked_var, $check_type_string] = array_map('trim', explode('=', $check_type_line));
+
+            if ($check_type_string === null) {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        "Invalid format for @psalm-check-type" . ($is_exact ? "-exact" : ""),
+                        new CodeLocation($statements_analyzer->source, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } else {
+                $checked_var_id = $checked_var;
+                $possibly_undefined = strrpos($checked_var_id, "?") === strlen($checked_var_id) - 1;
+                if ($possibly_undefined) {
+                    $checked_var_id = substr($checked_var_id, 0, strlen($checked_var_id) - 1);
+                }
+
+                if (!isset($context->vars_in_scope[$checked_var_id])) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            "Attempt to check undefined variable $checked_var_id",
+                            new CodeLocation($statements_analyzer->source, $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } else {
+                    try {
+                        $checked_type = $context->vars_in_scope[$checked_var_id];
+                        $check_type = Type::parseString($check_type_string);
+                        $check_type->possibly_undefined = $possibly_undefined;
+
+                        if ($check_type->possibly_undefined !== $checked_type->possibly_undefined
+                            || !UnionTypeComparator::isContainedBy($codebase, $checked_type, $check_type)
+                            || ($is_exact && !UnionTypeComparator::isContainedBy($codebase, $check_type, $checked_type))
+                        ) {
+                            $check_var = $checked_var_id . ($checked_type->possibly_undefined ? "?" : "");
+                            IssueBuffer::maybeAdd(
+                                new CheckType(
+                                    "Checked variable $checked_var = {$check_type->getId()} does not match "
+                                        . "$check_var = {$checked_type->getId()}",
+                                    new CodeLocation($statements_analyzer->source, $stmt),
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
+                    } catch (TypeParseTreeException $e) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidDocblock(
+                                $e->getMessage(),
+                                new CodeLocation($statements_analyzer->source, $stmt),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static function dispatchAfterStatementAnalysis(
+        PhpParser\Node\Stmt $stmt,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer
+    ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $event = new AfterStatementAnalysisEvent(
+            $stmt,
+            $context,
+            $statements_analyzer,
+            $codebase,
+            []
+        );
+
+        if ($codebase->config->eventDispatcher->dispatchAfterStatementAnalysis($event) === false) {
+            return false;
+        }
+
+        $file_manipulations = $event->getFileReplacements();
+        if ($file_manipulations) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+        }
+        return null;
+    }
+
+    private static function dispatchBeforeStatementAnalysis(
+        PhpParser\Node\Stmt $stmt,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer
+    ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $event = new BeforeStatementAnalysisEvent(
+            $stmt,
+            $context,
+            $statements_analyzer,
+            $codebase,
+            []
+        );
+
+        if ($codebase->config->eventDispatcher->dispatchBeforeStatementAnalysis($event) === false) {
+            return false;
+        }
+
+        $file_manipulations = $event->getFileReplacements();
+        if ($file_manipulations) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+        }
         return null;
     }
 
@@ -795,7 +906,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             $assignment_node = DataFlowNode::getForAssignment($var_id, $original_location);
 
             if (!isset($this->byref_uses[$var_id])
-                && !isset($context->vars_from_global[$var_id])
+                && !isset($context->referenced_globals[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
                 && $this->data_flow_graph instanceof VariableUseGraph
                 && !$this->data_flow_graph->isVariableUsed($assignment_node)
@@ -960,7 +1071,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param array<string, bool> $byref_uses
+     * @param array<string, true> $byref_uses
      */
     public function setByRefUses(array $byref_uses): void
     {

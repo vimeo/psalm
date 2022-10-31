@@ -24,6 +24,8 @@ use function ob_start;
 use function preg_replace;
 use function unlink;
 
+use const JSON_THROW_ON_ERROR;
+
 class ReportOutputTest extends TestCase
 {
     public function setUp(): void
@@ -666,7 +668,7 @@ echo "Successfully executed the command: " . $prefixedData;';
 
         $this->assertSame(
             $issue_data,
-            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $sarif_report_options), true)
+            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $sarif_report_options), true, 512, JSON_THROW_ON_ERROR)
         );
     }
 
@@ -819,7 +821,7 @@ echo $a;';
 
         $this->assertSame(
             $issue_data,
-            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $json_report_options), true)
+            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $json_report_options), true, 512, JSON_THROW_ON_ERROR)
         );
     }
 
@@ -853,7 +855,7 @@ echo $a;';
             $fixable_issue_counts,
             $report_options
         );
-        $this->assertIsArray(json_decode($report->create()));
+        $this->assertIsArray(json_decode($report->create(), null, 512, JSON_THROW_ON_ERROR));
     }
 
     public function testSonarqubeReport(): void
@@ -950,7 +952,7 @@ echo $a;';
 
         $this->assertSame(
             $issue_data,
-            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $sonarqube_report_options), true)
+            json_decode(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $sonarqube_report_options), true, 512, JSON_THROW_ON_ERROR)
         );
     }
 

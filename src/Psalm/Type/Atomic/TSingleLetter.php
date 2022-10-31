@@ -4,7 +4,8 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes a string that has a length of 1
+ * @psalm-immutable
  */
-class TSingleLetter extends TString
+final class TSingleLetter extends TString
 {
 }

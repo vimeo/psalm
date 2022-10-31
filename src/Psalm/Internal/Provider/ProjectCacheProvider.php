@@ -18,6 +18,8 @@ use const PHP_VERSION_ID;
 /**
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
+ *
+ * @internal
  */
 class ProjectCacheProvider
 {
@@ -92,7 +94,7 @@ class ProjectCacheProvider
             return true;
         }
 
-        if (PHP_VERSION_ID >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00) {
             $hash = hash('xxh128', $lockfile_contents);
         } else {
             $hash = hash('md4', $lockfile_contents);

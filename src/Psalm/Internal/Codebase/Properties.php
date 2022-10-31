@@ -327,12 +327,12 @@ class Properties
 
         if ($storage->type) {
             if ($property_set) {
-                if (isset($class_storage->pseudo_property_set_types[$property_name])) {
-                    return $class_storage->pseudo_property_set_types[$property_name];
+                if (isset($class_storage->pseudo_property_set_types['$'.$property_name])) {
+                    return $class_storage->pseudo_property_set_types['$'.$property_name];
                 }
             } else {
-                if (isset($class_storage->pseudo_property_get_types[$property_name])) {
-                    return $class_storage->pseudo_property_get_types[$property_name];
+                if (isset($class_storage->pseudo_property_get_types['$'.$property_name])) {
+                    return $class_storage->pseudo_property_get_types['$'.$property_name];
                 }
             }
 

@@ -5,6 +5,9 @@ namespace Psalm\Internal\Scanner;
 use function explode;
 use function trim;
 
+/**
+ * @internal
+ */
 class ParsedDocblock
 {
     /** @var string */

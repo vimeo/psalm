@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\Greater;
 use Psalm\Node\VirtualNode;
 
-class VirtualGreater extends Greater implements VirtualNode
+final class VirtualGreater extends Greater implements VirtualNode
 {
 
 }

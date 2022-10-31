@@ -11,13 +11,13 @@ class InternalAnnotationTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'internalMethodWithCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class Foo {
                             /**
@@ -37,7 +37,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalClassWithStaticCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -57,7 +57,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalClassWithInstanceCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -81,7 +81,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalClassWithPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @internal
@@ -104,7 +104,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalClassExtendingNamespaceWithStaticCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -130,7 +130,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalClassWithNew' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -147,7 +147,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalClassWithExtends' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -160,7 +160,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalPropertyGet' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class Foo {
                             /**
@@ -180,7 +180,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalPropertySet' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class Foo {
                             /**
@@ -200,7 +200,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalMethodInTraitWithCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -225,7 +225,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'magicPropertyGetInternalImplicit' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class Foo {
                             /**
@@ -245,7 +245,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'constInternalClass' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -262,7 +262,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalMethodWithCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /**
@@ -282,7 +282,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalMethodWithCallWithCaseMisMatched' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /**
@@ -302,7 +302,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalMethodWithTrailingWhitespace' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /** @psalm-internal A\B */
@@ -313,7 +313,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'internalToClassMethodWithCallSameNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /**
@@ -329,7 +329,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalClassWithStaticCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A
@@ -349,7 +349,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalClassWithInstanceCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A\B
@@ -373,7 +373,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalClassWithPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A\B
@@ -396,7 +396,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalClassExtendingNamespaceWithStaticCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @psalm-internal A
@@ -422,7 +422,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalClassWithNew' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A\B
@@ -439,7 +439,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalClassWithInstanceOf' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         interface Bar {};
 
@@ -458,7 +458,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalClassWithExtends' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A\B
@@ -471,7 +471,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalClassWithTrailingWhitespace' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /** @psalm-internal A\B */
                         class Foo {}
@@ -479,7 +479,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalPropertyGet' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /**
@@ -499,7 +499,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalPropertySet' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /**
@@ -519,7 +519,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalPropertyWithTrailingWhitespace' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /** @psalm-internal A\B */
@@ -532,7 +532,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalMethodInTraitWithCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @psalm-internal A
@@ -557,7 +557,7 @@ class InternalAnnotationTest extends TestCase
                     }',
             ],
             'psalmInternalMultipleNamespaces' => [
-                '<?php
+                'code' => '<?php
                     namespace A
                     {
                         class Foo
@@ -582,7 +582,7 @@ class InternalAnnotationTest extends TestCase
                 ',
             ],
             'psalmInternalToClass' => [
-                '<?php
+                'code' => '<?php
                     namespace A
                     {
                         class Foo
@@ -613,13 +613,13 @@ class InternalAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'internalMethodWithCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class Foo {
                             /**
@@ -639,8 +639,30 @@ class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'The method A\Foo::barBar is internal to A but called from B\Bat',
             ],
+            'internalCloneMethodWithCall' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             */
+                            public function __clone() {
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        class Bat {
+                            public function batBat(): void {
+                                $a = new \A\Foo;
+                                $aa = clone $a;
+                            }
+                        }
+                    }',
+                'error_message' => 'The method A\Foo::__clone is internal to A but called from B',
+            ],
             'internalMethodWithCallFromRootNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class Foo {
                             /**
@@ -657,7 +679,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'The method A\Foo::barBar is internal to A but called from root namespace',
             ],
             'internalClassWithStaticCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -678,7 +700,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalClass',
             ],
             'internalClassWithInstanceCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -703,7 +725,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalMethod',
             ],
             'internalClassWithPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @internal
@@ -727,7 +749,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'A\B\Foo::$barBar is internal',
             ],
             'internalClassWithNew' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -745,7 +767,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalClass',
             ],
             'internalClassWithExtends' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -759,7 +781,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalClass',
             ],
             'internalPropertyGet' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class Foo {
                             /**
@@ -780,7 +802,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalProperty',
             ],
             'internalPropertySet' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class Foo {
                             /**
@@ -801,7 +823,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalProperty',
             ],
             'magicPropertyGetInternalExplicit' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class Foo {
                             /**
@@ -822,7 +844,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalMethod',
             ],
             'constInternalClass' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /**
                          * @internal
@@ -841,7 +863,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalClass',
             ],
             'psalmInternalMethodWithCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /**
@@ -862,7 +884,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'The method A\B\Foo::barBar is internal to A\B',
             ],
             'psalmInternalToClassMethodWithCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /**
@@ -883,7 +905,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'The method A\B\Foo::barBar is internal to A\B\Foo',
             ],
             'psalmInternalClassWithStaticCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A\B
@@ -904,7 +926,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalClass',
             ],
             'psalmInternalClassWithPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A\B
@@ -928,7 +950,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'A\B\Foo::$barBar is internal to A\B',
             ],
             'psalmInternalClassWithInstanceCall' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A\B
@@ -953,7 +975,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'The method A\B\Foo::barBar is internal to A\B',
             ],
             'psalmInternalClassWithNew' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A\B
@@ -971,7 +993,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'InternalClass',
             ],
             'psalmInternalClassWithExtends' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         /**
                          * @psalm-internal A\B
@@ -985,7 +1007,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'A\B\Foo is internal to A\B',
             ],
             'psalmInternalPropertyGet' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /**
@@ -1006,7 +1028,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'A\B\Foo::$foo is internal to A\B',
             ],
             'psalmInternalPropertySet' => [
-                '<?php
+                'code' => '<?php
                     namespace A\B {
                         class Foo {
                             /**
@@ -1027,7 +1049,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'A\B\Foo::$foo is internal to A\B',
             ],
             'psalmInternalClassMissingNamespace' => [
-                    '<?php
+                    'code' => '<?php
 
                     /**
                       * @internal
@@ -1039,7 +1061,7 @@ class InternalAnnotationTest extends TestCase
                     'error_message' => 'psalm-internal annotation used without specifying namespace',
             ],
             'psalmInternalPropertyMissingNamespace' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                           * @var int
@@ -1052,7 +1074,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'psalm-internal annotation used without specifying namespace',
             ],
             'psalmInternalMethodMissingNamespace' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @psalm-internal
@@ -1064,7 +1086,7 @@ class InternalAnnotationTest extends TestCase
                 'error_message' => 'psalm-internal annotation used without specifying namespace',
             ],
             'internalConstructor' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         class C {
                             /** @internal */

@@ -2,21 +2,21 @@
 
 namespace Psalm\Internal;
 
-use Psalm\Internal\Algebra;
+use Psalm\Storage\Assertion;
+use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 
 use function array_diff;
 use function array_keys;
-use function array_map;
-use function array_unique;
-use function array_values;
 use function count;
 use function hash;
 use function implode;
 use function ksort;
 use function reset;
 use function serialize;
-use function sort;
-use function strpos;
 use function substr;
 
 use const PHP_VERSION_ID;
@@ -47,7 +47,7 @@ class Clause
      *
      * !$a || $b || $c !== null || is_string($d) || is_int($d)
      *
-     * @var array<string, non-empty-list<string>>
+     * @var array<string, non-empty-array<string, Assertion>>
      */
     public $possibilities;
 
@@ -63,7 +63,7 @@ class Clause
      *
      * $a && !$b && $c === null && !is_string($d) && !is_int($d)
      *
-     * @var array<string, non-empty-list<string>>|null
+     * @var array<string, non-empty-list<Assertion>>|null
      */
     public $impossibilities;
 
@@ -83,7 +83,7 @@ class Clause
     public $hash;
 
     /**
-     * @param array<string, non-empty-list<string>>  $possibilities
+     * @param array<string, non-empty-array<string, Assertion>>  $possibilities
      * @param array<string, bool> $redefined_vars
      */
     public function __construct(
@@ -95,6 +95,24 @@ class Clause
         bool $generated = false,
         array $redefined_vars = []
     ) {
+        if ($wedge || !$reconcilable) {
+            $this->hash = ($wedge ? 'w' : '') . $creating_object_id;
+        } else {
+            ksort($possibilities);
+
+            $possibility_strings = [];
+
+            foreach ($possibilities as $i => $v) {
+                if (count($v) > 1) {
+                    ksort($v);
+                }
+                $possibility_strings[$i] = array_keys($v);
+            }
+
+            $data = serialize($possibility_strings);
+            $this->hash = PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
+        }
+
         $this->possibilities = $possibilities;
         $this->wedge = $wedge;
         $this->reconcilable = $reconcilable;
@@ -102,22 +120,6 @@ class Clause
         $this->redefined_vars = $redefined_vars;
         $this->creating_conditional_id = $creating_conditional_id;
         $this->creating_object_id = $creating_object_id;
-
-        if ($wedge || !$reconcilable) {
-            $this->hash = ($wedge ? 'w' : '') . $creating_object_id;
-        } else {
-            ksort($possibilities);
-
-            foreach ($possibilities as $i => $v) {
-                if (count($v) < 2) {
-                    continue;
-                }
-                sort($possibilities[$i]);
-            }
-
-            $data = serialize($possibilities);
-            $this->hash = PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
-        }
     }
 
     public function contains(Clause $other_clause): bool
@@ -146,79 +148,57 @@ class Clause
      */
     public function __toString(): string
     {
-        $clause_strings = array_map(
-            /**
-             * @param non-empty-list<string> $values
-             */
-            function (string $var_id, array $values): string {
-                if ($var_id[0] === '*') {
-                    $var_id = '<expr>';
+        $clause_strings = [];
+
+        foreach ($this->possibilities as $var_id => $values) {
+            if ($var_id[0] === '*') {
+                $var_id = '<expr>';
+            }
+
+            $var_id_clauses = [];
+            foreach ($values as $value) {
+                $value = (string) $value;
+                if ($value === 'falsy') {
+                    $var_id_clauses[] = '!'.$var_id;
+                    continue;
                 }
 
-                $var_id_clauses = array_map(
-                    function (string $value) use ($var_id): string {
-                        if ($value === 'falsy') {
-                            return '!' . $var_id;
-                        }
-
-                        if ($value === '!falsy') {
-                            return $var_id;
-                        }
-
-                        $negate = false;
-
-                        if ($value[0] === '!') {
-                            $negate = true;
-                            $value = substr($value, 1);
-                        }
-
-                        if ($value[0] === '=') {
-                            $value = substr($value, 1);
-                        }
-
-                        if ($negate) {
-                            return $var_id . ' is not ' . $value;
-                        }
-
-                        return $var_id . ' is ' . $value;
-                    },
-                    $values
-                );
-
-                if (count($var_id_clauses) > 1) {
-                    return '(' . implode(') || (', $var_id_clauses) . ')';
+                if ($value === '!falsy') {
+                    $var_id_clauses[] = $var_id;
+                    continue;
                 }
 
-                return $var_id_clauses[0];
-            },
-            array_keys($this->possibilities),
-            array_values($this->possibilities)
-        );
+                $negate = false;
+
+                if ($value[0] === '!') {
+                    $negate = true;
+                    $value  = substr($value, 1);
+                }
+
+                if ($value[0] === '=') {
+                    $value = substr($value, 1);
+                }
+
+                if ($negate) {
+                    $var_id_clauses[] = $var_id.' is not '.$value;
+                    continue;
+                }
+
+                $var_id_clauses[] = $var_id.' is '.$value;
+            }
+
+            if (count($var_id_clauses) > 1) {
+                $clause_strings[] = '('.implode(') || (', $var_id_clauses).')';
+            } else {
+                $clause_strings[] = reset($var_id_clauses);
+            }
+        }
 
         if (count($clause_strings) > 1) {
             return '(' . implode(') || (', $clause_strings) . ')';
         }
 
         return reset($clause_strings);
-    }
-
-    public function makeUnique(): self
-    {
-        $possibilities = $this->possibilities;
-
-        foreach ($possibilities as $var_id => $var_possibilities) {
-            $possibilities[$var_id] = array_values(array_unique($var_possibilities));
-        }
-
-        return new self(
-            $possibilities,
-            $this->creating_conditional_id,
-            $this->creating_object_id,
-            $this->wedge,
-            $this->reconcilable,
-            $this->generated,
-            $this->redefined_vars
-        );
     }
 
     public function removePossibilities(string $var_id): ?self
@@ -242,7 +222,7 @@ class Clause
     }
 
     /**
-     * @param non-empty-list<string> $clause_var_possibilities
+     * @param non-empty-array<string, Assertion> $clause_var_possibilities
      */
     public function addPossibilities(string $var_id, array $clause_var_possibilities): self
     {
@@ -272,12 +252,15 @@ class Clause
             $impossibility = [];
 
             foreach ($possibility as $type) {
-                if (($type[0] !== '=' && $type[0] !== '~'
-                        && (!isset($type[1]) || ($type[1] !== '=' && $type[1] !== '~')))
-                    || strpos($type, '(')
-                    || strpos($type, 'getclass-')
+                if (!$type->hasEquality()
+                    || (($inner_type = $type->getAtomicType())
+                        && ($inner_type instanceof TLiteralInt
+                            || $inner_type instanceof TLiteralFloat
+                            || $inner_type instanceof TLiteralString
+                            || $inner_type instanceof TClassConstant
+                            || $inner_type instanceof TEnumCase))
                 ) {
-                    $impossibility[] = Algebra::negateType($type);
+                    $impossibility[] = $type->getNegation();
                 }
             }
 

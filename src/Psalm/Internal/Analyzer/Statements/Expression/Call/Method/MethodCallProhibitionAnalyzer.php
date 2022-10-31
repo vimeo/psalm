@@ -12,6 +12,9 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InternalMethod;
 use Psalm\IssueBuffer;
 
+/**
+ * @internal
+ */
 class MethodCallProhibitionAnalyzer
 {
     /**

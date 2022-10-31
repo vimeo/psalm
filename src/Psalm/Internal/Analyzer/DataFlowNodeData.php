@@ -4,6 +4,8 @@ namespace Psalm\Internal\Analyzer;
 
 /**
  * @psalm-immutable
+ *
+ * @internal
  */
 class DataFlowNodeData
 {

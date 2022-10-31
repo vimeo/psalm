@@ -77,6 +77,8 @@ class AtomicPropertyFetchAnalyzer
 {
     /**
      * @param array<string> $invalid_fetch_types $invalid_fetch_types
+     *
+     * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -743,7 +745,7 @@ class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            TemplateInferredTypeReplacer::replace(
+            $class_property_type = TemplateInferredTypeReplacer::replace(
                 $class_property_type,
                 new TemplateResult([], $template_types),
                 $codebase
@@ -768,9 +770,6 @@ class AtomicPropertyFetchAnalyzer
 
         $data_flow_graph = $statements_analyzer->data_flow_graph;
 
-        $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
         $added_taints = [];
         $removed_taints = [];
 
@@ -783,13 +782,13 @@ class AtomicPropertyFetchAnalyzer
         }
 
         if ($class_storage->specialize_instance) {
-            $var_id = ExpressionIdentifier::getArrayVarId(
+            $var_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt->var,
                 null,
                 $statements_analyzer
             );
 
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
                 $statements_analyzer
@@ -805,6 +804,9 @@ class AtomicPropertyFetchAnalyzer
                     $var_type->parent_nodes = [];
                     return;
                 }
+
+                $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+                $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $var_node = DataFlowNode::getForAssignment(
                     $var_id,
@@ -844,49 +846,80 @@ class AtomicPropertyFetchAnalyzer
                 $type->parent_nodes = [$property_node->id => $property_node];
             }
         } else {
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            self::processUnspecialTaints(
+                $statements_analyzer,
                 $stmt,
-                null,
-                $statements_analyzer
-            );
-
-            $localized_property_node = DataFlowNode::getForAssignment(
-                $var_property_id
-                    ?: $property_id . '-' . $property_location->file_name . ':' . $property_location->raw_file_start,
-                $property_location
-            );
-
-            $data_flow_graph->addNode($localized_property_node);
-
-            $property_node = new DataFlowNode(
+                $type,
                 $property_id,
-                $property_id,
-                null,
-                null
+                $in_assignment,
+                $added_taints,
+                $removed_taints
             );
-
-            $data_flow_graph->addNode($property_node);
-
-            if ($in_assignment) {
-                $data_flow_graph->addPath(
-                    $localized_property_node,
-                    $property_node,
-                    'property-assignment',
-                    $added_taints,
-                    $removed_taints
-                );
-            } else {
-                $data_flow_graph->addPath(
-                    $property_node,
-                    $localized_property_node,
-                    'property-fetch',
-                    $added_taints,
-                    $removed_taints
-                );
-            }
-
-            $type->parent_nodes = [$localized_property_node->id => $localized_property_node];
         }
+    }
+
+    /**
+     * @param ?array<string> $added_taints
+     * @param ?array<string> $removed_taints
+     */
+    public static function processUnspecialTaints(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        Union $type,
+        string $property_id,
+        bool $in_assignment,
+        ?array $added_taints,
+        ?array $removed_taints
+    ): void {
+        if (!$statements_analyzer->data_flow_graph) {
+            return;
+        }
+
+        $data_flow_graph = $statements_analyzer->data_flow_graph;
+
+        $var_property_id = ExpressionIdentifier::getExtendedVarId(
+            $stmt,
+            null,
+            $statements_analyzer
+        );
+
+        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $localized_property_node = DataFlowNode::getForAssignment(
+            $var_property_id ?: $property_id,
+            $property_location
+        );
+
+        $data_flow_graph->addNode($localized_property_node);
+
+        $property_node = new DataFlowNode(
+            $property_id,
+            $property_id,
+            null,
+            null
+        );
+
+        $data_flow_graph->addNode($property_node);
+
+        if ($in_assignment) {
+            $data_flow_graph->addPath(
+                $localized_property_node,
+                $property_node,
+                'property-assignment',
+                $added_taints,
+                $removed_taints
+            );
+        } else {
+            $data_flow_graph->addPath(
+                $property_node,
+                $localized_property_node,
+                'property-fetch',
+                $added_taints,
+                $removed_taints
+            );
+        }
+
+        $type->parent_nodes = [$localized_property_node->id => $localized_property_node];
     }
 
     private static function handleEnumName(

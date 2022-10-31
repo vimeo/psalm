@@ -58,9 +58,9 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function count;
 use function explode;
 use function in_array;
@@ -231,7 +231,7 @@ class ArgumentAnalyzer
         CodeLocation $function_call_location,
         FunctionLikeParameter $function_param,
         bool $allow_named_args,
-        Union $arg_type,
+        Union $arg_value_type,
         int $argument_offset,
         int $unpacked_argument_offset,
         PhpParser\Node\Arg $arg,
@@ -300,8 +300,6 @@ class ArgumentAnalyzer
             // don’t get overwritten
             $readonly_template_result->readonly = true;
 
-            $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
-
             $param_type = TemplateStandinTypeReplacer::replace(
                 $param_type,
                 $readonly_template_result,
@@ -313,8 +311,8 @@ class ArgumentAnalyzer
                 $context->calling_function_id ?: $context->calling_method_id
             );
 
-            $arg_type = TemplateStandinTypeReplacer::replace(
-                $arg_type,
+            $arg_value_type = TemplateStandinTypeReplacer::replace(
+                $arg_value_type,
                 $readonly_template_result,
                 $codebase,
                 $statements_analyzer,
@@ -326,12 +324,12 @@ class ArgumentAnalyzer
         }
 
         if ($template_result && $template_result->template_types) {
-            $arg_type_param = $arg_type;
+            $arg_type_param = $arg_value_type;
 
             if ($arg->unpack) {
                 $arg_type_param = null;
 
-                foreach ($arg_type->getAtomicTypes() as $arg_atomic_type) {
+                foreach ($arg_value_type->getAtomicTypes() as $arg_atomic_type) {
                     if ($arg_atomic_type instanceof TArray
                         || $arg_atomic_type instanceof TList
                         || $arg_atomic_type instanceof TKeyedArray
@@ -357,7 +355,7 @@ class ArgumentAnalyzer
 
                 if (!$arg_type_param) {
                     $arg_type_param = Type::getMixed();
-                    $arg_type_param->parent_nodes = $arg_type->parent_nodes;
+                    $arg_type_param->parent_nodes = $arg_value_type->parent_nodes;
                 }
             }
 
@@ -429,7 +427,7 @@ class ArgumentAnalyzer
         $unpacked_atomic_array = null;
 
         if ($arg->unpack) {
-            if ($arg_type->hasMixed()) {
+            if ($arg_value_type->hasMixed()) {
                 if (!$context->collect_initializations
                     && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
@@ -443,7 +441,7 @@ class ArgumentAnalyzer
                 IssueBuffer::maybeAdd(
                     new MixedArgument(
                         'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                            . ' cannot unpack ' . $arg_type->getId() . ', expecting iterable',
+                            . ' cannot unpack ' . $arg_value_type->getId() . ', expecting iterable',
                         new CodeLocation($statements_analyzer->getSource(), $arg->value),
                         $cased_method_id
                     ),
@@ -461,7 +459,7 @@ class ArgumentAnalyzer
                         $arg_location,
                         $function_call_location,
                         $function_param,
-                        $arg_type,
+                        $arg_value_type,
                         $arg->value,
                         $context,
                         $specialize_taint
@@ -471,12 +469,12 @@ class ArgumentAnalyzer
                 return null;
             }
 
-            if ($arg_type->hasArray()) {
+            if ($arg_value_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
                  * @var TArray|TList|TKeyedArray|TClassStringMap
                  */
-                $unpacked_atomic_array = $arg_type->getAtomicTypes()['array'];
+                $unpacked_atomic_array = $arg_value_type->getAtomicTypes()['array'];
                 $arg_key_allowed = true;
 
                 if ($unpacked_atomic_array instanceof TKeyedArray) {
@@ -485,40 +483,40 @@ class ArgumentAnalyzer
                     }
 
                     if ($function_param->is_variadic) {
-                        $arg_type = $unpacked_atomic_array->getGenericValueType();
-                    } elseif ($codebase->php_major_version >= 8
+                        $arg_value_type = $unpacked_atomic_array->getGenericValueType();
+                    } elseif ($codebase->analysis_php_version_id >= 8_00_00
                         && $allow_named_args
                         && isset($unpacked_atomic_array->properties[$function_param->name])
                     ) {
-                        $arg_type = clone $unpacked_atomic_array->properties[$function_param->name];
+                        $arg_value_type = clone $unpacked_atomic_array->properties[$function_param->name];
                     } elseif ($unpacked_atomic_array->is_list
                         && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])
                     ) {
-                        $arg_type = clone $unpacked_atomic_array->properties[$unpacked_argument_offset];
+                        $arg_value_type = clone $unpacked_atomic_array->properties[$unpacked_argument_offset];
                     } elseif ($function_param->is_optional && $function_param->default_type) {
                         if ($function_param->default_type instanceof Union) {
-                            $arg_type = $function_param->default_type;
+                            $arg_value_type = $function_param->default_type;
                         } else {
-                            $arg_type_atomic = ConstantTypeResolver::resolve(
+                            $arg_value_type_atomic = ConstantTypeResolver::resolve(
                                 $codebase->classlikes,
                                 $function_param->default_type,
                                 $statements_analyzer
                             );
 
-                            $arg_type = new Union([$arg_type_atomic]);
+                            $arg_value_type = new Union([$arg_value_type_atomic]);
                         }
                     } else {
-                        $arg_type = Type::getMixed();
+                        $arg_value_type = Type::getMixed();
                     }
                 } elseif ($unpacked_atomic_array instanceof TList) {
-                    $arg_type = $unpacked_atomic_array->type_param;
+                    $arg_value_type = $unpacked_atomic_array->type_param;
                 } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
-                    $arg_type = Type::getMixed();
+                    $arg_value_type = Type::getMixed();
                 } else {
                     if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
                         $arg_key_allowed = false;
                     }
-                    $arg_type = $unpacked_atomic_array->type_params[1];
+                    $arg_value_type = $unpacked_atomic_array->type_params[1];
                 }
 
                 if (!$arg_key_allowed) {
@@ -538,7 +536,7 @@ class ArgumentAnalyzer
                 $invalid_key = false;
                 $invalid_string_key = false;
                 $possibly_matches = false;
-                foreach ($arg_type->getAtomicTypes() as $atomic_type) {
+                foreach ($arg_value_type->getAtomicTypes() as $atomic_type) {
                     if (!$atomic_type->isIterable($codebase)) {
                         $non_iterable = true;
                     } else {
@@ -552,7 +550,9 @@ class ArgumentAnalyzer
 
                             continue;
                         }
-                        if (($codebase->php_major_version < 8 || !$allow_named_args) && !$key_type->isInt()) {
+                        if (($codebase->analysis_php_version_id < 8_00_00 || !$allow_named_args)
+                            && !$key_type->isInt()
+                        ) {
                             $invalid_string_key = true;
 
                             continue;
@@ -565,7 +565,7 @@ class ArgumentAnalyzer
                 if ($non_iterable) {
                     IssueBuffer::maybeAdd(
                         new $issue_type(
-                            'Tried to unpack non-iterable ' . $arg_type->getId(),
+                            'Tried to unpack non-iterable ' . $arg_value_type->getId(),
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id
                         ),
@@ -576,9 +576,9 @@ class ArgumentAnalyzer
                     IssueBuffer::maybeAdd(
                         new $issue_type(
                             'Method ' . $cased_method_id
-                                . ' called with unpacked iterable ' . $arg_type->getId()
+                                . ' called with unpacked iterable ' . $arg_value_type->getId()
                                 . ' with invalid key (must be '
-                                . ($codebase->php_major_version < 8 ? 'int' : 'int|string') . ')',
+                                . ($codebase->analysis_php_version_id < 8_00_00 ? 'int' : 'int|string') . ')',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id
                         ),
@@ -586,7 +586,7 @@ class ArgumentAnalyzer
                     );
                 }
                 if ($invalid_string_key) {
-                    if ($codebase->php_major_version < 8) {
+                    if ($codebase->analysis_php_version_id < 8_00_00) {
                         IssueBuffer::maybeAdd(
                             new $issue_type(
                                 'String keys not supported in unpacked arguments',
@@ -599,7 +599,7 @@ class ArgumentAnalyzer
                         IssueBuffer::maybeAdd(
                             new NamedArgumentNotAllowed(
                                 'Method ' . $cased_method_id
-                                    . ' called with named unpacked iterable ' . $arg_type->getId()
+                                    . ' called with named unpacked iterable ' . $arg_value_type->getId()
                                     . ' (iterable with string keys)',
                                 new CodeLocation($statements_analyzer->getSource(), $arg->value),
                                 $cased_method_id
@@ -635,7 +635,7 @@ class ArgumentAnalyzer
 
         if (self::verifyType(
             $statements_analyzer,
-            $arg_type,
+            $arg_value_type,
             $param_type,
             $fleshed_out_signature_type,
             $cased_method_id,
@@ -660,7 +660,6 @@ class ArgumentAnalyzer
     /**
      * @param TKeyedArray|TArray|TList|TClassStringMap|null $unpacked_atomic_array
      * @return  null|false
-     * @psalm-suppress ComplexMethod
      */
     public static function verifyType(
         StatementsAnalyzer $statements_analyzer,
@@ -739,10 +738,10 @@ class ArgumentAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                 foreach ($input_type->parent_nodes as $parent_node) {
-                    $origin_locations = array_merge(
-                        $origin_locations,
-                        $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                    );
+                    $origin_locations = [
+                        ...$origin_locations,
+                        ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                    ];
                 }
             }
 
@@ -786,7 +785,7 @@ class ArgumentAnalyzer
             }
 
             if ($cased_method_id) {
-                $input_type = self::processTaintedness(
+                self::processTaintedness(
                     $statements_analyzer,
                     $cased_method_id,
                     $method_id,
@@ -836,6 +835,7 @@ class ArgumentAnalyzer
         if ($param_type->hasCallableType() && $param_type->isSingle()) {
             // we do this replacement early because later we don't have access to the
             // $statements_analyzer, which is necessary to understand string function names
+            $input_type = $input_type->getBuilder();
             foreach ($input_type->getAtomicTypes() as $key => $atomic_type) {
                 if (!$atomic_type instanceof TLiteralString
                     || InternalCallMapHandler::inCallMap($atomic_type->value)
@@ -856,6 +856,7 @@ class ArgumentAnalyzer
                     $input_type->addType($candidate_callable);
                 }
             }
+            $input_type = $input_type->freeze();
         }
 
         $union_comparison_results = new TypeComparisonResult();
@@ -877,9 +878,7 @@ class ArgumentAnalyzer
         }
 
         if ($cased_method_id) {
-            $old_input_type = $input_type;
-
-            $input_type = self::processTaintedness(
+            self::processTaintedness(
                 $statements_analyzer,
                 $cased_method_id,
                 $method_id,
@@ -893,7 +892,9 @@ class ArgumentAnalyzer
                 $specialize_taint
             );
 
-            if ($old_input_type !== $input_type) {
+            if ($function_param->assert_untainted) {
+                $input_type = clone $input_type;
+                $input_type->parent_nodes = [];
                 $replace_input_type = true;
             }
         }
@@ -960,10 +961,10 @@ class ArgumentAnalyzer
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                     foreach ($input_type->parent_nodes as $parent_node) {
-                        $origin_locations = array_merge(
-                            $origin_locations,
-                            $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                        );
+                        $origin_locations = [
+                            ...$origin_locations,
+                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                        ];
                     }
                 }
 
@@ -983,7 +984,7 @@ class ArgumentAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
-            } else {
+            } elseif ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
                 IssueBuffer::maybeAdd(
                     new ArgumentTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
@@ -1351,20 +1352,29 @@ class ArgumentAnalyzer
         }
 
         if (!$input_type_changed && $param_type->from_docblock && !$input_type->hasMixed()) {
-            $input_type = clone $input_type;
-
+            $types = $input_type->getAtomicTypes();
             foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
                 if ($param_atomic_type instanceof TGenericObject) {
-                    foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
+                    foreach ($types as &$input_atomic_type) {
                         if ($input_atomic_type instanceof TGenericObject
                             && $input_atomic_type->value === $param_atomic_type->value
                         ) {
+                            $new_type_params = [];
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
-                                if ($type_param->isEmpty() && isset($param_atomic_type->type_params[$i])) {
+                                if ($type_param->isNever() && isset($param_atomic_type->type_params[$i])) {
                                     $input_type_changed = true;
 
-                                    $input_atomic_type->type_params[$i] = clone $param_atomic_type->type_params[$i];
+                                    $new_type_params[$i] = $param_atomic_type->type_params[$i];
                                 }
+                            }
+                            if ($new_type_params) {
+                                $input_atomic_type = new TGenericObject(
+                                    $input_atomic_type->value,
+                                    [...$input_atomic_type->type_params, ...$new_type_params],
+                                    $input_atomic_type->remapped_params,
+                                    false,
+                                    $input_atomic_type->extra_types
+                                );
                             }
                         }
                     }
@@ -1374,6 +1384,8 @@ class ArgumentAnalyzer
             if (!$input_type_changed) {
                 return;
             }
+
+            $input_type = new Union($types);
         }
 
         $var_id = ExpressionIdentifier::getVarId(
@@ -1386,23 +1398,15 @@ class ArgumentAnalyzer
             $was_cloned = false;
 
             if ($input_type->isNullable() && !$param_type->isNullable()) {
-                $input_type = clone $input_type;
+                $input_type = $input_type->getBuilder();
                 $was_cloned = true;
                 $input_type->removeType('null');
+                $input_type = $input_type->freeze();
             }
 
             if ($input_type->getId() === $param_type->getId()) {
                 if ($input_type->from_docblock) {
-                    if (!$was_cloned) {
-                        $was_cloned = true;
-                        $input_type = clone $input_type;
-                    }
-
-                    $input_type->from_docblock = false;
-
-                    foreach ($input_type->getAtomicTypes() as $atomic_type) {
-                        $atomic_type->from_docblock = false;
-                    }
+                    $input_type = $input_type->setFromDocblock(false);
                 }
             } elseif ($input_type->hasMixed() && $signature_param_type) {
                 $was_cloned = true;
@@ -1428,20 +1432,24 @@ class ArgumentAnalyzer
 
             if ($unpack) {
                 if ($unpacked_atomic_array instanceof TList) {
-                    $unpacked_atomic_array = clone $unpacked_atomic_array;
-                    $unpacked_atomic_array->type_param = $input_type;
+                    $unpacked_atomic_array = $unpacked_atomic_array->replaceTypeParam($input_type);
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TArray) {
-                    $unpacked_atomic_array = clone $unpacked_atomic_array;
-                    $unpacked_atomic_array->type_params[1] = $input_type;
+                    $unpacked_atomic_array = $unpacked_atomic_array->replaceTypeParams([
+                        $unpacked_atomic_array->type_params[0],
+                        $input_type
+                    ]);
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } elseif ($unpacked_atomic_array instanceof TKeyedArray
                     && $unpacked_atomic_array->is_list
                 ) {
-                    $unpacked_atomic_array = $unpacked_atomic_array->getList();
-                    $unpacked_atomic_array->type_param = $input_type;
+                    if ($unpacked_atomic_array->isNonEmpty()) {
+                        $unpacked_atomic_array = new TNonEmptyList($input_type);
+                    } else {
+                        $unpacked_atomic_array = new TList($input_type);
+                    }
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
                 } else {
@@ -1470,14 +1478,14 @@ class ArgumentAnalyzer
         PhpParser\Node\Expr $expr,
         Context $context,
         bool $specialize_taint
-    ): Union {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$statements_analyzer->data_flow_graph
             || ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues()))
         ) {
-            return $input_type;
+            return;
         }
 
         // literal data can’t be tainted
@@ -1485,7 +1493,7 @@ class ArgumentAnalyzer
             && $input_type->isSingle()
             && $input_type->hasLiteralValue()
         ) {
-            return $input_type;
+            return;
         }
 
         // numeric types can't be tainted, neither can bool
@@ -1493,7 +1501,7 @@ class ArgumentAnalyzer
             && $input_type->isSingle()
             && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
         ) {
-            return $input_type;
+            return;
         }
 
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
@@ -1502,16 +1510,13 @@ class ArgumentAnalyzer
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
-            $cast_type = CastAnalyzer::castStringAttempt(
+            $input_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
                 $expr,
                 false
             );
-
-            $input_type = clone $input_type;
-            $input_type->parent_nodes += $cast_type->parent_nodes;
         }
 
         if ($specialize_taint) {
@@ -1618,12 +1623,5 @@ class ArgumentAnalyzer
                 $removed_taints
             );
         }
-
-        if ($function_param->assert_untainted) {
-            $input_type = clone $input_type;
-            $input_type->parent_nodes = [];
-        }
-
-        return $input_type;
     }
 }

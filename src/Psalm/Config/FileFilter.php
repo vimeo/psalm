@@ -2,6 +2,7 @@
 
 namespace Psalm\Config;
 
+use FilesystemIterator;
 use Psalm\Exception\ConfigException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -68,6 +69,11 @@ class FileFilter
     /**
      * @var array<string>
      */
+    protected $class_constant_ids = [];
+
+    /**
+     * @var array<string>
+     */
     protected $var_names = [];
 
     /**
@@ -112,6 +118,7 @@ class FileFilter
             foreach ($config['directory'] as $directory) {
                 $directory_path = (string) ($directory['name'] ?? '');
                 $ignore_type_stats = (bool) ($directory['ignoreTypeStats'] ?? false);
+                $resolve_symlinks = (bool) ($directory['resolveSymlinks'] ?? false);
                 $declare_strict_types = (bool) ($directory['useStrictTypes'] ?? false);
 
                 if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
@@ -181,27 +188,33 @@ class FileFilter
                     );
                 }
 
-                /** @var RecursiveDirectoryIterator */
-                $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory_path));
-                $iterator->rewind();
+                if ($resolve_symlinks) {
+                    /** @var RecursiveDirectoryIterator */
+                    $iterator = new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS)
+                    );
+                    $iterator->rewind();
 
-                while ($iterator->valid()) {
-                    if (!$iterator->isDot() && $iterator->isLink()) {
-                        $linked_path = readlink($iterator->getPathname());
+                    while ($iterator->valid()) {
+                        if ($iterator->isLink()) {
+                            $linked_path = readlink($iterator->getPathname());
 
-                        if (stripos($linked_path, $directory_path) !== 0) {
-                            if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
-                                $filter->ignore_type_stats[$directory_path] = true;
-                            }
+                            if (stripos($linked_path, $directory_path) !== 0) {
+                                if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
+                                    $filter->ignore_type_stats[$directory_path] = true;
+                                }
 
-                            if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
-                                $filter->declare_strict_types[$directory_path] = true;
-                            }
+                                if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
+                                    $filter->declare_strict_types[$directory_path] = true;
+                                }
 
-                            if (is_dir($linked_path)) {
-                                $filter->addDirectory($linked_path);
+                                if (is_dir($linked_path)) {
+                                    $filter->addDirectory($linked_path);
+                                }
                             }
                         }
+
+                        $iterator->next();
                     }
 
                     $iterator->next();
@@ -317,6 +330,13 @@ class FileFilter
             }
         }
 
+        if (isset($config['referencedConstant']) && is_iterable($config['referencedConstant'])) {
+            /** @var array $referenced_constant */
+            foreach ($config['referencedConstant'] as $referenced_constant) {
+                $filter->class_constant_ids[] = strtolower((string) ($referenced_constant['name'] ?? ''));
+            }
+        }
+
         if (isset($config['referencedVariable']) && is_iterable($config['referencedVariable'])) {
             /** @var array $referenced_variable */
             foreach ($config['referencedVariable'] as $referenced_variable) {
@@ -345,6 +365,7 @@ class FileFilter
                 $config['directory'][] = [
                     'name' => (string) $directory['name'],
                     'ignoreTypeStats' => strtolower((string) ($directory['ignoreTypeStats'] ?? '')) === 'true',
+                    'resolveSymlinks' => strtolower((string) ($directory['resolveSymlinks'] ?? '')) === 'true',
                     'useStrictTypes' => strtolower((string) ($directory['useStrictTypes'] ?? '')) === 'true',
                 ];
             }
@@ -390,6 +411,14 @@ class FileFilter
             }
         }
 
+        if ($e->referencedConstant) {
+            $config['referencedConstant'] = [];
+            /** @var SimpleXMLElement $referenced_constant */
+            foreach ($e->referencedConstant as $referenced_constant) {
+                $config['referencedConstant'][]['name'] = strtolower((string)$referenced_constant['name']);
+            }
+        }
+
         if ($e->referencedVariable) {
             $config['referencedVariable'] = [];
 
@@ -405,9 +434,7 @@ class FileFilter
     private static function isRegularExpression(string $string): bool
     {
         set_error_handler(
-            function (): bool {
-                return false;
-            },
+            static fn(): bool => false,
             E_WARNING
         );
         $is_regexp = preg_match($string, '') !== false;
@@ -523,6 +550,11 @@ class FileFilter
     public function allowsProperty(string $property_id): bool
     {
         return in_array(strtolower($property_id), $this->property_ids, true);
+    }
+
+    public function allowsClassConstant(string $constant_id): bool
+    {
+        return in_array(strtolower($constant_id), $this->class_constant_ids, true);
     }
 
     public function allowsVariable(string $var_name): bool

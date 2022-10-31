@@ -15,6 +15,7 @@ use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
@@ -33,6 +34,9 @@ use function mt_rand;
 use function reset;
 use function spl_object_id;
 
+/**
+ * @internal
+ */
 class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -84,15 +88,13 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             if (!isset($call_args[1]) && !$first_arg_array->previous_value_type) {
                 $had_one = count($first_arg_array->properties) === 1;
 
-                $first_arg_array = clone $first_arg_array;
-
                 $new_properties = array_filter(
                     array_map(
                         static function ($keyed_type) use ($statements_source, $context) {
                             $prev_keyed_type = $keyed_type;
 
                             $keyed_type = AssertionReconciler::reconcile(
-                                '!falsy',
+                                new Truthy(),
                                 clone $keyed_type,
                                 '',
                                 $statements_source,
@@ -108,27 +110,27 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         },
                         $first_arg_array->properties
                     ),
-                    static function ($keyed_type) {
-                        return !$keyed_type->isEmpty();
-                    }
+                    static fn($keyed_type) => !$keyed_type->isNever()
                 );
 
                 if (!$new_properties) {
                     return Type::getEmptyArray();
                 }
 
-                $first_arg_array->properties = $new_properties;
-
-                $first_arg_array->is_list = $first_arg_array->is_list && $had_one;
-                $first_arg_array->sealed = false;
-
-                return new Union([$first_arg_array]);
+                return new Union([new TKeyedArray(
+                    $new_properties,
+                    null,
+                    false,
+                    null,
+                    null,
+                    $first_arg_array->is_list && $had_one
+                )]);
             }
         }
 
         if (!isset($call_args[1])) {
             $inner_type = AssertionReconciler::reconcile(
-                '!falsy',
+                new Truthy(),
                 clone $inner_type,
                 '',
                 $statements_source,
@@ -151,11 +153,11 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             }
 
             if ($key_type->getLiteralStrings()) {
-                $key_type->addType(new TString);
+                $key_type = $key_type->getBuilder()->addType(new TString)->freeze();
             }
 
             if ($key_type->getLiteralInts()) {
-                $key_type->addType(new TInt);
+                $key_type = $key_type->getBuilder()->addType(new TInt)->freeze();
             }
 
             if ($inner_type->isUnionEmpty()) {
@@ -196,24 +198,26 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $fake_var_discriminator
                     );
 
-                    $array_var_id = ExpressionIdentifier::getArrayVarId(
+                    $extended_var_id = ExpressionIdentifier::getExtendedVarId(
                         $array_arg,
                         null,
                         $statements_source
                     );
 
-                    if (isset($assertions[$array_var_id . "[\$__fake_{$fake_var_discriminator}_offset_var__]"])) {
+                    $assertion_id = $extended_var_id . "[\$__fake_{$fake_var_discriminator}_offset_var__]";
+
+                    if (isset($assertions[$assertion_id])) {
                         $changed_var_ids = [];
 
                         $assertions = [
-                            '$inner_type' =>
-                                $assertions["{$array_var_id}[\$__fake_{$fake_var_discriminator}_offset_var__]"],
+                            '$inner_type' => $assertions[$assertion_id],
                         ];
 
-                        $reconciled_types = Reconciler::reconcileKeyedTypes(
+                        [$reconciled_types, $_] = Reconciler::reconcileKeyedTypes(
                             $assertions,
                             $assertions,
                             ['$inner_type' => $inner_type],
+                            [],
                             $changed_var_ids,
                             ['$inner_type' => true],
                             $statements_source,
@@ -289,10 +293,11 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                             $assertions = ['$inner_type' => $assertions['$' . $first_param->var->name]];
 
-                            $reconciled_types = Reconciler::reconcileKeyedTypes(
+                            [$reconciled_types, $_] = Reconciler::reconcileKeyedTypes(
                                 $assertions,
                                 $assertions,
                                 ['$inner_type' => $inner_type],
+                                [],
                                 $changed_var_ids,
                                 ['$inner_type' => true],
                                 $statements_source,

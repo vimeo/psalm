@@ -4,13 +4,9 @@ namespace Psalm\Tests\Config;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\MockObject\MockObject;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Stmt\ClassLike;
-use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
-use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -21,18 +17,12 @@ use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
-use Psalm\Plugin\Hook\AfterClassLikeVisitInterface as LegacyAfterClassLikeVisitInterface;
-use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface as LegacyAfterMethodCallAnalysisInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
-use Psalm\StatementsSource;
-use Psalm\Storage\ClassLikeStorage;
-use Psalm\Test\Config\Plugin\Hook\StringProvider\TSqlSelectString;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
-use Psalm\Type\Union;
 use stdClass;
 
 use function define;
@@ -302,55 +292,6 @@ class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testEchoAnalyzerPluginWithEscapedString(): void
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <plugin filename="examples/plugins/composer-based/echo-checker/EchoChecker.php" />
-                    </plugins>
-                    <issueHandlers>
-                        <UndefinedGlobalVariable errorLevel="suppress" />
-                        <MixedArgument errorLevel="suppress" />
-                    </issueHandlers>
-                </psalm>'
-            )
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                /**
-                 * @param mixed $s
-                 * @return html-escaped-string
-                 */
-                function escapeHtml($s) : string {
-                    if (!is_scalar($s)) {
-                        throw new \UnexpectedValueException("bad value passed to escape");
-                    }
-                    /** @var html-escaped-string */
-                    return htmlentities((string) $s);
-                }
-            ?>
-            Some text
-            <?= escapeHtml($unsafe) ?>'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
     public function testFileAnalyzerPlugin(): void
     {
         require_once __DIR__ . '/Plugin/FilePlugin.php';
@@ -572,86 +513,6 @@ class PluginTest extends TestCase
         );
     }
 
-    public function testAfterMethodCallAnalysisLegacyHookIsLoaded(): void
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                </psalm>'
-            )
-        );
-
-        $hook = new class implements LegacyAfterMethodCallAnalysisInterface {
-            public static function afterMethodCallAnalysis(
-                Expr $expr,
-                string $method_id,
-                string $appearing_method_id,
-                string $declaring_method_id,
-                Context $context,
-                StatementsSource $statements_source,
-                Codebase $codebase,
-                array &$file_replacements = [],
-                Union &$return_type_candidate = null
-            ): void {
-            }
-        };
-
-        $codebase = $this->project_analyzer->getCodebase();
-
-        $config = $codebase->config;
-
-        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass(get_class($hook));
-
-        $this->assertTrue($this->project_analyzer->getCodebase()->config->eventDispatcher->hasAfterMethodCallAnalysisHandlers());
-    }
-
-    public function testAfterClassLikeAnalysisLegacyHookIsLoaded(): void
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                </psalm>'
-            )
-        );
-
-        $hook = new class implements LegacyAfterClassLikeVisitInterface {
-            /**
-             * @return void
-             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
-             */
-            public static function afterClassLikeVisit(
-                ClassLike $stmt,
-                ClassLikeStorage $storage,
-                FileSource $statements_source,
-                Codebase $codebase,
-                array &$file_replacements = []
-            ) {
-            }
-        };
-
-        $codebase = $this->project_analyzer->getCodebase();
-
-        $config = $codebase->config;
-
-        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass(get_class($hook));
-
-        $this->assertTrue($this->project_analyzer->getCodebase()->config->eventDispatcher->hasAfterClassLikeVisitHandlers());
-    }
-
     public function testPropertyProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/PropertyPlugin.php';
@@ -784,47 +645,6 @@ class PluginTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testSqlStringProviderHooks(): void
-    {
-        require_once __DIR__ . '/Plugin/SqlStringProviderPlugin.php';
-
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\SqlStringProviderPlugin" />
-                    </plugins>
-                </psalm>'
-            )
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                $a = "select * from videos;";'
-        );
-
-        $context = new Context();
-        $this->analyzeFile($file_path, $context);
-
-        $this->assertTrue(isset($context->vars_in_scope['$a']));
-
-        foreach ($context->vars_in_scope['$a']->getAtomicTypes() as $type) {
-            $this->assertInstanceOf(TSqlSelectString::class, $type);
-        }
     }
 
     public function testPropertyProviderHooksInvalidAssignment(): void
@@ -1157,6 +977,60 @@ class PluginTest extends TestCase
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/TaintedHtml/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testFunctionDynamicStorageProviderHook(): void
+    {
+        require_once __DIR__ . '/Plugin/StoragePlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\StoragePlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param mixed ...$_args
+                 * @return mixed
+                 */
+                function custom_array_map(...$_args) { throw new RuntimeException("???"); }
+
+                /**
+                 * @param list<array{num: int}> $_list
+                 */
+                function acceptsList(array $_list): void { }
+
+                /** @var list<int> $list */
+                $list = [1, 2, 3];
+
+                $tuples = custom_array_map(
+                    fn($a) => $a + 1,
+                    fn($a) => ["num" => $a],
+                    $list
+                );
+
+                acceptsList($tuples);'
+        );
 
         $this->analyzeFile($file_path, new Context());
     }

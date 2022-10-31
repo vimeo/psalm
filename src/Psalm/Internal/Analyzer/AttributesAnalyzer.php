@@ -30,6 +30,9 @@ use function count;
 use function reset;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class AttributesAnalyzer
 {
     private const TARGET_DESCRIPTIONS = [

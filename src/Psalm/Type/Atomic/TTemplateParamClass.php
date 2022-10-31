@@ -4,8 +4,9 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
+ * @psalm-immutable
  */
-class TTemplateParamClass extends TClassString
+final class TTemplateParamClass extends TClassString
 {
     /**
      * @var string
@@ -21,12 +22,14 @@ class TTemplateParamClass extends TClassString
         string $param_name,
         string $as,
         ?TNamedObject $as_type,
-        string $defining_class
+        string $defining_class,
+        bool $from_docblock = false
     ) {
         $this->param_name = $param_name;
         $this->as = $as;
         $this->as_type = $as_type;
         $this->defining_class = $defining_class;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -34,18 +37,13 @@ class TTemplateParamClass extends TClassString
         return 'class-string<' . $this->param_name . '>';
     }
 
-    public function __toString(): string
-    {
-        return 'class-string<' . $this->param_name . '>';
-    }
-
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'class-string<' . $this->param_name . ':' . $this->defining_class
-            . ' as ' . ($this->as_type ? $this->as_type->getId() : $this->as) . '>';
+            . ' as ' . ($this->as_type ? $this->as_type->getId($exact) : $this->as) . '>';
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'class-string<' . $this->param_name . '>';
     }

@@ -5,7 +5,7 @@ namespace Psalm\Type;
 /**
  * An Enum class holding all the taint types that Psalm recognises
  */
-class TaintKindGroup
+final class TaintKindGroup
 {
     public const ALL_INPUT = [
         TaintKind::INPUT_HTML,

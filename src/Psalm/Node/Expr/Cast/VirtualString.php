@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\Cast;
 use PhpParser\Node\Expr\Cast\String_;
 use Psalm\Node\VirtualNode;
 
-class VirtualString extends String_ implements VirtualNode
+final class VirtualString extends String_ implements VirtualNode
 {
 
 }

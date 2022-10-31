@@ -12,6 +12,8 @@ use Psalm\Internal\LanguageServer\LanguageServer;
 
 /**
  * Provides method handlers for all workspace/* methods
+ *
+ * @internal
  */
 class Workspace
 {

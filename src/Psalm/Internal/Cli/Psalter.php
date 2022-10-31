@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Cli;
 
+use AssertionError;
 use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Config;
 use Psalm\Exception\UnsupportedIssueToFixException;
@@ -26,7 +27,6 @@ use Psalm\Report\ReportOptions;
 use function array_filter;
 use function array_key_exists;
 use function array_map;
-use function array_merge;
 use function array_shift;
 use function array_slice;
 use function chdir;
@@ -49,6 +49,7 @@ use function is_numeric;
 use function is_string;
 use function microtime;
 use function pathinfo;
+use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
@@ -72,6 +73,9 @@ require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 
+/**
+ * @internal
+ */
 final class Psalter
 {
     private const SHORT_OPTIONS =  ['f:', 'm', 'h', 'r:', 'c:'];
@@ -110,63 +114,63 @@ final class Psalter
 
         if (array_key_exists('h', $options)) {
             echo <<<HELP
-Usage:
-    psalter [options] [file...]
+            Usage:
+                psalter [options] [file...]
 
-Options:
-    -h, --help
-        Display this help message
+            Options:
+                -h, --help
+                    Display this help message
 
-    --debug, --debug-by-line, --debug-emitted-issues
-        Debug information
+                --debug, --debug-by-line, --debug-emitted-issues
+                    Debug information
 
-    -c, --config=psalm.xml
-        Path to a psalm.xml configuration file. Run psalm --init to create one.
+                -c, --config=psalm.xml
+                    Path to a psalm.xml configuration file. Run psalm --init to create one.
 
-    -m, --monochrome
-        Enable monochrome output
+                -m, --monochrome
+                    Enable monochrome output
 
-    -r, --root
-        If running Psalm globally you'll need to specify a project root. Defaults to cwd
+                -r, --root
+                    If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-    --plugin=PATH
-        Executes a plugin, an alternative to using the Psalm config
+                --plugin=PATH
+                    Executes a plugin, an alternative to using the Psalm config
 
-    --dry-run
-        Shows a diff of all the changes, without making them
+                --dry-run
+                    Shows a diff of all the changes, without making them
 
-    --safe-types
-        Only update PHP types when the new type information comes from other PHP types,
-        as opposed to type information that just comes from docblocks
+                --safe-types
+                    Only update PHP types when the new type information comes from other PHP types,
+                    as opposed to type information that just comes from docblocks
 
-    --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
+                --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
 
-    --issues=IssueType1,IssueType2
-        If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as possible,
-        use --issues=all
+                --issues=IssueType1,IssueType2
+                    If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as
+                    possible, use --issues=all
 
-    --list-supported-issues
-        Display the list of issues that psalter knows how to fix
+                --list-supported-issues
+                    Display the list of issues that psalter knows how to fix
 
-    --find-unused-code
-        Include unused code as a candidate for removal
+                --find-unused-code
+                    Include unused code as a candidate for removal
 
-    --threads=INT
-        If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+                --threads=INT
+                    If greater than one, Psalm will run analysis on multiple threads, speeding things up.
 
-    --codeowner=[codeowner]
-        You can specify a GitHub code ownership group, and only that owner's code will be updated.
+                --codeowner=[codeowner]
+                    You can specify a GitHub code ownership group, and only that owner's code will be updated.
 
-    --allow-backwards-incompatible-changes=BOOL
-        Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
+                --allow-backwards-incompatible-changes=BOOL
+                    Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
 
-    --add-newline-between-docblock-annotations=BOOL
-        Whether to add or not add a new line between docblock annotations. Defaults to true.
+                --add-newline-between-docblock-annotations=BOOL
+                    Whether to add or not add a new line between docblock annotations. Defaults to true.
 
-    --no-cache
-        Runs Psalm without using cache
+                --no-cache
+                    Runs Psalm without using cache
 
-HELP;
+            HELP;
 
             exit;
         }
@@ -205,9 +209,8 @@ HELP;
         $first_autoloader = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
-                return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
-            }
+            static fn(): ?\Composer\Autoload\ClassLoader =>
+                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
 
 
@@ -303,7 +306,7 @@ HELP;
 
             $files_for_codeowners = self::loadCodeownersFiles($desired_codeowners, $codeowner_files);
             $paths_to_check = is_array($paths_to_check) ?
-                array_merge($paths_to_check, $files_for_codeowners) :
+                [...$paths_to_check, ...$files_for_codeowners] :
                 $files_for_codeowners;
         }
 
@@ -422,8 +425,8 @@ HELP;
     {
         $memLimit = CliUtils::getMemoryLimitInBytes();
         // Magic number is 4096M in bytes
-        if ($memLimit > 0 && $memLimit < 8 * 1024 * 1024 * 1024) {
-            ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
+        if ($memLimit > 0 && $memLimit < 8 * 1_024 * 1_024 * 1_024) {
+            ini_set('memory_limit', (string) (8 * 1_024 * 1_024 * 1_024));
         }
     }
 
@@ -431,7 +434,7 @@ HELP;
     private static function validateCliArguments(array $args): void
     {
         array_map(
-            function (string $arg): void {
+            static function (string $arg): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
@@ -496,15 +499,18 @@ HELP;
         $codeowners_file = file_get_contents($codeowners_file_path);
 
         $codeowner_lines = array_map(
-            function (string $line): array {
+            static function (string $line): array {
                 $line_parts = preg_split('/\s+/', $line);
+                if ($line_parts === false) {
+                    throw new AssertionError("An error occurred: ".preg_last_error_msg());
+                }
 
                 $file_selector = substr(array_shift($line_parts), 1);
                 return [$file_selector, $line_parts];
             },
             array_filter(
                 explode("\n", $codeowners_file),
-                function (string $line): bool {
+                static function (string $line): bool {
                     $line = trim($line);
 
                     // currently we don’t match wildcard files or files that could appear anywhere

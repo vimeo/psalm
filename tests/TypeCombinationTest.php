@@ -24,6 +24,7 @@ class TypeCombinationTest extends TestCase
 
         foreach ($types as $type) {
             $converted_type = self::getAtomic($type);
+            /** @psalm-suppress InaccessibleProperty */
             $converted_type->from_docblock = true;
             $converted_types[] = $converted_type;
         }
@@ -35,13 +36,13 @@ class TypeCombinationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'multipleValuedArray' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
                     $var = [];
@@ -49,7 +50,7 @@ class TypeCombinationTest extends TestCase
                     $var[] = new B();',
             ],
             'preventLiteralAndClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param "array"|class-string $type_name
                      */
@@ -58,7 +59,7 @@ class TypeCombinationTest extends TestCase
                     }',
             ],
             'NeverTwice' => [
-                '<?php
+                'code' => '<?php
                     /** @return no-return */
                     function other() {
                         throw new Exception();
@@ -67,7 +68,7 @@ class TypeCombinationTest extends TestCase
                     rand(0,1) ? die() : other();',
             ],
             'ArrayAndTraversableNotIterable' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
 
                     /** @param mixed $identifier */
                     function isNullIdentifier($identifier): bool
@@ -109,10 +110,10 @@ class TypeCombinationTest extends TestCase
                     'null',
                 ],
             ],
-            'mixedOrEmpty' => [
+            'mixedOrNever' => [
                 'mixed',
                 [
-                    'empty',
+                    'never',
                     'mixed',
                 ],
             ],
@@ -124,10 +125,10 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'mixedOrEmptyArray' => [
-                'array<empty, empty>|mixed',
+                'array<never, never>|mixed',
                 [
                     'mixed',
-                    'array<empty, empty>',
+                    'array<never, never>',
                 ],
             ],
             'falseTrueToBool' => [
@@ -197,16 +198,16 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'emptyArrays' => [
-                'array<empty, empty>',
+                'array<never, never>',
                 [
-                    'array<empty,empty>',
-                    'array<empty,empty>',
+                    'array<never, never>',
+                    'array<never, never>',
                 ],
             ],
             'arrayStringOrEmptyArray' => [
                 'array<array-key, string>',
                 [
-                    'array<empty>',
+                    'array<never>',
                     'array<string>',
                 ],
             ],
@@ -227,7 +228,7 @@ class TypeCombinationTest extends TestCase
             'arrayMixedOrEmpty' => [
                 'array<array-key, mixed>',
                 [
-                    'array<empty>',
+                    'array<never>',
                     'array<mixed>',
                 ],
             ],
@@ -309,16 +310,16 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayObjectAndParamsWithEmptyArray' => [
-                'ArrayObject<int, string>|array<empty, empty>',
+                'ArrayObject<int, string>|array<never, never>',
                 [
                     'ArrayObject<int, string>',
-                    'array<empty, empty>',
+                    'array<never, never>',
                 ],
             ],
             'emptyArrayWithArrayObjectAndParams' => [
-                'ArrayObject<int, string>|array<empty, empty>',
+                'ArrayObject<int, string>|array<never, never>',
                 [
-                    'array<empty, empty>',
+                    'array<never, never>',
                     'ArrayObject<int, string>',
                 ],
             ],
@@ -370,28 +371,28 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineObjectTypeWithIntKeyedArray' => [
-                'array<"a"|int, int|string>',
+                "array<'a'|int, int|string>",
                 [
                     'array{a: int}',
                     'array<int, string>',
                 ],
             ],
             'combineNestedObjectTypeWithTKeyedArrayIntKeyedArray' => [
-                'array{a: array<"a"|int, int|string>}',
+                "array{a: array<'a'|int, int|string>}",
                 [
                     'array{a: array{a: int}}',
                     'array{a: array<int, string>}',
                 ],
             ],
             'combineIntKeyedObjectTypeWithNestedIntKeyedArray' => [
-                'array<int, array<"a"|int, int|string>>',
+                "array<int, array<'a'|int, int|string>>",
                 [
                     'array<int, array{a:int}>',
                     'array<int, array<int, string>>',
                 ],
             ],
             'combineNestedObjectTypeWithNestedIntKeyedArray' => [
-                'array<"a"|int, array<"a"|int, int|string>>',
+                "array<'a'|int, array<'a'|int, int|string>>",
                 [
                     'array{a: array{a: int}}',
                     'array<int, array<int, string>>',
@@ -462,7 +463,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'objectLikePlusArrayEqualsArray' => [
-                'array<"a"|"b"|"c", 1|2|3>',
+                "array<'a'|'b'|'c', 1|2|3>",
                 [
                     'array<"a"|"b"|"c", 1|2|3>',
                     'array{a: 1|2, b: 2|3, c: 1|3}',
@@ -630,28 +631,28 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineZeroAndPositiveInt' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     '0',
                     'positive-int',
                 ],
             ],
             'combinePositiveIntAndZero' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     'positive-int',
                     '0',
                 ],
             ],
             'combinePositiveIntAndMinusOne' => [
-                'int',
+                'int<-1, max>',
                 [
                     'positive-int',
                     '-1',
                 ],
             ],
             'combinePositiveIntZeroAndMinusOne' => [
-                'int',
+                'int<-1, max>',
                 [
                     '0',
                     'positive-int',
@@ -659,14 +660,14 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineMinusOneAndPositiveInt' => [
-                'int',
+                'int<-1, max>',
                 [
                     '-1',
                     'positive-int',
                 ],
             ],
             'combineZeroMinusOneAndPositiveInt' => [
-                'int',
+                'int<-1, max>',
                 [
                     '0',
                     '-1',
@@ -674,7 +675,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineZeroOneAndPositiveInt' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     '0',
                     '1',
@@ -682,7 +683,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combinePositiveIntOneAndZero' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     'positive-int',
                     '1',
@@ -690,7 +691,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combinePositiveInts' => [
-                'positive-int',
+                'int<1, max>',
                 [
                     'positive-int',
                     'positive-int',

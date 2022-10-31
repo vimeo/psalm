@@ -9,6 +9,9 @@ use Psalm\Type\Union;
 
 use function count;
 
+/**
+ * @internal
+ */
 class SimpleXmlElementAsXml implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array

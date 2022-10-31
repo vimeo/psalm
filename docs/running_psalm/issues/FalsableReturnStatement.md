@@ -18,7 +18,7 @@ You can add a specific check for false:
 <?php
 
 function getCommaPosition(string $a) : int {
-    $pos = return strpos($a, ',');
+    $pos = strpos($a, ',');
 
     if ($pos === false) {
         return -1;
@@ -34,7 +34,7 @@ Alternatively you may choose to throw an exception:
 <?php
 
 function getCommaPosition(string $a) : int {
-    $pos = return strpos($a, ',');
+    $pos = strpos($a, ',');
 
     if ($pos === false) {
         throw new Exception('This is unexpected');

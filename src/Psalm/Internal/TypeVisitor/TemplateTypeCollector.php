@@ -6,11 +6,14 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
-use Psalm\Type\NodeVisitor;
+use Psalm\Type\ImmutableTypeVisitor;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
-class TemplateTypeCollector extends NodeVisitor
+/**
+ * @internal
+ */
+class TemplateTypeCollector extends ImmutableTypeVisitor
 {
     /**
      * @var list<TTemplateParam>

@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\Div;
 use Psalm\Node\VirtualNode;
 
-class VirtualDiv extends Div implements VirtualNode
+final class VirtualDiv extends Div implements VirtualNode
 {
 
 }

@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\ShellExec;
 use Psalm\Node\VirtualNode;
 
-class VirtualShellExec extends ShellExec implements VirtualNode
+final class VirtualShellExec extends ShellExec implements VirtualNode
 {
 
 }

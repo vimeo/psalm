@@ -5,6 +5,9 @@ namespace Psalm\Internal\Provider;
 use function microtime;
 use function strpos;
 
+/**
+ * @internal
+ */
 class FakeFileProvider extends FileProvider
 {
     /**

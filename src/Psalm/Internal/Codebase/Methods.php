@@ -10,7 +10,6 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -20,30 +19,24 @@ use Psalm\Internal\Provider\MethodReturnTypeProvider;
 use Psalm\Internal\Provider\MethodVisibilityProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
-use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function array_pop;
-use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -496,7 +489,7 @@ class Methods
                     if ($params[$i]->signature_type
                         && $params[$i]->signature_type->isNullable()
                     ) {
-                        $params[$i]->type->addType(new TNull);
+                        $params[$i]->type = $params[$i]->type->getBuilder()->addType(new TNull)->freeze();
                     }
 
                     $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
@@ -522,105 +515,10 @@ class Methods
             return $type;
         }
 
-        $type = clone $type;
-
-        foreach ($type->getAtomicTypes() as $key => $atomic_type) {
-            if ($atomic_type instanceof TTemplateParam
-                && ($atomic_type->defining_class === $base_fq_class_name
-                    || isset($extends[$atomic_type->defining_class]))
-            ) {
-                $types_to_add = self::getExtendedTemplatedTypes(
-                    $atomic_type,
-                    $extends
-                );
-
-                if ($types_to_add) {
-                    $type->removeType($key);
-
-                    foreach ($types_to_add as $extra_added_type) {
-                        $type->addType($extra_added_type);
-                    }
-                }
-            }
-
-            if ($atomic_type instanceof TTemplateParamClass) {
-                if ($atomic_type->defining_class === $base_fq_class_name) {
-                    if (isset($extends[$base_fq_class_name][$atomic_type->param_name])) {
-                        $extended_param = $extends[$base_fq_class_name][$atomic_type->param_name];
-
-                        $types = array_values($extended_param->getAtomicTypes());
-
-                        if (count($types) === 1 && $types[0] instanceof TNamedObject) {
-                            $atomic_type->as_type = $types[0];
-                        } else {
-                            $atomic_type->as_type = null;
-                        }
-                    }
-                }
-            }
-
-            if ($atomic_type instanceof TArray
-                || $atomic_type instanceof TIterable
-                || $atomic_type instanceof TGenericObject
-            ) {
-                foreach ($atomic_type->type_params as &$type_param) {
-                    $type_param = self::localizeType(
-                        $codebase,
-                        $type_param,
-                        $appearing_fq_class_name,
-                        $base_fq_class_name
-                    );
-                }
-            }
-
-            if ($atomic_type instanceof TList) {
-                $atomic_type->type_param = self::localizeType(
-                    $codebase,
-                    $atomic_type->type_param,
-                    $appearing_fq_class_name,
-                    $base_fq_class_name
-                );
-            }
-
-            if ($atomic_type instanceof TKeyedArray) {
-                foreach ($atomic_type->properties as &$property_type) {
-                    $property_type = self::localizeType(
-                        $codebase,
-                        $property_type,
-                        $appearing_fq_class_name,
-                        $base_fq_class_name
-                    );
-                }
-            }
-
-            if ($atomic_type instanceof TCallable
-                || $atomic_type instanceof TClosure
-            ) {
-                if ($atomic_type->params) {
-                    foreach ($atomic_type->params as $param) {
-                        if ($param->type) {
-                            $param->type = self::localizeType(
-                                $codebase,
-                                $param->type,
-                                $appearing_fq_class_name,
-                                $base_fq_class_name
-                            );
-                        }
-                    }
-                }
-
-                if ($atomic_type->return_type) {
-                    $atomic_type->return_type = self::localizeType(
-                        $codebase,
-                        $atomic_type->return_type,
-                        $appearing_fq_class_name,
-                        $base_fq_class_name
-                    );
-                }
-            }
-        }
-
-        $type->bustCache();
+        (new TypeLocalizer(
+            $extends,
+            $base_fq_class_name
+        ))->traverse($type);
 
         return $type;
     }
@@ -640,13 +538,10 @@ class Methods
 
             foreach ($extended_param->getAtomicTypes() as $extended_atomic_type) {
                 if ($extended_atomic_type instanceof TTemplateParam) {
-                    $extra_added_types = array_merge(
-                        $extra_added_types,
-                        self::getExtendedTemplatedTypes(
-                            $extended_atomic_type,
-                            $extends
-                        )
-                    );
+                    $extra_added_types = [...$extra_added_types, ...self::getExtendedTemplatedTypes(
+                        $extended_atomic_type,
+                        $extends
+                    )];
                 } else {
                     $extra_added_types[] = $extended_atomic_type;
                 }
@@ -730,9 +625,7 @@ class Methods
                     $types[] = new Union([new TEnumCase($original_fq_class_name, $case_name)]);
                 }
 
-                $list = new TKeyedArray($types);
-                $list->is_list = true;
-                $list->sealed = true;
+                $list = new TKeyedArray($types, null, true, null, null, true);
                 return new Union([$list]);
             }
         }
@@ -894,12 +787,17 @@ class Methods
                 if ((!$old_contained_by_new && !$new_contained_by_old)
                     || ($old_contained_by_new && $new_contained_by_old)
                 ) {
+                    $attempted_intersection = null;
                     if ($old_contained_by_new) { //implicitly $new_contained_by_old as well
-                        $attempted_intersection = Type::intersectUnionTypes(
-                            $candidate_type,
-                            $overridden_storage->return_type,
-                            $source_analyzer->getCodebase()
-                        );
+                        try {
+                            $attempted_intersection = Type::intersectUnionTypes(
+                                $candidate_type,
+                                $overridden_storage->return_type,
+                                $source_analyzer->getCodebase()
+                            );
+                        } catch (InvalidArgumentException $e) {
+                            // TODO: fix
+                        }
                     } else {
                         $attempted_intersection = Type::intersectUnionTypes(
                             $overridden_storage->return_type,

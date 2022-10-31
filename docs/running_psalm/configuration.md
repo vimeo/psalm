@@ -58,15 +58,7 @@ Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s outpu
 
 #### totallyTyped
 
-```xml
-<psalm
-  totallyTyped="[bool]"
-/>
-```
-
-\(Deprecated\) Setting `totallyTyped` to `"true"` is equivalent to setting `errorLevel` to `"1"`. Setting `totallyTyped` to `"false"` is equivalent to setting `errorLevel` to `"2"` and `reportMixedIssues` to `"false"`
-
-
+\(Deprecated\) This setting has been replaced by `reportMixedIssues` which is automatically enabled when `errorLevel` is 1.
 
 #### resolveFromConfigFile
 
@@ -143,17 +135,6 @@ If true we force strict typing on numerical and string operations (see https://g
 >
 ```
 Setting this to `false` means that any function calls will cause Psalm to forget anything it knew about object properties within the scope of the function it's currently analysing. This duplicates functionality that Hack has. Defaults to `true`.
-
-#### allowPhpStormGenerics
-
-```xml
-<psalm
-  allowPhpStormGenerics="[bool]"
->
-```
-Allows you to specify whether or not to use the typed iterator docblock format supported by PHP Storm e.g. `ArrayIterator|string[]`, which Psalm transforms to `ArrayIterator<string>`. Defaults to `false`.
-
-This flag is deprecated and will be removed in Psalm 5
 
 #### allowStringToStandInForClass
 
@@ -267,16 +248,6 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
 ```
 When `true`, Psalm will report all `@psalm-suppress` annotations that aren't used, the equivalent of running with `--find-unused-psalm-suppress`. Defaults to `false`.
 
-#### loadXdebugStub
-```xml
-<psalm
-  loadXdebugStub="[bool]"
->
-```
-If not present, Psalm will only load the Xdebug stub if Psalm has unloaded the extension.
-When `true`, Psalm will load the Xdebug extension stub (as the extension is unloaded when Psalm runs).
-Setting to `false` prevents the stub from loading.
-
 #### ensureArrayStringOffsetsExist
 ```xml
 <psalm
@@ -357,7 +328,7 @@ When `false`, Psalm will not consider issue at lower level than `errorLevel` as 
 #### allowNamedArgumentCalls
 
 ```xml
-<psalm 
+<psalm
   allowNamedArgumentCalls="[bool]"
 >
 ```
@@ -467,12 +438,15 @@ Please note that changing this setting might introduce unwanted side effects and
 ## Project settings
 
 #### &lt;projectFiles&gt;
-Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive, e.g.
+Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive.  By default, ignored files/folders are required to exist.  An `allowMissingFiles` attribute can be added for ignored files/folders than may or may not exist.
 ```xml
 <projectFiles>
   <directory name="src" />
   <ignoreFiles>
     <directory name="src/Stubs" />
+  </ignoreFiles>
+  <ignoreFiles allowMissingFiles="true">
+    <directory name="path-that-may-not-exist" />
   </ignoreFiles>
 </projectFiles>
 ```
@@ -482,6 +456,23 @@ Optional. Same format as `<projectFiles>`. Directories Psalm should load but not
 
 #### &lt;fileExtensions&gt;
 Optional. A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
+
+#### &lt;enableExtensions&gt;
+Optional. A list of extensions to enable. By default, only extensions required by your composer.json will be enabled.
+```xml
+<enableExtensions>
+  <extension name="decimal"/>
+  <extension name="pdo"/>
+</enableExtensions>
+```
+
+#### &lt;disableExtensions&gt;
+Optional. A list of extensions to disable. By default, only extensions required by your composer.json will be enabled.
+```xml
+<disableExtensions>
+  <extension name="gmp"/>
+</disableExtensions>
+```
 
 #### &lt;plugins&gt;
 Optional. A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.
@@ -533,18 +524,18 @@ The  following configuration declares custom types for super-globals (`$GLOBALS`
 
 ```xml
 <globals>
-  <var name="$GLOBALS" type="array{DB: MyVendor\DatabaseConnection, VIEW: MyVendor\TemplateView}" />
-  <var name="$_GET" type="array{data: array<string, string>}" />     
+  <var name="GLOBALS" type="array{DB: MyVendor\DatabaseConnection, VIEW: MyVendor\TemplateView}" />
+  <var name="_GET" type="array{data: array<string, string>}" />
 </globals>
 ```
 
 The example above declares global variables as shown below
 
-* `$GLOBALS`
-  + `DB` of type `MyVendor\DatabaseConnection`
-  + `VIEW` of type `MyVendor\TemplateView`
-* `$_GET`
-  + `data` e.g. like `["id" => "123", "title" => "Nice"]`
+- `$GLOBALS`
+    - `DB` of type `MyVendor\DatabaseConnection`
+    - `VIEW` of type `MyVendor\TemplateView`
+- `$_GET`
+    - `data` e.g. like `["id" => "123", "title" => "Nice"]`
 
 ## Accessing Psalm configuration in plugins
 

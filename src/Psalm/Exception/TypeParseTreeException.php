@@ -4,6 +4,6 @@ namespace Psalm\Exception;
 
 use Exception;
 
-class TypeParseTreeException extends Exception
+final class TypeParseTreeException extends Exception
 {
 }

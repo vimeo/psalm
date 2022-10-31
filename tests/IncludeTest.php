@@ -478,7 +478,7 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
                 'hoist_constants' => false,
-                'error_levels' => ['DuplicateClass'],
+                'ignored_issues' => ['DuplicateClass'],
             ],
             'duplicateClassesProperty' => [
                 'files' => [
@@ -496,7 +496,7 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
                 'hoist_constants' => false,
-                'error_levels' => ['DuplicateClass', 'MissingPropertyType'],
+                'ignored_issues' => ['DuplicateClass', 'MissingPropertyType'],
             ],
             'functionsDefined' => [
                 'files' => [
@@ -722,7 +722,7 @@ class IncludeTest extends TestCase
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'namespacedRequireFunction' => [
                 'files' => [

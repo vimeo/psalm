@@ -7,7 +7,7 @@ namespace Psalm\Node\Scalar\MagicConst;
 use PhpParser\Node\Scalar\MagicConst\Dir;
 use Psalm\Node\VirtualNode;
 
-class VirtualDir extends Dir implements VirtualNode
+final class VirtualDir extends Dir implements VirtualNode
 {
 
 }

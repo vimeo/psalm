@@ -11,20 +11,20 @@ class ReferenceConstraintTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'functionParameterNoViolation' => [
-                '<?php
+                'code' => '<?php
                     /** @return void */
                     function changeInt(int &$a) {
                       $a = 5;
                     }',
             ],
             'dontAllowByRefVarToBeAltered' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param ?string $str
                      * @psalm-suppress PossiblyNullArgument
@@ -36,7 +36,7 @@ class ReferenceConstraintTest extends TestCase
                     }',
             ],
             'trackFunctionReturnRefs' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         public $foo = "bar";
@@ -52,7 +52,7 @@ class ReferenceConstraintTest extends TestCase
                     useString($a->getString());',
             ],
             'makeByRefUseMixed' => [
-                '<?php
+                'code' => '<?php
                     function s(?string $p): void {}
 
                     $var = 1;
@@ -62,10 +62,10 @@ class ReferenceConstraintTest extends TestCase
                     $var = null;
                     $callback();',
                 'assertions' => [],
-                'error_levels' => ['MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'assignByRefToMixed' => [
-                '<?php
+                'code' => '<?php
                     function testRef() : array {
                         $result = [];
                         foreach ([1, 2, 1] as $v) {
@@ -78,7 +78,7 @@ class ReferenceConstraintTest extends TestCase
                         return $result;
                     }',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                     'MixedArrayAccess',
                     'MixedReturnStatement',
@@ -87,7 +87,7 @@ class ReferenceConstraintTest extends TestCase
                 ],
             ],
             'paramOutRefineType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param-out string $s
                      */
@@ -103,7 +103,7 @@ class ReferenceConstraintTest extends TestCase
                     echo strlen($a);',
             ],
             'paramOutChangeType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param-out int $s
                      */
@@ -121,7 +121,7 @@ class ReferenceConstraintTest extends TestCase
                 ],
             ],
             'paramOutReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param-out bool $s
                      */
@@ -136,7 +136,7 @@ class ReferenceConstraintTest extends TestCase
                 ],
             ],
             'dontChangeThis' => [
-                '<?php
+                'code' => '<?php
                     interface I {}
                     class C implements I {
                         public function foo() : self {
@@ -148,7 +148,7 @@ class ReferenceConstraintTest extends TestCase
                     function bar(I &$i) : void {}',
             ],
             'notEmptyArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $value
                      * @param-out int $value
@@ -162,7 +162,7 @@ class ReferenceConstraintTest extends TestCase
                     addValue($foo["a"]);'
             ],
             'paramOutArrayDefaultNullWithThrow' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param-out array{errors: int}|null $info
                      */
@@ -175,7 +175,7 @@ class ReferenceConstraintTest extends TestCase
                     }'
             ],
             'specificArrayWalkBehavior' => [
-                '<?php
+                'code' => '<?php
                     function withArrayWalk(array &$val): void {
                         array_walk($val, /** @param mixed $arg */ function (&$arg): void {});
                     }
@@ -183,17 +183,30 @@ class ReferenceConstraintTest extends TestCase
                         array_walk_recursive($val, /** @param mixed $arg */ function (&$arg): void {});
                     }'
             ],
+            'investigateByrefArg' => [
+                'code' => '<?php
+                    class A {}
+                    function takesNullableObj(?A &$a): bool { return true; }
+
+                    $a = null;
+
+                    if (takesNullableObj($a) === false) {
+                        return;
+                    } else {}
+
+                    if ($a) {}',
+            ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'functionParameterViolation' => [
-                '<?php
+                'code' => '<?php
                     /** @return void */
                     function changeInt(int &$a) {
                       $a = "hello";
@@ -201,7 +214,7 @@ class ReferenceConstraintTest extends TestCase
                 'error_message' => 'ReferenceConstraintViolation',
             ],
             'classMethodParameterViolation' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       /** @var int */
                       private $foo;
@@ -218,7 +231,7 @@ class ReferenceConstraintTest extends TestCase
                 'error_message' => 'ReferenceConstraintViolation',
             ],
             'classMethodParameterViolationInPostAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       /** @var int */
                       private $foo;
@@ -234,7 +247,7 @@ class ReferenceConstraintTest extends TestCase
                 'error_message' => 'ReferenceConstraintViolation',
             ],
             'contradictoryReferenceConstraints' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int */
                         private $foo;
@@ -265,7 +278,7 @@ class ReferenceConstraintTest extends TestCase
                 'error_message' => 'ConflictingReferenceConstraint',
             ],
             'invalidDocblockForBadAnnotation' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param-out array<a(),bool> $ar
                      */
@@ -273,7 +286,7 @@ class ReferenceConstraintTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'preventTernaryPassedByReference' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string $p
                      */
@@ -285,6 +298,38 @@ class ReferenceConstraintTest extends TestCase
                         b($a ? $b : $c);
                     }',
                 'error_message' => 'InvalidPassByReference',
+            ],
+            'SKIPPED-referenceToTypedArrayConstrainsAssignment' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /** @var list<int> */
+                        public array $arr = [];
+
+                        public function __construct()
+                        {
+                            assert(isset($this->arr[0]));
+                            $int = &$this->arr[0];
+                            $int = (string) $int;
+                        }
+                    }
+                ',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'SKIPPED-referenceToTypedArrayConstrainsAssignmentWithNullReferenceInitialization' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /** @var list<int> */
+                        public array $arr = [];
+
+                        public function __construct()
+                        {
+                            $int = &$this->arr[0]; // If $this->arr[0] isn\'t set, this will set it to null.
+                        }
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
             ],
         ];
     }

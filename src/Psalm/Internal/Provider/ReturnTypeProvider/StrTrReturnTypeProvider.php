@@ -12,6 +12,9 @@ use UnexpectedValueException;
 
 use function in_array;
 
+/**
+ * @internal
+ */
 class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

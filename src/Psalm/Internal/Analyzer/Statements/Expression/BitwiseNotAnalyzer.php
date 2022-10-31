@@ -21,6 +21,9 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class BitwiseNotAnalyzer
 {
     public static function analyze(
@@ -41,12 +44,13 @@ class BitwiseNotAnalyzer
             $unacceptable_type = null;
             $has_valid_operand = false;
 
+            $stmt_expr_type = $stmt_expr_type->getBuilder();
             foreach ($stmt_expr_type->getAtomicTypes() as $type_string => $type_part) {
                 if ($type_part instanceof TInt || $type_part instanceof TString) {
                     if ($type_part instanceof TLiteralInt) {
-                        $type_part->value = ~$type_part->value;
+                        $type_part = new TLiteralInt(~$type_part->value);
                     } elseif ($type_part instanceof TLiteralString) {
-                        $type_part->value = ~$type_part->value;
+                        $type_part = new TLiteralString(~$type_part->value);
                     }
 
                     $acceptable_types[] = $type_part;

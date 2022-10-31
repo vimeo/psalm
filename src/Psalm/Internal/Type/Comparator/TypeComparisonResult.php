@@ -5,9 +5,17 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class TypeComparisonResult
 {
-    /** @var ?bool */
+    /**
+     * This is used to trigger `InvalidScalarArgument` in situations where we know PHP
+     * will try to coerce one scalar type to another.
+     *
+     * @var ?bool
+     */
     public $scalar_type_match_found;
 
     /** @var ?bool */

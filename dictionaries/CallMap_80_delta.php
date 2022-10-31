@@ -16,8 +16,8 @@
  */
 return [
   'added' => [
-    'DateTime::createFromInterface' => ['self', 'object'=>'DateTimeInterface'],
-    'DateTimeImmutable::createFromInterface' => ['self', 'object'=>'DateTimeInterface'],
+    'DateTime::createFromInterface' => ['static', 'object'=>'DateTimeInterface'],
+    'DateTimeImmutable::createFromInterface' => ['static', 'object'=>'DateTimeInterface'],
     'PhpToken::getTokenName' => ['string'],
     'PhpToken::is' => ['bool', 'kind'=>'string|int|string[]|int[]'],
     'PhpToken::isIgnorable' => ['bool'],
@@ -40,6 +40,14 @@ return [
     'DateTime::format' => [
       'old' => ['string|false', 'format'=>'string'],
       'new' => ['string', 'format'=>'string'],
+    ],
+    'DateTime::getTimestamp' => [
+      'old' => ['int|false'],
+      'new' => ['int'],
+    ],
+    'DateTimeInterface::getTimestamp' => [
+       'old' => ['int|false'],
+       'new' => ['int'],
     ],
     'DateTimeZone::listIdentifiers' => [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],

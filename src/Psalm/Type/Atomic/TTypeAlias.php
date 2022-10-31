@@ -7,7 +7,10 @@ use Psalm\Type\Atomic;
 use function array_map;
 use function implode;
 
-class TTypeAlias extends Atomic
+/**
+ * @psalm-immutable
+ */
+final class TTypeAlias extends Atomic
 {
     /**
      * @var array<string, TTypeAlias>|null
@@ -20,10 +23,28 @@ class TTypeAlias extends Atomic
     /** @var string */
     public $alias_name;
 
-    public function __construct(string $declaring_fq_classlike_name, string $alias_name)
+    /**
+     * @param array<string, TTypeAlias>|null $extra_types
+     */
+    public function __construct(string $declaring_fq_classlike_name, string $alias_name, ?array $extra_types = null)
     {
         $this->declaring_fq_classlike_name = $declaring_fq_classlike_name;
         $this->alias_name = $alias_name;
+        $this->extra_types = $extra_types;
+    }
+    /**
+     * @param array<string, TTypeAlias>|null $extra_types
+     */
+    public function setIntersectionTypes(?array $extra_types): self
+    {
+        if ($extra_types === $this->extra_types) {
+            return $this;
+        }
+        return new self(
+            $this->declaring_fq_classlike_name,
+            $this->alias_name,
+            $extra_types
+        );
     }
 
     public function getKey(bool $include_extra = true): string
@@ -31,30 +52,13 @@ class TTypeAlias extends Atomic
         return 'type-alias(' . $this->declaring_fq_classlike_name . '::' . $this->alias_name . ')';
     }
 
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         if ($this->extra_types) {
             return $this->getKey() . '&' . implode(
                 '&',
                 array_map(
-                    'strval',
-                    $this->extra_types
-                )
-            );
-        }
-
-        return $this->getKey();
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        if ($this->extra_types) {
-            return $this->getKey() . '&' . implode(
-                '&',
-                array_map(
-                    function ($type) {
-                        return $type->getId(true);
-                    },
+                    static fn(Atomic $type): string => $type->getId($exact, true),
                     $this->extra_types
                 )
             );
@@ -70,18 +74,17 @@ class TTypeAlias extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'mixed';
     }

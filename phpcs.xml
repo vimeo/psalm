@@ -43,6 +43,14 @@
 
 
     <!-- **************************************************************************************************************
+      *  STANDARD:  PSR1                                                                                              *
+      ************************************************************************************************************** -->
+
+    <rule ref="PSR1.Files.SideEffects.FoundWithSymbols">
+        <exclude-pattern>bin/update-property-map.php</exclude-pattern>
+    </rule>
+
+    <!-- **************************************************************************************************************
       *  STANDARD:  PSR2                                                                                              *
       ************************************************************************************************************** -->
 
@@ -108,6 +116,10 @@
             <property name="linesCountBeforeNamespace" type="int" value="1"/>
             <property name="linesCountAfterNamespace" type="int" value="1"/>
         </properties>
+    </rule>
+
+    <rule ref="Squiz.Classes.ValidClassName">
+        <exclude-pattern>src/Psalm/Storage/Assertion/Empty_.php</exclude-pattern>
     </rule>
 
     <!--
@@ -190,4 +202,47 @@
         </properties>
     </rule>
 
+    <!--
+        Requires using a underscore separator for long numbers.
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardnumbersrequirenumericliteralseparator
+    -->
+    <rule ref="SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator">
+        <properties>
+            <property name="enable" value="true"/>
+            <property name="minDigitsBeforeDecimalPoint" value="5"/>
+        </properties>
+    </rule>
+
+    <!--
+        Requires use of null coalesce operator when possible.
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardcontrolstructuresrequirenullcoalesceoperator-
+    -->
+    <rule ref="SlevomatCodingStandard.ControlStructures.RequireNullCoalesceOperator" />
+
+    <!--
+        Requires use of null coalesce equal operator when possible.
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardcontrolstructuresrequirenullcoalesceequaloperator-
+    -->
+    <rule ref="SlevomatCodingStandard.ControlStructures.RequireNullCoalesceEqualOperator">
+        <properties>
+            <property name="enable" value="true"/>
+        </properties>
+    </rule>
+
+    <!--
+        Enforces using short form of list syntax, [...] instead of list(...).
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardphpshortlist-
+    -->
+    <rule ref="SlevomatCodingStandard.PHP.ShortList"/>
+
+    <!-- 
+        Requires arrow functions.
+        https://github.com/slevomat/coding-standard/#slevomatcodingstandardfunctionsrequirearrowfunction-
+    -->
+    <rule ref="SlevomatCodingStandard.Functions.RequireArrowFunction">
+        <properties>
+            <property name="enabled" value="true"/>
+            <property name="allowNested" value="true"/>
+        </properties>
+    </rule>
 </ruleset>

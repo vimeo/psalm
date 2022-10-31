@@ -34,7 +34,7 @@ use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
-use Psalm\Storage\Assertion;
+use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -48,6 +48,9 @@ use function explode;
 use function in_array;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
@@ -65,7 +68,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         ?Atomic $static_type,
         ?string $lhs_var_id,
         MethodIdentifier $method_id,
-        AtomicMethodCallAnalysisResult $result
+        AtomicMethodCallAnalysisResult $result,
+        ?TemplateResult $inferred_template_result = null
     ): Union {
         $config = $codebase->config;
 
@@ -203,7 +207,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         if ($method_storage && $method_storage->if_this_is_type) {
             $method_template_result = new TemplateResult($method_storage->template_types ?: [], []);
 
-            TemplateStandinTypeReplacer::replace(
+            TemplateStandinTypeReplacer::fillTemplateResult(
                 clone $method_storage->if_this_is_type,
                 $method_template_result,
                 $codebase,
@@ -216,6 +220,10 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $template_result = new TemplateResult([], $class_template_params ?: []);
         $template_result->lower_bounds += $method_template_params;
+
+        if ($inferred_template_result) {
+            $template_result->lower_bounds += $inferred_template_result->lower_bounds;
+        }
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
@@ -292,9 +300,11 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         if ($method_storage) {
             if ($method_storage->if_this_is_type) {
                 $class_type = new Union([$lhs_type_part]);
-                $if_this_is_type = clone $method_storage->if_this_is_type;
-
-                TemplateInferredTypeReplacer::replace($if_this_is_type, $template_result, $codebase);
+                $if_this_is_type = TemplateInferredTypeReplacer::replace(
+                    clone $method_storage->if_this_is_type,
+                    $template_result,
+                    $codebase
+                );
 
                 if (!UnionTypeComparator::isContainedBy($codebase, $class_type, $if_this_is_type)) {
                     IssueBuffer::maybeAdd(
@@ -397,15 +407,13 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            $class_template_params = $template_result->lower_bounds;
-
             if ($method_storage->assertions) {
                 self::applyAssertionsToContext(
                     $stmt_name,
-                    ExpressionIdentifier::getArrayVarId($stmt->var, null, $statements_analyzer),
+                    ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
                     $method_storage->assertions,
                     $args,
-                    $class_template_params,
+                    $template_result,
                     $context,
                     $statements_analyzer
                 );
@@ -415,17 +423,11 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use (
-                            $class_template_params,
+                        static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
+                            $template_result,
                             $lhs_var_id,
                             $codebase
-                        ): Assertion {
-                            return $assertion->getUntemplatedCopy(
-                                $class_template_params ?: [],
-                                $lhs_var_id,
-                                $codebase
-                            );
-                        },
+                        ),
                         $method_storage->if_true_assertions
                     )
                 );
@@ -435,17 +437,11 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use (
-                            $class_template_params,
+                        static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
+                            $template_result,
                             $lhs_var_id,
                             $codebase
-                        ): Assertion {
-                            return $assertion->getUntemplatedCopy(
-                                $class_template_params ?: [],
-                                $lhs_var_id,
-                                $codebase
-                            );
-                        },
+                        ),
                         $method_storage->if_false_assertions
                     )
                 );

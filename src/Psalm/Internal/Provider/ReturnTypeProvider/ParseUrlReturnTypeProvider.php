@@ -24,6 +24,9 @@ use const PHP_URL_QUERY;
 use const PHP_URL_SCHEME;
 use const PHP_URL_USER;
 
+/**
+ * @internal
+ */
 class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

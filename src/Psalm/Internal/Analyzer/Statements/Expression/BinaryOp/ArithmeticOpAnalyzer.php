@@ -40,7 +40,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -48,6 +47,7 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
+use function get_class;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -75,9 +75,9 @@ class ArithmeticOpAnalyzer
         $right_type = $nodes->getType($right);
         $config = Config::getInstance();
 
-        if ($left_type && $left_type->isEmpty()) {
+        if ($left_type && $left_type->isNever()) {
             $left_type = $right_type;
-        } elseif ($right_type && $right_type->isEmpty()) {
+        } elseif ($right_type && $right_type->isNever()) {
             $right_type = $left_type;
         }
 
@@ -292,6 +292,8 @@ class ArithmeticOpAnalyzer
     /**
      * @param string[] $invalid_left_messages
      * @param string[] $invalid_right_messages
+     *
+     * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     private static function analyzeOperands(
         ?StatementsSource $statements_source,
@@ -310,8 +312,8 @@ class ArithmeticOpAnalyzer
         bool &$has_string_increment,
         Union &$result_type = null
     ): ?Union {
-        if ($left_type_part instanceof TLiteralInt
-            && $right_type_part instanceof TLiteralInt
+        if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
+            && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (
                 //we don't try to do arithmetics on variables in loops
                 $context === null
@@ -319,6 +321,21 @@ class ArithmeticOpAnalyzer
                 || (!$left instanceof PhpParser\Node\Expr\Variable && !$right instanceof PhpParser\Node\Expr\Variable)
             )
         ) {
+            // get_class is fine here because both classes are final.
+            if ($statements_source !== null
+                && $config->strict_binary_operands
+                && get_class($left_type_part) !== get_class($right_type_part)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidOperand(
+                        'Cannot process numeric types together in strict operands mode, '.
+                        'please cast explicitly',
+                        new CodeLocation($statements_source, $parent)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                );
+            }
+
             // time for some arithmetic!
             $calculated_type = self::arithmeticOperation(
                 $parent,
@@ -561,8 +578,11 @@ class ArithmeticOpAnalyzer
                     }
                 }
 
-                $new_keyed_array = new TKeyedArray($properties);
-                $new_keyed_array->sealed = $left_type_part->sealed && $right_type_part->sealed;
+                $new_keyed_array = new TKeyedArray(
+                    $properties,
+                    null,
+                    $left_type_part->sealed && $right_type_part->sealed
+                );
                 $result_type_member = new Union([$new_keyed_array]);
             } else {
                 $result_type_member = TypeCombiner::combine(
@@ -734,11 +754,11 @@ class ArithmeticOpAnalyzer
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     $result_type = new Union([new TInt(), new TFloat()]);
                 } else {
-                    $left_is_positive = $left_type_part instanceof TPositiveInt
-                        || ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0);
+                    $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
+                        || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
 
-                    $right_is_positive = $right_type_part instanceof TPositiveInt
-                        || ($right_type_part instanceof TLiteralInt && $right_type_part->value > 0);
+                    $right_is_positive = ($right_type_part instanceof TLiteralInt && $right_type_part->value > 0)
+                        || ($right_type_part instanceof TIntRange && $right_type_part->isPositive());
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
                         $always_positive = false;
@@ -778,17 +798,14 @@ class ArithmeticOpAnalyzer
                             }
                         } else {
                             if ($always_positive) {
-                                $result_type = new Union([
-                                    new TPositiveInt(),
-                                    new TLiteralInt(0)
-                                ]);
+                                $result_type = new Union([new TIntRange(0, null)]);
                             } else {
                                 $result_type = Type::getInt();
                             }
                         }
                     } else {
                         $result_type = Type::combineUnionTypes(
-                            $always_positive ? Type::getPositiveInt(true) : Type::getInt(true),
+                            $always_positive ? new Union([new TIntRange(1, null)]) : Type::getInt(true),
                             $result_type
                         );
                     }
@@ -902,7 +919,7 @@ class ArithmeticOpAnalyzer
             $result = $operand1 - $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
             if ($operand2 === 0) {
-                return Type::getEmpty();
+                return Type::getNever();
             }
 
             $result = $operand1 % $operand2;
@@ -922,7 +939,7 @@ class ArithmeticOpAnalyzer
             $result = $operand1 >> $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0) {
-                return Type::getEmpty();
+                return Type::getNever();
             }
 
             $result = $operand1 / $operand2;
@@ -1275,9 +1292,11 @@ class ArithmeticOpAnalyzer
                 $new_result_type = Type::getInt(true, 0);
             } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
                 $new_result_type = Type::getInt(true, 1);
+            } elseif ($right_type_part->isNegative()) {
+                $new_result_type = Type::getFloat();
             } else {
-                //technically could be a float(INF)...
-                $new_result_type = Type::getEmpty();
+                $new_result_type = new Union([new TFloat(), new TLiteralInt(0), new TLiteralInt(1)]);
+                $new_result_type->from_calculation = true;
             }
         } else {
             //$left_type_part may be a mix of positive, negative and 0
@@ -1311,7 +1330,7 @@ class ArithmeticOpAnalyzer
         if ($right_type_part->min_bound !== null && $right_type_part->min_bound === $right_type_part->max_bound) {
             //if the second operand is a literal, we can be pretty detailed
             if ($right_type_part->max_bound === 0) {
-                $new_result_type = Type::getEmpty();
+                $new_result_type = Type::getNever();
             } else {
                 if ($left_type_part->isPositiveOrZero()) {
                     if ($right_type_part->isPositive()) {

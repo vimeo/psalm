@@ -16,6 +16,7 @@ use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CodeClimateReport;
 use Psalm\Report\CompactReport;
@@ -77,7 +78,7 @@ use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const PSALM_VERSION;
 use const STDERR;
 
-class IssueBuffer
+final class IssueBuffer
 {
     /**
      * @var array<string, list<IssueData>>
@@ -255,6 +256,11 @@ class IssueBuffer
     {
         $config = Config::getInstance();
 
+        $event = new BeforeAddIssueEvent($e, $is_fixable);
+        if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
+            return false;
+        };
+
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
@@ -292,7 +298,7 @@ class IssueBuffer
             . $trace_var
             . '-' . $e->getShortLocation()
             . ':' . $e->code_location->getColumn()
-            . ' ' . $e->dupe_key;
+            . ' ' . ($e->dupe_key ?? $e->message);
 
         if ($reporting_level === Config::REPORT_INFO) {
             if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
@@ -517,7 +523,7 @@ class IssueBuffer
                     . '-' . $issue->file_name
                     . ':' . $issue->line_from
                     . ':' . $issue->column_from
-                    . ' ' . $issue->dupe_key;
+                    . ' ' . ($issue->dupe_key ?? $issue->message);
 
                 if (!self::alreadyEmitted($emitted_key)) {
                     self::$issues_data[$file_path][] = $issue;
@@ -568,7 +574,7 @@ class IssueBuffer
             foreach (self::$issues_data as $file_path => $file_issues) {
                 usort(
                     $file_issues,
-                    function (IssueData $d1, IssueData $d2): int {
+                    static function (IssueData $d1, IssueData $d2): int {
                         if ($d1->file_path === $d2->file_path) {
                             if ($d1->line_from === $d2->line_from) {
                                 if ($d1->column_from === $d2->column_from) {
@@ -641,9 +647,7 @@ class IssueBuffer
         }
 
 
-        if ($codebase->config->eventDispatcher->after_analysis
-            || $codebase->config->eventDispatcher->legacy_after_analysis
-        ) {
+        if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;
             $build_info = (new BuildInfoCollector(self::$server))->collect();
 
@@ -734,7 +738,7 @@ class IssueBuffer
 
             if ($start_time) {
                 echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-                echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
+                echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
 
                 $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
                 echo $analysis_summary . "\n";
@@ -761,7 +765,7 @@ class IssueBuffer
                             break;
                         }
 
-                        echo $function_id . ': ' . round(1000 * $time, 2) . 'ms per node' . "\n";
+                        echo $function_id . ': ' . round(1_000 * $time, 2) . 'ms per node' . "\n";
                     }
 
                     echo "\n";
@@ -842,7 +846,9 @@ class IssueBuffer
 
         $normalized_data = $issues_data === [] ? [] : array_merge(...array_values($issues_data));
 
-        switch ($report_options->format) {
+        $format = $report_options->format;
+
+        switch ($format) {
             case Report::TYPE_COMPACT:
                 $output = new CompactReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;

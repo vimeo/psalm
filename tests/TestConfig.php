@@ -20,6 +20,10 @@ class TestConfig extends Config
     {
         parent::__construct();
 
+        foreach ($this->php_extensions as $ext => $_enabled) {
+            $this->php_extensions[$ext] = true;
+        }
+
         $this->throw_exception = true;
         $this->use_docblock_types = true;
         $this->level = 1;

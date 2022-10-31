@@ -13,13 +13,13 @@ class ReadonlyPropertyTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'docblockReadonlyPropertySetInConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @readonly
@@ -34,7 +34,7 @@ class ReadonlyPropertyTest extends TestCase
                     echo (new A)->bar;'
             ],
             'readonlyPropertySetInConstructor' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public readonly string $bar;
 
@@ -44,12 +44,12 @@ class ReadonlyPropertyTest extends TestCase
                     }
 
                     echo (new A)->bar;',
-                [],
-                [],
-                '8.1'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
             ],
             'docblockReadonlyWithPrivateMutationsAllowedPropertySetInAnotherMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @readonly
@@ -65,7 +65,7 @@ class ReadonlyPropertyTest extends TestCase
                     echo (new A)->bar;'
             ],
             'readonlyPublicPropertySetInAnotherMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @psalm-readonly-allow-private-mutation
@@ -80,7 +80,7 @@ class ReadonlyPropertyTest extends TestCase
                     echo (new A)->bar;'
             ],
             'docblockReadonlyWithPrivateMutationsAllowedConstructorPropertySetInAnotherMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(
                             /**
@@ -98,7 +98,7 @@ class ReadonlyPropertyTest extends TestCase
                     echo (new A)->bar;'
             ],
             'readonlyPublicConstructorPropertySetInAnotherMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(
                             /**
@@ -115,7 +115,7 @@ class ReadonlyPropertyTest extends TestCase
                     echo (new A)->bar;'
             ],
             'readonlyPropertySetChildClass' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         /**
                          * @readonly
@@ -135,13 +135,13 @@ class ReadonlyPropertyTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'readonlyPropertySetInConstructorAndAlsoAnotherMethodInsideClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @readonly
@@ -159,7 +159,7 @@ class ReadonlyPropertyTest extends TestCase
                 'error_message' => 'InaccessibleProperty',
             ],
             'readonlyPropertySetInConstructorAndAlsoAnotherMethodInSublass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @readonly
@@ -179,7 +179,7 @@ class ReadonlyPropertyTest extends TestCase
                 'error_message' => 'InaccessibleProperty',
             ],
             'docblockReadonlyPropertySetInConstructorAndAlsoOutsideClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @readonly
@@ -196,7 +196,7 @@ class ReadonlyPropertyTest extends TestCase
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:21',
             ],
             'readonlyPropertySetInConstructorAndAlsoOutsideClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public readonly string $bar;
 
@@ -208,12 +208,11 @@ class ReadonlyPropertyTest extends TestCase
                     $a = new A();
                     $a->bar = "goodbye";',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:21',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'readonlyPropertySetInConstructorAndAlsoOutsideClassWithAllowPrivate' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @readonly
@@ -235,7 +234,7 @@ class ReadonlyPropertyTest extends TestCase
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:21',
             ],
             'readonlyPublicPropertySetInConstructorAndAlsoOutsideClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @psalm-readonly-allow-private-mutation
@@ -256,7 +255,7 @@ class ReadonlyPropertyTest extends TestCase
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:21',
             ],
             'readonlyPropertyAssignOperator' => [
-                '<?php
+                'code' => '<?php
                     class Test {
                         /** @readonly */
                         public int $prop;
@@ -273,17 +272,16 @@ class ReadonlyPropertyTest extends TestCase
                 'error_message' => 'InaccessibleProperty'
             ],
             'readonlyPropertyWithDefault' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public readonly string $s = "a";
                     }',
                 'error_message' => 'InvalidPropertyAssignment',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'readonlyPromotedPropertyAssignOperator' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(public readonly string $bar) {
                         }
@@ -292,12 +290,11 @@ class ReadonlyPropertyTest extends TestCase
                     $a = new A("hello");
                     $a->bar = "goodbye";',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'readonlyPromotedPropertyAccess' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __construct(private readonly string $bar) {
                         }
@@ -306,12 +303,11 @@ class ReadonlyPropertyTest extends TestCase
                     $a = new A("hello");
                     $b = $a->bar;',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:26',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'readonlyPhpDocPromotedPropertyAssignOperator' => [
-                '<?php
+                'code' => '<?php
 
                     final class A
                     {
@@ -329,9 +325,8 @@ class ReadonlyPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'InaccessibleProperty',
-                [],
-                false,
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

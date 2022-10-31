@@ -12,8 +12,9 @@ use function implode;
 
 /**
  * denotes a template parameter that has been previously specified in a `@template` tag.
+ * @psalm-immutable
  */
-class TTemplateParam extends Atomic
+final class TTemplateParam extends Atomic
 {
     use HasIntersectionTrait;
 
@@ -32,16 +33,34 @@ class TTemplateParam extends Atomic
      */
     public $defining_class;
 
-    public function __construct(string $param_name, Union $extends, string $defining_class)
-    {
+    /**
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     */
+    public function __construct(
+        string $param_name,
+        Union $extends,
+        string $defining_class,
+        array $extra_types = [],
+        bool $from_docblock = false
+    ) {
         $this->param_name = $param_name;
         $this->as = $extends;
         $this->defining_class = $defining_class;
+        $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
-    public function __toString(): string
+    /**
+     * @return static
+     */
+    public function replaceAs(Union $as): self
     {
-        return $this->param_name;
+        if ($as === $this->as) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->as = $as;
+        return $cloned;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -53,23 +72,26 @@ class TTemplateParam extends Atomic
         return $this->param_name . ':' . $this->defining_class;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return $this->as->getId();
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
+        if (!$exact) {
+            return $this->param_name;
+        }
+
         if ($this->extra_types) {
-            return '(' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId()
-                . ')&' . implode('&', array_map(function ($type) {
-                    return $type->getId(true);
-                }, $this->extra_types));
+            return '(' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact)
+                . ')&' . implode('&', array_map(static fn(Atomic $type): string
+                    => $type->getId($exact, true), $this->extra_types));
         }
 
         return ($nested ? '(' : '') . $this->param_name
             . ':' . $this->defining_class
-            . ' as ' . $this->as->getId() . ($nested ? ')' : '');
+            . ' as ' . $this->as->getId($exact) . ($nested ? ')' : '');
     }
 
     /**
@@ -81,8 +103,7 @@ class TTemplateParam extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         return null;
     }
@@ -116,20 +137,29 @@ class TTemplateParam extends Atomic
         return $this->param_name . $intersection_types;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return [$this->as];
+        return ['as', 'extra_types'];
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+    ): self {
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        if (!$intersection) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->extra_types = $intersection;
+        return $cloned;
     }
 }

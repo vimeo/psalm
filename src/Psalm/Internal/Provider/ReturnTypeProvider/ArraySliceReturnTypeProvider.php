@@ -16,6 +16,9 @@ use UnexpectedValueException;
 use function array_merge;
 use function array_shift;
 
+/**
+ * @internal
+ */
 class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**

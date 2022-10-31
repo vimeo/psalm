@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\Empty_;
 use Psalm\Node\VirtualNode;
 
-class VirtualEmpty extends Empty_ implements VirtualNode
+final class VirtualEmpty extends Empty_ implements VirtualNode
 {
 
 }

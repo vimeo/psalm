@@ -16,7 +16,8 @@ use function substr;
 
 use const SCANDIR_SORT_NONE;
 
-class IssueHandler
+/** @internal */
+final class IssueHandler
 {
     /**
      * @var string
@@ -131,6 +132,17 @@ class IssueHandler
         return null;
     }
 
+    public function getReportingLevelForClassConstant(string $constant_id): ?string
+    {
+        foreach ($this->custom_levels as $custom_level) {
+            if ($custom_level->allowsClassConstant($constant_id)) {
+                return $custom_level->getErrorLevel();
+            }
+        }
+
+        return null;
+    }
+
     public function getReportingLevelForVariable(string $var_name): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
@@ -149,26 +161,23 @@ class IssueHandler
     {
         return array_filter(
             array_map(
-                function (string $file_name): string {
-                    return substr($file_name, 0, -4);
-                },
+                static fn(string $file_name): string => substr($file_name, 0, -4),
                 scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE)
             ),
-            function (string $issue_name): bool {
-                return $issue_name !== ''
-                    && $issue_name !== 'MethodIssue'
-                    && $issue_name !== 'PropertyIssue'
-                    && $issue_name !== 'FunctionIssue'
-                    && $issue_name !== 'ArgumentIssue'
-                    && $issue_name !== 'VariableIssue'
-                    && $issue_name !== 'ClassIssue'
-                    && $issue_name !== 'CodeIssue'
-                    && $issue_name !== 'PsalmInternalError'
-                    && $issue_name !== 'ParseError'
-                    && $issue_name !== 'PluginIssue'
-                    && $issue_name !== 'MixedIssue'
-                    && $issue_name !== 'MixedIssueTrait';
-            }
+            static fn(string $issue_name): bool => $issue_name !== ''
+                && $issue_name !== 'MethodIssue'
+                && $issue_name !== 'PropertyIssue'
+                && $issue_name !== 'ClassConstantIssue'
+                && $issue_name !== 'FunctionIssue'
+                && $issue_name !== 'ArgumentIssue'
+                && $issue_name !== 'VariableIssue'
+                && $issue_name !== 'ClassIssue'
+                && $issue_name !== 'CodeIssue'
+                && $issue_name !== 'PsalmInternalError'
+                && $issue_name !== 'ParseError'
+                && $issue_name !== 'PluginIssue'
+                && $issue_name !== 'MixedIssue'
+                && $issue_name !== 'MixedIssueTrait'
         );
     }
 }

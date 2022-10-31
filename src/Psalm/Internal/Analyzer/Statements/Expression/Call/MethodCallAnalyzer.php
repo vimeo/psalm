@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -11,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\NullReference;
@@ -43,7 +45,8 @@ class MethodCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
-        bool $real_method_call = true
+        bool $real_method_call = true,
+        ?TemplateResult $template_result = null
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -89,7 +92,7 @@ class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        $lhs_var_id = ExpressionIdentifier::getArrayVarId(
+        $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -194,7 +197,8 @@ class MethodCallAnalyzer extends CallAnalyzer
                     : null,
                 false,
                 $lhs_var_id,
-                $result
+                $result,
+                $template_result
             );
             if (isset($context->vars_in_scope[$lhs_var_id])
                 && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Union
@@ -225,9 +229,7 @@ class MethodCallAnalyzer extends CallAnalyzer
         if (count($possible_new_class_types) > 0) {
             $class_type = array_reduce(
                 $possible_new_class_types,
-                function (?Union $type_1, Union $type_2) use ($codebase): Union {
-                    return Type::combineUnionTypes($type_1, $type_2, $codebase);
-                }
+                static fn(?Union $type_1, Union $type_2): Union => Type::combineUnionTypes($type_1, $type_2, $codebase)
             );
         }
 
@@ -380,7 +382,7 @@ class MethodCallAnalyzer extends CallAnalyzer
             return $stmt->isFirstClassCallable() || self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
-                null,
+                new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer
@@ -397,27 +399,24 @@ class MethodCallAnalyzer extends CallAnalyzer
             && ($class_type->from_docblock || $class_type->isNullable())
             && $real_method_call
         ) {
-            $keys_to_remove = [];
+            $types = $class_type->getAtomicTypes();
 
-            $class_type = clone $class_type;
-
-            foreach ($class_type->getAtomicTypes() as $key => $type) {
+            foreach ($types as $key => &$type) {
                 if (!$type instanceof TNamedObject) {
-                    $keys_to_remove[] = $key;
+                    unset($types[$key]);
                 } else {
-                    $type->from_docblock = false;
+                    $type = $type->setFromDocblock(false);
                 }
             }
-
-            foreach ($keys_to_remove as $key) {
-                $class_type->removeType($key);
+            if (!$types) {
+                throw new AssertionError("We must have some types here!");
             }
-
-            $class_type->from_docblock = false;
 
             $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
 
-            $context->vars_in_scope[$lhs_var_id] = $class_type;
+            $class_type = $class_type->getBuilder()->setTypes($types);
+            $class_type->from_docblock = false;
+            $context->vars_in_scope[$lhs_var_id] = $class_type->freeze();
         }
 
         return true;

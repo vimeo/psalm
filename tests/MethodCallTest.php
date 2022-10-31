@@ -6,8 +6,6 @@ use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-use function class_exists;
-
 use const DIRECTORY_SEPARATOR;
 
 class MethodCallTest extends TestCase
@@ -17,10 +15,6 @@ class MethodCallTest extends TestCase
 
     public function testExtendDocblockParamType(): void
     {
-        if (class_exists('SoapClient') === false) {
-            $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
-        }
-
         $this->addFile(
             'somefile.php',
             '<?php
@@ -200,17 +194,17 @@ class MethodCallTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'notInCallMapTest' => [
-                '<?php
+                'code' => '<?php
                     new DOMImplementation();',
             ],
             'parentStaticCall' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public static function foo(){}
@@ -224,7 +218,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'nonStaticInvocation' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public static function barBar(): void {}
                     }
@@ -232,7 +226,7 @@ class MethodCallTest extends TestCase
                     (new Foo())->barBar();',
             ],
             'staticInvocation' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function fooFoo(): void {}
                     }
@@ -244,7 +238,7 @@ class MethodCallTest extends TestCase
                     B::fooFoo();',
             ],
             'staticCallOnVar' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(): int {
                             return 5;
@@ -254,7 +248,7 @@ class MethodCallTest extends TestCase
                     $b = $foo::bar();',
             ],
             'uppercasedSelf' => [
-                '<?php
+                'code' => '<?php
                     class X33{
                         public static function main(): void {
                             echo SELF::class . "\n";  // Class or interface SELF does not exist
@@ -263,7 +257,7 @@ class MethodCallTest extends TestCase
                     X33::main();',
             ],
             'dateTimeImmutableStatic' => [
-                '<?php
+                'code' => '<?php
                     final class MyDate extends DateTimeImmutable {}
 
                     $today = new MyDate();
@@ -276,7 +270,7 @@ class MethodCallTest extends TestCase
                 ],
             ],
             'magicCall' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __call(string $method_name, array $args) : string {
                             return "hello";
@@ -285,12 +279,12 @@ class MethodCallTest extends TestCase
 
                     $a = new A;
                     $s = $a->bar();',
-                [
+                'assertions' => [
                     '$s' => 'string',
                 ]
             ],
             'canBeCalledOnMagic' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       public function __call(string $method, array $args) {}
                     }
@@ -301,10 +295,10 @@ class MethodCallTest extends TestCase
 
                     $a->maybeUndefinedMethod();',
                 'assertions' => [],
-                'error_levels' => ['PossiblyUndefinedMethod'],
+                'ignored_issues' => ['PossiblyUndefinedMethod'],
             ],
             'canBeCalledOnMagicWithMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       public function __call(string $method, array $args) {}
                     }
@@ -319,7 +313,7 @@ class MethodCallTest extends TestCase
                 'assertions' => [],
             ],
             'invokeCorrectType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __invoke(string $p): void {}
                     }
@@ -328,7 +322,7 @@ class MethodCallTest extends TestCase
                     $q("asda");',
             ],
             'domDocumentAppendChild' => [
-                '<?php
+                'code' => '<?php
                     $doc = new DOMDocument("1.0");
                     $node = $doc->createElement("foo");
                     if ($node instanceof DOMElement) {
@@ -337,7 +331,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'nonStaticSelfCall' => [
-                '<?php
+                'code' => '<?php
                     class A11 {
                         public function call() : self {
                             $result = self::method();
@@ -352,7 +346,7 @@ class MethodCallTest extends TestCase
                     var_export($x->call());',
             ],
             'simpleXml' => [
-                '<?php
+                'code' => '<?php
                     $xml = new SimpleXMLElement("<a><b></b></a>");
                     $a = $xml->asXML();
                     $b = $xml->asXML("foo.xml");',
@@ -362,7 +356,7 @@ class MethodCallTest extends TestCase
                 ],
             ],
             'datetimeformatNotFalse' => [
-                '<?php
+                'code' => '<?php
                     $format = random_bytes(10);
                     $dt = new DateTime;
                     $formatted = $dt->format($format);
@@ -370,11 +364,11 @@ class MethodCallTest extends TestCase
                     function takesString(string $s) : void {}
                     takesString($formatted);',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' =>  '7.4'
             ],
             'domElement' => [
-                '<?php
+                'code' => '<?php
                     function foo(DOMElement $e) : ?string {
                         $a = $e->getElementsByTagName("bar");
                         $b = $a->item(0);
@@ -385,7 +379,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'domElementIteratorOrEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-string $XML */
                     function foo(string $XML) : void {
                         $dom = new DOMDocument();
@@ -398,7 +392,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'reflectionParameter' => [
-                '<?php
+                'code' => '<?php
                     function getTypeName(ReflectionParameter $parameter): string {
                         $type = $parameter->getType();
 
@@ -417,11 +411,11 @@ class MethodCallTest extends TestCase
                         throw new RuntimeException("unexpected type");
                     }',
                     'assertions' => [],
-                    'error_levels' => [],
+                    'ignored_issues' => [],
                     'php_version' =>  '8.0'
             ],
             'PDOMethod' => [
-                '<?php
+                'code' => '<?php
                     function md5_and_reverse(string $string) : string {
                         return strrev(md5($string));
                     }
@@ -430,7 +424,7 @@ class MethodCallTest extends TestCase
                     $db->sqliteCreateFunction("md5rev", "md5_and_reverse", 1);',
             ],
             'dontConvertedMaybeMixedAfterCall' => [
-                '<?php
+                'code' => '<?php
                     class B {
                         public function foo() : void {}
                     }
@@ -445,11 +439,11 @@ class MethodCallTest extends TestCase
                             if ($d instanceof B) {}
                         }
                     }',
-                [],
-                'error_levels' => ['MixedAssignment', 'MixedMethodCall'],
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedMethodCall'],
             ],
             'methodResolution' => [
-                '<?php
+                'code' => '<?php
                     interface ReturnsString {
                         public function getId(): string;
                     }
@@ -466,17 +460,17 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'defineVariableCreatedInArgToMixed' => [
-                '<?php
+                'code' => '<?php
                     function bar($a) : void {
                         if ($a->foo($b = (int) "5")) {
                             echo $b;
                         }
                     }',
-                [],
-                'error_levels' => ['MixedMethodCall', 'MissingParamType'],
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall', 'MissingParamType'],
             ],
             'staticCallAfterMethodExists' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         protected static function existing() : string
@@ -497,7 +491,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'varSelfCall' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /** @var self */
                         public static $current;
@@ -507,7 +501,7 @@ class MethodCallTest extends TestCase
                     Foo::$current->bar();',
             ],
             'pdoStatementSetFetchMode' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $a;
@@ -522,7 +516,7 @@ class MethodCallTest extends TestCase
                     $a = $stmt->fetch();',
             ],
             'datePeriodConstructor' => [
-                '<?php
+                'code' => '<?php
                     function foo(DateTime $d1, DateTime $d2) : void {
                         new DatePeriod(
                             $d1,
@@ -532,7 +526,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'callMethodAfterCheckingExistence' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     function foo(A $a) : void {
@@ -543,7 +537,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'callMethodAfterCheckingExistenceInClosure' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     function foo(A $a) : void {
@@ -557,7 +551,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'callManyMethodsAfterCheckingExistence' => [
-                '<?php
+                'code' => '<?php
                     function foo(object $object) : void {
                         if (!method_exists($object, "foo")) {
                             return;
@@ -570,7 +564,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'callManyMethodsAfterCheckingExistenceChained' => [
-                '<?php
+                'code' => '<?php
                     function foo(object $object) : void {
                         if (method_exists($object, "foo") && method_exists($object, "bar")) {
                             $object->foo();
@@ -579,7 +573,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'callManyMethodsOnKnownObjectAfterCheckingExistenceChained' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     function foo(A $object) : void {
                         if (method_exists($object, "foo") && method_exists($object, "bar")) {
@@ -589,7 +583,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'preserveMethodExistsType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param class-string $foo
                      */
@@ -602,7 +596,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'methodDoesNotExistOnClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -617,7 +611,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'pdoStatementFetchAssoc' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<string,null|scalar>|false */
                     function fetch_assoc() {
                         $p = new PDO("sqlite::memory:");
@@ -627,7 +621,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'pdoStatementFetchBoth' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<null|scalar>|false */
                     function fetch_both() {
                         $p = new PDO("sqlite::memory:");
@@ -637,7 +631,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'pdoStatementFetchBound' => [
-                '<?php
+                'code' => '<?php
                     /** @return bool */
                     function fetch_both() : bool {
                         $p = new PDO("sqlite::memory:");
@@ -647,7 +641,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'pdoStatementFetchClass' => [
-                '<?php
+                'code' => '<?php
                     /** @return object|false */
                     function fetch_class() {
                         $p = new PDO("sqlite::memory:");
@@ -657,7 +651,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'pdoStatementFetchLazy' => [
-                '<?php
+                'code' => '<?php
                     /** @return object|false */
                     function fetch_lazy() {
                         $p = new PDO("sqlite::memory:");
@@ -667,7 +661,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'pdoStatementFetchNamed' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<string,scalar|list<scalar>>|false */
                     function fetch_named() {
                         $p = new PDO("sqlite::memory:");
@@ -677,7 +671,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'pdoStatementFetchNum' => [
-                '<?php
+                'code' => '<?php
                     /** @return list<null|scalar>|false */
                     function fetch_named() {
                         $p = new PDO("sqlite::memory:");
@@ -687,7 +681,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'pdoStatementFetchObj' => [
-                '<?php
+                'code' => '<?php
                     /** @return stdClass|false */
                     function fetch_named() {
                         $p = new PDO("sqlite::memory:");
@@ -697,12 +691,12 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'dateTimeSecondArg' => [
-                '<?php
+                'code' => '<?php
                     $date = new DateTime(null, new DateTimeZone("Pacific/Nauru"));
                     echo $date->format("Y-m-d H:i:sP") . "\n";'
             ],
             'noCrashOnGetClassMethodCallWithNull' => [
-                '<?php
+                'code' => '<?php
                     class User {
                         /**
                          * @psalm-suppress NullArgument
@@ -715,7 +709,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'unknownMethodCallWithProperty' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         private string $b = "c";
 
@@ -726,7 +720,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'maybeNotTooManyArgumentsToInstance' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(int $a): void {}
                     }
@@ -738,7 +732,7 @@ class MethodCallTest extends TestCase
                     (rand(0, 1) ? new A : new B)->fooFoo(5, "dfd");',
             ],
             'interfaceMethodCallCheck' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         function foo() : void;
                     }
@@ -760,7 +754,7 @@ class MethodCallTest extends TestCase
                     takesWithoutArguments(new C);'
             ],
             'getterAutomagicAssertion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string|null */
                         public $a;
@@ -778,7 +772,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'ignorePossiblyNull' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         protected ?string $type = null;
 
@@ -796,7 +790,7 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'abstractMethodExistsOnChild' => [
-                '<?php
+                'code' => '<?php
                     abstract class Foo {}
 
                     abstract class FooChild extends Foo {}
@@ -812,17 +806,17 @@ class MethodCallTest extends TestCase
                             return $this->createFoo();
                         }
                     }',
-                [],
-                [],
-                '7.4'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4'
             ],
             'pdoQueryTwoArgs' => [
-                '<?php
+                'code' => '<?php
                     $pdo = new PDO("test");
                     $pdo->query("SELECT * FROM projects", PDO::FETCH_NAMED);'
             ],
             'unchainedInferredMutationFreeMethodCallMemoize' => [
-                '<?php
+                'code' => '<?php
                     class SomeClass {
                         private ?int $int;
 
@@ -849,7 +843,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'unchainedInferredInferredFinalMutationFreeMethodCallMemoize' => [
-                '<?php
+                'code' => '<?php
                     class SomeClass {
                         private ?int $int;
 
@@ -873,7 +867,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'privateInferredMutationFreeMethodCallMemoize' => [
-                '<?php
+                'code' => '<?php
                     class PropertyClass {
                         public function test() : void {
                             echo "test";
@@ -894,7 +888,7 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'inferredFinalMethod' => [
-                '<?php
+                'code' => '<?php
                     class PropertyClass {
                         public function test() : bool {
                             return true;
@@ -914,7 +908,7 @@ class MethodCallTest extends TestCase
                     if ($main->getProperty() !== null && $main->getProperty()->test()) {}'
             ],
             'getterTypeInferring' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int|string|null */
                         public $a;
@@ -932,14 +926,14 @@ class MethodCallTest extends TestCase
                     }',
             ],
             'newSplObjectStorageDefaultEmpty' => [
-                '<?php
+                'code' => '<?php
                     $a = new SplObjectStorage();',
-                [
-                    '$a' => 'SplObjectStorage<empty, empty>',
+                'assertions' => [
+                    '$a' => 'SplObjectStorage<never, never>',
                 ]
             ],
             'allowIteratorToBeNull' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return Iterator<string>
                      */
@@ -958,7 +952,7 @@ class MethodCallTest extends TestCase
                     if ($it->current() === null) {}'
             ],
             'resolveFinalInParentCall' => [
-                '<?php
+                'code' => '<?php
                     abstract class A {
                         protected static function create() : static {
                             return new static();
@@ -974,22 +968,22 @@ class MethodCallTest extends TestCase
                     }'
             ],
             'noCrashWhenCallingParent' => [
-                '<?php
+                'code' => '<?php
                     namespace FooBar;
 
                     class Datetime extends \DateTime
                     {
-                        public static function createFromInterface(\DateTimeInterface $datetime): \DateTime
+                        public static function createFromInterface(\DateTimeInterface $datetime): static
                         {
                             return parent::createFromInterface($datetime);
                         }
                     }',
-                [],
-                ['MixedReturnStatement', 'MixedInferredReturnType'],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'php_version' => '8.0'
             ],
             'nullsafeShortCircuit' => [
-                '<?php
+                'code' => '<?php
                     interface Bar {
                         public function doBaz(): void;
                     }
@@ -1000,12 +994,12 @@ class MethodCallTest extends TestCase
                         return null;
                     }
                     fooOrNull()?->getBar()->doBaz();',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'parentMagicMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class Model {
                         /**
                          * @return static
@@ -1028,7 +1022,7 @@ class MethodCallTest extends TestCase
 
                     $m = new BlahModel();
                     $n = $m->create([]);',
-                [
+                'assertions' => [
                     '$n' => 'BlahModel',
                 ]
             ],
@@ -1036,13 +1030,13 @@ class MethodCallTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'staticInvocation' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public function barBar(): void {}
                     }
@@ -1051,7 +1045,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'InvalidStaticInvocation',
             ],
             'parentStaticCall' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function foo(){}
@@ -1066,7 +1060,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'InvalidStaticInvocation',
             ],
             'mixedMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public static function barBar(): void {}
                     }
@@ -1076,18 +1070,18 @@ class MethodCallTest extends TestCase
 
                     $a->barBar();',
                 'error_message' => 'MixedMethodCall',
-                'error_levels' => [
+                'ignored_issues' => [
                     'MissingPropertyType',
                     'MixedAssignment',
                 ],
             ],
             'invalidMethodCall' => [
-                '<?php
+                'code' => '<?php
                     ("hello")->someMethod();',
                 'error_message' => 'InvalidMethodCall',
             ],
             'possiblyInvalidMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class A1 {
                         public function methodOfA(): void {
                         }
@@ -1102,7 +1096,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'PossiblyInvalidMethodCall',
             ],
             'selfNonStaticInvocation' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(): void {}
 
@@ -1113,7 +1107,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'NonStaticSelfCall',
             ],
             'noParent' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public function barBar(): void {
                             parent::barBar();
@@ -1122,7 +1116,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'ParentNotFound',
             ],
             'coercedClass' => [
-                '<?php
+                'code' => '<?php
                     class NullableClass {
                     }
 
@@ -1145,15 +1139,15 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement', 'MixedMethodCall'],
+                'ignored_issues' => ['MixedInferredReturnType', 'MixedReturnStatement', 'MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
-                '<?php
+                'code' => '<?php
                     $foo::bar();',
                 'error_message' => 'UndefinedGlobalVariable',
             ],
             'staticCallOnString' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(): int {
                             return 5;
@@ -1165,12 +1159,12 @@ class MethodCallTest extends TestCase
                 'error_message' => 'MixedAssignment',
             ],
             'possiblyNullFunctionCall' => [
-                '<?php
+                'code' => '<?php
                     $this->foo();',
                 'error_message' => 'InvalidScope',
             ],
             'possiblyFalseReference' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function bar(): void {}
                     }
@@ -1180,7 +1174,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'PossiblyFalseReference',
             ],
             'undefinedParentClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress UndefinedClass
                      */
@@ -1190,26 +1184,26 @@ class MethodCallTest extends TestCase
                 'error_message' => 'MissingDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],
             'variableMethodCallOnArray' => [
-                '<?php
+                'code' => '<?php
                     $arr = [];
                     $b = "foo";
                     $arr->$b();',
                 'error_message' => 'InvalidMethodCall',
             ],
             'intVarStaticCall' => [
-                '<?php
+                'code' => '<?php
                     $a = 5;
                     $a::bar();',
                 'error_message' => 'UndefinedClass',
             ],
             'intVarNewCall' => [
-                '<?php
+                'code' => '<?php
                     $a = 5;
                     new $a();',
                 'error_message' => 'UndefinedClass',
             ],
             'invokeTypeMismatch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __invoke(string $p): void {}
                     }
@@ -1219,7 +1213,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'explicitInvokeTypeMismatch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __invoke(string $p): void {}
                     }
@@ -1227,7 +1221,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'undefinedMethodPassedAsArg' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __call(string $method, array $args) {}
                     }
@@ -1237,7 +1231,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'UndefinedFunction',
             ],
             'noIntersectionMethod' => [
-                '<?php
+                'code' => '<?php
                     interface A {}
                     interface B {}
 
@@ -1248,7 +1242,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'UndefinedInterfaceMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Method (B&A)::zugzug does not exist',
             ],
             'noInstanceCallAsStatic' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         public function foo() : void {}
                     }
@@ -1257,7 +1251,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'InvalidStaticInvocation',
             ],
             'noExceptionOnMissingClass' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress UndefinedClass */
                     class A
                     {
@@ -1273,7 +1267,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'MissingConstructor',
             ],
             'checkMixedMethodCallStaticMethodCallArg' => [
-                '<?php
+                'code' => '<?php
                     class B {}
                     /** @param mixed $a */
                     function foo($a) : void {
@@ -1283,7 +1277,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'complainAboutUndefinedPropertyOnMixedCall' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /** @param mixed $a */
                         public function foo($a) : void {
@@ -1294,7 +1288,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'UndefinedThisPropertyFetch',
             ],
             'complainAboutUndefinedPropertyOnMixedCallConcatOp' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @psalm-suppress MixedMethodCall
@@ -1306,7 +1300,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'UndefinedThisPropertyFetch',
             ],
             'alreadyHasmethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -1319,7 +1313,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'possiblyNullOrMixedArg' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var mixed
@@ -1339,7 +1333,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
             ],
             'callOnVoid' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo(): void {}
                     }
@@ -1349,12 +1343,12 @@ class MethodCallTest extends TestCase
                 'error_message' => 'NullReference'
             ],
             'dateTimeNullFirstArg' => [
-                '<?php
+                'code' => '<?php
                     $date = new DateTime(null);',
                 'error_message' => 'NullArgument'
             ],
             'noCrashOnGetClassMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class User {
                         /**
                          * @psalm-suppress MixedArgument
@@ -1369,7 +1363,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'InvalidStringClass',
             ],
             'preventAbstractMethodCall' => [
-                '<?php
+                'code' => '<?php
                     abstract class Base {
                         public static function callAbstract() : void {
                             static::bar();
@@ -1382,7 +1376,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'AbstractMethodCall',
             ],
             'tooManyArgumentsToStatic' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function fooFoo(int $a): void {}
                     }
@@ -1391,7 +1385,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'TooManyArguments',
             ],
             'tooFewArgumentsToStatic' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function fooFoo(int $a): void {}
                     }
@@ -1400,7 +1394,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'TooFewArguments',
             ],
             'tooManyArgumentsToInstance' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(int $a): void {}
                     }
@@ -1409,7 +1403,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'TooManyArguments',
             ],
             'tooFewArgumentsToInstance' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(int $a): void {}
                     }
@@ -1418,7 +1412,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'TooFewArguments',
             ],
             'getterAutomagicOverridden' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string|null */
                         public $a;
@@ -1445,7 +1439,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'PossiblyNullArgument'
             ],
             'getterAutomagicOverriddenWithAssertion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string|null */
                         public $a;
@@ -1477,13 +1471,13 @@ class MethodCallTest extends TestCase
                 'error_message' => 'PossiblyNullArgument'
             ],
             'checkVariableInUnknownClassConstructor' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress UndefinedClass */
                     new Missing($class_arg);',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
             'unchainedInferredInferredMutationFreeMethodCallDontMemoize' => [
-                '<?php
+                'code' => '<?php
                     class SomeClass {
                         private ?int $int;
 
@@ -1508,7 +1502,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
             ],
             'getterTypeInferringWithChange' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var int|string|null */
                         public $val;
@@ -1528,7 +1522,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'possiblyNullReferenceInInvokedCall' => [
-                '<?php
+                'code' => '<?php
                     interface Location {
                         public function getId(): int;
                     }
@@ -1548,7 +1542,7 @@ class MethodCallTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullsafeShortCircuitInVariable' => [
-                '<?php
+                'code' => '<?php
                     interface Bar {
                         public function doBaz(): void;
                     }
@@ -1561,12 +1555,11 @@ class MethodCallTest extends TestCase
                     $a = fooOrNull()?->getBar();
                     $a->doBaz();',
                 'error_message' => 'PossiblyNullReference',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'undefinedMethodOnParentCallWithMethodExistsOnSelf' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                         public function foo(): string {

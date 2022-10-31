@@ -15,7 +15,6 @@ use LanguageServerProtocol\SignatureInformation;
 use LanguageServerProtocol\TextEdit;
 use PhpParser;
 use PhpParser\Node\Arg;
-use Psalm\CodeLocation;
 use Psalm\CodeLocation\Raw;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Exception\UnpopulatedClasslikeException;
@@ -68,7 +67,6 @@ use ReflectionType;
 use UnexpectedValueException;
 
 use function array_combine;
-use function array_merge;
 use function array_pop;
 use function array_reverse;
 use function count;
@@ -77,6 +75,7 @@ use function error_log;
 use function explode;
 use function implode;
 use function in_array;
+use function intdiv;
 use function is_numeric;
 use function is_string;
 use function krsort;
@@ -90,11 +89,9 @@ use function strtolower;
 use function substr;
 use function substr_count;
 
-use const PHP_MAJOR_VERSION;
-use const PHP_MINOR_VERSION;
 use const PHP_VERSION_ID;
 
-class Codebase
+final class Codebase
 {
     /**
      * @var Config
@@ -305,18 +302,6 @@ class Codebase
      */
     public $allow_backwards_incompatible_changes = true;
 
-    /**
-     * @var int
-     * @deprecated Removed in Psalm 5, use Codebase::$analysis_php_version_id
-     */
-    public $php_major_version = PHP_MAJOR_VERSION;
-
-    /**
-     * @var int
-     * @deprecated Removed in Psalm 5, use Codebase::$analysis_php_version_id
-     */
-    public $php_minor_version = PHP_MINOR_VERSION;
-
     /** @var int */
     public $analysis_php_version_id = PHP_VERSION_ID;
 
@@ -328,6 +313,7 @@ class Codebase
      */
     public $track_unused_suppressions = false;
 
+    /** @internal */
     public function __construct(
         Config $config,
         Providers $providers,
@@ -384,7 +370,6 @@ class Codebase
         );
 
         $this->populator = new Populator(
-            $config,
             $providers->classlike_storage_provider,
             $providers->file_storage_provider,
             $this->classlikes,
@@ -534,7 +519,7 @@ class Codebase
     {
         return $this->statements_provider->getStatementsForFile(
             $file_path,
-            $this->php_major_version . '.' . $this->php_minor_version,
+            $this->analysis_php_version_id,
             $this->progress
         );
     }
@@ -632,7 +617,7 @@ class Codebase
         $locations = $this->file_reference_provider->getClassLocations($fq_class_name_lc);
 
         if (isset($this->use_referencing_locations[$fq_class_name_lc])) {
-            $locations = array_merge($locations, $this->use_referencing_locations[$fq_class_name_lc]);
+            $locations = [...$locations, ...$this->use_referencing_locations[$fq_class_name_lc]];
         }
 
         return $locations;
@@ -1981,9 +1966,7 @@ class Codebase
 
         $this->taint_flow_graph->addSource($source);
 
-        $expr_type->parent_nodes = [
-            $source->id => $source,
-        ];
+        $expr_type->parent_nodes[$source->id] = $source;
     }
 
     /**
@@ -2009,5 +1992,20 @@ class Codebase
         );
 
         $this->taint_flow_graph->addSink($sink);
+    }
+
+    public function getMinorAnalysisPhpVersion(): int
+    {
+        return self::transformPhpVersionId($this->analysis_php_version_id % 10_000, 100);
+    }
+
+    public function getMajorAnalysisPhpVersion(): int
+    {
+        return self::transformPhpVersionId($this->analysis_php_version_id, 10_000);
+    }
+
+    public static function transformPhpVersionId(int $php_version_id, int $div): int
+    {
+        return intdiv($php_version_id, $div);
     }
 }

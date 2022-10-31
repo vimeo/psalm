@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\ConstFetch;
 use Psalm\Node\VirtualNode;
 
-class VirtualConstFetch extends ConstFetch implements VirtualNode
+final class VirtualConstFetch extends ConstFetch implements VirtualNode
 {
 
 }

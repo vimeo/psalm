@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class MixedMethodCall extends CodeIssue implements MixedIssue
+final class MixedMethodCall extends CodeIssue implements MixedIssue
 {
     public const ERROR_LEVEL = 1;
     public const SHORTCODE = 15;

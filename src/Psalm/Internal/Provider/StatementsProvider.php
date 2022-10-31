@@ -6,6 +6,7 @@ use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Node\Stmt;
 use Psalm\CodeLocation\ParseErrorLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
@@ -20,7 +21,7 @@ use Psalm\Progress\VoidProgress;
 use Throwable;
 
 use function abs;
-use function array_flip;
+use function array_fill_keys;
 use function array_intersect_key;
 use function array_map;
 use function array_merge;
@@ -118,8 +119,11 @@ class StatementsProvider
     /**
      * @return list<Stmt>
      */
-    public function getStatementsForFile(string $file_path, string $php_version, ?Progress $progress = null): array
-    {
+    public function getStatementsForFile(
+        string $file_path,
+        int $analysis_php_version_id,
+        ?Progress $progress = null
+    ): array {
         unset($this->errors[$file_path]);
 
         if ($progress === null) {
@@ -135,7 +139,7 @@ class StatementsProvider
 
         $config = Config::getInstance();
 
-        if (PHP_VERSION_ID >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00) {
             $file_content_hash = hash('xxh128', $version . $file_contents);
         } else {
             $file_content_hash = hash('md4', $version . $file_contents);
@@ -144,7 +148,7 @@ class StatementsProvider
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
-            $cache_key = "{$file_content_hash}:{$php_version}";
+            $cache_key = "{$file_content_hash}:{$analysis_php_version_id}";
             if ($this->statements_volatile_cache->has($cache_key)) {
                 return $this->statements_volatile_cache->get($cache_key);
             }
@@ -153,7 +157,7 @@ class StatementsProvider
 
             $has_errors = false;
 
-            $stmts = self::parseStatements($file_contents, $php_version, $has_errors, $file_path);
+            $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
 
             $this->statements_volatile_cache->set($cache_key, $stmts);
 
@@ -170,10 +174,6 @@ class StatementsProvider
             $progress->debug('Parsing ' . $file_path . "\n");
 
             $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_path);
-
-            if ($existing_statements && !$existing_statements[0] instanceof PhpParser\Node\Stmt) {
-                $existing_statements = null;
-            }
 
             $existing_file_contents = $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path);
 
@@ -196,7 +196,7 @@ class StatementsProvider
 
             if ($existing_statements
                 && $existing_file_contents
-                && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5000
+                && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5_000
             ) {
                 $file_changes = FileDiffer::getDiff($existing_file_contents, $file_contents);
 
@@ -215,7 +215,7 @@ class StatementsProvider
 
             $stmts = self::parseStatements(
                 $file_contents,
-                $php_version,
+                $analysis_php_version_id,
                 $has_errors,
                 $file_path,
                 $existing_file_contents,
@@ -232,25 +232,14 @@ class StatementsProvider
                         $file_contents
                     );
 
-                $unchanged_members = array_map(
-                    function (int $_): bool {
-                        return true;
-                    },
-                    array_flip($unchanged_members)
-                );
-
-                $unchanged_signature_members = array_map(
-                    function (int $_): bool {
-                        return true;
-                    },
-                    array_flip($unchanged_signature_members)
-                );
+                $unchanged_members = array_fill_keys($unchanged_members, true);
+                $unchanged_signature_members = array_fill_keys($unchanged_signature_members, true);
 
                 // do NOT change this to hash, it will fail on Windows for whatever reason
                 $file_path_hash = md5($file_path);
 
                 $changed_members = array_map(
-                    function (string $key) use ($file_path_hash): string {
+                    static function (string $key) use ($file_path_hash): string {
                         if (strpos($key, 'use:') === 0) {
                             return $key . ':' . $file_path_hash;
                         }
@@ -260,17 +249,7 @@ class StatementsProvider
                     $changed_members
                 );
 
-                $changed_members = array_map(
-                    /**
-                     * @param int $_
-                     *
-                     * @return bool
-                     */
-                    function ($_): bool {
-                        return true;
-                    },
-                    array_flip($changed_members)
-                );
+                $changed_members = array_fill_keys($changed_members, true);
 
                 if (isset($this->unchanged_members[$file_path])) {
                     $this->unchanged_members[$file_path] = array_intersect_key(
@@ -437,22 +416,24 @@ class StatementsProvider
      * @return list<Stmt>
      */
     public static function parseStatements(
-        string $file_contents,
-        string $php_version,
-        bool &$has_errors,
+        string  $file_contents,
+        int     $analysis_php_version_id,
+        bool    &$has_errors,
         ?string $file_path = null,
         ?string $existing_file_contents = null,
-        ?array $existing_statements = null,
-        ?array $file_changes = null
+        ?array  $existing_statements = null,
+        ?array  $file_changes = null
     ): array {
         $attributes = [
             'comments', 'startLine', 'startFilePos', 'endFilePos',
         ];
 
         if (!self::$lexer) {
+            $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10_000);
+            $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10_000, 100);
             self::$lexer = new PhpParser\Lexer\Emulative([
                 'usedAttributes' => $attributes,
-                'phpVersion' => $php_version,
+                'phpVersion' => $major_version . '.' . $minor_version,
             ]);
         }
 

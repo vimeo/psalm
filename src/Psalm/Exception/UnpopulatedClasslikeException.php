@@ -4,7 +4,7 @@ namespace Psalm\Exception;
 
 use LogicException;
 
-class UnpopulatedClasslikeException extends LogicException
+final class UnpopulatedClasslikeException extends LogicException
 {
     public function __construct(string $fq_classlike_name)
     {

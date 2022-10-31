@@ -3,7 +3,6 @@
 namespace Psalm\Internal;
 
 use function array_diff;
-use function array_merge;
 use function array_unique;
 use function array_values;
 use function get_included_files;
@@ -17,6 +16,8 @@ use const PREG_GREP_INVERT;
  * Used to execute code that may cause file inclusions, and report what files have been included
  * NOTE: dependencies of this class should be kept at minimum, as it's used before autoloader is
  * registered.
+ *
+ * @internal
  */
 final class IncludeCollector
 {
@@ -36,7 +37,7 @@ final class IncludeCollector
 
         $included = array_diff($after, $before);
 
-        $this->included_files = array_values(array_unique(array_merge($this->included_files, $included)));
+        $this->included_files = array_values(array_unique([...$this->included_files, ...$included]));
 
         return $ret;
     }

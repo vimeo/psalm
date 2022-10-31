@@ -41,7 +41,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -125,7 +125,7 @@ class FunctionCallReturnTypeFetcher
                                 $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => [
                                         new TemplateBound(
-                                            Type::getInt(false, $codebase->php_major_version)
+                                            Type::getInt(false, $codebase->getMajorAnalysisPhpVersion())
                                         )
                                     ]
                                 ];
@@ -135,8 +135,7 @@ class FunctionCallReturnTypeFetcher
                                         new TemplateBound(
                                             Type::getInt(
                                                 false,
-                                                10000 * $codebase->php_major_version
-                                                + 100 * $codebase->php_minor_version
+                                                $codebase->analysis_php_version_id
                                             )
                                         )
                                     ]
@@ -145,7 +144,7 @@ class FunctionCallReturnTypeFetcher
                                 $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => [
                                         new TemplateBound(
-                                            Type::getEmpty()
+                                            Type::getNever()
                                         )
                                     ]
                                 ];
@@ -174,7 +173,7 @@ class FunctionCallReturnTypeFetcher
                                 null
                             );
 
-                            TemplateInferredTypeReplacer::replace(
+                            $return_type = TemplateInferredTypeReplacer::replace(
                                 $return_type,
                                 $template_result,
                                 $codebase
@@ -329,9 +328,7 @@ class FunctionCallReturnTypeFetcher
                     $keyed_array = new TKeyedArray([
                         Type::getInt(),
                         Type::getInt()
-                    ]);
-                    $keyed_array->sealed = true;
-                    $keyed_array->is_list = true;
+                    ], null, true, null, null, true);
                     return new Union([$keyed_array]);
 
                 case 'get_called_class':
@@ -374,7 +371,7 @@ class FunctionCallReturnTypeFetcher
                                     return new Union([
                                         $atomic_types['array']->count !== null
                                             ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TPositiveInt
+                                            : new TIntRange(1, null)
                                     ]);
                                 }
 
@@ -382,7 +379,7 @@ class FunctionCallReturnTypeFetcher
                                     return new Union([
                                         $atomic_types['array']->count !== null
                                             ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TPositiveInt
+                                            : new TIntRange(1, null)
                                     ]);
                                 }
 
@@ -392,14 +389,13 @@ class FunctionCallReturnTypeFetcher
                                     foreach ($atomic_types['array']->properties as $property) {
                                         // empty, never and possibly undefined can't count for min value
                                         if (!$property->possibly_undefined
-                                            && !$property->isEmpty()
                                             && !$property->isNever()
                                         ) {
                                             $min++;
                                         }
 
-                                        //empty and never can't count for max value because we know keys are undefined
-                                        if (!$property->isEmpty() && !$property->isNever()) {
+                                        //never can't count for max value because we know keys are undefined
+                                        if (!$property->isNever()) {
                                             $max++;
                                         }
                                     }
@@ -418,15 +414,13 @@ class FunctionCallReturnTypeFetcher
                                 }
 
                                 if ($atomic_types['array'] instanceof TArray
-                                    && $atomic_types['array']->type_params[0]->isEmpty()
-                                    && $atomic_types['array']->type_params[1]->isEmpty()
+                                    && $atomic_types['array']->isEmptyArray()
                                 ) {
                                     return Type::getInt(false, 0);
                                 }
 
                                 return new Union([
-                                    new TLiteralInt(0),
-                                    new TPositiveInt
+                                    new TIntRange(0, null)
                                 ]);
                             }
                         }
@@ -445,9 +439,7 @@ class FunctionCallReturnTypeFetcher
                         $keyed_array = new TKeyedArray([
                             Type::getInt(),
                             Type::getInt()
-                        ]);
-                        $keyed_array->sealed = true;
-                        $keyed_array->is_list = true;
+                        ], null, true, null, null, true);
 
                         if ((string) $first_arg_type === 'false') {
                             return new Union([$keyed_array]);
@@ -506,8 +498,10 @@ class FunctionCallReturnTypeFetcher
                     break;
 
                 case 'fgetcsv':
-                    $string_type = Type::getString();
-                    $string_type->addType(new TNull);
+                    $string_type = new Union([
+                        new TString,
+                        new TNull
+                    ]);
                     $string_type->ignore_nullable_issues = true;
 
                     $call_map_return_type = new Union([
@@ -614,10 +608,8 @@ class FunctionCallReturnTypeFetcher
         $conditionally_removed_taints = [];
 
         foreach ($function_storage->conditionally_removed_taints as $conditionally_removed_taint) {
-            $conditionally_removed_taint = clone $conditionally_removed_taint;
-
-            TemplateInferredTypeReplacer::replace(
-                $conditionally_removed_taint,
+            $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
+                clone $conditionally_removed_taint,
                 $template_result,
                 $codebase
             );
@@ -651,7 +643,7 @@ class FunctionCallReturnTypeFetcher
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                array_merge($removed_taints, $conditionally_removed_taints)
+                [...$removed_taints, ...$conditionally_removed_taints]
             );
 
             $stmt_type->parent_nodes[$assignment_node->id] = $assignment_node;

@@ -14,7 +14,7 @@ class ArrayColumnTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         yield 'arrayColumnObjectWithProperties' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @param object{id: int} $o
                  * @return non-empty-list<int>
@@ -26,7 +26,7 @@ class ArrayColumnTest extends TestCase
         ];
 
         yield 'arrayColumnWithPrivatePropertiesExternal' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var int */
                     private $id = 42;
@@ -35,11 +35,11 @@ class ArrayColumnTest extends TestCase
             ',
             // for inaccessible properties we cannot figure out neither type nor emptiness
             // in practice, array_column() omits inaccessible elements
-            ['$r' => 'list<mixed>'],
+            'assertions' => ['$r' => 'list<mixed>'],
         ];
 
         yield 'arrayColumnWithPrivatePropertiesInternal' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var int */
                     private $id = 42;
@@ -53,7 +53,7 @@ class ArrayColumnTest extends TestCase
         ];
 
         yield 'arrayColumnWithShapes' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @param array{id:int} $shape
                  * @return non-empty-list<int>
@@ -65,7 +65,7 @@ class ArrayColumnTest extends TestCase
         ];
 
         yield 'arrayColumnWithObjectsAndColumnNameNull' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var string */
                     public $name = "";
@@ -79,7 +79,7 @@ class ArrayColumnTest extends TestCase
         ];
 
         yield 'arrayColumnWithIntersectionAndColumnNameNull' => [
-            '<?php
+            'code' => '<?php
                 interface I {
                     public function foo(): void;
                 }
@@ -103,7 +103,7 @@ class ArrayColumnTest extends TestCase
         ];
 
         yield 'arrayColumnWithArrayAndColumnNameNull' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var string */
                     public $name = "";
@@ -117,7 +117,7 @@ class ArrayColumnTest extends TestCase
         ];
 
         yield 'arrayColumnWithListOfObject' => [
-            '<?php
+            'code' => '<?php
                 function foo(object $object): void {}
 
                 /** @var list<object> $instances */
@@ -129,7 +129,7 @@ class ArrayColumnTest extends TestCase
         ];
 
         yield 'arrayColumnWithListOfArrays' => [
-            '<?php
+            'code' => '<?php
                 function foo(array $array): void {}
 
                 /** @var list<array> $arrays */
@@ -144,7 +144,7 @@ class ArrayColumnTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         yield 'arrayColumnWithArrayAndColumnNameNull' => [
-            '<?php
+            'code' => '<?php
                 /** @var list<array{name: string, instance: object}> $arrays */
                 $arrays = [];
                 foreach (array_column($arrays, null, "name") as $array) {

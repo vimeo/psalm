@@ -11,13 +11,13 @@ class MixinAnnotationTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'validSimpleAnnotations' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                         public static function __callStatic(string $name, array $args) {}
@@ -48,7 +48,7 @@ class MixinAnnotationTest extends TestCase
                 ],
             ],
             'anotherSimpleExample' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @mixin B
                      */
@@ -84,7 +84,7 @@ class MixinAnnotationTest extends TestCase
                     $a->b();'
             ],
             'allowConstructor' => [
-                '<?php
+                'code' => '<?php
                     abstract class AParent {
                         protected int $i;
 
@@ -103,7 +103,7 @@ class MixinAnnotationTest extends TestCase
                     class A extends AParent {}'
             ],
             'implicitMixin' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $dir) : void {
                         $iterator = new \RecursiveIteratorIterator(
                             new \RecursiveDirectoryIterator($dir)
@@ -117,7 +117,10 @@ class MixinAnnotationTest extends TestCase
                     }'
             ],
             'wrapCustomIterator' => [
-                '<?php
+                'code' => '<?php
+                    /**
+                     * @implements Iterator<1, 2>
+                     */
                     class Subject implements Iterator {
                         /**
                          * the index method exists
@@ -148,12 +151,12 @@ class MixinAnnotationTest extends TestCase
 
                     $iter = new IteratorIterator(new Subject());
                     $b = $iter->index(0);',
-                [
+                'assertions' => [
                     '$b' => 'bool',
                 ]
             ],
             'templatedMixin' => [
-                '<?php
+                'code' => '<?php
 
                     /**
                      * @template T
@@ -170,12 +173,12 @@ class MixinAnnotationTest extends TestCase
 
                     $bar = new Bar();
                     $b = $bar->hi();',
-                [
+                'assertions' => [
                     '$b' => 'string',
                 ]
             ],
             'templatedMixinSelf' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -210,7 +213,7 @@ class MixinAnnotationTest extends TestCase
                     }'
             ],
             'inheritPropertyAnnotations' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @property string $foo
                      */
@@ -231,7 +234,7 @@ class MixinAnnotationTest extends TestCase
                     }'
             ],
             'inheritTemplatedMixinWithStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -294,7 +297,7 @@ class MixinAnnotationTest extends TestCase
                     }'
             ],
             'inheritTemplatedMixinWithStaticAndFinalClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -350,7 +353,7 @@ class MixinAnnotationTest extends TestCase
                     }'
             ],
             'mixinParseWithTextAfter' => [
-                '<?php
+                'code' => '<?php
                     class M {}
 
                     /**
@@ -360,7 +363,7 @@ class MixinAnnotationTest extends TestCase
                     class C {}'
             ],
             'templatedMixinWithTemplateWithStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      * @mixin T
@@ -403,7 +406,7 @@ class MixinAnnotationTest extends TestCase
                     }'
             ],
             'multipleMixins' => [
-                '<?php
+                'code' => '<?php
                     class MixinA {
                         function a(): string { return "foo"; }
                     }
@@ -428,7 +431,7 @@ class MixinAnnotationTest extends TestCase
                 ],
             ],
             'inheritMultipleTemplatedMixinsWithStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -536,7 +539,7 @@ class MixinAnnotationTest extends TestCase
                     }'
             ],
             'multipleMixinsWithSameMethod' => [
-                '<?php
+                'code' => '<?php
 
                     class Mix1
                     {
@@ -568,7 +571,7 @@ class MixinAnnotationTest extends TestCase
                     $bar->foo();'
             ],
             'templatedMixinBindStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant TModel of Model
                      */
@@ -590,7 +593,7 @@ class MixinAnnotationTest extends TestCase
 
                     $f = new FooModel();
                     $g = $f->getInner();',
-                [
+                'assertions' => [
                     '$g' => 'list<FooModel>',
                 ]
             ],
@@ -598,19 +601,19 @@ class MixinAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedMixinClass' => [
-                '<?php
+                'code' => '<?php
                     /** @mixin B */
                     class A {}',
                 'error_message' => 'UndefinedDocblockClass'
             ],
             'undefinedMixinClassWithPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     /** @mixin B */
                     class A {}
 
@@ -618,7 +621,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedPropertyFetch'
             ],
             'undefinedMixinClassWithPropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     /** @mixin B */
                     class A {}
 
@@ -626,7 +629,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedPropertyAssignment'
             ],
             'undefinedMixinClassWithMethodCall' => [
-                '<?php
+                'code' => '<?php
                     /** @mixin B */
                     class A {}
 
@@ -634,7 +637,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMethod'
             ],
             'inheritTemplatedMixinWithSelf' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -688,7 +691,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement'
             ],
             'mixinStaticCallShouldNotPolluteContext' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */

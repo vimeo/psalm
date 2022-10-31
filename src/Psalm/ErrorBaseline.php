@@ -30,7 +30,7 @@ use function usort;
 use const LIBXML_NOBLANKS;
 use const PHP_VERSION;
 
-class ErrorBaseline
+final class ErrorBaseline
 {
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
@@ -48,9 +48,7 @@ class ErrorBaseline
                 /**
                  * @param array{o:int, s:array<int, string>} $existingIssue
                  */
-                function (int $carry, array $existingIssue): int {
-                    return $carry + $existingIssue['o'];
-                },
+                static fn(int $carry, array $existingIssue): int => $carry + $existingIssue['o'],
                 0
             );
         }
@@ -198,7 +196,7 @@ class ErrorBaseline
              *
              * @return array<string,array<string,array{o:int, s:array<int, string>}>>
              */
-            function (array $carry, IssueData $issue): array {
+            static function (array $carry, IssueData $issue): array {
                 if ($issue->severity !== Config::REPORT_ERROR) {
                     return $carry;
                 }
@@ -251,21 +249,16 @@ class ErrorBaseline
         $filesNode->setAttribute('psalm-version', PSALM_VERSION);
 
         if ($include_php_versions) {
-            $extensions = array_merge(get_loaded_extensions(), get_loaded_extensions(true));
+            $extensions = [...get_loaded_extensions(), ...get_loaded_extensions(true)];
 
             usort($extensions, 'strnatcasecmp');
 
-            $filesNode->setAttribute('php-version', implode(';' . "\n\t", array_merge(
-                [
-                    ('php:' . PHP_VERSION),
-                ],
-                array_map(
-                    function (string $extension): string {
-                        return $extension . ':' . phpversion($extension);
-                    },
-                    $extensions
-                )
-            )));
+            $filesNode->setAttribute('php-version', implode(';' . "\n\t", [...[
+                ('php:' . PHP_VERSION),
+            ], ...array_map(
+                static fn(string $extension): string => $extension . ':' . phpversion($extension),
+                $extensions
+            )]));
         }
 
         foreach ($groupedIssues as $file => $issueTypes) {
@@ -282,12 +275,7 @@ class ErrorBaseline
 
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
-
-                    /** @todo in major version release (e.g. Psalm 5) replace $selection with trim($selection)
-                     * This will be a minor BC break as baselines generated will then not be compatible with Psalm
-                     * versions from before PR https://github.com/vimeo/psalm/pull/6000
-                     */
-                    $codeNode->textContent = $selection;
+                    $codeNode->textContent = trim($selection);
                     $issueNode->appendChild($codeNode);
                 }
                 $fileNode->appendChild($issueNode);
@@ -304,21 +292,18 @@ class ErrorBaseline
             /**
              * @param string[] $matches
              */
-            function (array $matches): string {
-                return
-                    '<files' .
-                    "\n  " .
-                    $matches[1] .
-                    "\n" .
-                    '  php-version="' .
-                    "\n    " .
-                    str_replace('&#10;&#9;', "\n    ", $matches[2]).
-                    "\n" .
-                    '  "' .
-                    "\n" .
-                    $matches[3] .
-                    "\n";
-            },
+            static fn(array $matches): string => '<files' .
+            "\n  " .
+            $matches[1] .
+            "\n" .
+            '  php-version="' .
+            "\n    " .
+            str_replace('&#10;&#9;', "\n    ", $matches[2]).
+            "\n" .
+            '  "' .
+            "\n" .
+            $matches[3] .
+            "\n",
             $baselineDoc->saveXML()
         );
 

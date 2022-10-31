@@ -8,7 +8,7 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 
-class AfterClassLikeAnalysisEvent
+final class AfterClassLikeAnalysisEvent
 {
     /**
      * @var Node\Stmt\ClassLike
@@ -35,6 +35,7 @@ class AfterClassLikeAnalysisEvent
      * Called after a statement has been checked
      *
      * @param  FileManipulation[]   $file_replacements
+     * @internal
      */
     public function __construct(
         Node\Stmt\ClassLike $stmt,

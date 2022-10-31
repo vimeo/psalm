@@ -28,7 +28,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -36,12 +36,12 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function assert;
 use function count;
 use function reset;
@@ -91,10 +91,10 @@ class ConcatAnalyzer
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         foreach ($left_type->parent_nodes as $parent_node) {
-                            $origin_locations = array_merge(
-                                $origin_locations,
-                                $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                            );
+                            $origin_locations = [
+                                ...$origin_locations,
+                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                            ];
                         }
                     }
 
@@ -118,10 +118,10 @@ class ConcatAnalyzer
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         foreach ($right_type->parent_nodes as $parent_node) {
-                            $origin_locations = array_merge(
-                                $origin_locations,
-                                $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                            );
+                            $origin_locations = [
+                                ...$origin_locations,
+                                ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                            ];
                         }
                     }
 
@@ -190,9 +190,11 @@ class ConcatAnalyzer
             }
 
             if (!$literal_concat) {
-                $numeric_type = Type::getNumericString();
-                $numeric_type->addType(new TInt());
-                $numeric_type->addType(new TFloat());
+                $numeric_type = new Union([
+                    new TNumericString,
+                    new TInt,
+                    new TFloat
+                ]);
                 $left_is_numeric = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $left_type,
@@ -208,8 +210,7 @@ class ConcatAnalyzer
                 $has_numeric_type = $left_is_numeric || $right_is_numeric;
 
                 if ($left_is_numeric) {
-                    $right_uint = Type::getPositiveInt();
-                    $right_uint->addType(new TLiteralInt(0));
+                    $right_uint = new Union([new TIntRange(0, null)]);
                     $right_is_uint = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $right_type,
@@ -222,8 +223,7 @@ class ConcatAnalyzer
                     }
                 }
 
-                $lowercase_type = clone $numeric_type;
-                $lowercase_type->addType(new TLowercaseString());
+                $lowercase_type = $numeric_type->getBuilder()->addType(new TLowercaseString())->freeze();
 
                 $all_lowercase = UnionTypeComparator::isContainedBy(
                     $codebase,
@@ -235,8 +235,7 @@ class ConcatAnalyzer
                     $lowercase_type
                 );
 
-                $non_empty_string = clone $numeric_type;
-                $non_empty_string->addType(new TNonEmptyString());
+                $non_empty_string = $numeric_type->getBuilder()->addType(new TNonEmptyString())->freeze();
 
                 $left_non_empty = UnionTypeComparator::isContainedBy(
                     $codebase,

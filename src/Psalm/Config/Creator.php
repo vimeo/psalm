@@ -2,6 +2,7 @@
 
 namespace Psalm\Config;
 
+use JsonException;
 use Psalm\Config;
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Internal\Analyzer\IssueData;
@@ -32,8 +33,10 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 use const GLOB_NOSORT;
+use const JSON_THROW_ON_ERROR;
 
-class Creator
+/** @internal */
+final class Creator
 {
     private const TEMPLATE = '<?xml version="1.0"?>
 <psalm
@@ -138,9 +141,7 @@ class Creator
             // remove any issues where < 0.1% of expressions are affected
             $filtered_issues = array_filter(
                 $issues,
-                function ($amount): bool {
-                    return $amount > 0.1;
-                }
+                static fn($amount): bool => $amount > 0.1
             );
 
             if (array_sum($filtered_issues) > 0.5) {
@@ -188,8 +189,19 @@ class Creator
                     'Problem during config autodiscovery - could not find composer.json during initialization.'
                 );
             }
-
-            if (!$composer_json = json_decode(file_get_contents($composer_json_location), true)) {
+            try {
+                $composer_json = json_decode(
+                    file_get_contents($composer_json_location),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR
+                );
+            } catch (JsonException $e) {
+                throw new ConfigCreationException(
+                    'Invalid composer.json at ' . $composer_json_location . ': ' . $e->getMessage()
+                );
+            }
+            if (!$composer_json) {
                 throw new ConfigCreationException('Invalid composer.json at ' . $composer_json_location);
             }
 
@@ -234,10 +246,7 @@ class Creator
 
             foreach ($paths as $path) {
                 if ($path === '') {
-                    $nodes = array_merge(
-                        $nodes,
-                        self::guessPhpFileDirs($current_dir)
-                    );
+                    $nodes = [...$nodes, ...self::guessPhpFileDirs($current_dir)];
 
                     continue;
                 }

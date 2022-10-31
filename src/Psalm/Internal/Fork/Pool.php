@@ -67,6 +67,8 @@ use const STREAM_SOCK_STREAM;
  *
  * Fork off to n-processes and divide up tasks between
  * each process.
+ *
+ * @internal
  */
 class Pool
 {
@@ -264,7 +266,7 @@ class Pool
 
             if ($bytes_written < $bytes_to_write) {
                 // wait a bit
-                usleep(500000);
+                usleep(500_000);
             }
         }
 
@@ -366,7 +368,7 @@ class Pool
 
             // For each stream that was ready, read the content.
             foreach ($needs_read as $file) {
-                $buffer = fread($file, 1024);
+                $buffer = fread($file, 1_024);
                 if ($buffer !== false) {
                     $content[(int)$file] .= $buffer;
                 }

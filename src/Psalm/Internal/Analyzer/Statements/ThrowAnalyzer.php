@@ -28,9 +28,11 @@ class ThrowAnalyzer
     ): bool {
         $context->inside_throw = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
+            $context->has_returned = true;
             return false;
         }
         $context->inside_throw = false;
+        $context->has_returned = true;
 
         if ($context->finally_scope) {
             foreach ($context->vars_in_scope as $var_id => $type) {
@@ -85,7 +87,7 @@ class ThrowAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
-            $statements_analyzer->node_data->setType($stmt, Type::getEmpty());
+            $statements_analyzer->node_data->setType($stmt, Type::getNever());
         }
 
         return true;

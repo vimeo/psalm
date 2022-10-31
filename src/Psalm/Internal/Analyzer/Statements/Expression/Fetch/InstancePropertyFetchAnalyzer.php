@@ -71,13 +71,13 @@ class InstancePropertyFetchAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $stmt_var_id = ExpressionIdentifier::getArrayVarId(
+        $stmt_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
         );
 
-        $var_id = ExpressionIdentifier::getArrayVarId(
+        $var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer
@@ -121,7 +121,7 @@ class InstancePropertyFetchAnalyzer
             return true;
         }
 
-        if ($stmt_var_type->isEmpty()) {
+        if ($stmt_var_type->isNever()) {
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
@@ -262,7 +262,8 @@ class InstancePropertyFetchAnalyzer
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
         if ($stmt_var_type->isNullable() && !$context->inside_isset && $stmt_type) {
-            $stmt_type->addType(new TNull);
+            $stmt_type = $stmt_type->getBuilder()->addType(new TNull)->freeze();
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($stmt_var_type->ignore_nullable_issues) {
                 $stmt_type->ignore_nullable_issues = true;
@@ -388,7 +389,10 @@ class InstancePropertyFetchAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     );
 
-                    $stmt_type->addType(new TNull);
+                    $stmt_type = $stmt_type->getBuilder()->addType(new TNull)->freeze();
+
+                    $context->vars_in_scope[$var_id] = $stmt_type;
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 }
             }
         }

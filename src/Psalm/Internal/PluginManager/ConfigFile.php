@@ -14,6 +14,9 @@ use function sprintf;
 use function strpos;
 use function substr;
 
+/**
+ * @internal
+ */
 class ConfigFile
 {
     /** @var string */

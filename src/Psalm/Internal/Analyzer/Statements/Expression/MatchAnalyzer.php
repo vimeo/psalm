@@ -23,6 +23,7 @@ use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -40,6 +41,9 @@ use function in_array;
 use function spl_object_id;
 use function substr;
 
+/**
+ * @internal
+ */
 class MatchAnalyzer
 {
     public static function analyze(
@@ -63,7 +67,7 @@ class MatchAnalyzer
 
         $context->inside_conditional = $was_inside_conditional;
 
-        $switch_var_id = ExpressionIdentifier::getArrayVarId(
+        $switch_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->cond,
             null,
             $statements_analyzer
@@ -76,7 +80,8 @@ class MatchAnalyzer
                 && $stmt->cond->name instanceof PhpParser\Node\Name
                 && ($stmt->cond->name->parts === ['get_class']
                     || $stmt->cond->name->parts === ['gettype']
-                    || $stmt->cond->name->parts === ['get_debug_type'])
+                    || $stmt->cond->name->parts === ['get_debug_type']
+                    || $stmt->cond->name->parts === ['count'])
                 && $stmt->cond->getArgs()
             ) {
                 $first_arg = $stmt->cond->getArgs()[0];
@@ -246,10 +251,11 @@ class MatchAnalyzer
             if ($reconcilable_types) {
                 $changed_var_ids = [];
 
-                $vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+                [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $reconcilable_types,
                     [],
                     $context->vars_in_scope,
+                    $context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
@@ -261,12 +267,10 @@ class MatchAnalyzer
                 if (isset($vars_in_scope_reconciled[$switch_var_id])) {
                     $array_literal_types = array_filter(
                         $vars_in_scope_reconciled[$switch_var_id]->getAtomicTypes(),
-                        function ($type) {
-                            return $type instanceof TLiteralInt
-                                || $type instanceof TLiteralString
-                                || $type instanceof TLiteralFloat
-                                || $type instanceof TEnumCase;
-                        }
+                        static fn(Atomic $type): bool => $type instanceof TLiteralInt
+                            || $type instanceof TLiteralString
+                            || $type instanceof TLiteralFloat
+                            || $type instanceof TEnumCase
                     );
 
                     if ($array_literal_types) {
@@ -311,9 +315,8 @@ class MatchAnalyzer
         }
 
         $array_items = array_map(
-            function ($cond): PhpParser\Node\Expr\ArrayItem {
-                return new VirtualArrayItem($cond, null, false, $cond->getAttributes());
-            },
+            static fn(PhpParser\Node\Expr $cond): PhpParser\Node\Expr\ArrayItem =>
+                new VirtualArrayItem($cond, null, false, $cond->getAttributes()),
             $conds
         );
 

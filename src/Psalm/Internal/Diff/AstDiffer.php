@@ -40,6 +40,7 @@ class AstDiffer
         $n = count($a);
         $m = count($b);
         $max = $n + $m;
+        /** @var array<int, int> $v */
         $v = [1 => 0];
         $bc = [];
         $trace = [];

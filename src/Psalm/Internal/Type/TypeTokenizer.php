@@ -19,6 +19,9 @@ use function strlen;
 use function strpos;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class TypeTokenizer
 {
     /**
@@ -44,6 +47,7 @@ class TypeTokenizer
         'numeric-string' => true,
         'class-string' => true,
         'interface-string' => true,
+        'enum-string' => true,
         'trait-string' => true,
         'callable-string' => true,
         'callable-array' => true,
@@ -51,8 +55,6 @@ class TypeTokenizer
         'stringable-object' => true,
         'pure-callable' => true,
         'pure-Closure' => true,
-        'mysql-escaped-string' => true, // deprecated
-        'html-escaped-string' => true, // deprecated
         'literal-string' => true,
         'non-empty-literal-string' => true,
         'lowercase-string' => true,
@@ -76,6 +78,10 @@ class TypeTokenizer
         'array-key' => true,
         'key-of' => true,
         'value-of' => true,
+        'properties-of' => true,
+        'public-properties-of' => true,
+        'protected-properties-of' => true,
+        'private-properties-of' => true,
         'non-empty-countable' => true,
         'list' => true,
         'non-empty-list' => true,
@@ -300,14 +306,11 @@ class TypeTokenizer
     }
 
     /**
-     * @param array{int,int}|null   $php_version
-     *
-     *
      * @psalm-pure
      */
     public static function fixScalarTerms(
         string $type_string,
-        ?array $php_version = null
+        ?int $analysis_php_version_id = null
     ): string {
         $type_string_lc = strtolower($type_string);
 
@@ -330,14 +333,14 @@ class TypeTokenizer
 
         switch ($type_string) {
             case 'boolean':
-                return $php_version !== null ? $type_string : 'bool';
+                return $analysis_php_version_id !== null ? $type_string : 'bool';
 
             case 'integer':
-                return $php_version !== null ? $type_string : 'int';
+                return $analysis_php_version_id !== null ? $type_string : 'int';
 
             case 'double':
             case 'real':
-                return $php_version !== null ? $type_string : 'float';
+                return $analysis_php_version_id !== null ? $type_string : 'float';
         }
 
         return $type_string;

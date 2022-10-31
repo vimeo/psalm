@@ -9,17 +9,17 @@ The risk here depends on the actual operation that contains user-controlled inpu
 It could range from:
 
 - Creating files
-  - Example: `file_put_contents`
-  - Risk: Depending on the server configuration this may result in remote code execution. (e.g. writing a file in the web root)
+    - Example: `file_put_contents`
+    - Risk: Depending on the server configuration this may result in remote code execution. (e.g. writing a file in the web root)
 - Modifying files
-  - Example: `file_put_contents`
-  - Risk: Depending on the server configuration this may result in remote code execution. (e.g. modifying a PHP file)
-- Reading files 
-  - Example: `file_get_contents`
-  - Risk: Sensitive data could be exposed from the filesystem. (e.g. config values, source code, user-submitted files)
+    - Example: `file_put_contents`
+    - Risk: Depending on the server configuration this may result in remote code execution. (e.g. modifying a PHP file)
+- Reading files
+    - Example: `file_get_contents`
+    - Risk: Sensitive data could be exposed from the filesystem. (e.g. config values, source code, user-submitted files)
 - Deleting files
-  - Example: `unlink`
-  - Risk: Denial of Service or potentially RCE. (e.g. deleting application code, removing a .htaccess file)
+    - Example: `unlink`
+    - Risk: Denial of Service or potentially RCE. (e.g. deleting application code, removing a .htaccess file)
 
 ## Example
 

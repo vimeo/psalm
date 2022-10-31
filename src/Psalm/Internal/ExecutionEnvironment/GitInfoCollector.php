@@ -19,6 +19,8 @@ use function trim;
  * Git repository info collector.
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
+ *
+ * @internal
  */
 class GitInfoCollector
 {

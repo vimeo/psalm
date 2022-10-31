@@ -56,6 +56,9 @@ use function array_values;
 use function get_class;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class CastAnalyzer
 {
     /** @var string[] */
@@ -241,12 +244,10 @@ class CastAnalyzer
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $keyed_array = new TKeyedArray([new Union([$type])]);
-                        $keyed_array->is_list = true;
-                        $keyed_array->sealed = true;
+                        $keyed_array = new TKeyedArray([new Union([$type])], null, true, null, null, true);
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
-                        $permissible_atomic_types[] = new TArray([Type::getEmpty(), Type::getEmpty()]);
+                        $permissible_atomic_types[] = new TArray([Type::getNever(), Type::getNever()]);
                     } elseif ($type instanceof TArray
                         || $type instanceof TList
                         || $type instanceof TKeyedArray
@@ -275,7 +276,7 @@ class CastAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Unset_
-            && $statements_analyzer->getCodebase()->php_major_version < 8
+            && $statements_analyzer->getCodebase()->analysis_php_version_id <= 7_04_00
         ) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -845,7 +846,7 @@ class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_strings, $castable_types);
+        $valid_types = [...$valid_strings, ...$castable_types];
 
         if (!$valid_types) {
             $str_type = Type::getString();

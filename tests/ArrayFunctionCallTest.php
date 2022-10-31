@@ -13,13 +13,13 @@ class ArrayFunctionCallTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'arrayFilter' => [
-                '<?php
+                'code' => '<?php
                     $d = array_filter(["a" => rand(0, 10), "b" => rand(0, 10), "c" => null]);
                     $e = array_filter(
                         ["a" => rand(0, 10), "b" => rand(0, 10), "c" => null],
@@ -33,7 +33,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'positiveIntArrayFilter' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param numeric $a
                      * @param positive-int $positiveOne
@@ -46,7 +46,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayFilterAdvanced' => [
-                '<?php
+                'code' => '<?php
                     $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key): bool {
                         return true;
                     }, ARRAY_FILTER_USE_BOTH);
@@ -75,7 +75,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayFilterIgnoreNullable' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @return array<int, self|null>
@@ -94,14 +94,14 @@ class ArrayFunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['PossiblyInvalidArgument'],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
             ],
             'arrayFilterAllowTrim' => [
-                '<?php
+                'code' => '<?php
                     $foo = array_filter(["hello ", " "], "trim");',
             ],
             'arrayFilterAllowNull' => [
-                '<?php
+                'code' => '<?php
                     function foo() : array {
                         return array_filter(
                             array_map(
@@ -115,7 +115,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayFilterNamedFunction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<int, DateTimeImmutable|null> $a
                      * @return array<int, DateTimeImmutable>
@@ -125,7 +125,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayFilterFleshOutType' => [
-                '<?php
+                'code' => '<?php
                     class Baz {
                         public const STATUS_FOO = "foo";
                         public const STATUS_BAR = "bar";
@@ -145,24 +145,24 @@ class ArrayFunctionCallTest extends TestCase
                     $statusList = array_filter($statusList, [Baz::class, "isStatus"]);'
             ],
             'arrayKeysNonEmpty' => [
-                '<?php
+                'code' => '<?php
                     $a = array_keys(["a" => 1, "b" => 2]);',
                 'assertions' => [
                     '$a' => 'non-empty-list<string>',
                 ],
             ],
             'arrayKeysMixed' => [
-                '<?php
+                'code' => '<?php
                     /** @var array */
                     $b = ["a" => 5];
                     $a = array_keys($b);',
                 'assertions' => [
                     '$a' => 'list<array-key>',
                 ],
-                'error_levels' => ['MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'arrayValues' => [
-                '<?php
+                'code' => '<?php
                     $b = array_values(["a" => 1, "b" => 2]);
                     $c = array_values(["a" => "hello", "b" => "jello"]);',
                 'assertions' => [
@@ -171,34 +171,34 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayCombine' => [
-                '<?php
+                'code' => '<?php
                     $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
                     '$c' => 'false|non-empty-array<string, int>',
                 ],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'arrayCombinePHP8' => [
-                '<?php
+                'code' => '<?php
                     $c = array_combine(["a", "b"], [1, 2, 3]);',
                 'assertions' => [
                     '$c' => 'non-empty-array<string, int>',
                 ],
-                'error_levels' => [],
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayCombineNotMatching' => [
-                '<?php
+                'code' => '<?php
                     $c = array_combine(["a", "b"], [1, 2, 3]);',
                 'assertions' => [
                     '$c' => 'false|non-empty-array<string, int>',
                 ],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'arrayCombineDynamicParams' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<string> */
                     function getStrings(): array{ return []; }
                     /** @return array<int> */
@@ -209,14 +209,14 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayMergeIntArrays' => [
-                '<?php
+                'code' => '<?php
                     $d = array_merge(["a", "b", "c", "d"], [1, 2, 3]);',
                 'assertions' => [
                     '$d' => 'array{0: string, 1: string, 2: string, 3: string, 4: int, 5: int, 6: int}',
                 ],
             ],
             'arrayMergePossiblyUndefined' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{host?:string} $opts
                      * @return array{host:string|int}
@@ -226,7 +226,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayMergeListResultWithArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<int, string> $list
                      * @return list<string>
@@ -236,7 +236,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayMergeListResultWithList' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<string> $list
                      * @return list<string>
@@ -246,7 +246,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayMergeTypes' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type A=array{name: string}
                      * @psalm-type B=array{age: int}
@@ -265,14 +265,14 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayReplaceIntArrays' => [
-                '<?php
+                'code' => '<?php
                     $d = array_replace(["a", "b", "c", "d"], [1, 2, 3]);',
                 'assertions' => [
                     '$d' => 'array{0: int, 1: int, 2: int, 3: string}',
                 ],
             ],
             'arrayReplacePossiblyUndefined' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{host?:string} $opts
                      * @return array{host:string|int}
@@ -282,7 +282,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayReplaceListResultWithArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<int, string> $list
                      * @return list<string>
@@ -292,7 +292,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayReplaceListResultWithList' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<string> $list
                      * @return list<string>
@@ -302,7 +302,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayReplaceTypes' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-type A=array{name: string}
                      * @psalm-type B=array{age: int}
@@ -321,45 +321,45 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayReverseDontPreserveKey' => [
-                '<?php
+                'code' => '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4]);',
                 'assertions' => [
                     '$d' => 'non-empty-array<int|string, int|string>',
                 ],
             ],
             'arrayReverseDontPreserveKeyExplicitArg' => [
-                '<?php
+                'code' => '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4], false);',
                 'assertions' => [
                     '$d' => 'non-empty-array<int|string, int|string>',
                 ],
             ],
             'arrayReversePreserveKey' => [
-                '<?php
+                'code' => '<?php
                     $d = array_reverse(["a", "b", 1], true);',
                 'assertions' => [
                     '$d' => 'non-empty-array<int, int|string>',
                 ],
             ],
             'arrayDiff' => [
-                '<?php
+                'code' => '<?php
                     $d = array_diff(["a" => 5, "b" => 12], [5]);',
                 'assertions' => [
                     '$d' => 'array<string, int>',
                 ],
             ],
             'arrayDiffIsVariadic' => [
-                '<?php
+                'code' => '<?php
                     array_diff([], [], [], [], []);',
                 'assertions' => [],
             ],
             'arrayDiffKeyIsVariadic' => [
-                '<?php
+                'code' => '<?php
                     array_diff_key([], [], [], [], []);',
                 'assertions' => [],
             ],
             'arrayDiffAssoc' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var array<string, int> $a
                      * @var array $b
@@ -371,7 +371,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopMixed' => [
-                '<?php
+                'code' => '<?php
                     /** @var mixed */
                     $b = ["a" => 5, "c" => 6];
                     $a = array_pop($b);',
@@ -379,10 +379,10 @@ class ArrayFunctionCallTest extends TestCase
                     '$a' => 'mixed',
                     '$b' => 'mixed',
                 ],
-                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
             ],
             'arrayPopNonEmpty' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -396,7 +396,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterIsset' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -408,7 +408,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterCount' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -420,7 +420,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayShiftNonEmptyList' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-list $arr */
                     function type_of_array_shift(array $arr) : int {
                         if (\is_int($arr[0])) {
@@ -431,7 +431,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayShiftFunkyTKeyedArrayList' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-list<string>|array{null} $arr
                      * @return array<int, string>
@@ -442,7 +442,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayPopNonEmptyAfterCountEqualsOne' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -454,7 +454,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterCountSoftEqualsOne' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -466,7 +466,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterCountGreaterThanOne' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -478,7 +478,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterCountGreaterOrEqualsOne' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -490,7 +490,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterCountEqualsOneReversed' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -502,7 +502,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterCountSoftEqualsOneReversed' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -514,7 +514,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterCountGreaterThanOneReversed' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -526,7 +526,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterCountGreatorOrEqualToOneReversed' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $b = 5;
@@ -538,7 +538,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayNotEmptyArrayAfterCountLessThanEqualToOne' => [
-                '<?php
+                'code' => '<?php
                     /** @var list<int> */
                     $leftCount = [1, 2, 3];
                     if (count($leftCount) <= 1) {
@@ -551,7 +551,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayNotEmptyArrayAfterCountLessThanTwo' => [
-                '<?php
+                'code' => '<?php
                     /** @var list<int> */
                     $leftCount = [1, 2, 3];
                     if (count($leftCount) < 2) {
@@ -564,7 +564,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayEmptyArrayAfterCountLessThanOne' => [
-                '<?php
+                'code' => '<?php
                     /** @var list<int> */
                     $leftCount = [1, 2, 3];
                     assert (count($leftCount) < 1);
@@ -572,12 +572,12 @@ class ArrayFunctionCallTest extends TestCase
                     $rightCount = [1, 2, 3];
                     assert (1 > count($rightCount));',
                 'assertions' => [
-                    '$leftCount' => 'array<empty, empty>',
-                    '$rightCount' => 'array<empty, empty>',
+                    '$leftCount' => 'array<never, never>',
+                    '$rightCount' => 'array<never, never>',
                 ],
             ],
             'arrayEmptyArrayAfterCountLessThanEqualToZero' => [
-                '<?php
+                'code' => '<?php
                     /** @var list<int> */
                     $leftCount = [1, 2, 3];
                     assert (count($leftCount) <= 0);
@@ -585,12 +585,12 @@ class ArrayFunctionCallTest extends TestCase
                     $rightCount = [1, 2, 3];
                     assert (0 >= count($rightCount));',
                 'assertions' => [
-                    '$leftCount' => 'array<empty, empty>',
-                    '$rightCount' => 'array<empty, empty>',
+                    '$leftCount' => 'array<never, never>',
+                    '$rightCount' => 'array<never, never>',
                 ],
             ],
             'arrayNotNonEmptyArrayAfterCountGreaterThanEqualToZero' => [
-                '<?php
+                'code' => '<?php
                     /** @var list<int> */
                     $leftCount = [1, 2, 3];
                     assert(count($leftCount) >= 0);
@@ -603,7 +603,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayNotNonEmptyArrayAfterCountGreaterThanMinusOne' => [
-                '<?php
+                'code' => '<?php
                     /** @var list<int> */
                     $leftCount = [1, 2, 3];
                     assert (count($leftCount) > -1);
@@ -616,7 +616,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayNonEmptyArrayAfterCountGreaterThanEqualToOne' => [
-                '<?php
+                'code' => '<?php
                     /** @var list<int> */
                     $leftCount = [1, 2, 3];
                     assert(count($leftCount) >= 1);
@@ -629,7 +629,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayNonEmptyArrayAfterCountGreaterThanZero' => [
-                '<?php
+                'code' => '<?php
                     /** @var list<int> */
                     $leftCount = [1, 2, 3];
                     assert (count($leftCount) > 0);
@@ -642,7 +642,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterArrayAddition' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $a["foo"] = 10;
@@ -652,7 +652,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPopNonEmptyAfterMixedArrayAddition' => [
-                '<?php
+                'code' => '<?php
                     /** @var array */
                     $a = ["a" => 5, "b" => 6, "c" => 7];
                     $a[] = "hello";
@@ -660,12 +660,12 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$b' => 'mixed|string',
                 ],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                 ],
             ],
             'uasort' => [
-                '<?php
+                'code' => '<?php
                     function foo (int $a, int $b): int {
                         return $a > $b ? 1 : -1;
                     }
@@ -682,14 +682,15 @@ class ArrayFunctionCallTest extends TestCase
                     ',
                 'assertions' => [
                     '$manifest' => 'non-empty-array<string, int>',
-                    '$emptyManifest' => 'array<empty, empty>',
+                    '$emptyManifest' => 'array<never, never>',
                 ],
             ],
             'uksort' => [
-                '<?php
+                'code' => '<?php
                     function foo (string $a, string $b): int {
                         return $a <=> $b;
                     }
+
                     $array = ["b" => 1, "a" => 2];
                     uksort(
                         $array,
@@ -702,11 +703,11 @@ class ArrayFunctionCallTest extends TestCase
                     );',
                 'assertions' => [
                     '$array' => 'non-empty-array<string, int>',
-                    '$emptyArray' => 'array<empty, empty>',
+                    '$emptyArray' => 'array<never, never>',
                 ],
             ],
             'arrayMergeTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                   /**
                    * @param array<string, int> $a
                    * @return array<string, int>
@@ -726,7 +727,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayReplaceTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                   /**
                    * @param array<string, int> $a
                    * @return array<string, int>
@@ -746,7 +747,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayRand' => [
-                '<?php
+                'code' => '<?php
                     $vars = ["x" => "a", "y" => "b"];
                     $c = array_rand($vars);
                     $d = $vars[$c];
@@ -762,7 +763,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayRandMultiple' => [
-                '<?php
+                'code' => '<?php
                     $vars = ["x" => "a", "y" => "b"];
                     $b = 3;
                     $c = array_rand($vars, 1);
@@ -778,7 +779,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayKeysNoEmpty' => [
-                '<?php
+                'code' => '<?php
                     function expect_string(string $x): void {
                         echo $x;
                     }
@@ -789,10 +790,10 @@ class ArrayFunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MixedArgument', 'MixedArgumentTypeCoercion'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArgumentTypeCoercion', 'NoValue'],
             ],
             'arrayPopNotNullable' => [
-                '<?php
+                'code' => '<?php
                     function expectsInt(int $a) : void {}
 
                     /**
@@ -807,7 +808,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayFilterWithAssert' => [
-                '<?php
+                'code' => '<?php
                     $a = array_filter(
                         [1, "hello", 6, "goodbye"],
                         function ($s): bool {
@@ -817,12 +818,12 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$a' => 'array<int, string>',
                 ],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MissingClosureParamType',
                 ],
             ],
             'arrayFilterUseKey' => [
-                '<?php
+                'code' => '<?php
                     $bar = "bar";
 
                     $foo = [
@@ -839,11 +840,11 @@ class ArrayFunctionCallTest extends TestCase
                         ARRAY_FILTER_USE_KEY
                     );',
                 'assertions' => [
-                    '$foo' => 'array<string, pure-Closure():"baz">',
+                    '$foo' => 'array<string, pure-Closure():string>',
                 ],
             ],
             'ignoreFalsableCurrent' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] $arr */
                     function foo(array $arr): string {
                         return current($arr);
@@ -865,42 +866,42 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arraySumEmpty' => [
-                '<?php
+                'code' => '<?php
                     $foo = array_sum([]) + 1;',
                 'assertions' => [
                     '$foo' => 'int',
                 ],
             ],
             'arraySumOnlyInt' => [
-                '<?php
+                'code' => '<?php
                     $foo = array_sum([5,18]);',
                 'assertions' => [
                     '$foo' => 'int',
                 ],
             ],
             'arraySumOnlyFloat' => [
-                '<?php
+                'code' => '<?php
                     $foo = array_sum([5.1,18.2]);',
                 'assertions' => [
                     '$foo' => 'float',
                 ],
             ],
             'arraySumNumeric' => [
-                '<?php
+                'code' => '<?php
                     $foo = array_sum(["5","18"]);',
                 'assertions' => [
                     '$foo' => 'float|int',
                 ],
             ],
             'arraySumMix' => [
-                '<?php
+                'code' => '<?php
                     $foo = array_sum([5,18.5]);',
                 'assertions' => [
                     '$foo' => 'float',
                 ],
             ],
             'arrayMapWithArrayAndCallable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return array<array-key, int>
                      */
@@ -910,7 +911,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayMapTKeyedArrayAndCallable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return array{key1:int,key2:int}
                      */
@@ -921,7 +922,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayMapTKeyedArrayListAndCallable' => [
-                '<?php
+                'code' => '<?php
                     /** @param list<int> $list */
                     function takesList(array $list): void {}
 
@@ -933,7 +934,7 @@ class ArrayFunctionCallTest extends TestCase
                     );',
             ],
             'arrayMapTKeyedArrayAndClosure' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return array{key1:int,key2:int}
                      */
@@ -943,12 +944,12 @@ class ArrayFunctionCallTest extends TestCase
                       return $r;
                     }',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MissingClosureParamType'
                 ],
             ],
             'arrayMapTKeyedArrayListAndClosure' => [
-                '<?php
+                'code' => '<?php
                     /** @param list<string> $list */
                     function takesList(array $list): void {}
 
@@ -960,7 +961,7 @@ class ArrayFunctionCallTest extends TestCase
                     );',
             ],
             'arrayMapUntypedCallable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var callable $callable
                      * @var array<string, int> $array
@@ -992,7 +993,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayFilterGoodArgs' => [
-                '<?php
+                'code' => '<?php
                     function fooFoo(int $i) : bool {
                       return true;
                     }
@@ -1011,13 +1012,13 @@ class ArrayFunctionCallTest extends TestCase
                     array_filter([1, 2, 3], "A::barbar");',
             ],
             'arrayFilterIgnoreMissingClass' => [
-                '<?php
+                'code' => '<?php
                     array_filter([1, 2, 3], "A::bar");',
                 'assertions' => [],
-                'error_levels' => ['UndefinedClass'],
+                'ignored_issues' => ['UndefinedClass'],
             ],
             'arrayFilterIgnoreMissingMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(int $i) : bool {
                             return true;
@@ -1026,10 +1027,10 @@ class ArrayFunctionCallTest extends TestCase
 
                     array_filter([1, 2, 3], "A::foo");',
                 'assertions' => [],
-                'error_levels' => ['UndefinedMethod'],
+                'ignored_issues' => ['UndefinedMethod'],
             ],
             'arrayMapParamDefault' => [
-                '<?php
+                'code' => '<?php
                     $arr = ["a", "b"];
                     array_map("mapdef", $arr, array_fill(0, count($arr), 1));
                     function mapdef(string $_a, int $_b = 0): string {
@@ -1037,26 +1038,26 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayFillZeroLength' => [
-                '<?php
+                'code' => '<?php
                     count(array_fill(0, 0, 0)) === 0;',
             ],
             'implodeMultiDimensionalArray' => [
-                '<?php
+                'code' => '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
             ],
             'implodeNonEmptyArrayAndString' => [
-                '<?php
+                'code' => '<?php
                     $l = ["a", "b"];
                     $k = [1, 2, 3];
                     $a = implode(":", $l);
                     $b = implode(":", $k);',
-                [
+                'assertions' => [
                     '$a===' => 'non-empty-literal-string',
                     '$b===' => 'non-empty-literal-string',
                 ]
             ],
             'implodeArrayOfNonEmptyStringAndEmptyString' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         const DIR = __DIR__;
                     }
@@ -1064,24 +1065,24 @@ class ArrayFunctionCallTest extends TestCase
                     $k = [Foo::DIR];
                     $a = implode("", $l);
                     $b = implode("", $k);',
-                [
+                'assertions' => [
                     '$a===' => 'non-empty-literal-string',
                     '$b===' => 'non-empty-string',
                 ]
             ],
             'implodeEmptyArrayAndString' => [
-                '<?php
+                'code' => '<?php
                     $l = [""];
                     $k = [];
                     $a = implode("", $l);
                     $b = implode("", $k);',
-                [
+                'assertions' => [
                     '$a===' => 'string',
                     '$b===' => 'string',
                 ]
             ],
             'key' => [
-                '<?php
+                'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = key($a);',
                 'assertions' => [
@@ -1089,7 +1090,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'keyEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = key($a);',
                 'assertions' => [
@@ -1097,7 +1098,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'keyNonEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-array $arr
                      * @return array-key
@@ -1185,7 +1186,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayKeyFirst' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<string, int> */
                     function makeArray(): array { return ["one" => 1, "two" => 3]; }
                     $a = makeArray();
@@ -1200,7 +1201,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayKeyFirstNonEmpty' => [
-                '<?php
+                'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = array_key_first($a);
                     $c = $a[$b];',
@@ -1210,7 +1211,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayKeyFirstEmpty' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = array_key_first($a);',
                 'assertions' => [
@@ -1218,7 +1219,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayKeyLast' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<string, int> */
                     function makeArray(): array { return ["one" => 1, "two" => 3]; }
                     $a = makeArray();
@@ -1233,7 +1234,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayKeyLastNonEmpty' => [
-                '<?php
+                'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = array_key_last($a);
                     $c = $a[$b];',
@@ -1243,7 +1244,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayKeyLastEmpty' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = array_key_last($a);',
                 'assertions' => [
@@ -1251,7 +1252,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayResetNonEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return non-empty-array<string, int> */
                     function makeArray(): array { return ["one" => 1, "two" => 3]; }
                     $a = makeArray();
@@ -1261,7 +1262,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayResetNonEmptyList' => [
-                '<?php
+                'code' => '<?php
                     /** @return non-empty-list<int> */
                     function makeArray(): array { return [1, 3]; }
                     $a = makeArray();
@@ -1271,7 +1272,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayResetNonEmptyTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = reset($a);',
                 'assertions' => [
@@ -1279,7 +1280,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayResetEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = reset($a);',
                 'assertions' => [
@@ -1287,8 +1288,8 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayResetEmptyList' => [
-                '<?php
-                    /** @return list<empty> */
+                'code' => '<?php
+                    /** @return list<never> */
                     function makeArray(): array { return []; }
                     $a = makeArray();
                     $b = reset($a);',
@@ -1297,7 +1298,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayResetMaybeEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<string, int> */
                     function makeArray(): array { return ["one" => 1, "two" => 3]; }
                     $a = makeArray();
@@ -1307,7 +1308,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayResetMaybeEmptyList' => [
-                '<?php
+                'code' => '<?php
                     /** @return list<int> */
                     function makeArray(): array { return []; }
                     $a = makeArray();
@@ -1317,7 +1318,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayResetMaybeEmptyTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return array{foo?: int} */
                     function makeArray(): array { return []; }
                     $a = makeArray();
@@ -1327,7 +1328,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayEndNonEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return non-empty-array<string, int> */
                     function makeArray(): array { return ["one" => 1, "two" => 3]; }
                     $a = makeArray();
@@ -1337,7 +1338,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayEndNonEmptyList' => [
-                '<?php
+                'code' => '<?php
                     /** @return non-empty-list<int> */
                     function makeArray(): array { return [1, 3]; }
                     $a = makeArray();
@@ -1347,7 +1348,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayEndNonEmptyTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = end($a);',
                 'assertions' => [
@@ -1355,7 +1356,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayEndEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = end($a);',
                 'assertions' => [
@@ -1363,8 +1364,8 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayEndEmptyList' => [
-                '<?php
-                    /** @return list<empty> */
+                'code' => '<?php
+                    /** @return list<never> */
                     function makeArray(): array { return []; }
                     $a = makeArray();
                     $b = end($a);',
@@ -1373,7 +1374,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayEndMaybeEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<string, int> */
                     function makeArray(): array { return ["one" => 1, "two" => 3]; }
                     $a = makeArray();
@@ -1383,7 +1384,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayEndMaybeEmptyList' => [
-                '<?php
+                'code' => '<?php
                     /** @return list<int> */
                     function makeArray(): array { return []; }
                     $a = makeArray();
@@ -1393,7 +1394,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayEndMaybeEmptyTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return array{foo?: int} */
                     function makeArray(): array { return []; }
                     $a = makeArray();
@@ -1403,7 +1404,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayColumnInference' => [
-                '<?php
+                'code' => '<?php
                     function makeMixedArray(): array { return []; }
                     /** @return array<array<int,bool>> */
                     function makeGenericArray(): array { return []; }
@@ -1452,7 +1453,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'splatArrayIntersect' => [
-                '<?php
+                'code' => '<?php
                     $foo = [
                         [1, 2, 3],
                         [1, 2],
@@ -1464,17 +1465,17 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayIntersectIsVariadic' => [
-                '<?php
+                'code' => '<?php
                     array_intersect([], [], [], [], []);',
                 'assertions' => [],
             ],
             'arrayIntersectKeyIsVariadic' => [
-                '<?php
+                'code' => '<?php
                     array_intersect_key([], [], [], [], []);',
                 'assertions' => [],
             ],
             'arrayIntersectKeyNoReturnType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress MissingReturnType
                      */
@@ -1513,7 +1514,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'arrayIntersectAssoc' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var array<string, int> $a
                      * @var array $b
@@ -1525,7 +1526,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayReduce' => [
-                '<?php
+                'code' => '<?php
                     $arr = [2, 3, 4, 5];
 
                     function multiply (int $carry, int $item) : int {
@@ -1562,7 +1563,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayReduceStaticMethods' => [
-                '<?php
+                'code' => '<?php
                     $arr = [2, 3, 4, 5];
 
                     class C {
@@ -1584,7 +1585,7 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [],
             ],
             'arrayReduceMixedReturn' => [
-                '<?php
+                'code' => '<?php
                     $arr = [2, 3, 4, 5];
 
                     $direct_closure_result = array_reduce(
@@ -1595,10 +1596,10 @@ class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'assertions' => [],
-                'error_levels' => ['MissingClosureReturnType', 'MixedAssignment'],
+                'ignored_issues' => ['MissingClosureReturnType', 'MixedAssignment'],
             ],
             'arraySpliceArray' => [
-                '<?php
+                'code' => '<?php
                     $a = [1, 2, 3];
                     $c = $a;
                     $b = ["a", "b", "c"];
@@ -1610,7 +1611,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arraySpliceReturn' => [
-                '<?php
+                'code' => '<?php
                     $d = [1, 2, 3];
                     $e = array_splice($d, -1, 1);',
                 'assertions' => [
@@ -1618,7 +1619,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arraySpliceOtherType' => [
-                '<?php
+                'code' => '<?php
                     $d = [["red"], ["green"], ["blue"]];
                     array_splice($d, -1, 1, "foo");',
                 'assertions' => [
@@ -1626,7 +1627,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'ksortPreserveShape' => [
-                '<?php
+                'code' => '<?php
                     $a = ["a" => 3, "b" => 4];
                     ksort($a);
                     acceptsAShape($a);
@@ -1637,7 +1638,7 @@ class ArrayFunctionCallTest extends TestCase
                     function acceptsAShape(array $a): void {}',
             ],
             'arraySlicePreserveKeys' => [
-                '<?php
+                'code' => '<?php
                     $a = ["a" => 1, "b" => 2, "c" => 3];
                     $b = array_slice($a, 1, 2, true);
                     $c = array_slice($a, 1, 2, false);
@@ -1649,7 +1650,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arraySliceDontPreserveIntKeys' => [
-                '<?php
+                'code' => '<?php
                     $a = [1 => "a", 4 => "b", 3 => "c"];
                     $b = array_slice($a, 1, 2, true);
                     $c = array_slice($a, 1, 2, false);
@@ -1661,7 +1662,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayReversePreserveNonEmptiness' => [
-                '<?php
+                'code' => '<?php
                     /** @param string[] $arr */
                     function getOrderings(array $arr): int {
                         if ($arr) {
@@ -1676,7 +1677,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'inferArrayMapReturnType' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<string> */
                     function Foo(DateTime ...$dateTimes) : array {
                         return array_map(
@@ -1688,7 +1689,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'inferArrayMapArrowFunctionReturnType' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<string> */
                     function Foo(DateTime ...$dateTimes) : array {
                         return array_map(
@@ -1697,11 +1698,11 @@ class ArrayFunctionCallTest extends TestCase
                         );
                     }',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
             'arrayPad' => [
-                '<?php
+                'code' => '<?php
                     $a = array_pad(["foo" => 1, "bar" => 2], 10, 123);
                     $b = array_pad(["a", "b", "c"], 10, "x");
                     /** @var list<int> $list */
@@ -1716,7 +1717,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPadDynamicSize' => [
-                '<?php
+                'code' => '<?php
                     function getSize(): int { return random_int(1, 10); }
 
                     $a = array_pad(["foo" => 1, "bar" => 2], getSize(), 123);
@@ -1733,7 +1734,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPadZeroSize' => [
-                '<?php
+                'code' => '<?php
                     /** @var array $arr */
                     $result = array_pad($arr, 0, null);',
                 'assertions' => [
@@ -1741,7 +1742,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPadTypeCombination' => [
-                '<?php
+                'code' => '<?php
                     $a = array_pad(["foo" => 1, "bar" => "two"], 5, false);
                     $b = array_pad(["a", 2, 3.14], 5, null);
                     /** @var list<string|bool> $list */
@@ -1756,7 +1757,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPadMixed' => [
-                '<?php
+                'code' => '<?php
                     /** @var array{foo: mixed, bar: mixed} $arr */
                     $a = array_pad($arr, 5, null);
                     /** @var mixed $mixed */
@@ -1773,7 +1774,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayPadFallback' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var mixed $mixed
                      * @psalm-suppress MixedArgument
@@ -1784,7 +1785,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayChunk' => [
-                '<?php
+                'code' => '<?php
                     /** @var array{a: int, b: int, c: int, d: int} $arr */
                     $a = array_chunk($arr, 2);
                     /** @var list<string> $list */
@@ -1799,7 +1800,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayChunkPreservedKeys' => [
-                '<?php
+                'code' => '<?php
                     /** @var array{a: int, b: int, c: int, d: int} $arr */
                     $a = array_chunk($arr, 2, true);
                     /** @var list<string> $list */
@@ -1813,7 +1814,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayChunkPreservedKeysExplicitFalse' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<string, string> $arr */
                     $result = array_chunk($arr, 2, false);',
                 'assertions' => [
@@ -1821,7 +1822,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayChunkMixed' => [
-                '<?php
+                'code' => '<?php
                     /** @var array{a: mixed, b: mixed, c: mixed} $arr */
                     $a = array_chunk($arr, 2);
                     /** @var list<mixed> $list */
@@ -1835,7 +1836,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayChunkFallback' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @var mixed $mixed
                      * @psalm-suppress MixedArgument
@@ -1846,7 +1847,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayMapPreserveNonEmptiness' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-param non-empty-list<string> $strings
                      * @psalm-return non-empty-list<int>
@@ -1856,7 +1857,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'SKIPPED-arrayMapZip' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array<int, array{string,?string}>
                      */
@@ -1870,7 +1871,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayFillKeys' => [
-                '<?php
+                'code' => '<?php
                     $keys = [1, 2, 3];
                     $result = array_fill_keys($keys, true);',
                 'assertions' => [
@@ -1878,40 +1879,40 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'shuffle' => [
-                '<?php
+                'code' => '<?php
                     $array = ["foo" => 123, "bar" => 456];
                     shuffle($array);
                     $emptyArray = [];
                     shuffle($emptyArray);',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<empty>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'sort' => [
-                '<?php
+                'code' => '<?php
                     $array = ["foo" => 123, "bar" => 456];
                     sort($array);
                     $emptyArray = [];
                     sort($emptyArray);',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<empty>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'rsort' => [
-                '<?php
+                'code' => '<?php
                     $array = ["foo" => 123, "bar" => 456];
                     rsort($array);
                     $emptyArray = [];
                     rsort($emptyArray);',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<empty>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'usort' => [
-                '<?php
+                'code' => '<?php
                     function baz (int $a, int $b): int { return $a <=> $b; }
                     $array = ["foo" => 123, "bar" => 456];
                     usort($array, "baz");
@@ -1919,11 +1920,11 @@ class ArrayFunctionCallTest extends TestCase
                     usort($emptyArray, "baz");',
                 'assertions' => [
                     '$array' => 'non-empty-list<int>',
-                    '$emptyArray' => 'list<empty>',
+                    '$emptyArray' => 'list<never>',
                 ],
             ],
             'closureParamConstraintsMet' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -1942,14 +1943,14 @@ class ArrayFunctionCallTest extends TestCase
                     );'
             ],
             'specialCaseArrayFilterOnSingleEntry' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-return list<int> */
                     function makeAList(int $ofThisInteger): array {
                         return array_filter([$ofThisInteger]);
                     }'
             ],
             'arrayMapWithEmptyArrayReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<array<string>> $elements
                      * @return list<string>
@@ -1974,7 +1975,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayFilterArrowFunction' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -1993,11 +1994,11 @@ class ArrayFunctionCallTest extends TestCase
                     '$a' => 'array<int, B>',
                     '$b' => 'array<int, B>',
                 ],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'arrayMergeTwoExplicitLists' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<int> $foo
                      */
@@ -2008,17 +2009,17 @@ class ArrayFunctionCallTest extends TestCase
                     foo(array_merge($foo1, $foo2));'
             ],
             'arrayMergeTwoPossiblyFalse' => [
-                '<?php
+                'code' => '<?php
                     $a = array_merge(
                         glob(__DIR__ . \'/stubs/*.php\'),
                         glob(__DIR__ . \'/stubs/DBAL/*.php\'),
                     );',
-                [
+                'assertions' => [
                     '$a' => 'list<string>'
                 ],
             ],
             'arrayReplaceTwoExplicitLists' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<int> $foo
                      */
@@ -2029,17 +2030,17 @@ class ArrayFunctionCallTest extends TestCase
                     foo(array_replace($foo1, $foo2));'
             ],
             'arrayReplaceTwoPossiblyFalse' => [
-                '<?php
+                'code' => '<?php
                     $a = array_replace(
                         glob(__DIR__ . \'/stubs/*.php\'),
                         glob(__DIR__ . \'/stubs/DBAL/*.php\'),
                     );',
-                [
+                'assertions' => [
                     '$a' => 'list<string>'
                 ],
             ],
             'arrayMapPossiblyFalseIgnored' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $string): void {}
 
                     $date = new DateTime();
@@ -2050,17 +2051,17 @@ class ArrayFunctionCallTest extends TestCase
                     array_map("takesString", $a);',
             ],
             'arrayMapExplicitZip' => [
-                '<?php
+                'code' => '<?php
                     $as = ["key"];
                     $bs = ["value"];
 
                     return array_map(fn ($a, $b) => [$a => $b], $as, $bs);',
                 'assertions' => [],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'spliceTurnsintKeyedInputToList' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-param list<string> $elements
                      * @return list<string>
@@ -2071,13 +2072,13 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayChangeKeyCaseWithNonStringKeys' => [
-                '<?php
+                'code' => '<?php
 
                 $a = [42, "A" => 42];
                 echo array_change_key_case($a, CASE_LOWER)[0];'
             ],
             'mapInterfaceMethod' => [
-                '<?php
+                'code' => '<?php
                     interface MapperInterface {
                         public function map(string $s): int;
                     }
@@ -2091,7 +2092,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayShiftComplexArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<string> $slugParts
                      */
@@ -2104,7 +2105,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayMergeKeepLastKeysAndType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{A: int} $a
                      * @param array<string, string> $b
@@ -2116,7 +2117,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayMergeKeepFirstKeysSameType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{A: int} $a
                      * @param array<string, int> $b
@@ -2128,7 +2129,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayReplaceKeepLastKeysAndType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{A: int} $a
                      * @param array<string, string> $b
@@ -2140,7 +2141,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayReplaceKeepFirstKeysSameType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{A: int} $a
                      * @param array<string, int> $b
@@ -2152,7 +2153,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'filteredArrayCanBeEmpty' => [
-                '<?php
+                'code' => '<?php
                     /**
                       * @return string|null
                       */
@@ -2168,9 +2169,9 @@ class ArrayFunctionCallTest extends TestCase
                     if (!empty($list)) {}'
             ],
             'arrayShiftOnMixedOrEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /**
-                     * @param mixed|array<empty, empty> $lengths
+                     * @param mixed|array<never, never> $lengths
                      */
                     function doStuff($lengths): void {
                         /** @psalm-suppress MixedArgument, MixedAssignment */
@@ -2179,7 +2180,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'countOnListIntoTuple' => [
-                '<?php
+                'code' => '<?php
                     /** @param array{string, string} $tuple */
                     function foo(array $tuple) : void {}
 
@@ -2191,7 +2192,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayColumnwithKeyedArrayWithoutRedundantUnion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<string, array{x?:int, y?:int, width?:int, height?:int}> $foos
                      */
@@ -2200,7 +2201,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayMapGenericObject' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -2225,7 +2226,7 @@ class ArrayFunctionCallTest extends TestCase
                     }'
             ],
             'arrayMapShapeAndGenericArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return string[] */
                     function getLine(): array { return ["a", "b"]; }
 
@@ -2245,7 +2246,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'arrayUnshiftOnEmptyArrayMeansNonEmptyList' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return non-empty-list<string>
                      */
@@ -2259,7 +2260,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'keepClassStringInOffsetThroughArrayMerge' => [
-                '<?php
+                'code' => '<?php
 
                     class A {
                         /** @var array<class-string, string> */
@@ -2280,13 +2281,13 @@ class ArrayFunctionCallTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'arrayFilterWithoutTypes' => [
-                '<?php
+                'code' => '<?php
                     $e = array_filter(
                         ["a" => 5, "b" => 12, "c" => null],
                         function(?int $i) {
@@ -2294,32 +2295,32 @@ class ArrayFunctionCallTest extends TestCase
                         }
                     );',
                 'error_message' => 'MixedArgumentTypeCoercion',
-                'error_levels' => ['MissingClosureParamType', 'MissingClosureReturnType'],
+                'ignored_issues' => ['MissingClosureParamType', 'MissingClosureReturnType'],
             ],
             'arrayFilterUseMethodOnInferrableInt' => [
-                '<?php
+                'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
                 'error_message' => 'InvalidMethodCall',
             ],
             'arrayMapUseMethodOnInferrableInt' => [
-                '<?php
+                'code' => '<?php
                     $a = array_map(function ($i) { return $i->foo(); }, [1, 2, 3, 4]);',
                 'error_message' => 'InvalidMethodCall',
             ],
             'arrayMapWithNonCallableStringArray' => [
-                '<?php
+                'code' => '<?php
                     $foo = ["one", "two"];
                     array_map($foo, ["hello"]);',
                 'error_message' => 'InvalidArgument',
             ],
             'arrayMapWithNonCallableIntArray' => [
-                '<?php
+                'code' => '<?php
                     $foo = [1, 2];
                     array_map($foo, ["hello"]);',
                 'error_message' => 'InvalidArgument',
             ],
             'arrayFilterBadArgs' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i) : bool {
                       return true;
                     }
@@ -2328,12 +2329,12 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'arrayFillPositiveConstantLength' => [
-                '<?php
+                'code' => '<?php
                     count(array_fill(0, 1, 0)) === 0;',
                 'error_message' => 'TypeDoesNotContainType'
             ],
             'arrayFilterTooFewArgs' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i, string $s) : bool {
                       return true;
                     }
@@ -2342,7 +2343,7 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'TooFewArguments',
             ],
             'arrayMapBadArgs' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i) : bool {
                       return true;
                     }
@@ -2351,7 +2352,7 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'arrayMapTooFewArgs' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i, string $s) : bool {
                       return true;
                     }
@@ -2360,7 +2361,7 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'TooFewArguments',
             ],
             'arrayMapTooManyArgs' => [
-                '<?php
+                'code' => '<?php
                     function foo() : bool {
                       return true;
                     }
@@ -2369,7 +2370,7 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'TooManyArguments',
             ],
             'arrayReduceInvalidClosureTooFewArgs' => [
-                '<?php
+                'code' => '<?php
                     $arr = [2, 3, 4, 5];
 
                     $direct_closure_result = array_reduce(
@@ -2380,10 +2381,10 @@ class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['MixedTypeCoercion'],
+                'ignored_issues' => ['MixedTypeCoercion'],
             ],
             'arrayReduceInvalidItemType' => [
-                '<?php
+                'code' => '<?php
                     $arr = [2, 3, 4, 5];
 
                     $direct_closure_result = array_reduce(
@@ -2394,10 +2395,10 @@ class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['MissingClosureReturnType'],
+                'ignored_issues' => ['MissingClosureReturnType'],
             ],
             'arrayReduceInvalidCarryType' => [
-                '<?php
+                'code' => '<?php
                     $arr = [2, 3, 4, 5];
 
                     $direct_closure_result = array_reduce(
@@ -2408,10 +2409,10 @@ class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['MissingClosureReturnType'],
+                'ignored_issues' => ['MissingClosureReturnType'],
             ],
             'arrayReduceInvalidCarryOutputType' => [
-                '<?php
+                'code' => '<?php
                     $arr = [2, 3, 4, 5];
 
                     $direct_closure_result = array_reduce(
@@ -2424,7 +2425,7 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'arrayPopNotNull' => [
-                '<?php
+                'code' => '<?php
                     function expectsInt(int $a) : void {}
 
                     /**
@@ -2440,13 +2441,13 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'DocblockTypeContradiction',
             ],
             'usortInvalidCallableString' => [
-                '<?php
+                'code' => '<?php
                     $a = [[1], [2], [3]];
                     usort($a, "strcmp");',
                 'error_message' => 'InvalidArgument',
             ],
             'arrayShiftUndefinedVariable' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress MissingParamType */
                     function foo($data): void {
                         /** @psalm-suppress MixedArgument */
@@ -2455,7 +2456,7 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'UndefinedVariable',
             ],
             'arrayFilterTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     /** @param list<int> $ints */
                     function ints(array $ints) : void {}
                     $brr = array_filter([2,3,0,4,5]);
@@ -2463,16 +2464,15 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'usortOneParamInvalid' => [
-                '<?php
+                'code' => '<?php
                     $list = [3, 2, 5, 9];
                     usort($list, fn(int $a, string $b): int => (int) ($a > $b));',
                 'error_message' => 'InvalidScalarArgument',
-                [],
-                false,
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'usortInvalidComparison' => [
-                '<?php
+                'code' => '<?php
                     $arr = [["one"], ["two"], ["three"]];
 
                     usort(
@@ -2484,7 +2484,7 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'arrayMergeKeepFirstKeysButNotType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{A: int} $a
                      * @param array<string, string> $b
@@ -2497,7 +2497,7 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
             ],
             'arrayReplaceKeepFirstKeysButNotType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{A: int} $a
                      * @param array<string, string> $b
@@ -2510,14 +2510,14 @@ class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
             ],
             'arrayWalkOverObject' => [
-                '<?php
+                'code' => '<?php
                     $o = new stdClass();
                     array_walk($o, "var_dump");
                 ',
                 'error_message' => 'RawObjectIteration',
             ],
             'arrayWalkRecursiveOverObject' => [
-                '<?php
+                'code' => '<?php
                     $o = new stdClass();
                     array_walk_recursive($o, "var_dump");
                 ',

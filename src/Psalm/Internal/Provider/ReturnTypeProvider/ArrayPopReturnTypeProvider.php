@@ -14,6 +14,9 @@ use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -55,7 +58,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
         if ($first_arg_array instanceof TArray) {
             $value_type = clone $first_arg_array->type_params[1];
 
-            if ($value_type->isEmpty()) {
+            if ($first_arg_array->isEmptyArray()) {
                 return Type::getNull();
             }
 
@@ -82,7 +85,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         if ($nullable) {
-            $value_type->addType(new TNull);
+            $value_type = $value_type->getBuilder()->addType(new TNull)->freeze();
 
             $codebase = $statements_source->getCodebase();
 

@@ -11,13 +11,13 @@ class CallableTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'byRefUseVar' => [
-                '<?php
+                'code' => '<?php
                     /** @return void */
                     function run_function(\Closure $fnc) {
                         $fnc();
@@ -42,7 +42,7 @@ class CallableTest extends TestCase
                     f();',
             ],
             'inferredArg' => [
-                '<?php
+                'code' => '<?php
                     $bar = ["foo", "bar"];
 
                     $bam = array_map(
@@ -53,7 +53,7 @@ class CallableTest extends TestCase
                     );',
             ],
             'inferredArgArrowFunction' => [
-                '<?php
+                'code' => '<?php
                     $bar = ["foo", "bar"];
 
                     $bam = array_map(
@@ -61,11 +61,11 @@ class CallableTest extends TestCase
                         $bar
                     );',
                 'assertions' => [],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'inferArgFromClassContext' => [
-                '<?php
+                'code' => '<?php
                     final class Calc
                     {
                         /**
@@ -83,11 +83,11 @@ class CallableTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                 ],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'inferArgFromClassContextWithNamedArguments' => [
-                '<?php
+                'code' => '<?php
                     final class Calc
                     {
                         /**
@@ -108,11 +108,11 @@ class CallableTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                 ],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'inferArgFromClassContextInGenericContext' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template A
                      */
@@ -148,7 +148,7 @@ class CallableTest extends TestCase
                 ],
             ],
             'inferArgByPreviousFunctionArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template A
                      * @template B
@@ -177,7 +177,7 @@ class CallableTest extends TestCase
                 ],
             ],
             'inferTemplateForExplicitlyTypedArgByPreviousFunctionArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template A
                      * @template B
@@ -206,7 +206,7 @@ class CallableTest extends TestCase
                 ],
             ],
             'doNotInferTemplateForExplicitlyTypedWithPhpdocArgByPreviousFunctionArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template A
                      * @template B
@@ -233,8 +233,292 @@ class CallableTest extends TestCase
                     '$inferred' => 'list<Foo>',
                 ],
             ],
+            'inferTemplateOfHighOrderFunctionArgByPreviousArg' => [
+                'code' => '<?php
+                    /**
+                     * @return list<int>
+                     */
+                    function getList() { throw new RuntimeException("???"); }
+
+                    /**
+                     * @template T
+                     * @return Closure(T): T
+                     */
+                    function id() { throw new RuntimeException("???"); }
+
+                    /**
+                     * @template A
+                     * @template B
+                     *
+                     * @param list<A> $_items
+                     * @param callable(A): B $_ab
+                     * @return list<B>
+                     */
+                    function map(array $_items, callable $_ab) { throw new RuntimeException("???"); }
+
+                    $result = map(getList(), id());
+                ',
+                'assertions' => [
+                    '$result' => 'list<int>',
+                ],
+            ],
+            'inferTemplateOfHighOrderFunctionArgByPreviousArgInClassContext' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     */
+                    final class ArrayList
+                    {
+                        /**
+                         * @template B
+                         *
+                         * @param callable(A): B $ab
+                         * @return ArrayList<B>
+                         */
+                        public function map(callable $ab) { throw new RuntimeException("???"); }
+                    }
+
+                    /**
+                     * @return ArrayList<int>
+                     */
+                    function getList() { throw new RuntimeException("???"); }
+
+                    /**
+                     * @template T
+                     * @return Closure(T): T
+                     */
+                    function id() { throw new RuntimeException("???"); }
+
+                    $result = getList()->map(id());
+                ',
+                'assertions' => [
+                    '$result' => 'ArrayList<int>',
+                ],
+            ],
+            'inferTemplateOfHighOrderFunctionFromMethodArgByPreviousArg' => [
+                'code' => '<?php
+                     final class Ops
+                     {
+                         /**
+                          * @template T
+                          * @return Closure(list<T>): T
+                          */
+                         public function flatten() { throw new RuntimeException("???"); }
+                     }
+                     /**
+                      * @return list<list<int>>
+                      */
+                     function getList() { throw new RuntimeException("???"); }
+                     /**
+                      * @template T
+                      * @return Closure(list<T>): T
+                      */
+                     function flatten() { throw new RuntimeException("???"); }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param list<A> $_a
+                      * @param callable(A): B $_ab
+                      * @return list<B>
+                      */
+                     function map(array $_a, callable $_ab) { throw new RuntimeException("???"); }
+
+                     $ops = new Ops;
+                     $result = map(getList(), $ops->flatten());
+                 ',
+                'assertions' => [
+                    '$result' => 'list<int>',
+                ],
+            ],
+            'inferTemplateOfHighOrderFunctionFromStaticMethodArgByPreviousArg' => [
+                'code' => '<?php
+                     final class StaticOps
+                     {
+                         /**
+                          * @template T
+                          * @return Closure(list<T>): T
+                          */
+                         public static function flatten() { throw new RuntimeException("???"); }
+                     }
+                     /**
+                      * @return list<list<int>>
+                      */
+                     function getList() { throw new RuntimeException("???"); }
+                     /**
+                      * @template T
+                      * @return Closure(list<T>): T
+                      */
+                     function flatten() { throw new RuntimeException("???"); }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param list<A> $_a
+                      * @param callable(A): B $_ab
+                      * @return list<B>
+                      */
+                     function map(array $_a, callable $_ab) { throw new RuntimeException("???"); }
+
+                     $result = map(getList(), StaticOps::flatten());
+                 ',
+                'assertions' => [
+                    '$result' => 'list<int>',
+                ],
+            ],
+            'PipeTest' => [
+                'code' => '<?php
+                     /**
+                      * @template A
+                      * @template B
+                      */
+                     final class MapOperator
+                     {
+                         /**
+                          * @param Closure(A): B $ab
+                          */
+                         public function __construct(private Closure $ab) { }
+
+                         /**
+                          * @param list<A> $a
+                          * @return list<B>
+                          */
+                         public function __invoke($a): array
+                         {
+                             $b = [];
+
+                             foreach ($a as $item) {
+                                 $b[] = ($this->ab)($item);
+                             }
+
+                             return $b;
+                         }
+                     }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param Closure(A): B $ab
+                      * @return MapOperator<A, B>
+                      */
+                     function map(Closure $ab): MapOperator
+                     {
+                         return new MapOperator($ab);
+                     }
+                     /**
+                      * @template A
+                      * @template B
+                      *
+                      * @param A $_a
+                      * @param callable(A): B $_ab
+                      * @return B
+                      */
+                     function pipe(array $_a, callable $_ab): array
+                     {
+                         throw new RuntimeException("???");
+                     }
+                     $result1 = pipe(
+                         ["1", "2", "3"],
+                         map(fn ($i) => (int) $i)
+                     );
+                     $result2 = pipe(
+                         ["1", "2", "3"],
+                         new MapOperator(fn ($i) => (int) $i)
+                     );
+                 ',
+                'assertions' => [
+                    '$result1' => 'list<int>',
+                    '$result2' => 'list<int>',
+                ],
+                'error_levels' => [],
+                '8.0',
+            ],
+            'inferPipelineWithPartiallyAppliedFunctions' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     *
+                     * @param callable(T, int): bool $_predicate
+                     * @return Closure(list<T>): list<T>
+                     */
+                    function filter(callable $_predicate): Closure { throw new RuntimeException("???"); }
+                    /**
+                     * @template A
+                     * @template B
+                     *
+                     * @param callable(A): B $_ab
+                     * @return Closure(list<A>): list<B>
+                     */
+                    function map(callable $_ab): Closure { throw new RuntimeException("???"); }
+                    /**
+                     * @template T
+                     * @return (Closure(list<T>): (non-empty-list<T> | null))
+                     */
+                    function asNonEmptyList(): Closure { throw new RuntimeException("???"); }
+                    /**
+                     * @template T
+                     * @return Closure(T): T
+                     */
+                    function id(): Closure { throw new RuntimeException("???"); }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @template C
+                     * @template D
+                     * @template E
+                     * @template F
+                     *
+                     * @param A $arg
+                     * @param callable(A): B $ab
+                     * @param callable(B): C $bc
+                     * @param callable(C): D $cd
+                     * @param callable(D): E $de
+                     * @param callable(E): F $ef
+                     * @return F
+                     */
+                    function pipe4(mixed $arg, callable $ab, callable $bc, callable $cd, callable $de, callable $ef): mixed
+                    {
+                        return $ef($de($cd($bc($ab($arg)))));
+                    }
+
+                    /**
+                     * @template TFoo of string
+                     * @template TBar of bool
+                     */
+                    final class Item
+                    {
+                        /**
+                         * @param TFoo $foo
+                         * @param TBar $bar
+                         */
+                        public function __construct(
+                           public string $foo,
+                           public bool $bar,
+                       ) { }
+                    }
+
+                    /**
+                     * @return list<Item>
+                     */
+                    function getList(): array { return []; }
+
+                    $result = pipe4(
+                        getList(),
+                        filter(fn($i) => $i->bar),
+                        filter(fn(Item $i) => $i->foo !== "bar"),
+                        map(fn($i) => new Item("test: " . $i->foo, $i->bar)),
+                        asNonEmptyList(),
+                        id(),
+                    );',
+                'assertions' => [
+                    '$result' => 'non-empty-list<Item<string, bool>>|null',
+                ],
+                'error_levels' => [],
+                '8.0',
+            ],
             'varReturnType' => [
-                '<?php
+                'code' => '<?php
                     $add_one = function(int $a) : int {
                         return $a + 1;
                     };
@@ -245,18 +529,18 @@ class CallableTest extends TestCase
                 ],
             ],
             'varReturnTypeArray' => [
-                '<?php
+                'code' => '<?php
                     $add_one = fn(int $a) : int => $a + 1;
 
                     $a = $add_one(1);',
                 'assertions' => [
                     '$a' => 'int',
                 ],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'varCallableParamReturnType' => [
-                '<?php
+                'code' => '<?php
                     $add_one = function(int $a): int {
                         return $a + 1;
                     };
@@ -271,7 +555,7 @@ class CallableTest extends TestCase
                     bar($add_one);',
             ],
             'callableToClosure' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return callable
                      */
@@ -282,7 +566,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'callableToClosureArrow' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return callable
                      */
@@ -290,17 +574,17 @@ class CallableTest extends TestCase
                         return fn(string $a): string => $a . "blah";
                     }',
                 'assertions' => [],
-                'error_levels' => [],
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'callable' => [
-                '<?php
+                'code' => '<?php
                     function foo(callable $c): void {
                         echo (string)$c();
                     }',
             ],
             'callableClass' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         public function __invoke(): string {
                             return "You ran?";
@@ -317,7 +601,7 @@ class CallableTest extends TestCase
                     $c2();',
             ],
             'invokeMethodExists' => [
-                '<?php
+                'code' => '<?php
                     function call(object $obj): void {
                         if (!method_exists($obj, "__invoke")) {
                             return;
@@ -326,12 +610,12 @@ class CallableTest extends TestCase
                     }',
             ],
             'correctParamType' => [
-                '<?php
+                'code' => '<?php
                     $take_string = function(string $s): string { return $s; };
                     $take_string("string");',
             ],
             'callableMethodStringCallable' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(string $a): string {
                             return $a . "b";
@@ -344,7 +628,7 @@ class CallableTest extends TestCase
                     foo(A::class . "::bar");',
             ],
             'callableMethodArrayCallable' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(string $a): string {
                             return $a . "b";
@@ -359,7 +643,7 @@ class CallableTest extends TestCase
                     foo([$a, "bar"]);',
             ],
             'callableMethodArrayCallableMissingTypes' => [
-                '<?php
+                'code' => '<?php
                     function foo(callable $c): void {}
 
                     /** @psalm-suppress MissingParamType */
@@ -368,7 +652,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'arrayMapCallableMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(string $a): string {
                             return $a . "b";
@@ -387,16 +671,16 @@ class CallableTest extends TestCase
                     $e = array_map([$a_instance, "bar"], ["one", "two"]);
                     $f = array_map("baz", ["one", "two"]);',
                 'assertions' => [
-                    '$a' => 'array{string, string}',
-                    '$b' => 'array{string, string}',
-                    '$c' => 'array{string, string}',
-                    '$d' => 'array{string, string}',
-                    '$e' => 'array{string, string}',
-                    '$f' => 'array{string, string}',
+                    '$a' => 'array{string, string}<string>',
+                    '$b' => 'array{string, string}<string>',
+                    '$c' => 'array{string, string}<string>',
+                    '$d' => 'array{string, string}<string>',
+                    '$e' => 'array{string, string}<string>',
+                    '$f' => 'array{string, string}<string>',
                 ],
             ],
             'arrayCallableMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(string $a): string {
                             return $a . "b";
@@ -408,13 +692,13 @@ class CallableTest extends TestCase
                     foo(["A", "bar"]);',
             ],
             'callableFunction' => [
-                '<?php
+                'code' => '<?php
                     function foo(callable $c): void {}
 
                     foo("trim");',
             ],
             'inlineCallableFunction' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         function bar(): void {
                             function foobar(int $a, int $b): int {
@@ -428,7 +712,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'closureSelf' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         /**
@@ -455,7 +739,7 @@ class CallableTest extends TestCase
                     new A([new A, new A]);',
             ],
             'possiblyUndefinedFunction' => [
-                '<?php
+                'code' => '<?php
                       /**
                        * @param string|callable $middlewareOrPath
                        */
@@ -464,7 +748,7 @@ class CallableTest extends TestCase
                     pipe("zzzz", function() : void {});',
             ],
             'callableWithNonInvokable' => [
-                '<?php
+                'code' => '<?php
                     function asd(): void {}
                     class B {}
 
@@ -476,7 +760,7 @@ class CallableTest extends TestCase
                     passes("asd");',
             ],
             'callableWithInvokable' => [
-                '<?php
+                'code' => '<?php
                     function asd(): void {}
                     class A { public function __invoke(): void {} }
 
@@ -488,7 +772,7 @@ class CallableTest extends TestCase
                     fails("asd");',
             ],
             'isCallableArray' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         public function callMeMaybe(string $method): void
@@ -506,7 +790,7 @@ class CallableTest extends TestCase
                     $a->callMeMaybe("foo");',
             ],
             'isCallableString' => [
-                '<?php
+                'code' => '<?php
                     function foo(): void {}
 
                     function callMeMaybe(string $method): void {
@@ -518,7 +802,7 @@ class CallableTest extends TestCase
                     callMeMaybe("foo");',
             ],
             'allowVoidCallable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable():void $p
                      */
@@ -526,7 +810,7 @@ class CallableTest extends TestCase
                     doSomething(function(): bool { return false; });',
             ],
             'callableProperties' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /** @psalm-var callable():bool */
                         private $callable;
@@ -549,7 +833,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'invokableProperties' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __invoke(): bool { return true; }
                     }
@@ -573,13 +857,13 @@ class CallableTest extends TestCase
                     }',
             ],
             'nullableReturnTypeShorthand' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     /** @param callable(mixed):?A $a */
                     function foo(callable $a): void {}',
             ],
             'callablesCanBeObjects' => [
-                '<?php
+                'code' => '<?php
                     function foo(callable $c) : void {
                         if (is_object($c)) {
                             $c();
@@ -587,7 +871,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'objectsCanBeCallable' => [
-                '<?php
+                'code' => '<?php
                     function foo(object $c) : void {
                         if (is_callable($c)) {
                             $c();
@@ -595,7 +879,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'unionCanBeCallable' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {
                         public function __invoke() : string {
@@ -612,7 +896,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'goodCallableArgs' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable(string,string):int $_p
                      */
@@ -627,14 +911,14 @@ class CallableTest extends TestCase
                     f([C::class, "m"]);',
             ],
             'callableWithSpaces' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable(string, string) : int $p
                      */
                     function f(callable $p): void {}',
             ],
             'fileExistsCallable' => [
-                '<?php
+                'code' => '<?php
                     /** @return string[] */
                     function foo(string $prospective_file_path) : array {
                         return array_filter(
@@ -644,7 +928,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'callableSelfArg' => [
-                '<?php
+                'code' => '<?php
                     class C extends B {}
 
                     $b = new B();
@@ -665,7 +949,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'callableParentArg' => [
-                '<?php
+                'code' => '<?php
                     class C extends B {}
 
                     $b = new B();
@@ -686,7 +970,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'callableStaticArg' => [
-                '<?php
+                'code' => '<?php
                     class C extends B {}
 
                     $b = new B();
@@ -707,7 +991,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'callableStaticReturn' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B extends A {
@@ -724,7 +1008,7 @@ class CallableTest extends TestCase
                     $c->func1(function(): C { return new C(); });',
             ],
             'callableSelfReturn' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B extends A {
@@ -743,7 +1027,7 @@ class CallableTest extends TestCase
                     $c->func2(function() { return new C(); });',
             ],
             'callableParentReturn' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B extends A {
@@ -758,7 +1042,7 @@ class CallableTest extends TestCase
                     $b->func3(function() { return new A(); });',
             ],
             'selfArrayMapCallableWrongClass' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public function __construct(int $param) {}
 
@@ -784,7 +1068,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'dynamicCallableArray' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var string */
                         private $value = "default";
@@ -799,7 +1083,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'callableIsArrayAssertion' => [
-                '<?php
+                'code' => '<?php
                     function foo(callable $c) : void {
                         if (is_array($c)) {
                             echo $c[1];
@@ -807,7 +1091,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'callableOrArrayIsArrayAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable|array $c
                      */
@@ -818,7 +1102,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'dontInferMethodIdWhenFormatDoesntFit' => [
-                '<?php
+                'code' => '<?php
                     /** @param string|callable $p */
                     function f($p): array {
                       return [];
@@ -826,7 +1110,7 @@ class CallableTest extends TestCase
                     f("#b::a");'
             ],
             'removeCallableAssertionAfterReassignment' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $key) : void {
                         $setter = "a" . $key;
                         if (is_callable($setter)) {
@@ -837,7 +1121,7 @@ class CallableTest extends TestCase
                     }'
             ],
             'noExceptionOnSelfString' => [
-                '<?php
+                'code' => '<?php
                     class Fish {
                         public static function example(array $vals): void {
                             usort($vals, ["self", "compare"]);
@@ -853,7 +1137,7 @@ class CallableTest extends TestCase
                     }',
             ],
             'noFatalErrorOnClassWithSlash' => [
-                '<?php
+                'code' => '<?php
                     class Func {
                         public function __construct(string $name, callable $callable) {}
                     }
@@ -865,7 +1149,7 @@ class CallableTest extends TestCase
                     new Func("f", ["\Foo", "bar"]);',
             ],
             'staticReturningCallable' => [
-                '<?php
+                'code' => '<?php
                     abstract class Id
                     {
                         /**
@@ -916,7 +1200,7 @@ class CallableTest extends TestCase
                     }'
             ],
             'offsetOnCallable' => [
-                '<?php
+                'code' => '<?php
                     function c(callable $c) : void {
                         if (is_array($c)) {
                             new ReflectionClass($c[0]);
@@ -924,7 +1208,7 @@ class CallableTest extends TestCase
                     }'
             ],
             'destructureCallableArray' => [
-                '<?php
+                'code' => '<?php
                     function getCallable(): callable {
                         return [DateTimeImmutable::class, "createFromFormat"];
                     }
@@ -936,13 +1220,13 @@ class CallableTest extends TestCase
                     }
 
                     [$classOrObject, $method] = $callable;',
-                [
+                'assertions' => [
                     '$classOrObject' => 'class-string|object',
                     '$method' => 'string'
                 ]
             ],
             'callableInterface' => [
-                '<?php
+                'code' => '<?php
                     interface CallableInterface{
                         public function __invoke(): bool;
                     }
@@ -956,7 +1240,7 @@ class CallableTest extends TestCase
                     }'
             ],
             'notCallableArrayNoUndefinedClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-param array|callable $_fields
                      */
@@ -965,7 +1249,7 @@ class CallableTest extends TestCase
                     f(["instance_date" => "ASC", "start_time" => "ASC"]);'
             ],
             'callOnInvokableOrCallable' => [
-                '<?php
+                'code' => '<?php
                     interface Callback {
                         public function __invoke(): void;
                     }
@@ -976,7 +1260,7 @@ class CallableTest extends TestCase
                     $test();'
             ],
             'resolveTraitClosureReturn' => [
-                '<?php
+                'code' => '<?php
                     class B {
                         /**
                          * @psalm-param callable(mixed...):static $i
@@ -989,7 +1273,7 @@ class CallableTest extends TestCase
                     }'
             ],
             'returnClosureReturningStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -1005,14 +1289,14 @@ class CallableTest extends TestCase
                     }',
             ],
             'returnsVoidAcceptableForNullable' => [
-                '<?php
+                'code' => '<?php
                     /** @param callable():?bool $c */
                     function takesCallable(callable $c) : void {}
 
                     takesCallable(function() { return; });',
             ],
             'byRefUsesAlwaysMixed' => [
-                '<?php
+                'code' => '<?php
                     $callback = function() use (&$isCalled) : void {
                         $isCalled = true;
                     };
@@ -1022,7 +1306,7 @@ class CallableTest extends TestCase
                     if ($isCalled === true) {}'
             ],
             'notCallableListNoUndefinedClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array|callable $arg
                      */
@@ -1031,7 +1315,7 @@ class CallableTest extends TestCase
                     foo(["a", "b"]);'
             ],
             'abstractInvokeInTrait' => [
-                '<?php
+                'code' => '<?php
                     function testFunc(callable $func) : void {}
 
                     trait TestTrait {
@@ -1050,13 +1334,13 @@ class CallableTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedCallableClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function getFoo(): Foo
                         {
@@ -1074,10 +1358,10 @@ class CallableTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidFunctionCall',
-                'error_levels' => ['UndefinedClass', 'MixedInferredReturnType'],
+                'ignored_issues' => ['UndefinedClass', 'MixedInferredReturnType'],
             ],
             'undefinedCallableMethodFullString' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(string $a): string {
                             return $a . "b";
@@ -1090,7 +1374,7 @@ class CallableTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'undefinedCallableMethodClassConcat' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(string $a): string {
                             return $a . "b";
@@ -1103,7 +1387,7 @@ class CallableTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'undefinedCallableMethodArray' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(string $a): string {
                             return $a . "b";
@@ -1116,7 +1400,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'undefinedCallableMethodArrayWithoutClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(string $a): string {
                             return $a . "b";
@@ -1129,7 +1413,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'undefinedCallableMethodClass' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function bar(string $a): string {
                             return $a . "b";
@@ -1142,20 +1426,20 @@ class CallableTest extends TestCase
                 'error_message' => 'UndefinedClass',
             ],
             'undefinedCallableFunction' => [
-                '<?php
+                'code' => '<?php
                     function foo(callable $c): void {}
 
                     foo("trime");',
                 'error_message' => 'UndefinedFunction',
             ],
             'stringFunctionCall' => [
-                '<?php
+                'code' => '<?php
                     $bad_one = "hello";
                     $a = $bad_one(1);',
                 'error_message' => 'MixedAssignment',
             ],
             'wrongCallableReturnType' => [
-                '<?php
+                'code' => '<?php
                     $add_one = function(int $a): int {
                         return $a + 1;
                     };
@@ -1171,7 +1455,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'checkCallableTypeString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable(int,int):int $_p
                      */
@@ -1181,7 +1465,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'checkCallableTypeArrayInstanceFirstArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable(int,int):int $_p
                      */
@@ -1195,7 +1479,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'checkCallableTypeArrayClassStringFirstArg' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable(int,int):int $_p
                      */
@@ -1209,7 +1493,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'callableWithSpaceAfterColonBadVarArg' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @var callable(string, string): bool $p
@@ -1225,7 +1509,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'callableWithSpaceBeforeColonBadVarArg' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @var callable(string, string) :bool $p
@@ -1241,7 +1525,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'callableWithSpacesEitherSideOfColonBadVarArg' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @var callable(string, string) : bool $p
@@ -1257,13 +1541,13 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'badArrayMapArrayCallable' => [
-                '<?php
+                'code' => '<?php
                     class one { public function two(string $_p): void {} }
                     array_map(["two", "three"], ["one", "two"]);',
                 'error_message' => 'InvalidArgument',
             ],
             'noFatalErrorOnMissingClassWithSlash' => [
-                '<?php
+                'code' => '<?php
                     class Func {
                         public function __construct(string $name, callable $callable) {}
                     }
@@ -1272,7 +1556,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument'
             ],
             'noFatalErrorOnMissingClassWithoutSlash' => [
-                '<?php
+                'code' => '<?php
                     class Func {
                         public function __construct(string $name, callable $callable) {}
                     }
@@ -1281,7 +1565,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument'
             ],
             'preventStringDocblockType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string $mapper
                      */
@@ -1291,7 +1575,7 @@ class CallableTest extends TestCase
                 'error_message' => 'MismatchingDocblockParamType',
             ],
             'moreSpecificCallable' => [
-                '<?php
+                'code' => '<?php
                     /** @param callable(string):void $c */
                     function takesSpecificCallable(callable $c) : void {
                         $c("foo");
@@ -1303,7 +1587,7 @@ class CallableTest extends TestCase
                 'error_message' => 'MixedArgumentTypeCoercion'
             ],
             'undefinedVarInBareCallable' => [
-                '<?php
+                'code' => '<?php
                     $fn = function(int $a): void{};
                     function a(callable $fn): void{
                       $fn(++$a);
@@ -1312,7 +1596,7 @@ class CallableTest extends TestCase
                 'error_message' => 'UndefinedVariable',
             ],
             'dontQualifyStringCallables' => [
-                '<?php
+                'code' => '<?php
                     namespace NS;
 
                     function ff() : void {}
@@ -1325,7 +1609,7 @@ class CallableTest extends TestCase
                 'error_message' => 'UndefinedFunction',
             ],
             'badCustomFunction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable(int):bool $func
                      */
@@ -1339,13 +1623,13 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'emptyCallable' => [
-                '<?php
+                'code' => '<?php
                     $a = "";
                     $a();',
                 'error_message' => 'InvalidFunctionCall',
             ],
             'ImpureFunctionCall' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-template T
                      *
@@ -1378,10 +1662,10 @@ class CallableTest extends TestCase
                     echo $c;
                 ',
                 'error_message' => 'ImpureFunctionCall',
-                'error_levels' => [],
+                'ignored_issues' => [],
             ],
             'constructCallableFromClassStringArray' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {
                         public function bar() : int;
                     }
@@ -1399,10 +1683,10 @@ class CallableTest extends TestCase
                     function foo(string $c) : void {
                         takesCallableReturningString([$c, "bar"]);
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'inexistantCallableinCallableString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable-string $c
                      */
@@ -1414,7 +1698,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'mismatchParamTypeFromDocblock' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template A
                      */

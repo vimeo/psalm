@@ -20,45 +20,14 @@ use function md5;
  *
  * @author Olivier Doucet <webmaster@ajeux.com>
  */
-class CodeClimateReport extends Report
+final class CodeClimateReport extends Report
 {
     public function create(): string
     {
         $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;
 
         $issues_data = array_map(
-            function (IssueData $issue): array {
-                /**
-                 * map fields to new structure.
-                 * Expected fields:
-                 * - type
-                 * - check_name
-                 * - description*
-                 * - content
-                 * - categories[]
-                 * - severity
-                 * - fingerprint*
-                 * - location.path*
-                 * - location.lines.begin*
-                 *
-                 * Fields with * are the one used by Gitlab for Code Quality
-                 */
-                return [
-                    'type' => 'issue',
-                    'check_name' => $issue->type,
-                    'description' => $issue->message,
-                    'categories' => [$issue->type],
-                    'severity' => $this->convertSeverity($issue->severity),
-                    'fingerprint' => $this->calculateFingerprint($issue),
-                    'location' => [
-                        'path' => $issue->file_name,
-                        'lines' => [
-                            'begin' => $issue->line_from,
-                            'end' => $issue->line_to,
-                        ],
-                    ],
-                ];
-            },
+            [$this, 'mapToNewStructure'],
             $this->issues_data
         );
 
@@ -91,5 +60,39 @@ class CodeClimateReport extends Report
     protected function calculateFingerprint(IssueData $issue): string
     {
         return md5($issue->type.$issue->message.$issue->file_name.$issue->from.$issue->to);
+    }
+
+    /**
+     * map fields to new structure.
+     * Expected fields:
+     * - type
+     * - check_name
+     * - description*
+     * - content
+     * - categories[]
+     * - severity
+     * - fingerprint*
+     * - location.path*
+     * - location.lines.begin*
+     *
+     * Fields with * are the one used by Gitlab for Code Quality
+     */
+    private function mapToNewStructure(IssueData $issue): array
+    {
+        return [
+            'type' => 'issue',
+            'check_name' => $issue->type,
+            'description' => $issue->message,
+            'categories' => [$issue->type],
+            'severity' => $this->convertSeverity($issue->severity),
+            'fingerprint' => $this->calculateFingerprint($issue),
+            'location' => [
+                'path' => $issue->file_name,
+                'lines' => [
+                    'begin' => $issue->line_from,
+                    'end' => $issue->line_to,
+                ],
+            ],
+        ];
     }
 }

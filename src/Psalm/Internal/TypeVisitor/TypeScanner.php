@@ -7,18 +7,24 @@ use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\NodeVisitor;
+use Psalm\Type\ImmutableTypeVisitor;
 use Psalm\Type\TypeNode;
 
 use function strtolower;
 
-class TypeScanner extends NodeVisitor
+/**
+ * @internal
+ */
+class TypeScanner extends ImmutableTypeVisitor
 {
-    private $scanner;
+    private Scanner $scanner;
 
-    private $file_storage;
+    private ?FileStorage $file_storage;
 
-    private $phantom_classes;
+    /**
+     * @var array<string, mixed>
+     */
+    private array $phantom_classes;
 
     /**
      * @param  array<string, mixed> $phantom_classes

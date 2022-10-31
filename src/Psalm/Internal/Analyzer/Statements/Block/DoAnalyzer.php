@@ -17,7 +17,6 @@ use UnexpectedValueException;
 
 use function array_diff;
 use function array_filter;
-use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_values;
@@ -73,7 +72,7 @@ class DoAnalyzer
         $while_clauses = array_values(
             array_filter(
                 $while_clauses,
-                function (Clause $c) use ($mixed_var_ids): bool {
+                static function (Clause $c) use ($mixed_var_ids): bool {
                     $keys = array_keys($c->possibilities);
 
                     $mixed_var_ids = array_diff($mixed_var_ids, $keys);
@@ -117,18 +116,19 @@ class DoAnalyzer
 
         $negated_while_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
-                array_merge($context->clauses, $negated_while_clauses)
+                [...$context->clauses, ...$negated_while_clauses]
             )
         );
 
         if ($negated_while_types) {
             $changed_var_ids = [];
 
-            $inner_loop_context->vars_in_scope =
+            [$inner_loop_context->vars_in_scope, $inner_loop_context->references_in_scope] =
                 Reconciler::reconcileKeyedTypes(
                     $negated_while_types,
                     [],
                     $inner_loop_context->vars_in_scope,
+                    $inner_loop_context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
@@ -159,11 +159,6 @@ class DoAnalyzer
         $context->vars_possibly_in_scope = array_merge(
             $context->vars_possibly_in_scope,
             $do_context->vars_possibly_in_scope
-        );
-
-        $context->referenced_var_ids = array_intersect_key(
-            $do_context->referenced_var_ids,
-            $context->referenced_var_ids
         );
 
         if ($context->collect_exceptions) {

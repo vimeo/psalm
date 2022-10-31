@@ -13,6 +13,8 @@ use const JSON_UNESCAPED_UNICODE;
 
 /**
  * Provides ability of pretty printed JSON output.
+ *
+ * @internal
  */
 class Json
 {

@@ -7,7 +7,6 @@ use Psalm\Internal\DataFlow\Path;
 
 use function abs;
 use function array_keys;
-use function array_merge;
 use function array_reverse;
 use function array_sum;
 use function count;
@@ -15,6 +14,9 @@ use function strlen;
 use function strpos;
 use function substr;
 
+/**
+ * @internal
+ */
 abstract class DataFlowGraph
 {
     /** @var array<string, array<string, Path>> */
@@ -68,7 +70,9 @@ abstract class DataFlowGraph
 
         // arraykey-fetch requires a matching arraykey-assignment at the same level
         // otherwise the tainting is not valid
-        if (strpos($path_type, $expression_type . '-fetch-') === 0 || $path_type === 'arraykey-fetch') {
+        if (strpos($path_type, $expression_type . '-fetch-') === 0
+            || ($path_type === 'arraykey-fetch' && $expression_type === 'arrayvalue')
+        ) {
             $fetch_nesting = 0;
 
             $previous_path_types = array_reverse($previous_path_types);
@@ -151,7 +155,7 @@ abstract class DataFlowGraph
         $edges = [];
 
         foreach ($this->forward_edges as $source => $destinations) {
-            $edges[] = array_merge([$source], array_keys($destinations));
+            $edges[] = [...[$source], ...array_keys($destinations)];
         }
 
         return $edges;

@@ -20,6 +20,9 @@ use function array_merge;
 use function array_shift;
 use function assert;
 
+/**
+ * @internal
+ */
 class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -106,7 +109,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                     $template_types = $key_type->getTemplateTypes();
                     $template_type = array_shift($template_types);
                     if ($template_type->as->hasMixed()) {
-                        $template_type->as = Type::getArrayKey();
+                        $template_type = $template_type->replaceAs(Type::getArrayKey());
                         $key_type = new Union([$template_type]);
                     }
                 }

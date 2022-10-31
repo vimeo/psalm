@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
+use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -30,6 +31,7 @@ use function get_included_files;
 use function implode;
 use function in_array;
 use function is_string;
+use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -239,7 +241,7 @@ class IncludeAnalyzer
                 $source->getSuppressedIssues()
             );
         } else {
-            $var_id = ExpressionIdentifier::getArrayVarId($stmt->expr, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
 
             if (!$var_id || !isset($context->phantom_files[$var_id])) {
                 $source = $statements_analyzer->getSource();
@@ -379,6 +381,9 @@ class IncludeAnalyzer
             ? preg_split('#(?<!phar):#', get_include_path())
             : explode(PATH_SEPARATOR, get_include_path());
 
+        if ($paths === false) {
+            throw new AssertionError(preg_last_error_msg());
+        }
         foreach ($paths as $prefix) {
             $ds = substr($prefix, -1) === DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR;
 

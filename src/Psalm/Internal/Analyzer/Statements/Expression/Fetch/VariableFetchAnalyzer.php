@@ -60,6 +60,8 @@ class VariableFetchAnalyzer
 
     /**
      * @param bool $from_global - when used in a global keyword
+     * @param bool $assigned_to_reference This is set to true when the expression being analyzed
+     *                                    here is being assigned to another variable by reference.
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -68,7 +70,8 @@ class VariableFetchAnalyzer
         bool $passed_by_reference = false,
         ?Union $by_ref_type = null,
         bool $array_assignment = false,
-        bool $from_global = false
+        bool $from_global = false,
+        bool $assigned_to_reference = false
     ): bool {
         $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
@@ -231,11 +234,16 @@ class VariableFetchAnalyzer
             if (!isset($context->vars_possibly_in_scope[$var_name])
                 || !$statements_analyzer->getFirstAppearance($var_name)
             ) {
-                if ($array_assignment) {
-                    // if we're in an array assignment, let's assign the variable
-                    // because PHP allows it
-
-                    $context->vars_in_scope[$var_name] = Type::getArray();
+                if ($array_assignment || $assigned_to_reference) {
+                    if ($array_assignment) {
+                        // if we're in an array assignment, let's assign the variable because PHP allows it
+                        $stmt_type = Type::getArray();
+                    } else {
+                        // If a variable is assigned by reference to a variable that
+                        // does not exist, they are automatically initialized as `null`
+                        $stmt_type = Type::getNull();
+                    }
+                    $context->vars_in_scope[$var_name] = $stmt_type;
                     $context->vars_possibly_in_scope[$var_name] = true;
 
                     // it might have been defined first in another if/else branch
@@ -245,6 +253,16 @@ class VariableFetchAnalyzer
                             new CodeLocation($statements_analyzer, $stmt),
                             $context->branch_point
                         );
+                    }
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+                    if ($assigned_to_reference) {
+                        // Since this variable was created by being assigned to as a reference (ie for
+                        // `$a = &$b` this variable is $b), we need to analyze it as an assignment to null.
+                        AssignmentAnalyzer::analyze($statements_analyzer, $stmt, null, $stmt_type, $context, null);
+
+                        // Stop here, we don't want it to be considered possibly undefined like the array case.
+                        return true;
                     }
                 } elseif (!$context->inside_isset
                     || $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
@@ -650,89 +668,91 @@ class VariableFetchAnalyzer
             $bool_string_helper = new Union([new TBool(), new TString()]);
             $bool_string_helper->possibly_undefined = true;
 
-            $detailed_type = new TKeyedArray([
-                // https://www.php.net/manual/en/reserved.variables.server.php
-                'PHP_SELF'             => $non_empty_string_helper,
-                'argv'                 => $argv_helper,
-                'argc'                 => $argc_helper,
-                'GATEWAY_INTERFACE'    => $non_empty_string_helper,
-                'SERVER_ADDR'          => $non_empty_string_helper,
-                'SERVER_NAME'          => $non_empty_string_helper,
-                'SERVER_SOFTWARE'      => $non_empty_string_helper,
-                'SERVER_PROTOCOL'      => $non_empty_string_helper,
-                'REQUEST_METHOD'       => $non_empty_string_helper,
-                'REQUEST_TIME'         => $request_time_helper,
-                'REQUEST_TIME_FLOAT'   => $request_time_float_helper,
-                'QUERY_STRING'         => $string_helper,
-                'DOCUMENT_ROOT'        => $non_empty_string_helper,
-                'HTTP_ACCEPT'          => $non_empty_string_helper,
-                'HTTP_ACCEPT_CHARSET'  => $non_empty_string_helper,
-                'HTTP_ACCEPT_ENCODING' => $non_empty_string_helper,
-                'HTTP_ACCEPT_LANGUAGE' => $non_empty_string_helper,
-                'HTTP_CONNECTION'      => $non_empty_string_helper,
-                'HTTP_HOST'            => $non_empty_string_helper,
-                'HTTP_REFERER'         => $non_empty_string_helper,
-                'HTTP_USER_AGENT'      => $non_empty_string_helper,
-                'HTTPS'                => $string_helper,
-                'REMOTE_ADDR'          => $non_empty_string_helper,
-                'REMOTE_HOST'          => $non_empty_string_helper,
-                'REMOTE_PORT'          => $string_helper,
-                'REMOTE_USER'          => $non_empty_string_helper,
-                'REDIRECT_REMOTE_USER' => $non_empty_string_helper,
-                'SCRIPT_FILENAME'      => $non_empty_string_helper,
-                'SERVER_ADMIN'         => $non_empty_string_helper,
-                'SERVER_PORT'          => $non_empty_string_helper,
-                'SERVER_SIGNATURE'     => $non_empty_string_helper,
-                'PATH_TRANSLATED'      => $non_empty_string_helper,
-                'SCRIPT_NAME'          => $non_empty_string_helper,
-                'REQUEST_URI'          => $non_empty_string_helper,
-                'PHP_AUTH_DIGEST'      => $non_empty_string_helper,
-                'PHP_AUTH_USER'        => $non_empty_string_helper,
-                'PHP_AUTH_PW'          => $non_empty_string_helper,
-                'AUTH_TYPE'            => $non_empty_string_helper,
-                'PATH_INFO'            => $non_empty_string_helper,
-                'ORIG_PATH_INFO'       => $non_empty_string_helper,
-                // misc from RFC not included above already http://www.faqs.org/rfcs/rfc3875.html
-                'CONTENT_LENGTH'       => $string_helper,
-                'CONTENT_TYPE'         => $string_helper,
-                // common, misc stuff
-                'FCGI_ROLE'            => $non_empty_string_helper,
-                'HOME'                 => $non_empty_string_helper,
-                'HTTP_CACHE_CONTROL'   => $non_empty_string_helper,
-                'HTTP_COOKIE'          => $non_empty_string_helper,
-                'HTTP_PRIORITY'        => $non_empty_string_helper,
-                'PATH'                 => $non_empty_string_helper,
-                'REDIRECT_STATUS'      => $non_empty_string_helper,
-                'REQUEST_SCHEME'       => $non_empty_string_helper,
-                'USER'                 => $non_empty_string_helper,
-                // common, misc headers
-                'HTTP_UPGRADE_INSECURE_REQUESTS' => $non_empty_string_helper,
-                'HTTP_X_FORWARDED_PROTO'         => $non_empty_string_helper,
-                'HTTP_CLIENT_IP'                 => $non_empty_string_helper,
-                'HTTP_X_REAL_IP'                 => $non_empty_string_helper,
-                'HTTP_X_FORWARDED_FOR'           => $non_empty_string_helper,
-                'HTTP_CF_CONNECTING_IP'          => $non_empty_string_helper,
-                'HTTP_CF_IPCOUNTRY'              => $non_empty_string_helper,
-                'HTTP_CF_VISITOR'                => $non_empty_string_helper,
-                'HTTP_CDN_LOOP'                  => $non_empty_string_helper,
-                // common, misc browser headers
-                'HTTP_DNT'                => $non_empty_string_helper,
-                'HTTP_SEC_FETCH_DEST'     => $non_empty_string_helper,
-                'HTTP_SEC_FETCH_USER'     => $non_empty_string_helper,
-                'HTTP_SEC_FETCH_MODE'     => $non_empty_string_helper,
-                'HTTP_SEC_FETCH_SITE'     => $non_empty_string_helper,
-                'HTTP_SEC_CH_UA_PLATFORM' => $non_empty_string_helper,
-                'HTTP_SEC_CH_UA_MOBILE'   => $non_empty_string_helper,
-                'HTTP_SEC_CH_UA'          => $non_empty_string_helper,
-                // phpunit
-                'APP_DEBUG' => $bool_string_helper,
-                'APP_ENV'   => $string_helper,
-            ]);
-
-            // generic case for all other elements
-            $detailed_type->previous_key_type = Type::getNonEmptyString();
-            $detailed_type->previous_value_type = Type::getString();
-
+            $detailed_type = new TKeyedArray(
+                [
+                    // https://www.php.net/manual/en/reserved.variables.server.php
+                    'PHP_SELF'             => $non_empty_string_helper,
+                    'argv'                 => $argv_helper,
+                    'argc'                 => $argc_helper,
+                    'GATEWAY_INTERFACE'    => $non_empty_string_helper,
+                    'SERVER_ADDR'          => $non_empty_string_helper,
+                    'SERVER_NAME'          => $non_empty_string_helper,
+                    'SERVER_SOFTWARE'      => $non_empty_string_helper,
+                    'SERVER_PROTOCOL'      => $non_empty_string_helper,
+                    'REQUEST_METHOD'       => $non_empty_string_helper,
+                    'REQUEST_TIME'         => $request_time_helper,
+                    'REQUEST_TIME_FLOAT'   => $request_time_float_helper,
+                    'QUERY_STRING'         => $string_helper,
+                    'DOCUMENT_ROOT'        => $non_empty_string_helper,
+                    'HTTP_ACCEPT'          => $non_empty_string_helper,
+                    'HTTP_ACCEPT_CHARSET'  => $non_empty_string_helper,
+                    'HTTP_ACCEPT_ENCODING' => $non_empty_string_helper,
+                    'HTTP_ACCEPT_LANGUAGE' => $non_empty_string_helper,
+                    'HTTP_CONNECTION'      => $non_empty_string_helper,
+                    'HTTP_HOST'            => $non_empty_string_helper,
+                    'HTTP_REFERER'         => $non_empty_string_helper,
+                    'HTTP_USER_AGENT'      => $non_empty_string_helper,
+                    'HTTPS'                => $string_helper,
+                    'REMOTE_ADDR'          => $non_empty_string_helper,
+                    'REMOTE_HOST'          => $non_empty_string_helper,
+                    'REMOTE_PORT'          => $string_helper,
+                    'REMOTE_USER'          => $non_empty_string_helper,
+                    'REDIRECT_REMOTE_USER' => $non_empty_string_helper,
+                    'SCRIPT_FILENAME'      => $non_empty_string_helper,
+                    'SERVER_ADMIN'         => $non_empty_string_helper,
+                    'SERVER_PORT'          => $non_empty_string_helper,
+                    'SERVER_SIGNATURE'     => $non_empty_string_helper,
+                    'PATH_TRANSLATED'      => $non_empty_string_helper,
+                    'SCRIPT_NAME'          => $non_empty_string_helper,
+                    'REQUEST_URI'          => $non_empty_string_helper,
+                    'PHP_AUTH_DIGEST'      => $non_empty_string_helper,
+                    'PHP_AUTH_USER'        => $non_empty_string_helper,
+                    'PHP_AUTH_PW'          => $non_empty_string_helper,
+                    'AUTH_TYPE'            => $non_empty_string_helper,
+                    'PATH_INFO'            => $non_empty_string_helper,
+                    'ORIG_PATH_INFO'       => $non_empty_string_helper,
+                    // misc from RFC not included above already http://www.faqs.org/rfcs/rfc3875.html
+                    'CONTENT_LENGTH'       => $string_helper,
+                    'CONTENT_TYPE'         => $string_helper,
+                    // common, misc stuff
+                    'FCGI_ROLE'            => $non_empty_string_helper,
+                    'HOME'                 => $non_empty_string_helper,
+                    'HTTP_CACHE_CONTROL'   => $non_empty_string_helper,
+                    'HTTP_COOKIE'          => $non_empty_string_helper,
+                    'HTTP_PRIORITY'        => $non_empty_string_helper,
+                    'PATH'                 => $non_empty_string_helper,
+                    'REDIRECT_STATUS'      => $non_empty_string_helper,
+                    'REQUEST_SCHEME'       => $non_empty_string_helper,
+                    'USER'                 => $non_empty_string_helper,
+                    // common, misc headers
+                    'HTTP_UPGRADE_INSECURE_REQUESTS' => $non_empty_string_helper,
+                    'HTTP_X_FORWARDED_PROTO'         => $non_empty_string_helper,
+                    'HTTP_CLIENT_IP'                 => $non_empty_string_helper,
+                    'HTTP_X_REAL_IP'                 => $non_empty_string_helper,
+                    'HTTP_X_FORWARDED_FOR'           => $non_empty_string_helper,
+                    'HTTP_CF_CONNECTING_IP'          => $non_empty_string_helper,
+                    'HTTP_CF_IPCOUNTRY'              => $non_empty_string_helper,
+                    'HTTP_CF_VISITOR'                => $non_empty_string_helper,
+                    'HTTP_CDN_LOOP'                  => $non_empty_string_helper,
+                    // common, misc browser headers
+                    'HTTP_DNT'                => $non_empty_string_helper,
+                    'HTTP_SEC_FETCH_DEST'     => $non_empty_string_helper,
+                    'HTTP_SEC_FETCH_USER'     => $non_empty_string_helper,
+                    'HTTP_SEC_FETCH_MODE'     => $non_empty_string_helper,
+                    'HTTP_SEC_FETCH_SITE'     => $non_empty_string_helper,
+                    'HTTP_SEC_CH_UA_PLATFORM' => $non_empty_string_helper,
+                    'HTTP_SEC_CH_UA_MOBILE'   => $non_empty_string_helper,
+                    'HTTP_SEC_CH_UA'          => $non_empty_string_helper,
+                    // phpunit
+                    'APP_DEBUG' => $bool_string_helper,
+                    'APP_ENV'   => $string_helper,
+                ],
+                null,
+                false,
+                Type::getNonEmptyString(),
+                Type::getString()
+            );
+            
             return new Union([$detailed_type]);
         }
 
@@ -760,7 +780,7 @@ class VariableFetchAnalyzer
                 ]),
             ];
 
-            if ($codebase_analysis_php_version_id >= 80100) {
+        if ($codebase_analysis_php_version_id >= 8_10_00) {
                 $values['full_path'] = new Union([
                     new TString(),
                     new TNonEmptyList(Type::getString()),

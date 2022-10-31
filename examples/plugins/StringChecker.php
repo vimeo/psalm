@@ -5,7 +5,6 @@ use PhpParser;
 use Psalm\Checker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
-use Psalm\FileManipulation;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;

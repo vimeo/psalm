@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use AssertionError;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -20,17 +21,25 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\PossiblyInvalidDocblockTag;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Empty_;
+use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsLooselyEqual;
+use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\IsNotType;
+use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\NonEmpty;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TAssertionFalsy;
-use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TConditional;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNull;
@@ -39,12 +48,12 @@ use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
 use function array_filter;
-use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -55,6 +64,9 @@ use function strtolower;
 use function substr;
 use function trim;
 
+/**
+ * @internal
+ */
 class FunctionLikeDocblockScanner
 {
     /**
@@ -165,9 +177,13 @@ class FunctionLikeDocblockScanner
                 $line
             );
 
-            $class_names = array_filter(array_map('trim', explode('|', $throw)));
+            foreach (explode('|', $throw) as $throw_class) {
+                $throw_class = trim($throw_class);
 
-            foreach ($class_names as $throw_class) {
+                if ($throw_class === '') {
+                    continue;
+                }
+
                 if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
                     $exception_fqcln = Type::getFQCLNFromString(
                         $throw_class,
@@ -268,9 +284,7 @@ class FunctionLikeDocblockScanner
         if ($storage instanceof MethodStorage) {
             $storage->has_docblock_param_types = (bool) array_filter(
                 $storage->params,
-                function (FunctionLikeParameter $p): bool {
-                    return $p->type !== null && $p->has_docblock_type;
-                }
+                static fn(FunctionLikeParameter $p): bool => $p->type !== null && $p->has_docblock_type
             );
         }
 
@@ -433,39 +447,44 @@ class FunctionLikeDocblockScanner
         );
 
         $param_type_mapping = [];
+        $template_function_id = 'fn-' . strtolower($cased_function_id);
 
         // This checks for param references in the return type tokens
         // If found, the param is replaced with a generated template param
         foreach ($fixed_type_tokens as $i => $type_token) {
             $token_body = $type_token[0];
-            $template_function_id = 'fn-' . strtolower($cased_function_id);
 
             if ($token_body[0] === '$') {
                 foreach ($storage->params as $j => $param_storage) {
                     if ('$' . $param_storage->name === $token_body) {
                         if (!isset($param_type_mapping[$token_body])) {
                             $template_name = 'TGeneratedFromParam' . $j;
+                            if (isset($storage->template_types[$template_name])) {
+                                $function_template_types[$template_name]
+                                    = $storage->template_types[$template_name];
+                                $param_type_mapping[$token_body] = $template_name;
+                            } else {
+                                $template_as_type = $param_storage->type
+                                    ? clone $param_storage->type
+                                    : Type::getMixed();
 
-                            $template_as_type = $param_storage->type
-                                ? clone $param_storage->type
-                                : Type::getMixed();
+                                $storage->template_types[$template_name] = [
+                                    $template_function_id => $template_as_type,
+                                ];
 
-                            $storage->template_types[$template_name] = [
-                                $template_function_id => $template_as_type,
-                            ];
+                                $function_template_types[$template_name]
+                                    = $storage->template_types[$template_name];
 
-                            $function_template_types[$template_name]
-                                = $storage->template_types[$template_name];
+                                $param_type_mapping[$token_body] = $template_name;
 
-                            $param_type_mapping[$token_body] = $template_name;
-
-                            $param_storage->type = new Union([
-                                new TTemplateParam(
-                                    $template_name,
-                                    $template_as_type,
-                                    $template_function_id
-                                )
-                            ]);
+                                $param_storage->type = new Union([
+                                    new TTemplateParam(
+                                        $template_name,
+                                        $template_as_type,
+                                        $template_function_id
+                                    )
+                                ]);
+                            }
                         }
 
                         // spaces are allowed before $foo in get(string $foo) magic method
@@ -530,7 +549,7 @@ class FunctionLikeDocblockScanner
      * @param array<string, array<string, Union>> $class_template_types
      * @param array<string, array<string, Union>> $function_template_types
      * @param array<string, TypeAlias> $type_aliases
-     * @return non-empty-list<string>|null
+     * @return non-empty-list<Assertion>|null
      */
     private static function getAssertionParts(
         Codebase $codebase,
@@ -545,20 +564,22 @@ class FunctionLikeDocblockScanner
         array $type_aliases,
         ?string $self_fqcln
     ): ?array {
-        $prefix = '';
+        $is_negation = false;
+        $is_loose_equality = false;
+        $is_strict_equality = false;
 
         if ($assertion_type[0] === '!') {
-            $prefix = '!';
+            $is_negation = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
         if ($assertion_type[0] === '~') {
-            $prefix .= '~';
+            $is_loose_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
         if ($assertion_type[0] === '=') {
-            $prefix .= '=';
+            $is_strict_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
@@ -566,17 +587,33 @@ class FunctionLikeDocblockScanner
             ? $class_template_types
             : [];
 
+        if ($assertion_type === 'falsy') {
+            return [$is_negation ? new Truthy() : new Falsy()];
+        }
+
+        if ($assertion_type === 'truthy') {
+            return [$is_negation ? new Falsy() : new Truthy()];
+        }
+
+        if ($assertion_type === 'empty') {
+            return [$is_negation ? new NonEmpty() : new Empty_()];
+        }
+
+        $template_types = $function_template_types + $class_template_types;
+
         try {
             $namespaced_type = TypeParser::parseTokens(
                 TypeTokenizer::getFullyQualifiedTokens(
                     $assertion_type,
                     $aliases,
-                    $function_template_types + $class_template_types,
+                    $template_types,
                     $type_aliases,
                     $self_fqcln,
                     null,
                     true
-                )
+                ),
+                null,
+                $template_types
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -587,10 +624,11 @@ class FunctionLikeDocblockScanner
             return null;
         }
 
-
-        if ($prefix && count($namespaced_type->getAtomicTypes()) > 1) {
+        if (($is_negation || $is_loose_equality || $is_strict_equality)
+            && count($namespaced_type->getAtomicTypes()) > 1
+        ) {
             $storage->docblock_issues[] = new InvalidDocblock(
-                'Docblock assertions cannot contain | characters together with ' . $prefix,
+                'Docblock assertions cannot contain | characters together with a prefix',
                 new CodeLocation($file_scanner, $stmt, null, true)
             );
 
@@ -606,20 +644,22 @@ class FunctionLikeDocblockScanner
         $assertion_type_parts = [];
 
         foreach ($namespaced_type->getAtomicTypes() as $namespaced_type_part) {
-            if ($namespaced_type_part instanceof TAssertionFalsy
-                || $namespaced_type_part instanceof TClassConstant
-                || ($namespaced_type_part instanceof TList
-                    && $namespaced_type_part->type_param->isMixed())
-                || ($namespaced_type_part instanceof TArray
-                    && $namespaced_type_part->type_params[0]->isArrayKey()
-                    && $namespaced_type_part->type_params[1]->isMixed())
-                || ($namespaced_type_part instanceof TIterable
-                    && $namespaced_type_part->type_params[0]->isMixed()
-                    && $namespaced_type_part->type_params[1]->isMixed())
-            ) {
-                $assertion_type_parts[] = $prefix . $namespaced_type_part->getAssertionString();
+            if ($is_negation) {
+                if ($is_strict_equality) {
+                    $assertion_type_parts[] = new IsNotIdentical($namespaced_type_part);
+                } elseif ($is_loose_equality) {
+                    $assertion_type_parts[] = new IsNotLooselyEqual($namespaced_type_part);
+                } else {
+                    $assertion_type_parts[] = new IsNotType($namespaced_type_part);
+                }
             } else {
-                $assertion_type_parts[] = $prefix . $namespaced_type_part->getId();
+                if ($is_strict_equality) {
+                    $assertion_type_parts[] = new IsIdentical($namespaced_type_part);
+                } elseif ($is_loose_equality) {
+                    $assertion_type_parts[] = new IsLooselyEqual($namespaced_type_part);
+                } else {
+                    $assertion_type_parts[] = new IsType($namespaced_type_part);
+                }
             }
         }
 
@@ -727,6 +767,7 @@ class FunctionLikeDocblockScanner
                     null,
                     null,
                     null,
+                    null,
                     false,
                     false,
                     true,
@@ -747,7 +788,8 @@ class FunctionLikeDocblockScanner
                     ),
                     null,
                     $function_template_types + $class_template_types,
-                    $type_aliases
+                    $type_aliases,
+                    true
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -759,7 +801,6 @@ class FunctionLikeDocblockScanner
             }
 
             $storage_param->has_docblock_type = true;
-            $new_param_type->setFromDocblock();
 
             $new_param_type->queueClassLikesForScanning(
                 $codebase,
@@ -808,7 +849,7 @@ class FunctionLikeDocblockScanner
                     && !$new_param_type->isNullable()
                     && !$new_param_type->hasTemplate()
                 ) {
-                    $new_param_type->addType(new TNull());
+                    $new_param_type = $new_param_type->getBuilder()->addType(new TNull())->freeze();
                 }
 
                 $config = Config::getInstance();
@@ -832,6 +873,7 @@ class FunctionLikeDocblockScanner
 
             foreach ($new_param_type->getAtomicTypes() as $key => $type) {
                 if (isset($storage_param_atomic_types[$key])) {
+                    /** @psalm-suppress InaccessibleProperty We just created this type */
                     $type->from_docblock = false;
 
                     if ($storage_param_atomic_types[$key] instanceof TArray
@@ -850,7 +892,7 @@ class FunctionLikeDocblockScanner
             }
 
             if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                $new_param_type->addType(new TNull());
+                $new_param_type = $new_param_type->getBuilder()->addType(new TNull())->freeze();
             }
 
             $storage_param->type = $new_param_type;
@@ -859,9 +901,7 @@ class FunctionLikeDocblockScanner
 
         $params_without_docblock_type = array_filter(
             $storage->params,
-            function (FunctionLikeParameter $p): bool {
-                return !$p->has_docblock_type && (!$p->type || $p->type->hasArray());
-            }
+            static fn(FunctionLikeParameter $p): bool => !$p->has_docblock_type && (!$p->type || $p->type->hasArray())
         );
 
         if ($params_without_docblock_type) {
@@ -930,10 +970,9 @@ class FunctionLikeDocblockScanner
                 array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
-                $type_aliases
+                $type_aliases,
+                true
             );
-
-            $storage->return_type->setFromDocblock();
 
             if ($storage instanceof MethodStorage) {
                 $storage->has_docblock_return_type = true;
@@ -945,6 +984,7 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->return_type->getAtomicTypes() as $key => $type) {
                     if (isset($signature_return_atomic_types[$key])) {
+                        /** @psalm-suppress InaccessibleProperty We just created this atomic type */
                         $type->from_docblock = false;
                     } else {
                         $all_typehint_types_match = false;
@@ -974,7 +1014,7 @@ class FunctionLikeDocblockScanner
                             $storage->signature_return_type
                         )
                     ) {
-                        $storage->return_type->addType(new TNull());
+                        $storage->return_type = $storage->return_type->getBuilder()->addType(new TNull())->freeze();
                     }
                 }
             }
@@ -1043,6 +1083,9 @@ class FunctionLikeDocblockScanner
 
                     if ($source_param_string[0] === '(' && substr($source_param_string, -1) === ')') {
                         $source_params = preg_split('/, ?/', substr($source_param_string, 1, -1));
+                        if ($source_params === false) {
+                            throw new AssertionError(preg_last_error_msg());
+                        }
 
                         foreach ($source_params as $source_param) {
                             $source_param = substr($source_param, 1);
@@ -1185,25 +1228,25 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
-                        $storage->assertions[] = new Assertion(
+                        $storage->assertions[] = new Possibilities(
                             $i,
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
-                        $storage->assertions[] = new Assertion(
+                        $storage->assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
                 }
 
-                $storage->assertions[] = new Assertion(
+                $storage->assertions[] = new Possibilities(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
-                    [$assertion_type_parts]
+                    $assertion_type_parts
                 );
             }
         }
@@ -1232,25 +1275,25 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
-                        $storage->if_true_assertions[] = new Assertion(
+                        $storage->if_true_assertions[] = new Possibilities(
                             $i,
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
-                        $storage->if_true_assertions[] = new Assertion(
+                        $storage->if_true_assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
                 }
 
-                $storage->if_true_assertions[] = new Assertion(
+                $storage->if_true_assertions[] = new Possibilities(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
-                    [$assertion_type_parts]
+                    $assertion_type_parts
                 );
             }
         }
@@ -1279,25 +1322,25 @@ class FunctionLikeDocblockScanner
 
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
-                        $storage->if_false_assertions[] = new Assertion(
+                        $storage->if_false_assertions[] = new Possibilities(
                             $i,
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
-                        $storage->if_false_assertions[] = new Assertion(
+                        $storage->if_false_assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
-                            [$assertion_type_parts]
+                            $assertion_type_parts
                         );
                         continue 2;
                     }
                 }
 
-                $storage->if_false_assertions[] = new Assertion(
+                $storage->if_false_assertions[] = new Possibilities(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
-                    [$assertion_type_parts]
+                    $assertion_type_parts
                 );
             }
         }

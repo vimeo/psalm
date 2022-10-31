@@ -21,6 +21,9 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ExitAnalyzer
 {
     public static function analyze(
@@ -136,7 +139,7 @@ class ExitAnalyzer
             }
         }
 
-        $statements_analyzer->node_data->setType($stmt, Type::getEmpty());
+        $statements_analyzer->node_data->setType($stmt, Type::getNever());
 
         $context->has_returned = true;
 

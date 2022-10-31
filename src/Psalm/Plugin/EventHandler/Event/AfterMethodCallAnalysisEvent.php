@@ -11,7 +11,7 @@ use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
-class AfterMethodCallAnalysisEvent
+final class AfterMethodCallAnalysisEvent
 {
     /**
      * @var MethodCall|StaticCall
@@ -53,6 +53,7 @@ class AfterMethodCallAnalysisEvent
     /**
      * @param  MethodCall|StaticCall $expr
      * @param  FileManipulation[] $file_replacements
+     * @internal
      */
     public function __construct(
         Expr $expr,

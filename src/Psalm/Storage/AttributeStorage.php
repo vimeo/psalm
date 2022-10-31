@@ -4,7 +4,7 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 
-class AttributeStorage
+final class AttributeStorage
 {
     /**
      * @var string

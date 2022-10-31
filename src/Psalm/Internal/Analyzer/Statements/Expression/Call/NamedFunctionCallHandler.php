@@ -132,7 +132,9 @@ class NamedFunctionCallHandler
         if ($function_id === 'interface_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    if (!$codebase->classlikes->interfaceExists($first_arg->value->value)) {
+                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
                     && $first_arg->value->name instanceof PhpParser\Node\Identifier
@@ -149,8 +151,30 @@ class NamedFunctionCallHandler
             return;
         }
 
+        if ($function_id === 'enum_exists') {
+            if ($first_arg) {
+                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                    if (!$codebase->classlikes->enumExists($first_arg->value->value)) {
+                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    }
+                } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $first_arg->value->class instanceof PhpParser\Node\Name
+                    && $first_arg->value->name instanceof PhpParser\Node\Identifier
+                    && $first_arg->value->name->name === 'class'
+                ) {
+                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
+
+                    if (!$codebase->classlikes->enumExists($resolved_name)) {
+                        $context->phantom_classes[strtolower($resolved_name)] = true;
+                    }
+                }
+            }
+
+            return;
+        }
+
         if (in_array($function_id, ['is_file', 'file_exists']) && $first_arg) {
-            $var_id = ExpressionIdentifier::getArrayVarId($first_arg->value, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($first_arg->value, null);
 
             if ($var_id) {
                 $context->phantom_files[$var_id] = true;
@@ -367,9 +391,7 @@ class NamedFunctionCallHandler
 
             foreach ($anded_assertions as $assertions) {
                 $referenced_var_ids = array_map(
-                    function (array $_): bool {
-                        return true;
-                    },
+                    static fn(array $_): bool => true,
                     $assertions
                 );
 
@@ -377,6 +399,7 @@ class NamedFunctionCallHandler
                     $assertions,
                     $assertions,
                     $context->vars_in_scope,
+                    $context->references_in_scope,
                     $changed_vars,
                     $referenced_var_ids,
                     $statements_analyzer,

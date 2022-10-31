@@ -10,6 +10,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
+use Psalm\Type\Atomic\TPropertiesOf;
 
 use function array_diff_key;
 use function array_keys;
@@ -67,20 +68,20 @@ class TypeComparatorTest extends TestCase
             'int-mask' => true,
             'pure-Closure' => true,
         ];
+        foreach (TPropertiesOf::tokenNames() as $token_name) {
+            $basic_generic_types[$token_name] = true;
+        }
 
         $basic_types = array_diff_key(
             TypeTokenizer::PSALM_RESERVED_WORDS,
             $basic_generic_types,
             [
                 'open-resource' => true, // unverifiable
-                'mysql-escaped-string' => true, // deprecated
                 'non-empty-countable' => true, // bit weird, maybe a bug?
             ]
         );
         return array_map(
-            function ($type) {
-                return [$type];
-            },
+            fn($type) => [$type],
             array_keys($basic_types)
         );
     }
@@ -114,19 +115,19 @@ class TypeComparatorTest extends TestCase
             ],
             'listAcceptsEmptyArray' => [
                 'list',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'arrayAcceptsEmptyArray' => [
                 'array',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'arrayOptionalKeyed1AcceptsEmptyArray' => [
                 'array{foo?: string}',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'arrayOptionalKeyed2AcceptsEmptyArray' => [
                 'array{foo?: string}&array<string, mixed>',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'Lowercase-stringAndCallable-string' => [
                 'lowercase-string',

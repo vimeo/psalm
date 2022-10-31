@@ -4,7 +4,6 @@ namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
-use Psalm\Internal\PhpVisitor\OffsetShifterVisitor;
 
 use function count;
 use function preg_match_all;
@@ -25,6 +24,8 @@ use const PREG_SET_ORDER;
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
  * just those methods.
+ *
+ * @internal
  */
 class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {

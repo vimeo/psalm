@@ -18,16 +18,17 @@ use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
-use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
 
+/**
+ * @internal
+ */
 class IfConditionalAnalyzer
 {
     public static function analyze(
@@ -42,15 +43,16 @@ class IfConditionalAnalyzer
 
         // used when evaluating elseifs
         if ($if_scope->negated_clauses) {
-            $entry_clauses = array_merge($outer_context->clauses, $if_scope->negated_clauses);
+            $entry_clauses = [...$outer_context->clauses, ...$if_scope->negated_clauses];
 
             $changed_var_ids = [];
 
             if ($if_scope->negated_types) {
-                $vars_reconciled = Reconciler::reconcileKeyedTypes(
+                [$vars_reconciled, $references_reconciled] = Reconciler::reconcileKeyedTypes(
                     $if_scope->negated_types,
                     [],
                     $outer_context->vars_in_scope,
+                    $outer_context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
@@ -69,15 +71,14 @@ class IfConditionalAnalyzer
                 if ($changed_var_ids) {
                     $outer_context = clone $outer_context;
                     $outer_context->vars_in_scope = $vars_reconciled;
+                    $outer_context->references_in_scope = $references_reconciled;
 
                     $entry_clauses = array_values(
                         array_filter(
                             $entry_clauses,
-                            function (Clause $c) use ($changed_var_ids): bool {
-                                return count($c->possibilities) > 1
-                                    || $c->wedge
-                                    || !isset($changed_var_ids[array_keys($c->possibilities)[0]]);
-                            }
+                            static fn(Clause $c): bool => count($c->possibilities) > 1
+                                || $c->wedge
+                                || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
                         )
                     );
                 }
@@ -96,8 +97,8 @@ class IfConditionalAnalyzer
 
         $pre_condition_vars_in_scope = $outer_context->vars_in_scope;
 
-        $referenced_var_ids = $outer_context->referenced_var_ids;
-        $outer_context->referenced_var_ids = [];
+        $referenced_var_ids = $outer_context->cond_referenced_var_ids;
+        $outer_context->cond_referenced_var_ids = [];
 
         $pre_assigned_var_ids = $outer_context->assigned_var_ids;
         $outer_context->assigned_var_ids = [];
@@ -112,14 +113,12 @@ class IfConditionalAnalyzer
 
         $outer_context->inside_conditional = true;
 
-        if ($externally_applied_if_cond_expr) {
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $externally_applied_if_cond_expr,
-                $outer_context
-            ) === false) {
-                throw new ScopeAnalysisException();
-            }
+        if (ExpressionAnalyzer::analyze(
+            $statements_analyzer,
+            $externally_applied_if_cond_expr,
+            $outer_context
+        ) === false) {
+            throw new ScopeAnalysisException();
         }
 
         $first_cond_assigned_var_ids = $outer_context->assigned_var_ids;
@@ -128,8 +127,8 @@ class IfConditionalAnalyzer
             $first_cond_assigned_var_ids
         );
 
-        $first_cond_referenced_var_ids = $outer_context->referenced_var_ids;
-        $outer_context->referenced_var_ids = array_merge(
+        $first_cond_referenced_var_ids = $outer_context->cond_referenced_var_ids;
+        $outer_context->cond_referenced_var_ids = array_merge(
             $referenced_var_ids,
             $first_cond_referenced_var_ids
         );
@@ -141,8 +140,10 @@ class IfConditionalAnalyzer
         }
 
         $if_conditional_context = clone $if_context;
-        $if_conditional_context->if_context = $if_context;
-        $if_conditional_context->if_scope = $if_scope;
+
+        // here we set up a context specifically for the statements in the first `if`, which can
+        // be affected by statements in the if condition
+        $if_conditional_context->if_body_context = $if_context;
 
         if ($codebase->alter_code) {
             $if_context->branch_point = $branch_point;
@@ -159,7 +160,7 @@ class IfConditionalAnalyzer
             $if_conditional_context->assigned_var_ids = [];
 
             $referenced_var_ids = $first_cond_referenced_var_ids;
-            $if_conditional_context->referenced_var_ids = [];
+            $if_conditional_context->cond_referenced_var_ids = [];
 
             $was_inside_conditional = $if_conditional_context->inside_conditional;
 
@@ -172,8 +173,8 @@ class IfConditionalAnalyzer
             $if_conditional_context->inside_conditional = $was_inside_conditional;
 
             /** @var array<string, bool> */
-            $more_cond_referenced_var_ids = $if_conditional_context->referenced_var_ids;
-            $if_conditional_context->referenced_var_ids = array_merge(
+            $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;
+            $if_conditional_context->cond_referenced_var_ids = array_merge(
                 $more_cond_referenced_var_ids,
                 $referenced_var_ids
             );
@@ -200,22 +201,16 @@ class IfConditionalAnalyzer
             $assigned_in_conditional_var_ids = $first_cond_assigned_var_ids;
         }
 
-        $newish_var_ids = array_map(
-            /**
-             * @param Union $_
-             *
-             * @return true
-             */
-            function (Union $_): bool {
-                return true;
-            },
-            array_diff_key(
-                $if_conditional_context->vars_in_scope,
-                $pre_condition_vars_in_scope,
-                $cond_referenced_var_ids,
-                $assigned_in_conditional_var_ids
-            )
-        );
+        $newish_var_ids = [];
+
+        foreach (array_diff_key(
+            $if_conditional_context->vars_in_scope,
+            $pre_condition_vars_in_scope,
+            $cond_referenced_var_ids,
+            $assigned_in_conditional_var_ids
+        ) as $name => $_value) {
+            $newish_var_ids[$name] = true;
+        }
 
         self::handleParadoxicalCondition($statements_analyzer, $cond, true);
 
@@ -237,7 +232,7 @@ class IfConditionalAnalyzer
      * Returns statements that are definitely evaluated before any statements after the end of the
      * if/elseif/else blocks
      */
-    private static function getDefinitelyEvaluatedExpressionAfterIf(PhpParser\Node\Expr $stmt): ?PhpParser\Node\Expr
+    private static function getDefinitelyEvaluatedExpressionAfterIf(PhpParser\Node\Expr $stmt): PhpParser\Node\Expr
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
@@ -281,7 +276,7 @@ class IfConditionalAnalyzer
      * Returns statements that are definitely evaluated before any statements inside
      * the if block
      */
-    private static function getDefinitelyEvaluatedExpressionInsideIf(PhpParser\Node\Expr $stmt): ?PhpParser\Node\Expr
+    private static function getDefinitelyEvaluatedExpressionInsideIf(PhpParser\Node\Expr $stmt): PhpParser\Node\Expr
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
@@ -333,18 +328,18 @@ class IfConditionalAnalyzer
                 if ($type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
-                            'Operand of type ' . $type->getId() . ' is always false',
+                            'Operand of type ' . $type->getId() . ' is always falsy',
                             new CodeLocation($statements_analyzer, $stmt),
-                            'false falsy'
+                            $type->getId() . ' falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new TypeDoesNotContainType(
-                            'Operand of type ' . $type->getId() . ' is always false',
+                            'Operand of type ' . $type->getId() . ' is always falsy',
                             new CodeLocation($statements_analyzer, $stmt),
-                            'false falsy'
+                            $type->getId() . ' falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
@@ -355,18 +350,18 @@ class IfConditionalAnalyzer
                 if ($type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new RedundantConditionGivenDocblockType(
-                            'Operand of type ' . $type->getId() . ' is always true',
+                            'Operand of type ' . $type->getId() . ' is always truthy',
                             new CodeLocation($statements_analyzer, $stmt),
-                            'true falsy'
+                            $type->getId() . ' falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new RedundantCondition(
-                            'Operand of type ' . $type->getId() . ' is always true',
+                            'Operand of type ' . $type->getId() . ' is always truthy',
                             new CodeLocation($statements_analyzer, $stmt),
-                            'true falsy'
+                            $type->getId() . ' falsy'
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );

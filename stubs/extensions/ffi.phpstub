@@ -1,0 +1,451 @@
+<?php
+
+namespace {
+    /**
+     * @since 7.4.0
+     */
+    final class FFI
+    {
+        public static function cdef(string $code = "", ?string $lib = null): FFI
+        {
+        }
+
+        public static function load(string $filename): ?FFI
+        {
+        }
+
+        public static function scope(string $name): FFI
+        {
+        }
+
+        /**
+         * @param \FFI\CType|string $type
+         */
+        public static function new($type, bool $owned = true, bool $persistent = false): ?\FFI\CData
+        {
+        }
+
+        public static function free(\FFI\CData $ptr): void
+        {
+        }
+
+        /**
+         * @param \FFI\CType $type
+         * @param \FFI\CData|int|float|bool|null $ptr
+         */
+        public static function cast($type, &$ptr): ?\FFI\CData
+        {
+        }
+
+        public static function type(string $type): ?\FFI\CType
+        {
+        }
+
+        public static function typeof(\FFI\CData $ptr): \FFI\CType
+        {
+        }
+
+        /**
+         * @param array<int<0,max>> $dimensions
+         */
+        public static function arrayType(\FFI\CType $type, array $dimensions): \FFI\CType
+        {
+        }
+
+        public static function addr(\FFI\CData $ptr): \FFI\CData
+        {
+        }
+
+        /**
+         * @param \FFI\CData|\FFI\CType $ptr
+         * @return int<0,max>
+         */
+        public static function sizeof($ptr): int
+        {
+        }
+
+        /**
+         * @param \FFI\CData|\FFI\CType $ptr
+         * @return positive-int
+         */
+        public static function alignof($ptr): int
+        {
+        }
+
+        /**
+         * @param \FFI\CData|string $from
+         * @param int<0,max> $size
+         */
+        public static function memcpy(\FFI\CData $to, $from, int $size): void
+        {
+        }
+
+        /**
+         * @param string|\FFI\CData $ptr1
+         * @param string|\FFI\CData $ptr2
+         * @param int<0,max> $size
+         */
+        public static function memcmp(&$ptr1, &$ptr2, int $size): int
+        {
+        }
+
+        /**
+         * @param int<0,max> $size
+         */
+        public static function memset(\FFI\CData $ptr, int $value, int $size): void
+        {
+        }
+
+        /**
+         * @param int<0,max>|null $size
+         */
+        public static function string(\FFI\CData $ptr, ?int $size = null): string
+        {
+        }
+
+        public static function isNull(\FFI\CData $ptr): bool
+        {
+        }
+    }
+
+}
+
+namespace FFI {
+
+    /**
+     * @since 7.4.0
+     */
+    final class CData
+    {
+
+    }
+
+    /**
+     * @since 7.4.0
+     */
+    final class CType
+    {
+        /**
+         * @since 8.1
+         */
+        public const TYPE_VOID = 0;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_FLOAT = 1;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_DOUBLE = 2;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_LONGDOUBLE = 3;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_UINT8 = 4;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_SINT8 = 5;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_UINT16 = 6;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_SINT16 = 7;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_UINT32 = 8;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_SINT32 = 9;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_UINT64 = 10;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_SINT64 = 11;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_ENUM = 12;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_BOOL = 13;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_CHAR = 14;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_POINTER = 15;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_FUNC = 16;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_ARRAY = 17;
+
+        /**
+         * @since 8.1
+         */
+        public const TYPE_STRUCT = 18;
+
+        /**
+         * @since 8.1
+         */
+        public const ATTR_CONST = 1;
+
+        /**
+         * @since 8.1
+         */
+        public const ATTR_INCOMPLETE_TAG = 2;
+
+        /**
+         * @since 8.1
+         */
+        public const ATTR_VARIADIC = 4;
+
+        /**
+         * @since 8.1
+         */
+        public const ATTR_INCOMPLETE_ARRAY = 8;
+
+        /**
+         * @since 8.1
+         */
+        public const ATTR_VLA = 16;
+
+        /**
+         * @since 8.1
+         */
+        public const ATTR_UNION = 32;
+
+        /**
+         * @since 8.1
+         */
+        public const ATTR_PACKED = 64;
+
+        /**
+         * @since 8.1
+         */
+        public const ATTR_MS_STRUCT = 128;
+
+        /**
+         * @since 8.1
+         */
+        public const ATTR_GCC_STRUCT = 256;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_DEFAULT = 0;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_CDECL = 1;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_FASTCALL = 2;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_THISCALL = 3;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_STDCALL = 4;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_PASCAL = 5;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_REGISTER = 6;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_MS = 7;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_SYSV = 8;
+
+        /**
+         * @since 8.1
+         */
+        public const ABI_VECTORCALL = 9;
+
+        public function getName(): string
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         * @return self::TYPE_*
+         */
+        public function getKind(): int
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         * @return int<0,max>
+         */
+        public function getSize(): int
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         * @return int<0,max>
+         */
+        public function getAlignment(): int
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         */
+        public function getAttributes(): int
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         * @return self::TYPE_UINT32|self::TYPE_UINT64
+         */
+        public function getEnumKind(): int
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         */
+        public function getArrayElementType(): CType
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         * @return int<0,max>
+         */
+        public function getArrayLength(): int
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         */
+        public function getPointerType(): CType
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         * @return string[]
+         */
+        public function getStructFieldNames(): array
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         * @return int<0,max>
+         */
+        public function getStructFieldOffset(string $name): int
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         */
+        public function getStructFieldType(string $name): CType
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         * @return self::ABI_*
+         */
+        public function getFuncABI(): int
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         */
+        public function getFuncReturnType(): CType
+        {
+        }
+
+        /**
+         * @since 8.1.0
+         * @return int<0,max>
+         */
+        public function getFuncParameterCount(): int
+        {
+        }
+
+        /**
+         * @param int<0,max> $index
+         * @since 8.1.0
+         */
+        public function getFuncParameterType(int $index): CType
+        {
+        }
+    }
+
+    /**
+     * @since 7.4.0
+     */
+    class Exception extends \Error
+    {
+    }
+
+    /**
+     * @since 7.4.0
+     */
+    final class ParserException extends Exception
+    {
+    }
+}

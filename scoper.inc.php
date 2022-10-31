@@ -39,17 +39,6 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            if (strpos($filePath, 'vendor/phpmyadmin/sql-parser/src/Context.php') === 0) {
-                return str_replace(
-                    '\'' . $prefix,
-                    '\'\\\\' . $prefix,
-                    $contents
-                );
-            }
-
-            return $contents;
-        },
-        function ($filePath, $prefix, $contents) {
             if (strpos($filePath, 'vendor/openlss') === 0) {
                 return str_replace(
                     $prefix . '\\DomDocument',

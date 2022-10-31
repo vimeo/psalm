@@ -17,6 +17,9 @@ use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Node\Scalar\VirtualLNumber;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class IncDecExpressionAnalyzer
 {
     /**
@@ -74,7 +77,7 @@ class IncDecExpressionAnalyzer
                 'inc'
             );
 
-            $var_id = ExpressionIdentifier::getArrayVarId($stmt->var, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->var, null);
 
             $codebase = $statements_analyzer->getCodebase();
 
@@ -126,7 +129,7 @@ class IncDecExpressionAnalyzer
             if ($stmt instanceof PreInc || $stmt instanceof PreDec) {
                 $old_node_data->setType(
                     $stmt,
-                    $statements_analyzer->node_data->getType($operation) ?? Type::getMixed()
+                    $statements_analyzer->node_data->getType($fake_assignment) ?? Type::getMixed()
                 );
             }
 

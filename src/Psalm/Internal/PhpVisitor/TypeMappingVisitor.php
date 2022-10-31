@@ -8,6 +8,9 @@ use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Internal\Provider\NodeDataProvider;
 
+/**
+ * @internal
+ */
 class TypeMappingVisitor extends NodeVisitorAbstract
 {
     private $fake_type_provider;

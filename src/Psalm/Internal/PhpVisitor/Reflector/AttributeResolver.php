@@ -17,6 +17,9 @@ use Psalm\Type;
 
 use function strtolower;
 
+/**
+ * @internal
+ */
 class AttributeResolver
 {
     public static function resolve(

@@ -42,6 +42,10 @@ You can also parameterize `class-string` with an object name e.g. [`class-string
 
 Psalm also supports a `trait-string` annotation denoting a trait that exists.
 
+### enum-string
+
+Psalm also supports a `enum-string` annotation denote an enum that exists.
+
 ### callable-string
 
 `callable-string` denotes a string value that has passed an `is_callable` check.
@@ -73,9 +77,3 @@ Strings that don't pass this type check:
 A non empty string, lowercased or both at once.
 
 `empty` here is defined as all strings except the empty string `''`. Another type `non-falsy-string` is effectively a subtype of `non-empty-string`, and also precludes the string value `'0'`.
-
-### html-escaped-string (deprecated)
-
-A string which can safely be used in a html context.
-
-_This type will be removed in Psalm 5.x._

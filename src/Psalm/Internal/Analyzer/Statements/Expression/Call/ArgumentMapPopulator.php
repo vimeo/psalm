@@ -18,6 +18,9 @@ use function strlen;
 use function substr;
 use function token_get_all;
 
+/**
+ * @internal
+ */
 class ArgumentMapPopulator
 {
     /**

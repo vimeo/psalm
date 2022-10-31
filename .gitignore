@@ -12,3 +12,4 @@
 /tests/fixtures/symlinktest/*
 
 .idea/
+.vscode/

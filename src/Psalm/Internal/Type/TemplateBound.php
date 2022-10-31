@@ -4,6 +4,9 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class TemplateBound
 {
     /**

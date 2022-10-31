@@ -5,7 +5,6 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
@@ -17,7 +16,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function array_map;
 use function in_array;
 use function is_string;
 use function preg_match;
@@ -94,8 +92,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                 $use_context->vars_in_scope['$this'] = clone $context->vars_in_scope['$this'];
             } elseif ($context->self) {
-                $this_atomic = new TNamedObject($context->self);
-                $this_atomic->was_static = true;
+                $this_atomic = new TNamedObject($context->self, true);
 
                 $use_context->vars_in_scope['$this'] = new Union([$this_atomic]);
             }
@@ -160,6 +157,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 if ($use->byRef) {
                     $use_context->vars_in_scope[$use_var_id]->by_ref = true;
+                    $use_context->references_to_external_scope[$use_var_id] = true;
                 }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
@@ -231,17 +229,15 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         PhpParser\Node\Expr\Closure $stmt,
         Context $context
     ): ?bool {
-        $param_names = array_map(
-            function (PhpParser\Node\Param $p): string {
-                if (!$p->var instanceof PhpParser\Node\Expr\Variable
-                    || !is_string($p->var->name)
-                ) {
-                    return '';
-                }
-                return $p->var->name;
-            },
-            $stmt->params
-        );
+        $param_names = [];
+
+        foreach ($stmt->params as $i => $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                $param_names[$i] = $param->var->name;
+            } else {
+                $param_names[$i] = '';
+            }
+        }
 
         foreach ($stmt->uses as $use) {
             if (!is_string($use->var->name)) {

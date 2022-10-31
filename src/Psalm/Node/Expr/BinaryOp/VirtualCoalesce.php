@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use Psalm\Node\VirtualNode;
 
-class VirtualCoalesce extends Coalesce implements VirtualNode
+final class VirtualCoalesce extends Coalesce implements VirtualNode
 {
 
 }

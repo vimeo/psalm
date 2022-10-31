@@ -7,7 +7,6 @@ use PhpParser\NodeTraverser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\PhpVisitor\ParamReplacementVisitor;
@@ -21,12 +20,14 @@ use Psalm\Issue\ImplementedParamTypeMismatch;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\LessSpecificImplementedReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
+use Psalm\Issue\MethodSignatureMustProvideReturnType;
 use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\ParamNameMismatch;
 use Psalm\Issue\TraitMethodSignatureMismatch;
 use Psalm\IssueBuffer;
+use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
@@ -35,10 +36,14 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_filter;
 use function in_array;
 use function strpos;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class MethodComparator
 {
     /**
@@ -92,7 +97,7 @@ class MethodComparator
             $cased_implementer_method_id,
             $prevent_method_signature_mismatch,
             $prevent_abstract_override,
-            $codebase->php_major_version >= 8,
+            $codebase->analysis_php_version_id >= 8_00_00,
             $code_location,
             $suppressed_issues
         );
@@ -110,6 +115,27 @@ class MethodComparator
                 $cased_implementer_method_id,
                 $code_location,
                 $suppressed_issues
+            );
+        }
+
+        if (!$guide_classlike_storage->user_defined
+            && $implementer_classlike_storage->user_defined
+            && $codebase->analysis_php_version_id >= 8_01_00
+            && ($guide_method_storage->return_type
+                || $guide_method_storage->signature_return_type
+            )
+            && !$implementer_method_storage->signature_return_type
+            && !array_filter(
+                $implementer_method_storage->attributes,
+                static fn (AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange'
+            )
+        ) {
+            IssueBuffer::maybeAdd(
+                new MethodSignatureMustProvideReturnType(
+                    'Method ' . $cased_implementer_method_id . ' must have a return type signature!',
+                    $implementer_method_storage->location ?: $code_location
+                ),
+                $suppressed_issues + $implementer_classlike_storage->suppressed_issues
             );
         }
 
@@ -336,7 +362,7 @@ class MethodComparator
                 $guide_param_signature_type = $guide_param->type;
 
                 $or_null_guide_param_signature_type = $guide_param->signature_type
-                    ? clone $guide_param->signature_type
+                    ? $guide_param->signature_type->getBuilder()
                     : null;
 
                 if ($or_null_guide_param_signature_type) {
@@ -559,9 +585,7 @@ class MethodComparator
             $implementer_classlike_storage->parent_class
         );
 
-        $is_contained_by = (($codebase->php_major_version === 7
-                    && $codebase->php_minor_version === 4)
-                || $codebase->php_major_version >= 8)
+        $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
             && $guide_param_signature_type
             ? UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -575,7 +599,7 @@ class MethodComparator
         if (!$is_contained_by) {
             $config = Config::getInstance();
 
-            if ($codebase->php_major_version >= 8
+            if ($codebase->analysis_php_version_id >= 8_00_00
                 || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                 || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                 || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
@@ -705,29 +729,34 @@ class MethodComparator
             }
         }
 
-        foreach ($implementer_method_storage_param_type->getAtomicTypes() as $k => $t) {
+        $builder = $implementer_method_storage_param_type->getBuilder();
+        foreach ($builder->getAtomicTypes() as $k => $t) {
             if ($t instanceof TTemplateParam
                 && strpos($t->defining_class, 'fn-') === 0
             ) {
-                $implementer_method_storage_param_type->removeType($k);
+                $builder->removeType($k);
 
                 foreach ($t->as->getAtomicTypes() as $as_t) {
-                    $implementer_method_storage_param_type->addType($as_t);
+                    $builder->addType($as_t);
                 }
             }
         }
+        $implementer_method_storage_param_type = $builder->freeze();
 
-        foreach ($guide_method_storage_param_type->getAtomicTypes() as $k => $t) {
+        $builder = $guide_method_storage_param_type->getBuilder();
+        foreach ($builder->getAtomicTypes() as $k => $t) {
             if ($t instanceof TTemplateParam
                 && strpos($t->defining_class, 'fn-') === 0
             ) {
-                $guide_method_storage_param_type->removeType($k);
+                $builder->removeType($k);
 
                 foreach ($t->as->getAtomicTypes() as $as_t) {
-                    $guide_method_storage_param_type->addType($as_t);
+                    $builder->addType($as_t);
                 }
             }
         }
+        $guide_method_storage_param_type = $builder->freeze();
+        unset($builder);
 
         if ($implementer_classlike_storage->template_extended_params) {
             self::transformTemplates(
@@ -853,9 +882,7 @@ class MethodComparator
                 $implementer_classlike_storage->parent_class
             ) : null;
 
-        $is_contained_by = (($codebase->php_major_version === 7
-                    && $codebase->php_minor_version === 4)
-                || $codebase->php_major_version >= 8)
+        $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
             && $implementer_signature_return_type
             ? UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -865,7 +892,7 @@ class MethodComparator
             : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
-            if ($codebase->php_major_version >= 8
+            if ($codebase->analysis_php_version_id >= 8_00_00
                 || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                 || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                 || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
@@ -1033,7 +1060,7 @@ class MethodComparator
     private static function transformTemplates(
         array $template_extended_params,
         string $base_class_name,
-        Union $templated_type,
+        Union &$templated_type,
         Codebase $codebase
     ): void {
         if (isset($template_extended_params[$base_class_name])) {
@@ -1070,7 +1097,7 @@ class MethodComparator
 
             $template_result = new TemplateResult([], $template_types);
 
-            TemplateInferredTypeReplacer::replace(
+            $templated_type = TemplateInferredTypeReplacer::replace(
                 $templated_type,
                 $template_result,
                 $codebase

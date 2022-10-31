@@ -25,6 +25,9 @@ use UnexpectedValueException;
 use function array_slice;
 use function rtrim;
 
+/**
+ * @internal
+ */
 class ClassLikeStubGenerator
 {
     /**
@@ -36,11 +39,7 @@ class ClassLikeStubGenerator
         string $classlike_name
     ) : PhpParser\Node\Stmt\ClassLike {
         $subnodes = [
-            'stmts' => array_merge(
-                self::getConstantNodes($codebase, $storage),
-                self::getPropertyNodes($storage),
-                self::getMethodNodes($storage)
-            )
+            'stmts' => [...self::getConstantNodes($codebase, $storage), ...self::getPropertyNodes($storage), ...self::getMethodNodes($storage)]
         ];
 
         $docblock = new ParsedDocblock('', []);

@@ -12,18 +12,18 @@ class GetObjectVarsTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         yield 'returnsPublicProperties' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var string */
                     public $prop = "val";
                 }
                 $ret = get_object_vars(new C);
             ',
-            ['$ret' => 'array{prop: string}'],
+            'assertions' => ['$ret' => 'array{prop: string}'],
         ];
 
         yield 'omitsPrivateAndProtectedPropertiesWhenCalledOutsideOfClassScope' => [
-            '<?php
+            'code' => '<?php
                 final class C {
                     /** @var string */
                     private $priv = "val";
@@ -33,11 +33,11 @@ class GetObjectVarsTest extends TestCase
                 }
                 $ret = get_object_vars(new C);
             ',
-            ['$ret' => 'array<empty, empty>'],
+            'assertions' => ['$ret' => 'array<never, never>'],
         ];
 
         yield 'includesPrivateAndProtectedPropertiesWhenCalledInsideClassScope' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var string */
                     private $priv = "val";
@@ -51,11 +51,11 @@ class GetObjectVarsTest extends TestCase
                     }
                 }
             ',
-            [],
+            'assertions' => [],
         ];
 
         yield 'includesProtectedAndOmitsPrivateFromParentWhenCalledInDescendant' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var string */
                     private $priv = "val";
@@ -74,11 +74,11 @@ class GetObjectVarsTest extends TestCase
                     }
                 }
             ',
-            [],
+            'assertions' => [],
         ];
 
         yield 'propertiesOfObjectWithKeys' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @param object{a:int, b:string, c:bool} $p
                  * @return array{a:int, b:string, c:bool}
@@ -87,17 +87,17 @@ class GetObjectVarsTest extends TestCase
                     return get_object_vars($p);
                 }
             ',
-            [],
+            'assertions' => [],
         ];
 
         yield 'propertiesOfCastScalar' => [
-            '<?php $ret = get_object_vars((object)true);',
-            ['$ret' => 'array{scalar: true}'],
+            'code' => '<?php $ret = get_object_vars((object)true);',
+            'assertions' => ['$ret' => 'array{scalar: true}'],
         ];
 
         yield 'propertiesOfPOPO' => [
-            '<?php $ret = get_object_vars((object)["a" => 1]);',
-            ['$ret' => 'array{a: int}'],
+            'code' => '<?php $ret = get_object_vars((object)["a" => 1]);',
+            'assertions' => ['$ret' => 'array{a: int}'],
         ];
     }
 }

@@ -5,7 +5,7 @@ namespace Psalm\Plugin\EventHandler\Event;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class PropertyTypeProviderEvent
+final class PropertyTypeProviderEvent
 {
     /**
      * @var string
@@ -28,6 +28,7 @@ class PropertyTypeProviderEvent
      */
     private $context;
 
+    /** @internal */
     public function __construct(
         string $fq_classlike_name,
         string $property_name,

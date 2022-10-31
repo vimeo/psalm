@@ -8,7 +8,8 @@ use SimpleXMLElement;
 use function stripos;
 use function strpos;
 
-class ProjectFileFilter extends FileFilter
+/** @internal */
+final class ProjectFileFilter extends FileFilter
 {
     /**
      * @var ProjectFileFilter|null

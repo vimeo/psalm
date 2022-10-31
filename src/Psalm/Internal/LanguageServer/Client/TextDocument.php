@@ -16,6 +16,8 @@ use function Amp\call;
 
 /**
  * Provides method handlers for all textDocument/* methods
+ *
+ * @internal
  */
 class TextDocument
 {
@@ -55,6 +57,8 @@ class TextDocument
      * @param TextDocumentIdentifier $textDocument The document to get the content for
      *
      * @return Promise<TextDocumentItem> The document's current content
+     *
+     * @psalm-suppress MixedReturnTypeCoercion due to Psalm bug
      */
     public function xcontent(TextDocumentIdentifier $textDocument): Promise
     {
@@ -62,7 +66,7 @@ class TextDocument
             /**
              * @return Generator<int, Promise<object>, object, TextDocumentItem>
              */
-            function () use ($textDocument) {
+            static function () use ($textDocument) {
                 /** @var Promise<object> */
                 $promise = $this->handler->request(
                     'textDocument/xcontent',

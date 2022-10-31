@@ -82,7 +82,6 @@ class SwitchCaseAnalyzer
             $case_context->branch_point = $case_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
         }
 
-        $case_context->parent_context = $context;
         $case_scope = $case_context->case_scope = new CaseScope($case_context);
 
         $case_equality_expr = null;
@@ -109,7 +108,6 @@ class SwitchCaseAnalyzer
             if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
                 unset($case_scope->parent_context);
                 unset($case_context->case_scope);
-                unset($case_context->parent_context);
 
                 return false;
             }
@@ -281,7 +279,6 @@ class SwitchCaseAnalyzer
 
             unset($case_scope->parent_context);
             unset($case_context->case_scope);
-            unset($case_context->parent_context);
 
             $statements_analyzer->node_data = $old_node_data;
 
@@ -359,10 +356,7 @@ class SwitchCaseAnalyzer
 
         if ($switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
             $entry_clauses = Algebra::simplifyCNF(
-                array_merge(
-                    $original_context->clauses,
-                    $switch_scope->negated_clauses
-                )
+                [...$original_context->clauses, ...$switch_scope->negated_clauses]
             );
         } else {
             $entry_clauses = $original_context->clauses;
@@ -379,9 +373,9 @@ class SwitchCaseAnalyzer
             );
 
             if (count($entry_clauses) + count($case_clauses) < 50) {
-                $case_context->clauses = Algebra::simplifyCNF(array_merge($entry_clauses, $case_clauses));
+                $case_context->clauses = Algebra::simplifyCNF([...$entry_clauses, ...$case_clauses]);
             } else {
-                $case_context->clauses = array_merge($entry_clauses, $case_clauses);
+                $case_context->clauses = [...$entry_clauses, ...$case_clauses];
             }
         } else {
             $case_context->clauses = $entry_clauses;
@@ -403,11 +397,12 @@ class SwitchCaseAnalyzer
                 $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
             }
 
-            $case_vars_in_scope_reconciled =
+            [$case_vars_in_scope_reconciled, $case_references_in_scope_reconciled] =
                 Reconciler::reconcileKeyedTypes(
                     $reconcilable_if_types,
                     [],
                     $case_context->vars_in_scope,
+                    $case_context->references_in_scope,
                     $changed_var_ids,
                     $case->cond && $switch_var_id ? [$switch_var_id => true] : [],
                     $statements_analyzer,
@@ -429,6 +424,7 @@ class SwitchCaseAnalyzer
             }
 
             $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
+            $case_context->references_in_scope = $case_references_in_scope_reconciled;
             foreach ($reconcilable_if_types as $var_id => $_) {
                 $case_context->vars_possibly_in_scope[$var_id] = true;
             }
@@ -460,17 +456,8 @@ class SwitchCaseAnalyzer
                 }
             }
 
-            $switch_scope->negated_clauses = array_merge(
-                $switch_scope->negated_clauses,
-                $negated_case_clauses
-            );
+            $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
         }
-
-        $pre_possibly_assigned_var_ids = $case_context->possibly_assigned_var_ids;
-        $case_context->possibly_assigned_var_ids = [];
-
-        $pre_assigned_var_ids = $case_context->assigned_var_ids;
-        $case_context->assigned_var_ids = [];
 
         $statements_analyzer->analyze($case_stmts, $case_context);
 
@@ -486,20 +473,6 @@ class SwitchCaseAnalyzer
 
         $statements_analyzer->node_data = $old_node_data;
 
-        /** @var array<string, int> */
-        $new_case_assigned_var_ids = $case_context->assigned_var_ids;
-        $case_context->assigned_var_ids = $pre_assigned_var_ids + $new_case_assigned_var_ids;
-
-        /** @var array<string, bool> */
-        $new_case_possibly_assigned_var_ids = $case_context->possibly_assigned_var_ids;
-        $case_context->possibly_assigned_var_ids =
-            $pre_possibly_assigned_var_ids + $new_case_possibly_assigned_var_ids;
-
-        $context->referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $case_context->referenced_var_ids
-        );
-
         if ($case_exit_type !== 'return_throw') {
             if (self::handleNonReturningCase(
                 $statements_analyzer,
@@ -513,7 +486,6 @@ class SwitchCaseAnalyzer
             ) === false) {
                 unset($case_scope->parent_context);
                 unset($case_context->case_scope);
-                unset($case_context->parent_context);
 
                 return false;
             }
@@ -570,7 +542,6 @@ class SwitchCaseAnalyzer
 
         unset($case_scope->parent_context);
         unset($case_context->case_scope);
-        unset($case_context->parent_context);
 
         return null;
     }
@@ -591,7 +562,7 @@ class SwitchCaseAnalyzer
         if (!$case->cond
             && $switch_var_id
             && isset($case_context->vars_in_scope[$switch_var_id])
-            && $case_context->vars_in_scope[$switch_var_id]->isEmpty()
+            && $case_context->vars_in_scope[$switch_var_id]->isNever()
         ) {
             if (IssueBuffer::accepts(
                 new ParadoxicalCondition(

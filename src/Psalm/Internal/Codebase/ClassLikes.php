@@ -13,7 +13,6 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\CodeMigration;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -194,7 +193,7 @@ class ClassLikes
             /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new ReflectionClass($predefined_class);
 
-            if (!$reflection_class->isUserDefined()) {
+            if (!$reflection_class->isUserDefined() && $reflection_class->name === $predefined_class) {
                 $predefined_class_lc = strtolower($predefined_class);
                 $this->existing_classlikes_lc[$predefined_class_lc] = true;
                 $this->existing_classes_lc[$predefined_class_lc] = true;
@@ -210,7 +209,7 @@ class ClassLikes
             /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new ReflectionClass($predefined_interface);
 
-            if (!$reflection_class->isUserDefined()) {
+            if (!$reflection_class->isUserDefined() && $reflection_class->name === $predefined_interface) {
                 $predefined_interface_lc = strtolower($predefined_interface);
                 $this->existing_classlikes_lc[$predefined_interface_lc] = true;
                 $this->existing_interfaces_lc[$predefined_interface_lc] = true;
@@ -803,7 +802,10 @@ class ClassLikes
             throw new UnexpectedValueException('Storage should exist for ' . $fq_trait_name);
         }
 
-        $file_statements = $this->statements_provider->getStatementsForFile($storage->location->file_path, '7.4');
+        $file_statements = $this->statements_provider->getStatementsForFile(
+            $storage->location->file_path,
+            ProjectAnalyzer::getInstance()->getCodebase()->analysis_php_version_id
+        );
 
         $trait_finder = new TraitFinder($fq_trait_name);
 
@@ -1453,9 +1455,10 @@ class ClassLikes
 
             foreach ($codebase->class_transforms as $old_fq_class_name => $new_fq_class_name) {
                 if ($type->containsClassLike($old_fq_class_name)) {
-                    $type = clone $type;
-
-                    $type->replaceClassLike($old_fq_class_name, $new_fq_class_name);
+                    $type = $type->replaceClassLike(
+                        $old_fq_class_name,
+                        $new_fq_class_name
+                    );
 
                     $bounds = $type_location->getSelectionBounds();
 
@@ -1493,9 +1496,10 @@ class ClassLikes
             $destination_class = $codebase->classes_to_move[$fq_class_name_lc];
 
             if ($type->containsClassLike($fq_class_name_lc)) {
-                $type = clone $type;
-
-                $type->replaceClassLike($fq_class_name_lc, $destination_class);
+                $type = $type->replaceClassLike(
+                    $fq_class_name_lc,
+                    $destination_class
+                );
             }
 
             $this->airliftClassDefinedDocblockType(
@@ -1596,29 +1600,23 @@ class ClassLikes
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
             return array_filter(
                 $storage->constants,
-                function ($constant) {
-                    return $constant->type
-                        && $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-                }
+                static fn(ClassConstantStorage $constant): bool => $constant->type
+                    && $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
             );
         }
 
         if ($visibility === ReflectionProperty::IS_PROTECTED) {
             return array_filter(
                 $storage->constants,
-                function ($constant) {
-                    return $constant->type
-                        && ($constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                            || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED);
-                }
+                static fn(ClassConstantStorage $constant): bool => $constant->type
+                    && ($constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED)
             );
         }
 
         return array_filter(
             $storage->constants,
-            function ($constant) {
-                return $constant->type !== null;
-            }
+            static fn(ClassConstantStorage $constant): bool => $constant->type !== null
         );
     }
 
@@ -1631,7 +1629,8 @@ class ClassLikes
         string $constant_name,
         int $visibility,
         ?StatementsAnalyzer $statements_analyzer = null,
-        array $visited_constant_ids = []
+        array $visited_constant_ids = [],
+        bool $late_static_binding = false
     ): ?Union {
         $class_name = strtolower($class_name);
 
@@ -1658,15 +1657,18 @@ class ClassLikes
             }
 
             if ($constant_storage->unresolved_node) {
-                $constant_storage->type = new Union([ConstantTypeResolver::resolve(
+                $constant_storage->inferred_type = new Union([ConstantTypeResolver::resolve(
                     $this,
                     $constant_storage->unresolved_node,
                     $statements_analyzer,
                     $visited_constant_ids
                 )]);
+                if ($constant_storage->type === null || !$constant_storage->type->from_docblock) {
+                    $constant_storage->type = $constant_storage->inferred_type;
+                }
             }
 
-            return $constant_storage->type;
+            return $late_static_binding ? $constant_storage->type : ($constant_storage->inferred_type ?? null);
         } elseif (isset($storage->enum_cases[$constant_name])) {
             return new Union([new TEnumCase($storage->name, $constant_name)]);
         }

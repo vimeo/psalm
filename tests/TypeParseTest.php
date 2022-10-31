@@ -213,6 +213,13 @@ class TypeParseTest extends TestCase
         $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a?: int}'));
     }
 
+
+    public function testIntersectionOfIntranges(): void
+    {
+        $this->assertSame('array{a: int<3, 4>}', (string) Type::parseString('array{a: int<2, 4>}&array{a: int<3, 6>}'));
+        $this->assertSame('array{a: 4}', Type::parseString('array{a: 4}&array{a: int<3, 6>}')->getId(true));
+    }
+
     public function testIntersectionOfTKeyedArrayWithConflictingProperties(): void
     {
         $this->expectException(TypeParseTreeException::class);
@@ -516,7 +523,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is string|true ? int|string : int)',
-            (string) Type::parseString('(T is "hello"|true ? string|int : int)', null, ['T' => ['' => Type::getArray()]])
+            Type::parseString('(T is "hello"|true ? string|int : int)', null, ['T' => ['' => Type::getArray()]])->getId(false)
         );
     }
 
@@ -733,7 +740,7 @@ class TypeParseTest extends TestCase
     public function testCombineLiteralStringWithClassString(): void
     {
         $this->assertSame(
-            '"array"|class-string',
+            "'array'|class-string",
             Type::parseString('"array"|class-string')->getId()
         );
     }
@@ -758,7 +765,15 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'key-of<T>',
-            (string)Type::parseString('key-of<T>', null, ['T' => ['' => Type::getArray()]])
+            Type::parseString('key-of<T>', null, ['T' => ['' => Type::getArray()]])->getId(false)
+        );
+    }
+
+    public function testValueOfTemplate(): void
+    {
+        $this->assertSame(
+            'value-of<T>',
+            (string)Type::parseString('value-of<T>', null, ['T' => ['' => Type::getArray()]])
         );
     }
 
@@ -791,7 +806,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'class-string-map<T as Foo, T>',
-            (string)Type::parseString('class-string-map<T as Foo, T>')
+            Type::parseString('class-string-map<T as Foo, T>')->getId(false)
         );
     }
 
@@ -881,31 +896,39 @@ class TypeParseTest extends TestCase
         $string = "АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя";
         $string .= $string;
         $expected = mb_substr($string, 0, 80);
-        $this->assertSame("\"$expected...\"", Type::parseString("'$string'")->getId());
-        $this->assertSame("\"$expected...\"", Type::parseString("\"$string\"")->getId());
+        $this->assertSame("'$expected...'", Type::parseString("'$string'")->getId());
+        $this->assertSame("'$expected...'", Type::parseString("\"$string\"")->getId());
     }
 
     public function testSingleLiteralString(): void
     {
         $this->assertSame(
-            'string',
-            (string)Type::parseString('"var"')
+            "'var'",
+            Type::parseString('"var"')->getId()
+        );
+    }
+
+    public function testEmptyArrayShape(): void
+    {
+        $this->assertSame(
+            'array<never, never>',
+            (string)Type::parseString('array{}')
         );
     }
 
     public function testSingleLiteralInt(): void
     {
         $this->assertSame(
-            'int',
-            (string)Type::parseString('6')
+            '6',
+            Type::parseString('6')->getId()
         );
     }
 
     public function testSingleLiteralFloat(): void
     {
         $this->assertSame(
-            'float',
-            (string)Type::parseString('6.315')
+            'float(6.315)',
+            Type::parseString('6.315')->getId()
         );
     }
 

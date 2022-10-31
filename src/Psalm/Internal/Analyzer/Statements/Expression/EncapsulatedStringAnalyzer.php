@@ -23,6 +23,9 @@ use Psalm\Type\Union;
 use function assert;
 use function in_array;
 
+/**
+ * @internal
+ */
 class EncapsulatedStringAnalyzer
 {
     public static function analyze(

@@ -41,7 +41,8 @@ class StaticCallAnalyzer extends CallAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
-        Context $context
+        Context $context,
+        ?TemplateResult $template_result = null
     ): bool {
         $method_id = null;
 
@@ -219,7 +220,8 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $lhs_type->ignore_nullable_issues,
                 $moved_call,
                 $has_mock,
-                $has_existing_method
+                $has_existing_method,
+                $template_result
             );
         }
 
@@ -227,7 +229,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             return self::checkMethodArgs(
                 $method_id,
                 $stmt->getArgs(),
-                null,
+                new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer
@@ -296,10 +298,8 @@ class StaticCallAnalyzer extends CallAnalyzer
 
         if ($method_storage && $template_result) {
             foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
-                $conditionally_removed_taint = clone $conditionally_removed_taint;
-
-                TemplateInferredTypeReplacer::replace(
-                    $conditionally_removed_taint,
+                $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
+                    clone $conditionally_removed_taint,
                     $template_result,
                     $codebase
                 );
@@ -342,7 +342,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                array_merge($conditionally_removed_taints, $removed_taints)
+                [...$conditionally_removed_taints, ...$removed_taints]
             );
 
             $return_type_candidate->parent_nodes[$assignment_node->id] = $assignment_node;

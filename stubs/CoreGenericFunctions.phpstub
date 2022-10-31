@@ -1,13 +1,12 @@
 <?php
 /**
- * @psalm-template TKey as array-key
- * @psalm-template TArray as array<TKey, mixed>
+ * @psalm-template TArray as array
  *
  * @param TArray $array
  * @param mixed $search_value
  * @param bool  $strict
  *
- * @return (TArray is non-empty-array ? non-empty-list<TKey> : list<TKey>)
+ * @return (TArray is non-empty-array ? non-empty-list<key-of<TArray>> : list<key-of<TArray>>)
  * @psalm-pure
  */
 function array_keys(array $array, $search_value = null, bool $strict = false)
@@ -136,7 +135,7 @@ function array_flip(array $array)
  *
  * @param TArray $array
  *
- * @return (TArray is array<empty,empty> ? null : (TArray is non-empty-list ? int<0,max> : (TArray is non-empty-array ? TKey : TKey|null)))
+ * @return (TArray is array<never, never> ? null : TKey|null)
  * @psalm-pure
  * @psalm-ignore-nullable-return
  */
@@ -186,11 +185,11 @@ function end(&$array)
 
 /**
  * @psalm-template TKey as array-key
- * @psalm-template TArray as array<TKey, mixed>
+ * @psalm-template TArray as array
  *
  * @param TArray $array
  *
- * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? key-of<TArray> : key-of<TArray>|null))
  * @psalm-pure
  */
 function array_key_first($array)
@@ -198,15 +197,26 @@ function array_key_first($array)
 }
 
 /**
- * @psalm-template TKey as array-key
- * @psalm-template TArray as array<TKey, mixed>
+ * @psalm-template TArray as array
  *
  * @param TArray $array
  *
- * @return (TArray is array<empty, empty> ? null : (TArray is non-empty-array ? TKey : TKey|null))
+ * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? key-of<TArray> : key-of<TArray>|null))
  * @psalm-pure
  */
 function array_key_last($array)
+{
+}
+
+/**
+ * @psalm-template TArray as array
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is non-empty-array ? non-empty-list<value-of<TArray>> : list<value-of<TArray>>)
+ * @psalm-pure
+ */
+function array_values($array)
 {
 }
 
@@ -753,6 +763,12 @@ function array_product(array $array) {}
  *
  * 259 is FILTER_VALIDATE_FLOAT
  * @psalm-taint-escape ($filter is 259 ? 'html' : null)
+ *
+ * 519 is FILTER_SANITIZE_NUMBER_INT
+ * @psalm-taint-escape ($filter is 519 ? 'html' : null)
+ *
+ * 520 is FILTER_SANITIZE_NUMBER_FLOAT
+ * @psalm-taint-escape ($filter is 520 ? 'html' : null)
  *
  * @psalm-flow ($value, $filter, $options) -> return
  */

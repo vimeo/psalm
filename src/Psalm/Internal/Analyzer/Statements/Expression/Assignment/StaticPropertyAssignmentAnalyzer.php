@@ -45,7 +45,7 @@ class StaticPropertyAssignmentAnalyzer
         Union $assignment_value_type,
         Context $context
     ): ?bool {
-        $var_id = ExpressionIdentifier::getArrayVarId(
+        $var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt,
             $context->self,
             $statements_analyzer
@@ -195,6 +195,16 @@ class StaticPropertyAssignmentAnalyzer
             if ($var_id) {
                 $context->vars_in_scope[$var_id] = $assignment_value_type;
             }
+
+            InstancePropertyAssignmentAnalyzer::taintUnspecializedProperty(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $class_storage,
+                $assignment_value_type,
+                $context,
+                null
+            );
 
             $class_property_type = $codebase->properties->getPropertyType(
                 $property_id,

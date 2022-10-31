@@ -59,6 +59,7 @@ use UnexpectedValueException;
 use function array_combine;
 use function array_diff;
 use function array_fill_keys;
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -311,6 +312,7 @@ class ProjectAnalyzer
         $this->stdout_report_options = $stdout_report_options;
         $this->generated_report_options = $generated_report_options;
 
+        $this->config->processPluginFileExtensions($this);
         $file_extensions = $this->config->getFileExtensions();
 
         foreach ($this->config->getProjectDirectories() as $dir_name) {
@@ -526,7 +528,7 @@ class ProjectAnalyzer
                         $reader = new ProtocolStreamReader($socket);
                         $reader->on(
                             'close',
-                            function (): void {
+                            static function (): void {
                                 fwrite(STDOUT, "Connection closed\n");
                             }
                         );
@@ -575,7 +577,7 @@ class ProjectAnalyzer
     {
         $codebase = $this->codebase;
 
-        $version = $codebase->php_major_version . '.' . $codebase->php_minor_version;
+        $version = $codebase->getMajorAnalysisPhpVersion() . '.' . $codebase->getMinorAnalysisPhpVersion();
 
         switch ($codebase->php_version_source) {
             case 'cli':
@@ -595,7 +597,9 @@ class ProjectAnalyzer
                 break;
         }
 
-        return "Target PHP version: $version $source\n";
+        return "Target PHP version: $version $source Extensions enabled: "
+            . implode(", ", array_keys(array_filter($codebase->config->php_extensions))) . " (unsupported extensions: "
+            . implode(", ", array_keys($codebase->config->php_extensions_not_supported)) . ")\n";
     }
 
     public function check(string $base_dir, bool $is_diff = false): void
@@ -621,7 +625,7 @@ class ProjectAnalyzer
             && $this->project_cache_provider->canDiffFiles()
         ) {
             $deleted_files = $this->file_reference_provider->getDeletedReferencedFiles();
-            $diff_files = array_merge($deleted_files, $this->getDiffFiles());
+            $diff_files = [...$deleted_files, ...$this->getDiffFiles()];
         }
 
         $this->progress->write($this->generatePHPVersionMessage());
@@ -955,7 +959,7 @@ class ProjectAnalyzer
             foreach ($migration_manipulations as $file_path => $file_manipulations) {
                 usort(
                     $file_manipulations,
-                    function (FileManipulation $a, FileManipulation $b): int {
+                    static function (FileManipulation $a, FileManipulation $b): int {
                         if ($a->start === $b->start) {
                             if ($b->end === $a->end) {
                                 return $b->insertion_text > $a->insertion_text ? 1 : -1;
@@ -1304,17 +1308,15 @@ class ProjectAnalyzer
         $php_major_version = (int) $php_major_version;
         $php_minor_version = (int) $php_minor_version;
 
-        if ($this->codebase->php_major_version !== $php_major_version
-            || $this->codebase->php_minor_version !== $php_minor_version
-        ) {
+        $analysis_php_version_id = $php_major_version * 10_000 + $php_minor_version * 100;
+
+        if ($this->codebase->analysis_php_version_id !== $analysis_php_version_id) {
             // reset lexer and parser when php version changes
             StatementsProvider::clearLexer();
             StatementsProvider::clearParser();
         }
 
-        $this->codebase->php_major_version = $php_major_version;
-        $this->codebase->php_minor_version = $php_minor_version;
-        $this->codebase->analysis_php_version_id = $php_major_version * 10000 + $php_minor_version * 100;
+        $this->codebase->analysis_php_version_id = $analysis_php_version_id;
         $this->codebase->php_version_source = $source;
     }
 
@@ -1523,7 +1525,7 @@ class ProjectAnalyzer
     {
         return array_map(
             /** @param class-string $issue_class */
-            function (string $issue_class): string {
+            static function (string $issue_class): string {
                 $parts = explode('\\', $issue_class);
                 return end($parts);
             },

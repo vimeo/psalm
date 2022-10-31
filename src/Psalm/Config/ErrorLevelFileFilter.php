@@ -8,7 +8,8 @@ use SimpleXMLElement;
 
 use function in_array;
 
-class ErrorLevelFileFilter extends FileFilter
+/** @internal */
+final class ErrorLevelFileFilter extends FileFilter
 {
     /**
      * @var string

@@ -1,0 +1,986 @@
+<?php
+// This file is the result of combining the stubs from the
+// [documentation](https://www.php.net/manual/en/class.domattr.php), the stubs from
+// [php-src](https://github.com/php/php-src/blob/master/ext/dom/php_dom.stub.php), the reflection-generated stubs, and
+// further updates for Psalm.
+
+const XML_ELEMENT_NODE = 1;
+const XML_ATTRIBUTE_NODE = 2;
+const XML_TEXT_NODE = 3;
+const XML_CDATA_SECTION_NODE = 4;
+const XML_ENTITY_REF_NODE = 5;
+const XML_ENTITY_NODE = 6;
+const XML_PI_NODE = 7;
+const XML_COMMENT_NODE = 8;
+const XML_DOCUMENT_NODE = 9;
+const XML_DOCUMENT_TYPE_NODE = 10;
+const XML_DOCUMENT_FRAG_NODE = 11;
+const XML_NOTATION_NODE = 12;
+const XML_HTML_DOCUMENT_NODE = 13;
+const XML_DTD_NODE = 14;
+const XML_ELEMENT_DECL_NODE = 15;
+const XML_ATTRIBUTE_DECL_NODE = 16;
+const XML_ENTITY_DECL_NODE = 17;
+const XML_NAMESPACE_DECL_NODE = 18;
+const XML_LOCAL_NAMESPACE = 18;
+const XML_ATTRIBUTE_CDATA = 1;
+const XML_ATTRIBUTE_ID = 2;
+const XML_ATTRIBUTE_IDREF = 3;
+const XML_ATTRIBUTE_IDREFS = 4;
+const XML_ATTRIBUTE_ENTITY = 6;
+const XML_ATTRIBUTE_NMTOKEN = 7;
+const XML_ATTRIBUTE_NMTOKENS = 8;
+const XML_ATTRIBUTE_ENUMERATION = 9;
+const XML_ATTRIBUTE_NOTATION = 10;
+const DOM_PHP_ERR = 0;
+const DOM_INDEX_SIZE_ERR = 1;
+const DOMSTRING_SIZE_ERR = 2;
+const DOM_HIERARCHY_REQUEST_ERR = 3;
+const DOM_WRONG_DOCUMENT_ERR = 4;
+const DOM_INVALID_CHARACTER_ERR = 5;
+const DOM_NO_DATA_ALLOWED_ERR = 6;
+const DOM_NO_MODIFICATION_ALLOWED_ERR = 7;
+const DOM_NOT_FOUND_ERR = 8;
+const DOM_NOT_SUPPORTED_ERR = 9;
+const DOM_INUSE_ATTRIBUTE_ERR = 10;
+const DOM_INVALID_STATE_ERR = 11;
+const DOM_SYNTAX_ERR = 12;
+const DOM_INVALID_MODIFICATION_ERR = 13;
+const DOM_NAMESPACE_ERR = 14;
+const DOM_INVALID_ACCESS_ERR = 15;
+const DOM_VALIDATION_ERR = 16;
+
+function dom_import_simplexml(object $node): ?DOMElement {}
+/** @php-from 8.0 */
+function dom_import_simplexml(object $node): DOMElement {}
+
+final class DOMException extends Exception
+{
+    public int $code;
+}
+
+/** @php-from 8.0 */
+interface DOMParentNode
+{
+    /**
+     * @param DOMNode|string ...$nodes
+     */
+    public function append(...$nodes) : void;
+
+    /**
+     * @param DOMNode|string ...$nodes
+     */
+    public function prepend(...$nodes) : void;
+}
+
+/** @php-from 8.0 */
+interface DOMChildNode
+{
+    public function remove() : void;
+
+    /**
+     * @param DOMNode|string ...$nodes
+     */
+    public function before(...$nodes) : void;
+
+    /**
+     * @param DOMNode|string ...$nodes
+     */
+    public function after(...$nodes) : void;
+
+    /**
+     * @param DOMNode|string ...$nodes
+     */
+    public function replaceWith(...$nodes) : void;
+}
+
+class DOMImplementation
+{
+    // Not implemented: https://github.com/php/php-src/blob/c53455ffd78179feb6f5cef180fa638890699266/ext/dom/domimplementation.c#L230
+    // public function getFeature(string $feature, string $version)
+    // {
+    // }
+
+    public function hasFeature(string $feature, string $version): bool {}
+
+    /**
+     * @return DOMDocumentType|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createDocumentType(string $qualifiedName, string $publicId = '', string $systemId = '') {}
+
+    /**
+     * @return DOMDocument|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createDocument(string $namespace = '', string $qualifiedName = '', DOMDocumentType $doctype = null) {}
+
+    /**
+     * @return DOMDocument|false
+     * @psalm-ignore-falsable-return
+     * @php-from 8.0
+     */
+    public function createDocument(string $namespace = '', string $qualifiedName = '', ?DOMDocumentType $doctype = null) {}
+
+    /**
+     * @return DOMDocument|false
+     * @psalm-ignore-falsable-return
+     * @php-from 8.0.3
+     */
+    public function createDocument(?string $namespace = null, string $qualifiedName = '', ?DOMDocumentType $doctype = null) {}
+}
+
+class DOMNode
+{
+    /** @readonly */
+    public string $nodeName;
+    public ?string $nodeValue;
+    /** @readonly */
+    public int $nodeType;
+    /** @readonly */
+    public ?DOMNode $parentNode;
+    /**
+     * @readonly
+     * @var DOMNodeList<DOMNode>
+     */
+    public DOMNodeList $childNodes;
+    /** @readonly */
+    public ?DOMNode $firstChild;
+    /** @readonly */
+    public ?DOMNode $lastChild;
+    /** @readonly */
+    public ?DOMNode $previousSibling;
+    /** @readonly */
+    public ?DOMNode $nextSibling;
+    /**
+     * @readonly
+     * @var DOMNamedNodeMap<DOMAttr>|null
+     */
+    public ?DOMNamedNodeMap $attributes;
+    /** @readonly */
+    public ?DOMDocument $ownerDocument;
+    /** @readonly */
+    public ?string $namespaceURI;
+    public string $prefix;
+    /** @readonly */
+    public ?string $localName;
+    /** @readonly */
+    public ?string $baseURI;
+    public string $textContent;
+
+    /**
+     * @return DOMNode|false
+     * @psalm-ignore-falsable-return
+     */
+    public function appendChild(DOMNode $node) {}
+
+    /**
+     * @return string|false
+     * @psalm-ignore-falsable-return
+     */
+    public function C14N(bool $exclusive = false, bool $withComments = false, ?array $xpath = null, ?array $nsPrefixes = null) {}
+
+    /**
+     * @return int|false
+     * @psalm-ignore-falsable-return
+     */
+    public function C14NFile(string $uri, bool $exclusive = false, bool $withComments = false, ?array $xpath = null, ?array $nsPrefixes = null) {}
+
+    /**
+     * @return DOMNode|false
+     * @psalm-ignore-falsable-return
+     */
+    public function cloneNode(bool $deep = false) {}
+
+    public function getLineNo(): int {}
+
+    public function getNodePath(): ?string {}
+
+    public function hasAttributes(): bool {}
+
+    public function hasChildNodes(): bool {}
+
+    /**
+     * @return DOMNode|false
+     * @psalm-ignore-falsable-return
+     */
+    public function insertBefore(DOMNode $node, ?DOMNode $child = null) {}
+
+    public function isDefaultNamespace(string $namespace): bool {}
+
+    public function isSameNode(DOMNode $otherNode): bool {}
+
+    public function isSupported(string $feature, string $version): bool {}
+
+    public function lookupNamespaceURI(?string $prefix): ?string {}
+
+    public function lookupPrefix(string $namespace): ?string {}
+
+    public function normalize(): void {}
+
+    /**
+     * @return DOMNode|false
+     * @psalm-ignore-falsable-return
+     */
+    public function removeChild(DOMNode $child) {}
+
+    /**
+     * @return DOMNode|false
+     * @psalm-ignore-falsable-return
+     */
+    public function replaceChild(DOMNode $node, DOMNode $child) {}
+}
+
+class DOMNameSpaceNode
+{
+    /** @readonly */
+    public string $nodeName;
+    /** @readonly */
+    public ?string $nodeValue;
+    /** @readonly */
+    public int $nodeType;
+    /** @readonly */
+    public string $prefix;
+    /** @readonly */
+    public ?string $localName;
+    /** @readonly */
+    public ?string $namespaceURI;
+    /** @readonly */
+    public ?DOMDocument $ownerDocument;
+    /** @readonly */
+    public ?DOMNode $parentNode;
+}
+
+class DOMDocumentFragment extends DOMNode implements DOMParentNode
+{
+    /** @readonly */
+    public ?DOMElement $firstElementChild;
+    /** @readonly */
+    public ?DOMElement $lastElementChild;
+    /** @readonly */
+    public int $childElementCount;
+
+    public function __construct() {}
+
+    public function appendXML(string $data): bool {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function append(...$nodes): void {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function prepend(...$nodes): void {}
+}
+
+class DOMDocument extends DOMNode implements DOMParentNode
+{
+    /** @readonly */
+    public ?DOMDocumentType $doctype;
+    /** @readonly */
+    public DOMImplementation $implementation;
+    /** @readonly */
+    public ?DOMElement $documentElement;
+
+    /**
+     * @deprecated
+     * @readonly
+     */
+    public ?string $actualEncoding;
+
+    /**
+     * @var ?string
+     */
+    public $encoding;
+
+    /** @readonly */
+    public ?string $xmlEncoding;
+
+    /**
+     * @var bool
+     */
+    public $standalone;
+
+    /**
+     * @var bool
+     */
+    public $xmlStandalone;
+
+    /**
+     * @var ?string
+     */
+    public $version;
+
+    /**
+     * @var ?string
+     */
+    public $xmlVersion;
+
+    /**
+     * @var bool
+     */
+    public $strictErrorChecking;
+
+    /**
+     * @var ?string
+     */
+    public $documentURI;
+
+    /**
+     * @var mixed
+     * @readonly
+     * @deprecated
+     */
+    public $config;
+
+    /**
+     * @var bool
+     */
+    public $formatOutput;
+
+    /**
+     * @var bool
+     */
+    public $validateOnParse;
+
+    /**
+     * @var bool
+     */
+    public $resolveExternals;
+
+    /**
+     * @var bool
+     */
+    public $preserveWhiteSpace;
+
+    /**
+     * @var bool
+     */
+    public $recover;
+
+    /**
+     * @var bool
+     */
+    public $substituteEntities;
+
+    /** @readonly */
+    public ?DOMElement $firstElementChild;
+    /** @readonly */
+    public ?DOMElement $lastElementChild;
+    /** @readonly */
+    public int $childElementCount;
+
+    public function __construct(string $version = '1.0', string $encoding = '') {}
+
+    /**
+     * @return DOMAttr|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createAttribute(string $localName) {}
+
+    /**
+     * @return DOMAttr|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createAttributeNS(?string $namespace, string $qualifiedName) {}
+
+    /**
+     * @return DOMCdataSection|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createCDATASection(string $data) {}
+
+    /**
+     * @return DOMComment|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createComment(string $data) {}
+
+    /**
+     * @throws DOMException
+     * @php-from 8.1
+     */
+    public function createComment(string $data): DOMComment {}
+
+    /**
+     * @return DOMDocumentFragment|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createDocumentFragment() {}
+
+    /**
+     * @throws DOMException
+     * @php-from 8.1
+     */
+    public function createDocumentFragment(): DOMDocumentFragment {}
+
+    /**
+     * @return DOMElement|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createElement(string $localName, string $value = '') {}
+
+    /**
+     * @return DOMElement|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createElementNS(?string $namespace, string $qualifiedName, string $value = '') {}
+
+    /**
+     * @return DOMEntityReference|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createEntityReference(string $name) {}
+
+    /**
+     * @return DOMProcessingInstruction|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createProcessingInstruction(string $target, string $data = '') {}
+
+    /**
+     * @return DOMText|false
+     * @psalm-ignore-falsable-return
+     */
+    public function createTextNode(string $data) {}
+
+    /**
+     * @throws DOMException
+     * @php-from 8.1
+     */
+    public function createTextNode(string $data): DOMText {}
+
+    public function getElementById(string $elementId): ?DOMElement {}
+
+    /** @return DOMNodeList<DOMElement> */
+    public function getElementsByTagName(string $qualifiedName): DOMNodeList {}
+
+    /** @return DOMNodeList<DOMElement> */
+    public function getElementsByTagNameNS(string $namespace, string $localName): DOMNodeList {}
+
+    /**
+     * @return DOMNodeList<DOMElement>
+     * @php-from 8.0.3
+     */
+    public function getElementsByTagNameNS(?string $namespace, string $localName): DOMNodeList {}
+
+    /**
+     * @return DOMNode|false
+     * @psalm-ignore-falsable-return
+     */
+    public function importNode(DOMNode $node, bool $deep = false) {}
+
+    /**
+     * @return DOMDocument|false
+     * @psalm-ignore-falsable-return
+     **/
+    public function load(string $filename, int $options = 0) {}
+
+    /**
+     * @return DOMDocument|false
+     * @psalm-ignore-falsable-return
+     */
+    public function loadXML(string $source, int $options = 0) {}
+
+    public function normalizeDocument(): void {}
+
+    public function registerNodeClass(string $baseClass, ?string $extendedClass): bool {}
+
+    /**
+     * @return int|false
+     * @psalm-ignore-falsable-return
+     */
+    public function save(string $filename, int $options = 0) {}
+
+    /** @return DOMDocument|bool */
+    public function loadHTML(string $source, int $options = 0) {}
+
+    /** @return DOMDocument|bool */
+    public function loadHTMLFile(string $filename, int $options = 0) {}
+
+    /**
+     * @return string|false
+     * @psalm-ignore-falsable-return
+     */
+    public function saveHTML(?DOMNode $node = null) {}
+
+    /**
+     * @return int|false
+     * @psalm-ignore-falsable-return
+     */
+    public function saveHTMLFile(string $filename) {}
+
+    /**
+     * @return string|false
+     * @psalm-ignore-falsable-return
+     */
+    public function saveXML(?DOMNode $node = null, int $options = 0) {}
+
+    public function schemaValidate(string $filename, int $flags = 0): bool {}
+
+    public function schemaValidateSource(string $source, int $flags = 0): bool {}
+
+    public function relaxNGValidate(string $filename): bool {}
+
+    public function relaxNGValidateSource(string $source): bool {}
+
+    public function validate(): bool {}
+
+    /**
+     * @return int|false
+     * @psalm-ignore-falsable-return
+     */
+    public function xinclude(int $options = 0) {}
+
+    /**
+     * @return DOMNode|false
+     * @psalm-ignore-falsable-return
+     */
+    public function adoptNode(DOMNode $node) {}
+
+    /**
+     * @return DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function append(...$nodes) : void {}
+
+    /**
+     * @return DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function prepend(...$nodes) : void {}
+}
+
+/**
+ * @template-covariant TNode as DOMNode
+ * @template-implements Traversable<int, TNode>
+ */
+class DOMNodeList implements Traversable
+{
+    /** @readonly */
+    public int $length;
+
+    /**
+     * @return TNode|null
+     * @psalm-ignore-nullable-return
+     */
+    public function item(int $index) {}
+}
+
+/**
+ * @template-covariant TNode as DOMNode
+ * @template-implements Traversable<int, TNode>
+ *
+ * @php-from 7.2
+ */
+class DOMNodeList implements Traversable, Countable
+{
+    /** @readonly */
+    public int $length;
+
+    public function count(): int {}
+
+    /**
+     * @return TNode|null
+     * @psalm-ignore-nullable-return
+     */
+    public function item(int $index) {}
+}
+
+/**
+ * @template-covariant TNode as DOMNode
+ * @template-implements IteratorAggregate<int, TNode>
+ *
+ * @php-from 8.0
+ */
+class DOMNodeList implements IteratorAggregate, Countable
+{
+    /** @readonly */
+    public int $length;
+
+    public function count(): int {}
+
+    /** @return Iterator<int, TNode> */
+    public function getIterator() : Iterator {}
+
+    /**
+     * @return TNode|null
+     * @psalm-ignore-nullable-return
+     */
+    public function item(int $index) {}
+}
+
+/**
+ * @template-covariant TNode as DOMNode
+ * @template-implements Traversable<string, TNode>
+ */
+class DOMNamedNodeMap implements Traversable, Countable
+{
+    /** @readonly */
+    public int $length;
+
+    /** @return TNode|null */
+    public function getNamedItem(string $qualifiedName): ?DOMNode {}
+
+    /** @return TNode|null */
+    public function getNamedItemNS(?string $namespace, string $localName): ?DOMNode {}
+
+    /**
+     * @return TNode|null
+     * @psalm-ignore-nullable-return
+     */
+    public function item(int $index): ?DOMNode {}
+
+    public function count(): int {}
+}
+
+/**
+ * @template-covariant TNode as DOMNode
+ * @template-implements IteratorAggregate<string, TNode>
+ *
+ * @php-from 8.0
+ */
+class DOMNamedNodeMap implements IteratorAggregate, Countable
+{
+    /** @readonly */
+    public int $length;
+
+    /** @return TNode|null */
+    public function getNamedItem(string $qualifiedName): ?DOMNode {}
+
+    /** @return TNode|null */
+    public function getNamedItemNS(?string $namespace, string $localName): ?DOMNode {}
+
+    /**
+     * @return TNode|null
+     * @psalm-ignore-nullable-return
+     */
+    public function item(int $index): ?DOMNode {}
+
+    public function count(): int {}
+
+    /** @return Iterator<string, TNode> */
+    public function getIterator() : Iterator {}
+}
+
+class DOMCharacterData extends DOMNode implements DOMChildNode
+{
+    public string $data;
+    /** @readonly */
+    public int $length;
+    /** @readonly */
+    public ?DOMElement $previousElementSibling;
+    /** @readonly */
+    public ?DOMElement $nextElementSibling;
+
+    public function appendData(string $data): bool {}
+
+    /**
+     * @return string|false
+     * @psalm-ignore-falsable-return
+     */
+    public function substringData(int $offset, int $count) {}
+
+    public function insertData(int $offset, string $data): bool {}
+
+    public function deleteData(int $offset, int $count): bool {}
+
+    public function replaceData(int $offset, int $count, string $data): bool {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function replaceWith(...$nodes) : void {}
+
+    /** @php-from 8.0 */
+    public function remove() : void {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function before(...$nodes) : void {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function after(...$nodes) : void {}
+}
+
+class DOMAttr extends DOMNode
+{
+    /** @readonly */
+    public string $name;
+    /** @readonly */
+    public bool $specified;
+    public string $value;
+    /** @readonly */
+    public ?DOMElement $ownerElement;
+    /** @readonly */
+    public mixed $schemaTypeInfo;
+
+    /**
+     * Inherited from DOMNode, but always non-null
+     * @readonly
+     */
+    public string $localName;
+
+    public function __construct(string $name, string $value = '') {}
+
+    public function isId(): bool {}
+}
+
+class DOMElement extends DOMNode implements DOMParentNode, DOMChildNode
+{
+    /** @readonly */
+    public string $tagName;
+    /** @readonly */
+    public mixed $schemaTypeInfo;
+    /** @readonly */
+    public ?DOMElement $firstElementChild;
+    /** @readonly */
+    public ?DOMElement $lastElementChild;
+    /** @readonly */
+    public int $childElementCount;
+    /** @readonly */
+    public ?DOMElement $previousElementSibling;
+    /** @readonly */
+    public ?DOMElement $nextElementSibling;
+
+    /**
+     * Inherited from DOMNode, but always non-null.
+     *
+     * @readonly
+     * @var DOMNamedNodeMap<DOMAttr>
+     */
+    public DOMNamedNodeMap $attributes;
+
+    /**
+     * Inherited from DOMNode, but always non-null
+     * @readonly
+     */
+    public string $localName;
+
+    public function __construct(string $qualifiedName, ?string $value = null, string $namespace = '') {}
+
+    public function getAttribute(string $qualifiedName): string {}
+
+    public function getAttributeNS(?string $namespace, string $localName): string {}
+
+    /**
+     * @return DOMAttr|DOMNameSpaceNode|false
+     * @psalm-ignore-falsable-return
+     */
+    public function getAttributeNode(string $qualifiedName) {}
+
+    /**
+     * @return DOMAttr|DOMNameSpaceNode|false
+     * @psalm-ignore-falsable-return
+     */
+    public function getAttributeNodeNS(?string $namespace, string $localName) {}
+
+    /** @return DOMNodeList<DOMElement> */
+    public function getElementsByTagName(string $qualifiedName): DOMNodeList {}
+
+    /** @return DOMNodeList<DOMElement> */
+    public function getElementsByTagNameNS(string $namespace, string $localName): DOMNodeList {}
+
+    /**
+     * @return DOMNodeList<DOMElement>
+     * @php-from 8.0.3
+     */
+    public function getElementsByTagNameNS(?string $namespace, string $localName): DOMNodeList {}
+
+    public function hasAttribute(string $qualifiedName): bool {}
+
+    public function hasAttributeNS(?string $namespace, string $localName): bool {}
+
+    public function removeAttribute(string $qualifiedName): bool {}
+
+    public function removeAttributeNS(?string $namespace, string $localName): void {}
+
+    /**
+     * @return DOMAttr|false
+     * @psalm-ignore-falsable-return
+     */
+    public function removeAttributeNode(DOMAttr $attr) {}
+
+    /**
+     * @return DOMAttr|false
+     * @psalm-ignore-falsable-return
+     */
+    public function setAttribute(string $qualifiedName, string $value) {}
+
+    public function setAttributeNS(?string $namespace, string $qualifiedName, string $value): void {}
+
+    /**
+     * @return DOMAttr|null|false
+     * @psalm-ignore-falsable-return
+     */
+    public function setAttributeNode(DOMAttr $attr) {}
+
+    /**
+     * @return DOMAttr|null|false
+     * @psalm-ignore-falsable-return
+     */
+    public function setAttributeNodeNS(DOMAttr $attr) {}
+
+    public function setIdAttribute(string $qualifiedName, bool $isId): void {}
+
+    public function setIdAttributeNS(string $namespace, string $qualifiedName, bool $isId): void {}
+
+    public function setIdAttributeNode(DOMAttr $attr, bool $isId): void {}
+
+    /** @php-from 8.0 */
+    public function remove() : void {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function before(...$nodes) : void {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function after(...$nodes) : void {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function replaceWith(...$nodes) : void {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function append(...$nodes) : void {}
+
+    /**
+     * @param DOMNode|string ...$nodes
+     * @php-from 8.0
+     */
+    public function prepend(...$nodes) : void {}
+}
+
+class DOMText extends DOMCharacterData
+{
+    /** @readonly */
+    public string $wholeText;
+
+    public function __construct(string $data = '') {}
+
+    public function isWhitespaceInElementContent(): bool {}
+
+    /**
+     * @alias DOMText::isWhitespaceInElementContent
+     */
+    public function isElementContentWhitespace(): bool {}
+
+    /**
+     * @return DOMText|false
+     * @psalm-ignore-falsable-return
+     */
+    public function splitText(int $offset) {}
+}
+
+class DOMComment extends DOMCharacterData
+{
+    public function __construct(string $data = '') {}
+}
+
+class DOMCdataSection extends DOMText
+{
+    public function __construct(string $data) {}
+}
+
+class DOMDocumentType extends DOMNode
+{
+    /** @readonly */
+    public string $name;
+    /** @readonly */
+    public DOMNamedNodeMap $entities;
+    /** @readonly */
+    public DOMNamedNodeMap $notations;
+    /** @readonly */
+    public string $publicId;
+    /** @readonly */
+    public string $systemId;
+    /** @readonly */
+    public ?string $internalSubset;
+}
+
+class DOMNotation extends DOMNode
+{
+    /** @readonly */
+    public string $publicId;
+    /** @readonly */
+    public string $systemId;
+}
+
+class DOMEntity extends DOMNode
+{
+    /** @readonly */
+    public ?string $publicId;
+    /** @readonly */
+    public ?string $systemId;
+    /** @readonly */
+    public ?string $notationName;
+
+    /**
+     * @readonly
+     * @deprecated
+     */
+    public ?string $actualEncoding;
+
+    /**
+     * @readonly
+     * @deprecated
+     */
+    public ?string $encoding;
+
+    /**
+     * @readonly
+     * @deprecated
+     */
+    public ?string $version;
+}
+
+class DOMEntityReference extends DOMNode
+{
+    public function __construct(string $name) {}
+}
+
+class DOMProcessingInstruction extends DOMNode
+{
+    /** @readonly */
+    public string $target;
+    public string $data;
+
+    public function __construct(string $name, string $value = '') {}
+}
+
+class DOMXPath
+{
+    /** @readonly */
+    public DOMDocument $document;
+    public bool $registerNodeNamespaces;
+
+    public function __construct(DOMDocument $document, bool $registerNodeNS = true) {}
+
+    public function evaluate(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
+
+    public function query(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
+
+    public function registerNamespace(string $prefix, string $namespace): bool {}
+
+    public function registerPhpFunctions(string|array|null $restrict = null): void {}
+}

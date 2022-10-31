@@ -1,6 +1,8 @@
 #!/usr/bin/env php
 <?php
 
+namespace Psalm;
+
 use Psalm\Internal\Cli\Refactor;
 
 require_once __DIR__ . '/src/Psalm/Internal/Cli/Refactor.php';

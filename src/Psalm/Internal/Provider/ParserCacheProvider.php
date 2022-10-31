@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Provider;
 
+use JsonException;
 use PhpParser;
 use PhpParser\Node\Stmt;
 use Psalm\Config;
@@ -10,6 +11,8 @@ use RuntimeException;
 use UnexpectedValueException;
 
 use function clearstatcache;
+use function error_log;
+use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function gettype;
@@ -30,6 +33,7 @@ use function unlink;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
 use const LOCK_EX;
 use const PHP_VERSION_ID;
 use const SCANDIR_SORT_NONE;
@@ -165,6 +169,37 @@ class ParserCacheProvider
             if (!$root_cache_directory) {
                 throw new UnexpectedValueException('No cache directory defined');
             }
+            if (is_readable($file_hashes_path)) {
+                $hashes_encoded = (string) file_get_contents($file_hashes_path);
+
+                if (!$hashes_encoded) {
+                    error_log('Unexpected value when loading from file content hashes');
+                    $this->existing_file_content_hashes = [];
+
+                    return [];
+                }
+
+                try {
+                    $hashes_decoded = json_decode($hashes_encoded, true, 512, JSON_THROW_ON_ERROR);
+                } catch (JsonException $e) {
+                    error_log('Failed to parse hashes: ' . $e->getMessage());
+                    $this->existing_file_content_hashes = [];
+
+                    return [];
+                }
+
+                if (!is_array($hashes_decoded)) {
+                    error_log('Unexpected value ' . gettype($hashes_decoded));
+                    $this->existing_file_content_hashes = [];
+
+                    return [];
+                }
+
+                /** @var array<string, string> $hashes_decoded */
+                $this->existing_file_content_hashes = $hashes_decoded;
+            } else {
+                $this->existing_file_content_hashes = [];
+            }
 
             if (!is_readable($file_hashes_path)) {
                 // might not exist yet
@@ -177,6 +212,7 @@ class ParserCacheProvider
                 throw new UnexpectedValueException('File content hashes should be in cache');
             }
 
+            /** @psalm-suppress MixedAssignment */
             $hashes_decoded = json_decode($hashes_encoded, true);
 
             if (!is_array($hashes_decoded)) {
@@ -260,7 +296,7 @@ class ParserCacheProvider
 
         file_put_contents(
             $file_hashes_path,
-            json_encode($file_content_hashes),
+            json_encode($file_content_hashes, JSON_THROW_ON_ERROR),
             LOCK_EX
         );
     }
@@ -313,7 +349,7 @@ class ParserCacheProvider
 
     private function getParserCacheKey(string $file_path): string
     {
-        if (PHP_VERSION_ID >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00) {
             $hash = hash('xxh128', $file_path);
         } else {
             $hash = hash('md4', $file_path);

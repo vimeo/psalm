@@ -18,6 +18,9 @@ use Psalm\Type\Union;
 
 use function dirname;
 
+/**
+ * @internal
+ */
 class MagicConstAnalyzer
 {
     public static function analyze(

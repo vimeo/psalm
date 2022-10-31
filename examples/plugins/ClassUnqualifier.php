@@ -41,9 +41,7 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
             $new_candidate_type = implode(
                 '',
                 array_map(
-                    function ($f) {
-                        return $f[0];
-                    },
+                    fn($f) => $f[0],
                     $type_tokens
                 )
             );

@@ -20,6 +20,7 @@ use function strtolower;
 /**
  * Denotes the `class-string` type, used to describe a string representing a valid PHP class.
  * The parent type from which the classes descend may or may not be specified in the constructor.
+ * @psalm-immutable
  */
 class TClassString extends TString
 {
@@ -28,33 +29,59 @@ class TClassString extends TString
      */
     public $as;
 
-    /**
-     * @var ?TNamedObject
-     */
-    public $as_type;
+    public ?TNamedObject $as_type;
 
-    public function __construct(string $as = 'object', ?TNamedObject $as_type = null)
-    {
+    /** @var bool */
+    public $is_loaded = false;
+
+    /** @var bool */
+    public $is_interface = false;
+
+    /** @var bool */
+    public $is_enum = false;
+
+    public function __construct(
+        string $as = 'object',
+        ?TNamedObject $as_type = null,
+        bool $is_loaded = false,
+        bool $is_interface = false,
+        bool $is_enum = false,
+        bool $from_docblock = false
+    ) {
         $this->as = $as;
         $this->as_type = $as_type;
+        $this->is_loaded = $is_loaded;
+        $this->is_interface = $is_interface;
+        $this->is_enum = $is_enum;
+        $this->from_docblock = $from_docblock;
     }
-
     public function getKey(bool $include_extra = true): string
     {
-        return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
+        if ($this->is_interface) {
+            $key = 'interface-string';
+        } elseif ($this->is_enum) {
+            $key = 'enum-string';
+        } else {
+            $key = 'class-string';
+        }
+
+        return $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
-    public function __toString(): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
-        return $this->getKey();
+        if ($this->is_interface) {
+            $key = 'interface-string';
+        } elseif ($this->is_enum) {
+            $key = 'enum-string';
+        } else {
+            $key = 'class-string';
+        }
+
+        return ($this->is_loaded ? 'loaded-' : '') . $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
-    public function getId(bool $nested = false): string
-    {
-        return $this->getKey();
-    }
-
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'class-string';
     }
@@ -66,8 +93,7 @@ class TClassString extends TString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         return 'string';
     }
@@ -104,19 +130,22 @@ class TClassString extends TString
         return 'class-string<\\' . $this->as . '>';
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return $this->as_type ? [$this->as_type] : [];
+        return $this->as_type ? ['as_type'] : [];
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        ?Codebase $codebase = null,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
@@ -125,11 +154,9 @@ class TClassString extends TString
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $class_string = clone $this;
-
-        if (!$class_string->as_type) {
-            return $class_string;
+    ): self {
+        if (!$this->as_type) {
+            return $this;
         }
 
         if ($input_type instanceof TLiteralClassString) {
@@ -141,7 +168,7 @@ class TClassString extends TString
         }
 
         $as_type = TemplateStandinTypeReplacer::replace(
-            new Union([$class_string->as_type]),
+            new Union([$this->as_type]),
             $template_result,
             $codebase,
             $statements_analyzer,
@@ -157,15 +184,19 @@ class TClassString extends TString
 
         $as_type_types = array_values($as_type->getAtomicTypes());
 
-        $class_string->as_type = count($as_type_types) === 1
+        $as_type = count($as_type_types) === 1
             && $as_type_types[0] instanceof TNamedObject
             ? $as_type_types[0]
             : null;
 
-        if (!$class_string->as_type) {
-            $class_string->as = 'object';
+        if ($this->as_type === $as_type) {
+            return $this;
         }
-
-        return $class_string;
+        $cloned = clone $this;
+        $cloned->as_type = $as_type;
+        if (!$cloned->as_type) {
+            $cloned->as = 'object';
+        }
+        return $cloned;
     }
 }

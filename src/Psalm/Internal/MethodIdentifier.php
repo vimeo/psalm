@@ -12,6 +12,8 @@ use function strtolower;
 
 /**
  * @psalm-immutable
+ *
+ * @internal
  */
 class MethodIdentifier
 {

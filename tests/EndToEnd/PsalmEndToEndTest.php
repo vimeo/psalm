@@ -20,11 +20,10 @@ use function preg_replace;
 use function readdir;
 use function rmdir;
 use function str_replace;
+use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
-
-use const PHP_VERSION_ID;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -152,10 +151,6 @@ class PsalmEndToEndTest extends TestCase
 
     public function testPsalmDiff(): void
     {
-        if (PHP_VERSION_ID < 70400) {
-            $this->markTestSkipped('Only works on 7.4+');
-        }
-
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/diff_composer.lock', self::$tmpDir . '/composer.lock');
 
         $this->runPsalmInit(1);
@@ -174,7 +169,7 @@ class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('3 errors', $result['STDOUT']);
-        $this->assertStringNotContainsString('E', $result['STDERR']);
+        $this->assertEquals(1, substr_count($result['STDERR'], 'E')); // Should only have 'E' from 'Extensions' in version message
 
         $this->assertSame(2, $result['CODE']);
 

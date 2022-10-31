@@ -7,7 +7,7 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\Property;
 use Psalm\Node\VirtualNode;
 
-class VirtualProperty extends Property implements VirtualNode
+final class VirtualProperty extends Property implements VirtualNode
 {
 
 }

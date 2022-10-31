@@ -20,26 +20,29 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\NodeVisitor;
+use Psalm\Type\ImmutableTypeVisitor;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function array_keys;
 use function array_search;
 use function count;
-use function is_array;
 use function md5;
 use function strpos;
 use function strtolower;
 
-class TypeChecker extends NodeVisitor
+/**
+ * @internal
+ */
+class TypeChecker extends ImmutableTypeVisitor
 {
     /**
      * @var StatementsSource
@@ -106,15 +109,16 @@ class TypeChecker extends NodeVisitor
     }
 
     /**
-     * @psalm-suppress MoreSpecificImplementedParamType
-     *
-     * @param  Atomic|Union $type
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     protected function enterNode(TypeNode $type): ?int
     {
+        if (!$type instanceof Atomic && !$type instanceof Union && !$type instanceof MutableUnion) {
+            return null;
+        }
+
         if ($type->checked) {
-            return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+            return TypeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
         if ($type instanceof TNamedObject) {
@@ -125,18 +129,9 @@ class TypeChecker extends NodeVisitor
             $this->checkTemplateParam($type);
         } elseif ($type instanceof TResource) {
             $this->checkResource($type);
-        } elseif ($type instanceof TArray) {
-            if (count($type->type_params) > 2) {
-                IssueBuffer::maybeAdd(
-                    new TooManyTemplateParams(
-                        $type->getId(). ' has too many template params, expecting 2',
-                        $this->code_location
-                    ),
-                    $this->suppressed_issues
-                );
-            }
         }
 
+        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
         $type->checked = true;
 
         return null;
@@ -321,7 +316,7 @@ class TypeChecker extends NodeVisitor
 
         $const_name = $atomic->const_name;
         if (strpos($const_name, '*') !== false) {
-            $expanded = TypeExpander::expandAtomic(
+            TypeExpander::expandAtomic(
                 $this->source->getCodebase(),
                 $atomic,
                 $fq_classlike_name,
@@ -331,7 +326,7 @@ class TypeChecker extends NodeVisitor
                 true
             );
 
-            $is_defined = is_array($expanded) && count($expanded) > 0;
+            $is_defined = true;
         } else {
             $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
                 $fq_classlike_name,

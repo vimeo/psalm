@@ -12,7 +12,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.1'
+          php-version: '7.4'
           tools: composer:v2
           coverage: none
 
@@ -33,9 +33,6 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-composer-
-
-      - name: Drop incompatible packages
-        run: composer remove --no-interaction --dev phpunit/phpunit brianium/paratest psalm/plugin-phpunit weirdan/prophecy-shim
 
       - name: Run composer install
         run: composer install -o
@@ -87,9 +84,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
+          ini-values: zend.assertions=1, assert.exception=1
           tools: composer:v2
           coverage: none
-          extensions: decimal
+          extensions: none, curl, dom, filter, json, libxml, mbstring, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
 
       - uses: actions/checkout@v3
 

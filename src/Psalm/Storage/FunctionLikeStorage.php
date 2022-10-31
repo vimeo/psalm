@@ -122,17 +122,17 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $template_types;
 
     /**
-     * @var array<int, Assertion>
+     * @var array<int, Possibilities>
      */
     public $assertions = [];
 
     /**
-     * @var array<int, Assertion>
+     * @var array<int, Possibilities>
      */
     public $if_true_assertions = [];
 
     /**
-     * @var array<int, Assertion>
+     * @var array<int, Possibilities>
      */
     public $if_false_assertions = [];
 
@@ -243,15 +243,21 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     {
         $newlines = $allow_newlines && !empty($this->params);
 
-        $symbol_text = 'function ' . $this->cased_name . '(' . ($newlines ? "\n" : '') . implode(
-            ',' . ($newlines ? "\n" : ' '),
-            array_map(
-                function (FunctionLikeParameter $param) use ($newlines): string {
-                    return ($newlines ? '    ' : '') . ($param->type ?: 'mixed') . ' $' . $param->name;
-                },
-                $this->params
+        $symbol_text = 'function ' . $this->cased_name . '('
+            . ($newlines ? "\n" : '')
+            . implode(
+                ',' . ($newlines ? "\n" : ' '),
+                array_map(
+                    static fn(FunctionLikeParameter $param): string =>
+                        ($newlines ? '    ' : '')
+                        . ($param->type ? $param->type->getId(false) : 'mixed')
+                        . ' $' . $param->name,
+                    $this->params
+                )
             )
-        ) . ($newlines ? "\n" : '') . ') : ' . ($this->return_type ?: 'mixed');
+            . ($newlines ? "\n" : '')
+            . ') : '
+            . ($this->return_type ?: 'mixed');
 
         if (!$this instanceof MethodStorage) {
             return $symbol_text;

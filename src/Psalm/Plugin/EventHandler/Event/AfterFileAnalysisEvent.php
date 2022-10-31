@@ -8,7 +8,7 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 
-class AfterFileAnalysisEvent
+final class AfterFileAnalysisEvent
 {
     /**
      * @var StatementsSource
@@ -35,6 +35,7 @@ class AfterFileAnalysisEvent
      * Called after a file has been checked
      *
      * @param array<Stmt> $stmts
+     * @internal
      */
     public function __construct(
         StatementsSource $statements_source,

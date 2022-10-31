@@ -7,7 +7,7 @@ use Psalm\Report;
 
 use function sprintf;
 
-class TextReport extends Report
+final class TextReport extends Report
 {
     public function create(): string
     {

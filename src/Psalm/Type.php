@@ -4,7 +4,6 @@ namespace Psalm;
 
 use InvalidArgumentException;
 use LogicException;
-use Psalm\Config;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
@@ -17,10 +16,10 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -40,7 +39,6 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
@@ -48,6 +46,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -76,14 +75,14 @@ abstract class Type
      */
     public static function parseString(
         string $type_string,
-        ?array $php_version = null,
+        ?int $analysis_php_version_id = null,
         array $template_type_map = []
     ): Union {
         return TypeParser::parseTokens(
             TypeTokenizer::tokenize(
                 $type_string
             ),
-            $php_version,
+            $analysis_php_version_id,
             $template_type_map
         );
     }
@@ -129,10 +128,10 @@ abstract class Type
         array $aliased_classes,
         ?string $this_class,
         bool $allow_self = false,
-        bool $was_static = false
+        bool $is_static = false
     ): string {
         if ($allow_self && $value === $this_class) {
-            if ($was_static) {
+            if ($is_static) {
                 return 'static';
             }
             return 'self';
@@ -177,6 +176,9 @@ abstract class Type
         return '\\' . $value;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getInt(bool $from_calculation = false, ?int $value = null): Union
     {
         if ($value !== null) {
@@ -185,11 +187,15 @@ abstract class Type
             $union = new Union([new TInt()]);
         }
 
+        /** @psalm-suppress ImpurePropertyAssignment We just created this object */
         $union->from_calculation = $from_calculation;
 
         return $union;
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getLowercaseString(): Union
     {
         $type = new TLowercaseString();
@@ -197,15 +203,9 @@ abstract class Type
         return new Union([$type]);
     }
 
-    /** @deprecated will be removed in Psalm 5 */
-    public static function getPositiveInt(bool $from_calculation = false): Union
-    {
-        $union = new Union([new TPositiveInt()]);
-        $union->from_calculation = $from_calculation;
-
-        return $union;
-    }
-
+    /**
+     * @psalm-pure
+     */
     public static function getNonEmptyLowercaseString(): Union
     {
         $type = new TNonEmptyLowercaseString();
@@ -213,6 +213,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNonEmptyString(): Union
     {
         $type = new TNonEmptyString();
@@ -220,6 +223,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNonFalsyString(): Union
     {
         $type = new TNonFalsyString();
@@ -227,6 +233,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNumeric(): Union
     {
         $type = new TNumeric;
@@ -234,6 +243,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNumericString(): Union
     {
         $type = new TNumericString;
@@ -268,6 +280,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getSingleLetter(): Union
     {
         $type = new TSingleLetter;
@@ -275,6 +290,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getClassString(string $extends = 'object'): Union
     {
         return new Union([
@@ -287,6 +305,9 @@ abstract class Type
         ]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getLiteralClassString(string $class_type, bool $definite_class = false): Union
     {
         $type = new TLiteralClassString($class_type, $definite_class);
@@ -294,62 +315,73 @@ abstract class Type
         return new Union([$type]);
     }
 
-    public static function getNull(): Union
+    /**
+     * @psalm-pure
+     */
+    public static function getNull(bool $from_docblock = false): Union
     {
-        $type = new TNull;
-
-        return new Union([$type]);
-    }
-
-    public static function getMixed(bool $from_loop_isset = false): Union
-    {
-        $type = new TMixed($from_loop_isset);
-
-        return new Union([$type]);
-    }
-
-    public static function getScalar(): Union
-    {
-        $type = new TScalar();
+        $type = new TNull($from_docblock);
 
         return new Union([$type]);
     }
 
     /**
-     * @deprecated will be removed in Psalm 5. See getNever to retrieve a TNever that replaces TEmpty
+     * @psalm-pure
      */
-    public static function getEmpty(): Union
+    public static function getMixed(bool $from_loop_isset = false, bool $from_docblock = false): Union
     {
-        $type = new TEmpty();
+        $type = new TMixed($from_loop_isset, $from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getNever(): Union
+    /**
+     * @psalm-pure
+     */
+    public static function getScalar(bool $from_docblock = false): Union
     {
-        $type = new TNever();
+        $type = new TScalar($from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getBool(): Union
+    /**
+     * @psalm-pure
+     */
+    public static function getNever(bool $from_docblock = false): Union
     {
-        $type = new TBool;
+        $type = new TNever($from_docblock);
 
         return new Union([$type]);
     }
 
-    public static function getFloat(?float $value = null): Union
+    /**
+     * @psalm-pure
+     */
+    public static function getBool(bool $from_docblock = false): Union
+    {
+        $type = new TBool($from_docblock);
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getFloat(?float $value = null, bool $from_docblock = false): Union
     {
         if ($value !== null) {
-            $type = new TLiteralFloat($value);
+            $type = new TLiteralFloat($value, $from_docblock);
         } else {
-            $type = new TFloat();
+            $type = new TFloat($from_docblock);
         }
 
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getObject(): Union
     {
         $type = new TObject;
@@ -357,6 +389,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getClosure(): Union
     {
         $type = new TClosure('Closure');
@@ -364,13 +399,19 @@ abstract class Type
         return new Union([$type]);
     }
 
-    public static function getArrayKey(): Union
+    /**
+     * @psalm-pure
+     */
+    public static function getArrayKey(bool $from_docblock = false): Union
     {
-        $type = new TArrayKey();
+        $type = new TArrayKey($from_docblock);
 
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getArray(): Union
     {
         $type = new TArray(
@@ -383,12 +424,15 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getEmptyArray(): Union
     {
         $array_type = new TArray(
             [
-                new Union([new TEmpty]),
-                new Union([new TEmpty]),
+                new Union([new TNever()]),
+                new Union([new TNever()]),
             ]
         );
 
@@ -397,6 +441,9 @@ abstract class Type
         ]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getList(): Union
     {
         $type = new TList(new Union([new TMixed]));
@@ -404,6 +451,9 @@ abstract class Type
         return new Union([$type]);
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function getNonEmptyList(): Union
     {
         $type = new TNonEmptyList(new Union([new TMixed]));
@@ -411,33 +461,46 @@ abstract class Type
         return new Union([$type]);
     }
 
-    public static function getVoid(): Union
+    /**
+     * @psalm-pure
+     */
+    public static function getVoid(bool $from_docblock = false): Union
     {
-        $type = new TVoid;
+        $type = new TVoid($from_docblock);
 
         return new Union([$type]);
-    }
-
-    public static function getFalse(): Union
-    {
-        $type = new TFalse;
-
-        return new Union([$type]);
-    }
-
-    public static function getTrue(): Union
-    {
-        $type = new TTrue;
-
-        return new Union([$type]);
-    }
-
-    public static function getResource(): Union
-    {
-        return new Union([new TResource]);
     }
 
     /**
+     * @psalm-pure
+     */
+    public static function getFalse(bool $from_docblock = false): Union
+    {
+        $type = new TFalse($from_docblock);
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getTrue(bool $from_docblock = false): Union
+    {
+        $type = new TTrue($from_docblock);
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getResource(bool $from_docblock = false): Union
+    {
+        return new Union([new TResource($from_docblock)]);
+    }
+
+    /**
+     * @psalm-external-mutation-free
      * @param non-empty-list<Union> $union_types
      */
     public static function combineUnionTypeArray(array $union_types, ?Codebase $codebase): Union
@@ -457,6 +520,9 @@ abstract class Type
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
      *
+     * @psalm-external-mutation-free
+     *
+     * @psalm-suppress ImpurePropertyAssignment We're not mutating external instances
      */
     public static function combineUnionTypes(
         ?Union $type_1,
@@ -572,10 +638,26 @@ abstract class Type
      *
      */
     public static function intersectUnionTypes(
-        Union $type_1,
-        Union $type_2,
+        ?Union $type_1,
+        ?Union $type_2,
         Codebase $codebase
     ): ?Union {
+        if ($type_2 === null && $type_1 === null) {
+            throw new UnexpectedValueException('At least one type must be provided to combine');
+        }
+
+        if ($type_1 === null) {
+            return $type_2;
+        }
+
+        if ($type_2 === null) {
+            return $type_1;
+        }
+
+        if ($type_1 === $type_2) {
+            return $type_1;
+        }
+
         $intersection_performed = false;
         $type_1_mixed = $type_1->isMixed();
         $type_2_mixed = $type_2->isMixed();
@@ -605,99 +687,24 @@ abstract class Type
                 $combined_type = null;
                 foreach ($type_1->getAtomicTypes() as $type_1_atomic) {
                     foreach ($type_2->getAtomicTypes() as $type_2_atomic) {
-                        $intersection_atomic = null;
-                        $wider_type = null;
-                        if ($type_1_atomic instanceof TNamedObject
-                            && $type_2_atomic instanceof TNamedObject
-                        ) {
-                            if (($type_1_atomic->value === $type_2_atomic->value
-                                && get_class($type_1_atomic) === TNamedObject::class
-                                && get_class($type_2_atomic) !== TNamedObject::class)
-                            ) {
-                                $intersection_atomic = clone $type_2_atomic;
-                                $wider_type = $type_1_atomic;
-                                $intersection_performed = true;
-                            } elseif (($type_1_atomic->value === $type_2_atomic->value
-                                && get_class($type_2_atomic) === TNamedObject::class
-                                && get_class($type_1_atomic) !== TNamedObject::class)
-                            ) {
-                                $intersection_atomic = clone $type_1_atomic;
-                                $wider_type = $type_2_atomic;
-                                $intersection_performed = true;
-                            }
-                        }
+                        $intersection_atomic = self::intersectAtomicTypes(
+                            $type_1_atomic,
+                            $type_2_atomic,
+                            $codebase,
+                            $intersection_performed
+                        );
 
-                        if (null === $intersection_atomic) {
-                            if (AtomicTypeComparator::isContainedBy(
-                                $codebase,
-                                $type_2_atomic,
-                                $type_1_atomic
-                            )) {
-                                $intersection_atomic = clone $type_2_atomic;
-                                $wider_type = $type_1_atomic;
-                                $intersection_performed = true;
-                            } elseif (AtomicTypeComparator::isContainedBy(
-                                $codebase,
-                                $type_1_atomic,
-                                $type_2_atomic
-                            )) {
-                                $intersection_atomic = clone $type_1_atomic;
-                                $wider_type = $type_2_atomic;
-                                $intersection_performed = true;
-                            }
-                        }
-
-                        if (static::mayHaveIntersection($type_1_atomic)
-                            && static::mayHaveIntersection($type_2_atomic)
-                        ) {
-                            if ($intersection_atomic === null && $wider_type === null) {
-                                $intersection_atomic = clone $type_1_atomic;
-                                $wider_type = $type_2_atomic;
-                            }
-                            if ($intersection_atomic === null || $wider_type === null) {
-                                throw new LogicException(
-                                    '$intersection_atomic and $wider_type should be both set or null.'
-                                    .' Check the preceding code for errors.'
-                                    .' Did you forget to assign one of the variables?'
-                                );
-                            }
-                            if (!static::mayHaveIntersection($intersection_atomic)
-                                || !static::mayHaveIntersection($wider_type)
-                            ) {
-                                throw new LogicException(
-                                    '$intersection_atomic and $wider_type should be both support intersection.'
-                                    .' Check the preceding code for errors.'
-                                );
-                            }
-                            if (!$intersection_atomic->extra_types) {
-                                $intersection_atomic->extra_types = [];
-                            }
-
-                            $intersection_performed = true;
-
-                            $wider_type_clone = clone $wider_type;
-
-                            $wider_type_clone->extra_types = [];
-
-                            $intersection_atomic->extra_types[$wider_type_clone->getKey()] = $wider_type_clone;
-
-                            $wider_type_intersection_types = $wider_type->getIntersectionTypes();
-
-                            if ($wider_type_intersection_types !== null) {
-                                foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
-                                    $intersection_atomic->extra_types[$wider_type_intersection_type->getKey()]
-                                        = clone $wider_type_intersection_type;
-                                }
-                            }
-                        }
                         if (null !== $intersection_atomic) {
                             if (null === $combined_type) {
-                                $combined_type = new Union([$intersection_atomic]);
+                                $combined_type = new MutableUnion([$intersection_atomic]);
                             } else {
                                 $combined_type->addType($intersection_atomic);
                             }
                         }
                     }
+                }
+                if ($combined_type) {
+                    $combined_type = $combined_type->freeze();
                 }
             }
 
@@ -756,14 +763,157 @@ abstract class Type
         return $combined_type;
     }
 
+    private static function intersectAtomicTypes(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$intersection_performed
+    ): ?Atomic {
+        $intersection_atomic = null;
+        $wider_type = null;
+        if ($type_1_atomic instanceof TNamedObject
+            && $type_2_atomic instanceof TNamedObject
+        ) {
+            if (($type_1_atomic->value === $type_2_atomic->value
+                && get_class($type_1_atomic) === TNamedObject::class
+                && get_class($type_2_atomic) !== TNamedObject::class)
+            ) {
+                $intersection_atomic = clone $type_2_atomic;
+                $wider_type = $type_1_atomic;
+                $intersection_performed = true;
+            } elseif (($type_1_atomic->value === $type_2_atomic->value
+                && get_class($type_2_atomic) === TNamedObject::class
+                && get_class($type_1_atomic) !== TNamedObject::class)
+            ) {
+                $intersection_atomic = clone $type_1_atomic;
+                $wider_type = $type_2_atomic;
+                $intersection_performed = true;
+            }
+        }
+        if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt) {
+            $int_intersection = TIntRange::intersectIntRanges(
+                TIntRange::convertToIntRange($type_1_atomic),
+                TIntRange::convertToIntRange($type_2_atomic)
+            );
+            if ($int_intersection
+                && ($int_intersection->min_bound !== null || $int_intersection->max_bound !== null)
+            ) {
+                $intersection_performed = true;
+                if ($int_intersection->min_bound !== null
+                    && $int_intersection->min_bound === $int_intersection->max_bound
+                ) {
+                    return new TLiteralInt($int_intersection->min_bound);
+                }
+                return $int_intersection;
+            }
+        }
+
+        if (null === $intersection_atomic) {
+            if (AtomicTypeComparator::isContainedBy(
+                $codebase,
+                $type_2_atomic,
+                $type_1_atomic
+            )) {
+                $intersection_atomic = clone $type_2_atomic;
+                $wider_type = $type_1_atomic;
+                $intersection_performed = true;
+            } elseif (AtomicTypeComparator::isContainedBy(
+                $codebase,
+                $type_1_atomic,
+                $type_2_atomic
+            )) {
+                $intersection_atomic = clone $type_1_atomic;
+                $wider_type = $type_2_atomic;
+                $intersection_performed = true;
+            }
+
+            if ($intersection_atomic
+                && !self::hasIntersection($type_1_atomic)
+                && !self::hasIntersection($type_2_atomic)
+            ) {
+                return $intersection_atomic;
+            }
+        }
+
+        if (self::mayHaveIntersection($type_1_atomic, $codebase)
+            && self::mayHaveIntersection($type_2_atomic, $codebase)
+        ) {
+            /** @psalm-suppress TypeDoesNotContainType */
+            if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
+                $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
+                $second = $codebase->classlike_storage_provider->get($type_2_atomic->value);
+                $first_is_class = !$first->is_interface && !$first->is_trait;
+                $second_is_class = !$second->is_interface && !$second->is_trait;
+                if ($first_is_class && $second_is_class) {
+                    return $intersection_atomic;
+                }
+            }
+            if ($intersection_atomic === null && $wider_type === null) {
+                $intersection_atomic = clone $type_1_atomic;
+                $wider_type = $type_2_atomic;
+            }
+            if ($intersection_atomic === null || $wider_type === null) {
+                throw new LogicException(
+                    '$intersection_atomic and $wider_type should be both set or null.'
+                    .' Check the preceding code for errors.'
+                    .' Did you forget to assign one of the variables?'
+                );
+            }
+            if (!self::mayHaveIntersection($intersection_atomic, $codebase)
+                || !self::mayHaveIntersection($wider_type, $codebase)
+            ) {
+                throw new LogicException(
+                    '$intersection_atomic and $wider_type should be both support intersection.'
+                    .' Check the preceding code for errors.'
+                );
+            }
+
+            $intersection_performed = true;
+
+            $wider_type_clone = $wider_type->setIntersectionTypes([]);
+
+            $final_intersection = array_merge(
+                [$wider_type_clone->getKey() => $wider_type_clone],
+                $intersection_atomic->getIntersectionTypes()
+            );
+
+            $wider_type_intersection_types = $wider_type->getIntersectionTypes();
+
+            foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
+                $final_intersection[$wider_type_intersection_type->getKey()]
+                    = clone $wider_type_intersection_type;
+            }
+
+            return $intersection_atomic->setIntersectionTypes($final_intersection);
+        }
+
+        return $intersection_atomic;
+    }
+
     /**
      * @psalm-assert-if-true TIterable|TNamedObject|TTemplateParam|TObjectWithProperties $type
      */
-    private static function mayHaveIntersection(Atomic $type): bool
+    private static function mayHaveIntersection(Atomic $type, Codebase $codebase): bool
     {
-        return $type instanceof TIterable
-            || $type instanceof TNamedObject
+        if ($type instanceof TIterable
             || $type instanceof TTemplateParam
-            || $type instanceof TObjectWithProperties;
+            || $type instanceof TObjectWithProperties
+        ) {
+            return true;
+        }
+        if (!$type instanceof TNamedObject) {
+            return false;
+        }
+        $storage = $codebase->classlike_storage_provider->get($type->value);
+        return !$storage->final;
+    }
+
+    private static function hasIntersection(Atomic $type): bool
+    {
+        return ($type instanceof TIterable
+                || $type instanceof TNamedObject
+                || $type instanceof TTemplateParam
+                || $type instanceof TObjectWithProperties
+            ) && $type->extra_types;
     }
 }

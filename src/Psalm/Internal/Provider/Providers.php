@@ -90,7 +90,7 @@ class Providers
                 break;
             }
             $max_wait_cycles--;
-            usleep(50000);
+            usleep(50_000);
         }
 
         if (!$has_lock) {

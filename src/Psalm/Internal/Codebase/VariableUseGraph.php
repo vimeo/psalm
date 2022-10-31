@@ -10,6 +10,9 @@ use function abs;
 use function array_merge;
 use function count;
 
+/**
+ * @internal
+ */
 class VariableUseGraph extends DataFlowGraph
 {
     /** @var array<string, array<string, true>> */
@@ -126,10 +129,7 @@ class VariableUseGraph extends DataFlowGraph
                     continue;
                 }
 
-                $new_parent_nodes = array_merge(
-                    $new_parent_nodes,
-                    $parent_nodes
-                );
+                $new_parent_nodes = [...$new_parent_nodes, ...$parent_nodes];
             }
 
             $child_nodes = $new_parent_nodes;
@@ -166,6 +166,7 @@ class VariableUseGraph extends DataFlowGraph
                 || $path->type === 'use-inside-conditional'
                 || $path->type === 'use-inside-isset'
                 || $path->type === 'arg'
+                || $path->type === 'comparison'
             ) {
                 return null;
             }
@@ -187,7 +188,7 @@ class VariableUseGraph extends DataFlowGraph
             }
 
             $new_destination = new DataFlowNode($to_id, $to_id, null);
-            $new_destination->path_types = array_merge($generated_source->path_types, [$path_type]);
+            $new_destination->path_types = [...$generated_source->path_types, ...[$path_type]];
 
             $new_child_nodes[$to_id] = $new_destination;
         }

@@ -4,8 +4,9 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `callable-string` type, used to represent an unknown string that is also `callable`.
+ * @psalm-immutable
  */
-class TCallableString extends TNonEmptyString
+final class TCallableString extends TNonFalsyString
 {
 
     public function getKey(bool $include_extra = true): string
@@ -13,17 +14,17 @@ class TCallableString extends TNonEmptyString
         return 'callable-string';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return $this->getKey();
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'string';
     }

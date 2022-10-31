@@ -7,11 +7,11 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
@@ -39,8 +39,8 @@ class ArrayTypeComparator
 
         $is_empty_array = $input_type_part->equals(
             new TArray([
-                new Union([new TEmpty()]),
-                new Union([new TEmpty()])
+                new Union([new TNever()]),
+                new Union([new TNever()])
             ]),
             false
         );
@@ -102,7 +102,7 @@ class ArrayTypeComparator
 
         if ($container_type_part instanceof TList
             && $input_type_part instanceof TArray
-            && $input_type_part->type_params[1]->isEmpty()
+            && $input_type_part->isEmptyArray()
         ) {
             return !$container_type_part instanceof TNonEmptyList;
         }
@@ -111,6 +111,7 @@ class ArrayTypeComparator
             && $input_type_part instanceof TNonEmptyArray
             && $input_type_part->type_params[0]->isSingleIntLiteral()
             && $input_type_part->type_params[0]->getSingleIntLiteral()->value === 0
+            && isset($input_type_part->type_params[1])
         ) {
             //this is a special case where the only offset value of an non empty array is 0, so it's a non empty list
             return UnionTypeComparator::isContainedBy(
@@ -192,9 +193,7 @@ class ArrayTypeComparator
                 // if the array has a known size < 10, make sure the array keys are literal ints
                 if ($input_type_part->count !== null && $input_type_part->count < 10) {
                     $literal_ints = array_map(
-                        function ($i) {
-                            return new TLiteralInt($i);
-                        },
+                        static fn($i): TLiteralInt => new TLiteralInt($i),
                         range(0, $input_type_part->count - 1)
                     );
 
@@ -225,7 +224,7 @@ class ArrayTypeComparator
                 continue;
             }
 
-            if ($input_param->isEmpty()
+            if ($input_param->isNever()
                 && $container_type_part instanceof TNonEmptyArray
             ) {
                 return false;
@@ -233,7 +232,7 @@ class ArrayTypeComparator
 
             $param_comparison_result = new TypeComparisonResult();
 
-            if (!$input_param->isEmpty()) {
+            if (!$input_param->isNever()) {
                 if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_param,

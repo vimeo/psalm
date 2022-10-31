@@ -45,7 +45,7 @@ class ImplementationRequirementTest extends TestCase
     {
         return [
             'implementsAllRequirements' => [
-                '<?php
+                'code' => '<?php
                     use ImplementationRequirements\Base\A;
                     use ImplementationRequirements\Base\B;
                     use ImplementationRequirements\Trait\ImposesImplementationRequirements;
@@ -62,7 +62,7 @@ class ImplementationRequirementTest extends TestCase
     {
         return [
             'doesNotImplementAnything' => [
-                '<?php
+                'code' => '<?php
                     use ImplementationRequirements\Trait\ImposesImplementationRequirements;
 
                     class Invalid {
@@ -72,7 +72,7 @@ class ImplementationRequirementTest extends TestCase
                 'error_message' => 'requires using class to implement'
             ],
             'onlyImplementsOneRequirement' => [
-                '<?php
+                'code' => '<?php
                     use ImplementationRequirements\Trait\ImposesImplementationRequirements;
                     use ImplementationRequirements\Base\A;
 

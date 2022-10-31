@@ -19,6 +19,9 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class MethodCallPurityAnalyzer
 {
     public static function analyze(

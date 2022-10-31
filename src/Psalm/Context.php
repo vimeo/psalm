@@ -2,21 +2,24 @@
 
 namespace Psalm;
 
+use InvalidArgumentException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
-use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Union;
+use RuntimeException;
 
 use function array_keys;
 use function array_search;
+use function array_shift;
+use function assert;
 use function count;
 use function in_array;
 use function is_int;
@@ -27,7 +30,9 @@ use function preg_replace;
 use function strpos;
 use function strtolower;
 
-class Context
+use const JSON_THROW_ON_ERROR;
+
+final class Context
 {
     /**
      * @var array<string, Union>
@@ -38,6 +43,49 @@ class Context
      * @var array<string, bool>
      */
     public $vars_possibly_in_scope = [];
+
+    /**
+     * Keeps track of how many times a var_in_scope has been referenced. May not be set for all $vars_in_scope.
+     *
+     * @var array<string, int<0, max>>
+     */
+    public $referenced_counts = [];
+
+    /**
+     * Maps references to referenced variables for the current scope.
+     * With `$b = &$a`, this will contain `['$b' => '$a']`.
+     *
+     * All keys and values in this array are guaranteed to be set in $vars_in_scope.
+     *
+     * To check if a variable was passed or returned by reference, or
+     * references an object property or array item, see Union::$by_ref.
+     *
+     * @var array<string, string>
+     */
+    public $references_in_scope = [];
+
+    /**
+     * Set of references to variables in another scope. These references will be marked as used if they are assigned to.
+     *
+     * @var array<string, true>
+     */
+    public $references_to_external_scope = [];
+
+    /**
+     * A set of globals that are referenced somewhere.
+     *
+     * @var array<string, true>
+     */
+    public $referenced_globals = [];
+
+    /**
+     * A set of references that might still be in scope from a scope likely to cause confusion. This applies
+     * to references set inside a loop or if statement, since it's easy to forget about PHP's weird scope
+     * rules, and assinging to a reference will change the referenced variable rather than shadowing it.
+     *
+     * @var array<string, CodeLocation>
+     */
+    public $references_possibly_from_confusing_scope = [];
 
     /**
      * Whether or not we're inside the conditional of an if/where etc.
@@ -225,11 +273,11 @@ class Context
     public $collect_exceptions = false;
 
     /**
-     * A list of variables that have been referenced
+     * A list of variables that have been referenced in conditionals
      *
      * @var array<string, bool>
      */
-    public $referenced_var_ids = [];
+    public $cond_referenced_var_ids = [];
 
     /**
      * A list of variables that have been passed by reference (where we know their type)
@@ -237,13 +285,6 @@ class Context
      * @var array<string, ReferenceConstraint>
      */
     public $byref_constraints = [];
-
-    /**
-     * If this context inherits from a context, it is here
-     *
-     * @var Context|null
-     */
-    public $parent_context;
 
     /**
      * A list of vars that have been assigned to
@@ -316,12 +357,7 @@ class Context
     /**
      * @var Context|null
      */
-    public $if_context;
-
-    /**
-     * @var IfScope|null
-     */
-    public $if_scope;
+    public $if_body_context;
 
     /**
      * @var bool
@@ -381,10 +417,11 @@ class Context
     public $has_returned = false;
 
     /**
-     * @var array<string, bool>
+     * @var array<string, true>
      */
-    public $vars_from_global = [];
+    public $parent_remove_vars = [];
 
+    /** @internal */
     public function __construct(?string $self = null)
     {
         $this->self = $self;
@@ -393,7 +430,6 @@ class Context
     public function __destruct()
     {
         $this->case_scope = null;
-        $this->parent_context = null;
     }
 
     public function __clone()
@@ -449,11 +485,14 @@ class Context
                 if ((!$new_type || !$old_type->equals($new_type))
                     && ($new_type || count($existing_type->getAtomicTypes()) > 1)
                 ) {
-                    $existing_type->substitute($old_type, $new_type);
+                    $existing_type = $existing_type
+                        ->getBuilder()
+                        ->substitute($old_type, $new_type);
 
                     if ($new_type && $new_type->from_docblock) {
-                        $existing_type->setFromDocblock();
+                        $existing_type = $existing_type->setFromDocblock();
                     }
+                    $existing_type = $existing_type->freeze();
 
                     $updated_vars[$var_id] = true;
                 }
@@ -461,6 +500,28 @@ class Context
                 $this->vars_in_scope[$var_id] = $existing_type;
             }
         }
+    }
+
+    /**
+     * Updates the list of possible references from a confusing scope,
+     * such as a reference created in an if that might later be reused.
+     */
+    public function updateReferencesPossiblyFromConfusingScope(
+        Context $confusing_scope_context,
+        StatementsAnalyzer $statements_analyzer
+    ): void {
+        $references = $confusing_scope_context->references_in_scope
+            + $confusing_scope_context->references_to_external_scope;
+        foreach ($references as $reference_id => $_) {
+            if (!isset($this->references_in_scope[$reference_id])
+                && !isset($this->references_to_external_scope[$reference_id])
+                && $reference_location = $statements_analyzer->getFirstAppearance($reference_id)
+            ) {
+                $this->references_possibly_from_confusing_scope[$reference_id] = $reference_location;
+            }
+        }
+        $this->references_possibly_from_confusing_scope +=
+            $confusing_scope_context->references_possibly_from_confusing_scope;
     }
 
     /**
@@ -510,19 +571,74 @@ class Context
         return $redefined_var_ids;
     }
 
-    public function remove(string $remove_var_id): void
+    public function remove(string $remove_var_id, bool $removeDescendents = true): void
     {
-        unset(
-            $this->referenced_var_ids[$remove_var_id],
-            $this->vars_possibly_in_scope[$remove_var_id]
-        );
-
         if (isset($this->vars_in_scope[$remove_var_id])) {
             $existing_type = $this->vars_in_scope[$remove_var_id];
             unset($this->vars_in_scope[$remove_var_id]);
 
-            $this->removeDescendents($remove_var_id, $existing_type);
+            if ($removeDescendents) {
+                $this->removeDescendents($remove_var_id, $existing_type);
+            }
         }
+        $this->removePossibleReference($remove_var_id);
+        unset($this->vars_possibly_in_scope[$remove_var_id]);
+    }
+
+    /**
+     * Remove a variable from the context which might be a reference to another variable, or
+     * referenced by another variable. Leaves the variable as possibly-in-scope, unlike remove().
+     */
+    public function removePossibleReference(string $remove_var_id): void
+    {
+        if (isset($this->referenced_counts[$remove_var_id]) && $this->referenced_counts[$remove_var_id] > 0) {
+            // If a referenced variable goes out of scope, we need to update the references.
+            // All of the references to this variable are still references to the same value,
+            // so we pick the first one and make the rest of the references point to it.
+            $references = [];
+            foreach ($this->references_in_scope as $reference => $referenced) {
+                if ($referenced === $remove_var_id) {
+                    $references[] = $reference;
+                    unset($this->references_in_scope[$reference]);
+                }
+            }
+            assert(!empty($references));
+            $first_reference = array_shift($references);
+            if (!empty($references)) {
+                $this->referenced_counts[$first_reference] = count($references);
+                foreach ($references as $reference) {
+                    $this->references_in_scope[$reference] = $first_reference;
+                }
+            }
+        }
+        if (isset($this->references_in_scope[$remove_var_id])) {
+            $this->decrementReferenceCount($remove_var_id);
+        }
+        unset(
+            $this->vars_in_scope[$remove_var_id],
+            $this->cond_referenced_var_ids[$remove_var_id],
+            $this->referenced_counts[$remove_var_id],
+            $this->references_in_scope[$remove_var_id],
+            $this->references_to_external_scope[$remove_var_id],
+        );
+    }
+
+    /**
+     * Decrement the reference count of the variable that $ref_id is referring to. This needs to
+     * be done before $ref_id is changed to no longer reference its currently referenced variable,
+     * for example by unsetting, reassigning to another reference, or being shadowed by a global.
+     */
+    public function decrementReferenceCount(string $ref_id): void
+    {
+        if (!isset($this->referenced_counts[$this->references_in_scope[$ref_id]])) {
+            throw new InvalidArgumentException("$ref_id is not a reference");
+        }
+        $reference_count = $this->referenced_counts[$this->references_in_scope[$ref_id]];
+        if ($reference_count < 1) {
+            throw new RuntimeException("Incorrect referenced count found");
+        }
+        --$reference_count;
+        $this->referenced_counts[$this->references_in_scope[$ref_id]] = $reference_count;
     }
 
     /**
@@ -569,7 +685,6 @@ class Context
         ?StatementsAnalyzer $statements_analyzer = null
     ): array {
         $new_type_string = $new_type ? $new_type->getId() : '';
-
         $clauses_to_keep = [];
 
         foreach ($clauses as $clause) {
@@ -583,8 +698,9 @@ class Context
                 }
             }
 
-            if (!isset($clause->possibilities[$remove_var_id]) ||
-                $clause->possibilities[$remove_var_id] === [$new_type_string]
+            if (!isset($clause->possibilities[$remove_var_id])
+                || (count($clause->possibilities[$remove_var_id]) === 1
+                    && array_keys($clause->possibilities[$remove_var_id])[0] === $new_type_string)
             ) {
                 $clauses_to_keep[] = $clause;
             } elseif ($statements_analyzer &&
@@ -595,15 +711,15 @@ class Context
 
                 // if the clause contains any possibilities that would be altered
                 // by the new type
-                foreach ($clause->possibilities[$remove_var_id] as $type) {
+                foreach ($clause->possibilities[$remove_var_id] as $assertion) {
                     // if we're negating a type, we generally don't need the clause anymore
-                    if ($type[0] === '!' && $type !== '!falsy' && $type !== '!empty') {
+                    if ($assertion->isNegation()) {
                         $type_changed = true;
                         break;
                     }
 
                     $result_type = AssertionReconciler::reconcile(
-                        $type,
+                        $assertion,
                         clone $new_type,
                         null,
                         $statements_analyzer,
@@ -635,10 +751,7 @@ class Context
         ?StatementsAnalyzer $statements_analyzer = null
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
-
-        if ($this->parent_context) {
-            $this->parent_context->removeVarFromConflictingClauses($remove_var_id);
-        }
+        $this->parent_remove_vars[$remove_var_id] = true;
     }
 
     /**
@@ -647,20 +760,10 @@ class Context
      */
     public function removeDescendents(
         string $remove_var_id,
-        ?Union $existing_type = null,
+        Union $existing_type,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null
     ): void {
-        if (!$existing_type && isset($this->vars_in_scope[$remove_var_id])) {
-            $existing_type = $this->vars_in_scope[$remove_var_id];
-        }
-
-        if (!$existing_type) {
-            return;
-        }
-
-        $existing_type->allow_mutations = true;
-
         $this->removeVarFromConflictingClauses(
             $remove_var_id,
             $existing_type->hasMixed()
@@ -670,17 +773,22 @@ class Context
             $statements_analyzer
         );
 
-        foreach ($this->vars_in_scope as $var_id => $type) {
+        foreach ($this->vars_in_scope as $var_id => &$type) {
             if (preg_match('/' . preg_quote($remove_var_id, '/') . '[\]\[\-]/', $var_id)) {
-                unset($this->vars_in_scope[$var_id]);
+                $this->remove($var_id, false);
             }
 
+            $builder = null;
             foreach ($type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof DependentType
                     && $atomic_type->getVarId() === $remove_var_id
                 ) {
-                    $type->addType($atomic_type->getReplacement());
+                    $builder ??= $type->getBuilder();
+                    $builder->addType($atomic_type->getReplacement());
                 }
+            }
+            if ($builder) {
+                $type = $builder->freeze();
             }
         }
     }
@@ -703,7 +811,7 @@ class Context
         }
 
         foreach ($vars_to_remove as $var_id) {
-            unset($this->vars_in_scope[$var_id], $this->vars_possibly_in_scope[$var_id]);
+            $this->remove($var_id, false);
         }
 
         $clauses_to_keep = [];
@@ -726,10 +834,6 @@ class Context
         }
 
         $this->clauses = $clauses_to_keep;
-
-        if ($this->parent_context) {
-            $this->parent_context->removeMutableObjectVars($methods_only);
-        }
     }
 
     public function updateChecks(Context $op_context): void
@@ -755,13 +859,7 @@ class Context
         $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name, 1);
 
         if ($stripped_var !== '$this' || $var_name !== $stripped_var) {
-            $this->referenced_var_ids[$var_name] = true;
-
-            if (!isset($this->vars_possibly_in_scope[$var_name])
-                && !isset($this->vars_in_scope[$var_name])
-            ) {
-                return false;
-            }
+            $this->cond_referenced_var_ids[$var_name] = true;
         }
 
         return isset($this->vars_in_scope[$var_name]);
@@ -777,7 +875,7 @@ class Context
             $summary[$k] = $v->getId();
         }
 
-        return json_encode($summary);
+        return json_encode($summary, JSON_THROW_ON_ERROR);
     }
 
     public function defineGlobals(): void

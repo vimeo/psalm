@@ -21,6 +21,8 @@ use function file_exists;
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
+ *
+ * @internal
  */
 class FileReferenceProvider
 {
@@ -184,9 +186,7 @@ class FileReferenceProvider
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
                 array_keys(self::$file_references),
-                function (string $file_name): bool {
-                    return !file_exists($file_name);
-                }
+                static fn(string $file_name): bool => !file_exists($file_name)
             );
         }
 
@@ -384,10 +384,7 @@ class FileReferenceProvider
             if (isset(self::$nonmethod_references_to_classes[$file_class_lc])) {
                 $new_files = array_keys(self::$nonmethod_references_to_classes[$file_class_lc]);
 
-                $referenced_files = array_merge(
-                    $referenced_files,
-                    $new_files
-                );
+                $referenced_files = [...$referenced_files, ...$new_files];
             }
 
             if (isset(self::$method_references_to_classes[$file_class_lc])) {
@@ -421,10 +418,10 @@ class FileReferenceProvider
 
         foreach ($file_classes as $file_class_lc => $_) {
             if (isset(self::$files_inheriting_classes[$file_class_lc])) {
-                $referenced_files = array_merge(
-                    $referenced_files,
-                    array_keys(self::$files_inheriting_classes[$file_class_lc])
-                );
+                $referenced_files = [
+                    ...$referenced_files,
+                    ...array_keys(self::$files_inheriting_classes[$file_class_lc])
+                ];
             }
         }
 
@@ -1162,10 +1159,10 @@ class FileReferenceProvider
     {
         foreach ($references as $referenced_member_id => $locations) {
             if (isset(self::$class_method_locations[$referenced_member_id])) {
-                self::$class_method_locations[$referenced_member_id] = array_merge(
-                    self::$class_method_locations[$referenced_member_id],
-                    $locations
-                );
+                self::$class_method_locations[$referenced_member_id] = [
+                    ...self::$class_method_locations[$referenced_member_id],
+                    ...$locations
+                ];
             } else {
                 self::$class_method_locations[$referenced_member_id] = $locations;
             }
@@ -1180,10 +1177,10 @@ class FileReferenceProvider
     {
         foreach ($references as $referenced_member_id => $locations) {
             if (isset(self::$class_property_locations[$referenced_member_id])) {
-                self::$class_property_locations[$referenced_member_id] = array_merge(
-                    self::$class_property_locations[$referenced_member_id],
-                    $locations
-                );
+                self::$class_property_locations[$referenced_member_id] = [
+                    ...self::$class_property_locations[$referenced_member_id],
+                    ...$locations
+                ];
             } else {
                 self::$class_property_locations[$referenced_member_id] = $locations;
             }
@@ -1198,10 +1195,10 @@ class FileReferenceProvider
     {
         foreach ($references as $referenced_member_id => $locations) {
             if (isset(self::$class_locations[$referenced_member_id])) {
-                self::$class_locations[$referenced_member_id] = array_merge(
-                    self::$class_locations[$referenced_member_id],
-                    $locations
-                );
+                self::$class_locations[$referenced_member_id] = [
+                    ...self::$class_locations[$referenced_member_id],
+                    ...$locations
+                ];
             } else {
                 self::$class_locations[$referenced_member_id] = $locations;
             }

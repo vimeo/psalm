@@ -11,7 +11,6 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use UnexpectedValueException;
 
-use function array_intersect_key;
 use function array_merge;
 use function count;
 use function in_array;
@@ -175,11 +174,6 @@ class ForAnalyzer
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
-
-        $context->referenced_var_ids = array_intersect_key(
-            $for_context->referenced_var_ids,
-            $context->referenced_var_ids
-        );
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($for_context);

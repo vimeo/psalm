@@ -4,6 +4,8 @@ namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 /**
  * @psalm-immutable
+ *
+ * @internal
  */
 class UnresolvedMultiplicationOp extends UnresolvedBinaryOp
 {

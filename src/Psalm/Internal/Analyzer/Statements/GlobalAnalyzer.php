@@ -15,6 +15,9 @@ use Psalm\IssueBuffer;
 
 use function is_string;
 
+/**
+ * @internal
+ */
 class GlobalAnalyzer
 {
     public static function analyze(
@@ -26,7 +29,7 @@ class GlobalAnalyzer
         if (!$context->collect_initializations && !$global_context) {
             IssueBuffer::maybeAdd(
                 new InvalidGlobal(
-                    'Cannot use global scope here',
+                    'Cannot use global scope here (unless this file is included from a non-global scope)',
                     new CodeLocation($statements_analyzer, $stmt)
                 ),
                 $statements_analyzer->getSource()->getSuppressedIssues()
@@ -60,6 +63,7 @@ class GlobalAnalyzer
 
                         $context->byref_constraints[$var_id] = new ReferenceConstraint();
                     }
+
                     $assignment_node = DataFlowNode::getForAssignment(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var)
@@ -67,7 +71,13 @@ class GlobalAnalyzer
                     $context->vars_in_scope[$var_id]->parent_nodes = [
                         $assignment_node->id => $assignment_node,
                     ];
-                    $context->vars_from_global[$var_id] = true;
+                    $context->references_to_external_scope[$var_id] = true;
+
+                    if (isset($context->references_in_scope[$var_id])) {
+                        // Global shadows existing reference
+                        $context->decrementReferenceCount($var_id);
+                        unset($context->references_in_scope[$var_id]);
+                    }
                     $statements_analyzer->registerVariable(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var),
@@ -78,6 +88,10 @@ class GlobalAnalyzer
                         $var,
                         $var_id
                     );
+
+                    if ($global_context !== null && $global_context->hasVariable($var_id)) {
+                        $global_context->referenced_globals[$var_id] = true;
+                    }
                 }
             }
         }

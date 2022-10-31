@@ -9,60 +9,63 @@ class ExceptionCodeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     */
     public function providerValidCodeParse(): iterable
     {
         yield 'RuntimeException' => [
-            '<?php
+            'code' => '<?php
                 /** @var \RuntimeException $e */
                 $code = $e->getCode();
             ',
-            ['$code' => 'int|string'],
+            'assertions' => ['$code' => 'int|string'],
         ];
         yield 'CustomRuntimeException' => [
-            '<?php
+            'code' => '<?php
                 class CustomRuntimeException extends \RuntimeException {}
 
                 /** @var CustomRuntimeException $e */
                 $code = $e->getCode();
             ',
-            ['$code' => 'int'],
+            'assertions' => ['$code' => 'int'],
         ];
         yield 'LogicException' => [
-            '<?php
+            'code' => '<?php
                 /** @var \LogicException $e */
                 $code = $e->getCode();
             ',
-            ['$code' => 'int'],
+            'assertions' => ['$code' => 'int'],
         ];
         yield 'PDOException' => [
-            '<?php
+            'code' => '<?php
                 /** @var \PDOException $e */
                 $code = $e->getCode();
             ',
-            ['$code' => 'int|string'],
+            'assertions' => ['$code' => 'int|string'],
         ];
         yield 'CustomThrowable' => [
-            '<?php
+            'code' => '<?php
                 interface CustomThrowable extends \Throwable {}
 
                 /** @var CustomThrowable $e */
                 $code = $e->getCode();
             ',
-            ['$code' => 'int'],
+            'assertions' => ['$code' => 'int'],
         ];
         yield 'Throwable' => [
-            '<?php
+            'code' => '<?php
                 /** @var \Throwable $e */
                 $code = $e->getCode();
             ',
-            ['$code' => 'int|string'],
+            'assertions' => ['$code' => 'int|string'],
         ];
         yield 'Exception' => [
-            '<?php
+            'code' => '<?php
                 /** @var \Exception $e */
                 $code = $e->getCode();
             ',
-            ['$code' => 'int|string'],
+            'assertions' => ['$code' => 'int|string'],
         ];
     }
 }

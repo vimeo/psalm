@@ -263,25 +263,12 @@ class DocumentationTest extends TestCase
             $php_version = '8.0';
             $ignored_issues = [];
             switch ($issue_name) {
-                case 'MissingThrowsDocblock':
-                    continue 2;
-
-                case 'UncaughtThrowInGlobalScope':
-                    continue 2;
-
                 case 'InvalidStringClass':
-                    continue 2;
-
-                case 'ForbiddenEcho':
-                    continue 2;
-
+                case 'MissingThrowsDocblock':
                 case 'PluginClass':
-                    continue 2;
-
                 case 'RedundantIdentityWithTrue':
-                    continue 2;
-
                 case 'TraitMethodSignatureMismatch':
+                case 'UncaughtThrowInGlobalScope':
                     continue 2;
 
                 /** @todo reinstate this test when the issue is restored */
@@ -317,12 +304,14 @@ class DocumentationTest extends TestCase
                     $ignored_issues = ['UnusedVariable'];
                     break;
 
-                case 'InvalidEnumBackingType':
-                case 'InvalidEnumCaseValue':
+                case 'AmbiguousConstantInheritance':
+                case 'DeprecatedConstant':
                 case 'DuplicateEnumCase':
                 case 'DuplicateEnumCaseValue':
+                case 'InvalidEnumBackingType':
+                case 'InvalidEnumCaseValue':
                 case 'NoEnumProperties':
-                case 'DeprecatedConstant':
+                case 'OverriddenFinalConstant':
                     $php_version = '8.1';
                     break;
             }
@@ -355,9 +344,7 @@ class DocumentationTest extends TestCase
 
         $duplicate_shortcodes = array_filter(
             $all_shortcodes,
-            function ($issues): bool {
-                return count($issues) > 1;
-            }
+            fn($issues): bool => count($issues) > 1
         );
 
         $this->assertEquals(
@@ -450,6 +437,9 @@ class DocumentationTest extends TestCase
         }
 
         $issues_index_contents = file($issues_index, FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES);
+        if ($issues_index_contents === false) {
+            throw new UnexpectedValueException("Issues index returned false");
+        }
         array_shift($issues_index_contents); // Remove title
 
         $issues_index_list = array_map(function (string $issues_line) {

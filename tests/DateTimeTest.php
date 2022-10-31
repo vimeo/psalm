@@ -9,13 +9,13 @@ class DateTimeTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return array<string, array{code: string, assertions?:array<string,string>, error_levels?: list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'modify' => [
-                '<?php
+                'code' => '<?php
                     function getString(): string
                     {
                         return "";
@@ -32,7 +32,7 @@ class DateTimeTest extends TestCase
                 ],
             ],
             'modifyWithValidConstant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return "+1 day"|"+2 day"
                      */
@@ -52,7 +52,7 @@ class DateTimeTest extends TestCase
                 ],
             ],
             'modifyWithInvalidConstant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return "foo"|"bar"
                      */
@@ -72,7 +72,7 @@ class DateTimeTest extends TestCase
                 ],
             ],
             'modifyWithBothConstant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return "+1 day"|"bar"
                      */

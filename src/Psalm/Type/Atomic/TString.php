@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `string` type, where the exact value is unknown.
+ * @psalm-immutable
  */
 class TString extends Scalar
 {
@@ -14,15 +15,9 @@ class TString extends Scalar
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
-        return $php_major_version >= 7 ? 'string' : null;
-    }
-
-    public function __toString(): string
-    {
-        return 'string';
+        return $analysis_php_version_id >= 7_00_00 ? 'string' : null;
     }
 
     public function getKey(bool $include_extra = true): string

@@ -7,8 +7,12 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class FirstArgStringReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -31,15 +35,13 @@ class FirstArgStringReturnTypeProvider implements FunctionReturnTypeProviderInte
             return Type::getMixed();
         }
 
-        $return_type = Type::getString();
-
         if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
              && $first_arg_type->isString()
         ) {
-            return $return_type;
+            return new Union([new TString]);
         }
 
-        $return_type->addType(new TNull);
+        $return_type = new Union([new TString, new TNull]);
         $return_type->ignore_nullable_issues = true;
 
         return $return_type;

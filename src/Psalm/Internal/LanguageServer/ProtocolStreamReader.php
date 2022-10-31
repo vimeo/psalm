@@ -18,6 +18,8 @@ use function trim;
 
 /**
  * Source: https://github.com/felixfbecker/php-language-server/tree/master/src/ProtocolStreamReader.php
+ *
+ * @internal
  */
 class ProtocolStreamReader implements ProtocolReader
 {
@@ -117,7 +119,7 @@ class ProtocolStreamReader implements ProtocolReader
                             ++$emitted_messages;
                             $this->emit('message', [$msg]);
                             /**
-                             * @psalm-suppress DocblockTypeContradiction
+                             * @psalm-suppress TypeDoesNotContainType
                              */
                             if (!$this->is_accepting_new_requests) {
                                 // If we fork, don't read any bytes in the input buffer from the worker process.

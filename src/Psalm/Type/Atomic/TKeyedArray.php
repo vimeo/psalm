@@ -10,12 +10,16 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function addslashes;
-use function array_keys;
-use function array_map;
 use function count;
 use function get_class;
 use function implode;
@@ -27,6 +31,7 @@ use function str_replace;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
+ * @psalm-immutable
  */
 class TKeyedArray extends Atomic
 {
@@ -64,6 +69,7 @@ class TKeyedArray extends Atomic
      */
     public $is_list = false;
 
+    /** @var non-empty-lowercase-string */
     public const KEY = 'array';
 
     /**
@@ -72,75 +78,72 @@ class TKeyedArray extends Atomic
      * @param non-empty-array<string|int, Union> $properties
      * @param array<string, bool> $class_strings
      */
-    public function __construct(array $properties, ?array $class_strings = null)
-    {
+    public function __construct(
+        array $properties,
+        ?array $class_strings = null,
+        bool $sealed = false,
+        ?Union $previous_key_type = null,
+        ?Union $previous_value_type = null,
+        bool $is_list = false,
+        bool $from_docblock = false
+    ) {
         $this->properties = $properties;
         $this->class_strings = $class_strings;
+        $this->sealed = $sealed;
+        $this->previous_key_type = $previous_key_type;
+        $this->previous_value_type = $previous_value_type;
+        $this->is_list = $is_list;
+        $this->from_docblock = $from_docblock;
     }
 
-    public function __toString(): string
+    /**
+     * @param non-empty-array<string|int, Union> $properties
+     *
+     * @return static
+     */
+    public function setProperties(array $properties): self
     {
-        $property_strings = array_map(
-            function ($name, Union $type): string {
-                if ($this->is_list && $this->sealed) {
-                    return (string) $type;
-                }
+        if ($properties === $this->properties) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->properties = $properties;
+        return $cloned;
+    }
 
-                $class_string_suffix = '';
-                if (isset($this->class_strings[$name])) {
-                    $class_string_suffix = '::class';
-                }
+    public function getId(bool $exact = true, bool $nested = false): string
+    {
+        $property_strings = [];
 
-                $name = $this->escapeAndQuote($name);
+        foreach ($this->properties as $name => $type) {
+            if ($this->is_list && $this->sealed) {
+                $property_strings[$name] = $type->getId($exact);
+                continue;
+            }
 
-                return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' . $type;
-            },
-            array_keys($this->properties),
-            $this->properties
-        );
+            $class_string_suffix = '';
+            if (isset($this->class_strings[$name])) {
+                $class_string_suffix = '::class';
+            }
+
+            $name = $this->escapeAndQuote($name);
+
+            $property_strings[$name] = $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '')
+                . ': ' . $type->getId($exact);
+        }
 
         if (!$this->is_list) {
             sort($property_strings);
         }
 
-        /** @psalm-suppress MixedOperand */
-        return static::KEY . '{' . implode(', ', $property_strings) . '}';
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        $property_strings = array_map(
-            function ($name, Union $type): string {
-                if ($this->is_list && $this->sealed) {
-                    return $type->getId();
-                }
-
-                $class_string_suffix = '';
-                if (isset($this->class_strings[$name])) {
-                    $class_string_suffix = '::class';
-                }
-
-                $name = $this->escapeAndQuote($name);
-
-                return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' . $type->getId();
-            },
-            array_keys($this->properties),
-            $this->properties
-        );
-
-        if (!$this->is_list) {
-            sort($property_strings);
-        }
-
-        /** @psalm-suppress MixedOperand */
         return static::KEY . '{' .
                 implode(', ', $property_strings) .
                 '}'
                 . ($this->previous_value_type
                     && (!$this->previous_value_type->isMixed()
                         || ($this->previous_key_type && !$this->previous_key_type->isArrayKey()))
-                    ? '<' . ($this->previous_key_type ? $this->previous_key_type->getId() . ', ' : '')
-                        . $this->previous_value_type->getId() . '>'
+                    ? '<' . ($this->previous_key_type ? $this->previous_key_type->getId($exact) . ', ' : '')
+                        . $this->previous_value_type->getId($exact) . '>'
                     : '');
     }
 
@@ -163,40 +166,26 @@ class TKeyedArray extends Atomic
             );
         }
 
-        /** @psalm-suppress MixedOperand */
-        return static::KEY . '{' .
-                implode(
-                    ', ',
-                    array_map(
-                        function (
-                            $name,
-                            Union $type
-                        ) use (
-                            $namespace,
-                            $aliased_classes,
-                            $this_class,
-                            $use_phpdoc_format
-                        ): string {
-                            $class_string_suffix = '';
-                            if (isset($this->class_strings[$name])) {
-                                $class_string_suffix = '::class';
-                            }
+        $suffixed_properties = [];
 
-                            $name = $this->escapeAndQuote($name);
+        foreach ($this->properties as $name => $type) {
+            $class_string_suffix = '';
+            if (isset($this->class_strings[$name])) {
+                $class_string_suffix = '::class';
+            }
 
-                            return $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' .
-                                $type->toNamespacedString(
-                                    $namespace,
-                                    $aliased_classes,
-                                    $this_class,
-                                    $use_phpdoc_format
-                                );
-                        },
-                        array_keys($this->properties),
-                        $this->properties
-                    )
-                ) .
-                '}';
+            $name = $this->escapeAndQuote($name);
+
+            $suffixed_properties[$name] = $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' .
+                $type->toNamespacedString(
+                    $namespace,
+                    $aliased_classes,
+                    $this_class,
+                    false
+                );
+        }
+
+        return static::KEY . '{' . implode(', ', $suffixed_properties) . '}';
     }
 
     /**
@@ -206,13 +195,12 @@ class TKeyedArray extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): string {
         return $this->getKey();
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
@@ -253,6 +241,9 @@ class TKeyedArray extends Atomic
         return $value_type;
     }
 
+    /**
+     * @return TArray|TNonEmptyArray
+     */
     public function getGenericArrayType(bool $allow_non_empty = true): TArray
     {
         $key_types = [];
@@ -303,22 +294,18 @@ class TKeyedArray extends Atomic
         return false;
     }
 
-    public function __clone()
-    {
-        foreach ($this->properties as &$property) {
-            $property = clone $property;
-        }
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         /** @var string */
         return static::KEY;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
-        ?Codebase $codebase = null,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
@@ -327,10 +314,10 @@ class TKeyedArray extends Atomic
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
-        $object_like = clone $this;
+    ): self {
+        $properties = $this->properties;
 
-        foreach ($this->properties as $offset => $property) {
+        foreach ($properties as $offset => $property) {
             $input_type_param = null;
 
             if ($input_type instanceof TKeyedArray
@@ -339,7 +326,7 @@ class TKeyedArray extends Atomic
                 $input_type_param = $input_type->properties[$offset];
             }
 
-            $object_like->properties[$offset] = TemplateStandinTypeReplacer::replace(
+            $properties[$offset] = TemplateStandinTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
@@ -355,25 +342,40 @@ class TKeyedArray extends Atomic
             );
         }
 
-        return $object_like;
+        if ($properties === $this->properties) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->properties = $properties;
+        return $cloned;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        foreach ($this->properties as $property) {
-            TemplateInferredTypeReplacer::replace(
+    ): self {
+        $properties = $this->properties;
+        foreach ($properties as $offset => $property) {
+            $properties[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase
             );
         }
+        if ($properties !== $this->properties) {
+            $cloned = clone $this;
+            $cloned->properties = $properties;
+            return $cloned;
+        }
+        return $this;
     }
 
-    public function getChildNodes(): array
+    public function getChildNodeKeys(): array
     {
-        return $this->properties;
+        return ['properties'];
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
@@ -403,7 +405,7 @@ class TKeyedArray extends Atomic
         return true;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return $this->getKey();
     }

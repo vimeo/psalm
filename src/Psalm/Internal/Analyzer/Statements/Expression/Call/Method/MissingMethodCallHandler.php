@@ -29,6 +29,9 @@ use Psalm\Type\Union;
 use function array_map;
 use function array_merge;
 
+/**
+ * @internal
+ */
 class MissingMethodCallHandler
 {
     public static function handleMagicMethod(
@@ -89,7 +92,7 @@ class MissingMethodCallHandler
                 CallAnalyzer::checkMethodArgs(
                     $method_id,
                     $stmt->getArgs(),
-                    null,
+                    new TemplateResult([], []),
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer
@@ -137,7 +140,7 @@ class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                new TemplateResult([], $found_generic_params ?: []),
                 new CodeLocation($statements_analyzer, $stmt),
                 $context
             );
@@ -146,7 +149,7 @@ class MissingMethodCallHandler
                 $return_type_candidate = clone $pseudo_method_storage->return_type;
 
                 if ($found_generic_params) {
-                    TemplateInferredTypeReplacer::replace(
+                    $return_type_candidate = TemplateInferredTypeReplacer::replace(
                         $return_type_candidate,
                         new TemplateResult([], $found_generic_params),
                         $codebase
@@ -198,17 +201,12 @@ class MissingMethodCallHandler
         $result->existent_method_ids[] = $method_id->__toString();
 
         $array_values = array_map(
-            /**
-             * @return PhpParser\Node\Expr\ArrayItem
-             */
-            function (PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem {
-                return new VirtualArrayItem(
-                    $arg->value,
-                    null,
-                    false,
-                    $arg->getAttributes()
-                );
-            },
+            static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
+                $arg->value,
+                null,
+                false,
+                $arg->getAttributes()
+            ),
             $stmt->getArgs()
         );
 
@@ -306,7 +304,7 @@ class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                new TemplateResult([], $found_generic_params ?: []),
                 new CodeLocation($statements_analyzer, $stmt->name),
                 $context
             ) === false) {
@@ -317,7 +315,7 @@ class MissingMethodCallHandler
                 $return_type_candidate = clone $pseudo_method_storage->return_type;
 
                 if ($found_generic_params) {
-                    TemplateInferredTypeReplacer::replace(
+                    $return_type_candidate = TemplateInferredTypeReplacer::replace(
                         $return_type_candidate,
                         new TemplateResult([], $found_generic_params),
                         $codebase

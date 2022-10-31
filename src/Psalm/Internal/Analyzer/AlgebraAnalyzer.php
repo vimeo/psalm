@@ -10,12 +10,12 @@ use Psalm\Internal\Clause;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion\InArray;
+use Psalm\Storage\Assertion\NotInArray;
 
 use function array_intersect_key;
-use function array_unique;
 use function count;
 use function implode;
-use function preg_match;
 
 /**
  * @internal
@@ -68,26 +68,10 @@ class AlgebraAnalyzer
                     new RedundantCondition(
                         $formula_2_clause . ' has already been asserted',
                         new CodeLocation($statements_analyzer, $stmt),
-                        null
+                        'already asserted ' . $formula_2_clause
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 );
-            }
-
-            foreach ($formula_2_clause->possibilities as $key => $values) {
-                if (!$formula_2_clause->generated
-                    && count($values) > 1
-                    && !isset($new_assigned_var_ids[$key])
-                    && count(array_unique($values)) < count($values)
-                ) {
-                    IssueBuffer::maybeAdd(
-                        new ParadoxicalCondition(
-                            'Found a redundant condition when evaluating assertion (' . $formula_2_clause . ')',
-                            new CodeLocation($statements_analyzer, $stmt)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    );
-                }
             }
 
             $formula_2_hashes[$hash] = true;
@@ -95,24 +79,6 @@ class AlgebraAnalyzer
 
         // remove impossible types
         foreach ($negated_formula2 as $negated_clause_2) {
-            if (count($negated_formula2) === 1) {
-                foreach ($negated_clause_2->possibilities as $key => $values) {
-                    if (count($values) > 1
-                        && !isset($new_assigned_var_ids[$key])
-                        && count(array_unique($values)) < count($values)
-                    ) {
-                        IssueBuffer::maybeAdd(
-                            new RedundantCondition(
-                                'Found a redundant condition when evaluating ' . $key,
-                                new CodeLocation($statements_analyzer, $stmt),
-                                null
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        );
-                    }
-                }
-            }
-
             if (!$negated_clause_2->reconcilable || $negated_clause_2->wedge) {
                 continue;
             }
@@ -135,7 +101,7 @@ class AlgebraAnalyzer
                         break;
                     }
                     foreach ($keyed_possibilities as $possibility) {
-                        if (preg_match('@^!?in-array-@', $possibility)) {
+                        if ($possibility instanceof InArray || $possibility instanceof NotInArray) {
                             $negated_clause_2_contains_1_possibilities = false;
                             break;
                         }

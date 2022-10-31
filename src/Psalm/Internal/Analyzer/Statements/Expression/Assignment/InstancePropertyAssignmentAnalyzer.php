@@ -464,17 +464,14 @@ class InstancePropertyAssignmentAnalyzer
 
         $data_flow_graph = $statements_analyzer->data_flow_graph;
 
-        $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
         if ($class_storage->specialize_instance) {
-            $var_id = ExpressionIdentifier::getArrayVarId(
+            $var_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt->var,
                 null,
                 $statements_analyzer
             );
 
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
                 $statements_analyzer
@@ -488,12 +485,16 @@ class InstancePropertyAssignmentAnalyzer
                     return;
                 }
 
+                $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+
                 $var_node = DataFlowNode::getForAssignment(
                     $var_id,
                     $var_location
                 );
 
                 $data_flow_graph->addNode($var_node);
+
+                $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $property_node = DataFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
@@ -542,82 +543,113 @@ class InstancePropertyAssignmentAnalyzer
                 return;
             }
 
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
                 $statements_analyzer
             );
 
-            $localized_property_node = DataFlowNode::getForAssignment(
+            self::taintUnspecializedProperty(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $class_storage,
+                $assignment_value_type,
+                $context,
                 $var_property_id
-                    ?: $property_id . '-' . $property_location->file_name . ':' . $property_location->raw_file_start,
-                $property_location
             );
+        }
+    }
 
-            $data_flow_graph->addNode($localized_property_node);
+    public static function taintUnspecializedProperty(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        string $property_id,
+        ClassLikeStorage $class_storage,
+        Union $assignment_value_type,
+        Context $context,
+        ?string $var_property_id
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
 
-            $property_node = new DataFlowNode(
-                $property_id,
-                $property_id,
-                null,
-                null
-            );
+        $data_flow_graph = $statements_analyzer->data_flow_graph;
 
-            $data_flow_graph->addNode($property_node);
+        if (!$data_flow_graph) {
+            return;
+        }
 
-            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-            $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+        $localized_property_node = DataFlowNode::getForAssignment(
+            $var_property_id ?: $property_id,
+            $property_location
+        );
 
-            $data_flow_graph->addPath(
-                $localized_property_node,
-                $property_node,
-                'property-assignment',
-                $added_taints,
-                $removed_taints
-            );
+        $data_flow_graph->addNode($localized_property_node);
 
-            if ($assignment_value_type->parent_nodes) {
-                foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                    $data_flow_graph->addPath(
-                        $parent_node,
-                        $localized_property_node,
-                        '=',
-                        $added_taints,
-                        $removed_taints
-                    );
-                }
-            }
+        $property_node = new DataFlowNode(
+            $property_id,
+            $property_id,
+            null,
+            null
+        );
 
-            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                $property_id,
-                false,
-                $statements_analyzer
-            );
+        $data_flow_graph->addNode($property_node);
 
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                && $declaring_property_class
-                && $declaring_property_class !== $class_storage->name
-                && $stmt->name instanceof PhpParser\Node\Identifier
-            ) {
-                $declaring_property_node = new DataFlowNode(
-                    $declaring_property_class . '::$' . $stmt->name,
-                    $declaring_property_class . '::$' . $stmt->name,
-                    null,
-                    null
-                );
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
-                $data_flow_graph->addNode($declaring_property_node);
+        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+        $data_flow_graph->addPath(
+            $localized_property_node,
+            $property_node,
+            'property-assignment',
+            $added_taints,
+            $removed_taints
+        );
+
+        if ($assignment_value_type->parent_nodes) {
+            foreach ($assignment_value_type->parent_nodes as $parent_node) {
                 $data_flow_graph->addPath(
-                    $property_node,
-                    $declaring_property_node,
-                    'property-assignment',
+                    $parent_node,
+                    $localized_property_node,
+                    '=',
                     $added_taints,
                     $removed_taints
                 );
             }
+        }
+
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+            $property_id,
+            false,
+            $statements_analyzer
+        );
+
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $declaring_property_class
+            && $declaring_property_class !== $class_storage->name
+            && ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
+                || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch)
+            && $stmt->name instanceof PhpParser\Node\Identifier
+        ) {
+            $declaring_property_node = new DataFlowNode(
+                $declaring_property_class . '::$' . $stmt->name,
+                $declaring_property_class . '::$' . $stmt->name,
+                null,
+                null
+            );
+
+            $data_flow_graph->addNode($declaring_property_node);
+
+            $data_flow_graph->addPath(
+                $property_node,
+                $declaring_property_node,
+                'property-assignment',
+                $added_taints,
+                $removed_taints
+            );
         }
     }
 
@@ -843,6 +875,8 @@ class InstancePropertyAssignmentAnalyzer
 
     /**
      * @param list<string> $invalid_assignment_types
+     *
+     * @psalm-suppress ComplexMethod Unavoidably complex method
      */
     private static function analyzeAtomicAssignment(
         StatementsAnalyzer $statements_analyzer,
@@ -1222,26 +1256,13 @@ class InstancePropertyAssignmentAnalyzer
             false
         );
 
-        if ($codebase->properties_to_rename) {
-            $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
-
-            foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
-                if ($declaring_property_id === $original_property_id) {
-                    $file_manipulations = [
-                        new FileManipulation(
-                            (int)$stmt->name->getAttribute('startFilePos'),
-                            (int)$stmt->name->getAttribute('endFilePos') + 1,
-                            $new_property_name
-                        )
-                    ];
-
-                    FileManipulationBuffer::add(
-                        $statements_analyzer->getFilePath(),
-                        $file_manipulations
-                    );
-                }
-            }
-        }
+        self::handlePropertyRenames(
+            $codebase,
+            $declaring_property_class,
+            $prop_name,
+            $stmt,
+            $statements_analyzer->getFilePath()
+        );
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
@@ -1379,10 +1400,10 @@ class InstancePropertyAssignmentAnalyzer
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                        $origin_locations = array_merge(
-                            $origin_locations,
-                            $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                        );
+                        $origin_locations = [
+                            ...$origin_locations,
+                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                        ];
                     }
                 }
 
@@ -1412,6 +1433,37 @@ class InstancePropertyAssignmentAnalyzer
             $property_id,
             $assignment_value_type
         );
+    }
+
+    private static function handlePropertyRenames(
+        Codebase $codebase,
+        string $declaring_property_class,
+        string $prop_name,
+        PropertyFetch $stmt,
+        string $file_path
+    ): void {
+        if (!$codebase->properties_to_rename) {
+            return;
+        }
+
+        $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
+
+        foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
+            if ($declaring_property_id === $original_property_id) {
+                $file_manipulations = [
+                    new FileManipulation(
+                        (int)$stmt->name->getAttribute('startFilePos'),
+                        (int)$stmt->name->getAttribute('endFilePos') + 1,
+                        $new_property_name
+                    )
+                ];
+
+                FileManipulationBuffer::add(
+                    $file_path,
+                    $file_manipulations
+                );
+            }
+        }
     }
 
     public static function getExpandedPropertyType(
@@ -1495,7 +1547,7 @@ class InstancePropertyAssignmentAnalyzer
                 $statements_analyzer
             );
 
-            unset($context->vars_in_scope[$var_id]);
+            $context->removePossibleReference($var_id);
         }
 
         $old_data_provider = $statements_analyzer->node_data;

@@ -16,7 +16,7 @@ If LDAP requests like these are used for login purposes, it could result in an a
 
 $ds = ldap_connect('example.com');
 $dn = 'o=Psalm, c=US';
-$filter = $_GET['filter']);
+$filter = $_GET['filter'];
 ldap_search($ds, $dn, $filter, []);
 ```
 

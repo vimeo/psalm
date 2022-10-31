@@ -21,12 +21,13 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
-use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -44,6 +45,9 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+/**
+ * @internal
+ */
 class ExistingAtomicStaticCallAnalyzer
 {
     /**
@@ -59,7 +63,8 @@ class ExistingAtomicStaticCallAnalyzer
         MethodIdentifier $method_id,
         string $cased_method_id,
         ClassLikeStorage $class_storage,
-        bool &$moved_call
+        bool &$moved_call,
+        ?TemplateResult $inferred_template_result = null
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -181,6 +186,10 @@ class ExistingAtomicStaticCallAnalyzer
         }
 
         $template_result = new TemplateResult([], $found_generic_params ?: []);
+
+        if ($inferred_template_result) {
+            $template_result->lower_bounds += $inferred_template_result->lower_bounds;
+        }
 
         if (CallAnalyzer::checkMethodArgs(
             $method_id,
@@ -309,15 +318,13 @@ class ExistingAtomicStaticCallAnalyzer
                 }
             }
 
-            $generic_params = $template_result->lower_bounds;
-
             if ($method_storage->assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
                     $method_storage->assertions,
                     $stmt->getArgs(),
-                    $generic_params,
+                    $template_result,
                     $context,
                     $statements_analyzer
                 );
@@ -327,9 +334,8 @@ class ExistingAtomicStaticCallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($generic_params, $codebase): Assertion {
-                            return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
-                        },
+                        static fn(Possibilities $assertion): Possibilities =>
+                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
                         $method_storage->if_true_assertions
                     )
                 );
@@ -339,9 +345,8 @@ class ExistingAtomicStaticCallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        function (Assertion $assertion) use ($generic_params, $codebase): Assertion {
-                            return $assertion->getUntemplatedCopy($generic_params, null, $codebase);
-                        },
+                        static fn(Possibilities $assertion): Possibilities =>
+                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
                         $method_storage->if_false_assertions
                     )
                 );
@@ -416,7 +421,7 @@ class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        $return_type_candidate = $return_type_candidate ?? Type::getMixed();
+        $return_type_candidate ??= Type::getMixed();
 
         StaticCallAnalyzer::taintReturnType(
             $statements_analyzer,
@@ -504,7 +509,7 @@ class ExistingAtomicStaticCallAnalyzer
                             $template_result->lower_bounds[$template_type->param_name] = [
                                 'fn-' . strtolower((string)$method_id) => [
                                     new TemplateBound(
-                                        Type::getInt(false, $codebase->php_major_version)
+                                        Type::getInt(false, $codebase->getMajorAnalysisPhpVersion())
                                     )
                                 ]
                             ];
@@ -514,8 +519,7 @@ class ExistingAtomicStaticCallAnalyzer
                                     new TemplateBound(
                                         Type::getInt(
                                             false,
-                                            10000 * $codebase->php_major_version
-                                            + 100 * $codebase->php_minor_version
+                                            $codebase->analysis_php_version_id
                                         )
                                     )
                                 ]
@@ -523,7 +527,7 @@ class ExistingAtomicStaticCallAnalyzer
                         } else {
                             $template_result->lower_bounds[$template_type->param_name] = [
                                 ($template_type->defining_class) => [
-                                    new TemplateBound(Type::getEmpty())
+                                    new TemplateBound(Type::getNever())
                                 ]
                             ];
                         }
@@ -572,7 +576,7 @@ class ExistingAtomicStaticCallAnalyzer
                     null
                 );
 
-                TemplateInferredTypeReplacer::replace(
+                $return_type_candidate = TemplateInferredTypeReplacer::replace(
                     $return_type_candidate,
                     $template_result,
                     $codebase
@@ -627,16 +631,8 @@ class ExistingAtomicStaticCallAnalyzer
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
     {
-        if ($type instanceof TNamedObject && ($type->value === 'static' || $type->was_static)) {
-            return true;
-        }
-
-        foreach ($type->getChildNodes() as $child_type) {
-            if (self::hasStaticInType($child_type)) {
-                return true;
-            }
-        }
-
-        return false;
+        $visitor = new ContainsStaticVisitor;
+        $visitor->traverse($type);
+        return $visitor->matches();
     }
 }

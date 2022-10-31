@@ -26,7 +26,7 @@ class LoopScope
     public $loop_parent_context;
 
     /**
-     * @var array<string, Union>|null
+     * @var array<string, Union>
      */
     public $redefined_loop_vars = [];
 
@@ -36,9 +36,9 @@ class LoopScope
     public $possibly_redefined_loop_vars = [];
 
     /**
-     * @var array<string, Union>|null
+     * @var array<string, Union>
      */
-    public $possibly_redefined_loop_parent_vars;
+    public $possibly_redefined_loop_parent_vars = [];
 
     /**
      * @var array<string, Union>

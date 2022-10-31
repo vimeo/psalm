@@ -8,7 +8,7 @@ use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
-class AfterExpressionAnalysisEvent
+final class AfterExpressionAnalysisEvent
 {
     /**
      * @var Expr
@@ -35,6 +35,7 @@ class AfterExpressionAnalysisEvent
      * Called after an expression has been checked
      *
      * @param  FileManipulation[]   $file_replacements
+     * @internal
      */
     public function __construct(
         Expr $expr,

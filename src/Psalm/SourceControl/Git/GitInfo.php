@@ -27,7 +27,7 @@ use Psalm\SourceControl\SourceControlInfo;
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  */
-class GitInfo extends SourceControlInfo
+final class GitInfo extends SourceControlInfo
 {
     /**
      * Branch name.

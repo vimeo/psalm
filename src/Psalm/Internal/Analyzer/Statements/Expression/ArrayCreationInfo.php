@@ -6,6 +6,9 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ArrayCreationInfo
 {
     /**
@@ -52,4 +55,6 @@ class ArrayCreationInfo
      * @var array<string, DataFlowNode>
      */
     public $parent_taint_nodes = [];
+
+    public bool $can_be_empty = true;
 }

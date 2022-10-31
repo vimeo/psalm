@@ -305,7 +305,7 @@ class FunctionDocblockManipulator
         string $new_type,
         string $phpdoc_type
     ): void {
-        $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<empty, empty>'], '', $new_type);
+        $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<never, never>'], '', $new_type);
 
         if ($php_type === 'static') {
             $php_type = '';

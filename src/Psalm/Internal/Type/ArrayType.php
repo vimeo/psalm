@@ -32,6 +32,15 @@ class ArrayType
         $this->is_list = $is_list;
     }
 
+    /**
+     * @return (
+     *     $type is TArrayKey ? self : (
+     *         $type is TArray ? self : (
+     *             $type is TList ? self : null
+     *         )
+     *     )
+     * )
+     */
     public static function infer(Atomic $type): ?self
     {
         if ($type instanceof TKeyedArray) {

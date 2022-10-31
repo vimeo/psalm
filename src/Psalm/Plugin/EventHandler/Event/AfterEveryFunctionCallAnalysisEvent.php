@@ -7,7 +7,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class AfterEveryFunctionCallAnalysisEvent
+final class AfterEveryFunctionCallAnalysisEvent
 {
     /**
      * @var FuncCall
@@ -30,6 +30,7 @@ class AfterEveryFunctionCallAnalysisEvent
      */
     private $codebase;
 
+    /** @internal */
     public function __construct(
         FuncCall $expr,
         string $function_id,

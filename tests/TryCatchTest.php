@@ -2,7 +2,6 @@
 
 namespace Psalm\Tests;
 
-use Psalm\Config;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -12,13 +11,13 @@ class TryCatchTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'addThrowableInterfaceType' => [
-                '<?php
+                'code' => '<?php
                     interface CustomThrowable {}
                     class CustomException extends Exception implements CustomThrowable {}
 
@@ -30,7 +29,7 @@ class TryCatchTest extends TestCase
                     }',
             ],
             'rethrowInterfaceExceptionWithoutInvalidThrow' => [
-                '<?php
+                'code' => '<?php
                     interface CustomThrowable {}
                     class CustomException extends Exception implements CustomThrowable {}
 
@@ -42,7 +41,7 @@ class TryCatchTest extends TestCase
                     }',
             ],
             'tryCatchVar' => [
-                '<?php
+                'code' => '<?php
                     try {
                         $worked = true;
                     }
@@ -54,7 +53,7 @@ class TryCatchTest extends TestCase
                 ],
             ],
             'alwaysReturnsBecauseCatchDoesNothing' => [
-                '<?php
+                'code' => '<?php
                     function throws(): void {
                         throw new Exception("bad");
                     }
@@ -69,7 +68,7 @@ class TryCatchTest extends TestCase
                     }',
             ],
             'wheresTheCatch' => [
-                '<?php
+                'code' => '<?php
                     function foo() : bool {
                         try {
                             return true;
@@ -86,7 +85,7 @@ class TryCatchTest extends TestCase
                     }',
             ],
             'catchWithNoReturnButFinallyReturns' => [
-                '<?php
+                'code' => '<?php
                     function foo() : bool {
                         try {
                             if (rand(0, 1)) throw new Exception("bad");
@@ -99,7 +98,7 @@ class TryCatchTest extends TestCase
                     }',
             ],
             'stopAnalysisAfterBadTryIssue' => [
-                '<?php
+                'code' => '<?php
                     $foo = true;
 
                     try {
@@ -110,13 +109,13 @@ class TryCatchTest extends TestCase
 
                     if (!$foo) {}',
                 'assertions' => [],
-                'error_message' => [
-                    'UndefinedGlobalVariable' => Config::REPORT_INFO,
-                    'MixedMethodCall' => Config::REPORT_INFO,
+                'ignored_issues' => [
+                    'UndefinedGlobalVariable',
+                    'MixedMethodCall',
                 ],
             ],
             'issetAfterTryCatchWithoutAssignmentInCatch' => [
-                '<?php
+                'code' => '<?php
                     function test(): string {
                         throw new Exception("bad");
                     }
@@ -134,7 +133,7 @@ class TryCatchTest extends TestCase
                     echo $a;',
             ],
             'issetAfterTryCatchWithoutAssignmentInCatchButReturn' => [
-                '<?php
+                'code' => '<?php
                     function test(): string {
                         throw new Exception("bad");
                     }
@@ -152,7 +151,7 @@ class TryCatchTest extends TestCase
                     echo $a;',
             ],
             'issetAfterTryCatchWithAssignmentInCatch' => [
-                '<?php
+                'code' => '<?php
                     function test(): string {
                         throw new Exception("bad");
                     }
@@ -169,7 +168,7 @@ class TryCatchTest extends TestCase
                     echo $a;',
             ],
             'issetAfterTryCatchWithIfInCatch' => [
-                '<?php
+                'code' => '<?php
                     function test(): string {
                         throw new Exception("bad");
                     }
@@ -191,7 +190,7 @@ class TryCatchTest extends TestCase
                     }',
             ],
             'noRedundantConditionsInFinally' => [
-                '<?php
+                'code' => '<?php
                     function doThings(): void {}
                     function message(): string { return "message"; }
 
@@ -210,7 +209,7 @@ class TryCatchTest extends TestCase
                     }',
             ],
             'typeDoesNotContainTypeInCatch' => [
-                '<?php
+                'code' => '<?php
                     function foo(bool $test, callable $bar): string {
                         try {
                             $bar();
@@ -228,7 +227,7 @@ class TryCatchTest extends TestCase
                     }',
             ],
             'notAlwaysUndefinedVarInFinally' => [
-                '<?php
+                'code' => '<?php
                     function maybeThrows() : void {
                         if (rand(0, 1)) {
                             throw new UnexpectedValueException();
@@ -249,7 +248,7 @@ class TryCatchTest extends TestCase
                     }',
             ],
             'noReturnInsideCatch' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return never-returns
                      */
@@ -265,7 +264,7 @@ class TryCatchTest extends TestCase
                     ord($str);',
             ],
             'varSetInOnlyCatch' => [
-                '<?php
+                'code' => '<?php
                     try {
                         if (rand(0, 1)) {
                             throw new \Exception("Gotcha!");
@@ -279,7 +278,7 @@ class TryCatchTest extends TestCase
                     echo $lastException->getMessage();'
             ],
             'varSetInOnlyCatchWithNull' => [
-                '<?php
+                'code' => '<?php
                     $lastException = null;
 
                     try {
@@ -295,7 +294,7 @@ class TryCatchTest extends TestCase
                     echo $lastException->getMessage();'
             ],
             'allowDoubleNestedLoop' => [
-                '<?php
+                'code' => '<?php
                     function foo() : void {
                         do {
                             try {
@@ -307,7 +306,7 @@ class TryCatchTest extends TestCase
                     }'
             ],
             'aliasException' => [
-                '<?php
+                'code' => '<?php
                     namespace UserException;
 
                     class UserException extends \Exception {
@@ -332,7 +331,7 @@ class TryCatchTest extends TestCase
                     }'
             ],
             'aliasAnotherException' => [
-                '<?php
+                'code' => '<?php
                     namespace UserException;
 
                     class UserException extends \Exception {
@@ -357,7 +356,7 @@ class TryCatchTest extends TestCase
                     }'
             ],
             'notRedundantVarCheckInFinally' => [
-                '<?php
+                'code' => '<?php
                     $var = "a";
                     try {
                         if (rand(0, 1)) {
@@ -371,14 +370,14 @@ class TryCatchTest extends TestCase
                     }'
             ],
             'suppressUndefinedVarInFinally' => [
-                '<?php
+                'code' => '<?php
                     try {} finally {
                         /** @psalm-suppress UndefinedGlobalVariable, MixedPropertyAssignment */
                         $event->end = null;
                     }',
             ],
             'returnsInTry' => [
-                '<?php
+                'code' => '<?php
                     final class A
                     {
                         private ?string $property = null;
@@ -397,7 +396,7 @@ class TryCatchTest extends TestCase
                     }'
             ],
             'finallyArgMaybeUndefined' => [
-                '<?php
+                'code' => '<?php
                     class TestMe {
                         private function startTransaction(): void {
                         }
@@ -420,7 +419,7 @@ class TryCatchTest extends TestCase
                     }'
             ],
             'finallyArgIsNotUndefinedIfSet' => [
-                '<?php
+                'code' => '<?php
                     function fooFunction (): string {
                         try{
                             $foo = "foo";
@@ -434,7 +433,7 @@ class TryCatchTest extends TestCase
                     }'
             ],
             'allowReturningPossiblyUndefinedFromTry' => [
-                '<?php
+                'code' => '<?php
                     function fooFunction (): string {
                         try{
                             $foo = "foo";
@@ -447,7 +446,7 @@ class TryCatchTest extends TestCase
                     }'
             ],
             'mixedNotUndefinedAfterTry' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array<int, mixed>
                      * @psalm-suppress MixedAssignment
@@ -466,12 +465,12 @@ class TryCatchTest extends TestCase
 
                         return $data;
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
             ],
             'issetInCatch' => [
-                '<?php
+                'code' => '<?php
                     function foo() : void {
                         try {
                             $a = 0;
@@ -481,7 +480,7 @@ class TryCatchTest extends TestCase
                     }'
             ],
             'issetExceptionInFinally' => [
-                '<?php
+                'code' => '<?php
                     try {
                         if (rand(0, 1)) {
                             throw new \Exception("bad");
@@ -496,13 +495,13 @@ class TryCatchTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidCatchClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     try {
                         $worked = true;
@@ -511,13 +510,13 @@ class TryCatchTest extends TestCase
                 'error_message' => 'InvalidCatch',
             ],
             'invalidThrowClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     throw new A();',
                 'error_message' => 'InvalidThrow',
             ],
             'theresNoCatch' => [
-                '<?php
+                'code' => '<?php
                     function missing_return() : bool {
                         try {
                         } finally {
@@ -526,7 +525,7 @@ class TryCatchTest extends TestCase
                 'error_message' => 'InvalidReturnType',
             ],
             'catchDoesNotReturn' => [
-                '<?php
+                'code' => '<?php
                     function missing_return() : bool {
                         try {
                         } finally {
@@ -535,7 +534,7 @@ class TryCatchTest extends TestCase
                 'error_message' => 'InvalidReturnType',
             ],
             'catchWithNoReturnAndFinallyDoesNotReturn' => [
-                '<?php
+                'code' => '<?php
                     function foo() : bool {
                         try {
                             if (rand(0, 1)) throw new Exception("bad");
@@ -550,7 +549,7 @@ class TryCatchTest extends TestCase
                 'error_message' => 'InvalidReturnType',
             ],
             'catchWithNoReturnAndNoFinally' => [
-                '<?php
+                'code' => '<?php
                     function foo() : bool {
                         try {
                             if (rand(0, 1)) throw new Exception("bad");
@@ -563,7 +562,7 @@ class TryCatchTest extends TestCase
                 'error_message' => 'InvalidReturnType',
             ],
             'preventPossiblyUndefinedVarInTry' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public static function possiblyThrows(): bool {
                             $result = (bool)rand(0, 1);
@@ -589,7 +588,7 @@ class TryCatchTest extends TestCase
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'possiblyNullReturnInTry' => [
-                '<?php
+                'code' => '<?php
                     function foo() : string {
                         $a = null;
 
@@ -611,7 +610,7 @@ class TryCatchTest extends TestCase
                 'error_message' => 'NullableReturnStatement'
             ],
             'isAlwaysDefinedInFinally' => [
-                '<?php
+                'code' => '<?php
                     function maybeThrows() : void {
                         if (rand(0, 1)) {
                             throw new UnexpectedValueException();
