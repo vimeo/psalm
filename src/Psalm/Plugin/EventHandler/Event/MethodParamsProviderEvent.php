@@ -63,7 +63,7 @@ class MethodParamsProviderEvent
     /**
      * @return ?list<Union>
      */
-    public function getTemplates(): ?array
+    public function getTemplateTypeParameters(): ?array
     {
         return $this->templates;
     }
