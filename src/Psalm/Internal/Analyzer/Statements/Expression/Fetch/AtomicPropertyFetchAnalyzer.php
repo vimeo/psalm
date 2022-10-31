@@ -845,7 +845,7 @@ class AtomicPropertyFetchAnalyzer
                     }
                 }
 
-                $type = $type->setParentNodes([$property_node->id => $property_node]);
+                $type = $type->setParentNodes([$property_node->id => $property_node], true);
             }
         } else {
             self::processUnspecialTaints(
@@ -921,7 +921,7 @@ class AtomicPropertyFetchAnalyzer
             );
         }
 
-        $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node]);
+        $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
     }
 
     private static function handleEnumName(

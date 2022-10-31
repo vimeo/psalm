@@ -263,7 +263,7 @@ final class Union implements TypeNode, Stringable
      * @param array<string, DataFlowNode> $parent_nodes
      * @return static
      */
-    public function setParentNodes(array $parent_nodes, bool $propagate_changes = true): self
+    public function setParentNodes(array $parent_nodes, bool $propagate_changes = false): self
     {
         if ($parent_nodes === $this->parent_nodes) {
             return $this;
