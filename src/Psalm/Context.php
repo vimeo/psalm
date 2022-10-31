@@ -530,7 +530,7 @@ final class Context
 
             $new_type = $new_vars_in_scope[$var_id];
 
-            if (!$this_type->equals($new_type, true, !$this_type->propagate_parent_nodes)) {
+            if (!$this_type->equals($new_type, true, !($this_type->propagate_parent_nodes || $new_type->propagate_parent_nodes))) {
                 $redefined_vars[$var_id] = $this_type;
             }
         }
