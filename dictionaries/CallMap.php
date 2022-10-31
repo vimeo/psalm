@@ -13824,7 +13824,7 @@ return [
 'str_replace' => ['string|string[]', 'search'=>'string|array', 'replace'=>'string|array', 'subject'=>'string|array', '&w_count='=>'int'],
 'str_rot13' => ['string', 'string'=>'string'],
 'str_shuffle' => ['string', 'string'=>'string'],
-'str_split' => ['non-empty-list<string>', 'string'=>'string', 'length='=>'positive-int'],
+'str_split' => ['list<string>', 'string'=>'string', 'length='=>'positive-int'],
 'str_starts_with' => ['bool', 'haystack'=>'string', 'needle'=>'string'],
 'str_word_count' => ['array<int, string>|int', 'string'=>'string', 'format='=>'int', 'characters='=>'string'],
 'strcasecmp' => ['int', 'string1'=>'string', 'string2'=>'string'],
