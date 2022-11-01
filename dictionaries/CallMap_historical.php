@@ -8497,7 +8497,7 @@ return [
     'XMLDiff\Memory::merge' => ['string', 'src'=>'string', 'diff'=>'string'],
     'XMLReader::XML' => ['bool', 'source'=>'string', 'encoding='=>'?string', 'options='=>'int'],
     'XMLReader::close' => ['bool'],
-    'XMLReader::expand' => ['DOMNode|false', 'basenode='=>'DOMNode'],
+    'XMLReader::expand' => ['DOMNode|false', 'baseNode='=>'?DOMNode'],
     'XMLReader::getAttribute' => ['?string', 'name'=>'string'],
     'XMLReader::getAttributeNo' => ['?string', 'index'=>'int'],
     'XMLReader::getAttributeNs' => ['?string', 'name'=>'string', 'namespaceuri'=>'string'],
