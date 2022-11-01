@@ -531,7 +531,7 @@ class ConditionalTest extends TestCase
             'specificArrayFields' => [
                 'code' => '<?php
                     /**
-                     * @param array{field:string} $array
+                     * @param unsealed-array{field:string} $array
                      */
                     function print_field($array) : void {
                         echo $array["field"];
@@ -1386,7 +1386,7 @@ class ConditionalTest extends TestCase
             ],
             'assertArrayReturnTypeNarrowed' => [
                 'code' => '<?php
-                    /** @return array{0:Exception} */
+                    /** @return unsealed-array{0:Exception} */
                     function f(array $a): array {
                         if ($a[0] instanceof Exception) {
                             return $a;
@@ -1397,7 +1397,7 @@ class ConditionalTest extends TestCase
             ],
             'assertTypeNarrowedByAssert' => [
                 'code' => '<?php
-                    /** @return array{0:Exception,1:Exception} */
+                    /** @return unsealed-array{0:Exception,1:Exception} */
                     function f(array $ret): array {
                         assert($ret[0] instanceof Exception);
                         assert($ret[1] instanceof Exception);
@@ -1407,7 +1407,7 @@ class ConditionalTest extends TestCase
             'assertTypeNarrowedByButOtherFetchesAreMixed' => [
                 'code' => '<?php
                     /**
-                     * @return array{0:Exception}
+                     * @return unsealed-array{0:Exception}
                      * @psalm-suppress MixedArgument
                      */
                     function f(array $ret): array {
@@ -1759,7 +1759,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param mixed $decoded
-                     * @return array{icons:mixed}
+                     * @return unsealed-array{icons:mixed}
                      */
                     function assertArrayWithOffset($decoded): array {
                         if (!is_array($decoded)

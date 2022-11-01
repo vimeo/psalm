@@ -313,6 +313,7 @@ class ConstantTest extends TestCase
                     }
 
                     class B extends A {
+                        /** @var unsealed-array{a: true, b: true} */
                         public const ARR = parent::ARR + ["b" => true];
                     }
 
@@ -328,10 +329,12 @@ class ConstantTest extends TestCase
             'lateConstantResolutionParentArraySpread' => [
                 'code' => '<?php
                     class A {
+                        /** @var unsealed-list{"a"} */
                         public const ARR = ["a"];
                     }
 
                     class B extends A {
+                        /** @var unsealed-list{"a", "b"} */
                         public const ARR = [...parent::ARR, "b"];
                     }
 

@@ -79,7 +79,7 @@ class GetObjectVarsTest extends TestCase
                 }
 
                 class D extends C {
-                    /** @return array{prot: string} */
+                    /** @return unsealed-array{prot: string, pub: string} */
                     public function method(): array {
                         return get_object_vars($this);
                     }

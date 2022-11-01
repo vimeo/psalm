@@ -194,7 +194,7 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'assertions' => [
                     '$foo' => 'array{0: string, 1: string, 2: string}',
-                    '$bar' => 'array{int, int, int}',
+                    '$bar' => 'list{int, int, int}',
                     '$bat' => 'non-empty-array<string, int>',
                 ],
             ],
@@ -855,7 +855,7 @@ class ArrayAssignmentTest extends TestCase
                     $b = ["hello", 5];
                     $b[0] = 3;',
                 'assertions' => [
-                    '$b' => 'array{int, int}',
+                    '$b' => 'list{int, int}',
                 ],
             ],
             'changeIntOffsetKeyValuesAfterCopy' => [

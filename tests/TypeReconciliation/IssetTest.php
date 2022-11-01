@@ -612,7 +612,7 @@ class IssetTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array{a:array} $array
-                     * @return array{a:array{b:mixed}}
+                     * @return array{a:unsealed-array{b:mixed}}
                      * @throw \LogicException
                      */
                     function level3($array) {
@@ -626,7 +626,7 @@ class IssetTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param string[] $a
-                     * @return array{b: string}
+                     * @return unsealed-array{b: string}
                      */
                     function foo(array $a) {
                         if (isset($a["b"])) {
