@@ -1291,7 +1291,7 @@ class ClassLikeNodeScanner
                     );
                 }
             }
-            
+
             $unresolved_node = null;
             if ($inferred_type
                 && !(

@@ -106,6 +106,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 },
                 $array_arg_types
             );
+            assert(count($array_arg_types));
 
             return new Union([new TKeyedArray($array_arg_types, null, true, null, null, true)]);
         }

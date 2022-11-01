@@ -97,7 +97,7 @@ abstract class FileManipulationTestCase extends TestCase
     }
 
     /**
-     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
+     * @return array<string,unsealed-array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
      */
     abstract public function providerValidCodeParse(): array;
 }

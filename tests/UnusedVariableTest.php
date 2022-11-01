@@ -102,7 +102,7 @@ class UnusedVariableTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return array<string, array{code:string,ignored_issues?:list<string>,php_version?:string,error_levels?:list<string>,assertions?:array<string, string>}>
      */
     public function providerValidCodeParse(): array
     {

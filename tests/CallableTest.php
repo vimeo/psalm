@@ -11,7 +11,7 @@ class CallableTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string,error_levels?:list<string>}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -431,7 +431,7 @@ class CallableTest extends TestCase
                     '$result2' => 'list<int>',
                 ],
                 'error_levels' => [],
-                '8.0',
+                'php_version' => '8.0',
             ],
             'inferPipelineWithPartiallyAppliedFunctions' => [
                 'code' => '<?php
@@ -515,7 +515,7 @@ class CallableTest extends TestCase
                     '$result' => 'non-empty-list<Item<string, bool>>|null',
                 ],
                 'error_levels' => [],
-                '8.0',
+                'php_version' => '8.0',
             ],
             'varReturnType' => [
                 'code' => '<?php

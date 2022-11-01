@@ -535,7 +535,6 @@ class TypeExpander
                 );
             }
             unset($property_type);
-            /** @psalm-suppress InvalidArgument Psalm bug */
             $return_type = $return_type->setProperties($properties);
         } elseif ($return_type instanceof TList) {
             $return_type = $return_type->setTypeParam(self::expandUnion(

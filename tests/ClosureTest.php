@@ -13,7 +13,7 @@ class ClosureTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -785,8 +785,8 @@ class ClosureTest extends TestCase
 
                     takesIntToString(C::foo(...));',
                 'assertions' => [],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:InheritedStaticMethodWithStaticTypeParameter' => [
                 'code' => '<?php

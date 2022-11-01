@@ -20,7 +20,7 @@ class InlineTypeAlias implements TypeAlias
     public $replacement_tokens;
 
     /**
-     * @param list<array{0: string, 1: int}> $replacement_tokens
+     * @param list<array{0: string, 1: int, 2?: string}> $replacement_tokens
      */
     public function __construct(array $replacement_tokens)
     {

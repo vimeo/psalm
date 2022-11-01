@@ -91,7 +91,7 @@ class AssertAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): iterable
     {
@@ -1612,7 +1612,7 @@ class AssertAnnotationTest extends TestCase
                     }',
                     'assertions' => [],
                     'ignored_issues' => [],
-                    '7.4'
+                    'php_version' => '7.4'
             ],
             'onPropertyOfImmutableArgument' => [
                 'code' => '<?php
