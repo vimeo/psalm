@@ -25,7 +25,7 @@
 - [BC] All atomic types, `Psalm\Type\Union`, `Psalm\CodeLocation` and storages are fully immutable, use the new setter methods to change properties: these setter methods will return new instances without altering the original instance.  
   Full immutability fixes a whole class of bugs that occurred in multithreaded mode, you can now feel free to use `--threads=$(nproc)` ;)
   Full immutability also makes Psalm run faster, even in single-threaded mode, by removing all superfluous `clone`s.
-  For this purpose, `__clone` was also made private, thus forbidding the cloning of atomics, unions and storages (an old and brittle pattern to avoid side-effects caused by mutability).  
+  For this purpose, `__clone` was also made private, forbidding the cloning of atomics, unions and storages (an old and brittle pattern used to avoid side-effects caused by mutability).  
 
 - [BC] `Psalm\Type\Union`s are now fully immutable, pre-existing in-place mutator methods were removed and moved into `Psalm\Type\MutableUnion`.  
   To modify a union type, usage of the new setter methods in `Psalm\Type\Union` is strongly recommended.  
