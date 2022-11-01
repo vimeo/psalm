@@ -2046,7 +2046,7 @@ class SimpleAssertionReconciler extends Reconciler
                 } else {
                     $array_types[] = $type;
                 }
-            } elseif ($type instanceof TArray || $type instanceof TKeyedArray) {
+            } elseif ($type instanceof TArray || ($type instanceof TKeyedArray && !$type->sealed)) {
                 if ($type instanceof TKeyedArray) {
                     $type = $type->getGenericArrayType();
                 }

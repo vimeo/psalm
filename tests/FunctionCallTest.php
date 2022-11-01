@@ -2452,7 +2452,8 @@ class FunctionCallTest extends TestCase
             ],
             'array_is_list_literal_array' => [
                 'code' => '<?php
-                    assert(array_is_list([1 => 0, 0 => 1]));',
+                    $list = [1 => 0, 0 => 1];
+                    assert(array_is_list($list));',
                 'error_message' => 'TypeDoesNotContainType'
             ]
         ];
