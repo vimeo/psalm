@@ -2,7 +2,6 @@
 
 namespace Psalm\Type\Atomic;
 
-use AssertionError;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;

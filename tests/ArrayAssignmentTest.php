@@ -381,8 +381,8 @@ class ArrayAssignmentTest extends TestCase
 
                     $b = [] + ["bar"];',
                 'assertions' => [
-                    '$a' => 'array{0: string}',
-                    '$b' => 'array{0: string}',
+                    '$a' => 'list{string}',
+                    '$b' => 'list{string}',
                 ],
             ],
             'additionDifferentType' => [
