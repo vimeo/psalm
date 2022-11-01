@@ -1447,15 +1447,19 @@ class TypeParser
             return new TObjectWithProperties($properties, [], [], $from_docblock);
         }
 
-        $class = TKeyedArray::class;
-        $sealed = str_starts_with($type, 'sealed-');
-        if ($sealed) {
-            $type = substr($type, 7);
+        $sealed = !str_starts_with($type, 'unsealed-');
+        if (!$sealed) {
+            $type = substr($type, 5);
         }
         $callable = str_starts_with($type, 'callable-');
+        $class = TKeyedArray::class;
         if ($callable) {
             $class = TCallableKeyedArray::class;
             $type = substr($type, 9);
+        }
+
+        if ($callable && !$sealed) {
+            throw new TypeParseTreeException('A callable array cannot be unsealed!');
         }
 
         if ($type === 'list') {

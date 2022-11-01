@@ -1202,7 +1202,7 @@ class FunctionCallTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @param sealed-array{int, int, string} $x
+                     * @param array{int, int, string} $x
                      * @return 3
                      */
                     function example($x) : int {

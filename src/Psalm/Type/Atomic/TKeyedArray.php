@@ -143,8 +143,8 @@ class TKeyedArray extends Atomic
             $key = static::NAME_ARRAY;
             sort($property_strings);
         }
-        if ($this->sealed) {
-            $key = "sealed-$key";
+        if (!$this->sealed) {
+            $key = "unsealed-$key";
         }
 
         return $key . '{' .
