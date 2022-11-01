@@ -98,7 +98,7 @@ class ClosureTest extends TestCase
                     $mirror = function(int $i) : int { return $i; };
                     $a = array_map($mirror, [1, 2, 3]);',
                 'assertions' => [
-                    '$a' => 'list{int, int, int}<int>',
+                    '$a' => 'list{int, int, int}',
                 ],
             ],
             'inlineCallableFunction' => [
@@ -562,7 +562,7 @@ class ClosureTest extends TestCase
                     $maker = maker(stdClass::class);
                     $result = array_map($maker, ["abc"]);',
                 'assertions' => [
-                    '$result' => 'list{stdClass}<stdClass>'
+                    '$result' => 'list{stdClass}'
                 ],
             ],
             'CallableWithArrayReduce' => [
@@ -825,9 +825,9 @@ class ClosureTest extends TestCase
                     $result3 = array_map($closure(...), $array);
                 ',
                 'assertions' => [
-                    '$result1' => 'list{null, null, null}<null>',
-                    '$result2' => 'list{string, string, string}<string>',
-                    '$result3' => 'list{int, int, int}<int>',
+                    '$result1' => 'list{null, null, null}',
+                    '$result2' => 'list{string, string, string}',
+                    '$result3' => 'list{int, int, int}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'

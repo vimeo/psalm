@@ -308,6 +308,7 @@ class ConstantTest extends TestCase
             'lateConstantResolutionParentArrayPlus' => [
                 'code' => '<?php
                     class A {
+                        /** @var unsealed-array{a: true} */
                         public const ARR = ["a" => true];
                     }
 

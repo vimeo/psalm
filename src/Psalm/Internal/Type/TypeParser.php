@@ -1471,9 +1471,7 @@ class TypeParser
             throw new TypeParseTreeException('A callable array cannot be empty!');
         }
 
-        if ($type === 'list') {
-            $is_list = true;
-        } elseif ($type !== 'array') {
+        if ($type !== 'array' && $type !== 'list') {
             throw new TypeParseTreeException('Unexpected brace character');
         }
 
