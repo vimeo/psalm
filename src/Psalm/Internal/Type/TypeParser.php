@@ -1125,8 +1125,13 @@ class TypeParser
                 array_pop($intersection_types);
             }
 
+            $all_sealed = true;
+
             /** @var TKeyedArray $intersection_type */
             foreach ($intersection_types as $intersection_type) {
+                if ($intersection_type->sealed) {
+                    $all_sealed = false;
+                }
                 foreach ($intersection_type->properties as $property => $property_type) {
                     if (!array_key_exists($property, $properties)) {
                         $properties[$property] = $property_type;
@@ -1162,7 +1167,7 @@ class TypeParser
             return new TKeyedArray(
                 $properties,
                 null,
-                false,
+                $all_sealed,
                 $previous_key_type ?? null,
                 $previous_value_type ?? null,
                 false,
@@ -1460,6 +1465,10 @@ class TypeParser
 
         if ($callable && !$sealed) {
             throw new TypeParseTreeException('A callable array cannot be unsealed!');
+        }
+
+        if ($callable && !$properties) {
+            throw new TypeParseTreeException('A callable array cannot be empty!');
         }
 
         if ($type === 'list') {

@@ -19,7 +19,7 @@ class GetObjectVarsTest extends TestCase
                 }
                 $ret = get_object_vars(new C);
             ',
-            'assertions' => ['$ret' => 'array{prop: string}'],
+            'assertions' => ['$ret' => 'unsealed-array{prop: string}'],
         ];
 
         yield 'omitsPrivateAndProtectedPropertiesWhenCalledOutsideOfClassScope' => [
@@ -92,12 +92,12 @@ class GetObjectVarsTest extends TestCase
 
         yield 'propertiesOfCastScalar' => [
             'code' => '<?php $ret = get_object_vars((object)true);',
-            'assertions' => ['$ret' => 'array{scalar: true}'],
+            'assertions' => ['$ret' => 'unsealed-array{scalar: true}'],
         ];
 
         yield 'propertiesOfPOPO' => [
             'code' => '<?php $ret = get_object_vars((object)["a" => 1]);',
-            'assertions' => ['$ret' => 'array{a: int}'],
+            'assertions' => ['$ret' => 'unsealed-array{a: int}'],
         ];
     }
 }

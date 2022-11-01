@@ -212,7 +212,7 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     $d = array_merge(["a", "b", "c", "d"], [1, 2, 3]);',
                 'assertions' => [
-                    '$d' => 'array{0: string, 1: string, 2: string, 3: string, 4: int, 5: int, 6: int}',
+                    '$d===' => "list{'a', 'b', 'c', 'd', 1, 2, 3}",
                 ],
             ],
             'arrayMergePossiblyUndefined' => [
@@ -268,7 +268,7 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     $d = array_replace(["a", "b", "c", "d"], [1, 2, 3]);',
                 'assertions' => [
-                    '$d' => 'array{0: int, 1: int, 2: int, 3: string}',
+                    '$d===' => "list{1, 2, 3, 'd'}",
                 ],
             ],
             'arrayReplacePossiblyUndefined' => [
@@ -723,7 +723,7 @@ class ArrayFunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{hi: int, bye: int}',
+                    '$a3' => 'array{bye: int, hi: int}',
                 ],
             ],
             'arrayReplaceTKeyedArray' => [
@@ -743,7 +743,7 @@ class ArrayFunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{hi: int, bye: int}',
+                    '$a3' => 'array{bye: int, hi: int}',
                 ],
             ],
             'arrayRand' => [
@@ -758,7 +758,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$vars' => 'array{x: string, y: string}',
                     '$c' => 'string',
                     '$d' => 'string',
-                    '$more_vars' => 'array{string, string}',
+                    '$more_vars' => 'list{string, string}',
                     '$e' => 'int',
                 ],
             ],
@@ -2164,7 +2164,7 @@ class ArrayFunctionCallTest extends TestCase
                     );
                 ',
                 'assertions' => [
-                    '$line===' => 'array{0: int}<array-key, int>',
+                    '$line===' => 'unsealed-array{0: int}<array-key, int>',
                 ],
             ],
             'arrayUnshiftOnEmptyArrayMeansNonEmptyList' => [
@@ -2416,7 +2416,7 @@ class ArrayFunctionCallTest extends TestCase
                     function merger(array $a, array $b) : array {
                         return array_merge($a, $b);
                     }',
-                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
+                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'unsealed-array{A: int|string}<string, string>\' is more general',
             ],
             'arrayReplaceKeepFirstKeysButNotType' => [
                 'code' => '<?php
@@ -2429,7 +2429,7 @@ class ArrayFunctionCallTest extends TestCase
                     function merger(array $a, array $b) : array {
                         return array_replace($a, $b);
                     }',
-                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'array{A: int|string}<string, string>\' is more general',
+                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - The type \'unsealed-array{A: int|string}<string, string>\' is more general',
             ],
             'arrayWalkOverObject' => [
                 'code' => '<?php

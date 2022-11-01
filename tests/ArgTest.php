@@ -39,7 +39,7 @@ class ArgTest extends TestCase
                     $a = [[1, 2]];
                     $b = array_merge([], ...$a);',
                 'assertions' => [
-                    '$b' => 'array{0: int, 1: int}',
+                    '$b' => 'list{1, 2}',
                 ],
             ],
             'preserveTypesWhenUnpacking' => [

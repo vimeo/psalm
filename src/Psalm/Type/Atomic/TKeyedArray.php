@@ -2,6 +2,7 @@
 
 namespace Psalm\Type\Atomic;
 
+use AssertionError;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -92,6 +93,9 @@ class TKeyedArray extends Atomic
         bool $is_list = false,
         bool $from_docblock = false
     ) {
+        if ($previous_key_type || $previous_value_type) {
+            $sealed = false;
+        }
         $this->properties = $properties;
         $this->class_strings = $class_strings;
         $this->sealed = $sealed;
@@ -180,6 +184,16 @@ class TKeyedArray extends Atomic
         $suffixed_properties = [];
 
         foreach ($this->properties as $name => $type) {
+            if ($this->is_list) {
+                $suffixed_properties[$name] = $type->toNamespacedString(
+                    $namespace,
+                    $aliased_classes,
+                    $this_class,
+                    false
+                );
+                continue;
+            }
+
             $class_string_suffix = '';
             if (isset($this->class_strings[$name])) {
                 $class_string_suffix = '::class';

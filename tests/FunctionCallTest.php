@@ -1367,7 +1367,7 @@ class FunctionCallTest extends TestCase
                     $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE);',
                 'assertions' => [
                     '$r===' => '0|1|false',
-                    '$matches===' => 'array<array-key, array{string, int<-1, max>}>',
+                    '$matches===' => 'array<array-key, list{string, int<-1, max>}>',
                 ],
             ],
             'pregMatchWithFlagUnmatchedAsNull' => [
@@ -1383,7 +1383,7 @@ class FunctionCallTest extends TestCase
                     $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL);',
                 'assertions' => [
                     '$r===' => '0|1|false',
-                    '$matches===' => 'array<array-key, array{null|string, int<-1, max>}>',
+                    '$matches===' => 'array<array-key, list{null|string, int<-1, max>}>',
                 ],
             ],
             'pregReplaceCallback' => [

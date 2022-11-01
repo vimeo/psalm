@@ -235,7 +235,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             /**
                              * @return B\C[]
                              *
-                             * @psalm-return array{0: B\C}
+                             * @psalm-return list{B\C}
                              */
                             public function getArrayOfC(): array {
                                 return [new \A\B\C];
@@ -499,7 +499,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0: \'hello\'}
+                         * @psalm-return list{\'hello\'}
                          */
                         public function foo(): ?array {
                             return ["hello"];
@@ -525,7 +525,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0: \'hello\'}
+                         * @psalm-return list{\'hello\'}
                          */
                         public function foo(): array {
                             return ["hello"];
@@ -884,7 +884,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     function ret() {
                         /** @var container1<int>&container2<int> $a */
                         $a = new container1;
@@ -901,7 +901,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     /**
                      * @return container1&container2
                      *
@@ -929,7 +929,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     function ret() {
                         /** @var container1<int>&container2<int> $a */
                         $a = new container1;
@@ -946,7 +946,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     /**
                      * @psalm-return container1<int>&container2<int>
                      */

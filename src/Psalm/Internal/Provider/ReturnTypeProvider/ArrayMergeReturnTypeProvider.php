@@ -58,6 +58,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         $generic_properties = [];
         $class_strings = [];
         $all_keyed_arrays = true;
+        $all_keyed_arrays_are_sealed = true;
         $all_int_offsets = true;
         $all_nonempty_lists = true;
         $any_nonempty = false;
@@ -116,6 +117,8 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                                         $generic_properties[] = $type;
                                     }
                                     continue;
+                                } else {
+                                    $all_int_offsets = false;
                                 }
 
                                 if (isset($unpacked_type_part->class_strings[$key])) {
@@ -141,6 +144,10 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
 
                             if (!$unpacked_type_part->is_list) {
                                 $all_nonempty_lists = false;
+                            }
+
+                            if (!$unpacked_type_part->sealed) {
+                                $all_keyed_arrays_are_sealed = false;
                             }
 
                             if ($unpacked_type_part->sealed) {
@@ -240,7 +247,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             $objectlike = new TKeyedArray(
                 $generic_properties,
                 $class_strings ?: null,
-                false,
+                $all_keyed_arrays && $all_keyed_arrays_are_sealed,
                 $all_keyed_arrays ? null : $inner_key_type,
                 $all_keyed_arrays ? null : $inner_value_type,
                 $all_nonempty_lists || $all_int_offsets

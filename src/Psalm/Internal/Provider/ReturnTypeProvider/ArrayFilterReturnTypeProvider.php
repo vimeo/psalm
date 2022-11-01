@@ -118,7 +118,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 return new Union([new TKeyedArray(
                     $new_properties,
                     null,
-                    false,
+                    $first_arg_array->sealed,
                     null,
                     null,
                     $first_arg_array->is_list && $had_one
