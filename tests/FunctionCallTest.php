@@ -1202,7 +1202,7 @@ class FunctionCallTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @param array{int, int, string} $x
+                     * @param sealed-array{int, int, string} $x
                      * @return 3
                      */
                     function example($x) : int {
@@ -2450,6 +2450,11 @@ class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'array_is_list_literal_array' => [
+                'code' => '<?php
+                    assert(array_is_list([1 => 0, 0 => 1]));',
+                'error_message' => 'TypeDoesNotContainType'
+            ]
         ];
     }
 

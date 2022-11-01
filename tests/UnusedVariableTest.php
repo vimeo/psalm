@@ -767,7 +767,7 @@ class UnusedVariableTest extends TestCase
             'arraySubAppend' => [
                 'code' => '<?php
                     $rules = [0, 1, 2];
-                    
+
                     $report = ["runs" => []];
                     foreach ($rules as $rule) {
                         $report["runs"][] = $rule;

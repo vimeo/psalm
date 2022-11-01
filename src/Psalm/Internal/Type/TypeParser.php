@@ -89,6 +89,7 @@ use function is_numeric;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function str_starts_with;
 use function stripslashes;
 use function strlen;
 use function strpos;
@@ -1380,7 +1381,7 @@ class TypeParser
 
         $type = $parse_tree->value;
 
-        $is_tuple = true;
+        $is_list = true;
 
         foreach ($parse_tree->children as $i => $property_branch) {
             $class_string = false;
@@ -1417,7 +1418,7 @@ class TypeParser
                 } else {
                     $property_key = $property_branch->value;
                 }
-                $is_tuple = false;
+                $is_list = false;
             } else {
                 throw new TypeParseTreeException(
                     'Missing property type'
@@ -1442,7 +1443,24 @@ class TypeParser
             }
         }
 
-        if ($type !== 'array' && $type !== 'object' && $type !== 'callable-array') {
+        if ($type === 'object') {
+            return new TObjectWithProperties($properties, [], [], $from_docblock);
+        }
+
+        $class = TKeyedArray::class;
+        $sealed = str_starts_with($type, 'sealed-');
+        if ($sealed) {
+            $type = substr($type, 7);
+        }
+        $callable = str_starts_with($type, 'callable-');
+        if ($callable) {
+            $class = TCallableKeyedArray::class;
+            $type = substr($type, 9);
+        }
+
+        if ($type === 'list') {
+            $is_list = true;
+        } elseif ($type !== 'array') {
             throw new TypeParseTreeException('Unexpected brace character');
         }
 
@@ -1450,22 +1468,13 @@ class TypeParser
             return new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock);
         }
 
-        if ($type === 'object') {
-            return new TObjectWithProperties($properties, [], [], $from_docblock);
-        }
-
-        $class = TKeyedArray::class;
-        if ($type === 'callable-array') {
-            $class = TCallableKeyedArray::class;
-        }
-
         return new $class(
             $properties,
             $class_strings,
-            $is_tuple,
+            $sealed,
             null,
             null,
-            $is_tuple,
+            $is_list,
             $from_docblock
         );
     }

@@ -8,10 +8,6 @@ namespace Psalm\Type\Atomic;
  */
 final class TCallableKeyedArray extends TKeyedArray
 {
-    public const KEY = 'callable-array';
-
-    public function getKey(bool $include_extra = true): string
-    {
-        return 'array';
-    }
+    protected const NAME_ARRAY = 'callable-array';
+    protected const NAME_LIST = 'callable-list';
 }
