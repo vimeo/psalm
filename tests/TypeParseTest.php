@@ -195,12 +195,12 @@ class TypeParseTest extends TestCase
 
     public function testIntersectionOfTwoDifferentArrays(): void
     {
-        $this->assertSame('array{a: int}<string, string>', Type::parseString('array{a: int}&array<string, string>')->getId());
+        $this->assertSame('unsealed-array{a: int}<string, string>', Type::parseString('array{a: int}&array<string, string>')->getId());
     }
 
     public function testIntersectionOfTwoDifferentArraysReversed(): void
     {
-        $this->assertSame('array{a: int}<string, string>', Type::parseString('array<string, string>&array{a: int}')->getId());
+        $this->assertSame('unsealed-array{a: int}<string, string>', Type::parseString('array<string, string>&array{a: int}')->getId());
     }
 
     public function testIntersectionOfTKeyedArrayWithMergedProperties(): void

@@ -926,7 +926,7 @@ class ReturnTypeTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array<"from"|"to", bool> $a
-                     * @return array{from?: bool, to?: bool}
+                     * @return unsealed-array{from?: bool, to?: bool}
                      */
                     function foo(array $a) : array {
                         return $a;
@@ -1272,7 +1272,7 @@ class ReturnTypeTest extends TestCase
             ],
             'complainAboutTKeyedArrayWhenArrayIsFound' => [
                 'code' => '<?php
-                    /** @return array{a:string,b:string,c:string} */
+                    /** @return unsealed-array{a:string,b:string,c:string} */
                     function foo(): array {
                       $arr = [];
                       foreach (["a", "b"] as $key) {
@@ -1533,7 +1533,10 @@ class ReturnTypeTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array<"from"|"to", bool> $a
-                     * @return array{from: bool, to: bool}
+                     *
+                     * This is unsealed because there is no way to mark a TArray as sealed.
+                     *
+                     * @return unshaped-array{from: bool, to: bool}
                      */
                     function foo(array $a) : array {
                         return $a;

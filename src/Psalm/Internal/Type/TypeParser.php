@@ -1129,7 +1129,7 @@ class TypeParser
 
             /** @var TKeyedArray $intersection_type */
             foreach ($intersection_types as $intersection_type) {
-                if ($intersection_type->sealed) {
+                if (!$intersection_type->sealed) {
                     $all_sealed = false;
                 }
                 foreach ($intersection_type->properties as $property => $property_type) {
