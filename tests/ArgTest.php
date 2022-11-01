@@ -312,6 +312,17 @@ class ArgTest extends TestCase
                     }
                 ',
             ],
+            'SealedAcceptSealed' => [
+                'code' => '<?php
+                    /** @param array{test: string} $a */
+                    function a(array $a): string {
+                        return $a["test"];
+                    }
+
+                    $sealed = ["test" => "str"];
+                    a($sealed);
+                ',
+            ],
         ];
     }
 
@@ -723,6 +734,31 @@ class ArgTest extends TestCase
                 );
                 ',
                 'error_message' => 'TooFewArguments',
+            ],
+            'SealedRefuseUnsealed' => [
+                'code' => '<?php
+                    /** @param array{test: string} $a */
+                    function a(array $a): string {
+                        return $a["test"];
+                    }
+
+                    /** @var unsealed-array{test: string} */
+                    $unsealed = [];
+                    a($unsealed);
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'SealedRefuseSealedExtra' => [
+                'code' => '<?php
+                    /** @param array{test: string} $a */
+                    function a(array $a): string {
+                        return $a["test"];
+                    }
+
+                    $sealedExtraKeys = ["test" => "str", "somethingElse" => "test"];
+                    a($sealedExtraKeys);
+                ',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

@@ -27,10 +27,21 @@ class KeyedArrayComparator
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
+        $container_sealed = $container_type_part instanceof TKeyedArray
+            && $container_type_part->sealed;
+
+        if ($container_sealed
+            && $input_type_part instanceof TKeyedArray
+            && !$input_type_part->sealed
+        ) {
+            return false;
+        }
+
         $all_types_contain = true;
 
+        $input_properties = $input_type_part->properties;
         foreach ($container_type_part->properties as $key => $container_property_type) {
-            if (!isset($input_type_part->properties[$key])) {
+            if (!isset($input_properties[$key])) {
                 if (!$container_property_type->possibly_undefined) {
                     $all_types_contain = false;
                 }
@@ -38,7 +49,8 @@ class KeyedArrayComparator
                 continue;
             }
 
-            $input_property_type = $input_type_part->properties[$key];
+            $input_property_type = $input_properties[$key];
+            unset($input_properties[$key]);
 
             $property_type_comparison = new TypeComparisonResult();
 
@@ -81,6 +93,9 @@ class KeyedArrayComparator
                     }
                 }
             }
+        }
+        if ($container_sealed && $input_properties) {
+            return false;
         }
         return $all_types_contain;
     }
