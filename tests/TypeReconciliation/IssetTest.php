@@ -337,7 +337,7 @@ class IssetTest extends TestCase
                     class Example {
                         const FOO = "foo";
                         /**
-                         * @param array{bar:string} $params
+                         * @param unsealed-array{bar:string} $params
                          */
                         public function test(array $params) : bool {
                             if (isset($params[self::FOO])) {

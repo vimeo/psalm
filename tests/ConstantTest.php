@@ -1264,7 +1264,7 @@ class ConstantTest extends TestCase
                     $arr = C::A;
                 ',
                 'assertions' => [
-                    '$arr===' => 'array{1, 2}',
+                    '$arr===' => 'list{1, 2}',
                 ],
             ],
             'keysInUnpackedArrayAreReset' => [
@@ -1275,7 +1275,7 @@ class ConstantTest extends TestCase
                     $arr = C::A;
                 ',
                 'assertions' => [
-                    '$arr===' => 'array{2}',
+                    '$arr===' => 'list{2}',
                 ],
             ],
             'arrayKeysSequenceContinuesAfterExplicitIntKey' => [

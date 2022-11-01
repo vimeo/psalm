@@ -160,7 +160,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: \'hello\'}
+                     * @psalm-return list{\'hello\'}
                      */
                     function foo() {
                         return ["hello"];
@@ -178,7 +178,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: \'hello\'}
+                     * @psalm-return list{\'hello\'}
                      */
                     function foo(): array {
                         return ["hello"];
