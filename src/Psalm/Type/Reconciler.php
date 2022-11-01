@@ -226,7 +226,7 @@ class Reconciler
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
-            $before_adjustment = $result_type ? $result_type->getBuilder()->freeze() : null;
+            $before_adjustment = $result_type;
 
             $failed_reconciliation = self::RECONCILIATION_OK;
 
@@ -321,7 +321,10 @@ class Reconciler
                 $result_type = $result_type->setByRef(true);
             }
 
-            $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
+            $type_changed = !$before_adjustment
+                || !$result_type->equals($before_adjustment)
+                || $result_type->different
+                || $before_adjustment->different;
 
             $key_parts = self::breakUpPathIntoParts($key);
             if ($type_changed || $failed_reconciliation) {
