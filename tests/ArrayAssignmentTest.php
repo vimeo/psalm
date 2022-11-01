@@ -65,7 +65,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = [4];
                     }',
                 'assertions' => [
-                    '$out' => 'non-empty-list<array{int}>',
+                    '$out' => 'non-empty-list<list{int}>',
                 ],
             ],
             'generic2dArrayCreationAddedInIf' => [
@@ -371,7 +371,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
                     $a["foo"] = ["bar" => "baz"];',
                 'assertions' => [
-                    '$a' => 'array{foo: array{bar: string}}<string, array<string, string>>',
+                    '$a' => 'unsealed-array{foo: array{bar: string}}<string, array<string, string>>',
                 ],
             ],
             'additionWithEmpty' => [
@@ -874,7 +874,7 @@ class ArrayAssignmentTest extends TestCase
                     $e = array_merge(["hello", 5], ["hello again"]);',
                 'assertions' => [
                     '$d' => 'list{string, int}',
-                    '$e' => 'array{string, int, string}',
+                    '$e' => 'list{string, int, string}',
                 ],
             ],
             'addIntOffsetToEmptyArray' => [
