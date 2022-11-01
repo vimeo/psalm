@@ -78,22 +78,32 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             $array_arg_types = [];
 
-            foreach ($call_args as $call_arg) {
+            foreach ($call_args as $k => $call_arg) {
                 $call_arg_type = $statements_source->node_data->getType($call_arg->value);
 
-                if ($call_arg_type) {
-                    $array_arg_types[] = $call_arg_type;
+                if ($call_arg_type
+                    && $call_arg_type->isSingle()
+                    && ($call_arg_atomic = $call_arg_type->getSingleAtomic()) instanceof TKeyedArray
+                    && $call_arg_atomic->sealed
+                ) {
+                    $array_arg_types []= array_values($call_arg_atomic->properties);
                 } else {
-                    $array_arg_types[] = Type::getMixed();
-                    break;
+                    return Type::getArray();
                 }
             }
 
-            if ($array_arg_types) {
-                return new Union([new TKeyedArray($array_arg_types)]);
-            }
+            $null = Type::getNull();
+            $array_arg_types = array_map(null, ...$array_arg_types);
+            foreach ($array_arg_types as &$sub) {
+                foreach ($sub as &$subArray) {
+                    if (!$subArray) {
+                        $subArray = $null;
+                    }
+                } unset($subArray);
+                $sub = new Union([new TKeyedArray($sub, null, true, null, null, true)]);
+            } unset($sub);
 
-            return Type::getArray();
+            return new Union([new TKeyedArray($array_arg_types, null, true, null, null, true)]);
         }
 
         $array_arg = $call_args[1] ?? null;
@@ -201,7 +211,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     null,
                     $array_arg_atomic_type->sealed,
                     $array_arg_atomic_type->previous_key_type,
-                    $mapping_return_type,
+                    $array_arg_atomic_type->sealed ? null : $mapping_return_type,
                     $array_arg_atomic_type->is_list
                 );
 

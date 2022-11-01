@@ -1972,6 +1972,19 @@ class ArrayFunctionCallTest extends TestCase
                     takesString($a[0]);
                     array_map("takesString", $a);',
             ],
+            'arrayMapZip' => [
+                'code' => '<?php
+                    $a = [1, 2, 3, 4, 5];
+                    $b = ["one", "two", "three", "four", "five"];
+                    $c = ["uno", "dos", "tres", "cuatro", "cinco", "seis"];
+
+                    $d = array_map(null, $a, $b, $c);',
+                'assertions' => [
+                    '$d===' => "list{list{1, 'one', 'uno'}, list{2, 'two', 'dos'}, list{3, 'three', 'tres'}, list{4, 'four', 'cuatro'}, list{5, 'five', 'cinco'}, list{null, null, 'seis'}}"
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'arrayMapExplicitZip' => [
                 'code' => '<?php
                     $as = ["key"];
@@ -2032,7 +2045,7 @@ class ArrayFunctionCallTest extends TestCase
                      * @param array{A: int} $a
                      * @param array<string, string> $b
                      *
-                     * @return array{A: int}
+                     * @return unsealed-array{A: int}
                      */
                     function merger(array $a, array $b) : array {
                         return array_merge($b, $a);
@@ -2044,7 +2057,7 @@ class ArrayFunctionCallTest extends TestCase
                      * @param array{A: int} $a
                      * @param array<string, int> $b
                      *
-                     * @return array{A: int}
+                     * @return unsealed-array{A: int}
                      */
                     function merger(array $a, array $b) : array {
                         return array_merge($a, $b);
@@ -2056,7 +2069,7 @@ class ArrayFunctionCallTest extends TestCase
                      * @param array{A: int} $a
                      * @param array<string, string> $b
                      *
-                     * @return array{A: int}
+                     * @return unsealed-array{A: int}
                      */
                     function merger(array $a, array $b) : array {
                         return array_replace($b, $a);
@@ -2068,7 +2081,7 @@ class ArrayFunctionCallTest extends TestCase
                      * @param array{A: int} $a
                      * @param array<string, int> $b
                      *
-                     * @return array{A: int}
+                     * @return unsealed-array{A: int}
                      */
                     function merger(array $a, array $b) : array {
                         return array_replace($a, $b);
