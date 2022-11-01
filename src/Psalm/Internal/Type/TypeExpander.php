@@ -964,12 +964,16 @@ class TypeExpander
             return [$return_type];
         }
 
+        $all_sealed = true;
         $properties = [];
         foreach ([$class_storage->name, ...array_values($class_storage->parent_classes)] as $class) {
             if (!$codebase->classExists($class)) {
                 continue;
             }
             $storage = $codebase->classlike_storage_provider->get($class);
+            if (!$storage->final) {
+                $all_sealed = false;
+            }
             foreach ($storage->properties as $key => $property) {
                 if (isset($properties[$key])) {
                     continue;
@@ -999,7 +1003,11 @@ class TypeExpander
         if ($properties === []) {
             return [$return_type];
         }
-        return [new TKeyedArray($properties)];
+        return [new TKeyedArray(
+            $properties,
+            null,
+            $all_sealed
+        )];
     }
 
     /**

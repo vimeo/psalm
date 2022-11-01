@@ -22,6 +22,17 @@ class GetObjectVarsTest extends TestCase
             'assertions' => ['$ret' => 'unsealed-array{prop: string}'],
         ];
 
+        yield 'returnsSealedArrayForFinalClass' => [
+            'code' => '<?php
+                final class C {
+                    /** @var string */
+                    public $prop = "val";
+                }
+                $ret = get_object_vars(new C);
+            ',
+            'assertions' => ['$ret' => 'array{prop: string}'],
+        ];
+
         yield 'omitsPrivateAndProtectedPropertiesWhenCalledOutsideOfClassScope' => [
             'code' => '<?php
                 final class C {
@@ -45,7 +56,7 @@ class GetObjectVarsTest extends TestCase
                     /** @var string */
                     protected $prot = "val";
 
-                    /** @return array{priv: string, prot: string} */
+                    /** @return unsealed-array{priv: string, prot: string} */
                     public function method(): array {
                         return get_object_vars($this);
                     }
@@ -81,7 +92,7 @@ class GetObjectVarsTest extends TestCase
             'code' => '<?php
                 /**
                  * @param object{a:int, b:string, c:bool} $p
-                 * @return array{a:int, b:string, c:bool}
+                 * @return unsealed-array{a:int, b:string, c:bool}
                  */
                 function f(object $p): array {
                     return get_object_vars($p);

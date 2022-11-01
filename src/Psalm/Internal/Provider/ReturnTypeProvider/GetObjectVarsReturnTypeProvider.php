@@ -101,7 +101,11 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 }
 
                 return new Union([
-                    new TKeyedArray($properties)
+                    new TKeyedArray(
+                        $properties,
+                        null,
+                        $class_storage->final
+                    )
                 ]);
             }
         }

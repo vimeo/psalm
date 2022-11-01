@@ -23,7 +23,7 @@ class ArrayKeyExistsTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param string[] $a
-                     * @return array{b: string}
+                     * @return unsealed-array{b: string}
                      */
                     function foo(array $a) {
                         if (array_key_exists("b", $a)) {
