@@ -41,7 +41,7 @@ class ParseTreeCreator
     /** @var ParseTree */
     private $current_leaf;
 
-    /** @var array<int, array{0: string, 1: int}> */
+    /** @var array<int, array{0: string, 1: int, 2?: string}> */
     private $type_tokens;
 
     /** @var int */
@@ -168,7 +168,7 @@ class ParseTreeCreator
     }
 
     /**
-     * @param  array{0: string, 1: int} $current_token
+     * @param  array{0: string, 1: int, 2?: string} $current_token
      */
     private function createMethodParam(array $current_token, ParseTree $current_parent): void
     {

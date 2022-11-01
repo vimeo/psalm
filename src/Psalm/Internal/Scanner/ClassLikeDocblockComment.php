@@ -63,7 +63,7 @@ class ClassLikeDocblockComment
     public $yield;
 
     /**
-     * @var array<int, array{name:string, type:string, tag:string, line_number:int}>
+     * @var array<int, array{end: int<min, max>, line_number: int, name: string, start?: int, tag: string, type: string}>
      */
     public $properties = [];
 

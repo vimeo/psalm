@@ -515,7 +515,7 @@ class TypeExpander
                 );
             }
             unset($type_param);
-            /** @psalm-suppress ArgumentTypeCoercion Psalm bug */
+            /** @psalm-suppress InvalidArgument Psalm bug */
             $return_type = $return_type->setTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;
@@ -535,6 +535,7 @@ class TypeExpander
                 );
             }
             unset($property_type);
+            /** @psalm-suppress InvalidArgument Psalm bug */
             $return_type = $return_type->setProperties($properties);
         } elseif ($return_type instanceof TList) {
             $return_type = $return_type->setTypeParam(self::expandUnion(

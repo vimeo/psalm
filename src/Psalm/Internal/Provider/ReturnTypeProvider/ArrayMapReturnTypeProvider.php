@@ -79,7 +79,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             $array_arg_types = [];
 
-            foreach ($call_args as $k => $call_arg) {
+            foreach ($call_args as $call_arg) {
                 $call_arg_type = $statements_source->node_data->getType($call_arg->value);
 
                 if ($call_arg_type
@@ -95,14 +95,17 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             $null = Type::getNull();
             $array_arg_types = array_map(null, ...$array_arg_types);
-            foreach ($array_arg_types as &$sub) {
-                foreach ($sub as &$subArray) {
-                    if (!$subArray) {
-                        $subArray = $null;
-                    }
-                } unset($subArray);
-                $sub = new Union([new TKeyedArray($sub, null, true, null, null, true)]);
-            } unset($sub);
+            $array_arg_types = array_map(
+                /** @param non-empty-array<?Union> $sub */
+                function (array $sub) use ($null) {
+                    $sub = array_map(
+                        fn (?Union $t) => $t ?? $null,
+                        $sub
+                    );
+                    return new Union([new TKeyedArray($sub, null, true, null, null, true)]);
+                },
+                $array_arg_types
+            );
 
             return new Union([new TKeyedArray($array_arg_types, null, true, null, null, true)]);
         }

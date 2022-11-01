@@ -411,7 +411,7 @@ class StatementsProvider
 
     /**
      * @param  list<Stmt> $existing_statements
-     * @param  array<int, array{0:int, 1:int, 2: int, 3: int, 4: int, 5:string}> $file_changes
+     * @param  array<int, list{int, int, int, int, int, string}> $file_changes
      *
      * @return list<Stmt>
      */

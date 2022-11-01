@@ -1388,7 +1388,9 @@ class TypeCombiner
                         null,
                         $combination->objectlike_sealed && (
                             !$combination->array_type_params
-                            || $combination->array_type_params[1]->isNever()
+                            || (isset($combination->array_type_params[1])
+                                && $combination->array_type_params[1]->isNever()
+                            )
                         ),
                         $previous_key_type,
                         $previous_value_type,
@@ -1400,7 +1402,9 @@ class TypeCombiner
                         null,
                         $combination->objectlike_sealed && (
                             !$combination->array_type_params
-                            || $combination->array_type_params[1]->isNever()
+                            || (isset($combination->array_type_params[1])
+                                && $combination->array_type_params[1]->isNever()
+                            )
                         ),
                         $previous_key_type,
                         $previous_value_type,
