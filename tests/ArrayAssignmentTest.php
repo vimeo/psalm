@@ -258,7 +258,7 @@ class ArrayAssignmentTest extends TestCase
                         "baz" => [1]
                     ];',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{a: string}, baz: array{int}}',
+                    '$foo' => 'array{bar: array{a: string}, baz: list{int}}',
                 ],
             ],
             'implicitTKeyedArrayCreation' => [
@@ -279,7 +279,7 @@ class ArrayAssignmentTest extends TestCase
                     ];
                     $foo["bar"]["bam"]["baz"] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{a: string, bam: array{baz: string}}, baz: array{int}}',
+                    '$foo' => 'array{bar: array{a: string, bam: array{baz: string}}, baz: list{int}}',
                 ],
             ],
             'conflictingTypesWithAssignment2' => [
@@ -437,7 +437,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["a"] = 1;
                     $foo += ["b" => [2, 3]];',
                 'assertions' => [
-                    '$foo' => 'array{a: int, b: array{int, int}}',
+                    '$foo' => 'array{a: int, b: list{int, int}}',
                 ],
             ],
             'objectLikeArrayIsNonEmpty' => [
@@ -457,7 +457,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["root"]["a"] = 1;
                     $foo["root"] += ["b" => [2, 3]];',
                 'assertions' => [
-                    '$foo' => 'array{root: array{a: int, b: array{int, int}}}',
+                    '$foo' => 'array{root: array{a: int, b: list{int, int}}}',
                 ],
             ],
             'updateStringIntKey1' => [
@@ -845,7 +845,7 @@ class ArrayAssignmentTest extends TestCase
                     $a_values = array_values($a);
                     $a_keys = array_keys($a);',
                 'assertions' => [
-                    '$a' => 'array{string, int}',
+                    '$a' => 'list{string, int}',
                     '$a_values' => 'non-empty-list<int|string>',
                     '$a_keys' => 'non-empty-list<int>',
                 ],
@@ -864,8 +864,8 @@ class ArrayAssignmentTest extends TestCase
                     $c = $b;
                     $c[0] = 3;',
                 'assertions' => [
-                    '$b' => 'array{string, int}',
-                    '$c' => 'array{int, int}',
+                    '$b' => 'list{string, int}',
+                    '$c' => 'list{int, int}',
                 ],
             ],
             'mergeIntOffsetValues' => [
@@ -873,8 +873,8 @@ class ArrayAssignmentTest extends TestCase
                     $d = array_merge(["hello", 5], []);
                     $e = array_merge(["hello", 5], ["hello again"]);',
                 'assertions' => [
-                    '$d' => 'array{0: string, 1: int}',
-                    '$e' => 'array{0: string, 1: int, 2: string}',
+                    '$d' => 'list{string, int}',
+                    '$e' => 'array{string, int, string}',
                 ],
             ],
             'addIntOffsetToEmptyArray' => [
@@ -1154,8 +1154,8 @@ class ArrayAssignmentTest extends TestCase
 
                     $b[] = rand(0, 10);',
                 'assertions' => [
-                    '$a' => 'array{int, int, int}',
-                    '$b' => 'array{int, int, int, int<0, 10>}',
+                    '$a' => 'list{int, int, int}',
+                    '$b' => 'list{int, int, int, int<0, 10>}',
                 ],
             ],
             'listMergedWithTKeyedArrayList' => [
@@ -1240,8 +1240,8 @@ class ArrayAssignmentTest extends TestCase
                     $arr2 = [...$arr1];
                     $arr3 = [1 => 0, ...$arr1];',
                 'assertions' => [
-                    '$result' => 'array{int, int, int, int, int, int, int, int}',
-                    '$arr2' => 'array{int, int, int}',
+                    '$result' => 'list{int, int, int, int, int, int, int, int}',
+                    '$arr2' => 'list{int, int, int}',
                     '$arr3' => 'array{1: int, 2: int, 3: int, 4: int}',
                 ]
             ],
@@ -1554,7 +1554,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $e = [...$a, ...$b, ...$c, ...$d, 3];
                 ',
-                'assertions' => ['$e===' => 'array{1, 2, 3}'],
+                'assertions' => ['$e===' => 'list{1, 2, 3}'],
             ],
             'unpackArrayCanBeEmpty' => [
                 'code' => '<?php
@@ -1633,8 +1633,8 @@ class ArrayAssignmentTest extends TestCase
                     $y = [...$shape, ...$a, ...$b, ...$c]; // Shape is first, but only possibly matching keys union their values
                 ',
                 'assertions' => [
-                    '$x===' => 'array{0: 3, bar: 2, foo: 1}<array-key, 4|5|6>',
-                    '$y===' => 'array{0: 3|4|5|6, bar: 2|6, foo: 1|6}<array-key, 4|5|6>',
+                    '$x===' => 'unsealed-array{0: 3, bar: 2, foo: 1}<array-key, 4|5|6>',
+                    '$y===' => 'unsealed-array{0: 3|4|5|6, bar: 2|6, foo: 1|6}<array-key, 4|5|6>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1648,7 +1648,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...test(), "a" => "b"];
                 ',
-                'assertions' => ['$x===' => "array{a: 'b'}<int<0, max>, mixed>"],
+                'assertions' => ['$x===' => "unsealed-array{a: 'b'}<int<0, max>, mixed>"],
             ],
             'checkTraversableUnpackTemplatesCorrectly' => [
                 'code' => '<?php

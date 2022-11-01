@@ -1454,7 +1454,7 @@ class TypeParser
 
         $sealed = !str_starts_with($type, 'unsealed-');
         if (!$sealed) {
-            $type = substr($type, 5);
+            $type = substr($type, 9);
         }
         $callable = str_starts_with($type, 'callable-');
         $class = TKeyedArray::class;
