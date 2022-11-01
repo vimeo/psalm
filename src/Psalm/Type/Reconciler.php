@@ -226,8 +226,9 @@ class Reconciler
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
-            $before_adjustment = $result_type ? $result_type : null;
+            $before_adjustment = $result_type;
 
+            $changed = false;
             $failed_reconciliation = self::RECONCILIATION_OK;
 
             foreach ($new_type_parts as $offset => $new_type_part_parts) {
@@ -264,7 +265,7 @@ class Reconciler
 
                     $result_type_candidate = AssertionReconciler::reconcile(
                         $new_type_part_part,
-                        $result_type ? $result_type : null,
+                        $result_type,
                         $key,
                         $statements_analyzer,
                         $inside_loop,
@@ -288,6 +289,8 @@ class Reconciler
                         $orred_type,
                         $codebase
                     );
+
+                    $changed = true;
                 }
 
                 $result_type = $orred_type;
@@ -321,7 +324,7 @@ class Reconciler
                 $result_type = $result_type->setByRef(true);
             }
 
-            $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
+            $type_changed = $changed || !$before_adjustment || !$result_type->equals($before_adjustment);
 
             $key_parts = self::breakUpPathIntoParts($key);
             if ($type_changed || $failed_reconciliation) {
