@@ -22,14 +22,16 @@
   }
   ```
 
-- [BC] All atomic types, `Psalm\CodeLocation` and storages are fully immutable, use the new setter methods to change properties: these setter methods will return new instances without altering the original instance.
+- [BC] All atomic types, `Psalm\Type\Union`, `Psalm\CodeLocation` and storages are fully immutable, use the new setter methods to change properties: these setter methods will return new instances without altering the original instance.  
+  Full immutability fixes a whole class of bugs that occurred in multithreaded mode, you can now feel free to use `--threads=$(nproc)` ;)
 
-- [BC] `Psalm\Type\Union`s are now fully immutable, mutator methods were removed and moved into `Psalm\Type\MutableUnion`.  
+- [BC] `Psalm\Type\Union`s are now fully immutable, pre-existing in-place mutator methods were removed and moved into `Psalm\Type\MutableUnion`.  
   To modify a union type, usage of the new setter methods in `Psalm\Type\Union` is strongly recommended.  
   When many consecutive property sets are required, use `Psalm\Type\Union::setProperties` method to avoid creating a new instance for each set.  
-  All setter methods will return a new instance of the type without altering the original instance.
-  If many property sets are required throughout multiple methods on a single Union instance, use `Psalm\Type\Union::getBuilder` to turn a `Psalm\Type\Union` into a `Psalm\Type\MutableUnion`: once you're done, use `Psalm\Type\MutableUnion::freeze` to get a new `Psalm\Type\Union`.
+  All setter methods will return a new instance of the type without altering the original instance.  
+  If many property sets are required throughout multiple methods on a single Union instance, use `Psalm\Type\Union::getBuilder` to turn a `Psalm\Type\Union` into a `Psalm\Type\MutableUnion`: once you're done, use `Psalm\Type\MutableUnion::freeze` to get a new `Psalm\Type\Union`.  
   Methods removed from `Psalm\Type\Union` and moved into `Psalm\Type\MutableUnion`:
+
    - `replaceTypes`
    - `addType`
    - `removeType`
