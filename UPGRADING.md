@@ -1,13 +1,44 @@
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
-- [BC] `Psalm\Type\Union`s are now partially immutable, mutator methods were removed and moved into `Psalm\Type\MutableUnion`.  
-  To modify a union type, use the new `Psalm\Type\Union::getBuilder` method to turn a `Psalm\Type\Union` into a `Psalm\Type\MutableUnion`: once you're done, use `Psalm\Type\MutableUnion::freeze` to get a new `Psalm\Type\Union`.
+
+- [BC] All shaped arrays are now sealed by default: this brings many assertion improvements and bugfixes.  
+  Note that shaped arrays constructed by gradually asserting keys on an array are by definition unsealed (due to possible excess unasserted keys), and thus cannot be passed to functions that take a sealed array.  
+
+  A solution is to use [Valinor](https://github.com/CuyZ/Valinor) in strict mode to easily assert sealed arrays @ runtime using Psalm array shape syntax (instead of manually asserting keys with isset and array_key_exists):
+
+  ```php
+  try {
+    $array = (new \CuyZ\Valinor\MapperBuilder())
+        ->mapper()
+        ->map(
+            'array{foo: string, bar: int}',
+            $_GET['param']
+        );
+
+    echo $array['foo'];
+    echo $array['bar'] * 2;
+  } catch (\CuyZ\Valinor\Mapper\MappingError $error) {
+      // Do something…
+  }
+  ```
+
+- [BC] All atomic types, `Psalm\CodeLocation` and storages are fully immutable, use the new setter methods to change properties: these setter methods will return new instances without altering the original instance.
+
+- [BC] `Psalm\Type\Union`s are now fully immutable, mutator methods were removed and moved into `Psalm\Type\MutableUnion`.  
+  To modify a union type, usage of the new setter methods in `Psalm\Type\Union` is strongly recommended.  
+  When many consecutive property sets are required, use `Psalm\Type\Union::setProperties` method to avoid creating a new instance for each set.  
+  All setter methods will return a new instance of the type without altering the original instance.
+  If many property sets are required throughout multiple methods on a single Union instance, use `Psalm\Type\Union::getBuilder` to turn a `Psalm\Type\Union` into a `Psalm\Type\MutableUnion`: once you're done, use `Psalm\Type\MutableUnion::freeze` to get a new `Psalm\Type\Union`.
   Methods removed from `Psalm\Type\Union` and moved into `Psalm\Type\MutableUnion`:
    - `replaceTypes`
    - `addType`
    - `removeType`
    - `substitute`
    - `replaceClassLike`
+
+- [BC] `Psalm\Type\TypeNode::getChildNodes()` was removed, use the new `Psalm\Type\TypeVisitor` and `Psalm\Type\MutableTypeVisitor` to iterate over a type tree.  
+
+- [BC] `Psalm\Type\TypeVisitor` is now fully immutable, implementors MUST NOT alter type nodes during iteration: use `Psalm\Type\MutableTypeVisitor` if type node mutation is desired.  
 
 - [BC] TPositiveInt has been removed and replaced by TIntRange
 
