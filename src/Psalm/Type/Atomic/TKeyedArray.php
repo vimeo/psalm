@@ -142,7 +142,7 @@ class TKeyedArray extends Atomic
 
         foreach ($this->properties as $name => $type) {
             if ($this->is_list) {
-                $property_strings[$name] = $type->getId($exact);
+                $property_strings[$name] = ($type->possibly_undefined ? '?' : ''). $type->getId($exact);
                 continue;
             }
 
@@ -201,7 +201,7 @@ class TKeyedArray extends Atomic
 
         foreach ($this->properties as $name => $type) {
             if ($this->is_list) {
-                $suffixed_properties[$name] = $type->toNamespacedString(
+                $suffixed_properties[$name] = ($type->possibly_undefined ? '?' : '') . $type->toNamespacedString(
                     $namespace,
                     $aliased_classes,
                     $this_class,

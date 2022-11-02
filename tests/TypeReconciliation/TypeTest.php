@@ -31,6 +31,19 @@ class TypeTest extends TestCase
                     '$a===' => 'array{a: mixed}'
                 ]
             ],
+            'sealedArrayCount' => [
+                'code' => '<?php
+                    $a = random_int(0,1) ? [] : [0, 1];
+
+                    $b = null;
+                    if (count($a) === 2) {
+                        $b = $a;
+                    }',
+                'assertions' => [
+                    '$a===' => 'list{?0, ?1}',
+                    '$b===' => 'list{0, 1}|null'
+                ]
+            ],
             'nullableMethodWithTernaryGuard' => [
                 'code' => '<?php
                     class A {

@@ -700,18 +700,30 @@ class SimpleAssertionReconciler extends Reconciler
                 $existing_var_type->addType(
                     $non_empty_list
                 );
-            } elseif ($array_atomic_type instanceof TKeyedArray && !$array_atomic_type->sealed) {
-                $has_possibly_undefined = false;
-                foreach ($array_atomic_type->properties as $property) {
-                    if ($property->possibly_undefined) {
-                        $has_possibly_undefined = true;
-                        break;
+            } elseif ($array_atomic_type instanceof TKeyedArray) {
+                if ($array_atomic_type->sealed) {
+                    if (count($array_atomic_type->properties) === $count) {
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type->setProperties(
+                            array_map(
+                                fn (Union $union) => $union->setPossiblyUndefined(false),
+                                $array_atomic_type->properties
+                            )
+                        ));
                     }
-                }
+                } else {
+                    $has_possibly_undefined = false;
+                    foreach ($array_atomic_type->properties as $property) {
+                        if ($property->possibly_undefined) {
+                            $has_possibly_undefined = true;
+                            break;
+                        }
+                    }
 
-                if (!$has_possibly_undefined && count($array_atomic_type->properties) === $count) {
-                    $existing_var_type->removeType('array');
-                    $existing_var_type->addType($array_atomic_type->setSealed(true));
+                    if (!$has_possibly_undefined && count($array_atomic_type->properties) === $count) {
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type->setSealed(true));
+                    }
                 }
             }
         }
