@@ -470,7 +470,18 @@ class ForeachAnalyzer
                 || $iterator_atomic_type instanceof TList
             ) {
                 if ($iterator_atomic_type instanceof TKeyedArray) {
-                    if (!$iterator_atomic_type->sealed) {
+                    if ($iterator_atomic_type->sealed) {
+                        $all_possibly_undefined = true;
+                        foreach ($iterator_atomic_type->properties as $prop) {
+                            if (!$prop->possibly_undefined) {
+                                $all_possibly_undefined = false;
+                                break;
+                            }
+                        }
+                        if ($all_possibly_undefined) {
+                            $always_non_empty_array = false;
+                        }
+                    } else {
                         $always_non_empty_array = false;
                     }
                     $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType();
