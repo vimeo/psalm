@@ -119,6 +119,23 @@ class TKeyedArray extends Atomic
         return $cloned;
     }
 
+    /**
+     * @return static
+     */
+    public function setSealed(bool $sealed): self
+    {
+        if ($sealed === $this->sealed) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->sealed = $sealed;
+        if (!$sealed) {
+            $cloned->previous_key_type = null;
+            $cloned->previous_value_type = null;
+        }
+        return $cloned;
+    }
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $property_strings = [];

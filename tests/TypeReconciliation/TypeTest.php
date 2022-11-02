@@ -19,6 +19,18 @@ class TypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'sealArray' => [
+                'code' => '<?php
+                    /** @var array */
+                    $a = [];
+
+                    assert(isset($a["a"]));
+                    assert(count($a) === 1);
+                    ',
+                'assertions' => [
+                    '$a===' => 'array{a: mixed}'
+                ]
+            ],
             'nullableMethodWithTernaryGuard' => [
                 'code' => '<?php
                     class A {

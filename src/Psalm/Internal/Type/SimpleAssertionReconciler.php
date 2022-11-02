@@ -700,6 +700,19 @@ class SimpleAssertionReconciler extends Reconciler
                 $existing_var_type->addType(
                     $non_empty_list
                 );
+            } elseif ($array_atomic_type instanceof TKeyedArray && !$array_atomic_type->sealed) {
+                $has_possibly_undefined = false;
+                foreach ($array_atomic_type->properties as $property) {
+                    if ($property->possibly_undefined) {
+                        $has_possibly_undefined = true;
+                        break;
+                    }
+                }
+
+                if (!$has_possibly_undefined && count($array_atomic_type->properties) === $count) {
+                    $existing_var_type->removeType('array');
+                    $existing_var_type->addType($array_atomic_type->setSealed(true));
+                }
             }
         }
 
