@@ -2,7 +2,7 @@
 namespace Phan\Language\Internal;
 
 /**
- * CURRENT PHP TARGET VERSION: 8.1
+ * CURRENT PHP TARGET VERSION: 8.2
  * The version above has to match Psalm\Internal\Codebase\InternalCallMapHandler::PHP_(MAJOR|MINOR)_VERSION
  *
  * Format
@@ -1695,6 +1695,7 @@ return [
 'curl_share_setopt' => ['bool', 'share_handle'=>'CurlShareHandle', 'option'=>'int', 'value'=>'mixed'],
 'curl_share_strerror' => ['?string', 'error_code'=>'int'],
 'curl_strerror' => ['?string', 'error_code'=>'int'],
+'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
 'curl_unescape' => ['string|false', 'handle'=>'CurlShareHandle', 'string'=>'string'],
 'curl_version' => ['array', 'version='=>'int'],
 'CURLFile::__construct' => ['void', 'filename'=>'string', 'mimetype='=>'string', 'postfilename='=>'string'],
@@ -6136,6 +6137,7 @@ return [
 'ini_get' => ['string|false', 'option'=>'string'],
 'ini_get_all' => ['array|false', 'extension='=>'?string', 'details='=>'bool'],
 'ini_restore' => ['void', 'option'=>'string'],
+'ini_parse_quantity' => ['int', 'shorthand'=>'non-empty-string'],
 'ini_set' => ['string|false', 'option'=>'string', 'value'=>'string|int|float|bool|null'],
 'inotify_add_watch' => ['int', 'inotify_instance'=>'resource', 'pathname'=>'string', 'mask'=>'int'],
 'inotify_init' => ['resource|false'],
@@ -7474,6 +7476,7 @@ return [
 'MemcachePool::setServerParams' => ['bool', 'host'=>'string', 'port='=>'int', 'timeout='=>'int', 'retry_interval='=>'int', 'status='=>'bool', 'failure_callback='=>'?callable'],
 'memory_get_peak_usage' => ['int', 'real_usage='=>'bool'],
 'memory_get_usage' => ['int', 'real_usage='=>'bool'],
+'memory_reset_peak_usage' => ['void'],
 'MessageFormatter::__construct' => ['void', 'locale'=>'string', 'pattern'=>'string'],
 'MessageFormatter::create' => ['MessageFormatter', 'locale'=>'string', 'pattern'=>'string'],
 'MessageFormatter::format' => ['false|string', 'args'=>'array'],
@@ -8442,6 +8445,7 @@ return [
 'mysqli::disable_reads_from_master' => ['bool'],
 'mysqli::dump_debug_info' => ['bool'],
 'mysqli::escape_string' => ['string', 'string'=>'string'],
+'mysqli::execute_query' => ['mysqli_result|bool', 'query'=>'non-empty-string', 'params='=>'list<string>|null'],
 'mysqli::get_charset' => ['object'],
 'mysqli::get_client_info' => ['string'],
 'mysqli::get_connection_stats' => ['array'],
@@ -8503,6 +8507,7 @@ return [
 'mysqli_error_list' => ['array', 'mysql'=>'mysqli'],
 'mysqli_escape_string' => ['string', 'mysql'=>'mysqli', 'string'=>'string'],
 'mysqli_execute' => ['bool', 'statement'=>'mysqli_stmt', 'params='=>'list<mixed>|null'],
+'mysqli_execute_query' => ['mysqli_result|bool', 'mysqli'=>'mysqli', 'query'=>'non-empty-string', 'params='=>'list<string>|null'],
 'mysqli_fetch_all' => ['list<array<array-key,null|int|float|string>>', 'result'=>'mysqli_result', 'mode='=>'3'],
 'mysqli_fetch_all\'1' => ['list<array<string,null|int|float|string>>', 'result'=>'mysqli_result', 'mode='=>'1'],
 'mysqli_fetch_all\'2' => ['list<list<null|int|float|string>>', 'result'=>'mysqli_result', 'mode='=>'2'],
@@ -9353,6 +9358,7 @@ return [
 'opendir' => ['resource|false', 'directory'=>'string', 'context='=>'resource'],
 'openlog' => ['bool', 'prefix'=>'string', 'flags'=>'int', 'facility'=>'int'],
 'openssl_cipher_iv_length' => ['int|false', 'cipher_algo'=>'string'],
+'openssl_cipher_key_length' => ['positive-int|false', 'cipher_algo'=>'non-empty-string'],
 'openssl_csr_export' => ['bool', 'csr'=>'OpenSSLCertificateSigningRequest|string', '&w_output'=>'string', 'no_text='=>'bool'],
 'openssl_csr_export_to_file' => ['bool', 'csr'=>'OpenSSLCertificateSigningRequest|string', 'output_filename'=>'string', 'no_text='=>'bool'],
 'openssl_csr_get_public_key' => ['OpenSSLAsymmetricKey|false', 'csr'=>'OpenSSLCertificateSigningRequest|string', 'short_names='=>'bool'],
@@ -13818,7 +13824,7 @@ return [
 'str_replace' => ['string|string[]', 'search'=>'string|array', 'replace'=>'string|array', 'subject'=>'string|array', '&w_count='=>'int'],
 'str_rot13' => ['string', 'string'=>'string'],
 'str_shuffle' => ['string', 'string'=>'string'],
-'str_split' => ['non-empty-list<string>', 'string'=>'string', 'length='=>'positive-int'],
+'str_split' => ['list<string>', 'string'=>'string', 'length='=>'positive-int'],
 'str_starts_with' => ['bool', 'haystack'=>'string', 'needle'=>'string'],
 'str_word_count' => ['array<int, string>|int', 'string'=>'string', 'format='=>'int', 'characters='=>'string'],
 'strcasecmp' => ['int', 'string1'=>'string', 'string2'=>'string'],
@@ -15670,7 +15676,7 @@ return [
 'XMLDiff\Memory::diff' => ['string', 'from'=>'string', 'to'=>'string'],
 'XMLDiff\Memory::merge' => ['string', 'src'=>'string', 'diff'=>'string'],
 'XMLReader::close' => ['bool'],
-'XMLReader::expand' => ['DOMNode|false', 'basenode='=>'DOMNode'],
+'XMLReader::expand' => ['DOMNode|false', 'baseNode='=>'?DOMNode'],
 'XMLReader::getAttribute' => ['?string', 'name'=>'string'],
 'XMLReader::getAttributeNo' => ['?string', 'index'=>'int'],
 'XMLReader::getAttributeNs' => ['?string', 'name'=>'string', 'namespaceuri'=>'string'],
