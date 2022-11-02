@@ -519,12 +519,24 @@ class Functions
             //gettext
             'bindtextdomain',
 
-            // serialize
-            'serialize', 'unserialize'
+            // unserialize
+            'unserialize'
         ];
 
         if (in_array(strtolower($function_id), $impure_functions, true)) {
             return false;
+        }
+
+        if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
+            $serialize_type = $type_provider->getType($args[0]->value);
+
+            if ($serialize_type) {
+                foreach ($serialize_type->getAtomicTypes() as $atomic_serialize_type) {
+                    if ($atomic_serialize_type->isObjectType()) {
+                        return false;
+                    }
+                }
+            }
         }
 
         if (strpos($function_id, 'image') === 0) {
