@@ -129,7 +129,7 @@ class TKeyedArray extends Atomic
         }
         $cloned = clone $this;
         $cloned->sealed = $sealed;
-        if (!$sealed) {
+        if ($sealed) {
             $cloned->previous_key_type = null;
             $cloned->previous_value_type = null;
         }
