@@ -63,7 +63,7 @@
    - `substitute`
    - `replaceClassLike`
 
-- [BC] `Psalm\Type\TypeNode::getChildNodes()` was removed, use the new `Psalm\Type\TypeVisitor` and `Psalm\Type\MutableTypeVisitor` to iterate over a type tree.  
+- [BC] `Psalm\Type\TypeNode::getChildNodes()` was removed, use `Psalm\Type\Union::getAtomicTypes()` to get the types of a union, and use `Psalm\Type\TypeVisitor` with the new `Psalm\Type\MutableTypeVisitor` class to iterate over a type tree.  
 
 - [BC] `Psalm\Type\TypeVisitor` is now fully immutable, implementors MUST NOT alter type nodes during iteration: use `Psalm\Type\MutableTypeVisitor` if type node mutation is desired.  
 
