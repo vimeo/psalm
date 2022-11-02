@@ -518,6 +518,9 @@ class Functions
 
             //gettext
             'bindtextdomain',
+
+            // serialize
+            'serialize', 'unserialize'
         ];
 
         if (in_array(strtolower($function_id), $impure_functions, true)) {
