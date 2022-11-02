@@ -737,6 +737,31 @@ class UnusedCodeTest extends TestCase
 
                     new Foo();'
             ],
+            'ignoreSerializeAndUnserialize' => [
+                '<?php
+                    class Foo
+                    {
+                        public function __sleep(): array
+                        {
+                            throw new BadMethodCallException();
+                        }
+                        public function __wakeup(): void
+                        {
+                            throw new BadMethodCallException();
+                        }
+                    }
+
+                    function test(): bool {
+                        try {
+                            serialize(new Foo());
+                            unserialize("");
+                        } catch (\Throwable) {
+                            return false;
+                        }
+
+                        return true;
+                    }'
+            ],
             'useIteratorMethodsWhenCallingForeach' => [
                 '<?php
                     /** @psalm-suppress UnimplementedInterfaceMethod */
