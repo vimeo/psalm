@@ -514,7 +514,6 @@ class ReturnTypeTest extends TestCase
                         return ["a" => 2];
                     }',
             ],
-            ],
             'arrayReturnTypeWithExplicitKeyType' => [
                 'code' => '<?php
                     /** @return array<int|string, mixed> */
