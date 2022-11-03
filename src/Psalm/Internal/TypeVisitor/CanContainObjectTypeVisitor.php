@@ -30,8 +30,7 @@ class CanContainObjectTypeVisitor extends NodeVisitor
 
     protected function enterNode(TypeNode $type): ?int
     {
-        if (
-            $type instanceof Union
+        if ($type instanceof Union
             && (
                 UnionTypeComparator::canBeContainedBy($this->codebase, new Union([new TObject()]), $type)
                 && UnionTypeComparator::canBeContainedBy($this->codebase, $type, new Union([new TObject()]))
