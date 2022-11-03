@@ -27,6 +27,7 @@
         "composer/package-versions-deprecated": "^1.8.0",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^1.1 || ^2.0 || ^3.0",
+        "danog/class-finder": "^0.4.8",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.1",
         "felixfbecker/language-server-protocol": "^1.5",

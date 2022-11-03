@@ -14,7 +14,7 @@ class RedundantConditionTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -337,7 +337,7 @@ class RedundantConditionTest extends TestCase
                     $a = getStrings();
 
                     if (is_string($a[0]) && strlen($a[0]) > 3) {}',
-                'assignments' => [],
+                'assertions' => [],
                 'ignored_issues' => [],
             ],
             'nullToMixedWithNullCheckWithIntKey' => [
@@ -350,7 +350,7 @@ class RedundantConditionTest extends TestCase
                     $a = getStrings();
 
                     if (is_string($a[0]) && strlen($a[0]) > 3) {}',
-                'assignments' => [],
+                'assertions' => [],
                 'ignored_issues' => [],
             ],
             'replaceFalseTypeWithTrueConditionalOnMixedEquality' => [
@@ -368,7 +368,7 @@ class RedundantConditionTest extends TestCase
 
                         if ($a === false) {}
                     }',
-                'assignments' => [],
+                'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MissingReturnType', 'MixedArrayAccess'],
             ],
             'nullCoalescePossiblyUndefined' => [
@@ -381,7 +381,7 @@ class RedundantConditionTest extends TestCase
                     $option = $options["option"] ?? false;
 
                     if ($option) {}',
-                'assignments' => [],
+                'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'allowIntValueCheckAfterComparisonDueToOverflow' => [
@@ -910,7 +910,7 @@ class RedundantConditionTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

@@ -14,7 +14,7 @@ class ClassTemplateExtendsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -1376,7 +1376,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                     /**
                      * @template T
-                     * 
+                     *
                      * @psalm-suppress MissingTemplateParam
                      */
                     class C implements I {
@@ -1417,7 +1417,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                     /**
                      * @template T2
-                     * 
+                     *
                      * @psalm-suppress MissingTemplateParam
                      */
                     class C implements I {
@@ -2250,7 +2250,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                     /**
                      * @template TT
-                     * 
+                     *
                      * @extends Container<TT>
                      */
                     class MyContainer extends Container {}
@@ -4052,14 +4052,14 @@ class ClassTemplateExtendsTest extends TestCase
                      */
                     class a {
                     }
-                    
+
                     /**
                      * @template TT1
                      * @template TT2
                      * @extends a<TT2>
                      */
                     class b extends a {}
-                    
+
                     /** @return Generator<int, b<"test1", "test2">, mixed, "test2"> */
                     function bb(): \Generator {
                         /** @var b<"test1", "test2"> */
@@ -4076,12 +4076,12 @@ class ClassTemplateExtendsTest extends TestCase
                      */
                     class a {
                     }
-                    
+
                     /**
                      * @extends a<"test">
                      */
                     class b extends a {}
-                    
+
                     /** @return Generator<int, b, mixed, "test"> */
                     function bb(): \Generator {
                         $b = new b;
@@ -4094,7 +4094,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                 /** @psalm-yield int */
                 class a {}
-                
+
                 /**
                  * @return Generator<int, a, mixed, int>
                  */
@@ -4637,7 +4637,7 @@ class ClassTemplateExtendsTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

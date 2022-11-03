@@ -35,7 +35,7 @@ class ValueTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -921,7 +921,7 @@ class ValueTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

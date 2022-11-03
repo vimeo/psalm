@@ -160,7 +160,6 @@ class ValueOfTest extends TestCase
                     foobar($foo->value);
                 ',
                 'assertions' => [],
-                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'valueOfIntEnum' => [
@@ -182,7 +181,6 @@ class ValueOfTest extends TestCase
                     foobar($foo->value);
                 ',
                 'assertions' => [],
-                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'valueOfEnumUnion' => [
@@ -206,7 +204,6 @@ class ValueOfTest extends TestCase
                     }
                 ',
                 'assertions' => [],
-                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
         ];
