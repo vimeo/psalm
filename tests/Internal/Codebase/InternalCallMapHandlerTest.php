@@ -692,7 +692,6 @@ class InternalCallMapHandlerTest extends TestCase
         foreach ($entryParameters as $key => $entry) {
             $normalizedKey = $key;
             /**
-             *
              * @var array{byRef: bool, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string} $normalizedEntry
              */
             $normalizedEntry = [

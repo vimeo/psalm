@@ -109,6 +109,10 @@ class TryCatchTest extends TestCase
 
                     if (!$foo) {}',
                 'assertions' => [],
+                'ignored_issues' => [
+                    'UndefinedGlobalVariable',
+                    'MixedMethodCall',
+                ],
             ],
             'issetAfterTryCatchWithoutAssignmentInCatch' => [
                 'code' => '<?php

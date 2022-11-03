@@ -101,6 +101,9 @@ class UnusedVariableTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /**
+     * @return array<string, array{code:string,ignored_issues?:list<string>,php_version?:string}>
+     */
     public function providerValidCodeParse(): array
     {
         return [

@@ -1565,7 +1565,7 @@ class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMismatch',
                 'ignored_issues' => [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'noTypehintInNativeDescendant' => [
                 'code' => '<?php
@@ -1577,7 +1577,7 @@ class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMustProvideReturnType',
                 'ignored_issues' => [],
-                '8.1'
+                'php_version' => '8.1'
             ],
         ];
     }
