@@ -751,12 +751,14 @@ class UnusedCodeTest extends TestCase
                         }
                     }
 
-                    function test(Foo|int $foo): bool {
+                    function test(Foo|int $foo, mixed $bar, iterable $baz): bool {
                         try {
                             serialize(new Foo());
                             serialize([new Foo()]);
                             serialize([[new Foo()]]);
                             serialize($foo);
+                            serialize($bar);
+                            serialize($baz);
                             unserialize("");
                         } catch (\Throwable) {
                             return false;

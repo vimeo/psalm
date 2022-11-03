@@ -32,10 +32,16 @@ class CanContainObjectTypeVisitor extends NodeVisitor
     {
         if (
             $type instanceof Union
-            && UnionTypeComparator::canBeContainedBy($this->codebase, $type, new Union([new TObject()]))
+            && (
+                UnionTypeComparator::canBeContainedBy($this->codebase, new Union([new TObject()]), $type)
+                && UnionTypeComparator::canBeContainedBy($this->codebase, $type, new Union([new TObject()]))
+            )
             ||
             $type instanceof Atomic
-            && AtomicTypeComparator::isContainedBy($this->codebase, $type, new TObject())
+            && (
+                AtomicTypeComparator::isContainedBy($this->codebase, new TObject(), $type)
+                || AtomicTypeComparator::isContainedBy($this->codebase, $type, new TObject())
+            )
         ) {
             $this->contains_object_type = true;
             return NodeVisitor::STOP_TRAVERSAL;
