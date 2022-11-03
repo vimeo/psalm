@@ -9,6 +9,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
+use Psalm\Internal\TypeVisitor\ContainsObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeChecker;
@@ -1490,6 +1491,15 @@ class Union implements TypeNode
         $literal_visitor->traverseArray($this->types);
 
         return $literal_visitor->matches();
+    }
+
+    public function containsObjectType(): bool
+    {
+        $object_type_visitor = new ContainsObjectTypeVisitor();
+
+        $object_type_visitor->traverseArray($this->types);
+
+        return $object_type_visitor->matches();
     }
 
     /**

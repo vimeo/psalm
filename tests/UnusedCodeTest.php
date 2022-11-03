@@ -754,6 +754,7 @@ class UnusedCodeTest extends TestCase
                     function test(): bool {
                         try {
                             serialize(new Foo());
+                            serialize([new Foo()]);
                             unserialize("");
                         } catch (\Throwable) {
                             return false;
