@@ -21,7 +21,6 @@ use ReflectionParameter;
 use ReflectionType;
 
 use function array_shift;
-use function assert;
 use function class_exists;
 use function count;
 use function explode;
@@ -716,7 +715,7 @@ class InternalCallMapHandlerTest extends TestCase
                 $parts = explode('_', $normalizedKey, 2);
                 if (count($parts) === 2) {
                     if (!($parts[0] === 'rw' || $parts[0] === 'w' || $parts[0] === 'r')) {
-                        throw new \InvalidArgumentException('Invalid refMode: '.$parts[0]);
+                        throw new InvalidArgumentException('Invalid refMode: '.$parts[0]);
                     }
                     $normalizedEntry['refMode'] = $parts[0];
                     $normalizedKey = $parts[1];
