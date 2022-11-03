@@ -78,8 +78,15 @@ class TypeComparatorTest extends TestCase
             [
                 'open-resource' => true, // unverifiable
                 'non-empty-countable' => true, // bit weird, maybe a bug?
+            ],
+            [
+                'unsealed-array' => true, // Requires a shape
+                'unsealed-list' => true, // Requires a shape
             ]
         );
+        $basic_types['unsealed-array{test: 123}'] = true;
+        $basic_types['unsealed-list{123}'] = true;
+
         return array_map(
             fn($type) => [$type],
             array_keys($basic_types)

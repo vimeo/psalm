@@ -686,14 +686,14 @@ class InternalCallMapHandlerTest extends TestCase
     {
         /**
          * Parse the parameter names from the map.
-         * @var array<string, array{byRef: bool, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string}>
+         * @var array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
          */
         $normalizedEntries = [];
 
         foreach ($entryParameters as $key => $entry) {
             $normalizedKey = $key;
             /**
-             * @var array{byRef: bool, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string} $normalizedEntry
+             * @var array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
              */
             $normalizedEntry = [
                 'variadic' => false,
@@ -715,7 +715,9 @@ class InternalCallMapHandlerTest extends TestCase
             if ($normalizedEntry['byRef']) {
                 $parts = explode('_', $normalizedKey, 2);
                 if (count($parts) === 2) {
-                    assert($parts[0] === 'rw' || $parts[0] === 'w');
+                    if (!($parts[0] === 'rw' || $parts[0] === 'w' || $parts[0] === 'r')) {
+                        throw new \InvalidArgumentException('Invalid refMode: '.$parts[0]);
+                    }
                     $normalizedEntry['refMode'] = $parts[0];
                     $normalizedKey = $parts[1];
                 } else {
@@ -740,7 +742,7 @@ class InternalCallMapHandlerTest extends TestCase
 
     /**
      *
-     * @param array{byRef: bool, name?: string, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string} $normalizedEntry
+     * @param array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
      */
     private function assertParameter(array $normalizedEntry, ReflectionParameter $param): void
     {
