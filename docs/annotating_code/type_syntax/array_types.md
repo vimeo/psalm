@@ -290,8 +290,8 @@ try {
 
   /** @psalm-trace $array */; // array{a: string, b: int}
 
-  echo $array['foo'];
-  echo $array['bar'];
+  echo $array['a'];
+  echo $array['b'];
 } catch (\CuyZ\Valinor\Mapper\MappingError $error) {
   // Do something…
 }
