@@ -193,7 +193,7 @@ class ErrorFixTest extends TestCase
                     ],
                 ],
                 'error_counts' => [2, 1, 0],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
