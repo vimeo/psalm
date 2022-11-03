@@ -15,7 +15,7 @@ class InlineTypeAlias implements TypeAlias
     use ImmutableNonCloneableTrait;
 
     /**
-     * @var list<array{0: string, 1: int}>
+     * @var list<array{0: string, 1: int, 2?: string}>
      */
     public $replacement_tokens;
 

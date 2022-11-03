@@ -226,7 +226,8 @@ class TKeyedArray extends Atomic
                 );
         }
 
-        return ($this->is_list ? static::NAME_LIST : static::NAME_ARRAY) . '{' . implode(', ', $suffixed_properties) . '}';
+        return ($this->is_list ? static::NAME_LIST : static::NAME_ARRAY) . '{' .
+                implode(', ', $suffixed_properties) . '}';
     }
 
     /**

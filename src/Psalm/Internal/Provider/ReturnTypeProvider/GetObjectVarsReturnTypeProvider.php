@@ -96,7 +96,6 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                             $context
                         );
                         if (!$property_type) {
-                            $properties[$name] = $property_type;
                             continue;
                         }
 

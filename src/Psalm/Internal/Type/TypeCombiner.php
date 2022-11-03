@@ -1517,6 +1517,7 @@ class TypeCombiner
             if ($combination->all_arrays_lists) {
                 if ($combination->objectlike_entries
                     && $combination->objectlike_sealed
+                    && isset($combination->array_type_params[1])
                 ) {
                     $array_type = new TKeyedArray(
                         [$generic_type_params[1]],

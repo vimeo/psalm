@@ -21,6 +21,7 @@ use ReflectionParameter;
 use ReflectionType;
 
 use function array_shift;
+use function assert;
 use function class_exists;
 use function count;
 use function explode;

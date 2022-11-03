@@ -336,6 +336,7 @@ final class Union implements TypeNode, Stringable
      */
     public function getBuilder(): MutableUnion
     {
+        /** @psalm-suppress InvalidArgument It's actually filtered internally */
         return new MutableUnion($this->getAtomicTypes(), get_object_vars($this));
     }
 

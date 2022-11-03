@@ -75,6 +75,7 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_map;
 use function array_merge;
 use function count;
 use function explode;

@@ -38,6 +38,7 @@ use function array_map;
 use function array_shift;
 use function array_slice;
 use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
