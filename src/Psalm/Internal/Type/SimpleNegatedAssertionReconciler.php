@@ -533,7 +533,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $existing_var_type->removeType('array');
             } elseif ($array_atomic_type instanceof TKeyedArray) {
                 if ($array_atomic_type->sealed && $count !== null) {
-                    $prop_count = count($array_atomic_type->properties);
+                    $prop_max_count = count($array_atomic_type->properties);
                     $prop_min_count = 0;
                     foreach ($array_atomic_type->properties as $property_type) {
                         if (!$property_type->possibly_undefined) {
@@ -546,8 +546,8 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
                     // We're asserting that count($a) < $count
                     // If it's impossible, remove the type
-                    // If it's possible but redundant, do nothing (?)
-                    // If it's possible, say that we removed a type
+                    // If it's possible but redundant, mark as redundant
+                    // If it's possible, mark as not redundant
 
                     // Impossible because count($a) >= $count always
                     if ($prop_min_count >= $count) {
@@ -556,7 +556,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $existing_var_type->removeType('array');
 
                         // Redundant because count($a) < $count always
-                    } elseif ($prop_count < $count) {
+                    } elseif ($prop_max_count < $count) {
                         $redundant = true;
 
                         // Possible
