@@ -121,6 +121,40 @@ Optional keys can be denoted by a trailing `?`, e.g.:
 /** @return array{optional?: string, bar: int} */
 ```
 
+Starting from Psalm v5, object-like arrays created from literals and phpdocs are sealed by default, which means Psalm can reason a lot better about them, see [here](#sealed-object-like-arrays) for more info.  
+
+## Object-like lists
+
+Psalm supports a special format for lists where the key offsets are known: object-like lists, also known as **list shapes**.
+
+Given a list
+
+```php
+<?php
+["hello", "world", new stdClass, false];
+```
+
+Psalm will type it internally as:
+
+```
+list{string, string, stdClass, false}
+```
+
+You can specify types in that format yourself, e.g.
+
+```php
+/** @return list{string, int} */
+/** @return list{0: string, 1: int} */
+```
+
+Optional keys can be denoted by a specifying keys for all elements and specifying a trailing `?` for optional keys, e.g.:
+
+```php
+/** @return list{0: string, 1?: int} */
+```
+
+Starting from Psalm v5, object-like lists created from literals and phpdocs are sealed by default, which means Psalm can reason a lot better about them, see [here](#sealed-object-like-arrays) for more info.  
+
 ## Callable arrays
 
 An array holding a callable, like PHP's native `call_user_func()` and friends supports it:
@@ -131,6 +165,139 @@ An array holding a callable, like PHP's native `call_user_func()` and friends su
 $callable = ['myClass', 'aMethod'];
 $callable = [$object, 'aMethod'];
 ```
+
+## Sealed object-like arrays
+
+Starting from Psalm v5, object-like arrays and lists created from literals and phpdocs are sealed by default.
+Sealed arrays can only have _only_ have the keys specified in the shape: extra keys are forbidden.  
+
+This additional simplicity means Psalm can reason a lot better about them:  
+
+```php
+/** @var array{foo: string, bar?: int, baz?: float} $arr */
+
+if (count($arr) > 2) {
+  echo $arr['baz']; // OK!
+}
+
+// Off by one bug, detected by Psalm:
+if (count($arr) > 3) {
+  // DocblockTypeContradiction - Docblock-defined type ...
+}
+
+/** @param array{0: float, 1: float, 2?: float} $arr */
+function avgShape(array $arr): float {
+  return array_sum($arr) / count($arr);
+}
+
+// InvalidArgument - Argument 1 of avgShape expects ...
+avgShape([123.1, 321.0, 1.0, new class {}, 'test']);
+```
+
+The above examples contain bugs which can be detected by Psalm *only when using sealed arrays*.  
+
+The counterpart to sealed arrays are [unsealed arrays &rauo;](#unsealed-object-like-arrays), generated as intermediate types when asserting raw arrays.  
+Unsealed arrays are by definition uncertain, so Psalm can't reason well about them: always convert them to sealed arrays as specified [here &raquo;](#unsealed-object-like-arrays).  
+
+## Unsealed object-like arrays
+
+Starting from v5, Psalm defines a supertype of object-like arrays called unsealed object-like arrays.  
+This type is used in cases where an [object-like array](#object-like-arrays) may have extra keys not specified in the shape.  
+Avoid using unsealed arrays in your codebase, as **they can cause undetectable bugs**: always transform them into sealed arrays before use.  
+Unsealed arrays are by definition uncertain, so, unlike [sealed arrays](#sealed-object-like-arrays), Psalm can't reason well about them: always use sealed arrays in your PHPDocs.  
+
+Here's how unsealed arrays can cause weird bugs:
+
+```php
+<?php
+
+/**
+ * @param unsealed-array{a: float, b: float} $params
+ */
+function avg(array $params): float {
+  return array_sum($params) / 2.0;
+}
+
+$arr = json_decode(file_get_contents('https://.../'), true);
+
+if (is_array($arr)
+  && isset($arr['a']) && is_float($arr['a'])
+  && isset($arr['b']) && is_float($arr['b'])
+) {
+  // Here, $arr is an unsealed-array{a: float, b: float}
+  echo avg($arr);
+}
+
+/**
+ * @param array{a: float, b: float, c: float} $params
+ */
+function avgCoefficient(array $params): float {
+  return avg($params) * $params['c'];
+}
+```
+
+In this example, we assume that `avg` takes an array with two elements, but what happens if the API (or some other function) also provides a third `c` parameter to a function that averages two elements?  
+And what would happen if a string `csrf` parameter were provided in `$_POST`?  
+
+Clearly, just asserting the shape of the array is not enough: we need to guarantee that the array will contain only the array elements we need.  
+
+```php
+<?php
+
+/**
+ * @param unsealed-array{a: float, b: float} $params
+ */
+function avg(array $params): float {
+  return array_sum($params) / 2.0;
+}
+
+$arr = json_decode(file_get_contents('https://.../'), true);
+
+if (is_array($arr)
+  && isset($arr['a']) && is_float($arr['a'])
+  && isset($arr['b']) && is_float($arr['b'])
+  && count($arr) === 2 // <-- Ensure only two elements are present
+) {
+  // Here, $arr is an unsealed-array{a: float, b: float}
+  echo avg($arr);
+}
+
+/**
+ * @param array{a: float, b: float, c: float} $params
+ */
+function avgCoefficient(array $params): float {
+  // InvalidArgument - Argument 1 of avg expects array{a: float, b: float}, but array{a: float, b: float, c: float} provided
+  //return avg($params) * $params['c'];
+
+  $coefficient = $params['c'];
+  unset($params['c']);
+  return avg($params) * $coefficient;
+}
+```
+
+You can also manually provide a `['a' => $arr['a'], 'b' => $arr['b']]`, but there's an even better way to seamlessly validate user-provided input:  
+
+Use [Valinor](https://github.com/CuyZ/Valinor) in strict mode to easily assert sealed arrays @ runtime using Psalm array shape syntax (instead of manually asserting keys with isset):
+
+```php
+try {
+  $array = (new \CuyZ\Valinor\MapperBuilder())
+      ->mapper()
+      ->map(
+          'array{a: string, b: int}',
+          json_decode(file_get_contents('https://.../'), true);
+      );
+
+  /** @psalm-trace $array */; // array{a: string, b: int}
+
+  echo $array['foo'];
+  echo $array['bar'];
+} catch (\CuyZ\Valinor\Mapper\MappingError $error) {
+  // Do something…
+}
+```
+
+Valinor provides both runtime and static Psalm assertions with full Psalm syntax support and many other features, check out the [Valinor documentation](https://valinor.cuyz.io/latest/) for more info!  
 
 ## non-empty-array
 

@@ -1,49 +1,7 @@
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 
-- [BC] All shaped arrays are now sealed by default: this brings many assertion improvements and bugfixes.  
-  Note that shaped arrays constructed by gradually asserting keys on an array are by definition unsealed (due to possible excess unasserted keys), and thus cannot be passed to functions that take a sealed array.  
-
-  A solution is to assert that the number of elements in the array matches exactly the number of keys:
-  
-  ```php
-  /** @var array $array */
-
-  assert(isset($array['foo']) && is_string($array['foo']));
-
-  /** @psalm-trace $array */; // unsealed-array{foo: string}<array-key, mixed>
-
-  assert(isset($array['bar']) && is_string($array['bar']));
-
-  /** @psalm-trace $array */; // unsealed-array{foo: string, bar: string}<array-key, mixed>
-
-  assert(count($array) === 2);
-
-  /** @psalm-trace $array */; // array{foo: string, bar: string}
-
-  echo $array['foo'];
-  echo $array['bar'];
-  ```
-
-  A better solution is to use [Valinor](https://github.com/CuyZ/Valinor) in strict mode to easily assert sealed arrays @ runtime using Psalm array shape syntax (instead of manually asserting keys with isset and array_key_exists):
-
-  ```php
-  try {
-    $array = (new \CuyZ\Valinor\MapperBuilder())
-        ->mapper()
-        ->map(
-            'array{foo: string, bar: string}',
-            $_GET['param']
-        );
-
-    /** @psalm-trace $array */; // array{foo: string, bar: string}
-
-    echo $array['foo'];
-    echo $array['bar'];
-  } catch (\CuyZ\Valinor\Mapper\MappingError $error) {
-      // Do something…
-  }
-  ```
+- [BC] All shaped arrays are now sealed by default: this brings many assertion improvements and bugfixes, see [the docs for more info](https://psalm.dev/docs/annotating_code/type_syntax/array_types/#sealed-object-like-arrays).
 
 - [BC] All atomic types, `Psalm\Type\Union`, `Psalm\CodeLocation` and storages are fully immutable, use the new setter methods to change properties: these setter methods will return new instances without altering the original instance.  
   Full immutability fixes a whole class of bugs that occurred in multithreaded mode, you can now feel free to use `--threads=$(nproc)` ;)
