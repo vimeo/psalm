@@ -176,7 +176,7 @@ class FunctionLikeDocblockParser
             }
         }
 
-        foreach (['psalm-self-out', 'psalm-this-out'] as $alias) {
+        foreach (['psalm-self-out', 'psalm-this-out', 'phpstan-self-out', 'phpstan-this-out'] as $alias) {
             if (isset($parsed_docblock->tags[$alias])) {
                 foreach ($parsed_docblock->tags[$alias] as $offset => $param) {
                     $line_parts = CommentAnalyzer::splitDocLine($param);
@@ -465,36 +465,48 @@ class FunctionLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-assert'])) {
-            foreach ($parsed_docblock->tags['psalm-assert'] as $assertion) {
-                $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
+        foreach (['psalm-assert', 'phpstan-assert'] as $assert) {
+            if (isset($parsed_docblock->tags[$assert])) {
+                foreach ($parsed_docblock->tags[$assert] as $assertion) {
+                    $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
 
-                $info->assertions[] = [
-                    'type' => $line_parts[0],
-                    'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
-                ];
+                    $info->assertions[] = [
+                        'type'       => $line_parts[0],
+                        'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
+                    ];
+                }
+
+                break;
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-assert-if-true'])) {
-            foreach ($parsed_docblock->tags['psalm-assert-if-true'] as $assertion) {
-                $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
+        foreach (['psalm-assert-if-true', 'phpstan-assert-if-true'] as $assert) {
+            if (isset($parsed_docblock->tags[$assert])) {
+                foreach ($parsed_docblock->tags[$assert] as $assertion) {
+                    $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
 
-                $info->if_true_assertions[] = [
-                    'type' => $line_parts[0],
-                    'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
-                ];
+                    $info->if_true_assertions[] = [
+                        'type'       => $line_parts[0],
+                        'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
+                    ];
+                }
+
+                break;
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-assert-if-false'])) {
-            foreach ($parsed_docblock->tags['psalm-assert-if-false'] as $assertion) {
-                $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
+        foreach (['psalm-assert-if-false', 'phpstan-assert-if-false'] as $assert) {
+            if (isset($parsed_docblock->tags[$assert])) {
+                foreach ($parsed_docblock->tags[$assert] as $assertion) {
+                    $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
 
-                $info->if_false_assertions[] = [
-                    'type' => $line_parts[0],
-                    'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
-                ];
+                    $info->if_false_assertions[] = [
+                        'type'       => $line_parts[0],
+                        'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
+                    ];
+                }
+
+                break;
             }
         }
 
