@@ -182,7 +182,7 @@ if (count($arr) > 2) {
 
 // Off by one bug, detected by Psalm:
 if (count($arr) > 3) {
-  // DocblockTypeContradiction - Docblock-defined type ...
+  // DocblockTypeContradiction - Docblock-defined type for $arr is never has-at-least-4
 }
 
 /** @param array{0: float, 1: float, 2?: float} $arr */
