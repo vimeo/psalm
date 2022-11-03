@@ -530,7 +530,7 @@ class Functions
         if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
-            if ($serialize_type && $serialize_type->containsObjectType()) {
+            if ($serialize_type && $serialize_type->canContainObjectType($codebase)) {
                 return false;
             }
         }
