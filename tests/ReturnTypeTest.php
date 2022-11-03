@@ -494,6 +494,7 @@ class ReturnTypeTest extends TestCase
                     foreach (foo3() as $i) echo $i;
                     foreach (foo4() as $i) echo $i;',
                 'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
             ],
             'objectLikeArrayOptionalKeyReturn' => [
                 'code' => '<?php
@@ -513,22 +514,6 @@ class ReturnTypeTest extends TestCase
                         return ["a" => 2];
                     }',
             ],
-            'badlyCasedReturnType' => [
-                'code' => '<?php
-                    namespace MyNS;
-
-                    class Example {
-                        /** @return array<int,example> */
-                        public static function test() : array {
-                            return [new Example()];
-                        }
-
-                        /** @return example */
-                        public static function instance() {
-                            return new Example();
-                        }
-                    }',
-                'assertions' => [],
             ],
             'arrayReturnTypeWithExplicitKeyType' => [
                 'code' => '<?php
@@ -784,6 +769,7 @@ class ReturnTypeTest extends TestCase
                 'assertions' => [
                     '$res' => 'Closure(int):bool',
                 ],
+                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'infersClosureReturnTypesWithPartialTypehinting' => [
@@ -955,6 +941,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'returnsNullSometimes' => [
@@ -1611,6 +1598,23 @@ class ReturnTypeTest extends TestCase
                         }
                     }',
                     'error_message' => 'LessSpecificImplementedReturnType',
+            ],
+            'badlyCasedReturnType' => [
+                'code' => '<?php
+                    namespace MyNS;
+
+                    class Example {
+                        /** @return array<int,example> */
+                        public static function test() : array {
+                            return [new Example()];
+                        }
+
+                        /** @return example */
+                        public static function instance() {
+                            return new Example();
+                        }
+                    }',
+                'error_message' => 'InvalidClass',
             ]
         ];
     }

@@ -462,6 +462,7 @@ class TryCatchTest extends TestCase
                         return $data;
                     }',
                 'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'issetInCatch' => [

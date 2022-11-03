@@ -226,6 +226,7 @@ class ReferenceTest extends TestCase
                     }
                 ',
                 'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'MissingParamType'],
             ],
             'dontCrashOnReferenceToArrayUnknownOffset' => [
                 'code' => '<?php
