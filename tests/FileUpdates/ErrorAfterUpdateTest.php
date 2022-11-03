@@ -50,13 +50,13 @@ class ErrorAfterUpdateTest extends TestCase
      * @dataProvider providerTestInvalidUpdates
      *
      * @param array<int, array<string, string>> $file_stages
-     * @param array<string, string> $error_levels
+     * @param array<string, string> $ignored_issues
      *
      */
     public function testErrorAfterUpdate(
         array $file_stages,
         string $error_message,
-        array $error_levels = []
+        array $ignored_issues = []
     ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
         $this->project_analyzer->getCodebase()->reportUnusedCode();
@@ -65,7 +65,7 @@ class ErrorAfterUpdateTest extends TestCase
 
         $config = $codebase->config;
 
-        foreach ($error_levels as $error_type => $error_level) {
+        foreach ($ignored_issues as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 

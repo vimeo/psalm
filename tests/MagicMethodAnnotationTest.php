@@ -879,7 +879,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /** @var I<B> $i */
                     $c = $i->foo();',
-                [
+                'assertions' => [
                     '$b' => 'A<B>&static',
                     '$c' => 'I<B>&static',
                 ]

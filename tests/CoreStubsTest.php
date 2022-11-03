@@ -46,7 +46,7 @@ class CoreStubsTest extends TestCase
                 '$period' => 'DatePeriod<DateTimeImmutable>',
                 '$dt' => 'DateTimeInterface|null'
             ],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '7.3',
         ];
         yield 'Iterating over \DatePeriod (#5954) PHP8 IteratorAggregate' => [
@@ -65,7 +65,7 @@ class CoreStubsTest extends TestCase
                 '$period' => 'DatePeriod<DateTimeImmutable>',
                 '$dt' => 'DateTimeImmutable|null'
             ],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '8.0',
         ];
         yield 'Iterating over \DatePeriod (#5954), ISO string' => [
@@ -80,7 +80,7 @@ class CoreStubsTest extends TestCase
                 '$period' => 'DatePeriod<string>',
                 '$dt' => 'DateTime|null'
             ],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '8.0',
         ];
         yield 'DatePeriod implements only Traversable on PHP 7' => [
@@ -89,7 +89,7 @@ class CoreStubsTest extends TestCase
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '7.3',
         ];
         yield 'DatePeriod implements IteratorAggregate on PHP 8' => [
@@ -98,7 +98,7 @@ class CoreStubsTest extends TestCase
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'error_levels' => ['RedundantCondition'],
+            'ignored_issues' => ['RedundantCondition'],
             'php_version' => '8.0',
         ];
     }

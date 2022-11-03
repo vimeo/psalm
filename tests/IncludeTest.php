@@ -20,14 +20,14 @@ class IncludeTest extends TestCase
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
      * @param bool $hoist_constants
-     * @param array<string, string> $error_levels
+     * @param array<string, string> $ignored_issues
      *
      */
     public function testValidInclude(
         array $files,
         array $files_to_check,
         $hoist_constants = false,
-        array $error_levels = []
+        array $ignored_issues = []
     ): void {
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -43,7 +43,7 @@ class IncludeTest extends TestCase
         $config = $codebase->config;
         $config->skip_checks_on_unresolvable_includes = true;
 
-        foreach ($error_levels as $error_level) {
+        foreach ($ignored_issues as $error_level) {
             $config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 

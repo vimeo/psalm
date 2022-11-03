@@ -494,7 +494,6 @@ class ReturnTypeTest extends TestCase
                     foreach (foo3() as $i) echo $i;
                     foreach (foo4() as $i) echo $i;',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
             ],
             'objectLikeArrayOptionalKeyReturn' => [
                 'code' => '<?php
@@ -530,7 +529,6 @@ class ReturnTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['InvalidClass'],
             ],
             'arrayReturnTypeWithExplicitKeyType' => [
                 'code' => '<?php
@@ -786,7 +784,6 @@ class ReturnTypeTest extends TestCase
                 'assertions' => [
                     '$res' => 'Closure(int):bool',
                 ],
-                'ignored_issues' => [],
                 'php_version' => '7.4'
             ],
             'infersClosureReturnTypesWithPartialTypehinting' => [
@@ -958,7 +955,6 @@ class ReturnTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'returnsNullSometimes' => [

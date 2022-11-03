@@ -18,7 +18,7 @@ use const PHP_VERSION;
 trait ValidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,php_version?:string,error_levels?:list<string>}>
+     * @return iterable<string,array{code:string,assertions?:array<string,string>,php_version?:string,ignored_issues?:list<string>}>
      */
     abstract public function providerValidCodeParse(): iterable;
 
@@ -27,14 +27,14 @@ trait ValidCodeAnalysisTestTrait
      *
      * @param string $code
      * @param array<string, string> $assertions
-     * @param list<string> $error_levels
+     * @param list<string> $ignored_issues
      *
      * @small
      */
     public function testValidCode(
         $code,
         $assertions = [],
-        $error_levels = [],
+        $ignored_issues = [],
         string $php_version = '7.3'
     ): void {
         $test_name = $this->getTestName();
@@ -50,11 +50,8 @@ trait ValidCodeAnalysisTestTrait
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
-        foreach ($error_levels as $error_level) {
-            $issue_name = $error_level;
-            $error_level = Config::REPORT_SUPPRESS;
-
-            Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
+        foreach ($ignored_issues as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
         }
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {

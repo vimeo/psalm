@@ -1181,7 +1181,7 @@ class ArrayAccessTest extends TestCase
                     $a = [];
                     echo $a[0];',
                 'error_message' => 'MixedArrayAccess',
-                'error_level' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'mixedArrayOffset' => [
                 'code' => '<?php
@@ -1189,7 +1189,7 @@ class ArrayAccessTest extends TestCase
                     $a = 5;
                     echo [1, 2, 3, 4][$a];',
                 'error_message' => 'MixedArrayOffset',
-                'error_level' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'nullArrayAccess' => [
                 'code' => '<?php

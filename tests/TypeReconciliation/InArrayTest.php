@@ -123,7 +123,7 @@ class InArrayTest extends TestCase
                         return $x;
                     }',
                 'assertions' => [],
-                'error_level' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
             ],
             'assertNegatedInArrayOfNotIntersectingTypeReturnsOriginalType' => [
                 'code' => '<?php
@@ -140,7 +140,7 @@ class InArrayTest extends TestCase
                         throw new \Exception();
                     }',
                 'assertions' => [],
-                'error_level' => ['RedundantConditionGivenDocblockType'],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'assertAgainstListOfLiteralsAndScalarUnion' => [
                 'code' => '<?php

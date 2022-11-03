@@ -28,7 +28,7 @@ class NativeUnionsTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'nativeTypeUnionAsArgument' => [
@@ -49,7 +49,7 @@ class NativeUnionsTest extends TestCase
                     test(new C());
                 ',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'unionAndNullableEquivalent' => [
@@ -59,7 +59,7 @@ class NativeUnionsTest extends TestCase
                     }
                 ',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
         ];

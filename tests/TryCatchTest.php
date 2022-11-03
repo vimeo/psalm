@@ -109,10 +109,6 @@ class TryCatchTest extends TestCase
 
                     if (!$foo) {}',
                 'assertions' => [],
-                'ignored_issues' => [
-                    'UndefinedGlobalVariable',
-                    'MixedMethodCall',
-                ],
             ],
             'issetAfterTryCatchWithoutAssignmentInCatch' => [
                 'code' => '<?php
@@ -466,7 +462,6 @@ class TryCatchTest extends TestCase
                         return $data;
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'issetInCatch' => [

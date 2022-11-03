@@ -170,7 +170,6 @@ class ToStringTest extends TestCase
 
                     takesFoo(new FooImplementer());',
                 'assertions' => [],
-                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'implicitStringable' => [
@@ -185,7 +184,6 @@ class ToStringTest extends TestCase
 
                     foo(new Bar());',
                 'assertions' => [],
-                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'toStringNever' => [

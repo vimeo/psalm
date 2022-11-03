@@ -427,7 +427,7 @@ class CallableTest extends TestCase
                     '$result1' => 'list<int>',
                     '$result2' => 'list<int>',
                 ],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'inferPipelineWithPartiallyAppliedFunctions' => [
@@ -511,7 +511,7 @@ class CallableTest extends TestCase
                 'assertions' => [
                     '$result' => 'non-empty-list<Item<string, bool>>|null',
                 ],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'varReturnType' => [

@@ -51,13 +51,13 @@ class ErrorFixTest extends TestCase
      *
      * @param array<int, array<string, string>> $files
      * @param array<int, int> $error_counts
-     * @param array<string, string> $error_levels
+     * @param array<string, string> $ignored_issues
      *
      */
     public function testErrorFix(
         array $files,
         array $error_counts,
-        array $error_levels = []
+        array $ignored_issues = []
     ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
 
@@ -65,7 +65,7 @@ class ErrorFixTest extends TestCase
 
         $config = $codebase->config;
 
-        foreach ($error_levels as $error_type => $error_level) {
+        foreach ($ignored_issues as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 

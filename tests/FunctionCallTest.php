@@ -1413,7 +1413,7 @@ class FunctionCallTest extends TestCase
                     };',
                     'assertions' => [],
                     'ignored_issues' => [],
-                    '7.4'
+                    'php_version' => '7.4'
             ],
             'compactDefinedVariable' => [
                 'code' => '<?php
@@ -1843,7 +1843,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedMethodCall'],
+                'ignored_issues' => ['MixedMethodCall'],
                 'php_version' => '8.1',
             ],
             'refineWithEnumExists' => [
@@ -1854,7 +1854,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'refineWithClassExistsOrEnumExists' => [
@@ -1877,7 +1877,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'trimSavesLowercaseAttribute' => [

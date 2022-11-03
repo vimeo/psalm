@@ -42,10 +42,10 @@ class UnusedVariableTest extends TestCase
      * @dataProvider providerValidCodeParse
      *
      * @param string $code
-     * @param array<string> $error_levels
+     * @param array<string> $ignored_issues
      *
      */
-    public function testValidCode($code, array $error_levels = [], string $php_version = '7.4'): void
+    public function testValidCode($code, array $ignored_issues = [], string $php_version = '7.4'): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -61,7 +61,7 @@ class UnusedVariableTest extends TestCase
             $code
         );
 
-        foreach ($error_levels as $error_level) {
+        foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
@@ -73,10 +73,10 @@ class UnusedVariableTest extends TestCase
      *
      * @param string $code
      * @param string $error_message
-     * @param array<string> $error_levels
+     * @param array<string> $ignored_issues
      *
      */
-    public function testInvalidCode($code, $error_message, $error_levels = []): void
+    public function testInvalidCode($code, $error_message, $ignored_issues = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -89,7 +89,7 @@ class UnusedVariableTest extends TestCase
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        foreach ($error_levels as $error_level) {
+        foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
@@ -101,9 +101,6 @@ class UnusedVariableTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @return array<string, array{code:string,ignored_issues?:list<string>,php_version?:string,error_levels?:list<string>,assertions?:array<string, string>}>
-     */
     public function providerValidCodeParse(): array
     {
         return [
@@ -2412,7 +2409,7 @@ class UnusedVariableTest extends TestCase
                             }
                         }
                     }',
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'concatWithUnknownProperty' => [

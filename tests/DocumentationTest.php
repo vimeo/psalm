@@ -203,11 +203,11 @@ class DocumentationTest extends TestCase
      *
      * @param string $code
      * @param string $error_message
-     * @param array<string> $error_levels
+     * @param array<string> $ignored_issues
      * @param bool $check_references
      *
      */
-    public function testInvalidCode($code, $error_message, $error_levels = [], $check_references = false, string $php_version = '8.0'): void
+    public function testInvalidCode($code, $error_message, $ignored_issues = [], $check_references = false, string $php_version = '8.0'): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -227,7 +227,7 @@ class DocumentationTest extends TestCase
         $this->project_analyzer->getConfig()->ensure_array_string_offsets_exist = $is_array_offset_test;
         $this->project_analyzer->getConfig()->ensure_array_int_offsets_exist = $is_array_offset_test;
 
-        foreach ($error_levels as $error_level) {
+        foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 

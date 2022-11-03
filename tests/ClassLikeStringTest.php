@@ -79,7 +79,7 @@ class ClassLikeStringTest extends TestCase
                     class B {}
 
                     takesClassConstants(["A", "B"]);',
-                'annotations' => [],
+                'assertions' => [],
                 'ignored_issues' => ['ArgumentTypeCoercion'],
             ],
             'singleClassConstantAsConstant' => [
@@ -104,7 +104,7 @@ class ClassLikeStringTest extends TestCase
 
                     /** @psalm-suppress ArgumentTypeCoercion */
                     takesClassConstants("A");',
-                'annotations' => [],
+                'assertions' => [],
             ],
             'returnClassConstant' => [
                 'code' => '<?php
@@ -127,7 +127,7 @@ class ClassLikeStringTest extends TestCase
                     function takesClassConstants() : string {
                         return "A";
                     }',
-                'annotations' => [],
+                'assertions' => [],
                 'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'returnClassConstantArray' => [
@@ -153,7 +153,7 @@ class ClassLikeStringTest extends TestCase
                     function takesClassConstants() : array {
                         return ["A", "B"];
                     }',
-                'annotations' => [],
+                'assertions' => [],
                 'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'ifClassStringEquals' => [

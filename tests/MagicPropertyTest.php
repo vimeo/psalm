@@ -225,7 +225,7 @@ class MagicPropertyTest extends TestCase
                         $a->__set("foo", $b);
                     }',
                 'assertions' => [],
-                'error_level' => ['MixedAssignment', 'MixedPropertyTypeCoercion'],
+                'ignored_issues' => ['MixedAssignment', 'MixedPropertyTypeCoercion'],
             ],
             'namedPropertyByVariable' => [
                 'code' => '<?php
@@ -367,7 +367,7 @@ class MagicPropertyTest extends TestCase
                     $c->foo = "bar";
                     echo $c->foo;',
                 'assertions' => [],
-                'error_level' => ['MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'dontAssumeNonNullAfterPossibleMagicFetch' => [
                 'code' => '<?php
@@ -383,7 +383,7 @@ class MagicPropertyTest extends TestCase
                         if ($c) {}
                     }',
                 'assertions' => [],
-                'error_level' => ['PossiblyNullPropertyFetch'],
+                'ignored_issues' => ['PossiblyNullPropertyFetch'],
             ],
             'accessInMagicGet' => [
                 'code' => '<?php
@@ -399,7 +399,7 @@ class MagicPropertyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_level' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'overrideInheritedProperty' => [
                 'code' => '<?php
