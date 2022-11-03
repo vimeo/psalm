@@ -106,21 +106,24 @@ class TypeTest extends TestCase
                     $a = [];
 
                     if (count($a) > 2) {
-                    }
-                    if (count($a) > 3) {
-                    }
-                    if (count($a) > 4) {
+                        echo "Have C!";
                     }
 
-                    if (count($a) < 1) {
-                    }
-                    if (count($a) < 2) {
-                    }
                     if (count($a) < 3) {
+                        echo "Do not have C!";
                     }
-                    if (count($a) < 4) {
-                    }
-                '
+                ',
+            ],
+            'validSealedArrayAssertions2' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    assert(count($a) > 2);
+                ',
+                'assertions' => [
+                    '$a===' => 'array{a: string, b: string, c: string}',
+                ]
             ],
             'nullableMethodWithTernaryGuard' => [
                 'code' => '<?php
@@ -1647,6 +1650,60 @@ class TypeTest extends TestCase
                     function returnsFalse() { return rand() % 2 > 0; }
                     ',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'invalidSealedArrayAssertion1' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 1) {
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType'
+            ],
+            'invalidSealedArrayAssertion2' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 3) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction'
+            ],
+            'invalidSealedArrayAssertion3' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 4) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction'
+            ],
+            'invalidSealedArrayAssertion4' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) < 1) {
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType'
+            ],
+            'invalidSealedArrayAssertion5' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) < 2) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction'
+            ],
+            'invalidSealedArrayAssertion6' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) < 4) {
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType'
             ],
             'intersectionTypeClassCheckAfterInstanceof' => [
                 'code' => '<?php
