@@ -36,9 +36,6 @@ class AttributeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -437,7 +434,7 @@ class AttributeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

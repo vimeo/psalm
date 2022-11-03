@@ -40,7 +40,7 @@ class ClassTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -628,7 +628,7 @@ class ClassTest extends TestCase
                             return $this;
                         }
                     }
-                    
+
                     class a {
                         /**
                          * @return iter<int, static>
@@ -639,7 +639,7 @@ class ClassTest extends TestCase
                     }
                     class b extends a {
                     }
-                    
+
                     $a = new b;
                     $a = $a->ret();
                     $a = $a->stabilize();',
@@ -663,7 +663,7 @@ class ClassTest extends TestCase
                             return $this;
                         }
                     }
-                    
+
                     interface a {
                         /**
                          * @return iter<int, static>
@@ -675,7 +675,7 @@ class ClassTest extends TestCase
                             return new iter([$this]);
                         }
                     }
-                    
+
                     /** @var a */
                     $a = new b;
                     $a = $a->ret();
@@ -700,7 +700,7 @@ class ClassTest extends TestCase
                             return $this;
                         }
                     }
-                    
+
                     interface a {
                         /**
                          * @return iter<int, a&static>
@@ -712,7 +712,7 @@ class ClassTest extends TestCase
                             return new iter([$this]);
                         }
                     }
-                    
+
                     /** @var a */
                     $a = new b;
                     $a = $a->ret();
@@ -754,7 +754,7 @@ class ClassTest extends TestCase
                     /**
                      * @template TKey
                      * @template TValue
-                     * 
+                     *
                      * @implements Traversable<TKey, TValue>
                      */
                     abstract class C implements Traversable {}
@@ -773,7 +773,7 @@ class ClassTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1121,7 +1121,7 @@ class ClassTest extends TestCase
                     /** @var class-string<Bar> */
                     protected const CLASS = Bar::class;
                 }
-                
+
                 class Bar {}
                 ',
                 'error_message' => 'ReservedWord',

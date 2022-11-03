@@ -11,7 +11,7 @@ class PropertyTypeInvarianceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -237,9 +237,6 @@ class PropertyTypeInvarianceTest extends TestCase
         ];
     }
 
-    /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -336,7 +333,7 @@ class PropertyTypeInvarianceTest extends TestCase
                     }
 
                     /**
-                     * @psalm-suppress MissingTemplateParam 
+                     * @psalm-suppress MissingTemplateParam
                      */
                     class FooPair extends Pair
                     {

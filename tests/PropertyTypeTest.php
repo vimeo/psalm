@@ -353,7 +353,7 @@ class PropertyTypeTest extends TestCase
 
                         return $has_changes;
                     }
-                        
+
                     public function alter() : void {
                         if (rand(0, 1)) {
                             array_pop($this->a);
@@ -551,7 +551,7 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -2680,7 +2680,7 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

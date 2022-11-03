@@ -11,7 +11,7 @@ class IfThisIsTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {

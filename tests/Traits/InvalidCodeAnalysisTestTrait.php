@@ -19,7 +19,7 @@ use const PHP_VERSION;
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,unsealed-array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     abstract public function providerInvalidCodeParse(): iterable;
 

@@ -149,7 +149,7 @@ class BinaryOperationTest extends TestCase
     {
         $config = Config::getInstance();
         $config->strict_binary_operands = true;
-        
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -313,9 +313,6 @@ class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -996,7 +993,7 @@ class BinaryOperationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

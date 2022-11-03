@@ -13,7 +13,7 @@ class CloneTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -49,7 +49,7 @@ class CloneTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -88,7 +88,7 @@ class CloneTest extends TestCase
                         private function __clone() {}
                     }
                     class b extends a {}
-                    
+
                     clone new b;',
                 'error_message' => 'InvalidClone',
             ],
@@ -100,7 +100,7 @@ class CloneTest extends TestCase
                     class b {
                         use a;
                     }
-                    
+
                     clone new b;',
                 'error_message' => 'InvalidClone',
             ],
