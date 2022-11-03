@@ -311,8 +311,6 @@ class FileReferenceTest extends TestCase
                 [],
                 [],
                 [],
-                [],
-                [],
             ],
             'staticPropertyRefs' => [
                 '<?php
@@ -413,8 +411,6 @@ class FileReferenceTest extends TestCase
                         'ns\c::bar' => true,
                     ],
                 ],
-                [],
-                [],
                 [],
                 [],
                 [],

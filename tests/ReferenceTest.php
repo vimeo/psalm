@@ -18,6 +18,17 @@ class ReferenceTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'referenceAssignmentToNonReferenceCountsAsUse' => [
+                'code' => '<?php
+                    $b = &$a;
+                    $b = 2;
+                    echo $a;
+                ',
+                'assertions' => [
+                    '$b===' => '2',
+                    '$a===' => '2',
+                ],
+            ],
             'updateReferencedTypes' => [
                 'code' => '<?php
                     $a = 1;

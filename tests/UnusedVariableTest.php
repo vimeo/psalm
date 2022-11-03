@@ -2528,10 +2528,6 @@ class UnusedVariableTest extends TestCase
                     $b = 2;
                     echo $a;
                 ',
-                'assertions' => [
-                    '$b===' => '2',
-                    '$a===' => '2',
-                ],
             ],
             'referenceUsedAfterVariableReassignment' => [
                 'code' => '<?php

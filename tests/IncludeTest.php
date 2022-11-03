@@ -99,7 +99,7 @@ class IncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>}>
+     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>}>
      */
     public function providerTestValidIncludes(): array
     {

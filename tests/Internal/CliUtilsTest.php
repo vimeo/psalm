@@ -61,7 +61,7 @@ class CliUtilsTest extends TestCase
         self::assertEquals($expected, $result);
     }
 
-    /** @return iterable<string,array{list<string>|null,list<string>,fpaths?:list<string>}> */
+    /** @return iterable<string,list{list<string>|null,list<string>,list<string>}> */
     public function provideGetPathsToCheck(): iterable
     {
         $psalm = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'psalm';
