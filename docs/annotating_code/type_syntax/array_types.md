@@ -258,7 +258,7 @@ if (is_array($arr)
   && isset($arr['b']) && is_float($arr['b'])
   && count($arr) === 2 // <-- Ensure only two elements are present
 ) {
-  // Here, $arr is an unsealed-array{a: float, b: float}
+  // Here, $arr is an array{a: float, b: float}
   echo avg($arr);
 }
 
