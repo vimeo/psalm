@@ -583,7 +583,7 @@ class SimpleAssertionReconciler extends Reconciler
                     || ($assertion instanceof HasAtLeastCount
                         && $array_atomic_type->min_count < $assertion->count)
                 ) {
-                    if ($array_atomic_type->getId() === 'array<empty, empty>') {
+                    if ($array_atomic_type->isEmptyArray()) {
                         $existing_var_type->removeType('array');
                     } else {
                         $non_empty_array = new TNonEmptyArray(
@@ -621,11 +621,26 @@ class SimpleAssertionReconciler extends Reconciler
                 }
 
                 if ($assertion instanceof HasAtLeastCount) {
-                    if ($array_atomic_type->sealed && $assertion->count > $min_count) {
-                        $existing_var_type->removeType('array');
-                        $did_remove_type = true;
-                    } elseif (!$array_atomic_type->sealed
-                        && $array_atomic_type->is_list
+                    if ($array_atomic_type->sealed) {
+                        if ($assertion->count <= $min_count) {
+                            // this means a redundant condition
+                        } elseif ($assertion->count >= $prop_count) {
+                            if ($prop_count === $min_count) {
+                                // this means a redundant condition
+                            } else {
+                                $existing_var_type->removeType('array');
+                                $existing_var_type->addType($array_atomic_type->setProperties(
+                                    array_map(
+                                        fn (Union $union) => $union->setPossiblyUndefined(false),
+                                        $array_atomic_type->properties
+                                    )
+                                ));
+                                $did_remove_type = true;
+                            }
+                        } else {
+                            $did_remove_type = true;
+                        }
+                    } elseif ($array_atomic_type->is_list
                         && $min_count === $prop_count
                     ) {
                         if ($assertion->count <= $min_count) {
