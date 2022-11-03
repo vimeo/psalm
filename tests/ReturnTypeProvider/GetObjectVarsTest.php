@@ -110,5 +110,63 @@ class GetObjectVarsTest extends TestCase
             'code' => '<?php $ret = get_object_vars((object)["a" => 1]);',
             'assertions' => ['$ret' => 'unsealed-array{a: int}'],
         ];
+
+        yield 'templatedProperties' => [
+            'code' => '<?php
+                /** @template T */
+                final class a {
+                    /** @param T $t */
+                    public function __construct(public mixed $t) {}
+                }
+
+                $a = get_object_vars(new a("test"));',
+            'assertions' => [
+                '$a===' => "array{t: 'test'}"
+            ]
+        ];
+
+        yield 'SKIPPED-dynamicProperties' => [
+            'code' => '<?php
+                class a {
+                    public function __construct(public string $t) {}
+                }
+
+                $a = new a("test");
+                $a->b = "test";
+                $test = get_object_vars($a);',
+            'assertions' => [
+                '$test===' => "unsealed-array{t: 'test'}"
+            ]
+        ];
+
+        yield 'SKIPPED-dynamicProperties82' => [
+            'code' => '<?php
+                #[AllowDynamicProperties]
+                class a {
+                    public function __construct(public string $t) {}
+                }
+
+                $a = new a("test");
+                $a->b = "test";
+                $test = get_object_vars($a);',
+            'assertions' => [
+                '$test===' => "unsealed-array{t: 'test'}"
+            ],
+            'php_version' => '8.2'
+        ];
+
+        yield 'SKIPPED-noDynamicProperties82' => [
+            'code' => '<?php
+                class a {
+                    public function __construct(public string $t) {}
+                }
+
+                $a = new a("test");
+                $test = get_object_vars($a);',
+            'assertions' => [
+                '$test===' => "array{t: 'test'}"
+            ],
+            'php_version' => '8.2'
+        ];
     }
 }
