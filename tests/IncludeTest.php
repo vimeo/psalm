@@ -20,7 +20,7 @@ class IncludeTest extends TestCase
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
      * @param bool $hoist_constants
-     * @param array<string, string> $ignored_issues
+     * @param list<string> $ignored_issues
      *
      */
     public function testValidInclude(

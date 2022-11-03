@@ -714,6 +714,7 @@ class InternalCallMapHandlerTest extends TestCase
             if ($normalizedEntry['byRef']) {
                 $parts = explode('_', $normalizedKey, 2);
                 if (count($parts) === 2) {
+                    assert($parts[0] === 'rw' || $parts[0] === 'w');
                     $normalizedEntry['refMode'] = $parts[0];
                     $normalizedKey = $parts[1];
                 } else {
@@ -738,7 +739,7 @@ class InternalCallMapHandlerTest extends TestCase
 
     /**
      *
-     * @param array{byRef: bool, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string} $normalizedEntry
+     * @param array{byRef: bool, name?: string, refMode: 'rw'|'w', variadic: bool, optional: bool, type: string} $normalizedEntry
      */
     private function assertParameter(array $normalizedEntry, ReflectionParameter $param): void
     {
