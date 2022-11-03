@@ -40,7 +40,7 @@ class TypeTest extends TestCase
                         $b = $a;
                     }',
                 'assertions' => [
-                    '$a===' => 'list{?0, ?1}',
+                    '$a===' => 'list{0?: 0, 1?: 1}',
                     '$b===' => 'list{0, 1}|null'
                 ]
             ],
@@ -96,7 +96,7 @@ class TypeTest extends TestCase
                 }',
                 'assertions' => [
                     '$buttons===' => 'list<string>',
-                    '$urls===' => 'list{?non-falsy-string}',
+                    '$urls===' => 'list{0?: non-falsy-string}',
                     '$mainUrlSet===' => 'bool',
                 ]
             ],
