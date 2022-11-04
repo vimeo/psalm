@@ -12,6 +12,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Issue\InvalidIntersectionType;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -110,11 +111,18 @@ class TypeHintResolver
                     );
                 }
 
-                $type = Type::intersectUnionTypes($resolved_type, $type, $codebase);
+                $type = $type ? Type::intersectUnionTypes($resolved_type, $type, $codebase) : $resolved_type;
             }
 
             if ($type === null) {
-                throw new UnexpectedValueException('Intersection type could not be resolved');
+                IssueBuffer::maybeAdd(
+                    new InvalidIntersectionType(
+                        'Intersection type can never be satisfied',
+                        $code_location
+                    )
+                );
+
+                return Type::getNever();
             }
 
             return $type;

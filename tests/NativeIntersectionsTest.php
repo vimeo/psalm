@@ -54,6 +54,28 @@ class NativeIntersectionsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1'
             ],
+            'docBlockIntersectionsMixedWithUnion' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    interface A {}
+                    interface B {}
+
+                    class Foobar
+                    {
+                        /** @var (Foo&Bar)|(Bar&B) */
+                        private $baz;
+
+                        /** @param Bar&B $baz */
+                        public function __construct($baz) {
+                            $this->baz = $baz;
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ]
         ];
     }
 
@@ -80,6 +102,59 @@ class NativeIntersectionsTest extends TestCase
                     test(new C());
                 ',
                 'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
+            'nativeTypeIntersectionNamedClasses' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    class Baz
+                    {
+                        public function __construct(private Foo&Bar $foobar) {}
+                    }
+                    new Baz(new Foo());
+                    ',
+                'error_message' => 'InvalidIntersectionType',
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
+            'phpdocTypeIntersectionNamedClasses' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    class Baz
+                    {
+                        /**
+                         * @param Foo&Bar $foobar
+                         */
+                        public function test(Foo&Bar $foobar) {}
+                    }
+                    new Baz(new Foo());
+                    ',
+                'error_message' => 'InvalidIntersectionType',
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
+            'docBlockIntersectionsMixedWithUnion' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    interface A {}
+                    interface B {}
+
+                    class Foobar
+                    {
+                        /** @var (Foo&Bar)|(Bar&B) */
+                        private $baz;
+
+                        /** @param Bar&A $baz */
+                        public function __construct($baz) {
+                            $this->baz = $baz;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidPropertyAssignmentValue',
                 'ignored_issues' => [],
                 'php_version' => '8.1'
             ],

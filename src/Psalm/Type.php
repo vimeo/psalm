@@ -635,25 +635,19 @@ abstract class Type
     /**
      * Combines two union types into one via an intersection
      *
-     *
+     * Returns null (not TNever) if the intersection is empty
      */
     public static function intersectUnionTypes(
-        ?Union $type_1,
-        ?Union $type_2,
+        Union $type_1,
+        Union $type_2,
         Codebase $codebase
     ): ?Union {
-        if ($type_2 === null && $type_1 === null) {
-            throw new UnexpectedValueException('At least one type must be provided to combine');
+        if ($type_1->isNever()) {
+            return null;
         }
-
-        if ($type_1 === null) {
-            return $type_2;
+        if ($type_2->isNever()) {
+            return null;
         }
-
-        if ($type_2 === null) {
-            return $type_1;
-        }
-
         if ($type_1 === $type_2) {
             return $type_1;
         }
@@ -760,7 +754,7 @@ abstract class Type
             $combined_type->possibly_undefined = true;
         }
 
-        return $combined_type;
+        return $combined_type && $combined_type->isNever() ? null : $combined_type;
     }
 
     private static function intersectAtomicTypes(
