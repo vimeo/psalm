@@ -2169,6 +2169,11 @@ class Config
             $this->internal_stubs[] = $ext_apcu_path;
         }
 
+        if (extension_loaded('random')) {
+            $ext_random_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-random.phpstub';
+            $this->internal_stubs[] = $ext_random_path;
+        }
+
         foreach ($this->internal_stubs as $stub_path) {
             if (!file_exists($stub_path)) {
                 throw new UnexpectedValueException('Cannot locate ' . $stub_path);

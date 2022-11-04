@@ -524,6 +524,9 @@ class Functions
 
             //gettext
             'bindtextdomain',
+            
+            // hash
+            'hash_update', 'hash_update_file', 'hash_update_stream',
         ];
 
         if (in_array(strtolower($function_id), $impure_functions, true)) {
