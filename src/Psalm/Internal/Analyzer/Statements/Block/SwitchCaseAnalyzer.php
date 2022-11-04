@@ -502,7 +502,7 @@ class SwitchCaseAnalyzer
                 foreach ($case_scope->break_vars as $var_id => $type) {
                     if (isset($context->vars_in_scope[$var_id])) {
                         $switch_scope->possibly_redefined_vars[$var_id] = Type::combineUnionTypes(
-                            clone $type,
+                            $type,
                             $switch_scope->possibly_redefined_vars[$var_id] ?? null
                         );
                     }
@@ -516,7 +516,7 @@ class SwitchCaseAnalyzer
                             unset($switch_scope->new_vars_in_scope[$var_id]);
                         } else {
                             $switch_scope->new_vars_in_scope[$var_id] = Type::combineUnionTypes(
-                                clone $case_scope->break_vars[$var_id],
+                                $case_scope->break_vars[$var_id],
                                 $type
                             );
                         }
@@ -530,7 +530,7 @@ class SwitchCaseAnalyzer
                 foreach ($switch_scope->redefined_vars as $var_id => $type) {
                     if (isset($case_scope->break_vars[$var_id])) {
                         $switch_scope->redefined_vars[$var_id] = Type::combineUnionTypes(
-                            clone $case_scope->break_vars[$var_id],
+                            $case_scope->break_vars[$var_id],
                             $type
                         );
                     } else {
@@ -595,7 +595,7 @@ class SwitchCaseAnalyzer
             } else {
                 foreach ($case_redefined_vars as $var_id => $type) {
                     $switch_scope->possibly_redefined_vars[$var_id] = Type::combineUnionTypes(
-                        clone $type,
+                        $type,
                         $switch_scope->possibly_redefined_vars[$var_id] ?? null
                     );
                 }
@@ -610,7 +610,7 @@ class SwitchCaseAnalyzer
                     } else {
                         $switch_scope->redefined_vars[$var_id] = Type::combineUnionTypes(
                             $type,
-                            clone $case_redefined_vars[$var_id]
+                            $case_redefined_vars[$var_id]
                         );
                     }
                 }
@@ -630,7 +630,7 @@ class SwitchCaseAnalyzer
                         unset($switch_scope->new_vars_in_scope[$new_var]);
                     } else {
                         $switch_scope->new_vars_in_scope[$new_var] =
-                            Type::combineUnionTypes(clone $case_context->vars_in_scope[$new_var], $type);
+                            Type::combineUnionTypes($case_context->vars_in_scope[$new_var], $type);
                     }
                 }
 

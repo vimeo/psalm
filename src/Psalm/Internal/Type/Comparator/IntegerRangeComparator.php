@@ -50,7 +50,11 @@ class IntegerRangeComparator
         Union $container_type
     ): bool {
         $container_atomic_types = $container_type->getAtomicTypes();
-        $reduced_range = clone $input_type_part;
+        $reduced_range = new TIntRange(
+            $input_type_part->min_bound,
+            $input_type_part->max_bound,
+            $input_type_part->from_docblock
+        );
 
         if (isset($container_atomic_types['int'])) {
             if (get_class($container_atomic_types['int']) === TInt::class) {
@@ -85,7 +89,7 @@ class IntegerRangeComparator
      * The goal is to use values in atomics in order to reduce the range.
      * Once the range is empty, it means that every value in range was covered by some atomics combination
      *
-     * @psalm-suppress InaccessibleProperty $reduced_range was already cloned
+     * @psalm-suppress InaccessibleProperty $reduced_range was just re-created
      * @param array<string, Atomic> $container_atomic_types
      */
     private static function reduceRangeIncrementally(array &$container_atomic_types, TIntRange $reduced_range): ?bool

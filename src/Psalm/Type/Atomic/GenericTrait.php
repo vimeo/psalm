@@ -29,7 +29,7 @@ trait GenericTrait
      *
      * @return static
      */
-    public function replaceTypeParams(array $type_params): self
+    public function setTypeParams(array $type_params): self
     {
         if ($this->type_params === $type_params) {
             return $this;

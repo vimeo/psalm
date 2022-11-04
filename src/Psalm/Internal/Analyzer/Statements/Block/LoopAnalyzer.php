@@ -111,7 +111,7 @@ class LoopAnalyzer
             $continue_context = clone $loop_context;
 
             foreach ($continue_context->vars_in_scope as $context_var_id => $context_type) {
-                $continue_context->vars_in_scope[$context_var_id] = clone $context_type;
+                $continue_context->vars_in_scope[$context_var_id] = $context_type;
             }
 
             $continue_context->loop_scope = $loop_scope;
@@ -173,10 +173,6 @@ class LoopAnalyzer
             }
 
             $continue_context = clone $loop_context;
-
-            foreach ($continue_context->vars_in_scope as $context_var_id => $context_type) {
-                $continue_context->vars_in_scope[$context_var_id] = clone $context_type;
-            }
 
             $continue_context->loop_scope = $loop_scope;
 
@@ -321,7 +317,7 @@ class LoopAnalyzer
                         )
                     ) {
                         if (isset($pre_loop_context->vars_in_scope[$var_id])) {
-                            $continue_context->vars_in_scope[$var_id] = clone $pre_loop_context->vars_in_scope[$var_id];
+                            $continue_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
                         } else {
                             $continue_context->removePossibleReference($var_id);
                         }
@@ -412,8 +408,11 @@ class LoopAnalyzer
 
                 $loop_parent_context->removeVarFromConflictingClauses($var_id);
             } else {
-                $loop_parent_context->vars_in_scope[$var_id]->parent_nodes
-                    += $loop_context->vars_in_scope[$var_id]->parent_nodes;
+                $loop_parent_context->vars_in_scope[$var_id]
+                    = $loop_parent_context->vars_in_scope[$var_id]->addParentNodes(
+                        $loop_context->vars_in_scope[$var_id]->parent_nodes
+                    )
+                ;
             }
         }
 
@@ -425,8 +424,11 @@ class LoopAnalyzer
                 }
 
                 if ($continue_context->vars_in_scope[$var_id]->hasMixed()) {
-                    $continue_context->vars_in_scope[$var_id]->parent_nodes
-                        += $loop_parent_context->vars_in_scope[$var_id]->parent_nodes;
+                    $continue_context->vars_in_scope[$var_id]
+                        = $continue_context->vars_in_scope[$var_id]->addParentNodes(
+                            $loop_parent_context->vars_in_scope[$var_id]->parent_nodes
+                        )
+                    ;
 
                     $loop_parent_context->vars_in_scope[$var_id] =
                         $continue_context->vars_in_scope[$var_id];
@@ -443,10 +445,12 @@ class LoopAnalyzer
 
                     $loop_parent_context->removeVarFromConflictingClauses($var_id);
                 } else {
-                    $loop_parent_context->vars_in_scope[$var_id]->parent_nodes = array_merge(
-                        $loop_parent_context->vars_in_scope[$var_id]->parent_nodes,
-                        $continue_context->vars_in_scope[$var_id]->parent_nodes
-                    );
+                    $loop_parent_context->vars_in_scope[$var_id] =
+                        $loop_parent_context->vars_in_scope[$var_id]->setParentNodes(array_merge(
+                            $loop_parent_context->vars_in_scope[$var_id]->parent_nodes,
+                            $continue_context->vars_in_scope[$var_id]->parent_nodes
+                        ))
+                    ;
                 }
             }
         }
@@ -548,7 +552,8 @@ class LoopAnalyzer
                             $type
                         );
                     } else {
-                        $continue_context->vars_in_scope[$var]->parent_nodes += $type->parent_nodes;
+                        $continue_context->vars_in_scope[$var] =
+                            $continue_context->vars_in_scope[$var]->addParentNodes($type->parent_nodes);
                     }
                 }
             }

@@ -381,6 +381,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 }
 
                 $var_type = $var_comment->type;
+                /** @psalm-suppress UnusedMethodCall */
                 $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             }
         }
@@ -613,26 +614,31 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         return null;
     }
 
+    /** @psalm-mutation-free */
     public function getFilePath(): string
     {
         return $this->file_path;
     }
 
+    /** @psalm-mutation-free */
     public function getFileName(): string
     {
         return $this->file_scanner->getFileName();
     }
 
+    /** @psalm-mutation-free */
     public function getRootFilePath(): string
     {
         return $this->file_scanner->getRootFilePath();
     }
 
+    /** @psalm-mutation-free */
     public function getRootFileName(): string
     {
         return $this->file_scanner->getRootFileName();
     }
 
+    /** @psalm-mutation-free */
     public function getAliases(): Aliases
     {
         return $this->aliases;

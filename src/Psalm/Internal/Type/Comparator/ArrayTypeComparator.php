@@ -64,8 +64,7 @@ class ArrayTypeComparator
 
             foreach ($input_type_part->type_params[0]->getAtomicTypes() as $atomic_key_type) {
                 if ($atomic_key_type instanceof TLiteralString || $atomic_key_type instanceof TLiteralInt) {
-                    $properties[$atomic_key_type->value] = clone $input_type_part->type_params[1];
-                    $properties[$atomic_key_type->value]->possibly_undefined = true;
+                    $properties[$atomic_key_type->value] = $input_type_part->type_params[1]->setPossiblyUndefined(true);
                 } else {
                     $all_string_int_literals = false;
                 }
@@ -167,14 +166,14 @@ class ArrayTypeComparator
         if ($input_type_part instanceof TClassStringMap) {
             $input_type_part = new TArray([
                 $input_type_part->getStandinKeyParam(),
-                clone $input_type_part->value_param
+                $input_type_part->value_param
             ]);
         }
 
         if ($container_type_part instanceof TClassStringMap) {
             $container_type_part = new TArray([
                 $container_type_part->getStandinKeyParam(),
-                clone $container_type_part->value_param
+                $container_type_part->value_param
             ]);
         }
 
@@ -185,7 +184,7 @@ class ArrayTypeComparator
                 $atomic_comparison_result->type_coerced = true;
             }
 
-            $container_type_part = new TArray([Type::getInt(), clone $container_type_part->type_param]);
+            $container_type_part = new TArray([Type::getInt(), $container_type_part->type_param]);
         }
 
         if ($input_type_part instanceof TList) {
@@ -199,13 +198,13 @@ class ArrayTypeComparator
 
                     $input_type_part = new TNonEmptyArray([
                         new Union($literal_ints),
-                        clone $input_type_part->type_param
+                        $input_type_part->type_param
                     ]);
                 } else {
-                    $input_type_part = new TNonEmptyArray([Type::getInt(), clone $input_type_part->type_param]);
+                    $input_type_part = new TNonEmptyArray([Type::getInt(), $input_type_part->type_param]);
                 }
             } else {
-                $input_type_part = new TArray([Type::getInt(), clone $input_type_part->type_param]);
+                $input_type_part = new TArray([Type::getInt(), $input_type_part->type_param]);
             }
         }
 

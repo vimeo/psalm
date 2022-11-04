@@ -502,6 +502,7 @@ class ClassLikeNodeScanner
                         $this->type_aliases,
                         true
                     );
+                    /** @psalm-suppress UnusedMethodCall */
                     $yield_type->queueClassLikesForScanning(
                         $this->codebase,
                         $this->file_storage,
@@ -562,6 +563,7 @@ class ClassLikeNodeScanner
                             $this->type_aliases,
                             true
                         );
+                        /** @psalm-suppress UnusedMethodCall */
                         $pseudo_property_type->queueClassLikesForScanning(
                             $this->codebase,
                             $this->file_storage,
@@ -664,6 +666,7 @@ class ClassLikeNodeScanner
                     true
                 );
 
+                /** @psalm-suppress UnusedMethodCall */
                 $mixin_type->queueClassLikesForScanning(
                     $this->codebase,
                     $this->file_storage,
@@ -774,6 +777,7 @@ class ClassLikeNodeScanner
             foreach ($mapped_properties as $property_name => $public_mapped_property) {
                 $property_type = Type::parseString($public_mapped_property);
 
+                /** @psalm-suppress UnusedMethodCall */
                 $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
 
                 if (!isset($classlike_storage->properties[$property_name])) {
@@ -941,6 +945,7 @@ class ClassLikeNodeScanner
             );
         }
 
+        /** @psalm-suppress UnusedMethodCall */
         $extended_union_type->queueClassLikesForScanning(
             $this->codebase,
             $this->file_storage,
@@ -1026,6 +1031,7 @@ class ClassLikeNodeScanner
             return;
         }
 
+        /** @psalm-suppress UnusedMethodCall */
         $implemented_union_type->queueClassLikesForScanning(
             $this->codebase,
             $this->file_storage,
@@ -1111,6 +1117,7 @@ class ClassLikeNodeScanner
             return;
         }
 
+        /** @psalm-suppress UnusedMethodCall */
         $used_union_type->queueClassLikesForScanning(
             $this->codebase,
             $this->file_storage,
@@ -1271,6 +1278,44 @@ class ClassLikeNodeScanner
                 $const_type = $inferred_type;
             }
 
+            $attributes = [];
+            foreach ($stmt->attrGroups as $attr_group) {
+                foreach ($attr_group->attrs as $attr) {
+                    $attributes[] = AttributeResolver::resolve(
+                        $this->codebase,
+                        $this->file_scanner,
+                        $this->file_storage,
+                        $this->aliases,
+                        $attr,
+                        $this->storage->name ?? null
+                    );
+                }
+            }
+            
+            $unresolved_node = null;
+            if ($inferred_type
+                && !(
+                    $const->value instanceof Concat
+                    && $inferred_type->isSingle()
+                    && get_class($inferred_type->getSingleAtomic()) === TString::class
+                )
+            ) {
+                $exists = true;
+            } else {
+                $exists = false;
+                $unresolved_const_expr = ExpressionResolver::getUnresolvedClassConstExpr(
+                    $const->value,
+                    $this->aliases,
+                    $fq_classlike_name,
+                    $storage->parent_class
+                );
+
+                if ($unresolved_const_expr) {
+                    $unresolved_node = $unresolved_const_expr;
+                } else {
+                    $const_type = Type::getMixed();
+                }
+            }
             $storage->constants[$const->name->name] = $constant_storage = new ClassConstantStorage(
                 $const_type,
                 $inferred_type,
@@ -1282,58 +1327,22 @@ class ClassLikeNodeScanner
                 new CodeLocation(
                     $this->file_scanner,
                     $const->name
-                )
+                ),
+                $type_location,
+                new CodeLocation(
+                    $this->file_scanner,
+                    $const
+                ),
+                $deprecated,
+                $stmt->isFinal(),
+                $unresolved_node,
+                $attributes,
+                $suppressed_issues,
+                $description
             );
-            $constant_storage->suppressed_issues = $suppressed_issues;
 
-            $constant_storage->type_location = $type_location;
-
-            $constant_storage->stmt_location = new CodeLocation(
-                $this->file_scanner,
-                $const
-            );
-
-            if ($inferred_type
-                && !(
-                    $const->value instanceof Concat
-                    && $inferred_type->isSingle()
-                    && get_class($inferred_type->getSingleAtomic()) === TString::class
-                )
-            ) {
+            if ($exists) {
                 $existing_constants[$const->name->name] = $constant_storage;
-            } else {
-                $unresolved_const_expr = ExpressionResolver::getUnresolvedClassConstExpr(
-                    $const->value,
-                    $this->aliases,
-                    $fq_classlike_name,
-                    $storage->parent_class
-                );
-
-                if ($unresolved_const_expr) {
-                    $constant_storage->unresolved_node = $unresolved_const_expr;
-                } else {
-                    $constant_storage->type = Type::getMixed();
-                }
-            }
-
-            if ($deprecated) {
-                $constant_storage->deprecated = true;
-            }
-
-            $constant_storage->description = $description;
-            $constant_storage->final = $stmt->isFinal();
-
-            foreach ($stmt->attrGroups as $attr_group) {
-                foreach ($attr_group->attrs as $attr) {
-                    $constant_storage->attributes[] = AttributeResolver::resolve(
-                        $this->codebase,
-                        $this->file_scanner,
-                        $this->file_storage,
-                        $this->aliases,
-                        $attr,
-                        $this->storage->name ?? null
-                    );
-                }
             }
         }
     }
@@ -1537,6 +1546,7 @@ class ClassLikeNodeScanner
         $doc_var_group_type = $var_comment->type ?? null;
 
         if ($doc_var_group_type) {
+            /** @psalm-suppress UnusedMethodCall */
             $doc_var_group_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
         }
 
@@ -1593,7 +1603,7 @@ class ClassLikeNodeScanner
                 if ($doc_var_group_type) {
                     $property_storage->type = count($stmt->props) === 1
                         ? $doc_var_group_type
-                        : clone $doc_var_group_type;
+                        : $doc_var_group_type;
                 }
             }
 
@@ -1618,6 +1628,7 @@ class ClassLikeNodeScanner
                     }
 
                     if ($all_typehint_types_match) {
+                        /** @psalm-suppress InaccessibleProperty We just created this type */
                         $property_storage->type->from_docblock = false;
                     }
 
@@ -1628,6 +1639,7 @@ class ClassLikeNodeScanner
                     }
                 }
 
+                /** @psalm-suppress UnusedMethodCall */
                 $property_storage->type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             }
 

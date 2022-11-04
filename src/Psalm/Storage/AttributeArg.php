@@ -6,8 +6,12 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\Union;
 
+/**
+ * @psalm-immutable
+ */
 final class AttributeArg
 {
+    use ImmutableNonCloneableTrait;
     /**
      * @var ?string
      * @psalm-suppress PossiblyUnusedProperty It's part of the public API for now

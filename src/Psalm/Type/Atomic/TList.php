@@ -43,7 +43,7 @@ class TList extends Atomic
     /**
      * @return static
      */
-    public function replaceTypeParam(Union $type_param): self
+    public function setTypeParam(Union $type_param): self
     {
         if ($type_param === $this->type_param) {
             return $this;
@@ -138,7 +138,7 @@ class TList extends Atomic
                 &&
                     isset($input_type->type_params[$offset])
             ) {
-                $input_type_param = clone $input_type->type_params[$offset];
+                $input_type_param = $input_type->type_params[$offset];
             } elseif ($input_type instanceof TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
@@ -150,7 +150,7 @@ class TList extends Atomic
                     continue;
                 }
 
-                $input_type_param = clone $input_type->type_param;
+                $input_type_param = $input_type->type_param;
             }
 
             $type_param = TemplateStandinTypeReplacer::replace(
@@ -184,7 +184,7 @@ class TList extends Atomic
         TemplateResult $template_result,
         ?Codebase $codebase
     ): self {
-        return $this->replaceTypeParam(TemplateInferredTypeReplacer::replace(
+        return $this->setTypeParam(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
             $codebase
@@ -213,7 +213,7 @@ class TList extends Atomic
         return $this->getId();
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['type_param'];
     }

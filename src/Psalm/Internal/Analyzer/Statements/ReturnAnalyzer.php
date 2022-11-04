@@ -132,7 +132,9 @@ class ReturnAnalyzer
                 }
 
                 if (isset($context->vars_in_scope[$var_comment->var_id])) {
-                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                    $comment_type = $comment_type->setParentNodes(
+                        $context->vars_in_scope[$var_comment->var_id]->parent_nodes
+                    );
                 }
 
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
@@ -165,7 +167,7 @@ class ReturnAnalyzer
                 $stmt_type = $var_comment_type;
 
                 if ($stmt_expr_type && $stmt_expr_type->parent_nodes) {
-                    $stmt_type->parent_nodes = $stmt_expr_type->parent_nodes;
+                    $stmt_type = $stmt_type->setParentNodes($stmt_expr_type->parent_nodes);
                 }
 
                 $statements_analyzer->node_data->setType($stmt, $var_comment_type);
@@ -199,7 +201,7 @@ class ReturnAnalyzer
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
         if ($context->finally_scope) {
-            foreach ($context->vars_in_scope as $var_id => $type) {
+            foreach ($context->vars_in_scope as $var_id => &$type) {
                 if (isset($context->finally_scope->vars_in_scope[$var_id])) {
                     $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $context->finally_scope->vars_in_scope[$var_id],
@@ -207,9 +209,8 @@ class ReturnAnalyzer
                         $statements_analyzer->getCodebase()
                     );
                 } else {
+                    $type = $type->setPossiblyUndefined(true, true);
                     $context->finally_scope->vars_in_scope[$var_id] = $type;
-                    $type->possibly_undefined = true;
-                    $type->possibly_undefined_from_try = true;
                 }
             }
         }
@@ -285,7 +286,7 @@ class ReturnAnalyzer
                             }
 
                             $local_return_type = TemplateInferredTypeReplacer::replace(
-                                clone $local_return_type,
+                                $local_return_type,
                                 new TemplateResult([], $found_generic_params),
                                 $codebase
                             );

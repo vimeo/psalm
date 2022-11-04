@@ -119,9 +119,12 @@ class UnaryPlusMinusAnalyzer
 
             $new_parent_node = DataFlowNode::getForAssignment($type, $var_location);
             $statements_analyzer->data_flow_graph->addNode($new_parent_node);
-            $result_type->parent_nodes = [
-                $new_parent_node->id => $new_parent_node,
-            ];
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                $result_type->setParentNodes([
+                    $new_parent_node->id => $new_parent_node,
+                ])
+            );
 
             if ($stmt_value_type && $stmt_value_type->parent_nodes) {
                 foreach ($stmt_value_type->parent_nodes as $parent_node) {

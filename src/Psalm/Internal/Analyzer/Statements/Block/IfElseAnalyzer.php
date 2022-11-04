@@ -311,7 +311,7 @@ class IfElseAnalyzer
         ) {
             $context->clauses = $else_context->clauses;
             foreach ($else_context->vars_in_scope as $var_id => $type) {
-                $context->vars_in_scope[$var_id] = clone $type;
+                $context->vars_in_scope[$var_id] = $type;
             }
 
             foreach ($pre_assignment_else_redefined_vars as $var_id => $reconciled_type) {
@@ -376,15 +376,18 @@ class IfElseAnalyzer
         );
 
         if ($if_scope->new_vars) {
-            foreach ($if_scope->new_vars as $var_id => $type) {
+            foreach ($if_scope->new_vars as $var_id => &$type) {
                 if (isset($context->vars_possibly_in_scope[$var_id])
                     && $statements_analyzer->data_flow_graph
                 ) {
-                    $type->parent_nodes += $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($var_id);
+                    $type = $type->addParentNodes(
+                        $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($var_id)
+                    );
                 }
 
                 $context->vars_in_scope[$var_id] = $type;
             }
+            unset($type);
         }
 
         if ($if_scope->redefined_vars) {
@@ -429,7 +432,8 @@ class IfElseAnalyzer
 
                         $context->vars_in_scope[$var_id] = $combined_type;
                     } else {
-                        $context->vars_in_scope[$var_id]->parent_nodes += $type->parent_nodes;
+                        $context->vars_in_scope[$var_id] =
+                            $context->vars_in_scope[$var_id]->addParentNodes($type->parent_nodes);
                     }
                 }
             }

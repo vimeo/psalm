@@ -56,7 +56,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $nullable = false;
 
         if ($first_arg_array instanceof TArray) {
-            $value_type = clone $first_arg_array->type_params[1];
+            $value_type = $first_arg_array->type_params[1];
 
             if ($first_arg_array->isEmptyArray()) {
                 return Type::getNull();
@@ -66,7 +66,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $nullable = true;
             }
         } elseif ($first_arg_array instanceof TList) {
-            $value_type = clone $first_arg_array->type_param;
+            $value_type = $first_arg_array->type_param;
 
             if (!$first_arg_array instanceof TNonEmptyList) {
                 $nullable = true;
@@ -74,7 +74,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
         } else {
             // special case where we know the type of the first element
             if ($function_id === 'array_shift' && $first_arg_array->is_list && isset($first_arg_array->properties[0])) {
-                $value_type = clone $first_arg_array->properties[0];
+                $value_type = $first_arg_array->properties[0];
             } else {
                 $value_type = $first_arg_array->getGenericValueType();
 
@@ -85,13 +85,15 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         if ($nullable) {
-            $value_type = $value_type->getBuilder()->addType(new TNull)->freeze();
+            $value_type = $value_type->getBuilder()->addType(new TNull);
 
             $codebase = $statements_source->getCodebase();
 
             if ($codebase->config->ignore_internal_nullable_issues) {
                 $value_type->ignore_nullable_issues = true;
             }
+            
+            $value_type = $value_type->freeze();
         }
 
         return $value_type;

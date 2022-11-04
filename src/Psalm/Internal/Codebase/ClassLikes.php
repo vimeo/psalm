@@ -833,6 +833,7 @@ class ClassLikes
         $this->existing_classlike_aliases[$alias_name] = true;
     }
 
+    /** @psalm-mutation-free */
     public function getUnAliasedName(string $alias_name): string
     {
         $alias_name_lc = strtolower($alias_name);
@@ -1657,6 +1658,7 @@ class ClassLikes
             }
 
             if ($constant_storage->unresolved_node) {
+                /** @psalm-suppress InaccessibleProperty Lazy resolution */
                 $constant_storage->inferred_type = new Union([ConstantTypeResolver::resolve(
                     $this,
                     $constant_storage->unresolved_node,
@@ -1664,6 +1666,7 @@ class ClassLikes
                     $visited_constant_ids
                 )]);
                 if ($constant_storage->type === null || !$constant_storage->type->from_docblock) {
+                    /** @psalm-suppress InaccessibleProperty Lazy resolution */
                     $constant_storage->type = $constant_storage->inferred_type;
                 }
             }
@@ -2022,7 +2025,7 @@ class ClassLikes
 
                             if ($method_storage->params[$offset]->default_type) {
                                 if ($method_storage->params[$offset]->default_type instanceof Union) {
-                                    $default_type = clone $method_storage->params[$offset]->default_type;
+                                    $default_type = $method_storage->params[$offset]->default_type;
                                 } else {
                                     $default_type_atomic = ConstantTypeResolver::resolve(
                                         $codebase->classlikes,
@@ -2055,7 +2058,7 @@ class ClassLikes
                                     );
 
                                 if ($has_variable_calls) {
-                                    $possible_type->from_docblock = true;
+                                    $possible_type = $possible_type->setProperties(['from_docblock' => true]);
                                 }
 
                                 if ($function_analyzer) {

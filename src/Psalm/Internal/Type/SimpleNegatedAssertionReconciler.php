@@ -155,7 +155,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($assertion instanceof NotInArray) {
-            $new_var_type = clone $assertion->type;
+            $new_var_type = $assertion->type;
 
             $intersection = Type::intersectUnionTypes(
                 $new_var_type,
@@ -618,6 +618,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $type = $new;
             }
         }
+        unset($type);
 
         if (!$did_remove_type || !$types) {
             if ($key && $code_location && !$is_equality) {
@@ -689,6 +690,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $type = $new;
             }
         }
+        unset($type);
 
         if (!$did_remove_type || !$types) {
             if ($key && $code_location && !$is_equality) {
@@ -978,11 +980,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_scalar_types) {
-            $type = new Union($non_scalar_types);
-            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
-            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
-            $type->from_docblock = $existing_var_type->from_docblock;
-            return $type;
+            return new Union($non_scalar_types, [
+                'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
+                'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
+                'from_docblock' => $existing_var_type->from_docblock
+            ]);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1079,11 +1081,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_object_types) {
-            $type = new Union($non_object_types);
-            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
-            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
-            $type->from_docblock = $existing_var_type->from_docblock;
-            return $type;
+            return new Union($non_object_types, [
+                'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
+                'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1171,11 +1173,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_numeric_types) {
-            $type = new Union($non_numeric_types);
-            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
-            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
-            $type->from_docblock = $existing_var_type->from_docblock;
-            return $type;
+            return new Union($non_numeric_types, [
+                'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
+                'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1273,11 +1275,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_int_types) {
-            $type = new Union($non_int_types);
-            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
-            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
-            $type->from_docblock = $existing_var_type->from_docblock;
-            return $type;
+            return new Union($non_int_types, [
+                'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
+                'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1370,11 +1372,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_float_types) {
-            $type = new Union($non_float_types);
-            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
-            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
-            $type->from_docblock = $existing_var_type->from_docblock;
-            return $type;
+            return new Union($non_float_types, [
+                'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
+                'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1476,11 +1478,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_string_types) {
-            $type = new Union($non_string_types);
-            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
-            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
-            $type->from_docblock = $existing_var_type->from_docblock;
-            return $type;
+            return new Union($non_string_types, [
+                'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
+                'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1579,11 +1581,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_array_types) {
-            $type = new Union($non_array_types);
-            $type->ignore_falsable_issues = $existing_var_type->ignore_falsable_issues;
-            $type->ignore_nullable_issues = $existing_var_type->ignore_nullable_issues;
-            $type->from_docblock = $existing_var_type->from_docblock;
-            return $type;
+            return new Union($non_array_types, [
+                'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
+                'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -1633,6 +1635,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $type = $new;
             }
         }
+        unset($type);
 
         if (!$did_remove_type || !$types) {
             if ($key && $code_location && !$is_equality) {

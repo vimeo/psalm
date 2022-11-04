@@ -90,7 +90,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 } elseif ($context->self) {
                     if ($stmt->class->parts[0] === 'static' && isset($context->vars_in_scope['$this'])) {
                         $fq_class_name = (string) $context->vars_in_scope['$this'];
-                        $lhs_type = clone $context->vars_in_scope['$this'];
+                        $lhs_type = $context->vars_in_scope['$this'];
                     } else {
                         $fq_class_name = $context->self;
                     }
@@ -252,7 +252,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\StaticCall $stmt,
         MethodIdentifier $method_id,
         string $cased_method_id,
-        Union $return_type_candidate,
+        Union &$return_type_candidate,
         ?MethodStorage $method_storage,
         ?TemplateResult $template_result,
         ?Context $context = null
@@ -299,7 +299,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         if ($method_storage && $template_result) {
             foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
                 $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
-                    clone $conditionally_removed_taint,
+                    $conditionally_removed_taint,
                     $template_result,
                     $codebase
                 );
@@ -345,9 +345,9 @@ class StaticCallAnalyzer extends CallAnalyzer
                 [...$conditionally_removed_taints, ...$removed_taints]
             );
 
-            $return_type_candidate->parent_nodes[$assignment_node->id] = $assignment_node;
+            $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {
-            $return_type_candidate->parent_nodes = [$method_source->id => $method_source];
+            $return_type_candidate = $return_type_candidate->setParentNodes([$method_source->id => $method_source]);
         }
 
         if ($method_storage

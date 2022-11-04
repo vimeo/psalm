@@ -159,9 +159,9 @@ class BinaryOpAnalyzer
                 $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
                 $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
-                $stmt_type->parent_nodes = [
+                $stmt_type = $stmt_type->setParentNodes([
                     $new_parent_node->id => $new_parent_node
-                ];
+                ]);
 
                 $codebase = $statements_analyzer->getCodebase();
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -402,9 +402,10 @@ class BinaryOpAnalyzer
             $new_parent_node = DataFlowNode::getForAssignment($type, $var_location);
             $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
-            $result_type->parent_nodes = [
+            $result_type = $result_type->setParentNodes([
                 $new_parent_node->id => $new_parent_node
-            ];
+            ]);
+            $statements_analyzer->node_data->setType($stmt, $result_type);
 
             if ($stmt_left_type && $stmt_left_type->parent_nodes) {
                 foreach ($stmt_left_type->parent_nodes as $parent_node) {

@@ -51,12 +51,12 @@ class GlobalAnalyzer
                         $context->vars_in_scope[$var_id] =
                             VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
                     } elseif (isset($function_storage->global_types[$var_id])) {
-                        $context->vars_in_scope[$var_id] = clone $function_storage->global_types[$var_id];
+                        $context->vars_in_scope[$var_id] = $function_storage->global_types[$var_id];
                         $context->vars_possibly_in_scope[$var_id] = true;
                     } else {
                         $context->vars_in_scope[$var_id] =
                             $global_context && $global_context->hasVariable($var_id)
-                                ? clone $global_context->vars_in_scope[$var_id]
+                                ? $global_context->vars_in_scope[$var_id]
                                 : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
 
                         $context->vars_possibly_in_scope[$var_id] = true;
@@ -68,9 +68,9 @@ class GlobalAnalyzer
                         $var_id,
                         new CodeLocation($statements_analyzer, $var)
                     );
-                    $context->vars_in_scope[$var_id]->parent_nodes = [
+                    $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setParentNodes([
                         $assignment_node->id => $assignment_node,
-                    ];
+                    ]);
                     $context->references_to_external_scope[$var_id] = true;
 
                     if (isset($context->references_in_scope[$var_id])) {

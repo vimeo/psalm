@@ -650,8 +650,7 @@ class Populator
             } else {
                 foreach ($parent_storage->template_types as $template_name => $template_type_map) {
                     foreach ($template_type_map as $template_type) {
-                        $default_param = clone $template_type;
-                        $default_param->from_docblock = false;
+                        $default_param = $template_type->setProperties(['from_docblock' => false]);
                         $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;
                     }
                 }

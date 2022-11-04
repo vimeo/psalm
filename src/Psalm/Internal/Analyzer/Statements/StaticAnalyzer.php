@@ -101,6 +101,7 @@ class StaticAnalyzer
 
                         $var_comment_type = $var_comment_type->setFromDocblock();
 
+                        /** @psalm-suppress UnusedMethodCall */
                         $var_comment_type->check(
                             $statements_analyzer,
                             new CodeLocation($statements_analyzer->getSource(), $var),
@@ -173,7 +174,7 @@ class StaticAnalyzer
             }
 
             if ($context->check_variables) {
-                $context->vars_in_scope[$var_id] = $comment_type ? clone $comment_type : Type::getMixed();
+                $context->vars_in_scope[$var_id] = $comment_type ? $comment_type : Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
                 $statements_analyzer->byref_uses[$var_id] = true;

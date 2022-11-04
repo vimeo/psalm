@@ -142,7 +142,7 @@ final class TClassStringMap extends Atomic
                 &&
                     isset($input_type->type_params[$offset])
             ) {
-                $input_type_param = clone $input_type->type_params[$offset];
+                $input_type_param = $input_type->type_params[$offset];
             } elseif ($input_type instanceof TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
@@ -154,7 +154,7 @@ final class TClassStringMap extends Atomic
                     continue;
                 }
 
-                $input_type_param = clone $input_type->type_param;
+                $input_type_param = $input_type->type_param;
             }
 
             $value_param = TemplateStandinTypeReplacer::replace(
@@ -203,7 +203,7 @@ final class TClassStringMap extends Atomic
         );
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['value_param'];
     }

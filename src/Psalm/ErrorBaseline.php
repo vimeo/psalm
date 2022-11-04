@@ -230,6 +230,7 @@ final class ErrorBaseline
         foreach ($groupedIssues as &$issues) {
             ksort($issues);
         }
+        unset($issues);
 
         return $groupedIssues;
     }

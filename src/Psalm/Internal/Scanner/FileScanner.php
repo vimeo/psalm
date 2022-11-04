@@ -90,26 +90,31 @@ class FileScanner implements FileSource
         $file_storage->deep_scan = $this->will_analyze;
     }
 
+    /** @psalm-mutation-free */
     public function getFilePath(): string
     {
         return $this->file_path;
     }
 
+    /** @psalm-mutation-free */
     public function getFileName(): string
     {
         return $this->file_name;
     }
 
+    /** @psalm-mutation-free */
     public function getRootFilePath(): string
     {
         return $this->file_path;
     }
 
+    /** @psalm-mutation-free */
     public function getRootFileName(): string
     {
         return $this->file_name;
     }
 
+    /** @psalm-mutation-free */
     public function getAliases(): Aliases
     {
         return new Aliases();

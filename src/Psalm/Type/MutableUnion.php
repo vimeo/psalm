@@ -222,6 +222,7 @@ final class MutableUnion implements TypeNode, Stringable
         $this->literal_int_types = [];
         $this->literal_string_types = [];
         $this->typed_class_strings = [];
+        $this->checked = false;
 
         $from_docblock = false;
         $keyed_types = [];
@@ -469,32 +470,27 @@ final class MutableUnion implements TypeNode, Stringable
      */
     public function freeze(): Union
     {
-        $union = new Union($this->getAtomicTypes());
-        foreach (get_object_vars($this) as $key => $value) {
-            if ($key === 'types') {
-                continue;
+        return new Union($this->getAtomicTypes(), get_object_vars($this));
+    }
+
+    public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
+    {
+        $result = true;
+        $changed = false;
+        foreach ($node->types as &$type) {
+            $type_orig = $type;
+            $result = $visitor->traverse($type);
+            $changed = $changed || $type_orig !== $type;
+            if (!$result) {
+                break;
             }
-            if ($key === 'id') {
-                continue;
-            }
-            if ($key === 'exact_id') {
-                continue;
-            }
-            if ($key === 'literal_string_types') {
-                continue;
-            }
-            if ($key === 'typed_class_strings') {
-                continue;
-            }
-            if ($key === 'literal_int_types') {
-                continue;
-            }
-            if ($key === 'literal_float_types') {
-                continue;
-            }
-            /** @psalm-suppress ImpurePropertyAssignment Acting on clone */
-            $union->{$key} = $value;
         }
-        return $union;
+        unset($type);
+
+        if ($changed) {
+            $node->setTypes($node->types);
+        }
+
+        return $result;
     }
 }

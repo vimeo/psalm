@@ -486,7 +486,7 @@ final class ClassLikeStorage implements HasAttributesInterface
         $type_params = [];
 
         foreach ($this->template_types ?? [] as $type_map) {
-            $type_params[] = clone array_values($type_map)[0];
+            $type_params[] = array_values($type_map)[0];
         }
 
         return $type_params;

@@ -5,6 +5,7 @@ namespace Psalm\CodeLocation;
 use Psalm\CodeLocation;
 use Psalm\FileSource;
 
+/** @psalm-immutable */
 class DocblockTypeLocation extends CodeLocation
 {
     public function __construct(
@@ -26,5 +27,7 @@ class DocblockTypeLocation extends CodeLocation
         $this->single_line = false;
 
         $this->preview_start = $this->file_start;
+
+        $this->docblock_line_number = $line_number;
     }
 }

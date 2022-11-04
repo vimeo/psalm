@@ -51,7 +51,7 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         if ($first_arg_array instanceof TArray) {
-            $key_type = clone $first_arg_array->type_params[0];
+            $key_type = $first_arg_array->type_params[0];
         } elseif ($first_arg_array instanceof TList) {
             $key_type = Type::getInt();
         } else {

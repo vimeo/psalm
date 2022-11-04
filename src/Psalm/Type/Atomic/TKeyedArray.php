@@ -205,7 +205,7 @@ class TKeyedArray extends Atomic
         return false;
     }
 
-    public function getGenericKeyType(): Union
+    public function getGenericKeyType(bool $possibly_undefined = false): Union
     {
         $key_types = [];
 
@@ -221,22 +221,29 @@ class TKeyedArray extends Atomic
 
         $key_type = TypeCombiner::combine($key_types);
 
-        $key_type->possibly_undefined = false;
+        /** @psalm-suppress InaccessibleProperty We just created this type */
+        $key_type->possibly_undefined = $possibly_undefined;
 
         return Type::combineUnionTypes($this->previous_key_type, $key_type);
     }
 
-    public function getGenericValueType(): Union
+    public function getGenericValueType(bool $possibly_undefined = false): Union
     {
         $value_type = null;
 
         foreach ($this->properties as $property) {
-            $value_type = Type::combineUnionTypes(clone $property, $value_type);
+            $value_type = Type::combineUnionTypes($property, $value_type);
         }
 
-        $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
-
-        $value_type->possibly_undefined = false;
+        $value_type = Type::combineUnionTypes(
+            $this->previous_value_type,
+            $value_type,
+            null,
+            false,
+            true,
+            500,
+            $possibly_undefined
+        );
 
         return $value_type;
     }
@@ -260,7 +267,7 @@ class TKeyedArray extends Atomic
                 $key_types[] = new TLiteralString($key);
             }
 
-            $value_type = Type::combineUnionTypes(clone $property, $value_type);
+            $value_type = Type::combineUnionTypes($property, $value_type);
 
             if (!$property->possibly_undefined) {
                 $has_defined_keys = true;
@@ -272,7 +279,7 @@ class TKeyedArray extends Atomic
         $value_type = Type::combineUnionTypes($this->previous_value_type, $value_type);
         $key_type = Type::combineUnionTypes($this->previous_key_type, $key_type);
 
-        $value_type->possibly_undefined = false;
+        $value_type = $value_type->setPossiblyUndefined(false);
 
         if ($allow_non_empty && ($this->previous_value_type || $has_defined_keys)) {
             $array_type = new TNonEmptyArray([$key_type, $value_type]);
@@ -373,7 +380,7 @@ class TKeyedArray extends Atomic
         return $this;
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['properties'];
     }

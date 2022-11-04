@@ -13,7 +13,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
-use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
@@ -108,7 +107,7 @@ class VariableFetchAnalyzer
                 return true;
             }
 
-            $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope['$this']);
+            $statements_analyzer->node_data->setType($stmt, $context->vars_in_scope['$this']);
 
             if ($codebase->store_node_types
                     && !$context->collect_initializations
@@ -150,11 +149,12 @@ class VariableFetchAnalyzer
                     $context->vars_possibly_in_scope[$var_name] = true;
                     $statements_analyzer->node_data->setType($stmt, Type::getMixed());
                 } else {
-                    $stmt_type = clone $context->vars_in_scope[$var_name];
-
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                    $stmt_type = $context->vars_in_scope[$var_name];
 
                     self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+
+                    $context->vars_in_scope[$var_name] = $stmt_type;
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -167,10 +167,11 @@ class VariableFetchAnalyzer
             $var_name = '$' . $stmt->name;
 
             if (isset($context->vars_in_scope[$var_name])) {
-                $type = clone $context->vars_in_scope[$var_name];
+                $type = $context->vars_in_scope[$var_name];
 
                 self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
-
+                
+                $context->vars_in_scope[$var_name] = $type;
                 $statements_analyzer->node_data->setType($stmt, $type);
 
                 return true;
@@ -181,7 +182,7 @@ class VariableFetchAnalyzer
             self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
 
             $statements_analyzer->node_data->setType($stmt, $type);
-            $context->vars_in_scope[$var_name] = clone $type;
+            $context->vars_in_scope[$var_name] = $type;
             $context->vars_possibly_in_scope[$var_name] = true;
 
             $codebase->analyzer->addNodeReference(
@@ -363,20 +364,21 @@ class VariableFetchAnalyzer
 
                 $stmt_type = Type::getMixed();
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
                 self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_name, $stmt);
 
                 return true;
             }
         } else {
-            $stmt_type = clone $context->vars_in_scope[$var_name];
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            $stmt_type = $context->vars_in_scope[$var_name];
 
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+
+            $context->vars_in_scope[$var_name] = $stmt_type;
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
                 if ($context->is_global) {
@@ -435,7 +437,7 @@ class VariableFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Variable $stmt,
         string $var_name,
-        Union $stmt_type,
+        Union &$stmt_type,
         Context $context
     ): void {
         $codebase = $statements_analyzer->getCodebase();
@@ -455,9 +457,9 @@ class VariableFetchAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
 
-                $stmt_type->parent_nodes = [
+                $stmt_type = $stmt_type->setParentNodes([
                     $assignment_node->id => $assignment_node
-                ];
+                ]);
             }
 
             foreach ($stmt_type->parent_nodes as $parent_node) {
@@ -509,7 +511,7 @@ class VariableFetchAnalyzer
     private static function taintVariable(
         StatementsAnalyzer $statements_analyzer,
         string $var_name,
-        Union $type,
+        Union &$type,
         PhpParser\Node\Expr\Variable $stmt
     ): void {
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
@@ -532,9 +534,9 @@ class VariableFetchAnalyzer
 
                 $statements_analyzer->data_flow_graph->addSource($server_taint_source);
 
-                $type->parent_nodes = [
+                $type = $type->setParentNodes([
                     $server_taint_source->id => $server_taint_source
-                ];
+                ]);
             }
         }
     }
@@ -551,6 +553,9 @@ class VariableFetchAnalyzer
         );
     }
 
+    /** @var array<value-of<self::SUPER_GLOBALS>|'$_FILES full path'|'$argv'|'$argc', Union> */
+    private static array $globalCache = [];
+
     public static function getGlobalType(string $var_id, int $codebase_analysis_php_version_id): Union
     {
         $config = Config::getInstance();
@@ -559,6 +564,36 @@ class VariableFetchAnalyzer
             return Type::parseString($config->globals[$var_id]);
         }
 
+        if (!self::$globalCache) {
+            foreach (self::SUPER_GLOBALS as $v) {
+                self::$globalCache[$v] = self::getGlobalTypeInner($v);
+            }
+            self::$globalCache['$_FILES full path'] = self::getGlobalTypeInner(
+                '$_FILES',
+                true
+            );
+            self::$globalCache['$argv'] = self::getGlobalTypeInner('$argv');
+            self::$globalCache['$argc'] = self::getGlobalTypeInner('$argc');
+        }
+
+        if ($codebase_analysis_php_version_id >= 8_01_00 && $var_id === '$_FILES') {
+            $var_id = '$_FILES full path';
+        }
+
+        if (isset(self::$globalCache[$var_id])) {
+            return self::$globalCache[$var_id];
+        }
+        
+        return Type::getMixed();
+    }
+
+    /**
+     * @psalm-suppress InaccessibleProperty Always acting on new types
+     *
+     * @param value-of<self::SUPER_GLOBALS>|'$argv'|'$argc' $var_id
+     */
+    private static function getGlobalTypeInner(string $var_id, bool $files_full_path = false): Union
+    {
         if ($var_id === '$argv') {
             // only in CLI, null otherwise
             $argv_nullable = new Union([
@@ -583,10 +618,6 @@ class VariableFetchAnalyzer
             // $argc_nullable->possibly_undefined = true;
             $argc_nullable->ignore_nullable_issues = true;
             return $argc_nullable;
-        }
-
-        if (!self::isSuperGlobal($var_id)) {
-            return Type::getMixed();
         }
 
         if ($var_id === '$http_response_header') {
@@ -757,60 +788,35 @@ class VariableFetchAnalyzer
         }
 
         if ($var_id === '$_FILES') {
+            $str = Type::getString();
             $values = [
-                'name' => new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]),
-                'type' => new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]),
-                'size' => new Union([
-                    new TIntRange(0, null),
-                    new TNonEmptyList(Type::getInt()),
-                ]),
-                'tmp_name' => new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]),
-                'error' => new Union([
-                    new TIntRange(0, 8),
-                    new TNonEmptyList(Type::getInt()),
-                ]),
+                'name' => $str,
+                'type' => $str,
+                'tmp_name' => $str,
+                'size' => new Union([new TIntRange(0, null)]),
+                'error' => new Union([new TIntRange(0, 8)]),
             ];
 
-            if ($codebase_analysis_php_version_id >= 8_10_00) {
-                $values['full_path'] = new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]);
+            if ($files_full_path) {
+                $values['full_path'] = $str;
             }
+            
+            $type = new Union([new TKeyedArray($values)]);
+            $parent = new TArray([Type::getNonEmptyString(), $type]);
 
-            $type = new TKeyedArray($values);
-
-            // $_FILES['userfile']['...'] case
-            $named_type = new TArray([Type::getNonEmptyString(), new Union([$type])]);
-
-            // by default $_FILES is an empty array
-            $default_type = new TArray([Type::getNever(), Type::getNever()]);
-
-            // ideally we would have 4 separate arrays with distinct types, but that isn't possible with psalm atm
-            return TypeCombiner::combine([$default_type, $type, $named_type]);
+            return new Union([$parent]);
         }
 
-        if ($var_id === '$_SESSION') {
-            // keys must be string
-            $type = new Union([
-                new TArray([
-                    Type::getNonEmptyString(),
-                    Type::getMixed(),
-                ])
-            ]);
-            $type->possibly_undefined = true;
-            return $type;
-        }
-
-        return Type::getMixed();
+        // $var_id === $_SESSION
+        
+        // keys must be string
+        $type = new Union([
+            new TArray([
+                Type::getNonEmptyString(),
+                Type::getMixed(),
+            ])
+        ]);
+        $type->possibly_undefined = true;
+        return $type;
     }
 }

@@ -208,7 +208,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $method_template_result = new TemplateResult($method_storage->template_types ?: [], []);
 
             TemplateStandinTypeReplacer::fillTemplateResult(
-                clone $method_storage->if_this_is_type,
+                $method_storage->if_this_is_type,
                 $method_template_result,
                 $codebase,
                 null,
@@ -301,7 +301,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             if ($method_storage->if_this_is_type) {
                 $class_type = new Union([$lhs_type_part]);
                 $if_this_is_type = TemplateInferredTypeReplacer::replace(
-                    clone $method_storage->if_this_is_type,
+                    $method_storage->if_this_is_type,
                     $template_result,
                     $codebase
                 );
@@ -319,7 +319,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             if ($method_storage->self_out_type && $lhs_var_id) {
-                $self_out_candidate = clone $method_storage->self_out_type;
+                $self_out_candidate = $method_storage->self_out_type;
 
                 if ($template_result->lower_bounds) {
                     $self_out_candidate = TypeExpander::expandUnion(
@@ -658,7 +658,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 }
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
-                    return clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+                    return $class_storage->pseudo_property_get_types['$' . $prop_name];
                 }
 
                 break;

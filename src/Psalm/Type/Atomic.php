@@ -72,6 +72,7 @@ use Psalm\Type\Atomic\TVoid;
 use function array_filter;
 use function array_keys;
 use function get_class;
+use function is_array;
 use function is_numeric;
 use function strpos;
 use function strtolower;
@@ -85,6 +86,10 @@ abstract class Atomic implements TypeNode
     {
         $this->from_docblock = $from_docblock;
     }
+    protected function __clone()
+    {
+    }
+
     /**
      * Whether or not the type has been checked yet
      *
@@ -592,7 +597,82 @@ abstract class Atomic implements TypeNode
             );
     }
 
-    public function getChildNodeKeys(): array
+    public function visit(TypeVisitor $visitor): bool
+    {
+        foreach ($this->getChildNodeKeys() as $key) {
+            /** @psalm-suppress MixedAssignment */
+            $value = $this->{$key};
+            if (is_array($value)) {
+                /** @psalm-suppress MixedAssignment */
+                foreach ($value as $type) {
+                    if (!$type instanceof TypeNode) {
+                        continue;
+                    }
+
+                    if ($visitor->traverse($type) === false) {
+                        return false;
+                    }
+                }
+            } elseif ($value instanceof TypeNode) {
+                if ($visitor->traverse($value) === false) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
+    {
+        foreach ($node->getChildNodeKeys() as $key) {
+            /** @psalm-suppress MixedAssignment */
+            $value = $node->{$key};
+            $result = true;
+            if (is_array($value)) {
+                $changed = false;
+                /** @psalm-suppress MixedAssignment */
+                foreach ($value as &$type) {
+                    if (!$type instanceof TypeNode) {
+                        continue;
+                    }
+
+                    $type_orig = $type;
+                    $result = $visitor->traverse($type);
+                    $changed = $changed || $type !== $type_orig;
+                }
+                unset($type);
+            } elseif ($value instanceof TypeNode) {
+                $value_orig = $value;
+                $result = $visitor->traverse($value);
+                $changed = $value !== $value_orig;
+            } else {
+                continue;
+            }
+
+            if ($changed) {
+                if (!$cloned) {
+                    $node = clone $node;
+                    $cloned = true;
+                }
+                if ($key === 'extra_types') {
+                    /** @var array<Atomic> $value */
+                    $new = [];
+                    foreach ($value as $type) {
+                        $new[$type->getKey()] = $type;
+                    }
+                    $value = $new;
+                }
+                $node->{$key} = $value;
+            }
+            if ($result === false) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** @return list<string> */
+    protected function getChildNodeKeys(): array
     {
         return [];
     }

@@ -433,6 +433,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array
@@ -445,6 +446,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, string>
      */
     public function getAliasedClassesFlippedReplaceable(): array
@@ -456,17 +458,20 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         return [];
     }
 
+    /** @psalm-mutation-free */
     public function getFQCLN(): string
     {
         return $this->fq_class_name;
     }
 
+    /** @psalm-mutation-free */
     public function getClassName(): ?string
     {
         return $this->class->name->name ?? null;
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, array<string, Union>>|null
      */
     public function getTemplateTypeMap(): ?array
@@ -474,11 +479,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         return $this->storage->template_types;
     }
 
+    /** @psalm-mutation-free */
     public function getParentFQCLN(): ?string
     {
         return $this->parent_fq_class_name;
     }
 
+    /** @psalm-mutation-free */
     public function isStatic(): bool
     {
         return false;
@@ -765,15 +772,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     }
 
                     if (!$template_type->isMixed()) {
-                        $template_type_copy = clone $template_type;
-
                         $template_result = new TemplateResult(
                             $previous_extended ?: [],
                             []
                         );
 
                         $template_type_copy = TemplateStandinTypeReplacer::replace(
-                            $template_type_copy,
+                            $template_type,
                             $template_result,
                             $codebase,
                             null,

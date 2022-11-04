@@ -122,7 +122,7 @@ final class TIterable extends Atomic
         return true;
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['type_params', 'extra_types'];
     }

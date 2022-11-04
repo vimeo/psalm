@@ -15,6 +15,8 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+use function array_fill_keys;
+
 use const PHP_URL_FRAGMENT;
 use const PHP_URL_HOST;
 use const PHP_URL_PASS;
@@ -37,6 +39,13 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
         return ['parse_url'];
     }
 
+    private static ?Union $acceptable_int_component_type = null;
+    private static ?Union $acceptable_string_component_type = null;
+    private static ?Union $nullable_falsable_int = null;
+    private static ?Union $nullable_falsable_string = null;
+    private static ?Union $nullable_string_or_int = null;
+    private static ?Union $return_type = null;
+
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
@@ -51,7 +60,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 if (!$component_type->hasMixed()) {
                     $codebase = $statements_source->getCodebase();
 
-                    $acceptable_string_component_type = new Union([
+                    self::$acceptable_string_component_type ??= new Union([
                         new TLiteralInt(PHP_URL_SCHEME),
                         new TLiteralInt(PHP_URL_USER),
                         new TLiteralInt(PHP_URL_PASS),
@@ -61,56 +70,44 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         new TLiteralInt(PHP_URL_FRAGMENT),
                     ]);
 
-                    $acceptable_int_component_type = new Union([
+                    self::$acceptable_int_component_type ??= new Union([
                         new TLiteralInt(PHP_URL_PORT),
                     ]);
 
                     if (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $component_type,
-                        $acceptable_string_component_type
+                        self::$acceptable_string_component_type
                     )) {
-                        $nullable_falsable_string = new Union([
+                        self::$nullable_falsable_string ??= new Union([
                             new TString,
                             new TFalse,
                             new TNull,
+                        ], [
+                            'ignore_nullable_issues' => $statements_source->getCodebase()
+                                ->config->ignore_internal_nullable_issues,
+                            'ignore_falsable_issues' => $statements_source->getCodebase()
+                                ->config->ignore_internal_falsable_issues,
                         ]);
-
-                        $codebase = $statements_source->getCodebase();
-
-                        if ($codebase->config->ignore_internal_nullable_issues) {
-                            $nullable_falsable_string->ignore_nullable_issues = true;
-                        }
-
-                        if ($codebase->config->ignore_internal_falsable_issues) {
-                            $nullable_falsable_string->ignore_falsable_issues = true;
-                        }
-
-                        return $nullable_falsable_string;
+                        return self::$nullable_falsable_string;
                     }
 
                     if (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $component_type,
-                        $acceptable_int_component_type
+                        self::$acceptable_int_component_type
                     )) {
-                        $nullable_falsable_int = new Union([
+                        self::$nullable_falsable_int ??= new Union([
                             new TInt,
                             new TFalse,
                             new TNull,
+                        ], [
+                            'ignore_nullable_issues' => $statements_source->getCodebase()
+                                ->config->ignore_internal_nullable_issues,
+                            'ignore_falsable_issues' => $statements_source->getCodebase()
+                                ->config->ignore_internal_falsable_issues,
                         ]);
-
-                        $codebase = $statements_source->getCodebase();
-
-                        if ($codebase->config->ignore_internal_nullable_issues) {
-                            $nullable_falsable_int->ignore_nullable_issues = true;
-                        }
-
-                        if ($codebase->config->ignore_internal_falsable_issues) {
-                            $nullable_falsable_int->ignore_falsable_issues = true;
-                        }
-
-                        return $nullable_falsable_int;
+                        return self::$nullable_falsable_int;
                     }
 
                     if ($component_type->isSingleIntLiteral()) {
@@ -121,46 +118,41 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             if (!$is_default_component) {
-                $nullable_string_or_int = new Union([
+                self::$nullable_string_or_int ??= new Union([
                     new TString,
                     new TInt,
                     new TNull,
+                ], [
+                    'ignore_nullable_issues' => $statements_source->getCodebase()
+                        ->config->ignore_internal_nullable_issues,
                 ]);
-
-                $codebase = $statements_source->getCodebase();
-
-                if ($codebase->config->ignore_internal_nullable_issues) {
-                    $nullable_string_or_int->ignore_nullable_issues = true;
-                }
-
-                return $nullable_string_or_int;
+                return self::$nullable_string_or_int;
             }
         }
 
-        $component_types = [
-            'scheme' => Type::getString(),
-            'user' => Type::getString(),
-            'pass' => Type::getString(),
-            'host' => Type::getString(),
-            'port' => Type::getInt(),
-            'path' => Type::getString(),
-            'query' => Type::getString(),
-            'fragment' => Type::getString(),
-        ];
+        if (!self::$return_type) {
+            $component_types = array_fill_keys(
+                [
+                    'scheme',
+                    'user',
+                    'pass',
+                    'host',
+                    'path',
+                    'query',
+                    'fragment',
+                ],
+                new Union([new TString()], ['possibly_undefined' => true])
+            );
+            $component_types['port'] = new Union([new TInt()], ['possibly_undefined' => true]);
 
-        foreach ($component_types as $component_type) {
-            $component_type->possibly_undefined = true;
+            self::$return_type = new Union([
+                new TKeyedArray($component_types),
+                new TFalse(),
+            ], [
+                'ignore_falsable_issues' => $statements_source->getCodebase()->config->ignore_internal_falsable_issues
+            ]);
         }
 
-        $return_type = new Union([
-            new TKeyedArray($component_types),
-            new TFalse(),
-        ]);
-
-        if ($statements_source->getCodebase()->config->ignore_internal_falsable_issues) {
-            $return_type->ignore_falsable_issues = true;
-        }
-
-        return $return_type;
+        return self::$return_type;
     }
 }

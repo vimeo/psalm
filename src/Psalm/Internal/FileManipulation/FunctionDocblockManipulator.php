@@ -357,6 +357,7 @@ class FunctionDocblockManipulator
                         break;
                     }
                 }
+                unset($param_block);
             }
 
             if (!$found_in_params) {
@@ -383,6 +384,7 @@ class FunctionDocblockManipulator
                         break;
                     }
                 }
+                unset($param_block);
             }
 
             if (!$found_in_params) {

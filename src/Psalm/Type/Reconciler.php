@@ -129,7 +129,7 @@ class Reconciler
             $cloned_referenceds = [];
             foreach ($existing_references as $reference => $referenced) {
                 if (!isset($cloned_referenceds[$referenced])) {
-                    $existing_types[$referenced] = clone $old_existing_types[$referenced];
+                    $existing_types[$referenced] = $old_existing_types[$referenced];
                     $cloned_referenceds[$referenced] = true;
                 }
                 $existing_types[$reference] = &$existing_types[$referenced];
@@ -209,26 +209,24 @@ class Reconciler
 
             $has_object_array_access = false;
 
-            $result_type = isset($existing_types[$key])
-                ? clone $existing_types[$key]
-                : self::getValueForKey(
-                    $codebase,
-                    $key,
-                    $existing_types,
-                    $new_types,
-                    $code_location,
-                    $has_isset,
-                    $has_inverted_isset,
-                    $has_empty,
-                    $inside_loop,
-                    $has_object_array_access
-                );
+            $result_type = $existing_types[$key] ?? self::getValueForKey(
+                $codebase,
+                $key,
+                $existing_types,
+                $new_types,
+                $code_location,
+                $has_isset,
+                $has_inverted_isset,
+                $has_empty,
+                $inside_loop,
+                $has_object_array_access
+            );
 
             if ($result_type && $result_type->isUnionEmpty()) {
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
-            $before_adjustment = $result_type ? clone $result_type : null;
+            $before_adjustment = $result_type;
 
             $failed_reconciliation = self::RECONCILIATION_OK;
 
@@ -266,7 +264,7 @@ class Reconciler
 
                     $result_type_candidate = AssertionReconciler::reconcile(
                         $new_type_part_part,
-                        $result_type ? clone $result_type : null,
+                        $result_type,
                         $key,
                         $statements_analyzer,
                         $inside_loop,
@@ -309,19 +307,24 @@ class Reconciler
                 || $statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
-                    $result_type->parent_nodes = $before_adjustment->parent_nodes;
+                    $result_type = $result_type->setParentNodes($before_adjustment->parent_nodes);
                 } elseif (!$did_type_exist && $code_location) {
-                    $result_type->parent_nodes = $statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
-                        $key
+                    $result_type = $result_type->setParentNodes(
+                        $statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
+                            $key
+                        )
                     );
                 }
             }
 
             if ($before_adjustment && $before_adjustment->by_ref) {
-                $result_type->by_ref = true;
+                $result_type = $result_type->setByRef(true);
             }
 
-            $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
+            $type_changed = !$before_adjustment
+                || !$result_type->equals($before_adjustment)
+                || $result_type->different
+                || $before_adjustment->different;
 
             $key_parts = self::breakUpPathIntoParts($key);
             if ($type_changed || $failed_reconciliation) {
@@ -379,7 +382,7 @@ class Reconciler
             }
 
             if ($failed_reconciliation === self::RECONCILIATION_EMPTY) {
-                $result_type->failed_reconciliation = true;
+                $result_type = $result_type->setProperties(['failed_reconciliation' => true]);
             }
 
             if (!$has_object_array_access) {
@@ -644,7 +647,7 @@ class Reconciler
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
-            return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;
+            return $existing_keys[$key_parts[0]] ?? null;
         }
 
         $base_key = array_shift($key_parts);
@@ -670,7 +673,7 @@ class Reconciler
                 );
 
                 if ($class_constant) {
-                    $existing_keys[$base_key] = clone $class_constant;
+                    $existing_keys[$base_key] = $class_constant;
                 } else {
                     return null;
                 }
@@ -706,7 +709,7 @@ class Reconciler
                                 return null;
                             }
 
-                            $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
+                            $new_base_type_candidate = $existing_key_type_part->type_params[1];
 
                             if ($new_base_type_candidate->isMixed() && !$has_isset && !$has_inverted_isset) {
                                 return $new_base_type_candidate;
@@ -716,27 +719,28 @@ class Reconciler
                                 if ($has_inverted_isset && $new_base_key === $key) {
                                     $new_base_type_candidate = $new_base_type_candidate->getBuilder();
                                     $new_base_type_candidate->addType(new TNull);
+                                    $new_base_type_candidate->possibly_undefined = true;
                                     $new_base_type_candidate = $new_base_type_candidate->freeze();
+                                } else {
+                                    $new_base_type_candidate = $new_base_type_candidate->setPossiblyUndefined(true);
                                 }
-
-                                $new_base_type_candidate->possibly_undefined = true;
                             }
                         } elseif ($existing_key_type_part instanceof TList) {
                             if ($has_empty) {
                                 return null;
                             }
 
-                            $new_base_type_candidate = clone $existing_key_type_part->type_param;
+                            $new_base_type_candidate = $existing_key_type_part->type_param;
 
                             if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
                                 if ($has_inverted_isset && $new_base_key === $key) {
-                                    $new_base_type_candidate = $new_base_type_candidate
-                                        ->getBuilder()
-                                        ->addType(new TNull)
-                                        ->freeze();
+                                    $new_base_type_candidate = $new_base_type_candidate->getBuilder();
+                                    $new_base_type_candidate->addType(new TNull);
+                                    $new_base_type_candidate->possibly_undefined = true;
+                                    $new_base_type_candidate = $new_base_type_candidate->freeze();
+                                } else {
+                                    $new_base_type_candidate = $new_base_type_candidate->setPossiblyUndefined(true);
                                 }
-
-                                $new_base_type_candidate->possibly_undefined = true;
                             }
                         } elseif ($existing_key_type_part instanceof TNull
                             || $existing_key_type_part instanceof TFalse
@@ -744,6 +748,7 @@ class Reconciler
                             $new_base_type_candidate = Type::getNull();
 
                             if ($existing_keys[$base_key]->ignore_nullable_issues) {
+                                /** @psalm-suppress InaccessibleProperty We just created this type */
                                 $new_base_type_candidate->ignore_nullable_issues = true;
                             }
                         } elseif ($existing_key_type_part instanceof TClassStringMap) {
@@ -778,13 +783,13 @@ class Reconciler
 
                             if (!isset($array_properties[$key_parts_key])) {
                                 if ($existing_key_type_part->previous_value_type) {
-                                    $new_base_type_candidate = clone $existing_key_type_part->previous_value_type;
-                                    $new_base_type_candidate->different = true;
+                                    $new_base_type_candidate = $existing_key_type_part
+                                        ->previous_value_type->setDifferent(true);
                                 } else {
                                     return null;
                                 }
                             } else {
-                                $new_base_type_candidate = clone $array_properties[$key_parts_key];
+                                $new_base_type_candidate = $array_properties[$key_parts_key];
                             }
                         }
 
@@ -858,7 +863,7 @@ class Reconciler
                                     if ($method_return_type) {
                                         $class_property_type = TypeExpander::expandUnion(
                                             $codebase,
-                                            clone $method_return_type,
+                                            $method_return_type,
                                             $declaring_class,
                                             $declaring_class,
                                             null
@@ -927,7 +932,7 @@ class Reconciler
             );
 
             if (isset($declaring_class_storage->pseudo_property_get_types['$' . $property_name])) {
-                return clone $declaring_class_storage->pseudo_property_get_types['$' . $property_name];
+                return $declaring_class_storage->pseudo_property_get_types['$' . $property_name];
             }
 
             return null;
@@ -956,7 +961,7 @@ class Reconciler
         if ($class_property_type) {
             return TypeExpander::expandUnion(
                 $codebase,
-                clone $class_property_type,
+                $class_property_type,
                 $declaring_class_storage->name,
                 $declaring_class_storage->name,
                 null
@@ -1126,15 +1131,15 @@ class Reconciler
                     || $base_atomic_type instanceof TList
                     || $base_atomic_type instanceof TClassStringMap
                 ) {
-                    $new_base_type = clone $existing_types[$base_key];
+                    $new_base_type = $existing_types[$base_key];
 
                     if ($base_atomic_type instanceof TArray) {
-                        $previous_key_type = clone $base_atomic_type->type_params[0];
-                        $previous_value_type = clone $base_atomic_type->type_params[1];
+                        $previous_key_type = $base_atomic_type->type_params[0];
+                        $previous_value_type = $base_atomic_type->type_params[1];
 
                         $base_atomic_type = new TKeyedArray(
                             [
-                                $array_key_offset => clone $result_type,
+                                $array_key_offset => $result_type,
                             ],
                             null,
                             false,
@@ -1143,11 +1148,11 @@ class Reconciler
                         );
                     } elseif ($base_atomic_type instanceof TList) {
                         $previous_key_type = Type::getInt();
-                        $previous_value_type = clone $base_atomic_type->type_param;
+                        $previous_value_type = $base_atomic_type->type_param;
 
                         $base_atomic_type = new TKeyedArray(
                             [
-                                $array_key_offset => clone $result_type,
+                                $array_key_offset => $result_type,
                             ],
                             null,
                             false,
@@ -1159,7 +1164,7 @@ class Reconciler
                         // do nothing
                     } else {
                         $properties = $base_atomic_type->properties;
-                        $properties[$array_key_offset] = clone $result_type;
+                        $properties[$array_key_offset] = $result_type;
                         $base_atomic_type = $base_atomic_type->setProperties($properties);
                     }
 

@@ -474,7 +474,7 @@ class Methods
                 ) {
                     $params[$i] = clone $param;
                     /** @var Union $params[$i]->type */
-                    $params[$i]->type = clone $overridden_storage->params[$i]->type;
+                    $params[$i]->type = $overridden_storage->params[$i]->type;
 
                     if ($source) {
                         $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
@@ -534,7 +534,7 @@ class Methods
         $extra_added_types = [];
 
         if (isset($extends[$atomic_type->defining_class][$atomic_type->param_name])) {
-            $extended_param = clone $extends[$atomic_type->defining_class][$atomic_type->param_name];
+            $extended_param = $extends[$atomic_type->defining_class][$atomic_type->param_name];
 
             foreach ($extended_param->getAtomicTypes() as $extended_atomic_type) {
                 if ($extended_atomic_type instanceof TTemplateParam) {
@@ -676,7 +676,7 @@ class Methods
                     if ($atomic_type instanceof TCallable
                         || $atomic_type instanceof TClosure
                     ) {
-                        $callable_type = clone $atomic_type;
+                        $callable_type = $atomic_type;
 
                         return new Union([new TClosure(
                             'Closure',
@@ -712,7 +712,9 @@ class Methods
             $return_type_candidate = $callmap_callables[0]->return_type;
 
             if ($return_type_candidate->isFalsable()) {
-                $return_type_candidate->ignore_falsable_issues = true;
+                return $return_type_candidate->setProperties([
+                    'ignore_falsable_issues' => true
+                ]);
             }
 
             return $return_type_candidate;
@@ -725,7 +727,7 @@ class Methods
         $candidate_type = $storage->return_type;
 
         if ($candidate_type && $candidate_type->isVoid()) {
-            return clone $candidate_type;
+            return $candidate_type;
         }
 
         if (isset($class_storage->documenting_method_ids[$appearing_method_name])) {
@@ -736,7 +738,7 @@ class Methods
                 && $storage->return_type
                 && $storage->return_type === $storage->signature_return_type
             ) {
-                return clone $storage->return_type;
+                return $storage->return_type;
             }
 
             $overridden_storage = $this->getStorage($overridden_method_id);
@@ -749,13 +751,13 @@ class Methods
                 if (!$candidate_type || !$source_analyzer) {
                     $self_class = $overridden_method_id->fq_class_name;
 
-                    return clone $overridden_storage->return_type;
+                    return $overridden_storage->return_type;
                 }
 
                 if ($candidate_type->getId() === $overridden_storage->return_type->getId()) {
                     $self_class = $appearing_fq_class_storage->name;
 
-                    return clone $candidate_type;
+                    return $candidate_type;
                 }
 
                 $overridden_class_storage =
@@ -763,7 +765,7 @@ class Methods
 
                 $overridden_storage_return_type = TypeExpander::expandUnion(
                     $source_analyzer->getCodebase(),
-                    clone $overridden_storage->return_type,
+                    $overridden_storage->return_type,
                     $overridden_method_id->fq_class_name,
                     $appearing_fq_class_name,
                     $overridden_class_storage->parent_class,
@@ -814,25 +816,25 @@ class Methods
 
                     $self_class = $appearing_fq_class_storage->name;
 
-                    return clone $candidate_type;
+                    return $candidate_type;
                 }
 
                 if ($old_contained_by_new) {
                     $self_class = $appearing_fq_class_storage->name;
 
-                    return clone $candidate_type;
+                    return $candidate_type;
                 }
 
                 $self_class = $overridden_method_id->fq_class_name;
 
-                return clone $overridden_storage->return_type;
+                return $overridden_storage->return_type;
             }
         }
 
         if ($candidate_type) {
             $self_class = $appearing_fq_class_storage->name;
 
-            return clone $candidate_type;
+            return $candidate_type;
         }
 
         if (!isset($class_storage->overridden_method_ids[$appearing_method_name])) {
@@ -859,7 +861,7 @@ class Methods
                 $overridden_class_storage =
                     $this->classlike_storage_provider->get($fq_overridden_class);
 
-                $overridden_return_type = clone $overridden_storage->return_type;
+                $overridden_return_type = $overridden_storage->return_type;
 
                 $self_class = $overridden_class_storage->name;
 
@@ -992,6 +994,7 @@ class Methods
         );
     }
 
+    /** @psalm-mutation-free */
     public function getDeclaringMethodId(
         MethodIdentifier $method_id
     ): ?MethodIdentifier {
@@ -1115,6 +1118,7 @@ class Methods
         return $this->classlike_storage_provider->get($declaring_fq_class_name);
     }
 
+    /** @psalm-mutation-free */
     public function getStorage(MethodIdentifier $method_id): MethodStorage
     {
         try {
@@ -1134,6 +1138,7 @@ class Methods
         return $class_storage->methods[$method_name];
     }
 
+    /** @psalm-mutation-free */
     public function hasStorage(MethodIdentifier $method_id): bool
     {
         try {

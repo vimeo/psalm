@@ -63,7 +63,7 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 return new Union([
                     new TNonEmptyArray([
                         Type::getInt(),
-                        clone $first_arg_array->type_param
+                        $first_arg_array->type_param
                     ])
                 ]);
             }
@@ -71,7 +71,7 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return new Union([
                 new TArray([
                     Type::getInt(),
-                    clone $first_arg_array->type_param
+                    $first_arg_array->type_param
                 ])
             ]);
         }

@@ -36,7 +36,7 @@ class TypeMappingVisitor extends NodeVisitorAbstract
 
         if ($node_type) {
             /** @psalm-suppress ArgumentTypeCoercion */
-            $this->real_type_provider->setType($origNode, clone $node_type);
+            $this->real_type_provider->setType($origNode, $node_type);
         }
 
         return null;

@@ -47,7 +47,7 @@ final class TIntMaskOf extends TInt
             . '>';
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['value'];
     }

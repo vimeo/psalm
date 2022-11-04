@@ -289,7 +289,7 @@ final class TObjectWithProperties extends TObject
         );
     }
 
-    public function getChildNodeKeys(): array
+    protected function getChildNodeKeys(): array
     {
         return ['properties', 'extra_types'];
     }

@@ -3,6 +3,7 @@
 namespace Psalm\Internal;
 
 use InvalidArgumentException;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 
 use function explode;
 use function is_string;
@@ -17,6 +18,8 @@ use function strtolower;
  */
 class MethodIdentifier
 {
+    use ImmutableNonCloneableTrait;
+
     public $fq_class_name;
     public $method_name;
 

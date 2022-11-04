@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use function substr;
 use function substr_count;
 
+/** @psalm-immutable */
 class Raw extends CodeLocation
 {
     public function __construct(

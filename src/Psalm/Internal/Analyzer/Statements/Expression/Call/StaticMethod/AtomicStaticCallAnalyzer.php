@@ -413,11 +413,11 @@ class AtomicStaticCallAnalyzer
                 )) {
                     $mixin_candidates = [];
                     foreach ($class_storage->templatedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = clone $mixin_candidate;
+                        $mixin_candidates[] = $mixin_candidate;
                     }
 
                     foreach ($class_storage->namedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = clone $mixin_candidate;
+                        $mixin_candidates[] = $mixin_candidate;
                     }
 
                     $mixin_candidates_no_generic = array_filter(
@@ -969,7 +969,7 @@ class AtomicStaticCallAnalyzer
         }
 
         if ($pseudo_method_storage->return_type) {
-            $return_type_candidate = clone $pseudo_method_storage->return_type;
+            $return_type_candidate = $pseudo_method_storage->return_type;
 
             $return_type_candidate = TypeExpander::expandUnion(
                 $statements_analyzer->getCodebase(),

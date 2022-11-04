@@ -212,6 +212,7 @@ class ForeachAnalyzer
                 }
 
                 if (isset($context->vars_in_scope[$var_comment->var_id])) {
+                    /** @psalm-suppress InaccessibleProperty We just created this type */
                     $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
                 }
 
@@ -266,7 +267,7 @@ class ForeachAnalyzer
         $foreach_context = clone $context;
 
         foreach ($foreach_context->vars_in_scope as $context_var_id => $context_type) {
-            $foreach_context->vars_in_scope[$context_var_id] = clone $context_type;
+            $foreach_context->vars_in_scope[$context_var_id] = $context_type;
         }
 
         $foreach_context->inside_loop = true;
@@ -291,10 +292,10 @@ class ForeachAnalyzer
             );
         }
 
-        $value_type ??= Type::getMixed();
-
-        if ($stmt->byRef) {
-            $value_type->by_ref = true;
+        if ($value_type !== null) {
+            $value_type = $value_type->setProperties(['by_ref' => $stmt->byRef]);
+        } else {
+            $value_type = new Union([new TMixed()], ['by_ref' => $stmt->byRef]);
         }
 
         if ($stmt->byRef
@@ -342,7 +343,9 @@ class ForeachAnalyzer
 
             if (isset($foreach_context->vars_in_scope[$var_comment->var_id])) {
                 $existing_var_type = $foreach_context->vars_in_scope[$var_comment->var_id];
+                /** @psalm-suppress InaccessibleProperty We just created this type */
                 $comment_type->parent_nodes = $existing_var_type->parent_nodes;
+                /** @psalm-suppress InaccessibleProperty We just created this type */
                 $comment_type->by_ref = $existing_var_type->by_ref;
             }
 
@@ -386,6 +389,9 @@ class ForeachAnalyzer
 
     /**
      * @param PhpParser\Node\Stmt\Foreach_|PhpParser\Node\Expr\YieldFrom $stmt
+     *
+     * @psalm-suppress ComplexMethod
+     *
      * @return false|null
      */
     public static function checkIteratorType(
@@ -491,7 +497,7 @@ class ForeachAnalyzer
                     $always_non_empty_array = false;
                 }
 
-                $value_type = Type::combineUnionTypes($value_type, clone $iterator_atomic_type->type_params[1]);
+                $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
 
                 $key_type_part = $iterator_atomic_type->type_params[0];
 
@@ -756,7 +762,7 @@ class ForeachAnalyzer
             ) {
                 $value_type = Type::combineUnionTypes(
                     $value_type,
-                    new Union([clone $iterator_atomic_type])
+                    new Union([$iterator_atomic_type])
                 );
 
                 $key_type = Type::combineUnionTypes(

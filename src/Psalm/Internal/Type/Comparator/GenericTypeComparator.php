@@ -60,7 +60,7 @@ class GenericTypeComparator
         $atomic_comparison_result_type_params = null;
         if ($atomic_comparison_result) {
             if (!$atomic_comparison_result->replacement_atomic_type) {
-                $atomic_comparison_result->replacement_atomic_type = clone $input_type_part;
+                $atomic_comparison_result->replacement_atomic_type = $input_type_part;
             }
 
             if ($atomic_comparison_result->replacement_atomic_type instanceof TGenericObject) {
@@ -76,7 +76,7 @@ class GenericTypeComparator
 
             if ($input_param->isNever()) {
                 if ($atomic_comparison_result_type_params !== null) {
-                    $atomic_comparison_result_type_params[$i] = clone $container_param;
+                    $atomic_comparison_result_type_params[$i] = $container_param;
                 }
 
                 continue;
@@ -139,7 +139,7 @@ class GenericTypeComparator
             ) {
                 if ($input_param->containsAnyLiteral()) {
                     if ($atomic_comparison_result_type_params !== null) {
-                        $atomic_comparison_result_type_params[$i] = clone $container_param;
+                        $atomic_comparison_result_type_params[$i] = $container_param;
                     }
                 } else {
                     if (!($container_type_params_covariant[$i] ?? false)
@@ -180,7 +180,7 @@ class GenericTypeComparator
             /** @psalm-suppress ArgumentTypeCoercion Psalm bug */
             $atomic_comparison_result->replacement_atomic_type =
                 $atomic_comparison_result->replacement_atomic_type
-                    ->replaceTypeParams($atomic_comparison_result_type_params);
+                    ->setTypeParams($atomic_comparison_result_type_params);
         }
 
         if ($all_types_contain) {

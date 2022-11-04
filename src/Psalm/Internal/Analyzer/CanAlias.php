@@ -135,6 +135,7 @@ trait CanAlias
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array
@@ -143,6 +144,7 @@ trait CanAlias
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, string>
      */
     public function getAliasedClassesFlippedReplaceable(): array
@@ -150,6 +152,7 @@ trait CanAlias
         return $this->aliased_classes_flipped_replaceable;
     }
 
+    /** @psalm-mutation-free */
     public function getAliases(): Aliases
     {
         return new Aliases(

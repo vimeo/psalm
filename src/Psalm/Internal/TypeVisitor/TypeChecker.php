@@ -25,7 +25,6 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\ImmutableTypeVisitor;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
@@ -42,7 +41,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeChecker extends ImmutableTypeVisitor
+class TypeChecker extends TypeVisitor
 {
     /**
      * @var StatementsSource
@@ -118,7 +117,7 @@ class TypeChecker extends ImmutableTypeVisitor
         }
 
         if ($type->checked) {
-            return TypeVisitor::DONT_TRAVERSE_CHILDREN;
+            return self::DONT_TRAVERSE_CHILDREN;
         }
 
         if ($type instanceof TNamedObject) {

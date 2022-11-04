@@ -143,11 +143,13 @@ class CastAnalyzer
                 }
             }
 
-            $type = Type::getBool();
-
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
-                $type->parent_nodes = $maybe_type->parent_nodes ?? [];
+                $type = new Union([new TBool()], [
+                    'parent_nodes' => $maybe_type->parent_nodes ?? []
+                ]);
+            } else {
+                $type = Type::getBool();
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -219,7 +221,7 @@ class CastAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
-                $type->parent_nodes = $stmt_expr_type->parent_nodes ?? [];
+                $type = $type->setParentNodes($stmt_expr_type->parent_nodes ?? []);
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -252,7 +254,7 @@ class CastAnalyzer
                         || $type instanceof TList
                         || $type instanceof TKeyedArray
                     ) {
-                        $permissible_atomic_types[] = clone $type;
+                        $permissible_atomic_types[] = $type;
                     } else {
                         $all_permissible = false;
                         break;
@@ -267,7 +269,7 @@ class CastAnalyzer
             }
 
             if ($statements_analyzer->data_flow_graph) {
-                $type->parent_nodes = $stmt_expr_type->parent_nodes ?? [];
+                $type = $type->setParentNodes($stmt_expr_type->parent_nodes ?? []);
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -479,7 +481,7 @@ class CastAnalyzer
         }
 
         if ($statements_analyzer->data_flow_graph) {
-            $int_type->parent_nodes = $parent_nodes;
+            $int_type = $int_type->setParentNodes($parent_nodes);
         }
 
         return $int_type;
@@ -665,7 +667,7 @@ class CastAnalyzer
         }
 
         if ($statements_analyzer->data_flow_graph) {
-            $float_type->parent_nodes = $parent_nodes;
+            $float_type = $float_type->setParentNodes($parent_nodes);
         }
 
         return $float_type;
@@ -858,7 +860,7 @@ class CastAnalyzer
         }
 
         if ($statements_analyzer->data_flow_graph) {
-            $str_type->parent_nodes = $parent_nodes;
+            $str_type = $str_type->setParentNodes($parent_nodes);
         }
 
         return $str_type;

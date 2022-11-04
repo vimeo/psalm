@@ -37,6 +37,7 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
                     $type_token[0] = $aliases[strtolower($fq_class_name)];
                 }
             }
+            unset($type_token);
 
             $new_candidate_type = implode(
                 '',

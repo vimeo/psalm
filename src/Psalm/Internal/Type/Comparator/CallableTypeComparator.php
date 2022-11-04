@@ -211,7 +211,9 @@ class CallableTypeComparator
                     return false;
                 }
 
-                $codebase->methods->getStorage($method_id);
+                if (!$codebase->methods->hasStorage($method_id)) {
+                    return false;
+                }
             } catch (Exception $e) {
                 return false;
             }
@@ -260,7 +262,7 @@ class CallableTypeComparator
 
                     foreach ($function_storage->params as $param) {
                         if ($param->type) {
-                            $param = $param->replaceType(
+                            $param = $param->setType(
                                 TypeExpander::expandUnion(
                                     $codebase,
                                     $param->type,
@@ -326,7 +328,7 @@ class CallableTypeComparator
                         }
                     }
 
-                    $matching_callable = clone InternalCallMapHandler::getCallableFromCallMapById(
+                    $matching_callable = InternalCallMapHandler::getCallableFromCallMapById(
                         $codebase,
                         $input_type_part->value,
                         $args,
@@ -335,14 +337,13 @@ class CallableTypeComparator
 
                     $must_use = false;
 
-                    /** @psalm-suppress InaccessibleProperty We just cloned this object */
-                    $matching_callable->is_pure = $codebase->functions->isCallMapFunctionPure(
+                    $matching_callable = $matching_callable->setIsPure($codebase->functions->isCallMapFunctionPure(
                         $codebase,
                         $statements_analyzer->node_data ?? null,
                         $input_type_part->value,
                         null,
                         $must_use
-                    );
+                    ));
 
                     return $matching_callable;
                 }
@@ -443,7 +444,7 @@ class CallableTypeComparator
 
                     if ($template_result) {
                         $callable = TemplateInferredTypeReplacer::replace(
-                            new Union([clone $callable]),
+                            new Union([$callable]),
                             $template_result,
                             $codebase
                         )->getSingleAtomic();

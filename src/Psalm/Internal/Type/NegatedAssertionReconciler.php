@@ -184,8 +184,8 @@ class NegatedAssertionReconciler extends Reconciler
                 [
                     $iterable->type_params[0]->hasMixed()
                         ? Type::getArrayKey()
-                        : clone $iterable->type_params[0],
-                    clone $iterable->type_params[1],
+                        : $iterable->type_params[0],
+                    $iterable->type_params[1],
                 ]
             ));
         } elseif ($assertion_type !== null && get_class($assertion_type) === TInt::class
@@ -259,7 +259,7 @@ class NegatedAssertionReconciler extends Reconciler
             && ($key !== '$this'
                 || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer))
         ) {
-            $assertion_type = new Union([clone $assertion->type]);
+            $assertion_type = new Union([$assertion->type]);
 
             if ($key
                 && $code_location
@@ -382,7 +382,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $existing_var_type->addType(new Type\Atomic\TIntRange($assertion_type->value + 1, null));*/
                 }
             } else {
-                $scalar_var_type = clone $assertion_type;
+                $scalar_var_type = $assertion_type;
             }
         } elseif ($assertion_type instanceof TLiteralString) {
             if ($existing_var_type->hasString()) {
@@ -396,7 +396,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $existing_var_type->addType(new TNonEmptyString());
                 }
             } elseif (get_class($assertion_type) === TLiteralString::class) {
-                $scalar_var_type = clone $assertion_type;
+                $scalar_var_type = $assertion_type;
             }
         } elseif ($assertion_type instanceof TLiteralFloat) {
             if ($existing_var_type->hasFloat()) {
@@ -408,7 +408,7 @@ class NegatedAssertionReconciler extends Reconciler
                     }
                 }
             } else {
-                $scalar_var_type = clone $assertion_type;
+                $scalar_var_type = $assertion_type;
             }
         } else {
             $fq_enum_name = $assertion_type->value;
@@ -423,7 +423,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $enum_storage = $codebase->classlike_storage_provider->get($fq_enum_name);
 
                     if (!$enum_storage->is_enum || !$enum_storage->enum_cases) {
-                        $scalar_var_type = clone $assertion_type;
+                        $scalar_var_type = $assertion_type;
                     } else {
                         $existing_var_type->removeType($atomic_type->getKey());
                         $did_remove_type = true;

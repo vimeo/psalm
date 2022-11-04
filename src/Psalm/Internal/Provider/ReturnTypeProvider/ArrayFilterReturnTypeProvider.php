@@ -77,7 +77,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         if ($first_arg_array instanceof TArray) {
             $inner_type = $first_arg_array->type_params[1];
-            $key_type = clone $first_arg_array->type_params[0];
+            $key_type = $first_arg_array->type_params[0];
         } elseif ($first_arg_array instanceof TList) {
             $inner_type = $first_arg_array->type_param;
             $key_type = Type::getInt();
@@ -95,7 +95,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                             $keyed_type = AssertionReconciler::reconcile(
                                 new Truthy(),
-                                clone $keyed_type,
+                                $keyed_type,
                                 '',
                                 $statements_source,
                                 $context->inside_loop,
@@ -104,9 +104,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                                 $statements_source->getSuppressedIssues()
                             );
 
-                            $keyed_type->possibly_undefined = !$prev_keyed_type->isAlwaysTruthy();
-
-                            return $keyed_type;
+                            return $keyed_type->setPossiblyUndefined(!$prev_keyed_type->isAlwaysTruthy());
                         },
                         $first_arg_array->properties
                     ),
@@ -131,7 +129,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         if (!isset($call_args[1])) {
             $inner_type = AssertionReconciler::reconcile(
                 new Truthy(),
-                clone $inner_type,
+                $inner_type,
                 '',
                 $statements_source,
                 $context->inside_loop,

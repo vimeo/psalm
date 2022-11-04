@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -221,8 +222,9 @@ class NamedFunctionCallHandler
                     continue;
                 }
 
-                $mixed_type = Type::getMixed();
-                $mixed_type->parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
+                $mixed_type = new Union([new TMixed()], [
+                    'parent_nodes' => $context->vars_in_scope[$var_id]->parent_nodes
+                ]);
 
                 $context->vars_in_scope[$var_id] = $mixed_type;
                 $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
@@ -546,7 +548,7 @@ class NamedFunctionCallHandler
 
                 foreach ($var_type->getAtomicTypes() as $class_type) {
                     if ($class_type instanceof TNamedObject) {
-                        $class_string_types[] = new TClassString($class_type->value, clone $class_type);
+                        $class_string_types[] = new TClassString($class_type->value, $class_type);
                     } elseif ($class_type instanceof TTemplateParam
                         && $class_type->as->isSingle()
                     ) {

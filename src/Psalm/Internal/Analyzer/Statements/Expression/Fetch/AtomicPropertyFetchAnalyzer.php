@@ -260,7 +260,7 @@ class AtomicPropertyFetchAnalyzer
                         || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
                 ) {
                     $fq_class_name = $mixin->value;
-                    $lhs_type_part = clone $mixin;
+                    $lhs_type_part = $mixin;
                     $class_storage = $new_class_storage;
 
                     if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
@@ -477,7 +477,9 @@ class AtomicPropertyFetchAnalyzer
         );
 
         if ($class_storage->mutation_free) {
-            $class_property_type->has_mutations = false;
+            $class_property_type = $class_property_type->setProperties([
+                'has_mutations' => false
+            ]);
         }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
@@ -567,7 +569,7 @@ class AtomicPropertyFetchAnalyzer
             if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
                 $stmt_type = TypeExpander::expandUnion(
                     $codebase,
-                    clone $class_storage->pseudo_property_get_types['$' . $prop_name],
+                    $class_storage->pseudo_property_get_types['$' . $prop_name],
                     $class_storage->name,
                     $class_storage->name,
                     $class_storage->parent_class
@@ -590,8 +592,6 @@ class AtomicPropertyFetchAnalyzer
                     );
                 }
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
                 self::processTaints(
                     $statements_analyzer,
                     $stmt,
@@ -601,6 +601,8 @@ class AtomicPropertyFetchAnalyzer
                     $in_assignment,
                     $context
                 );
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                 return false;
             }
@@ -758,7 +760,7 @@ class AtomicPropertyFetchAnalyzer
     public static function processTaints(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        Union $type,
+        Union &$type,
         string $property_id,
         ClassLikeStorage $class_storage,
         bool $in_assignment,
@@ -801,7 +803,7 @@ class AtomicPropertyFetchAnalyzer
                     && $var_type
                     && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
-                    $var_type->parent_nodes = [];
+                    $statements_analyzer->node_data->setType($stmt->var, $var_type->setParentNodes([]));
                     return;
                 }
 
@@ -843,7 +845,7 @@ class AtomicPropertyFetchAnalyzer
                     }
                 }
 
-                $type->parent_nodes = [$property_node->id => $property_node];
+                $type = $type->setParentNodes([$property_node->id => $property_node], true);
             }
         } else {
             self::processUnspecialTaints(
@@ -865,7 +867,7 @@ class AtomicPropertyFetchAnalyzer
     public static function processUnspecialTaints(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        Union $type,
+        Union &$type,
         string $property_id,
         bool $in_assignment,
         ?array $added_taints,
@@ -919,7 +921,7 @@ class AtomicPropertyFetchAnalyzer
             );
         }
 
-        $type->parent_nodes = [$localized_property_node->id => $localized_property_node];
+        $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
     }
 
     private static function handleEnumName(
@@ -1126,7 +1128,7 @@ class AtomicPropertyFetchAnalyzer
         if ($config->use_phpdoc_property_without_magic_or_parent
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
         ) {
-            $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+            $stmt_type = $class_storage->pseudo_property_get_types['$' . $prop_name];
 
             if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
                 if (!$lhs_type_part instanceof TGenericObject) {
@@ -1145,8 +1147,6 @@ class AtomicPropertyFetchAnalyzer
                 );
             }
 
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
             self::processTaints(
                 $statements_analyzer,
                 $stmt,
@@ -1156,6 +1156,8 @@ class AtomicPropertyFetchAnalyzer
                 $in_assignment,
                 $context
             );
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             return;
         }
@@ -1216,7 +1218,7 @@ class AtomicPropertyFetchAnalyzer
         } else {
             $class_property_type = TypeExpander::expandUnion(
                 $codebase,
-                clone $class_property_type,
+                $class_property_type,
                 $declaring_class_storage->name,
                 $declaring_class_storage->name,
                 $declaring_class_storage->parent_class

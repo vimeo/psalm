@@ -6,9 +6,9 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
-use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 
 use function array_values;
@@ -17,7 +17,7 @@ use function count;
 /**
  * @internal
  */
-class TypeLocalizer extends TypeVisitor
+class TypeLocalizer extends MutableTypeVisitor
 {
     /**
      * @var array<string, array<string, Union>>
@@ -36,9 +36,6 @@ class TypeLocalizer extends TypeVisitor
         $this->base_fq_class_name = $base_fq_class_name;
     }
 
-    /**
-     * @psalm-suppress InaccessibleProperty Acting on clones
-     */
     protected function enterNode(TypeNode &$type): ?int
     {
         if ($type instanceof TTemplateParamClass) {
@@ -49,11 +46,15 @@ class TypeLocalizer extends TypeVisitor
                     $types = array_values($extended_param->getAtomicTypes());
 
                     if (count($types) === 1 && $types[0] instanceof TNamedObject) {
-                        $type = clone $type;
-                        $type->as_type = $types[0];
+                        $type = $type->setAs(
+                            $type->as,
+                            $types[0]
+                        );
                     } elseif ($type->as_type !== null) {
-                        $type = clone $type;
-                        $type->as_type = null;
+                        $type = $type->setAs(
+                            $type->as,
+                            null
+                        );
                     }
                 }
             }

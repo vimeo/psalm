@@ -41,6 +41,7 @@ use function array_pop;
 use function array_reverse;
 use function array_shift;
 use function array_slice;
+use function assert;
 use function count;
 use function end;
 use function implode;
@@ -187,11 +188,11 @@ class ArrayAssignmentAnalyzer
 
             if (count($string_literals) + count($int_literals) === count($all_atomic_types)) {
                 foreach ($string_literals as $string_literal) {
-                    $key_values[] = clone $string_literal;
+                    $key_values[] = $string_literal;
                 }
 
                 foreach ($int_literals as $int_literal) {
-                    $key_values[] = clone $int_literal;
+                    $key_values[] = $int_literal;
                 }
             }
         }
@@ -315,7 +316,7 @@ class ArrayAssignmentAnalyzer
                     if (isset($properties[$key_value->value])) {
                         $has_matching_objectlike_property = true;
 
-                        $properties[$key_value->value] = clone $current_type;
+                        $properties[$key_value->value] = $current_type;
                     }
                 }
                 $type = $type->setProperties($properties);
@@ -349,8 +350,8 @@ class ArrayAssignmentAnalyzer
                     $has_matching_objectlike_property = true;
 
                     $changed = true;
-                    $type = $type->replaceTypeParam(Type::combineUnionTypes(
-                        clone $current_type,
+                    $type = $type->setTypeParam(Type::combineUnionTypes(
+                        $current_type,
                         $type->type_param,
                         $codebase,
                         true,
@@ -371,7 +372,7 @@ class ArrayAssignmentAnalyzer
                 $key_value = $key_values[0];
 
                 $object_like = new TKeyedArray(
-                    [$key_value->value => clone $current_type],
+                    [$key_value->value => $current_type],
                     $key_value instanceof TLiteralClassString
                         ? [$key_value->value => true]
                         : null,
@@ -387,7 +388,7 @@ class ArrayAssignmentAnalyzer
                 $array_assignment_type = new Union([
                     new TNonEmptyArray([
                         new Union($array_assignment_literals),
-                        clone $current_type
+                        $current_type
                     ])
                 ]);
             }
@@ -410,7 +411,7 @@ class ArrayAssignmentAnalyzer
     private static function taintArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $expr,
-        Union $stmt_type,
+        Union &$stmt_type,
         Union $child_stmt_type,
         ?string $var_var_id,
         array $key_values
@@ -430,7 +431,7 @@ class ArrayAssignmentAnalyzer
 
             $old_parent_nodes = $stmt_type->parent_nodes;
 
-            $stmt_type->parent_nodes = [$parent_node->id => $parent_node];
+            $stmt_type = $stmt_type->setParentNodes([$parent_node->id => $parent_node]);
 
             foreach ($old_parent_nodes as $old_parent_node) {
                 $statements_analyzer->data_flow_graph->addPath(
@@ -622,11 +623,11 @@ class ArrayAssignmentAnalyzer
                     if ($atomic_root_types['array']->is_list
                         && $array_atomic_type instanceof TList
                     ) {
-                        $array_atomic_type = clone $atomic_root_types['array'];
+                        $array_atomic_type = $atomic_root_types['array'];
 
-                        $new_child_type = new Union([$array_atomic_type]);
-
-                        $new_child_type->parent_nodes = $root_type->parent_nodes;
+                        $new_child_type = new Union([$array_atomic_type], [
+                            'parent_nodes' => $root_type->parent_nodes
+                        ]);
                     }
                 } elseif ($array_atomic_type instanceof TList) {
                     $array_atomic_type = new TNonEmptyList(
@@ -736,23 +737,21 @@ class ArrayAssignmentAnalyzer
                 $full_var_id = false;
             }
 
-            if (!($child_stmt_var_type = $statements_analyzer->node_data->getType($child_stmt->var))) {
+            if (!($array_type = $statements_analyzer->node_data->getType($child_stmt->var))) {
                 return;
             }
 
-            if ($child_stmt_var_type->isNever()) {
-                $child_stmt_var_type = Type::getEmptyArray();
-                $statements_analyzer->node_data->setType($child_stmt->var, $child_stmt_var_type);
+            if ($array_type->isNever()) {
+                $array_type = Type::getEmptyArray();
+                $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
 
             $extended_var_id = $root_var_id . implode('', $var_id_additions);
 
             if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
-                $child_stmt_var_type = clone $context->vars_in_scope[$parent_var_id];
-                $statements_analyzer->node_data->setType($child_stmt->var, $child_stmt_var_type);
+                $array_type = $context->vars_in_scope[$parent_var_id];
+                $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
-
-            $array_type = clone $child_stmt_var_type;
 
             $is_last = $i === count($child_stmts) - 1;
 
@@ -769,27 +768,16 @@ class ArrayAssignmentAnalyzer
                 !$is_last ? null : $assignment_type
             );
             if ($child_stmt->dim) {
-                $statements_analyzer->node_data->setType($child_stmt->dim, $child_stmt_dim_type_or_int);
+                $statements_analyzer->node_data->setType(
+                    $child_stmt->dim,
+                    $child_stmt_dim_type_or_int
+                );
             }
 
             $statements_analyzer->node_data->setType(
                 $child_stmt,
                 $child_stmt_type
             );
-
-            $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
-
-            if ($root_var_id) {
-                if (!$parent_var_id) {
-                    $rooted_parent_id = $root_var_id;
-                    $root_type = $array_type;
-                } else {
-                    $rooted_parent_id = $parent_var_id;
-                }
-
-                $context->vars_in_scope[$rooted_parent_id] = $array_type;
-                $context->possibly_assigned_var_ids[$rooted_parent_id] = true;
-            }
 
             if ($is_last) {
                 // we need this slight hack as the type we're putting it has to be
@@ -815,6 +803,20 @@ class ArrayAssignmentAnalyzer
                         $offset_type !== null ? [$offset_type] : []
                     );
                 }
+            }
+
+            $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
+
+            if ($root_var_id) {
+                if (!$parent_var_id) {
+                    $rooted_parent_id = $root_var_id;
+                    $root_type = $array_type;
+                } else {
+                    $rooted_parent_id = $parent_var_id;
+                }
+
+                $context->vars_in_scope[$rooted_parent_id] = $array_type;
+                $context->possibly_assigned_var_ids[$rooted_parent_id] = true;
             }
 
             $current_type = $child_stmt_type;
@@ -854,7 +856,7 @@ class ArrayAssignmentAnalyzer
                 $offset_already_existed = true;
             }
 
-            $context->vars_in_scope[$extended_var_id] = clone $assignment_type;
+            $context->vars_in_scope[$extended_var_id] = $assignment_type;
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }
 
@@ -903,12 +905,12 @@ class ArrayAssignmentAnalyzer
                     true
                 );
             }
-
-            $new_child_type = $new_child_type->getBuilder();
-            $new_child_type->removeType('null');
-            $new_child_type->possibly_undefined = false;
-            $new_child_type = $new_child_type->freeze();
-
+            if ($new_child_type->hasNull() || $new_child_type->possibly_undefined) {
+                $new_child_type = $new_child_type->getBuilder();
+                $new_child_type->removeType('null');
+                $new_child_type->possibly_undefined = false;
+                $new_child_type = $new_child_type->freeze();
+            }
             if (!$child_stmt_type->hasObjectType()) {
                 $child_stmt_type = $new_child_type;
                 $statements_analyzer->node_data->setType($child_stmt, $new_child_type);
@@ -924,19 +926,35 @@ class ArrayAssignmentAnalyzer
             if ($root_var_id) {
                 $extended_var_id = $root_var_id . implode('', $var_id_additions);
                 $parent_array_var_id = $root_var_id . implode('', array_slice($var_id_additions, 0, -1));
-                $context->vars_in_scope[$extended_var_id] = clone $child_stmt_type;
+                $context->vars_in_scope[$extended_var_id] = $child_stmt_type;
                 $context->possibly_assigned_var_ids[$extended_var_id] = true;
             }
 
             if ($statements_analyzer->data_flow_graph) {
+                $t_orig = $statements_analyzer->node_data->getType($child_stmt->var);
+                $array_type = $t_orig ?? Type::getMixed();
                 self::taintArrayAssignment(
                     $statements_analyzer,
                     $child_stmt,
-                    $statements_analyzer->node_data->getType($child_stmt->var) ?? Type::getMixed(),
+                    $array_type,
                     $new_child_type,
                     $parent_array_var_id,
                     $child_stmt->dim ? self::getDimKeyValues($statements_analyzer, $child_stmt->dim) : [],
                 );
+                if ($t_orig) {
+                    $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
+                }
+                if ($root_var_id) {
+                    if ($parent_array_var_id === $root_var_id) {
+                        $rooted_parent_id = $root_var_id;
+                        $root_type = $array_type;
+                    } else {
+                        assert($parent_array_var_id !== null);
+                        $rooted_parent_id = $parent_array_var_id;
+                    }
+
+                    $context->vars_in_scope[$rooted_parent_id] = $array_type;
+                }
             }
         }
     }
@@ -965,11 +983,11 @@ class ArrayAssignmentAnalyzer
 
                 if (count($string_literals) + count($int_literals) === count($all_atomic_types)) {
                     foreach ($string_literals as $string_literal) {
-                        $key_values[] = clone $string_literal;
+                        $key_values[] = $string_literal;
                     }
 
                     foreach ($int_literals as $int_literal) {
-                        $key_values[] = clone $int_literal;
+                        $key_values[] = $int_literal;
                     }
                 }
             }

@@ -13,6 +13,7 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -45,6 +46,8 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         parent::__construct($function, $source, $storage);
     }
 
+
+    /** @psalm-mutation-free */
     public function getTemplateTypeMap(): ?array
     {
         return $this->source->getTemplateTypeMap();
@@ -90,7 +93,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 )
             ) {
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                $use_context->vars_in_scope['$this'] = clone $context->vars_in_scope['$this'];
+                $use_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
             } elseif ($context->self) {
                 $this_atomic = new TNamedObject($context->self, true);
 
@@ -100,7 +103,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         foreach ($context->vars_in_scope as $var => $type) {
             if (strpos($var, '$this->') === 0) {
-                $use_context->vars_in_scope[$var] = clone $type;
+                $use_context->vars_in_scope[$var] = $type;
             }
         }
 
@@ -133,7 +136,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
                 if ($use->byRef && !$context->hasVariable($use_var_id)) {
-                    $context->vars_in_scope[$use_var_id] = Type::getMixed();
+                    $context->vars_in_scope[$use_var_id] = new Union([new TMixed()], ['by_ref' => true]);
                 }
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
@@ -152,11 +155,12 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 $use_context->vars_in_scope[$use_var_id] =
                     $context->hasVariable($use_var_id) && !$use->byRef
-                    ? clone $context->vars_in_scope[$use_var_id]
+                    ? $context->vars_in_scope[$use_var_id]
                     : Type::getMixed();
 
                 if ($use->byRef) {
-                    $use_context->vars_in_scope[$use_var_id]->by_ref = true;
+                    $use_context->vars_in_scope[$use_var_id] =
+                        $use_context->vars_in_scope[$use_var_id]->setProperties(['by_ref' => true]);
                     $use_context->references_to_external_scope[$use_var_id] = true;
                 }
 
@@ -164,7 +168,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
-                        $use_context->vars_in_scope[$var_id] = clone $type;
+                        $use_context->vars_in_scope[$var_id] = $type;
                         $use_context->vars_possibly_in_scope[$var_id] = true;
                     }
                 }
@@ -179,7 +183,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
             foreach ($short_closure_visitor->getUsedVariables() as $use_var_id => $_) {
                 if ($context->hasVariable($use_var_id)) {
-                    $use_context->vars_in_scope[$use_var_id] = clone $context->vars_in_scope[$use_var_id];
+                    $use_context->vars_in_scope[$use_var_id] = $context->vars_in_scope[$use_var_id];
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
@@ -325,8 +329,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     continue;
                 }
             } elseif ($use->byRef) {
-                $new_type = Type::getMixed();
-                $new_type->parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
+                $new_type = new Union([new TMixed()], [
+                    'parent_nodes' => $context->vars_in_scope[$use_var_id]->parent_nodes
+                ]);
 
                 $context->remove($use_var_id);
 

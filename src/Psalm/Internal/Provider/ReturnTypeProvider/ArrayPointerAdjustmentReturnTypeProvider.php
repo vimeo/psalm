@@ -66,10 +66,10 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
             }
 
             if ($atomic_type instanceof TArray) {
-                $value_type = clone $atomic_type->type_params[1];
+                $value_type = $atomic_type->type_params[1];
                 $definitely_has_items = $atomic_type instanceof TNonEmptyArray;
             } elseif ($atomic_type instanceof TList) {
-                $value_type = clone $atomic_type->type_param;
+                $value_type = $atomic_type->type_param;
                 $definitely_has_items = $atomic_type instanceof TNonEmptyList;
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $value_type = $atomic_type->getGenericValueType();
@@ -86,21 +86,24 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
         if ($value_type->isNever()) {
             $value_type = Type::getFalse();
         } elseif (($function_id !== 'reset' && $function_id !== 'end') || !$definitely_has_items) {
-            $value_type = $value_type->getBuilder()->addType(new TFalse)->freeze();
+            $value_type = $value_type->getBuilder()->addType(new TFalse);
 
             $codebase = $statements_source->getCodebase();
 
             if ($codebase->config->ignore_internal_falsable_issues) {
                 $value_type->ignore_falsable_issues = true;
             }
+
+            $value_type = $value_type->freeze();
         }
 
+        $temp = Type::getMixed();
         ArrayFetchAnalyzer::taintArrayFetch(
             $statements_source,
             $first_arg,
             null,
             $value_type,
-            Type::getMixed()
+            $temp
         );
 
         return $value_type;

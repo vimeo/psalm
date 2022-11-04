@@ -27,6 +27,7 @@ use function strtolower;
  */
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
+    /** @psalm-external-mutation-free */
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,

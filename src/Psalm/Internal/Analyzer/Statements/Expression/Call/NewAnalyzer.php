@@ -512,13 +512,13 @@ class NewAnalyzer extends CallAnalyzer
                         if ($fq_class_name === 'SplObjectStorage') {
                             $generic_param_type = Type::getNever();
                         } else {
-                            $generic_param_type = clone array_values($base_type)[0];
+                            $generic_param_type = array_values($base_type)[0];
                         }
                     }
 
-                    $generic_param_type->had_template = true;
-
-                    $generic_param_types[] = $generic_param_type;
+                    $generic_param_types[] = $generic_param_type->setProperties([
+                        'had_template' => true
+                    ]);
                 }
             }
 
@@ -549,7 +549,7 @@ class NewAnalyzer extends CallAnalyzer
                 $fq_class_name,
                 array_values(
                     array_map(
-                        static fn($map) => clone reset($map),
+                        static fn($map) => reset($map),
                         $storage->template_types
                     )
                 ),
@@ -568,7 +568,10 @@ class NewAnalyzer extends CallAnalyzer
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
             if ($stmt_type) {
-                $stmt_type->reference_free = true;
+                $stmt_type = $stmt_type->setProperties([
+                    'reference_free' => true
+                ]);
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
             }
         }
 
@@ -605,7 +608,8 @@ class NewAnalyzer extends CallAnalyzer
 
             $statements_analyzer->data_flow_graph->addNode($method_source);
 
-            $stmt_type->parent_nodes = [$method_source->id => $method_source];
+            $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
     }
 
@@ -769,7 +773,7 @@ class NewAnalyzer extends CallAnalyzer
                 if (!$statements_analyzer->node_data->getType($stmt)) {
                     if ($lhs_type_part instanceof TClassString) {
                         $generated_type = $lhs_type_part->as_type
-                            ? clone $lhs_type_part->as_type
+                            ? $lhs_type_part->as_type
                             : new TObject();
 
                         if ($lhs_type_part->as_type

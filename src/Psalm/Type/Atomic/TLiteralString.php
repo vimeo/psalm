@@ -21,6 +21,20 @@ class TLiteralString extends TString
         $this->from_docblock = $from_docblock;
     }
 
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     * @return static
+     */
+    public function setValue(string $value): self
+    {
+        if ($value === $this->value) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->value = $value;
+        return $cloned;
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         return 'string(' . $this->value . ')';

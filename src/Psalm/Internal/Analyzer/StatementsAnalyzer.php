@@ -706,6 +706,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
                         $check_type = Type::parseString($check_type_string);
+                        /** @psalm-suppress InaccessibleProperty We just created this type */
                         $check_type->possibly_undefined = $possibly_undefined;
 
                         if ($check_type->possibly_undefined !== $checked_type->possibly_undefined
@@ -1001,7 +1002,8 @@ class StatementsAnalyzer extends SourceAnalyzer
         $stmt_type = $this->node_data->getType($stmt);
 
         if ($stmt_type) {
-            $stmt_type->parent_nodes[$use_node->id] = $use_node;
+            $stmt_type = $stmt_type->addParentNodes([$use_node->id => $use_node]);
+            $this->node_data->setType($stmt, $stmt_type);
         }
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
@@ -1141,6 +1143,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         return $this->parsed_docblock;
     }
 
+    /** @psalm-mutation-free */
     public function getFQCLN(): ?string
     {
         if ($this->fake_this_class) {

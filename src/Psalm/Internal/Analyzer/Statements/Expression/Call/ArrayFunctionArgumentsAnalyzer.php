@@ -230,7 +230,7 @@ class ArrayFunctionArgumentsAnalyzer
 
             if ($array_type instanceof TKeyedArray) {
                 if ($array_type->is_list) {
-                    $objectlike_list = clone $array_type;
+                    $objectlike_list = $array_type;
                 }
 
                 $array_type = $array_type->getGenericArrayType();
@@ -244,7 +244,7 @@ class ArrayFunctionArgumentsAnalyzer
                 }
             }
 
-            $by_ref_type = new Union([clone $array_type]);
+            $by_ref_type = new Union([$array_type]);
 
             foreach ($args as $argument_offset => $arg) {
                 if ($argument_offset === 0) {
@@ -309,7 +309,7 @@ class ArrayFunctionArgumentsAnalyzer
                             $by_ref_type,
                             new Union(
                                 [
-                                    new TNonEmptyList(clone $arg_value_type),
+                                    new TNonEmptyList($arg_value_type),
                                 ]
                             )
                         );
@@ -321,7 +321,7 @@ class ArrayFunctionArgumentsAnalyzer
                                     new TNonEmptyArray(
                                         [
                                             $new_offset_type,
-                                            clone $arg_value_type
+                                            $arg_value_type
                                         ]
                                     ),
                                 ]
@@ -743,6 +743,7 @@ class ArrayFunctionArgumentsAnalyzer
                 $array_arg_types
             );
         }
+        unset($closure_type);
     }
 
     /**

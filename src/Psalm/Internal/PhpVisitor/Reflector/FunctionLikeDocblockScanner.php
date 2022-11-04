@@ -147,6 +147,7 @@ class FunctionLikeDocblockScanner
                 || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->ignore_nullable_issues = true;
         }
 
@@ -157,6 +158,7 @@ class FunctionLikeDocblockScanner
                 || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->ignore_falsable_issues = true;
         }
 
@@ -465,7 +467,7 @@ class FunctionLikeDocblockScanner
                                 $param_type_mapping[$token_body] = $template_name;
                             } else {
                                 $template_as_type = $param_storage->type
-                                    ? clone $param_storage->type
+                                    ? $param_storage->type
                                     : Type::getMixed();
 
                                 $storage->template_types[$template_name] = [
@@ -635,6 +637,7 @@ class FunctionLikeDocblockScanner
             return null;
         }
 
+        /** @psalm-suppress UnusedMethodCall */
         $namespaced_type->queueClassLikesForScanning(
             $codebase,
             $file_storage,
@@ -751,10 +754,11 @@ class FunctionLikeDocblockScanner
                     $function,
                     null,
                     true,
-                    CodeLocation::FUNCTION_PARAM_VAR
+                    CodeLocation::FUNCTION_PARAM_VAR,
+                    null,
+                    $docblock_param['line_number']
                 );
 
-                $param_location->setCommentLine($docblock_param['line_number']);
                 $unused_docblock_params[$param_name] = $param_location;
 
                 if (!$docblock_param_variadic || $storage->params || $file_scanner->will_analyze) {
@@ -802,6 +806,7 @@ class FunctionLikeDocblockScanner
 
             $storage_param->has_docblock_type = true;
 
+            /** @psalm-suppress UnusedMethodCall */
             $new_param_type->queueClassLikesForScanning(
                 $codebase,
                 $file_storage,
@@ -880,6 +885,7 @@ class FunctionLikeDocblockScanner
                         && $type instanceof TArray
                         && $type->type_params[0]->hasArrayKey()
                     ) {
+                        /** @psalm-suppress InaccessibleProperty We just created this type */
                         $type->type_params[0]->from_docblock = false;
                     }
                 } else {
@@ -888,6 +894,7 @@ class FunctionLikeDocblockScanner
             }
 
             if ($all_typehint_types_match) {
+                /** @psalm-suppress InaccessibleProperty We just created this type */
                 $new_param_type->from_docblock = false;
             }
 
@@ -950,7 +957,10 @@ class FunctionLikeDocblockScanner
                 !$fake_method
                     ? CodeLocation::FUNCTION_PHPDOC_RETURN_TYPE
                     : CodeLocation::FUNCTION_PHPDOC_METHOD,
-                $docblock_info->return_type
+                $docblock_info->return_type,
+                $docblock_info->return_type_line_number && !$fake_method
+                    ? $docblock_info->return_type_line_number
+                    : null
             );
         }
 
@@ -992,6 +1002,7 @@ class FunctionLikeDocblockScanner
                 }
 
                 if ($all_typehint_types_match) {
+                    /** @psalm-suppress InaccessibleProperty We just created this type */
                     $storage->return_type->from_docblock = false;
 
                     if ($storage instanceof MethodStorage) {
@@ -1019,6 +1030,7 @@ class FunctionLikeDocblockScanner
                 }
             }
 
+            /** @psalm-suppress UnusedMethodCall */
             $storage->return_type->queueClassLikesForScanning($codebase, $file_storage);
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1034,6 +1046,7 @@ class FunctionLikeDocblockScanner
                 || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->ignore_nullable_issues = true;
         }
 
@@ -1044,15 +1057,13 @@ class FunctionLikeDocblockScanner
                 || !in_array($file_storage->file_path, $codebase->config->internal_stubs)
             )
         ) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->ignore_falsable_issues = true;
         }
 
         if ($stmt->returnsByRef() && $storage->return_type) {
+            /** @psalm-suppress InaccessibleProperty We just created this type */
             $storage->return_type->by_ref = true;
-        }
-
-        if ($docblock_info->return_type_line_number && !$fake_method) {
-            $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
         }
 
         $storage->return_type_description = $docblock_info->return_type_description;
@@ -1169,6 +1180,7 @@ class FunctionLikeDocblockScanner
                 $type_aliases
             );
 
+            /** @psalm-suppress UnusedMethodCall */
             $removed_taint->queueClassLikesForScanning($codebase, $file_storage);
 
             $removed_taint_single = $removed_taint->getSingleAtomic();
@@ -1388,6 +1400,7 @@ class FunctionLikeDocblockScanner
             return;
         }
 
+        /** @psalm-suppress UnusedMethodCall */
         $out_type->queueClassLikesForScanning(
             $codebase,
             $file_storage,
@@ -1480,8 +1493,15 @@ class FunctionLikeDocblockScanner
     ): void {
         foreach ($docblock_info->unexpected_tags as $tag => $details) {
             foreach ($details['lines'] as $line) {
-                $tag_location = new CodeLocation($file_scanner, $stmt, null, true);
-                $tag_location->setCommentLine($line);
+                $tag_location = new CodeLocation(
+                    $file_scanner,
+                    $stmt,
+                    null,
+                    true,
+                    null,
+                    null,
+                    $line
+                );
 
                 $message = 'Docblock tag @' . $tag . ' is not recognized in the function docblock '
                     . 'for ' . $cased_function_id;

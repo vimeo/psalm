@@ -7,6 +7,7 @@ use LogicException;
 use PhpParser;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 use UnexpectedValueException;
 
 use function explode;
@@ -25,8 +26,13 @@ use function trim;
 
 use const PREG_OFFSET_CAPTURE;
 
+/**
+ * @psalm-immutable
+ */
 class CodeLocation
 {
+    use ImmutableNonCloneableTrait;
+
     /** @var string */
     public $file_path;
 
@@ -85,7 +91,7 @@ class CodeLocation
     private $docblock_start_line_number;
 
     /** @var int|null */
-    private $docblock_line_number;
+    protected $docblock_line_number;
 
     /** @var null|int */
     private $regex_type;
@@ -111,9 +117,12 @@ class CodeLocation
         ?CodeLocation $previous_location = null,
         bool $single_line = false,
         ?int $regex_type = null,
-        ?string $selected_text = null
+        ?string $selected_text = null,
+        ?int $comment_line = null
     ) {
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->file_end = (int)$stmt->getAttribute('endFilePos');
         $this->raw_file_start = $this->file_start;
         $this->raw_file_end = $this->file_end;
@@ -124,6 +133,7 @@ class CodeLocation
         $this->previous_location = $previous_location;
         $this->text = $selected_text;
 
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $doc_comment = $stmt->getDocComment();
 
         $this->docblock_start = $doc_comment ? $doc_comment->getStartFilePos() : null;
@@ -131,14 +141,30 @@ class CodeLocation
 
         $this->preview_start = $this->docblock_start ?: $this->file_start;
 
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->raw_line_number = $stmt->getLine();
+
+        $this->docblock_line_number = $comment_line;
     }
 
-    public function setCommentLine(int $line): void
+    /**
+     * @psalm-suppress PossiblyUnusedMethod Part of public API
+     * @return static
+     */
+    public function setCommentLine(?int $line): self
     {
-        $this->docblock_line_number = $line;
+        if ($line === $this->docblock_line_number) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->docblock_line_number = $line;
+        return $cloned;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     * @psalm-suppress InaccessibleProperty Mainly used for caching
+     */
     private function calculateRealLocation(): void
     {
         if ($this->have_recalculated) {

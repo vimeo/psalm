@@ -73,9 +73,11 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -305,6 +307,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 null
             );
 
+            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
             $union->check(
                 $this,
                 new CodeLocation(
@@ -320,6 +323,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         if ($storage->template_extended_params) {
             foreach ($storage->template_extended_params as $type_map) {
                 foreach ($type_map as $atomic_type) {
+                    /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
                     $atomic_type->check(
                         $this,
                         new CodeLocation(
@@ -748,11 +752,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         continue;
                     }
 
-                    $property_type = clone $property_storage->type;
+                    $property_type = $property_storage->type;
 
-                    $guide_property_type = $guide_property_storage->type === null
-                        ? Type::getMixed()
-                        : clone $guide_property_storage->type;
+                    $guide_property_type = $guide_property_storage->type ?? Type::getMixed();
 
                     // Set upper bounds for all templates
                     $lower_bounds = [];
@@ -831,24 +833,28 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($property_storage->type) {
-                $property_type = clone $property_storage->type;
+                $property_type = $property_storage->type;
 
                 if (!$property_type->isMixed()
                     && !$property_storage->is_promoted
                     && !$property_storage->has_default
                     && !($property_type->isNullable() && $property_type->from_docblock)
                 ) {
-                    $property_type->initialized = false;
-                    $property_type->from_property = true;
-                    $property_type->from_static_property = $property_storage->is_static === true;
+                    $property_type = $property_type->setProperties([
+                        'initialized' => false,
+                        'from_property' => true,
+                        'from_static_property' => $property_storage->is_static === true
+                    ]);
                 }
             } else {
-                $property_type = Type::getMixed();
-
                 if (!$property_storage->has_default && !$property_storage->is_promoted) {
-                    $property_type->initialized = false;
-                    $property_type->from_property = true;
-                    $property_type->from_static_property = $property_storage->is_static === true;
+                    $property_type = new Union([new TMixed()], [
+                        'initialized' => false,
+                        'from_property' => true,
+                        'from_static_property' => $property_storage->is_static === true
+                    ]);
+                } else {
+                    $property_type = Type::getMixed();
                 }
             }
 
@@ -886,7 +892,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $type_params = [];
 
                     foreach ($class_template_params as $type_map) {
-                        $type_params[] = clone array_values($type_map)[0];
+                        $type_params[] = array_values($type_map)[0];
                     }
 
                     $this_object_type = new TGenericObject($this_object_type->value, $type_params);
@@ -924,6 +930,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
+                /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
                 $fleshed_out_type->check(
                     $statements_source,
                     $property_type_location,
@@ -1249,8 +1256,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 [, $property_name] = explode('::$', $property_id);
 
                 if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
-                    $end_type = Type::getVoid();
-                    $end_type->initialized = false;
+                    $end_type = new Union([new TVoid()], ['initialized' => false]);
                 } else {
                     $end_type = $method_context->vars_in_scope['$this->' . $property_name];
                 }
@@ -1776,10 +1782,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $method_context = clone $class_context;
 
         foreach ($method_context->vars_in_scope as $context_var_id => $context_type) {
-            $method_context->vars_in_scope[$context_var_id] = clone $context_type;
+            $method_context->vars_in_scope[$context_var_id] = $context_type;
 
             if ($context_type->from_property && $stmt->name->name !== '__construct') {
-                $method_context->vars_in_scope[$context_var_id]->initialized = true;
+                $method_context->vars_in_scope[$context_var_id] =
+                    $method_context->vars_in_scope[$context_var_id]->setProperties(['initialized' => true]);
             }
         }
 

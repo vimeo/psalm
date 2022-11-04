@@ -182,15 +182,13 @@ abstract class Type
     public static function getInt(bool $from_calculation = false, ?int $value = null): Union
     {
         if ($value !== null) {
-            $union = new Union([new TLiteralInt($value)]);
-        } else {
-            $union = new Union([new TInt()]);
+            return new Union([new TLiteralInt($value)], [
+                'from_calculation' => $from_calculation
+            ]);
         }
-
-        /** @psalm-suppress ImpurePropertyAssignment We just created this object */
-        $union->from_calculation = $from_calculation;
-
-        return $union;
+        return new Union([new TInt()], [
+            'from_calculation' => $from_calculation
+        ]);
     }
 
     /**
@@ -523,6 +521,7 @@ abstract class Type
      * @psalm-external-mutation-free
      *
      * @psalm-suppress ImpurePropertyAssignment We're not mutating external instances
+     * @psalm-suppress InaccessibleProperty We're not mutating external instances
      */
     public static function combineUnionTypes(
         ?Union $type_1,
@@ -530,21 +529,31 @@ abstract class Type
         ?Codebase $codebase = null,
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
-        int $literal_limit = 500
+        int $literal_limit = 500,
+        ?bool $possibly_undefined = null
     ): Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
         }
 
         if ($type_1 === null) {
+            if ($possibly_undefined !== null) {
+                return $type_2->setPossiblyUndefined($possibly_undefined);
+            }
             return $type_2;
         }
 
         if ($type_2 === null) {
+            if ($possibly_undefined !== null) {
+                return $type_1->setPossiblyUndefined($possibly_undefined);
+            }
             return $type_1;
         }
 
         if ($type_1 === $type_2) {
+            if ($possibly_undefined !== null) {
+                return $type_1->setPossiblyUndefined($possibly_undefined);
+            }
             return $type_1;
         }
 
@@ -557,16 +566,16 @@ abstract class Type
                 if ($type_2->failed_reconciliation) {
                     $both_failed_reconciliation = true;
                 } else {
-                    $type_2 = clone $type_2;
-                    $type_2->parent_nodes += $type_1->parent_nodes;
-
-                    return $type_2;
+                    return $type_2->setProperties([
+                        'parent_nodes' => array_merge($type_2->parent_nodes, $type_1->parent_nodes),
+                        'possibly_undefined' => $possibly_undefined ?? $type_2->possibly_undefined
+                    ]);
                 }
             } elseif ($type_2->failed_reconciliation) {
-                $type_1 = clone $type_1;
-                $type_1->parent_nodes += $type_2->parent_nodes;
-
-                return $type_1;
+                return $type_1->setProperties([
+                    'parent_nodes' => array_merge($type_1->parent_nodes, $type_2->parent_nodes),
+                    'possibly_undefined' => $possibly_undefined ?? $type_1->possibly_undefined
+                ]);
             }
 
             $combined_type = TypeCombiner::combine(
@@ -613,7 +622,9 @@ abstract class Type
             }
         }
 
-        if ($type_1->possibly_undefined || $type_2->possibly_undefined) {
+        if ($possibly_undefined !== null) {
+            $combined_type->possibly_undefined = $possibly_undefined;
+        } elseif ($type_1->possibly_undefined || $type_2->possibly_undefined) {
             $combined_type->possibly_undefined = true;
         }
 
@@ -662,8 +673,10 @@ abstract class Type
         $type_1_mixed = $type_1->isMixed();
         $type_2_mixed = $type_2->isMixed();
 
+        $possibly_undefined = $type_1->possibly_undefined && $type_2->possibly_undefined;
+
         if ($type_1_mixed && $type_2_mixed) {
-            $combined_type = self::getMixed();
+            $combined_type = new Union([new TMixed()], ['possibly_undefined' => $possibly_undefined]);
         } else {
             $both_failed_reconciliation = false;
 
@@ -678,10 +691,10 @@ abstract class Type
             }
 
             if ($type_1_mixed) {
-                $combined_type = clone $type_2;
+                $combined_type = $type_2->getBuilder();
                 $intersection_performed = true;
             } elseif ($type_2_mixed) {
-                $combined_type = clone $type_1;
+                $combined_type = $type_1->getBuilder();
                 $intersection_performed = true;
             } else {
                 $combined_type = null;
@@ -703,9 +716,6 @@ abstract class Type
                         }
                     }
                 }
-                if ($combined_type) {
-                    $combined_type = $combined_type->freeze();
-                }
             }
 
             //if a type is contained by the other, the intersection is the narrowest type
@@ -714,10 +724,10 @@ abstract class Type
                 $type_2_in_1 = UnionTypeComparator::isContainedBy($codebase, $type_2, $type_1);
                 if ($type_1_in_2) {
                     $intersection_performed = true;
-                    $combined_type = $type_1;
+                    $combined_type = $type_1->getBuilder();
                 } elseif ($type_2_in_1) {
                     $intersection_performed = true;
-                    $combined_type = $type_2;
+                    $combined_type = $type_2->getBuilder();
                 }
             }
 
@@ -749,15 +759,15 @@ abstract class Type
                 if ($both_failed_reconciliation) {
                     $combined_type->failed_reconciliation = true;
                 }
+
+                $combined_type->possibly_undefined = $possibly_undefined;
+
+                $combined_type = $combined_type->freeze();
             }
         }
 
         if (!$intersection_performed && $type_1->getId() !== $type_2->getId()) {
             return null;
-        }
-
-        if ($type_1->possibly_undefined && $type_2->possibly_undefined && $combined_type !== null) {
-            $combined_type->possibly_undefined = true;
         }
 
         return $combined_type;
@@ -778,14 +788,14 @@ abstract class Type
                 && get_class($type_1_atomic) === TNamedObject::class
                 && get_class($type_2_atomic) !== TNamedObject::class)
             ) {
-                $intersection_atomic = clone $type_2_atomic;
+                $intersection_atomic = $type_2_atomic;
                 $wider_type = $type_1_atomic;
                 $intersection_performed = true;
             } elseif (($type_1_atomic->value === $type_2_atomic->value
                 && get_class($type_2_atomic) === TNamedObject::class
                 && get_class($type_1_atomic) !== TNamedObject::class)
             ) {
-                $intersection_atomic = clone $type_1_atomic;
+                $intersection_atomic = $type_1_atomic;
                 $wider_type = $type_2_atomic;
                 $intersection_performed = true;
             }
@@ -814,7 +824,7 @@ abstract class Type
                 $type_2_atomic,
                 $type_1_atomic
             )) {
-                $intersection_atomic = clone $type_2_atomic;
+                $intersection_atomic = $type_2_atomic;
                 $wider_type = $type_1_atomic;
                 $intersection_performed = true;
             } elseif (AtomicTypeComparator::isContainedBy(
@@ -822,7 +832,7 @@ abstract class Type
                 $type_1_atomic,
                 $type_2_atomic
             )) {
-                $intersection_atomic = clone $type_1_atomic;
+                $intersection_atomic = $type_1_atomic;
                 $wider_type = $type_2_atomic;
                 $intersection_performed = true;
             }
@@ -849,7 +859,7 @@ abstract class Type
                 }
             }
             if ($intersection_atomic === null && $wider_type === null) {
-                $intersection_atomic = clone $type_1_atomic;
+                $intersection_atomic = $type_1_atomic;
                 $wider_type = $type_2_atomic;
             }
             if ($intersection_atomic === null || $wider_type === null) {
@@ -881,7 +891,7 @@ abstract class Type
 
             foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
                 $final_intersection[$wider_type_intersection_type->getKey()]
-                    = clone $wider_type_intersection_type;
+                    = $wider_type_intersection_type;
             }
 
             return $intersection_atomic->setIntersectionTypes($final_intersection);

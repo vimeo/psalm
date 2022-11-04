@@ -432,17 +432,6 @@ final class Context
         $this->case_scope = null;
     }
 
-    public function __clone()
-    {
-        foreach ($this->clauses as &$clause) {
-            $clause = clone $clause;
-        }
-
-        foreach ($this->constants as &$constant) {
-            $constant = clone $constant;
-        }
-    }
-
     /**
      * Updates the parent context, looking at the changes within a block and then applying those changes, where
      * necessary, to the parent context
@@ -471,14 +460,12 @@ final class Context
 
                 if (!$existing_type) {
                     if ($new_type) {
-                        $this->vars_in_scope[$var_id] = clone $new_type;
+                        $this->vars_in_scope[$var_id] = $new_type;
                         $updated_vars[$var_id] = true;
                     }
 
                     continue;
                 }
-
-                $existing_type = clone $existing_type;
 
                 // if the type changed within the block of statements, process the replacement
                 // also never allow ourselves to remove all types from a union
@@ -543,7 +530,12 @@ final class Context
 
             $new_type = $new_vars_in_scope[$var_id];
 
-            if (!$this_type->equals($new_type)) {
+            if (!$this_type->equals(
+                $new_type,
+                true,
+                !($this_type->propagate_parent_nodes || $new_type->propagate_parent_nodes)
+            )
+            ) {
                 $redefined_vars[$var_id] = $this_type;
             }
         }
@@ -720,7 +712,7 @@ final class Context
 
                     $result_type = AssertionReconciler::reconcile(
                         $assertion,
-                        clone $new_type,
+                        $new_type,
                         null,
                         $statements_analyzer,
                         false,

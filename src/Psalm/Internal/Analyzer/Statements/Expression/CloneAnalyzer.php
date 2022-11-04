@@ -146,14 +146,13 @@ class CloneAnalyzer
                 return true;
             }
 
-            $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
-
             if ($immutable_cloned) {
-                $stmt_expr_type = clone $stmt_expr_type;
-                $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
-                $stmt_expr_type->reference_free = true;
-                $stmt_expr_type->allow_mutations = true;
+                $stmt_expr_type = $stmt_expr_type->setProperties([
+                    'reference_free' => true,
+                    'allow_mutations' => true,
+                ]);
             }
+            $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
         }
 
         return true;

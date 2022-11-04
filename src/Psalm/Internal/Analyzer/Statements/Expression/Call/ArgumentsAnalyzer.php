@@ -158,7 +158,7 @@ class ArgumentsAnalyzer
             $by_ref_type = null;
 
             if ($by_ref) {
-                $by_ref_type = $param->type ? clone $param->type : Type::getMixed();
+                $by_ref_type = $param->type ?: Type::getMixed();
             }
 
             if ($by_ref
@@ -269,7 +269,7 @@ class ArgumentsAnalyzer
                 $codebase = $statements_analyzer->getCodebase();
 
                 TemplateStandinTypeReplacer::fillTemplateResult(
-                    clone $param->type,
+                    $param->type,
                     $template_result,
                     $codebase,
                     $statements_analyzer,
@@ -484,7 +484,7 @@ class ArgumentsAnalyzer
             return null;
         }
 
-        $replaced_container_hof_atomic = new Union([clone $container_hof_atomic]);
+        $replaced_container_hof_atomic = new Union([$container_hof_atomic]);
 
         // Replaces all input args in container function.
         //
@@ -514,7 +514,7 @@ class ArgumentsAnalyzer
                 isset($container_hof_atomic->params[$offset])
             ) {
                 TemplateStandinTypeReplacer::fillTemplateResult(
-                    clone $actual_func_param->type,
+                    $actual_func_param->type,
                     $high_order_template_result,
                     $codebase,
                     null,
@@ -573,7 +573,7 @@ class ArgumentsAnalyzer
                 )
             ]);
         } else {
-            $replaced_type = clone $param->type;
+            $replaced_type = $param->type;
         }
 
         $replace_template_result = new TemplateResult(
@@ -684,12 +684,13 @@ class ArgumentsAnalyzer
             }
 
             if ($param_storage->type && ($method_id === 'array_map' || $method_id === 'array_filter')) {
+                $temp = Type::getMixed();
                 ArrayFetchAnalyzer::taintArrayFetch(
                     $statements_analyzer,
                     $args[1 - $argument_offset]->value,
                     null,
                     $param_storage->type,
-                    Type::getMixed()
+                    $temp
                 );
             }
         }
@@ -792,7 +793,7 @@ class ArgumentsAnalyzer
         foreach ($template_result->lower_bounds as $template_name => $type_map) {
             foreach ($type_map as $class => $lower_bounds) {
                 if (count($lower_bounds) === 1) {
-                    $class_generic_params[$template_name][$class] = clone reset($lower_bounds)->type;
+                    $class_generic_params[$template_name][$class] = reset($lower_bounds)->type;
                 }
             }
         }
@@ -1210,10 +1211,10 @@ class ArgumentsAnalyzer
                 }
 
                 if ($function_param->type) {
-                    $by_ref_type = clone $function_param->type;
+                    $by_ref_type = $function_param->type;
                 }
                 if ($function_param->out_type) {
-                    $by_ref_out_type = clone $function_param->out_type;
+                    $by_ref_out_type = $function_param->out_type;
                 }
 
                 if ($by_ref_type && $by_ref_type->isNullable()) {
@@ -1221,10 +1222,10 @@ class ArgumentsAnalyzer
                 }
 
                 if ($template_result && $by_ref_type) {
-                    $original_by_ref_type = clone $by_ref_type;
+                    $original_by_ref_type = $by_ref_type;
 
                     $by_ref_type = TemplateStandinTypeReplacer::replace(
-                        clone $by_ref_type,
+                        $by_ref_type,
                         $template_result,
                         $codebase,
                         $statements_analyzer,
@@ -1246,10 +1247,10 @@ class ArgumentsAnalyzer
                 }
 
                 if ($template_result && $by_ref_out_type) {
-                    $original_by_ref_out_type = clone $by_ref_out_type;
+                    $original_by_ref_out_type = $by_ref_out_type;
 
                     $by_ref_out_type = TemplateStandinTypeReplacer::replace(
-                        clone $by_ref_out_type,
+                        $by_ref_out_type,
                         $template_result,
                         $codebase,
                         $statements_analyzer,
@@ -1494,7 +1495,7 @@ class ArgumentsAnalyzer
                     $array_type = new TArray([Type::getInt(), $array_type->type_param]);
                 }
 
-                $by_ref_type = new Union([clone $array_type]);
+                $by_ref_type = new Union([$array_type]);
 
                 AssignmentAnalyzer::assignByRefParam(
                     $statements_analyzer,
@@ -1786,7 +1787,7 @@ class ArgumentsAnalyzer
                     && $template_result
                 ) {
                     if ($param->default_type instanceof Union) {
-                        $default_type = clone $param->default_type;
+                        $default_type = $param->default_type;
                     } else {
                         $default_type_atomic = ConstantTypeResolver::resolve(
                             $codebase->classlikes,
@@ -1798,7 +1799,7 @@ class ArgumentsAnalyzer
                     }
 
                     TemplateStandinTypeReplacer::fillTemplateResult(
-                        clone $param->type,
+                        $param->type,
                         $template_result,
                         $codebase,
                         $statements_analyzer,

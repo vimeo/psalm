@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Diff;
 
+use Psalm\Storage\ImmutableNonCloneableTrait;
+
 /**
  * @internal
  *
@@ -11,6 +13,8 @@ namespace Psalm\Internal\Diff;
  */
 class DiffElem
 {
+    use ImmutableNonCloneableTrait;
+
     public const TYPE_KEEP = 0;
     public const TYPE_REMOVE = 1;
     public const TYPE_ADD = 2;

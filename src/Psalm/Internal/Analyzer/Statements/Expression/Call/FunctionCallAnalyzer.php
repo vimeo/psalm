@@ -309,8 +309,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         foreach ($function_call_info->defined_constants as $const_name => $const_type) {
-            $context->constants[$const_name] = clone $const_type;
-            $context->vars_in_scope[$const_name] = clone $const_type;
+            $context->constants[$const_name] = $const_type;
+            $context->vars_in_scope[$const_name] = $const_type;
         }
 
         foreach ($function_call_info->global_variables as $var_id => $_) {
@@ -998,7 +998,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if (isset($op_vars_in_scope[$var_id])) {
-                    $op_vars_in_scope[$var_id]->from_docblock = true;
+                    $op_vars_in_scope[$var_id] = $op_vars_in_scope[$var_id]->setProperties(['from_docblock' => true]);
                 }
             }
 

@@ -755,7 +755,7 @@ class CallAnalyzer
 
                     if ($assertion_type_atomic) {
                         $assertion_type = TemplateInferredTypeReplacer::replace(
-                            new Union([clone $assertion_type_atomic]),
+                            new Union([$assertion_type_atomic]),
                             $template_result,
                             $codebase
                         );
@@ -1050,7 +1050,7 @@ class CallAnalyzer
                     } else {
                         $template_result->lower_bounds[$template_name][$defining_id] = [
                             new TemplateBound(
-                                clone $upper_bound->type
+                                $upper_bound->type
                             )
                         ];
                     }

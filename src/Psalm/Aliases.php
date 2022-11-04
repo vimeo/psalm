@@ -54,6 +54,8 @@ final class Aliases
      * @param array<lowercase-string, string> $functions_flipped
      * @param array<string, string> $constants_flipped
      * @internal
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         ?string $namespace = null,

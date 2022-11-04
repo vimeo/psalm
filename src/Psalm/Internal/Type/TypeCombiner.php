@@ -101,7 +101,7 @@ class TypeCombiner
         int $literal_limit = 500
     ): Union {
         if (count($types) === 1) {
-            return new Union([$types[0]], $types[0]->from_docblock);
+            return new Union([$types[0]]);
         }
 
         $combination = new TypeCombination();
@@ -122,7 +122,7 @@ class TypeCombiner
 
             if ($result) {
                 if ($from_docblock) {
-                    $result->from_docblock = true;
+                    return $result->setProperties(['from_docblock' => true]);
                 }
 
                 return $result;
@@ -360,7 +360,7 @@ class TypeCombiner
         }
 
         if ($from_docblock) {
-            $union_type->from_docblock = true;
+            return $union_type->setProperties(['from_docblock' => true]);
         }
 
         return $union_type;
@@ -675,7 +675,7 @@ class TypeCombiner
             }
 
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
-            $possibly_undefined_entries = $combination->objectlike_entries;
+            $missing_entries = $combination->objectlike_entries;
             $combination->objectlike_sealed = $combination->objectlike_sealed && $type->sealed;
 
             if ($type->previous_value_type) {
@@ -702,10 +702,9 @@ class TypeCombiner
                 $value_type = $combination->objectlike_entries[$candidate_property_name] ?? null;
 
                 if (!$value_type) {
-                    $combination->objectlike_entries[$candidate_property_name] = clone $candidate_property_type;
-                    // it's possibly undefined if there are existing objectlike entries and
-                    $combination->objectlike_entries[$candidate_property_name]->possibly_undefined
-                        = $existing_objectlike_entries || $candidate_property_type->possibly_undefined;
+                    $combination->objectlike_entries[$candidate_property_name] = $candidate_property_type
+                        ->setPossiblyUndefined($existing_objectlike_entries
+                            || $candidate_property_type->possibly_undefined);
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
@@ -715,13 +714,11 @@ class TypeCombiner
                     );
                 }
 
-                if (!$type->previous_value_type) {
-                    unset($possibly_undefined_entries[$candidate_property_name]);
-                }
-
                 if (!$candidate_property_type->possibly_undefined) {
                     $has_defined_keys = true;
                 }
+
+                unset($missing_entries[$candidate_property_name]);
             }
 
             if (!$has_defined_keys) {
@@ -742,8 +739,9 @@ class TypeCombiner
                 $combination->array_min_counts[$min_prop_count] = true;
             }
 
-            foreach ($possibly_undefined_entries as $possibly_undefined_type) {
-                $possibly_undefined_type->possibly_undefined = true;
+            foreach ($missing_entries as $k => $_) {
+                $combination->objectlike_entries[$k] = $combination->objectlike_entries[$k]
+                    ->setPossiblyUndefined(true);
             }
 
             if (!$type->is_list) {
@@ -1348,9 +1346,10 @@ class TypeCombiner
                     && ($combination->array_type_params[1]->isNever()
                         || $combination->array_type_params[1]->isMixed()))
             ) {
-                foreach ($combination->objectlike_entries as $objectlike_entry) {
-                    $objectlike_entry->possibly_undefined = true;
+                foreach ($combination->objectlike_entries as &$objectlike_entry) {
+                    $objectlike_entry = $objectlike_entry->setPossiblyUndefined(true);
                 }
+                unset($objectlike_entry);
             }
 
             if ($combination->objectlike_value_type
@@ -1437,10 +1436,13 @@ class TypeCombiner
 
             foreach ($combination->objectlike_entries as $property_name => $property_type) {
                 $objectlike_generic_type = Type::combineUnionTypes(
-                    clone $property_type,
+                    $property_type,
                     $objectlike_generic_type,
                     $codebase,
-                    $overwrite_empty_array
+                    $overwrite_empty_array,
+                    true,
+                    500,
+                    false
                 );
 
                 if (is_int($property_name)) {
@@ -1457,11 +1459,12 @@ class TypeCombiner
                     $combination->objectlike_value_type,
                     $objectlike_generic_type,
                     $codebase,
-                    $overwrite_empty_array
+                    $overwrite_empty_array,
+                    true,
+                    500,
+                    false
                 );
             }
-
-            $objectlike_generic_type->possibly_undefined = false;
 
             $objectlike_key_type = new Union(array_values($objectlike_keys));
 

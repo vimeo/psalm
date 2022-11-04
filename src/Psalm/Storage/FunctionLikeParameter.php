@@ -4,7 +4,9 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 
 final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
@@ -151,7 +153,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     }
 
     /** @psalm-mutation-free */
-    public function replaceType(Union $type): self
+    public function setType(Union $type): self
     {
         if ($this->type === $type) {
             return $this;
@@ -161,14 +163,52 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         return $cloned;
     }
 
-    /** @psalm-mutation-free */
-    public function getChildNodeKeys(): array
+    /**
+     * @internal Should only be used by the MutableTypeVisitor.
+     * @psalm-mutation-free
+     */
+    public function visit(TypeVisitor $visitor): bool
     {
-        $result = ['type', 'signature_type', 'out_type'];
-        if ($this->default_type instanceof Union) {
-            $result []= 'default_type';
+        if ($this->type && !$visitor->traverse($this->type)) {
+            return false;
         }
-        return $result;
+        if ($this->signature_type && !$visitor->traverse($this->signature_type)) {
+            return false;
+        }
+        if ($this->out_type && !$visitor->traverse($this->out_type)) {
+            return false;
+        }
+        if ($this->default_type instanceof Union && !$visitor->traverse($this->default_type)) {
+            return false;
+        }
+
+        return true;
+    }
+    public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
+    {
+        foreach (['type', 'signature_type', 'out_type', 'default_type'] as $key) {
+            if (!$node->{$key} instanceof TypeNode) {
+                continue;
+            }
+
+            /** @var TypeNode */
+            $value = $node->{$key};
+            $value_orig = $value;
+            $result = $visitor->traverse($value);
+            if ($value !== $value_orig) {
+                if (!$cloned) {
+                    $node = clone $node;
+                    $cloned = true;
+                }
+                $node->{$key} = $value;
+            }
+
+            if (!$result) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

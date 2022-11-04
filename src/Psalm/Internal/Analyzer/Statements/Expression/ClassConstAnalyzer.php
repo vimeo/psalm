@@ -392,7 +392,7 @@ class ClassConstAnalyzer
             }
 
             if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock) {
-                $stmt_type = clone $class_constant_type;
+                $stmt_type = $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 $context->vars_in_scope[$const_id] = $stmt_type;
@@ -427,7 +427,7 @@ class ClassConstAnalyzer
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_string_types[] = new TClassString(
                         $lhs_atomic_type->value,
-                        clone $lhs_atomic_type
+                        $lhs_atomic_type
                     );
                 } elseif ($lhs_atomic_type instanceof TTemplateParam
                     && $lhs_atomic_type->as->isSingle()) {
@@ -668,7 +668,7 @@ class ClassConstAnalyzer
             }
 
             if ($const_class_storage->final || $lhs_type_definite_class === true) {
-                $stmt_type = clone $class_constant_type;
+                $stmt_type = $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 $context->vars_in_scope[$const_id] = $stmt_type;

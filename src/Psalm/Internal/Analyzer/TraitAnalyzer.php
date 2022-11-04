@@ -34,17 +34,20 @@ class TraitAnalyzer extends ClassLikeAnalyzer
         $this->aliases = $aliases;
     }
 
+    /** @psalm-mutation-free */
     public function getNamespace(): ?string
     {
         return $this->aliases->namespace;
     }
 
+    /** @psalm-mutation-free */
     public function getAliases(): Aliases
     {
         return $this->aliases;
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array
@@ -53,6 +56,7 @@ class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, string>
      */
     public function getAliasedClassesFlippedReplaceable(): array
