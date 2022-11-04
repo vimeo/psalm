@@ -230,6 +230,9 @@ class DocumentationTest extends TestCase
         foreach ($error_levels as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
+        if (strpos($error_message, 'LiteralKeyUnshapedArray') !== false) {
+            Config::getInstance()->setCustomErrorLevel('LiteralKeyUnshapedArray', Config::REPORT_SUPPRESS);
+        }
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');

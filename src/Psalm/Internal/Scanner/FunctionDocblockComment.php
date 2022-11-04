@@ -103,6 +103,13 @@ class FunctionDocblockComment
     public $pure = false;
 
     /**
+     * Whether or not the function is a validation function
+     *
+     * @var bool
+     */
+    public $validator = false;
+
+    /**
      * Whether or not to specialize a given call (useful for taint analysis)
      *
      * @var bool

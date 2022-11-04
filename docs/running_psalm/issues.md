@@ -100,6 +100,7 @@
  - [LessSpecificImplementedReturnType](issues/LessSpecificImplementedReturnType.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)
+ - [LiteralKeyUnshapedArray](issues/LiteralKeyUnshapedArray.md)
  - [LoopInvalidation](issues/LoopInvalidation.md)
  - [MethodSignatureMismatch](issues/MethodSignatureMismatch.md)
  - [MethodSignatureMustOmitReturnType](issues/MethodSignatureMustOmitReturnType.md)

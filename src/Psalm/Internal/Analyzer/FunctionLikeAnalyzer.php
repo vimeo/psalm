@@ -364,6 +364,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context->pure = true;
         }
 
+        if ($storage->validator) {
+            $context->validator = true;
+        }
+
         if ($storage->mutation_free
             && $cased_method_id
             && !strpos($cased_method_id, '__construct')
