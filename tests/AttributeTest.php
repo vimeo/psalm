@@ -242,6 +242,7 @@ class AttributeTest extends TestCase
 
                     /**
                      * @psalm-suppress MissingTemplateParam
+                     * @psalm-suppress MethodSignatureMismatch
                      */
                     final class EmptyCollection implements IteratorAggregate
                     {

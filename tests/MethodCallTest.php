@@ -979,7 +979,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType', 'MethodSignatureMismatch'],
                 'php_version' => '8.0'
             ],
             'nullsafeShortCircuit' => [
