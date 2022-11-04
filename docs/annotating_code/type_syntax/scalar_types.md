@@ -13,6 +13,7 @@
 * [callable-string &raquo;](scalar_types.md#callable-string)
 * [numeric-string &raquo;](scalar_types.md#numeric-string)
 * [literal-string &raquo;](scalar_types.md#literal-string)
+* [literal-int &raquo;](scalar_types.md#literal-int)
 * [array-key &raquo;](scalar_types.md#array-key)
 * [numeric &raquo;](scalar_types.md#numeric)
 * [scalar &raquo;](scalar_types.md#scalar)
@@ -109,6 +110,21 @@ Strings that don't pass this type check:
 - `file_get_contents("foo.txt")`
 - `$_GET["foo"]`
 - `"hello " . $_GET["foo"]`
+
+### literal-int
+
+`literal-int` denotes an int value that is entirely composed of literal integers in your application.
+
+Examples:
+
+- `12`
+- `12+42`
+
+Integers that don't pass this type check:
+
+- `(int) file_get_contents("foo.txt")`
+- `(int) $_GET["foo"]`
+- `((int)$_GET["foo"]) + 2`
 
 ### lowercase-string, non-empty-string, non-empty-lowercase-string
 

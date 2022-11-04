@@ -18,6 +18,7 @@ _Click on the &raquo; next to each type to view detailed documentation and examp
   * [callable-string &raquo;](scalar_types.md#callable-string)
   * [numeric-string &raquo;](scalar_types.md#numeric-string)
   * [literal-string &raquo;](scalar_types.md#literal-string)
+  * [literal-int &raquo;](scalar_types.md#literal-int)
   * [array-key &raquo;](scalar_types.md#array-key)
   * [numeric &raquo;](scalar_types.md#numeric)
   * [scalar &raquo;](scalar_types.md#scalar)
