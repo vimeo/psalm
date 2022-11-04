@@ -194,6 +194,54 @@ $bar = A::get(Bar::class);
 If we had used an `array<class-string<Foo>, Foo>` instead of a `class-string-map<T as Foo, T>` in the above example, we would've gotten some false positive `InvalidReturnStatement` issues, caused by the lack of a type assertion inside the `isset`.  
 On the other hand, when using `class-string-map`, Psalm assumes that the value obtained by using a key `class-string<T>` is always equal to `T`.  
 
+Unbounded templates can also be used for unrelated classes:
+
+```php
+<?php
+
+/**
+ * @psalm-consistent-constructor
+ */
+class Foo {}
+
+/**
+ * @psalm-consistent-constructor
+ */
+class Bar {}
+
+/**
+ * @psalm-consistent-constructor
+ */
+class Baz {}
+
+class A {
+  /** @var class-string-map<T, T> */
+  private static array $map = [];
+
+  /**
+   * @template U
+   * @param class-string<U> $class
+   * @return U
+   */
+  public static function get(string $class) : object {
+    if (isset(self::$map[$class])) {
+      return self::$map[$class];
+    }
+
+    self::$map[$class] = new $class();
+    return self::$map[$class];
+  }
+}
+
+$foo = A::get(Foo::class);
+$bar = A::get(Bar::class);
+$baz = A::get(Baz::class);
+
+/** @psalm-trace $foo */; // Foo
+/** @psalm-trace $bar */; // Bar
+/** @psalm-trace $baz */; // Baz
+```
+
 ## `T[K]`
 
 Used to get the value corresponding to the specified key:
