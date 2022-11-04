@@ -3,7 +3,7 @@
 
 - [BC] All shaped arrays are now sealed by default: this brings many assertion improvements and bugfixes, see [the docs for more info](https://psalm.dev/docs/annotating_code/type_syntax/array_types/#sealed-object-like-arrays).
 
-- [BC] All atomic types, `Psalm\Type\Union`, `Psalm\CodeLocation` and storages are fully immutable, use the new setter methods to change properties: these setter methods will return new instances without altering the original instance.  
+- [BC] All atomic types, `Psalm\Type\Union`, `Psalm\CodeLocation` and storages are fully immutable, use the new setter methods or the new constructors to change properties: these setter methods will return new instances without altering the original instance.  
   Full immutability fixes a whole class of bugs that occurred in multithreaded mode, you can now feel free to use `--threads=$(nproc)` ;)
   Full immutability also makes Psalm run faster, even in single-threaded mode, by removing all superfluous `clone`s!
   For this purpose, `__clone` was also made private, forbidding the cloning of atomics, unions and storages (an old and brittle pattern used to avoid side-effects caused by mutability).  

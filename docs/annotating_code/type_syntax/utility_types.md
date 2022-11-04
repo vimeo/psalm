@@ -2,6 +2,15 @@
 
 Psalm supports some _magical_ utility types that brings superpower to the PHP type system.
 
+- [(T is true ? string : bool)](conditional_types.md)
+- [`key-of<T>`](#key-oft)
+- [`value-of<T>`](#value-oft)
+- [`properties-of<T>`](#properties-oft)
+- [`class-string-map<T as Foo, T>`](#class-string-mapt-as-foo-t)
+- [`T[K]`](#tk)
+- [Type aliases](#type-aliases)
+- [Variable templates](#variable-templates)
+
 ## `key-of<T>`
 
 (Psalm 5.0+)
@@ -110,18 +119,16 @@ properties with a certain visibility:
 
 ### Limited template support
 
-As there is no way to statically analyze if a method returns all properties of a generic param (e.g. via Reflection or
-serialization), you have to annotate it where you assume it.
+Use final classes if you want to properties-of and get_object_vars to return [sealed arrays](array_types.md#sealed-object-like-arrays):
 
 ```php
 /**
+ * @template T
  * @param T $object
  * @return properties-of<T>
  */
-public function asArray($object): array {
-  /** @var properties-of<T> */
-  $array = json_decode(json_encode($object), true);
-  return $array;
+function asArray($object): array {
+  return get_object_vars($object);
 }
 
 
@@ -130,8 +137,180 @@ class A {
   public int $bar = 42;
 }
 
-$a = new A();
-$aAsArray = asArray($a);
-$aAsArray['foo']; // valid
-$aAsArray['adams']; // error!
+final class B extends A {
+  public float $baz = 2.1;
+}
+
+$a = asArray(new A);
+/** @psalm-trace $a */; // unsealed-array{foo: string, bar: int}
+
+$b = asArray(new B);
+/** @psalm-trace $b */; // array{foo: string, bar: int, baz: float}
+```
+
+## `class-string-map<T as Foo, T>`
+
+Used to indicate an array where each value is equal an instance of the class string contained in the key:
+
+```php
+<?php
+
+/**
+ * @psalm-consistent-constructor
+ */
+class Foo {}
+
+/**
+ * @psalm-consistent-constructor
+ */
+class Bar extends Foo {}
+
+class A {
+  /** @var class-string-map<T as Foo, T> */
+  private static array $map = [];
+
+  /**
+   * @template U as Foo
+   * @param class-string<U> $class
+   * @return U
+   */
+  public static function get(string $class) : Foo {
+    if (isset(self::$map[$class])) {
+      return self::$map[$class];
+    }
+
+    self::$map[$class] = new $class();
+    return self::$map[$class];
+  }
+}
+
+$foo = A::get(Foo::class);
+$bar = A::get(Bar::class);
+
+/** @psalm-trace $foo */; // Foo
+/** @psalm-trace $bar */; // Bar
+```
+
+If we had used an `array<class-string<Foo>, Foo>` instead of a `class-string-map<T as Foo, T>` in the above example, we would've gotten some false positive `InvalidReturnStatement` issues, caused by the lack of a type assertion inside the `isset`.  
+On the other hand, when using `class-string-map`, Psalm assumes that the value obtained by using a key `class-string<T>` is always equal to `T`.  
+
+## `T[K]`
+
+Used to get the value corresponding to the specified key:
+
+```php
+<?php
+
+/**
+ * @template T as array
+ * @template TKey as string
+ * @param T $arr
+ * @param TKey $k
+ * @return T[TKey]
+ */
+function a(array $arr, string $k): mixed {
+  assert(isset($arr[$k]));
+  return $arr[$k];
+}
+
+$a = a(['test' => 123], 'test');
+/** @psalm-trace $a */; // 123
+```
+
+## Type aliases
+
+Psalm allows defining type aliases for complex types (like array shapes) which must be reused often:
+
+```php
+/**
+ * @psalm-type PhoneType = array{phone: string}
+ */
+class Phone {
+    /**
+     * @psalm-return PhoneType
+     */
+    public function toArray(): array {
+        return ["phone" => "Nokia"];
+    }
+}
+```
+
+You can use the [`@psalm-import-type`](../supported_annotations.md#psalm-import-type) annotation to import a type defined with [`@psalm-type`](../supported_annotations.md#psalm-type) if it was defined somewhere else.
+
+```php
+<?php
+/**
+ * @psalm-import-type PhoneType from Phone
+ */
+class User {
+    /**
+     * @psalm-return PhoneType
+     */
+    public function toArray(): array {
+        return array_merge([], (new Phone())->toArray());
+    }
+}
+```
+
+You can also alias a type when you import it:
+
+```php
+<?php
+/**
+ * @psalm-import-type PhoneType from Phone as MyPhoneTypeAlias
+ */
+class User {
+    /**
+     * @psalm-return MyPhoneTypeAlias
+     */
+    public function toArray(): array {
+        return array_merge([], (new Phone())->toArray());
+    }
+}
+```
+
+## Variable templates
+
+Variable templates allow directly using variables instead of template types, for example instead of the following verbose example:
+
+```php
+<?php
+
+/**
+ * @template TA as string
+ * @template TB as string
+ * @template TChoose as bool
+ * @param TA $a
+ * @param TB $b
+ * @param TChoose $choose
+ * @return (TChoose is true ? TA : TB)
+ */
+function pick(string $a, string $b, bool $choose): string {
+  return $choose ? $a : $b;
+}
+
+$a = pick('a', 'b', true);
+/** @psalm-trace $a */; // 'a'
+
+$a = pick('a', 'b', false);
+/** @psalm-trace $a */; // 'b'
+```
+
+We can instead use variable templates like so:
+
+```php
+<?php
+
+/**
+ * @return ($choose is true ? $a : $b)
+ */
+function pick(string $a, string $b, bool $choose): string {
+  return $choose ? $a : $b;
+}
+
+$a = pick('a', 'b', true);
+/** @psalm-trace $a */; // 'a'
+
+$a = pick('a', 'b', false);
+/** @psalm-trace $a */; // 'b'
 ```
