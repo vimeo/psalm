@@ -30,10 +30,10 @@ Psalm has a few different ways to represent arrays in its type system:
 - [string\[\]](#phpdoc-syntax)
 - [list & non-empty-list](#lists)
 - [list&lt;string&gt;](#lists)
-- [array{foo: int, bar: string}](#object-like-arrays)
 - [list{int, string}](#object-like-lists)
-- [unsealed-array{foo: int, bar: string}](#unsealed-object-like-arrays)
-- [unsealed-list{int, string}](#unsealed-object-like-arrays)
+- [array{foo: int, bar: string}](#object-like-arrays)
+  - [Sealed arrays](#sealed-object-like-arrays)
+  - [Unsealed arrays](#unsealed-object-like-arrays)
 - [callable-array](#callable-arrays)
 
 ## Generic arrays

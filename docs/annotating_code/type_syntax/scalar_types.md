@@ -1,22 +1,21 @@
 # Scalar types
 
-- [bool](#scalar)
-- [int](#scalar)
-- [float](#scalar)
-- [string](#scalar)
-- [int-range](#int-range)
-- [`int-mask<1, 2, 4>`](#int-mask1-2-4)
-- [`int-mask-of<MyClass::CLASS_CONSTANT_*>`](#int-mask-ofmyclassclass_constant_)
-- [class-string and class-string&lt;Foo&gt;](#class-string-interface-string)
-- [trait-string](#trait-string)
-- [enum-string](#enum-string)
-- [callable-string](#callable-string)
-- [numeric-string](#numeric-string)
-- [literal-string](#literal-string)
-- [array-key](#array-key)
-- [numeric](#numeric)
-- [scalar](#scalar)
-
+* [bool &raquo;](scalar_types.md#scalar)
+* [int &raquo;](scalar_types.md#scalar)
+* [float &raquo;](scalar_types.md#scalar)
+* [string &raquo;](scalar_types.md#scalar)
+* [`int-range<x, y>` &raquo;](scalar_types.md#int-range)
+* [`int-mask<1, 2, 4>` &raquo;](scalar_types.md#int-mask1-2-4)
+* [`int-mask-of<MyClass::CLASS_CONSTANT_*>` &raquo;](scalar_types.md#int-mask-ofmyclassclass_constant_)
+* [class-string and class-string&lt;Foo&gt; &raquo;](scalar_types.md#class-string-interface-string)
+* [trait-string &raquo;](scalar_types.md#trait-string)
+* [enum-string &raquo;](scalar_types.md#enum-string)
+* [callable-string &raquo;](scalar_types.md#callable-string)
+* [numeric-string &raquo;](scalar_types.md#numeric-string)
+* [literal-string &raquo;](scalar_types.md#literal-string)
+* [array-key &raquo;](scalar_types.md#array-key)
+* [numeric &raquo;](scalar_types.md#numeric)
+* [scalar &raquo;](scalar_types.md#scalar)
 
 ### scalar
 
