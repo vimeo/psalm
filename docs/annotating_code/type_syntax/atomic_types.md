@@ -56,6 +56,7 @@ _Click on the &raquo; next to each type to view detailed documentation and examp
   * [`iterable<TKey, TValue>` &raquo;](other_types.md)
   * [void &raquo;](other_types.md)
   * [resource &raquo;](other_types.md)
+  * [closed-resource &raquo;](other_types.md)
 * [Top and bottom types &raquo;](top_bottom_types.md)
   * [mixed &raquo;](top_bottom_types.md#mixed)
   * [never &raquo;](top_bottom_types.md#never)
