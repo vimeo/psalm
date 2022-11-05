@@ -125,6 +125,31 @@ class TypeTest extends TestCase
                     '$a===' => 'strict-array{a: string, b: string, c: string}',
                 ]
             ],
+            'instanceOfInterface' => [
+                'code' => '<?php
+                    interface Supplier {
+                        public function get(): iterable;
+                    }
+
+                    class SomeClass {
+                        protected Supplier|iterable $prop;
+
+                        public function __construct(Supplier|iterable $value) {
+                            $this->prop = $value;
+                        }
+
+                        public function do(): void {
+                            $var = $this->prop;
+
+                            if ($var instanceof Supplier) {
+                                $var->get();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
+            ],
             'nullableMethodWithTernaryGuard' => [
                 'code' => '<?php
                     class A {
