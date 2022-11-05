@@ -650,11 +650,9 @@ class VariableFetchAnalyzer
             $bool_string_helper = new Union([new TBool(), new TString()]);
             $bool_string_helper->possibly_undefined = true;
 
-            $detailed_type = new TKeyedArray([
+            $detailed_type_members = [
                 // https://www.php.net/manual/en/reserved.variables.server.php
                 'PHP_SELF'             => $non_empty_string_helper,
-                'argv'                 => $argv_helper,
-                'argc'                 => $argc_helper,
                 'GATEWAY_INTERFACE'    => $non_empty_string_helper,
                 'SERVER_ADDR'          => $non_empty_string_helper,
                 'SERVER_NAME'          => $non_empty_string_helper,
@@ -727,7 +725,15 @@ class VariableFetchAnalyzer
                 // phpunit
                 'APP_DEBUG' => $bool_string_helper,
                 'APP_ENV'   => $string_helper,
-            ]);
+            ];
+
+            if ($var_id === '$_SERVER') {
+                // those elements are not usually present in $_ENV
+                $detailed_type_members['argc'] = $argc_helper;
+                $detailed_type_members['argv'] = $argv_helper;
+            }
+
+            $detailed_type = new TKeyedArray($detailed_type_members);
 
             // generic case for all other elements
             $detailed_type->previous_key_type = Type::getNonEmptyString();
