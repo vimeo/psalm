@@ -325,7 +325,7 @@ class EmptyTest extends TestCase
             'doubleEmptyCheckOnTKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @param array{a: array, b: array} $arr
+                     * @param strict-array{a: array, b: array} $arr
                      */
                     function foo(array $arr) : void {
                         if (empty($arr["a"]) && empty($arr["b"])) {}
@@ -383,7 +383,7 @@ class EmptyTest extends TestCase
             'reconcileNonEmptyArrayKey' => [
                 'code' => '<?php
                     /**
-                     * @param array{a?: string, b: string} $arr
+                     * @param strict-array{a?: string, b: string} $arr
                      */
                     function createFromString(array $arr): void
                     {
@@ -486,7 +486,7 @@ class EmptyTest extends TestCase
             ],
             'preventEmptyCreatingArray' => [
                 'code' => '<?php
-                    /** @return array{a:mixed} */
+                    /** @return strict-array{a:mixed} */
                     function foo(array $r) {
                         if (!empty($r["a"])) {}
                         return $r;
@@ -495,7 +495,7 @@ class EmptyTest extends TestCase
             ],
             'preventEmptyEquivalentCreatingArray' => [
                 'code' => '<?php
-                    /** @return array{a:mixed} */
+                    /** @return strict-array{a:mixed} */
                     function foo(array $r) {
                         if (isset($r["a"]) && $r["a"]) {}
                         return $r;

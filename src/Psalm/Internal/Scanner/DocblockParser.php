@@ -90,7 +90,7 @@ class DocblockParser
             }
 
             if (preg_match('/^[ \t]*\*?\s*@([\w\-\\\:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
-                /** @var array<int, array{string, int}> $matches */
+                /** @var array<int, strict-array{string, int}> $matches */
                 [, $type_info, $data_info] = $matches;
 
                 [$type] = $type_info;

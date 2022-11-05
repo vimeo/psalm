@@ -21,7 +21,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     $dummy = ["test" => 123];
 
-                    /** @var array{test: ?int} */
+                    /** @var strict-array{test: ?int} */
                     $a = ["test" => null];
 
                     if ($a["test"] === null) {
@@ -531,14 +531,14 @@ class ConditionalTest extends TestCase
             'specificArrayFields' => [
                 'code' => '<?php
                     /**
-                     * @param unsealed-array{field:string} $array
+                     * @param array{field:string} $array
                      */
                     function print_field($array) : void {
                         echo $array["field"];
                     }
 
                     /**
-                     * @param array{field:string,otherField:string} $array
+                     * @param strict-array{field:string,otherField:string} $array
                      */
                     function has_mix_of_fields($array) : void {
                         print_field($array);
@@ -652,7 +652,7 @@ class ConditionalTest extends TestCase
             ],
             'isArrayOnArrayKeyOffset' => [
                 'code' => '<?php
-                    /** @var array{s:array<mixed, array<int, string>|string>} */
+                    /** @var strict-array{s:array<mixed, array<int, string>|string>} */
                     $doc = [];
 
                     if (!is_array($doc["s"]["t"])) {
@@ -1101,8 +1101,8 @@ class ConditionalTest extends TestCase
             'dontRewriteNullableArrayAfterEmptyCheck' => [
                 'code' => '<?php
                     /**
-                     * @param array{x:int,y:int}|null $start_pos
-                     * @return array{x:int,y:int}|null
+                     * @param strict-array{x:int,y:int}|null $start_pos
+                     * @return strict-array{x:int,y:int}|null
                      */
                     function foo(?array $start_pos) : ?array {
                         if ($start_pos) {}
@@ -1386,7 +1386,7 @@ class ConditionalTest extends TestCase
             ],
             'assertArrayReturnTypeNarrowed' => [
                 'code' => '<?php
-                    /** @return unsealed-array{0:Exception} */
+                    /** @return array{0:Exception} */
                     function f(array $a): array {
                         if ($a[0] instanceof Exception) {
                             return $a;
@@ -1397,7 +1397,7 @@ class ConditionalTest extends TestCase
             ],
             'assertTypeNarrowedByAssert' => [
                 'code' => '<?php
-                    /** @return unsealed-array{0:Exception,1:Exception} */
+                    /** @return array{0:Exception,1:Exception} */
                     function f(array $ret): array {
                         assert($ret[0] instanceof Exception);
                         assert($ret[1] instanceof Exception);
@@ -1407,7 +1407,7 @@ class ConditionalTest extends TestCase
             'assertTypeNarrowedByButOtherFetchesAreMixed' => [
                 'code' => '<?php
                     /**
-                     * @return unsealed-array{0:Exception}
+                     * @return array{0:Exception}
                      * @psalm-suppress MixedArgument
                      */
                     function f(array $ret): array {
@@ -1419,7 +1419,7 @@ class ConditionalTest extends TestCase
             'assertCheckOnNonZeroArrayOffset' => [
                 'code' => '<?php
                     /**
-                     * @param array{string,array|null} $a
+                     * @param strict-array{string,array|null} $a
                      * @return string
                      */
                     function f(array $a) {
@@ -1759,7 +1759,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param mixed $decoded
-                     * @return unsealed-array{icons:mixed}
+                     * @return array{icons:mixed}
                      */
                     function assertArrayWithOffset($decoded): array {
                         if (!is_array($decoded)
@@ -3000,7 +3000,7 @@ class ConditionalTest extends TestCase
             'lessSpecificArrayFields' => [
                 'code' => '<?php
                     /**
-                     * @param array{field:string, otherField:string} $array
+                     * @param strict-array{field:string, otherField:string} $array
                      */
                     function print_field($array) : void {
                         echo $array["field"] . " " . $array["otherField"];

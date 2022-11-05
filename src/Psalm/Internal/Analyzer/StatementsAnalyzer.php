@@ -132,7 +132,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     private $function_analyzers = [];
 
     /**
-     * @var array<string, array{0: string, 1: CodeLocation}>
+     * @var array<string, strict-array{0: string, 1: CodeLocation}>
      */
     private $unused_var_locations = [];
 
@@ -981,7 +981,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<string, array{0: string, 1: CodeLocation}>
+     * @return array<string, strict-array{0: string, 1: CodeLocation}>
      */
     public function getUnusedVarLocations(): array
     {

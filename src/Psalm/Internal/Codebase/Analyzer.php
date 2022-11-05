@@ -49,15 +49,15 @@ use const PATHINFO_EXTENSION;
 use const PHP_INT_MAX;
 
 /**
- * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: non-empty-string}>
+ * @psalm-type  TaggedCodeType = array<int, strict-array{0: int, 1: non-empty-string}>
  *
- * @psalm-type  FileMapType = array{
+ * @psalm-type  FileMapType = strict-array{
  *      0: TaggedCodeType,
  *      1: TaggedCodeType,
- *      2: array<int, array{0: int, 1: non-empty-string, 2: int}>
+ *      2: array<int, strict-array{0: int, 1: non-empty-string, 2: int}>
  * }
  *
- * @psalm-type  WorkerData = array{
+ * @psalm-type  WorkerData = strict-array{
  *      issues: array<string, list<IssueData>>,
  *      fixable_issue_counts: array<string, int>,
  *      nonmethod_references_to_classes: array<string, array<string,bool>>,
@@ -66,7 +66,7 @@ use const PHP_INT_MAX;
  *      file_references_to_class_properties: array<string, array<string,bool>>,
  *      file_references_to_method_returns: array<string, array<string,bool>>,
  *      file_references_to_missing_class_members: array<string, array<string,bool>>,
- *      mixed_counts: array<string, array{0: int, 1: int}>,
+ *      mixed_counts: array<string, strict-array{0: int, 1: int}>,
  *      mixed_member_names: array<string, array<string, bool>>,
  *      function_timings: array<string, float>,
  *      file_manipulations: array<string, FileManipulation[]>,
@@ -120,7 +120,7 @@ class Analyzer
     /**
      * Used to store counts of mixed vs non-mixed variables
      *
-     * @var array<string, array{0: int, 1: int}>
+     * @var array<string, strict-array{0: int, 1: int}>
      */
     private $mixed_counts = [];
 
@@ -176,17 +176,17 @@ class Analyzer
     private $existing_issues = [];
 
     /**
-     * @var array<string, array<int, array{0: int, 1: non-empty-string}>>
+     * @var array<string, array<int, strict-array{0: int, 1: non-empty-string}>>
      */
     private $reference_map = [];
 
     /**
-     * @var array<string, array<int, array{0: int, 1: non-empty-string}>>
+     * @var array<string, array<int, strict-array{0: int, 1: non-empty-string}>>
      */
     private $type_map = [];
 
     /**
-     * @var array<string, array<int, array{0: int, 1: non-empty-string, 2: int}>>
+     * @var array<string, array<int, strict-array{0: int, 1: non-empty-string, 2: int}>>
      */
     private $argument_map = [];
 
@@ -911,8 +911,8 @@ class Analyzer
     }
 
     /**
-     * @param array<string, array<int, array{int, int, int, int}>> $diff_map
-     * @param array<string, array<int, array{int, int}>> $deletion_ranges
+     * @param array<string, array<int, strict-array{int, int, int, int}>> $diff_map
+     * @param array<string, array<int, strict-array{int, int}>> $deletion_ranges
      */
     public function shiftFileOffsets(array $diff_map, array $deletion_ranges): void
     {
@@ -1103,7 +1103,7 @@ class Analyzer
     }
 
     /**
-     * @return array{0:int, 1:int}
+     * @return strict-array{0:int, 1:int}
      */
     public function getMixedCountsForFile(string $file_path): array
     {
@@ -1115,7 +1115,7 @@ class Analyzer
     }
 
     /**
-     * @param  array{0:int, 1:int} $mixed_counts
+     * @param  strict-array{0:int, 1:int} $mixed_counts
      *
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void
@@ -1167,7 +1167,7 @@ class Analyzer
     }
 
     /**
-     * @return array<string, array{0: int, 1: int}>
+     * @return array<string, strict-array{0: int, 1: int}>
      */
     public function getMixedCounts(): array
     {
@@ -1256,7 +1256,7 @@ class Analyzer
     }
 
     /**
-     * @return array{int, int}
+     * @return strict-array{int, int}
      */
     public function getTotalTypeCoverage(Codebase $codebase): array
     {

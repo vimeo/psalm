@@ -30,7 +30,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
 
     /**
      * @param ErrorHandler $errorHandler Error handler
-     * @param null|array<int, array{int, int, int, int, int, string}> $offset_map
+     * @param null|array<int, strict-array{int, int, int, int, int, string}> $offset_map
      */
     public function __construct(ErrorHandler $errorHandler, ?array $offset_map = null)
     {
@@ -84,7 +84,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             && $this->start_change
             && $this->end_change
         ) {
-            /** @var array{startFilePos: int, endFilePos: int} */
+            /** @var strict-array{startFilePos: int, endFilePos: int} */
             $attrs = $node->getAttributes();
 
             if ($cs = $node->getComments()) {

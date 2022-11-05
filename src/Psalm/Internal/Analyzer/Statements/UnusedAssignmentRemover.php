@@ -230,7 +230,7 @@ class UnusedAssignmentRemover
 
     /**
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @return array{
+     * @return strict-array{
      *          0: PhpParser\Node\Stmt|null,
      *          1: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null
      *          }
@@ -320,7 +320,7 @@ class UnusedAssignmentRemover
     }
 
     /**
-     * @return array{
+     * @return strict-array{
      *          0: PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef|null,
      *          1: int
      *          }

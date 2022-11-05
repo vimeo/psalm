@@ -638,8 +638,8 @@ final class Psalm
     }
 
     /**
-     * @param unsealed-array{"set-baseline": string} $options
-     * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @param array{"set-baseline": string} $options
+     * @return array<string,array<string,strict-array{o:int, s: list<string>}>>
      */
     private static function generateBaseline(
         array $options,
@@ -679,7 +679,7 @@ final class Psalm
     }
 
     /**
-     * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @return array<string,array<string,strict-array{o:int, s: list<string>}>>
      */
     private static function updateBaseline(array $options, Config $config): array
     {
@@ -978,7 +978,7 @@ final class Psalm
 
     /**
      * @param array<int, string> $args
-     * @return array{Config,?string}
+     * @return strict-array{Config,?string}
      */
     private static function initConfig(
         string $current_dir,
@@ -1015,7 +1015,7 @@ final class Psalm
     }
 
     /**
-     * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @return array<string,array<string,strict-array{o:int, s: list<string>}>>
      */
     private static function initBaseline(
         array $options,

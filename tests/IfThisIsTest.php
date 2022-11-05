@@ -290,7 +290,7 @@ class IfThisIsTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code: string, error_message: string}>
+     * @return array<string, strict-array{code: string, error_message: string}>
      */
     public function providerInvalidCodeParse(): iterable
     {

@@ -43,7 +43,7 @@ class ClassLikeDocblockComment
     public $mixins = [];
 
     /**
-     * @var array<int, array{string, ?string, ?string, bool, int}>
+     * @var array<int, strict-array{string, ?string, ?string, bool, int}>
      */
     public $templates = [];
 
@@ -63,7 +63,7 @@ class ClassLikeDocblockComment
     public $yield;
 
     /**
-     * @var array<int, array{end?: int, line_number: int, name: string, start?: int, tag: string, type: string}>
+     * @var array<int, strict-array{end?: int, line_number: int, name: string, start?: int, tag: string, type: string}>
      */
     public $properties = [];
 
@@ -113,7 +113,7 @@ class ClassLikeDocblockComment
     public $suppressed_issues = [];
 
     /**
-     * @var list<array{line_number:int,start_offset:int,end_offset:int,parts:list<string>}>
+     * @var list<strict-array{line_number:int,start_offset:int,end_offset:int,parts:list<string>}>
      */
     public $imported_types = [];
 

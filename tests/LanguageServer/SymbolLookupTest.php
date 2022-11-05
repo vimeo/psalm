@@ -487,7 +487,7 @@ class SymbolLookupTest extends TestCase
     }
 
     /**
-     * @return array<int, array{0: Position, 1: ?string, 2: ?int, 3: ?int}>
+     * @return array<int, strict-array{0: Position, 1: ?string, 2: ?int, 3: ?int}>
      */
     public function providerGetSignatureHelp(): array
     {

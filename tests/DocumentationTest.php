@@ -253,7 +253,7 @@ class DocumentationTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,string[],bool,string}>
+     * @return array<string,strict-array{string,string,string[],bool,string}>
      */
     public function providerInvalidCodeParse(): array
     {
@@ -370,7 +370,7 @@ class DocumentationTest extends TestCase
         );
     }
 
-    /** @return iterable<string, array{string}> */
+    /** @return iterable<string, strict-array{string}> */
     public function knownAnnotations(): iterable
     {
         foreach (DocComment::PSALM_ANNOTATIONS as $annotation) {

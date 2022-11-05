@@ -49,9 +49,9 @@ class PropertiesOfTest extends TestCase
                 $result3 = test3();
                 ',
                 'assertions' => [
-                    '$result1===' => 'unsealed-array{a: int}',
-                    '$result2===' => 'unsealed-array{a: int}',
-                    '$result3===' => 'unsealed-array{a: int}',
+                    '$result1===' => 'array{a: int}',
+                    '$result2===' => 'array{a: int}',
+                    '$result3===' => 'array{a: int}',
                 ]
             ],
             'publicPropertiesOf' => [

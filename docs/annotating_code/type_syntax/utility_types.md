@@ -20,7 +20,7 @@ The `key-of` utility returns the offset-type for any [array type](array_types.md
 Some examples:
 - `key-of<Foo\Bar::ARRAY_CONST>` evaluates to offset-type of `ARRAY_CONST` (Psalm 3.3+)
 - `key-of<list<mixed>>` evaluates to `int`
-- `key-of<array{a: mixed, b: mixed}|array{c: mixed}>` evaluates to `'a'|'b'|'c'`
+- `key-of<strict-array{a: mixed, b: mixed}|strict-array{c: mixed}>` evaluates to `'a'|'b'|'c'`
 - `key-of<string[]>` evaluates to `array-key`
 - `key-of<T>` evaluates to the template param's offset-type (ensure `@template T of array`)
 
@@ -54,7 +54,7 @@ The `value-of` utility returns the value-type for any [array type](array_types.m
 Some examples:
 - `value-of<Foo\Bar::ARRAY_CONST>` evaluates to value-type of `ARRAY_CONST` (Psalm 3.3+)
 - `value-of<list<float>>` evaluates to `float`
-- `value-of<array{a: bool, b: int}|array{c: string}>` evaluates to `bool|int|string`
+- `value-of<strict-array{a: bool, b: int}|strict-array{c: string}>` evaluates to `bool|int|string`
 - `value-of<string[]>` evaluates to `string`
 - `value-of<T>` evaluates to the template param's value-type (ensure `@template T of array`)
 
@@ -142,10 +142,10 @@ final class B extends A {
 }
 
 $a = asArray(new A);
-/** @psalm-trace $a */; // unsealed-array{foo: string, bar: int}
+/** @psalm-trace $a */; // unsealed-strict-array{foo: string, bar: int}
 
 $b = asArray(new B);
-/** @psalm-trace $b */; // array{foo: string, bar: int, baz: float}
+/** @psalm-trace $b */; // strict-array{foo: string, bar: int, baz: float}
 ```
 
 ## `class-string-map<T as Foo, T>`
@@ -271,7 +271,7 @@ Psalm allows defining type aliases for complex types (like array shapes) which m
 
 ```php
 /**
- * @psalm-type PhoneType = array{phone: string}
+ * @psalm-type PhoneType = strict-array{phone: string}
  */
 class Phone {
     /**

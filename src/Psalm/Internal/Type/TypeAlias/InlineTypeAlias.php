@@ -15,12 +15,12 @@ class InlineTypeAlias implements TypeAlias
     use ImmutableNonCloneableTrait;
 
     /**
-     * @var list<array{0: string, 1: int, 2?: string}>
+     * @var list<strict-array{0: string, 1: int, 2?: string}>
      */
     public $replacement_tokens;
 
     /**
-     * @param list<array{0: string, 1: int, 2?: string}> $replacement_tokens
+     * @param list<strict-array{0: string, 1: int, 2?: string}> $replacement_tokens
      */
     public function __construct(array $replacement_tokens)
     {

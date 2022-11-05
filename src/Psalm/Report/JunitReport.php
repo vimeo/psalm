@@ -101,7 +101,7 @@ final class JunitReport extends Report
     }
 
     /**
-     * @param  array{
+     * @param  strict-array{
      *         errors: int,
      *         warnings: int,
      *         failures: list<IssueData>

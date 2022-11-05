@@ -289,8 +289,8 @@ class IssetTest extends TestCase
             'returnArrayWithDefinedKeys' => [
                 'code' => '<?php
                     /**
-                     * @param array{bar?: int, foo: int|string} $arr
-                     * @return array{bar: int, foo: string}|null
+                     * @param strict-array{bar?: int, foo: int|string} $arr
+                     * @return strict-array{bar: int, foo: string}|null
                      */
                     function foo(array $arr) : ?array {
                         if (!isset($arr["bar"])) {
@@ -337,7 +337,7 @@ class IssetTest extends TestCase
                     class Example {
                         const FOO = "foo";
                         /**
-                         * @param unsealed-array{bar:string} $params
+                         * @param array{bar:string} $params
                          */
                         public function test(array $params) : bool {
                             if (isset($params[self::FOO])) {
@@ -611,8 +611,8 @@ class IssetTest extends TestCase
             'issetOnNestedObjectlikeOneLevel' => [
                 'code' => '<?php
                     /**
-                     * @param array{a:array} $array
-                     * @return array{a:unsealed-array{b:mixed}}
+                     * @param strict-array{a:array} $array
+                     * @return strict-array{a:array{b:mixed}}
                      * @throw \LogicException
                      */
                     function level3($array) {
@@ -626,7 +626,7 @@ class IssetTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param string[] $a
-                     * @return unsealed-array{b: string}
+                     * @return array{b: string}
                      */
                     function foo(array $a) {
                         if (isset($a["b"])) {
@@ -1125,7 +1125,7 @@ class IssetTest extends TestCase
             'accessAfterIssetCheckOnFalsableArray' => [
                 'code' => '<?php
                     /**
-                     * @return array{b?: string}|false
+                     * @return strict-array{b?: string}|false
                      */
                     function returnPossiblyFalseArray() {
                         return rand(0, 1) ? false : (rand(0, 1) ? ["b" => "hello"] : []);

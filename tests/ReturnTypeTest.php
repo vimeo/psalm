@@ -498,14 +498,14 @@ class ReturnTypeTest extends TestCase
             ],
             'objectLikeArrayOptionalKeyReturn' => [
                 'code' => '<?php
-                    /** @return array{a: int, b?: int} */
+                    /** @return strict-array{a: int, b?: int} */
                     function foo() : array {
                         return rand(0, 1) ? ["a" => 1, "b" => 2] : ["a" => 2];
                     }',
             ],
             'objectLikeArrayOptionalKeyReturnSeparateStatements' => [
                 'code' => '<?php
-                    /** @return array{a: int, b?: int} */
+                    /** @return strict-array{a: int, b?: int} */
                     function foo() : array {
                         if (rand(0, 1)) {
                             return ["a" => 1, "b" => 2];
@@ -705,7 +705,7 @@ class ReturnTypeTest extends TestCase
                         ];
 
                         /**
-                         * @return iterable<array-key, array{foo: value-of<self::AVAILABLE_TYPES>}>
+                         * @return iterable<array-key, strict-array{foo: value-of<self::AVAILABLE_TYPES>}>
                          */
                         public function foo() {
                             return [
@@ -852,7 +852,7 @@ class ReturnTypeTest extends TestCase
             'infersObjectShapeOfCastArray' => [
                 'code' => '<?php
                     /**
-                     * @return array{a:1}
+                     * @return strict-array{a:1}
                      */
                     function returnsArray(): array {
                         return ["a" => 1];
@@ -908,7 +908,7 @@ class ReturnTypeTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array<"from"|"to", bool> $a
-                     * @return unsealed-array{from?: bool, to?: bool}
+                     * @return array{from?: bool, to?: bool}
                      */
                     function foo(array $a) : array {
                         return $a;
@@ -1254,7 +1254,7 @@ class ReturnTypeTest extends TestCase
             ],
             'complainAboutTKeyedArrayWhenArrayIsFound' => [
                 'code' => '<?php
-                    /** @return unsealed-array{a:string,b:string,c:string} */
+                    /** @return array{a:string,b:string,c:string} */
                     function foo(): array {
                       $arr = [];
                       foreach (["a", "b"] as $key) {
@@ -1349,7 +1349,7 @@ class ReturnTypeTest extends TestCase
             ],
             'objectLikeArrayOptionalKeyWithNonOptionalReturn' => [
                 'code' => '<?php
-                    /** @return array{a: int, b: int} */
+                    /** @return strict-array{a: int, b: int} */
                     function foo() : array {
                         return rand(0, 1) ? ["a" => 1, "b" => 2] : ["a" => 2];
                     }',
@@ -1518,7 +1518,7 @@ class ReturnTypeTest extends TestCase
                      *
                      * This is unsealed because there is no way to mark a TArray as sealed.
                      *
-                     * @return unsealed-array{from: bool, to: bool}
+                     * @return array{from: bool, to: bool}
                      */
                     function foo(array $a) : array {
                         return $a;

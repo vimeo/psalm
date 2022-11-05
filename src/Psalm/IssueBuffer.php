@@ -533,7 +533,7 @@ final class IssueBuffer
     }
 
     /**
-     * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
+     * @param  array<string,array<string,strict-array{o:int, s:array<int, string>}>>  $issue_baseline
      *
      */
     public static function finish(
@@ -833,7 +833,7 @@ final class IssueBuffer
 
     /**
      * @param array<string, array<int, IssueData>> $issues_data
-     * @param array{int, int} $mixed_counts
+     * @param strict-array{int, int} $mixed_counts
      *
      */
     public static function getOutput(

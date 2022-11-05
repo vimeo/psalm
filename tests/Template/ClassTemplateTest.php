@@ -1021,7 +1021,7 @@ class ClassTemplateTest extends TestCase
                      */
                     class Collection {
                         /**
-                         * @return array{0:Collection<TKey,TValue>,1:Collection<TKey,TValue>}
+                         * @return strict-array{0:Collection<TKey,TValue>,1:Collection<TKey,TValue>}
                          * @psalm-suppress InvalidReturnType
                          */
                         public function partition() {}
@@ -3378,7 +3378,7 @@ class ClassTemplateTest extends TestCase
             'templateIsAComplexMultilineType' => [
                 'code' => '<?php
                 /**
-                 * @template T of array{
+                 * @template T of strict-array{
                  *    a: string,
                  *    b: int
                  * }
@@ -3417,7 +3417,7 @@ class ClassTemplateTest extends TestCase
 
                     /**
                      * @param WeakMap<Throwable,int> $wm
-                     * @return array{Throwable,int}
+                     * @return strict-array{Throwable,int}
                      */
                     function isTraverable(WeakMap $wm): array {
                         foreach ($wm as $k => $v) {
@@ -3517,7 +3517,7 @@ class ClassTemplateTest extends TestCase
                         }
                     }
 
-                    /** @param Container<array{name: string}> $r */
+                    /** @param Container<strict-array{name: string}> $r */
                     function takesContainer(Container $r): void {
                         $r->data = ["name" => "David"];
                     }
@@ -4275,7 +4275,7 @@ class ClassTemplateTest extends TestCase
                         }
                     }
 
-                    /** @extends Row<array{id: int, name: string, height: float}> */
+                    /** @extends Row<strict-array{id: int, name: string, height: float}> */
                     class CharacterRow extends Row {}
 
                     $mario = new CharacterRow(["id" => 5, "name" => "Mario", "height" => 3.5]);

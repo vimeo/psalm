@@ -1016,7 +1016,7 @@ class PluginTest extends TestCase
                 function custom_array_map(...$_args) { throw new RuntimeException("???"); }
 
                 /**
-                 * @param list<array{num: int}> $_list
+                 * @param list<strict-array{num: int}> $_list
                  */
                 function acceptsList(array $_list): void { }
 

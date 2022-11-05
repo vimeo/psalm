@@ -51,7 +51,7 @@ class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,string,bool}> */
+    /** @return iterable<int,strict-array{string,string,bool}> */
     public function typeContainments(): iterable
     {
         yield ['int', 'int|string', true];
@@ -81,7 +81,7 @@ class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,string,bool}> */
+    /** @return iterable<int,strict-array{string,string,bool}> */
     public function typeIntersections(): iterable
     {
         yield ['int', 'int|string', true];
@@ -95,7 +95,7 @@ class CodebaseTest extends TestCase
      * @test
      * @dataProvider iterableParams
      *
-     * @param array{string,string} $expected
+     * @param strict-array{string,string} $expected
      *
      */
     public function getKeyValueParamsForTraversableObject(string $input, array $expected): void
@@ -120,7 +120,7 @@ class CodebaseTest extends TestCase
         );
     }
 
-    /** @return iterable<int,array{string,array{string,string}}> */
+    /** @return iterable<int,strict-array{string,strict-array{string,string}}> */
     public function iterableParams(): iterable
     {
         yield ['iterable<int,string>', ['int', 'string']];

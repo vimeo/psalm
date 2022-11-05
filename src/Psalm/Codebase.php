@@ -991,7 +991,7 @@ final class Codebase
     /**
      * @param string $file_path
      * @param string $symbol
-     * @return array{ type: string, description?: string|null}|null
+     * @return strict-array{ type: string, description?: string|null}|null
      */
     public function getSymbolInformation(string $file_path, string $symbol): ?array
     {
@@ -1204,7 +1204,7 @@ final class Codebase
     }
 
     /**
-     * @return array{0: string, 1: Range}|null
+     * @return strict-array{0: string, 1: Range}|null
      */
     public function getReferenceAtPosition(string $file_path, Position $position): ?array
     {
@@ -1257,7 +1257,7 @@ final class Codebase
     }
 
     /**
-     * @return array{0: non-empty-string, 1: int, 2: Range}|null
+     * @return strict-array{0: non-empty-string, 1: int, 2: Range}|null
      */
     public function getFunctionArgumentAtPosition(string $file_path, Position $position): ?array
     {
@@ -1393,7 +1393,7 @@ final class Codebase
     }
 
     /**
-     * @return array{0: string, 1: '->'|'::'|'['|'symbol', 2: int}|null
+     * @return strict-array{0: string, 1: '->'|'::'|'['|'symbol', 2: int}|null
      */
     public function getCompletionDataAtPosition(string $file_path, Position $position): ?array
     {
@@ -1914,7 +1914,7 @@ final class Codebase
      * //  returns [Union(TInt), Union(TString)]
      * ```
      *
-     * @return array{Union, Union}
+     * @return strict-array{Union, Union}
      */
     public function getKeyValueParamsForTraversableObject(Atomic $type): array
     {

@@ -164,7 +164,7 @@ class ReferenceConstraintTest extends TestCase
             'paramOutArrayDefaultNullWithThrow' => [
                 'code' => '<?php
                     /**
-                     * @param-out array{errors: int}|null $info
+                     * @param-out strict-array{errors: int}|null $info
                      */
                     function idnToAsci(?array &$info = null): void {
                         if (rand(0, 1)) {

@@ -225,7 +225,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $attributes = [];
 
     /**
-     * @var list<array{fqn: string, params: array<int>, return: bool}>|null
+     * @var list<strict-array{fqn: string, params: array<int>, return: bool}>|null
      */
     public $proxy_calls = [];
 

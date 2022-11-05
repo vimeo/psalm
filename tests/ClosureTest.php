@@ -98,7 +98,7 @@ class ClosureTest extends TestCase
                     $mirror = function(int $i) : int { return $i; };
                     $a = array_map($mirror, [1, 2, 3]);',
                 'assertions' => [
-                    '$a' => 'list{int, int, int}',
+                    '$a' => 'strict-list{int, int, int}',
                 ],
             ],
             'inlineCallableFunction' => [
@@ -263,14 +263,14 @@ class ClosureTest extends TestCase
             'inferArrayMapReturnTypeWithoutTypehints' => [
                 'code' => '<?php
                     /**
-                     * @param array{0:string,1:string}[] $ret
-                     * @return array{0:string,1:int}[]
+                     * @param strict-array{0:string,1:string}[] $ret
+                     * @return strict-array{0:string,1:int}[]
                      */
                     function f(array $ret) : array
                     {
                         return array_map(
                             /**
-                             * @param array{0:string,1:string} $row
+                             * @param strict-array{0:string,1:string} $row
                              */
                             function (array $row) {
                                 return [
@@ -287,14 +287,14 @@ class ClosureTest extends TestCase
             'inferArrayMapReturnTypeWithTypehints' => [
                 'code' => '<?php
                     /**
-                     * @param array{0:string,1:string}[] $ret
-                     * @return array{0:string,1:int}[]
+                     * @param strict-array{0:string,1:string}[] $ret
+                     * @return strict-array{0:string,1:int}[]
                      */
                     function f(array $ret): array
                     {
                         return array_map(
                             /**
-                             * @param array{0:string,1:string} $row
+                             * @param strict-array{0:string,1:string} $row
                              */
                             function (array $row): array {
                                 return [
@@ -562,7 +562,7 @@ class ClosureTest extends TestCase
                     $maker = maker(stdClass::class);
                     $result = array_map($maker, ["abc"]);',
                 'assertions' => [
-                    '$result' => 'list{stdClass}'
+                    '$result' => 'strict-list{stdClass}'
                 ],
             ],
             'CallableWithArrayReduce' => [
@@ -825,9 +825,9 @@ class ClosureTest extends TestCase
                     $result3 = array_map($closure(...), $array);
                 ',
                 'assertions' => [
-                    '$result1' => 'list{null, null, null}',
-                    '$result2' => 'list{string, string, string}',
-                    '$result3' => 'list{int, int, int}',
+                    '$result1' => 'strict-list{null, null, null}',
+                    '$result2' => 'strict-list{string, string, string}',
+                    '$result3' => 'strict-list{int, int, int}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'

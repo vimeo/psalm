@@ -223,15 +223,15 @@ return [
     ],
     'hash' => [
       'old' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
-      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'array{seed:scalar}'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool', 'options='=>'strict-array{seed:scalar}'],
     ],
     'hash_file' => [
       'old' => ['non-empty-string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool'],
-      'new' => ['non-empty-string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'array{seed:scalar}'],
+      'new' => ['non-empty-string|false', 'algo'=>'string', 'filename'=>'string', 'binary='=>'bool', 'options='=>'strict-array{seed:scalar}'],
     ],
     'hash_init' => [
       'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
-      'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array{seed:scalar}'],
+      'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'strict-array{seed:scalar}'],
     ],
     'imageinterlace' => [
       'old' => ['int|bool', 'image'=>'GdImage', 'enable='=>'bool|null'],

@@ -389,10 +389,10 @@ class TraitTemplateTest extends TestCase
                 'code' => '<?php
                     /** @template TValue */
                     trait A {
-                        /** @psalm-var array{TValue} */
+                        /** @psalm-var strict-array{TValue} */
                         private $foo;
 
-                        /** @psalm-param array{TValue} $foo */
+                        /** @psalm-param strict-array{TValue} $foo */
                         public function __construct(array $foo)
                         {
                             $this->foo = $foo;

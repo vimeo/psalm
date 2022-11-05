@@ -27,7 +27,7 @@ class TNonEmptyArray extends TArray
     public $value = 'non-empty-array';
 
     /**
-     * @param array{Union, Union} $type_params
+     * @param strict-array{Union, Union} $type_params
      * @param positive-int|null $count
      * @param positive-int|null $min_count
      */

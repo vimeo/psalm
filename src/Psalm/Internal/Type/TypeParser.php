@@ -105,8 +105,8 @@ class TypeParser
     /**
      * Parses a string type representation
      *
-     * @param  list<array{0: string, 1: int, 2?: string}> $type_tokens
-     * @param  array{int,int}|null   $php_version
+     * @param  list<strict-array{0: string, 1: int, 2?: string}> $type_tokens
+     * @param  strict-array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
@@ -1452,9 +1452,9 @@ class TypeParser
             return new TObjectWithProperties($properties, [], [], $from_docblock);
         }
 
-        $sealed = !str_starts_with($type, 'unsealed-');
-        if (!$sealed) {
-            $type = substr($type, 9);
+        $sealed = str_starts_with($type, 'strict-');
+        if ($sealed) {
+            $type = substr($type, 7);
         }
         $callable = str_starts_with($type, 'callable-');
         $class = TKeyedArray::class;

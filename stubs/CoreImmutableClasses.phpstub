@@ -155,7 +155,7 @@ interface Throwable
 
     /**
      * @psalm-mutation-free
-     * @return list<array{file?:string,line?:int,function?:string,class?:class-string,type?:'::'|'->',args?:array<mixed>}>
+     * @return list<strict-array{file?:string,line?:int,function?:string,class?:class-string,type?:'::'|'->',args?:array<mixed>}>
      */
     public function getTrace() : array;
 
@@ -234,7 +234,7 @@ class Exception implements Throwable
 
     /**
      * @psalm-mutation-free
-     * @return list<array{file?:string,line?:int,function?:string,class?:class-string,type?:'::'|'->',args?:array<mixed>}>
+     * @return list<strict-array{file?:string,line?:int,function?:string,class?:class-string,type?:'::'|'->',args?:array<mixed>}>
      */
     public final function getTrace() : array {}
 
@@ -311,7 +311,7 @@ class Error implements Throwable
 
     /**
      * @psalm-mutation-free
-     * @return list<array{file?:string,line?:int,function?:string,class?:class-string,type?:'::'|'->',args?:array<mixed>}>
+     * @return list<strict-array{file?:string,line?:int,function?:string,class?:class-string,type?:'::'|'->',args?:array<mixed>}>
      */
     public final function getTrace() : array {}
 

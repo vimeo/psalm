@@ -17,7 +17,7 @@ trait PsalmRunnerTrait
     /**
      * @param list<string> $args
      *
-     * @return array{STDOUT: string, STDERR: string, CODE: int|null}
+     * @return strict-array{STDOUT: string, STDERR: string, CODE: int|null}
      */
     private function runPsalm(
         array $args,

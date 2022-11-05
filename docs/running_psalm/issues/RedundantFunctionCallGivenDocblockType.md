@@ -8,7 +8,7 @@ This may be desired (e.g. when checking user input) so is distinct from Redundan
 <?php
 
 /**
- * @param array{0: lowercase-string, 1: non-empty-list<lowercase-string>} $s
+ * @param strict-array{0: lowercase-string, 1: non-empty-list<lowercase-string>} $s
  *
  * @return lowercase-string
  */

@@ -129,7 +129,7 @@ class CallableTest extends TestCase
                     /**
                      * @template T
                      * @param ArrayList<T> $list
-                     * @return ArrayList<array{T}>
+                     * @return ArrayList<strict-array{T}>
                      */
                     function asTupled(ArrayList $list): ArrayList
                     {
@@ -141,7 +141,7 @@ class CallableTest extends TestCase
                     $a = new ArrayList();
                     $b = asTupled($a);',
                 'assertions' => [
-                    '$b' => 'ArrayList<list{int}>',
+                    '$b' => 'ArrayList<strict-list{int}>',
                 ],
             ],
             'inferArgByPreviousFunctionArg' => [
@@ -668,12 +668,12 @@ class CallableTest extends TestCase
                     $e = array_map([$a_instance, "bar"], ["one", "two"]);
                     $f = array_map("baz", ["one", "two"]);',
                 'assertions' => [
-                    '$a' => 'list{string, string}',
-                    '$b' => 'list{string, string}',
-                    '$c' => 'list{string, string}',
-                    '$d' => 'list{string, string}',
-                    '$e' => 'list{string, string}',
-                    '$f' => 'list{string, string}',
+                    '$a' => 'strict-list{string, string}',
+                    '$b' => 'strict-list{string, string}',
+                    '$c' => 'strict-list{string, string}',
+                    '$d' => 'strict-list{string, string}',
+                    '$e' => 'strict-list{string, string}',
+                    '$f' => 'strict-list{string, string}',
                 ],
             ],
             'arrayCallableMethod' => [
@@ -1717,7 +1717,7 @@ class CallableTest extends TestCase
                      * @template B
                      *
                      * @param ArrayList<T> $list
-                     * @return ArrayList<array{T}>
+                     * @return ArrayList<strict-array{T}>
                      */
                     function genericContext(ArrayList $list): ArrayList
                     {

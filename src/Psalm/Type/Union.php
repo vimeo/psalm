@@ -15,7 +15,7 @@ use function get_object_vars;
 
 /**
  * @psalm-immutable
- * @psalm-type TProperties=array{
+ * @psalm-type TProperties=strict-array{
  *      from_docblock?: bool,
  *      from_calculation?: bool,
  *      from_property?: bool,

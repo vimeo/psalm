@@ -484,7 +484,7 @@ This allows you to define an alias for another type.
 ```php
 <?php
 /**
- * @psalm-type PhoneType = array{phone: string}
+ * @psalm-type PhoneType = strict-array{phone: string}
  */
 class Phone {
     /**

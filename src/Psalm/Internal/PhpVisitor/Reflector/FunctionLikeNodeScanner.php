@@ -912,7 +912,7 @@ class FunctionLikeNodeScanner
     }
 
     /**
-     * @return array{
+     * @return strict-array{
      *     string,
      *     FunctionStorage|MethodStorage,
      *     null|string,

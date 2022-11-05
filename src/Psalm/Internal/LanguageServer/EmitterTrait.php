@@ -28,7 +28,7 @@ trait EmitterTrait
     /**
      * The list of listeners
      *
-     * @var array<string, array{0: bool, 1: int[], 2: callable[]}>
+     * @var array<string, strict-array{0: bool, 1: int[], 2: callable[]}>
      */
     protected $listeners = [];
 

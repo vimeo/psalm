@@ -29,7 +29,7 @@ use const PREG_SET_ORDER;
  */
 class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {
-    /** @var array<int, array{int, int, int, int, int, string}> */
+    /** @var array<int, strict-array{int, int, int, int, int, string}> */
     private $offset_map;
 
     /** @var bool */
@@ -53,7 +53,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
     /** @var PhpParser\ErrorHandler\Collecting */
     private $error_handler;
 
-    /** @param array<int, array{int, int, int, int, int, string}> $offset_map */
+    /** @param array<int, strict-array{int, int, int, int, int, string}> $offset_map */
     public function __construct(
         PhpParser\Parser $parser,
         PhpParser\ErrorHandler\Collecting $error_handler,
@@ -75,7 +75,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
      */
     public function enterNode(PhpParser\Node $node, bool &$traverseChildren = true)
     {
-        /** @var array{startFilePos: int, endFilePos: int, startLine: int} */
+        /** @var strict-array{startFilePos: int, endFilePos: int, startLine: int} */
         $attrs = $node->getAttributes();
 
         if ($cs = $node->getComments()) {
@@ -277,7 +277,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         if ($error_handler->hasErrors()) {
                             foreach ($error_handler->getErrors() as $error) {
                                 if ($error->hasColumnInfo()) {
-                                    /** @var array{startFilePos: int, endFilePos: int} */
+                                    /** @var strict-array{startFilePos: int, endFilePos: int} */
                                     $error_attrs = $error->getAttributes();
                                     $error = new PhpParser\Error(
                                         $error->getRawMessage(),

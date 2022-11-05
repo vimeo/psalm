@@ -811,7 +811,7 @@ class ClassConstAnalyzer
     /**
      * Get the const storage from the parent or interface that this class is overriding.
      *
-     * @return array{ClassLikeStorage, ClassConstantStorage}|null
+     * @return strict-array{ClassLikeStorage, ClassConstantStorage}|null
      */
     private static function getOverriddenConstant(
         ClassLikeStorage $class_storage,

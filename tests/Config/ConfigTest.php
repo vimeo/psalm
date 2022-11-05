@@ -1127,10 +1127,10 @@ class ConfigTest extends TestCase
                 <psalm>
                     <globals>
                         <var name="glob1" type="string" />
-                        <var name="glob2" type="array{str:string}" />
+                        <var name="glob2" type="strict-array{str:string}" />
                         <var name="glob3" type="ns\Clazz" />
                         <var name="glob4" type="string|null" />
-                        <var name="_GET" type="array{str:string}" />
+                        <var name="_GET" type="strict-array{str:string}" />
                     </globals>
                 </psalm>'
             )
@@ -1424,7 +1424,7 @@ class ConfigTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: int, 1: int|null}>
+     * @return array<string, strict-array{0: int, 1: int|null}>
      */
     public function pluginRegistersScannerAndAnalyzerDataProvider(): array
     {

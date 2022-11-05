@@ -28,7 +28,7 @@ class CliUtilsTest extends TestCase
         $argv = $this->argv;
     }
 
-    /** @return iterable<string,array{list<string>,list<string>}> */
+    /** @return iterable<string,strict-array{list<string>,list<string>}> */
     public function provideGetArguments(): iterable
     {
         $psalter = __DIR__ . '/../../psalter';
@@ -61,7 +61,7 @@ class CliUtilsTest extends TestCase
         self::assertEquals($expected, $result);
     }
 
-    /** @return iterable<string,list{0: list<string>|null, 1: list<string>, 2?: list<string>}> */
+    /** @return iterable<string,strict-list{0: list<string>|null, 1: list<string>, 2?: list<string>}> */
     public function provideGetPathsToCheck(): iterable
     {
         $psalm = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'psalm';

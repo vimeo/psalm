@@ -91,7 +91,7 @@ class TypeCombinationTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,non-empty-list<string>}>
+     * @return array<string,strict-array{string,non-empty-list<string>}>
      */
     public function providerTestValidTypeCombination(): array
     {
@@ -357,66 +357,66 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineObjectType1' => [
-                'array{a?: int, b?: string}',
+                'strict-array{a?: int, b?: string}',
                 [
-                    'array{a: int}',
-                    'array{b: string}',
+                    'strict-array{a: int}',
+                    'strict-array{b: string}',
                 ],
             ],
             'combineObjectType2' => [
-                'array{a: int|string, b?: string}',
+                'strict-array{a: int|string, b?: string}',
                 [
-                    'array{a: int}',
-                    'array{a: string,b: string}',
+                    'strict-array{a: int}',
+                    'strict-array{a: string,b: string}',
                 ],
             ],
             'combineObjectTypeWithIntKeyedArray' => [
                 "array<'a'|int, int|string>",
                 [
-                    'array{a: int}',
+                    'strict-array{a: int}',
                     'array<int, string>',
                 ],
             ],
             'combineNestedObjectTypeWithTKeyedArrayIntKeyedArray' => [
-                "array{a: array<'a'|int, int|string>}",
+                "strict-array{a: array<'a'|int, int|string>}",
                 [
-                    'array{a: array{a: int}}',
-                    'array{a: array<int, string>}',
+                    'strict-array{a: strict-array{a: int}}',
+                    'strict-array{a: array<int, string>}',
                 ],
             ],
             'combineIntKeyedObjectTypeWithNestedIntKeyedArray' => [
                 "array<int, array<'a'|int, int|string>>",
                 [
-                    'array<int, array{a:int}>',
+                    'array<int, strict-array{a:int}>',
                     'array<int, array<int, string>>',
                 ],
             ],
             'combineNestedObjectTypeWithNestedIntKeyedArray' => [
                 "array<'a'|int, array<'a'|int, int|string>>",
                 [
-                    'array{a: array{a: int}}',
+                    'strict-array{a: strict-array{a: int}}',
                     'array<int, array<int, string>>',
                 ],
             ],
             'combinePossiblyUndefinedKeys' => [
-                'array{a: bool, b?: mixed, d?: mixed}',
+                'strict-array{a: bool, b?: mixed, d?: mixed}',
                 [
-                    'array{a: false, b: mixed}',
-                    'array{a: true, d: mixed}',
-                    'array{a: true, d: mixed}',
+                    'strict-array{a: false, b: mixed}',
+                    'strict-array{a: true, d: mixed}',
+                    'strict-array{a: true, d: mixed}',
                 ],
             ],
             'combinePossiblyUndefinedKeysAndString' => [
-                'array{a: string, b?: int}|string',
+                'strict-array{a: string, b?: int}|string',
                 [
-                    'array{a: string, b?: int}',
+                    'strict-array{a: string, b?: int}',
                     'string',
                 ],
             ],
             'combineMixedArrayWithTKeyedArray' => [
                 'array<array-key, mixed>',
                 [
-                    'array{a: int}',
+                    'strict-array{a: int}',
                     'array',
                 ],
             ],
@@ -466,7 +466,7 @@ class TypeCombinationTest extends TestCase
                 "array<'a'|'b'|'c', 1|2|3>",
                 [
                     'array<"a"|"b"|"c", 1|2|3>',
-                    'array{a: 1|2, b: 2|3, c: 1|3}',
+                    'strict-array{a: 1|2, b: 2|3, c: 1|3}',
                 ],
             ],
             'combineClosures' => [
@@ -584,7 +584,7 @@ class TypeCombinationTest extends TestCase
             'combineCallableArrayAndArray' => [
                 'array<array-key, mixed>',
                 [
-                    'callable-array{class-string, string}',
+                    'callable-strict-array{class-string, string}',
                     'array',
                 ],
             ],
@@ -598,14 +598,14 @@ class TypeCombinationTest extends TestCase
             'combineTKeyedArrayAndArray' => [
                 'array<array-key, mixed>',
                 [
-                    'array{hello: int}',
+                    'strict-array{hello: int}',
                     'array<array-key, mixed>',
                 ],
             ],
             'combineTKeyedArrayAndNestedArray' => [
                 'array<array-key, mixed>',
                 [
-                    'array{hello: array{goodbye: int}}',
+                    'strict-array{hello: strict-array{goodbye: int}}',
                     'array<array-key, mixed>',
                 ],
             ],
@@ -624,10 +624,10 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineNonEmptyListWithTKeyedArrayList' => [
-                'unsealed-list{null|string}<int, string>',
+                'list{null|string}<int, string>',
                 [
                     'non-empty-list<string>',
-                    'array{null}'
+                    'strict-array{null}'
                 ],
             ],
             'combineZeroAndPositiveInt' => [
@@ -701,7 +701,7 @@ class TypeCombinationTest extends TestCase
                 'array<int, int>',
                 [
                     'non-empty-array<int, int>',
-                    'array{0?:int}',
+                    'strict-array{0?:int}',
                 ]
             ],
             'combineNonEmptyStringAndLiteral' => [

@@ -61,9 +61,9 @@ class CallMapTest extends TestCase
 
     /**
      * @depends testDictionaryPathMustBeAReadableDirectory
-     * @return array<string, array{
+     * @return array<string, strict-array{
      *     added: array<string, array<int|string, string>>,
-     *     changed: array<string, array{
+     *     changed: array<string, strict-array{
      *         old: array<int|string, string>,
      *         new: array<int|string, string>
      *     }>,
@@ -90,9 +90,9 @@ class CallMapTest extends TestCase
             }
 
             /**
-             * @var array{
+             * @var strict-array{
              *     added: array<string, array<int|string, string>>,
-             *     changed: array<string, array{
+             *     changed: array<string, strict-array{
              *         old: array<int|string, string>,
              *         new: array<int|string, string>
              *     }>,
@@ -133,9 +133,9 @@ class CallMapTest extends TestCase
      * @depends testMainCallmapFileContainsACallmap
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @param array<string, array<int|string,string>> $mainCallMap
-     * @param array<string, array{
+     * @param array<string, strict-array{
      *     added: array<string, array<int|string, string>>,
-     *     changed: array<string, array{
+     *     changed: array<string, strict-array{
      *         old: array<int|string, string>,
      *         new: array<int|string, string>
      *     }>,
@@ -166,9 +166,9 @@ class CallMapTest extends TestCase
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testCallmapKeysAreStringsAndValuesAreSignatures
      * @param array<string, array<int|string,string>> $mainCallMap
-     * @param array<string, array{
+     * @param array<string, strict-array{
      *     added: array<string, array<int|string, string>>,
-     *     changed: array<string, array{
+     *     changed: array<string, strict-array{
      *         old: array<int|string, string>,
      *         new: array<int|string, string>
      *     }>,
@@ -208,9 +208,9 @@ class CallMapTest extends TestCase
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
      * @param array<string, array<int|string,string>> $mainCallMap
-     * @param array<string, array{
+     * @param array<string, strict-array{
      *     added: array<string, array<int|string, string>>,
-     *     changed: array<string, array{
+     *     changed: array<string, strict-array{
      *         old: array<int|string, string>,
      *         new: array<int|string, string>
      *     }>,
@@ -252,9 +252,9 @@ class CallMapTest extends TestCase
     /**
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testCallmapKeysAreStringsAndValuesAreSignatures
-     * @param array<string, array{
+     * @param array<string, strict-array{
      *     added: array<string, array<int|string, string>>,
-     *     changed: array<string, array{
+     *     changed: array<string, strict-array{
      *         old: array<int|string, string>,
      *         new: array<int|string, string>
      *     }>,
@@ -296,9 +296,9 @@ class CallMapTest extends TestCase
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testCallmapKeysAreStringsAndValuesAreSignatures
      * @depends testChangedAndRemovedFunctionsMustExist
-     * @param array<string, array{
+     * @param array<string, strict-array{
      *     added: array<string, array<int|string, string>>,
-     *     changed: array<string, array{
+     *     changed: array<string, strict-array{
      *         old: array<int|string, string>,
      *         new: array<int|string, string>
      *     }>,
@@ -330,9 +330,9 @@ class CallMapTest extends TestCase
     /**
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testCallmapKeysAreStringsAndValuesAreSignatures
-     * @param array<string, array{
+     * @param array<string, strict-array{
      *     added: array<string, array<int|string, string>>,
-     *     changed: array<string, array{
+     *     changed: array<string, strict-array{
      *         old: array<int|string, string>,
      *         new: array<int|string, string>
      *     }>,
@@ -445,9 +445,9 @@ class CallMapTest extends TestCase
     /**
      * @depends testDeltaFilesContainAddedChangedAndRemovedSections
      * @depends testSignatureKeysAreZeroOrStringAndValuesAreTypes
-     * @param array<string, array{
+     * @param array<string, strict-array{
      *     added: array<string, array<int|string, string>>,
-     *     changed: array<string, array{
+     *     changed: array<string, strict-array{
      *         old: array<int|string, string>,
      *         new: array<int|string, string>
      *     }>,

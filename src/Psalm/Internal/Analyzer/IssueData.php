@@ -112,7 +112,7 @@ class IssueData
     public $link;
 
     /**
-     * @var ?list<DataFlowNodeData|array{label: string, entry_path_type: string}>
+     * @var ?list<DataFlowNodeData|strict-array{label: string, entry_path_type: string}>
      */
     public $taint_trace;
 
@@ -128,7 +128,7 @@ class IssueData
     public $dupe_key;
 
     /**
-     * @param ?list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * @param ?list<DataFlowNodeData|strict-array{label: string, entry_path_type: string}> $taint_trace
      * @param ?list<DataFlowNodeData> $other_references
      */
     public function __construct(

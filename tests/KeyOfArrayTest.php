@@ -102,7 +102,7 @@ class KeyOfArrayTest extends TestCase
             'keyOfUnionListAndKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<list<int>|array{a: int, b: int}>
+                     * @return key-of<list<int>|strict-array{a: int, b: int}>
                      */
                     function getKey(bool $asInt) {
                         if ($asInt) {
@@ -217,7 +217,7 @@ class KeyOfArrayTest extends TestCase
             'noLiteralCAllowedInKeyOfUnionListAndKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<list<int>|array{a: int, b: int}>
+                     * @return key-of<list<int>|strict-array{a: int, b: int}>
                      */
                     function getKey() {
                         return "c";

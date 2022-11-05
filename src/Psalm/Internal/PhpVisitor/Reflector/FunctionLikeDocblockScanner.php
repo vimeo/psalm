@@ -425,8 +425,8 @@ class FunctionLikeDocblockScanner
      * @param  array<string, TypeAlias>|null   $type_aliases
      * @param  array<string, array<string, Union>> $function_template_types
      *
-     * @return array{
-     *     array<int, array{0: string, 1: int, 2?: string}>,
+     * @return strict-array{
+     *     array<int, strict-array{0: string, 1: int, 2?: string}>,
      *     array<string, array<string, Union>>
      * }
      */
@@ -675,7 +675,7 @@ class FunctionLikeDocblockScanner
      * @param array<string, TypeAlias> $type_aliases
      * @param array<
      *     int,
-     *     array{
+     *     strict-array{
      *         type:string,
      *         name:string,
      *         line_number:int,
@@ -1362,7 +1362,7 @@ class FunctionLikeDocblockScanner
      * @param array<string, TypeAlias> $type_aliases
      * @param array<string, array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
-     * @param  array{name:string, type:string, line_number: int} $docblock_param_out
+     * @param  strict-array{name:string, type:string, line_number: int} $docblock_param_out
      */
     private static function handleParamOut(
         array $docblock_param_out,

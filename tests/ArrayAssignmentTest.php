@@ -65,7 +65,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = [4];
                     }',
                 'assertions' => [
-                    '$out' => 'non-empty-list<list{int}>',
+                    '$out' => 'non-empty-list<strict-list{int}>',
                 ],
             ],
             'generic2dArrayCreationAddedInIf' => [
@@ -193,8 +193,8 @@ class ArrayAssignmentTest extends TestCase
                         $bat[$text] = $bar[$i];
                     }',
                 'assertions' => [
-                    '$foo' => 'array{0: string, 1: string, 2: string}',
-                    '$bar' => 'list{int, int, int}',
+                    '$foo' => 'strict-array{0: string, 1: string, 2: string}',
+                    '$bar' => 'strict-list{int, int, int}',
                     '$bat' => 'non-empty-array<string, int>',
                 ],
             ],
@@ -203,7 +203,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo["bar"] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array{bar: string}',
+                    '$foo' => 'strict-array{bar: string}',
                     '$foo[\'bar\']' => 'string',
                 ],
             ],
@@ -212,7 +212,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo["bar"]["baz"] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{baz: string}}',
+                    '$foo' => 'strict-array{bar: strict-array{baz: string}}',
                     '$foo[\'bar\'][\'baz\']' => 'string',
                 ],
             ],
@@ -221,7 +221,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo["bar"]["baz"]["bat"] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{baz: array{bat: string}}}',
+                    '$foo' => 'strict-array{bar: strict-array{baz: strict-array{bat: string}}}',
                     '$foo[\'bar\'][\'baz\'][\'bat\']' => 'string',
                 ],
             ],
@@ -230,7 +230,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo["bar"]["baz"]["bat"]["bap"] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{baz: array{bat: array{bap: string}}}}',
+                    '$foo' => 'strict-array{bar: strict-array{baz: strict-array{bat: strict-array{bap: string}}}}',
                     '$foo[\'bar\'][\'baz\'][\'bat\'][\'bap\']' => 'string',
                 ],
             ],
@@ -239,7 +239,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = ["bar" => []];
                     $foo["bar"]["baz"] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{baz: string}}',
+                    '$foo' => 'strict-array{bar: strict-array{baz: string}}',
                     '$foo[\'bar\'][\'baz\']' => 'string',
                 ],
             ],
@@ -248,7 +248,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = ["bar" => []];
                     $foo["bar"]["baz"]["bat"] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{baz: array{bat: string}}}',
+                    '$foo' => 'strict-array{bar: strict-array{baz: strict-array{bat: string}}}',
                 ],
             ],
             'conflictingTypesWithNoAssignment' => [
@@ -258,7 +258,7 @@ class ArrayAssignmentTest extends TestCase
                         "baz" => [1]
                     ];',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{a: string}, baz: list{int}}',
+                    '$foo' => 'strict-array{bar: strict-array{a: string}, baz: strict-list{int}}',
                 ],
             ],
             'implicitTKeyedArrayCreation' => [
@@ -268,7 +268,7 @@ class ArrayAssignmentTest extends TestCase
                     ];
                     $foo["baz"] = "a";',
                 'assertions' => [
-                    '$foo' => 'array{bar: int, baz: string}',
+                    '$foo' => 'strict-array{bar: int, baz: string}',
                 ],
             ],
             'conflictingTypesWithAssignment' => [
@@ -279,7 +279,7 @@ class ArrayAssignmentTest extends TestCase
                     ];
                     $foo["bar"]["bam"]["baz"] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array{bar: array{a: string, bam: array{baz: string}}, baz: list{int}}',
+                    '$foo' => 'strict-array{bar: strict-array{a: string, bam: strict-array{baz: string}}, baz: strict-list{int}}',
                 ],
             ],
             'conflictingTypesWithAssignment2' => [
@@ -289,7 +289,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["b"][] = "goodbye";
                     $bar = $foo["a"];',
                 'assertions' => [
-                    '$foo' => 'array{a: string, b: non-empty-list<string>}',
+                    '$foo' => 'strict-array{a: string, b: non-empty-list<string>}',
                     '$foo[\'a\']' => 'string',
                     '$foo[\'b\']' => 'non-empty-list<string>',
                     '$bar' => 'string',
@@ -301,7 +301,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["a"] = "hello";
                     $foo["b"]["c"]["d"] = "goodbye";',
                 'assertions' => [
-                    '$foo' => 'array{a: string, b: array{c: array{d: string}}}',
+                    '$foo' => 'strict-array{a: string, b: strict-array{c: strict-array{d: string}}}',
                 ],
             ],
             'nestedTKeyedArrayAssignment' => [
@@ -310,7 +310,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["a"]["b"] = "hello";
                     $foo["a"]["c"] = 1;',
                 'assertions' => [
-                    '$foo' => 'array{a: array{b: string, c: int}}',
+                    '$foo' => 'strict-array{a: strict-array{b: string, c: int}}',
                 ],
             ],
             'conditionalTKeyedArrayAssignment' => [
@@ -323,7 +323,7 @@ class ArrayAssignmentTest extends TestCase
                         $foo["b"] = 2;
                     }',
                 'assertions' => [
-                    '$foo' => 'array{a: string, b: int}',
+                    '$foo' => 'strict-array{a: string, b: int}',
                 ],
             ],
             'arrayKey' => [
@@ -342,7 +342,7 @@ class ArrayAssignmentTest extends TestCase
             'conditionalCheck' => [
                 'code' => '<?php
                     /**
-                     * @param  array{b:string} $a
+                     * @param  strict-array{b:string} $a
                      * @return null|string
                      */
                     function fooFoo($a) {
@@ -361,8 +361,8 @@ class ArrayAssignmentTest extends TestCase
                     $c = [];
                     $c[$b][$b][] = "bam";',
                 'assertions' => [
-                    '$a' => 'array{boop: non-empty-list<string>}',
-                    '$c' => 'array{boop: array{boop: non-empty-list<string>}}',
+                    '$a' => 'strict-array{boop: non-empty-list<string>}',
+                    '$c' => 'strict-array{boop: strict-array{boop: non-empty-list<string>}}',
                 ],
             ],
             'assignExplicitValueToGeneric' => [
@@ -371,7 +371,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
                     $a["foo"] = ["bar" => "baz"];',
                 'assertions' => [
-                    '$a' => 'unsealed-array{foo: array{bar: string}}<string, array<string, string>>',
+                    '$a' => 'array{foo: strict-array{bar: string}}<string, array<string, string>>',
                 ],
             ],
             'additionWithEmpty' => [
@@ -381,8 +381,8 @@ class ArrayAssignmentTest extends TestCase
 
                     $b = [] + ["bar"];',
                 'assertions' => [
-                    '$a' => 'list{string}',
-                    '$b' => 'list{string}',
+                    '$a' => 'strict-list{string}',
+                    '$b' => 'strict-list{string}',
                 ],
             ],
             'additionDifferentType' => [
@@ -392,8 +392,8 @@ class ArrayAssignmentTest extends TestCase
 
                     $b = ["bar"] + [1];',
                 'assertions' => [
-                    '$a' => 'array{0: string}',
-                    '$b' => 'array{0: string}',
+                    '$a' => 'strict-array{0: string}',
+                    '$b' => 'strict-array{0: string}',
                 ],
             ],
             'present1dArrayTypeWithVarKeys' => [
@@ -419,7 +419,7 @@ class ArrayAssignmentTest extends TestCase
             ],
             'objectLikeWithIntegerKeys' => [
                 'code' => '<?php
-                    /** @var array{0: string, 1: int} **/
+                    /** @var strict-array{0: string, 1: int} **/
                     $a = ["hello", 5];
                     $b = $a[0]; // string
                     $c = $a[1]; // int
@@ -437,13 +437,13 @@ class ArrayAssignmentTest extends TestCase
                     $foo["a"] = 1;
                     $foo += ["b" => [2, 3]];',
                 'assertions' => [
-                    '$foo' => 'array{a: int, b: list{int, int}}',
+                    '$foo' => 'strict-array{a: int, b: strict-list{int, int}}',
                 ],
             ],
             'objectLikeArrayIsNonEmpty' => [
                 'code' => '<?php
                     /**
-                     * @param array{a?: string, b: string} $arg
+                     * @param strict-array{a?: string, b: string} $arg
                      * @return non-empty-array<string, string>
                      */
                     function test(array $arg): array {
@@ -457,7 +457,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo["root"]["a"] = 1;
                     $foo["root"] += ["b" => [2, 3]];',
                 'assertions' => [
-                    '$foo' => 'array{root: array{a: int, b: list{int, int}}}',
+                    '$foo' => 'strict-array{root: strict-array{a: int, b: strict-list{int, int}}}',
                 ],
             ],
             'updateStringIntKey1' => [
@@ -467,7 +467,7 @@ class ArrayAssignmentTest extends TestCase
                     $a["a"] = 5;
                     $a[0] = 3;',
                 'assertions' => [
-                    '$a' => 'array{0: int, a: int}',
+                    '$a' => 'strict-array{0: int, a: int}',
                 ],
             ],
             'updateStringIntKey2' => [
@@ -479,7 +479,7 @@ class ArrayAssignmentTest extends TestCase
                     $b[$string] = 5;
                     $b[0] = 3;',
                 'assertions' => [
-                    '$b' => 'array{0: int, c: int}',
+                    '$b' => 'strict-array{0: int, c: int}',
                 ],
             ],
             'updateStringIntKey3' => [
@@ -491,7 +491,7 @@ class ArrayAssignmentTest extends TestCase
                     $c[0] = 3;
                     $c[$string] = 5;',
                 'assertions' => [
-                    '$c' => 'array{0: int, c: int}',
+                    '$c' => 'strict-array{0: int, c: int}',
                 ],
             ],
             'updateStringIntKey4' => [
@@ -503,7 +503,7 @@ class ArrayAssignmentTest extends TestCase
                     $d[$int] = 3;
                     $d["a"] = 5;',
                 'assertions' => [
-                    '$d' => 'array{5: int, a: int}',
+                    '$d' => 'strict-array{5: int, a: int}',
                 ],
             ],
             'updateStringIntKey5' => [
@@ -516,7 +516,7 @@ class ArrayAssignmentTest extends TestCase
                     $e[$int] = 3;
                     $e[$string] = 5;',
                 'assertions' => [
-                    '$e' => 'array{5: int, c: int}',
+                    '$e' => 'strict-array{5: int, c: int}',
                 ],
             ],
             'updateStringIntKeyWithIntRootAndNumberOffset' => [
@@ -529,7 +529,7 @@ class ArrayAssignmentTest extends TestCase
                     $a[0]["a"] = 5;
                     $a[0][0] = 3;',
                 'assertions' => [
-                    '$a' => 'array{0: array{0: int, a: int}}',
+                    '$a' => 'strict-array{0: strict-array{0: int, a: int}}',
                 ],
             ],
             'updateStringIntKeyWithIntRoot' => [
@@ -557,10 +557,10 @@ class ArrayAssignmentTest extends TestCase
                     $e[0][$int] = 3;
                     $e[0][$string] = 5;',
                 'assertions' => [
-                    '$b' => 'array{0: array{0: int, c: int}}',
-                    '$c' => 'array{0: array{0: int, c: int}}',
-                    '$d' => 'array{0: array{5: int, a: int}}',
-                    '$e' => 'array{0: array{5: int, c: int}}',
+                    '$b' => 'strict-array{0: strict-array{0: int, c: int}}',
+                    '$c' => 'strict-array{0: strict-array{0: int, c: int}}',
+                    '$d' => 'strict-array{0: strict-array{5: int, a: int}}',
+                    '$e' => 'strict-array{0: strict-array{5: int, c: int}}',
                 ],
             ],
             'updateStringIntKeyWithTKeyedArrayRootAndNumberOffset' => [
@@ -573,7 +573,7 @@ class ArrayAssignmentTest extends TestCase
                     $a["root"]["a"] = 5;
                     $a["root"][0] = 3;',
                 'assertions' => [
-                    '$a' => 'array{root: array{0: int, a: int}}',
+                    '$a' => 'strict-array{root: strict-array{0: int, a: int}}',
                 ],
             ],
             'updateStringIntKeyWithTKeyedArrayRoot' => [
@@ -601,10 +601,10 @@ class ArrayAssignmentTest extends TestCase
                     $e["root"][$int] = 3;
                     $e["root"][$string] = 5;',
                 'assertions' => [
-                    '$b' => 'array{root: array{0: int, c: int}}',
-                    '$c' => 'array{root: array{0: int, c: int}}',
-                    '$d' => 'array{root: array{5: int, a: int}}',
-                    '$e' => 'array{root: array{5: int, c: int}}',
+                    '$b' => 'strict-array{root: strict-array{0: int, c: int}}',
+                    '$c' => 'strict-array{root: strict-array{0: int, c: int}}',
+                    '$d' => 'strict-array{root: strict-array{5: int, a: int}}',
+                    '$e' => 'strict-array{root: strict-array{5: int, c: int}}',
                 ],
             ],
             'mixedArrayAssignmentWithStringKeys' => [
@@ -661,9 +661,9 @@ class ArrayAssignmentTest extends TestCase
                     $a["d"]["e"] = 5;',
                 'assertions' => [
                     '$a[\'b\']' => 'int',
-                    '$a[\'d\']' => 'array{e: int}',
+                    '$a[\'d\']' => 'strict-array{e: int}',
                     '$a[\'d\'][\'e\']' => 'int',
-                    '$a' => 'array{b: int, d: array{e: int}}',
+                    '$a' => 'strict-array{b: int, d: strict-array{e: int}}',
                 ],
             ],
             'changeTKeyedArrayTypeInIf' => [
@@ -682,8 +682,8 @@ class ArrayAssignmentTest extends TestCase
 
                     $a["b"]["e"] = "d";',
                 'assertions' => [
-                    '$a' => 'array{b: array{e: string}}',
-                    '$a[\'b\']' => 'array{e: string}',
+                    '$a' => 'strict-array{b: strict-array{e: string}}',
+                    '$a[\'b\']' => 'strict-array{e: string}',
                     '$a[\'b\'][\'e\']' => 'string',
                 ],
             ],
@@ -807,7 +807,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = null;
                     $a[0][] = 1;',
                 'assertions' => [
-                    '$a' => 'array{0: non-empty-list<int>}',
+                    '$a' => 'strict-array{0: non-empty-list<int>}',
                 ],
                 'ignored_issues' => ['PossiblyNullArrayAssignment'],
             ],
@@ -845,7 +845,7 @@ class ArrayAssignmentTest extends TestCase
                     $a_values = array_values($a);
                     $a_keys = array_keys($a);',
                 'assertions' => [
-                    '$a' => 'list{string, int}',
+                    '$a' => 'strict-list{string, int}',
                     '$a_values' => 'non-empty-list<int|string>',
                     '$a_keys' => 'non-empty-list<int>',
                 ],
@@ -855,7 +855,7 @@ class ArrayAssignmentTest extends TestCase
                     $b = ["hello", 5];
                     $b[0] = 3;',
                 'assertions' => [
-                    '$b' => 'list{int, int}',
+                    '$b' => 'strict-list{int, int}',
                 ],
             ],
             'changeIntOffsetKeyValuesAfterCopy' => [
@@ -864,8 +864,8 @@ class ArrayAssignmentTest extends TestCase
                     $c = $b;
                     $c[0] = 3;',
                 'assertions' => [
-                    '$b' => 'list{string, int}',
-                    '$c' => 'list{int, int}',
+                    '$b' => 'strict-list{string, int}',
+                    '$c' => 'strict-list{int, int}',
                 ],
             ],
             'mergeIntOffsetValues' => [
@@ -873,8 +873,8 @@ class ArrayAssignmentTest extends TestCase
                     $d = array_merge(["hello", 5], []);
                     $e = array_merge(["hello", 5], ["hello again"]);',
                 'assertions' => [
-                    '$d' => 'list{string, int}',
-                    '$e' => 'list{string, int, string}',
+                    '$d' => 'strict-list{string, int}',
+                    '$e' => 'strict-list{string, int, string}',
                 ],
             ],
             'addIntOffsetToEmptyArray' => [
@@ -882,14 +882,14 @@ class ArrayAssignmentTest extends TestCase
                     $f = [];
                     $f[0] = "hello";',
                 'assertions' => [
-                    '$f' => 'array{0: string}',
+                    '$f' => 'strict-array{0: string}',
                 ],
             ],
             'dontIncrementIntOffsetForKeyedItems' => [
                 'code' => '<?php
                     $a = [1, "a" => 2, 3];',
                 'assertions' => [
-                    '$a' => 'array{0: int, 1: int, a: int}',
+                    '$a' => 'strict-array{0: int, 1: int, a: int}',
                 ],
             ],
             'assignArrayOrSetNull' => [
@@ -1013,7 +1013,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = (array) (rand(0, 1) ? [1 => "one"] : 0);
                     $b = (array) null;',
                 'assertions' => [
-                    '$a' => 'array{0?: int, 1?: string}',
+                    '$a' => 'strict-array{0?: int, 1?: string}',
                     '$b' => 'array<never, never>',
                 ],
             ],
@@ -1154,8 +1154,8 @@ class ArrayAssignmentTest extends TestCase
 
                     $b[] = rand(0, 10);',
                 'assertions' => [
-                    '$a' => 'list{int, int, int}',
-                    '$b' => 'list{int, int, int, int<0, 10>}',
+                    '$a' => 'strict-list{int, int, int}',
+                    '$b' => 'strict-list{int, int, int, int<0, 10>}',
                 ],
             ],
             'listMergedWithTKeyedArrayList' => [
@@ -1240,9 +1240,9 @@ class ArrayAssignmentTest extends TestCase
                     $arr2 = [...$arr1];
                     $arr3 = [1 => 0, ...$arr1];',
                 'assertions' => [
-                    '$result' => 'list{int, int, int, int, int, int, int, int}',
-                    '$arr2' => 'list{int, int, int}',
-                    '$arr3' => 'array{1: int, 2: int, 3: int, 4: int}',
+                    '$result' => 'strict-list{int, int, int, int, int, int, int, int}',
+                    '$arr2' => 'strict-list{int, int, int}',
+                    '$arr3' => 'strict-array{1: int, 2: int, 3: int, 4: int}',
                 ]
             ],
             'arraySpreadWithString' => [
@@ -1253,7 +1253,7 @@ class ArrayAssignmentTest extends TestCase
                         ...["b" => 2]
                     ];',
                 'assertions' => [
-                    '$x===' => 'array{a: 1, b: 2}',
+                    '$x===' => 'strict-array{a: 1, b: 2}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'
@@ -1274,7 +1274,7 @@ class ArrayAssignmentTest extends TestCase
             'propertyAssignmentToTKeyedArrayIntKeys' => [
                 'code' => '<?php
                     class Bar {
-                        /** @var array{0: string, 1:string} */
+                        /** @var strict-array{0: string, 1:string} */
                         private array $baz = ["a", "b"];
 
                         public function append(string $str) : void {
@@ -1285,7 +1285,7 @@ class ArrayAssignmentTest extends TestCase
             'propertyAssignmentToTKeyedArrayStringKeys' => [
                 'code' => '<?php
                     class Bar {
-                        /** @var array{a: string, b:string} */
+                        /** @var strict-array{a: string, b:string} */
                         private array $baz = ["a" => "c", "b" => "d"];
 
                         public function append(string $str) : void {
@@ -1408,8 +1408,8 @@ class ArrayAssignmentTest extends TestCase
             'assignWithLiteralStringKey' => [
                 'code' => '<?php
                     /**
-                     * @param array<int, array{internal: bool, ported: bool}> $i
-                     * @return array<int, array{internal: bool, ported: bool}>
+                     * @param array<int, strict-array{internal: bool, ported: bool}> $i
+                     * @return array<int, strict-array{internal: bool, ported: bool}>
                      */
                     function addOneEntry(array $i, int $id): array {
                         $i[$id][rand(0, 1) ? "internal" : "ported"] = true;
@@ -1427,7 +1427,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $a += ["e" => new RuntimeException()];',
                 'assertions' => [
-                    '$a' => 'array{c: RuntimeException, e: RuntimeException}',
+                    '$a' => 'strict-array{c: RuntimeException, e: RuntimeException}',
                 ]
             ],
             'mergeArrayKeysProperly' => [
@@ -1554,7 +1554,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $e = [...$a, ...$b, ...$c, ...$d, 3];
                 ',
-                'assertions' => ['$e===' => 'list{1, 2, 3}'],
+                'assertions' => ['$e===' => 'strict-list{1, 2, 3}'],
             ],
             'unpackArrayCanBeEmpty' => [
                 'code' => '<?php
@@ -1633,8 +1633,8 @@ class ArrayAssignmentTest extends TestCase
                     $y = [...$shape, ...$a, ...$b, ...$c]; // Shape is first, but only possibly matching keys union their values
                 ',
                 'assertions' => [
-                    '$x===' => 'unsealed-array{0: 3, bar: 2, foo: 1}<array-key, 4|5|6>',
-                    '$y===' => 'unsealed-array{0: 3|4|5|6, bar: 2|6, foo: 1|6}<array-key, 4|5|6>',
+                    '$x===' => 'array{0: 3, bar: 2, foo: 1}<array-key, 4|5|6>',
+                    '$y===' => 'array{0: 3|4|5|6, bar: 2|6, foo: 1|6}<array-key, 4|5|6>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1648,7 +1648,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...test(), "a" => "b"];
                 ',
-                'assertions' => ['$x===' => "unsealed-array{a: 'b'}<int<0, max>, mixed>"],
+                'assertions' => ['$x===' => "array{a: 'b'}<int<0, max>, mixed>"],
             ],
             'checkTraversableUnpackTemplatesCorrectly' => [
                 'code' => '<?php
@@ -1875,7 +1875,7 @@ class ArrayAssignmentTest extends TestCase
                     }
                     $_a = Token::ONE + Token::TWO + Token::THREE;
                     ',
-                'assertions' => ['$_a===' => 'array{16: 16, 17: 17, 18: 18}']
+                'assertions' => ['$_a===' => 'strict-array{16: 16, 17: 17, 18: 18}']
             ],
             'unpackTypedIterableWithStringKeysIntoArray' => [
                 'code' => '<?php
@@ -1944,7 +1944,7 @@ class ArrayAssignmentTest extends TestCase
             'nullableDestructuring' => [
                 'code' => '<?php
                     /**
-                     * @return array{"foo", "bar"}|null
+                     * @return strict-array{"foo", "bar"}|null
                      */
                     function foobar(): ?array
                     {
@@ -1983,7 +1983,7 @@ class ArrayAssignmentTest extends TestCase
 
 
                 /**
-                 * @return array{booking: array{active: false, icon: "settings"}, phones: array{active: false, icon: "phone-tube"}, stat: array{active: false, icon: "review"}, support: array{active: false, icon: "help"}}
+                 * @return strict-array{booking: strict-array{active: false, icon: "settings"}, phones: strict-array{active: false, icon: "phone-tube"}, stat: strict-array{active: false, icon: "review"}, support: strict-array{active: false, icon: "help"}}
                  */
                 function getSections(): array {
                     return [

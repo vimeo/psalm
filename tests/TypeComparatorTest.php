@@ -54,7 +54,7 @@ class TypeComparatorTest extends TestCase
     }
 
     /**
-     * @return array<array{string}>
+     * @return array<strict-array{string}>
      */
     public function getAllBasicTypes(): array
     {
@@ -80,12 +80,12 @@ class TypeComparatorTest extends TestCase
                 'non-empty-countable' => true, // bit weird, maybe a bug?
             ],
             [
-                'unsealed-array' => true, // Requires a shape
-                'unsealed-list' => true, // Requires a shape
+                'strict-array' => true, // Requires a shape
+                'strict-list' => true, // Requires a shape
             ]
         );
-        $basic_types['unsealed-array{test: 123}'] = true;
-        $basic_types['unsealed-list{123}'] = true;
+        $basic_types['strict-array{test: 123}'] = true;
+        $basic_types['strict-list{123}'] = true;
 
         return array_map(
             fn($type) => [$type],
@@ -111,7 +111,7 @@ class TypeComparatorTest extends TestCase
     }
 
     /**
-     * @return array<array{string, string}>
+     * @return array<strict-array{string, string}>
      */
     public function getAllowedChildTypes(): array
     {
@@ -129,11 +129,11 @@ class TypeComparatorTest extends TestCase
                 'array<never, never>',
             ],
             'arrayOptionalKeyed1AcceptsEmptyArray' => [
-                'array{foo?: string}',
+                'strict-array{foo?: string}',
                 'array<never, never>',
             ],
             'arrayOptionalKeyed2AcceptsEmptyArray' => [
-                'array{foo?: string}&array<string, mixed>',
+                'strict-array{foo?: string}&array<string, mixed>',
                 'array<never, never>',
             ],
             'Lowercase-stringAndCallable-string' => [

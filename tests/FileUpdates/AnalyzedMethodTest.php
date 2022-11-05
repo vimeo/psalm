@@ -108,7 +108,7 @@ class AnalyzedMethodTest extends TestCase
     }
 
     /**
-     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,0?:array<string,string>}>
+     * @return array<string,strict-array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,0?:array<string,string>}>
      */
     public function providerTestValidUpdates(): array
     {

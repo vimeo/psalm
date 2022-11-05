@@ -175,7 +175,7 @@ class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string}>
+     * @return array<string, strict-array{code:string}>
      */
     public function providerValidCodeParse(): array
     {
@@ -1211,7 +1211,7 @@ class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{code:string,error_message:string,ignored_issues?:list<string>}>
+     * @return array<string,strict-array{code:string,error_message:string,ignored_issues?:list<string>}>
      */
     public function providerInvalidCodeParse(): array
     {

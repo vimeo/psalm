@@ -1,7 +1,7 @@
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 
-- [BC] All shaped arrays are now sealed by default: this brings many assertion improvements and bugfixes, see [the docs for more info](https://psalm.dev/docs/annotating_code/type_syntax/array_types/#sealed-object-like-arrays).
+- [BC] Shaped arrays can now be sealed: this brings many assertion improvements and bugfixes, see [the docs for more info](https://psalm.dev/docs/annotating_code/type_syntax/array_types/#sealed-object-like-arrays).
 
 - [BC] All atomic types, `Psalm\Type\Union`, `Psalm\CodeLocation` and storages are fully immutable, use the new setter methods or the new constructors to change properties: these setter methods will return new instances without altering the original instance.  
   Full immutability fixes a whole class of bugs that occurred in multithreaded mode, you can now feel free to use `--threads=$(nproc)` ;)
@@ -29,13 +29,13 @@
 
 - [BC] The parameter `$php_version` of `Psalm\Type\Atomic::create()` renamed
   to `$analysis_php_version_id` and changed from `array|null` to `int|null`.
-  Previously it accepted PHP version as `array{major_version, minor_version}`
+  Previously it accepted PHP version as `strict-array{major_version, minor_version}`
   while now it accepts version ID, similar to how [`PHP_VERSION_ID` is
   calculated](https://www.php.net/manual/en/reserved.constants.php#constant.php-version-id).
 
 - [BC] The parameter `$php_version` of `Psalm\Type::parseString()` renamed to
   `$analysis_php_version_id` and changed from `array|null` to `int|null`.
-  Previously it accepted PHP version as `array{major_version, minor_version}`
+  Previously it accepted PHP version as `strict-array{major_version, minor_version}`
   while now it accepts version ID.
 
 - [BC] Parameter 0 of `canBeFullyExpressedInPhp()` of the classes listed below
@@ -805,7 +805,7 @@
     - [BC] Class `Psalm\Type\TaintKind` became final
     - [BC] Class `Psalm\Type\Union` became final
  - [BC] Property `Psalm\Config::$universal_object_crates` changed default value
-   from `array{'stdClass','SimpleXMLElement','SimpleXMLIterator'}` to `null`
+   from `strict-array{'stdClass','SimpleXMLElement','SimpleXMLIterator'}` to `null`
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use

@@ -847,8 +847,8 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     /**
-                     * @param array<int, array{0: int, 1: string}> $array
-                     * @return list<array{0: int, 1: string}>
+                     * @param array<int, strict-array{0: int, 1: string}> $array
+                     * @return list<strict-array{0: int, 1: string}>
                      */
                     function example(array $array): array {
                         example_sort_by_ref($array);
@@ -2165,7 +2165,7 @@ class FunctionTemplateTest extends TestCase
             'preventBadArraySubtyping' => [
                 'code' => '<?php
                     /**
-                     * @template T as array{a: int}
+                     * @template T as strict-array{a: int}
                      * @return T
                      */
                     function foo() : array {
@@ -2177,7 +2177,7 @@ class FunctionTemplateTest extends TestCase
             'modifyTemplatedShape' => [
                 'code' => '<?php
                     /**
-                     * @template T as array{a: int}
+                     * @template T as strict-array{a: int}
                      * @param T $s
                      * @return T
                      */

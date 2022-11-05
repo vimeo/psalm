@@ -106,7 +106,7 @@ class ReconcilerTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,Assertion,string}>
+     * @return array<string,strict-array{string,Assertion,string}>
      */
     public function providerTestReconcilation(): array
     {
@@ -161,9 +161,9 @@ class ReconcilerTest extends TestCase
             'nullableClassStringTruthy' => ['class-string<SomeClass>', new Truthy(), 'class-string<SomeClass>|null'],
             'iterableToArray' => ['array<int, int>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable<int, int>'],
             'iterableToTraversable' => ['Traversable<int, int>', new IsType(new TNamedObject('Traversable')), 'iterable<int, int>'],
-            'callableToCallableArray' => ['unsealed-callable-array{0: class-string|object, 1: string}', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable'],
-            'SmallKeyedArrayAndCallable' => ['unsealed-array{test: string}', new IsType(new TKeyedArray(['test' => Type::getString()])), 'callable'],
-            'BigKeyedArrayAndCallable' => ['unsealed-array{foo: string, test: string, thing: string}', new IsType(new TKeyedArray(['foo' => Type::getString(), 'test' => Type::getString(), 'thing' => Type::getString()])), 'callable'],
+            'callableToCallableArray' => ['callable-array{0: class-string|object, 1: string}', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable'],
+            'SmallKeyedArrayAndCallable' => ['array{test: string}', new IsType(new TKeyedArray(['test' => Type::getString()])), 'callable'],
+            'BigKeyedArrayAndCallable' => ['array{foo: string, test: string, thing: string}', new IsType(new TKeyedArray(['foo' => Type::getString(), 'test' => Type::getString(), 'thing' => Type::getString()])), 'callable'],
             'callableOrArrayToCallableArray' => ['array<array-key, mixed>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable|array'],
             'traversableToIntersection' => ['Countable&Traversable', new IsType(new TNamedObject('Traversable')), 'Countable'],
             'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', new IsNotType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable'],
@@ -175,7 +175,7 @@ class ReconcilerTest extends TestCase
             'classAssertionOnClassInterfaceUnion' => ['SomeClass|SomeClass&SomeInterface', new IsType(new TNamedObject('SomeClass')), 'SomeClass|SomeInterface'],
             'stringToNumericStringWithInt' => ['numeric-string', new IsLooselyEqual(new TInt()), 'string'],
             'stringToNumericStringWithFloat' => ['numeric-string', new IsLooselyEqual(new TFloat()), 'string'],
-            'filterKeyedArrayWithIterable' => ['array{some: string}',new IsType(new TIterable([Type::getMixed(), Type::getString()])), 'array{some: mixed}'],
+            'filterKeyedArrayWithIterable' => ['strict-array{some: string}',new IsType(new TIterable([Type::getMixed(), Type::getString()])), 'strict-array{some: mixed}'],
             'SimpleXMLElementNotAlwaysTruthy' => ['SimpleXMLElement', new Truthy(), 'SimpleXMLElement'],
             'SimpleXMLElementNotAlwaysTruthy2' => ['SimpleXMLElement', new Falsy(), 'SimpleXMLElement'],
             'SimpleXMLIteratorNotAlwaysTruthy' => ['SimpleXMLIterator', new Truthy(), 'SimpleXMLIterator'],
@@ -185,7 +185,7 @@ class ReconcilerTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string}>
+     * @return array<string,strict-array{string,string}>
      */
     public function providerTestTypeIsContainedBy(): array
     {
@@ -200,12 +200,12 @@ class ReconcilerTest extends TestCase
             'unionContainsWithstring' => ['string', 'string|false'],
             'unionContainsWithFalse' => ['false', 'string|false'],
             'objectLikeTypeWithPossiblyUndefinedToGeneric' => [
-                'array{0: array{a: string}, 1: array{c: string, e: string}}',
+                'strict-array{0: strict-array{a: string}, 1: strict-array{c: string, e: string}}',
                 'array<int, array<string, string>>',
             ],
             'objectLikeTypeWithPossiblyUndefinedToEmpty' => [
                 'array<never, never>',
-                'array{a?: string, b?: string}',
+                'strict-array{a?: string, b?: string}',
             ],
             'literalNumericStringInt' => [
                 '"0"',
@@ -256,7 +256,7 @@ class ReconcilerTest extends TestCase
     }
 
     /**
-     * @return array<non-empty-string,array{Assertion,string}>
+     * @return array<non-empty-string,strict-array{Assertion,string}>
      */
     public function constantAssertions(): array
     {
