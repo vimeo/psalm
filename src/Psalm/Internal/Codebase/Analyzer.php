@@ -6,6 +6,7 @@ use Closure;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FileAnalyzer;

@@ -4,7 +4,9 @@ namespace Psalm\Internal\Codebase;
 
 use Closure;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\Pool;
@@ -15,6 +17,8 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use ReflectionClass;
 use Throwable;
