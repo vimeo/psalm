@@ -282,7 +282,7 @@ try {
       ->mapper()
       ->map(
           'strict-array{a: string, b: int}',
-          json_decode(file_get_contents('https://.../'), true);
+          json_decode(file_get_contents('https://.../'), true)
       );
 
   /** @psalm-trace $array */; // strict-array{a: string, b: int}
