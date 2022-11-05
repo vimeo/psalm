@@ -601,7 +601,7 @@ class AssertionReconciler extends Reconciler
             $codebase,
             $type_1_atomic,
             $type_2_atomic,
-            !($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject),
+            $type_1_atomic instanceof TClassString && $type_2_atomic instanceof TClassString,
             false,
             $atomic_comparison_results
         );
