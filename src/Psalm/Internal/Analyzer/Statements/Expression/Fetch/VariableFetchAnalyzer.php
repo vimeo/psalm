@@ -769,7 +769,7 @@ class VariableFetchAnalyzer
 
             if ($var_id === '$_SERVER') {
                 $arr['argv'] = $argv_helper;
-                $arr['argv'] = $argc_helper;
+                $arr['argc'] = $argc_helper;
             }
 
             $detailed_type = new TKeyedArray(
