@@ -62,7 +62,7 @@ class ObjectComparator
             foreach ($intersection_input_types as $input_type_key => $intersection_input_type) {
                 if ($allow_interface_equality
                     && $container_type_is_interface
-                    && !isset($intersection_container_types[$input_type_key])
+                    && isset($intersection_container_types[$input_type_key])
                 ) {
                     $any_inputs_contained = true;
                 } elseif (self::isIntersectionShallowlyContainedBy(
