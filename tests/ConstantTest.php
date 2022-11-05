@@ -1482,6 +1482,44 @@ class ConstantTest extends TestCase
                     }
                 ',
             ],
+            'finalConst' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        final public const BAR="baz";
+                    }
+
+                    class Baz extends Foo
+                    {
+                    }
+
+                    $a = Baz::BAR;
+                ',
+                'assertions' => [
+                    '$a===' => "'baz'"
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
+            'finalConstInterface' => [
+                'code' => '<?php
+                    interface Foo
+                    {
+                        final public const BAR="baz";
+                    }
+
+                    class Baz implements Foo
+                    {
+                    }
+
+                    $a = Baz::BAR;
+                ',
+                'assertions' => [
+                    '$a===' => "'baz'"
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
         ];
     }
 
