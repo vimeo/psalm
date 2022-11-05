@@ -911,6 +911,7 @@ class FunctionLikeNodeScanner
         );
     }
 
+    //phpcs:disable -- Remove this once the phpstan phpdoc parser MR is merged
     /**
      * @return strict-array{
      *     string,
@@ -928,6 +929,7 @@ class FunctionLikeNodeScanner
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method
     ) {
+        //phpcs:enable -- Remove this once the phpstan phpdoc parser MR is merged
         $classlike_storage = null;
         $fq_classlike_name = null;
         $is_functionlike_override = false;

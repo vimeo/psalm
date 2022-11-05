@@ -930,11 +930,13 @@ class FileReferenceCacheProvider
         }
     }
 
+    //phpcs:disable -- Remove this once the phpstan phpdoc parser MR is merged
     /**
      * @return array<string, strict-array{int, int}>|false
      */
     public function getTypeCoverage()
     {
+        //phpcs:enable -- Remove this once the phpstan phpdoc parser MR is merged
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;

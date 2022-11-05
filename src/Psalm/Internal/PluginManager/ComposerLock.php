@@ -29,7 +29,10 @@ class ComposerLock
     /**
      * @param mixed $package
      *
-     * @psalm-assert-if-true strict-array{name: string, extra: strict-array{psalm: strict-array{pluginClass: string}}} $package
+     * @psalm-assert-if-true strict-array{
+     *      name: string,
+     *      extra: strict-array{psalm: strict-array{pluginClass: string}}
+     * } $package
      *
      * @psalm-pure
      */
