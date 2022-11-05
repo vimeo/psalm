@@ -2454,7 +2454,9 @@ class FunctionCallTest extends TestCase
                 'code' => '<?php
                     $list = [1 => 0, 0 => 1];
                     assert(array_is_list($list));',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ]
         ];
     }
