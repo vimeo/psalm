@@ -4,9 +4,6 @@ namespace Psalm\Tests\FileManipulation;
 
 class MissingReturnTypeTest extends FileManipulationTestCase
 {
-    /**
-     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
-     */
     public function providerValidCodeParse(): array
     {
         return [
@@ -160,7 +157,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: \'hello\'}
+                     * @psalm-return strict-list{\'hello\'}
                      */
                     function foo() {
                         return ["hello"];
@@ -178,7 +175,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: \'hello\'}
+                     * @psalm-return strict-list{\'hello\'}
                      */
                     function foo(): array {
                         return ["hello"];
@@ -196,7 +193,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
+                     * @psalm-return strict-array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
                      */
                     function foo(): array {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
@@ -221,7 +218,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return int[]
                      *
-                     * @psalm-return array{a?: 1, b?: 2}
+                     * @psalm-return strict-array{a?: 1, b?: 2}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {
@@ -258,7 +255,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return ((int|int[])[]|int)[]
                      *
-                     * @psalm-return array{a: 1, b: 2, c: array{a: 1, b: 2, c: array{a: 1, b: 2, c: 3}}}
+                     * @psalm-return strict-array{a: 1, b: 2, c: strict-array{a: 1, b: 2, c: strict-array{a: 1, b: 2, c: 3}}}
                      */
                     function foo(): array {
                         return [
@@ -296,7 +293,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
+                     * @psalm-return strict-array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {

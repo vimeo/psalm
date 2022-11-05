@@ -66,7 +66,7 @@ class ArgumentMapPopulator
         }
 
         // Record ranges of the source code that need to be tokenized to find commas
-        /** @var array{0: int, 1: int}[] $ranges */
+        /** @var strict-array{0: int, 1: int}[] $ranges */
         $ranges = [];
 
         // Add range between opening paren and first argument

@@ -85,12 +85,12 @@ class StatementsProvider
     private $errors = [];
 
     /**
-     * @var array<string, array<int, array{int, int, int, int}>>
+     * @var array<string, array<int, strict-array{int, int, int, int}>>
      */
     private $diff_map = [];
 
     /**
-     * @var array<string, array<int, array{int, int}>>
+     * @var array<string, array<int, strict-array{int, int}>>
      */
     private $deletion_ranges = [];
 
@@ -367,7 +367,7 @@ class StatementsProvider
     }
 
     /**
-     * @return array<string, array<int, array{int, int, int, int}>>
+     * @return array<string, array<int, strict-array{int, int, int, int}>>
      */
     public function getDiffMap(): array
     {
@@ -375,7 +375,7 @@ class StatementsProvider
     }
 
     /**
-     * @return array<string, array<int, array{int, int}>>
+     * @return array<string, array<int, strict-array{int, int}>>
      */
     public function getDeletionRanges(): array
     {
@@ -383,7 +383,7 @@ class StatementsProvider
     }
 
     /**
-     * @param array<string, array<int, array{int, int, int, int}>> $diff_map
+     * @param array<string, array<int, strict-array{int, int, int, int}>> $diff_map
      *
      */
     public function addDiffMap(array $diff_map): void
@@ -392,7 +392,7 @@ class StatementsProvider
     }
 
     /**
-     * @param array<string, array<int, array{int, int}>> $deletion_ranges
+     * @param array<string, array<int, strict-array{int, int}>> $deletion_ranges
      *
      */
     public function addDeletionRanges(array $deletion_ranges): void
@@ -411,7 +411,7 @@ class StatementsProvider
 
     /**
      * @param  list<Stmt> $existing_statements
-     * @param  array<int, array{0:int, 1:int, 2: int, 3: int, 4: int, 5:string}> $file_changes
+     * @param  array<int, strict-list{int, int, int, int, int, string}> $file_changes
      *
      * @return list<Stmt>
      */

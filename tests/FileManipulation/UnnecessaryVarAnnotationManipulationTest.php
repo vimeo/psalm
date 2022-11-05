@@ -4,9 +4,6 @@ namespace Psalm\Tests\FileManipulation;
 
 class UnnecessaryVarAnnotationManipulationTest extends FileManipulationTestCase
 {
-    /**
-     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:string[],safe_types:bool}>
-     */
     public function providerValidCodeParse(): array
     {
         return [

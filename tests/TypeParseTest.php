@@ -190,40 +190,40 @@ class TypeParseTest extends TestCase
 
     public function testIntersectionOfTKeyedArray(): void
     {
-        $this->assertSame('array{a: int, b: int}', (string) Type::parseString('array{a: int}&array{b: int}'));
+        $this->assertSame('strict-array{a: int, b: int}', (string) Type::parseString('strict-array{a: int}&strict-array{b: int}'));
     }
 
     public function testIntersectionOfTwoDifferentArrays(): void
     {
-        $this->assertSame('array{a: int}<string, string>', Type::parseString('array{a: int}&array<string, string>')->getId());
+        $this->assertSame('array{a: int}<string, string>', Type::parseString('strict-array{a: int}&array<string, string>')->getId());
     }
 
     public function testIntersectionOfTwoDifferentArraysReversed(): void
     {
-        $this->assertSame('array{a: int}<string, string>', Type::parseString('array<string, string>&array{a: int}')->getId());
+        $this->assertSame('array{a: int}<string, string>', Type::parseString('array<string, string>&strict-array{a: int}')->getId());
     }
 
     public function testIntersectionOfTKeyedArrayWithMergedProperties(): void
     {
-        $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a: mixed}'));
+        $this->assertSame('strict-array{a: int}', (string) Type::parseString('strict-array{a: int}&strict-array{a: mixed}'));
     }
 
     public function testIntersectionOfTKeyedArrayWithPossiblyUndefinedMergedProperties(): void
     {
-        $this->assertSame('array{a: int}', (string) Type::parseString('array{a: int}&array{a?: int}'));
+        $this->assertSame('strict-array{a: int}', (string) Type::parseString('strict-array{a: int}&strict-array{a?: int}'));
     }
 
 
     public function testIntersectionOfIntranges(): void
     {
-        $this->assertSame('array{a: int<3, 4>}', (string) Type::parseString('array{a: int<2, 4>}&array{a: int<3, 6>}'));
-        $this->assertSame('array{a: 4}', Type::parseString('array{a: 4}&array{a: int<3, 6>}')->getId(true));
+        $this->assertSame('strict-array{a: int<3, 4>}', (string) Type::parseString('strict-array{a: int<2, 4>}&strict-array{a: int<3, 6>}'));
+        $this->assertSame('strict-array{a: 4}', Type::parseString('strict-array{a: 4}&strict-array{a: int<3, 6>}')->getId(true));
     }
 
     public function testIntersectionOfTKeyedArrayWithConflictingProperties(): void
     {
         $this->expectException(TypeParseTreeException::class);
-        Type::parseString('array{a: string}&array{a: int}');
+        Type::parseString('strict-array{a: string}&strict-array{a: int}');
     }
 
     public function testIntersectionOfTwoRegularArrays(): void
@@ -234,25 +234,25 @@ class TypeParseTest extends TestCase
 
     public function testUnionOfIntersectionOfTKeyedArray(): void
     {
-        $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{a: int}|array{a: string}&array{b: int}'));
-        $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{b: int}&array{a: string}|array{a: int}'));
+        $this->assertSame('strict-array{a: int|string, b?: int}', (string) Type::parseString('strict-array{a: int}|strict-array{a: string}&strict-array{b: int}'));
+        $this->assertSame('strict-array{a: int|string, b?: int}', (string) Type::parseString('strict-array{b: int}&strict-array{a: string}|strict-array{a: int}'));
     }
 
     public function testIntersectionOfUnionOfTKeyedArray(): void
     {
         $this->expectException(TypeParseTreeException::class);
-        Type::parseString('array{a: int}&array{a: string}|array{b: int}');
+        Type::parseString('strict-array{a: int}&strict-array{a: string}|strict-array{b: int}');
     }
 
     public function testIntersectionOfTKeyedArrayAndObject(): void
     {
         $this->expectException(TypeParseTreeException::class);
-        Type::parseString('array{a: int}&T1');
+        Type::parseString('strict-array{a: int}&T1');
     }
 
     public function testIterableContainingTKeyedArray(): void
     {
-        $this->assertSame('iterable<string, array{int}>', Type::parseString('iterable<string, array{int}>')->getId());
+        $this->assertSame('iterable<string, strict-list{int}>', Type::parseString('iterable<string, strict-array{int}>')->getId());
     }
 
     public function testPhpDocSimpleArray(): void
@@ -278,8 +278,8 @@ class TypeParseTest extends TestCase
     public function testPhpDocTKeyedArray(): void
     {
         $this->assertSame(
-            'array<array-key, array{b: bool, d: string}>',
-            (string) Type::parseString('array{b: bool, d: string}[]')
+            'array<array-key, strict-array{b: bool, d: string}>',
+            (string) Type::parseString('strict-array{b: bool, d: string}[]')
         );
     }
 
@@ -327,41 +327,41 @@ class TypeParseTest extends TestCase
 
     public function testTKeyedArrayWithSimpleArgs(): void
     {
-        $this->assertSame('array{a: int, b: string}', (string) Type::parseString('array{a: int, b: string}'));
+        $this->assertSame('strict-array{a: int, b: string}', (string) Type::parseString('strict-array{a: int, b: string}'));
     }
 
     public function testTKeyedArrayWithSpace(): void
     {
-        $this->assertSame('array{\'a \': int, \'b  \': string}', (string) Type::parseString('array{\'a \': int, \'b  \': string}'));
+        $this->assertSame('strict-array{\'a \': int, \'b  \': string}', (string) Type::parseString('strict-array{\'a \': int, \'b  \': string}'));
     }
 
     public function testTKeyedArrayWithQuotedKeys(): void
     {
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{"\\"": int, "\\\'": string}'));
+        $this->assertSame('strict-array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('strict-array{\'"\': int, \'\\\'\': string}'));
+        $this->assertSame('strict-array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('strict-array{"\\"": int, "\\\'": string}'));
     }
 
     public function testTKeyedArrayWithClassConstantKey(): void
     {
         $this->expectException(TypeParseTreeException::class);
-        Type::parseString('array{self::FOO: string}');
+        Type::parseString('strict-array{self::FOO: string}');
     }
 
     public function testTKeyedArrayWithQuotedClassConstantKey(): void
     {
-        $this->assertSame('array{\'self::FOO\': string}', (string) Type::parseString('array{"self::FOO": string}'));
+        $this->assertSame('strict-array{\'self::FOO\': string}', (string) Type::parseString('strict-array{"self::FOO": string}'));
     }
 
     public function testTKeyedArrayWithoutClosingBracket(): void
     {
         $this->expectException(TypeParseTreeException::class);
-        Type::parseString('array{a: int, b: string');
+        Type::parseString('strict-array{a: int, b: string');
     }
 
     public function testTKeyedArrayInType(): void
     {
         $this->expectException(TypeParseTreeException::class);
-        Type::parseString('array{a:[]}');
+        Type::parseString('strict-array{a:[]}');
     }
 
     public function testObjectWithSimpleArgs(): void
@@ -377,45 +377,45 @@ class TypeParseTest extends TestCase
     public function testTKeyedArrayWithUnionArgs(): void
     {
         $this->assertSame(
-            'array{a: int|string, b: string}',
-            (string) Type::parseString('array{a: int|string, b: string}')
+            'strict-array{a: int|string, b: string}',
+            (string) Type::parseString('strict-array{a: int|string, b: string}')
         );
     }
 
     public function testTKeyedArrayWithGenericArgs(): void
     {
         $this->assertSame(
-            'array{a: array<int, int|string>, b: string}',
-            (string) Type::parseString('array{a: array<int, string|int>, b: string}')
+            'strict-array{a: array<int, int|string>, b: string}',
+            (string) Type::parseString('strict-array{a: array<int, string|int>, b: string}')
         );
     }
 
     public function testTKeyedArrayWithIntKeysAndUnionArgs(): void
     {
         $this->assertSame(
-            'array{null|stdClass}',
-            (string)Type::parseString('array{stdClass|null}')
+            'strict-list{null|stdClass}',
+            (string)Type::parseString('strict-list{stdClass|null}')
         );
     }
 
     public function testTKeyedArrayWithIntKeysAndGenericArgs(): void
     {
         $this->assertSame(
-            'array{array<array-key, mixed>}',
-            (string)Type::parseString('array{array}')
+            'strict-list{array<array-key, mixed>}',
+            (string)Type::parseString('strict-array{array}')
         );
 
         $this->assertSame(
-            'array{array<int, string>}',
-            (string)Type::parseString('array{array<int, string>}')
+            'strict-list{array<int, string>}',
+            (string)Type::parseString('strict-array{array<int, string>}')
         );
     }
 
     public function testTKeyedArrayOptional(): void
     {
         $this->assertSame(
-            'array{a: int, b?: int}',
-            (string)Type::parseString('array{a: int, b?: int}')
+            'strict-array{a: int, b?: int}',
+            (string)Type::parseString('strict-array{a: int, b?: int}')
         );
     }
 
@@ -530,8 +530,8 @@ class TypeParseTest extends TestCase
     public function testConditionalTypeWithTKeyedArray(): void
     {
         $this->assertSame(
-            '(T is array{a: string} ? string : int)',
-            (string) Type::parseString('(T is array{a: string} ? string : int)', null, ['T' => ['' => Type::getArray()]])
+            '(T is strict-array{a: string} ? string : int)',
+            (string) Type::parseString('(T is strict-array{a: string} ? string : int)', null, ['T' => ['' => Type::getArray()]])
         );
     }
 
@@ -812,7 +812,7 @@ class TypeParseTest extends TestCase
 
     public function testVeryLargeType(): void
     {
-        $very_large_type = 'array{a: Closure():(array<array-key, mixed>|null), b?: Closure():array<array-key, mixed>, c?: Closure():array<array-key, mixed>, d?: Closure():array<array-key, mixed>, e?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), p?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), q: string, r?: Closure():(array<array-key, mixed>|null), s: array<array-key, mixed>}|null';
+        $very_large_type = 'null|strict-array{a: Closure():(array<array-key, mixed>|null), b?: Closure():array<array-key, mixed>, c?: Closure():array<array-key, mixed>, d?: Closure():array<array-key, mixed>, e?: Closure():(null|strict-array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: strict-array{0: string}}), p?: Closure():(null|strict-array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: strict-array{0: string}}), q: string, r?: Closure():(array<array-key, mixed>|null), s: array<array-key, mixed>}';
 
         $this->assertSame(
             $very_large_type,
@@ -912,7 +912,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'array<never, never>',
-            (string)Type::parseString('array{}')
+            (string)Type::parseString('strict-array{}')
         );
     }
 

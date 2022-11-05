@@ -38,6 +38,7 @@ class TypeTokenizer
         'empty' => true,
         'callable' => true,
         'array' => true,
+        'strict-array' => true,
         'non-empty-array' => true,
         'non-empty-string' => true,
         'non-falsy-string' => true,
@@ -84,6 +85,7 @@ class TypeTokenizer
         'private-properties-of' => true,
         'non-empty-countable' => true,
         'list' => true,
+        'strict-list' => true,
         'non-empty-list' => true,
         'class-string-map' => true,
         'open-resource' => true,
@@ -95,7 +97,7 @@ class TypeTokenizer
     ];
 
     /**
-     * @var array<string, list<array{0: string, 1: int}>>
+     * @var array<string, list<strict-array{0: string, 1: int}>>
      */
     private static $memoized_tokens = [];
 
@@ -103,7 +105,7 @@ class TypeTokenizer
      * Tokenises a type string into an array of tuples where the first element
      * contains the string token and the second element contains its offset,
      *
-     * @return list<array{string, int}>
+     * @return list<strict-array{string, int}>
      *
      * @psalm-suppress PossiblyUndefinedIntArrayOffset
      */
@@ -299,7 +301,7 @@ class TypeTokenizer
             $was_space = false;
         }
 
-        /** @var list<array{0: string, 1: int}> $type_tokens */
+        /** @var list<strict-array{0: string, 1: int}> $type_tokens */
         self::$memoized_tokens[$string_type] = $type_tokens;
 
         return $type_tokens;
@@ -350,7 +352,7 @@ class TypeTokenizer
      * @param  array<string, mixed>|null       $template_type_map
      * @param  array<string, TypeAlias>|null   $type_aliases
      *
-     * @return list<array{0: string, 1: int, 2?: string}>
+     * @return list<strict-array{0: string, 1: int, 2?: string}>
      */
     public static function getFullyQualifiedTokens(
         string $string_type,
@@ -503,7 +505,7 @@ class TypeTokenizer
             }
         }
 
-        /** @var list<array{0: string, 1: int, 2?: string}> */
+        /** @var list<strict-array{0: string, 1: int, 2?: string}> */
         return $type_tokens;
     }
 

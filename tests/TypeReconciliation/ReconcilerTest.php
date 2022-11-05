@@ -106,7 +106,7 @@ class ReconcilerTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,Assertion,string}>
+     * @return array<string,strict-array{string,Assertion,string}>
      */
     public function providerTestReconcilation(): array
     {
@@ -175,7 +175,7 @@ class ReconcilerTest extends TestCase
             'classAssertionOnClassInterfaceUnion' => ['SomeClass|SomeClass&SomeInterface', new IsType(new TNamedObject('SomeClass')), 'SomeClass|SomeInterface'],
             'stringToNumericStringWithInt' => ['numeric-string', new IsLooselyEqual(new TInt()), 'string'],
             'stringToNumericStringWithFloat' => ['numeric-string', new IsLooselyEqual(new TFloat()), 'string'],
-            'filterKeyedArrayWithIterable' => ['array{some: string}',new IsType(new TIterable([Type::getMixed(), Type::getString()])), 'array{some: mixed}'],
+            'filterKeyedArrayWithIterable' => ['strict-array{some: string}',new IsType(new TIterable([Type::getMixed(), Type::getString()])), 'strict-array{some: mixed}'],
             'SimpleXMLElementNotAlwaysTruthy' => ['SimpleXMLElement', new Truthy(), 'SimpleXMLElement'],
             'SimpleXMLElementNotAlwaysTruthy2' => ['SimpleXMLElement', new Falsy(), 'SimpleXMLElement'],
             'SimpleXMLIteratorNotAlwaysTruthy' => ['SimpleXMLIterator', new Truthy(), 'SimpleXMLIterator'],
@@ -185,7 +185,7 @@ class ReconcilerTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string}>
+     * @return array<string,strict-array{string,string}>
      */
     public function providerTestTypeIsContainedBy(): array
     {
@@ -200,12 +200,12 @@ class ReconcilerTest extends TestCase
             'unionContainsWithstring' => ['string', 'string|false'],
             'unionContainsWithFalse' => ['false', 'string|false'],
             'objectLikeTypeWithPossiblyUndefinedToGeneric' => [
-                'array{0: array{a: string}, 1: array{c: string, e: string}}',
+                'strict-array{0: strict-array{a: string}, 1: strict-array{c: string, e: string}}',
                 'array<int, array<string, string>>',
             ],
             'objectLikeTypeWithPossiblyUndefinedToEmpty' => [
                 'array<never, never>',
-                'array{a?: string, b?: string}',
+                'strict-array{a?: string, b?: string}',
             ],
             'literalNumericStringInt' => [
                 '"0"',
@@ -256,7 +256,7 @@ class ReconcilerTest extends TestCase
     }
 
     /**
-     * @return array<non-empty-string,array{Assertion,string}>
+     * @return array<non-empty-string,strict-array{Assertion,string}>
      */
     public function constantAssertions(): array
     {

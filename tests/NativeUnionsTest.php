@@ -10,9 +10,6 @@ class NativeUnionsTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -31,7 +28,7 @@ class NativeUnionsTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'nativeTypeUnionAsArgument' => [
@@ -52,7 +49,7 @@ class NativeUnionsTest extends TestCase
                     test(new C());
                 ',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
             'unionAndNullableEquivalent' => [
@@ -62,14 +59,14 @@ class NativeUnionsTest extends TestCase
                     }
                 ',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

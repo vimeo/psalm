@@ -49,7 +49,7 @@ class AnalyzedMethodTest extends TestCase
      *
      * @param array<string, string> $start_files
      * @param array<string, string> $end_files
-     * @param array<string, string> $error_levels
+     * @param array<string, string> $ignored_issues
      *
      */
     public function testValidInclude(
@@ -57,7 +57,7 @@ class AnalyzedMethodTest extends TestCase
         array $end_files,
         array $initial_analyzed_methods,
         array $unaffected_analyzed_methods,
-        array $error_levels = []
+        array $ignored_issues = []
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -71,7 +71,7 @@ class AnalyzedMethodTest extends TestCase
         $config = $codebase->config;
         $config->throw_exception = false;
 
-        foreach ($error_levels as $error_type => $error_level) {
+        foreach ($ignored_issues as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
@@ -108,7 +108,7 @@ class AnalyzedMethodTest extends TestCase
     }
 
     /**
-     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,4?:array<string,string>}>
+     * @return array<string,strict-array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,0?:array<string,string>}>
      */
     public function providerTestValidUpdates(): array
     {

@@ -289,7 +289,7 @@ abstract class Atomic implements TypeNode
 
             case 'positive-int':
                 return new TIntRange(1, null);
-            
+
             case 'non-positive-int':
                 return new TIntRange(null, 0);
 

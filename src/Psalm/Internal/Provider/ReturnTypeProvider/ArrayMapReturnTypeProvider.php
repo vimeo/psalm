@@ -37,6 +37,8 @@ use UnexpectedValueException;
 use function array_map;
 use function array_shift;
 use function array_slice;
+use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
@@ -81,19 +83,33 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             foreach ($call_args as $call_arg) {
                 $call_arg_type = $statements_source->node_data->getType($call_arg->value);
 
-                if ($call_arg_type) {
-                    $array_arg_types[] = $call_arg_type;
+                if ($call_arg_type
+                    && $call_arg_type->isSingle()
+                    && ($call_arg_atomic = $call_arg_type->getSingleAtomic()) instanceof TKeyedArray
+                    && $call_arg_atomic->sealed
+                ) {
+                    $array_arg_types []= array_values($call_arg_atomic->properties);
                 } else {
-                    $array_arg_types[] = Type::getMixed();
-                    break;
+                    return Type::getArray();
                 }
             }
 
-            if ($array_arg_types) {
-                return new Union([new TKeyedArray($array_arg_types)]);
-            }
+            $null = Type::getNull();
+            $array_arg_types = array_map(null, ...$array_arg_types);
+            $array_arg_types = array_map(
+                /** @param non-empty-array<?Union> $sub */
+                function (array $sub) use ($null) {
+                    $sub = array_map(
+                        fn (?Union $t) => $t ?? $null,
+                        $sub
+                    );
+                    return new Union([new TKeyedArray($sub, null, true, null, null, true)]);
+                },
+                $array_arg_types
+            );
+            assert(count($array_arg_types));
 
-            return Type::getArray();
+            return new Union([new TKeyedArray($array_arg_types, null, true, null, null, true)]);
         }
 
         $array_arg = $call_args[1] ?? null;
@@ -201,7 +217,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     null,
                     $array_arg_atomic_type->sealed,
                     $array_arg_atomic_type->previous_key_type,
-                    $mapping_return_type,
+                    $array_arg_atomic_type->sealed ? null : $mapping_return_type,
                     $array_arg_atomic_type->is_list
                 );
 

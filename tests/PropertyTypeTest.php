@@ -353,7 +353,7 @@ class PropertyTypeTest extends TestCase
 
                         return $has_changes;
                     }
-                        
+
                     public function alter() : void {
                         if (rand(0, 1)) {
                             array_pop($this->a);
@@ -551,7 +551,7 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -1068,7 +1068,7 @@ class PropertyTypeTest extends TestCase
 
                         /**
                          * @param string[] $opts
-                         * @psalm-param array{a:string,b:string} $opts
+                         * @psalm-param strict-array{a:string,b:string} $opts
                          */
                         public function __construct(array $opts)
                         {
@@ -1077,7 +1077,7 @@ class PropertyTypeTest extends TestCase
 
                         /**
                          * @param string[] $opts
-                         * @psalm-param array{a:string,b:string} $opts
+                         * @psalm-param strict-array{a:string,b:string} $opts
                          */
                         final public function setOptions(array $opts): void
                         {
@@ -1102,7 +1102,7 @@ class PropertyTypeTest extends TestCase
 
                         /**
                          * @param string[] $opts
-                         * @psalm-param array{a:string,b:string} $opts
+                         * @psalm-param strict-array{a:string,b:string} $opts
                          */
                         public function __construct(array $opts)
                         {
@@ -1111,7 +1111,7 @@ class PropertyTypeTest extends TestCase
 
                         /**
                          * @param string[] $opts
-                         * @psalm-param array{a:string,b:string} $opts
+                         * @psalm-param strict-array{a:string,b:string} $opts
                          */
                         public function setOptions(array $opts): void
                         {
@@ -1757,7 +1757,7 @@ class PropertyTypeTest extends TestCase
                 'code' => '<?php
                     class Foo {
                         /**
-                         * @psalm-var array{from:bool, to:bool}
+                         * @psalm-var strict-array{from:bool, to:bool}
                          */
                         protected $changed = [
                             "from" => false,
@@ -2072,7 +2072,7 @@ class PropertyTypeTest extends TestCase
                     class Foo {
                         private $bar;
 
-                        /** @psalm-param array{key: string} $bar */
+                        /** @psalm-param strict-array{key: string} $bar */
                         public function __construct(array $bar) {
                             $this->bar = $bar;
                         }
@@ -2680,7 +2680,7 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

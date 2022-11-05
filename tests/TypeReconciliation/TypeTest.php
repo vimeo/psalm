@@ -14,11 +14,117 @@ class TypeTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
         return [
+            'sealArray' => [
+                'code' => '<?php
+                    /** @var array */
+                    $a = [];
+
+                    assert(isset($a["a"]));
+                    assert(count($a) === 1);
+                    ',
+                'assertions' => [
+                    '$a===' => 'strict-array{a: mixed}'
+                ]
+            ],
+            'sealedArrayCount' => [
+                'code' => '<?php
+                    $a = random_int(0,1) ? [] : [0, 1];
+
+                    $b = null;
+                    if (count($a) === 2) {
+                        $b = $a;
+                    }',
+                'assertions' => [
+                    '$a===' => 'strict-list{0?: 0, 1?: 1}',
+                    '$b===' => 'null|strict-list{0, 1}'
+                ]
+            ],
+            'sealedArrayMagic' => [
+                'code' => '<?php
+
+                /** @var strict-array{invoice?: string, utd?: "utd", cancel_agreement?: "test", installment?: "test"} */
+                $b = [];
+
+
+                $buttons = [];
+                foreach ($b as $text) {
+                    $buttons[] = $text;
+                }
+                if (count($buttons) === 0) {
+                    echo "Zero";
+                }
+
+
+                /** @var ?string */
+                $test = null;
+                $urls = array_filter([$test]);
+
+                $mainUrlSet = false;
+                foreach ($urls as $_) {
+                    if (!$mainUrlSet) {
+                        $mainUrlSet = true;
+                    }
+                }
+                if (!$mainUrlSet) {
+                    echo "SKIP";
+                }
+
+
+                /**
+                 * @param string|list<bool|strict-array{0:string, 1:string}> $time
+                 */
+                function mapTime($time): void
+                {
+                    $atime = is_array($time) ? $time : [];
+                    if ($time === "24h") {
+                        return;
+                    }
+
+                    for ($day = 0; $day < 7; ++$day) {
+                        if (!array_key_exists($day, $atime) || !is_array($atime[$day])) {
+                            continue;
+                        }
+
+                        $dayWh = $atime[$day];
+                        array_pop($dayWh);
+                    }
+                }',
+                'assertions' => [
+                    '$buttons===' => 'list<string>',
+                    '$urls===' => 'strict-list{0?: non-falsy-string}',
+                    '$mainUrlSet===' => 'bool',
+                ]
+            ],
+            'validSealedArrayAssertions' => [
+                'code' => '<?php
+                    /** @var strict-array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 2) {
+                        echo "Have C!";
+                    }
+
+                    if (count($a) < 3) {
+                        echo "Do not have C!";
+                    }
+                ',
+            ],
+            'validSealedArrayAssertions2' => [
+                'code' => '<?php
+                    /** @var strict-array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    assert(count($a) > 2);
+                ',
+                'assertions' => [
+                    '$a===' => 'strict-array{a: string, b: string, c: string}',
+                ]
+            ],
             'instanceOfInterface' => [
                 'code' => '<?php
                     interface Supplier {
@@ -1148,7 +1254,7 @@ class TypeTest extends TestCase
                     }
 
                     /**
-                     * @param array{0:string, 1: string} $input
+                     * @param strict-array{0:string, 1: string} $input
                      */
                     function consume($input): void{}'
             ],
@@ -1209,7 +1315,7 @@ class TypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<string,strict-array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1569,6 +1675,60 @@ class TypeTest extends TestCase
                     function returnsFalse() { return rand() % 2 > 0; }
                     ',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'invalidSealedArrayAssertion1' => [
+                'code' => '<?php
+                    /** @var strict-array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 1) {
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType'
+            ],
+            'invalidSealedArrayAssertion2' => [
+                'code' => '<?php
+                    /** @var strict-array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 3) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction'
+            ],
+            'invalidSealedArrayAssertion3' => [
+                'code' => '<?php
+                    /** @var strict-array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 4) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction'
+            ],
+            'invalidSealedArrayAssertion4' => [
+                'code' => '<?php
+                    /** @var strict-array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) < 1) {
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType'
+            ],
+            'invalidSealedArrayAssertion5' => [
+                'code' => '<?php
+                    /** @var strict-array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) < 2) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction'
+            ],
+            'invalidSealedArrayAssertion6' => [
+                'code' => '<?php
+                    /** @var strict-array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) < 4) {
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType'
             ],
             'intersectionTypeClassCheckAfterInstanceof' => [
                 'code' => '<?php

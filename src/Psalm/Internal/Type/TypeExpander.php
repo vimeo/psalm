@@ -327,46 +327,69 @@ class TypeExpander
                 $declaring_fq_classlike_name = $self_class;
             }
 
-            if ($evaluate_class_constants && $codebase->classOrInterfaceExists($declaring_fq_classlike_name)) {
-                $class_storage = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name);
-
-                $type_alias_name = $return_type->alias_name;
-
-                if (isset($class_storage->type_aliases[$type_alias_name])) {
-                    $resolved_type_alias = $class_storage->type_aliases[$type_alias_name];
-
-                    if ($resolved_type_alias->replacement_atomic_types) {
-                        $replacement_atomic_types = $resolved_type_alias->replacement_atomic_types;
-
-                        $recursively_fleshed_out_types = [];
-
-                        foreach ($replacement_atomic_types as $replacement_atomic_type) {
-                            $more_recursively_fleshed_out_types = self::expandAtomic(
-                                $codebase,
-                                $replacement_atomic_type,
-                                $self_class,
-                                $static_class_type,
-                                $parent_class,
-                                $evaluate_class_constants,
-                                $evaluate_conditional_types,
-                                $final,
-                                $expand_generic,
-                                $expand_templates,
-                                $throw_on_unresolvable_constant,
-                            );
-
-                            $recursively_fleshed_out_types = [
-                                ...$more_recursively_fleshed_out_types,
-                                ...$recursively_fleshed_out_types
-                            ];
-                        }
-
-                        return $recursively_fleshed_out_types;
-                    }
-                }
+            if (!($evaluate_class_constants && $codebase->classOrInterfaceExists($declaring_fq_classlike_name))) {
+                return [$return_type];
             }
 
-            return [$return_type];
+            $class_storage = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name);
+
+            $type_alias_name = $return_type->alias_name;
+
+            if (!isset($class_storage->type_aliases[$type_alias_name])) {
+                return [$return_type];
+            }
+
+            $resolved_type_alias = $class_storage->type_aliases[$type_alias_name];
+            $replacement_atomic_types = $resolved_type_alias->replacement_atomic_types;
+
+            if (!$replacement_atomic_types) {
+                return [$return_type];
+            }
+
+            $recursively_fleshed_out_types = [];
+            foreach ($replacement_atomic_types as $replacement_atomic_type) {
+                $more_recursively_fleshed_out_types = self::expandAtomic(
+                    $codebase,
+                    $replacement_atomic_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+
+                $recursively_fleshed_out_types = [
+                    ...$more_recursively_fleshed_out_types,
+                    ...$recursively_fleshed_out_types
+                ];
+            }
+
+            foreach ($return_type->extra_types ?? [] as $alias) {
+                $more_recursively_fleshed_out_types = self::expandAtomic(
+                    $codebase,
+                    $alias,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+
+                $recursively_fleshed_out_types = [
+                    ...$more_recursively_fleshed_out_types,
+                    ...$recursively_fleshed_out_types
+                ];
+            }
+
+            return $recursively_fleshed_out_types;
         }
 
         if ($return_type instanceof TKeyOf
@@ -492,7 +515,7 @@ class TypeExpander
                 );
             }
             unset($type_param);
-            /** @psalm-suppress ArgumentTypeCoercion Psalm bug */
+            /** @psalm-suppress InvalidArgument Psalm bug */
             $return_type = $return_type->setTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;
@@ -964,12 +987,16 @@ class TypeExpander
             return [$return_type];
         }
 
+        $all_sealed = true;
         $properties = [];
         foreach ([$class_storage->name, ...array_values($class_storage->parent_classes)] as $class) {
             if (!$codebase->classExists($class)) {
                 continue;
             }
             $storage = $codebase->classlike_storage_provider->get($class);
+            if (!$storage->final) {
+                $all_sealed = false;
+            }
             foreach ($storage->properties as $key => $property) {
                 if (isset($properties[$key])) {
                     continue;
@@ -999,7 +1026,11 @@ class TypeExpander
         if ($properties === []) {
             return [$return_type];
         }
-        return [new TKeyedArray($properties)];
+        return [new TKeyedArray(
+            $properties,
+            null,
+            $all_sealed
+        )];
     }
 
     /**

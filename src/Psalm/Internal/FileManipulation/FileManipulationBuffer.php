@@ -49,7 +49,7 @@ class FileManipulationBuffer
     }
 
     /**
-     * @return array{int, int}
+     * @return strict-array{int, int}
      */
     private static function getCodeOffsets(
         string $source_file_path,

@@ -930,11 +930,13 @@ class FileReferenceCacheProvider
         }
     }
 
+    //phpcs:disable -- Remove this once the phpstan phpdoc parser MR is merged
     /**
-     * @return array<string, array{int, int}>|false
+     * @return array<string, strict-array{int, int}>|false
      */
     public function getTypeCoverage()
     {
+        //phpcs:enable -- Remove this once the phpstan phpdoc parser MR is merged
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
@@ -943,12 +945,12 @@ class FileReferenceCacheProvider
             && file_exists($type_coverage_cache_location)
         ) {
             if ($this->config->use_igbinary) {
-                /** @var array<string, array{int, int}> */
+                /** @var array<string, strict-array{int, int}> */
                 $type_coverage_cache = igbinary_unserialize(
                     Providers::safeFileGetContents($type_coverage_cache_location)
                 );
             } else {
-                /** @var array<string, array{int, int}> */
+                /** @var array<string, strict-array{int, int}> */
                 $type_coverage_cache = unserialize(
                     Providers::safeFileGetContents($type_coverage_cache_location)
                 );
@@ -961,7 +963,7 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @param array<string, array{int, int}> $mixed_counts
+     * @param array<string, strict-array{int, int}> $mixed_counts
      */
     public function setTypeCoverage(array $mixed_counts): void
     {

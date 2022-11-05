@@ -2,6 +2,11 @@
 
 Psalm also allows you to specify values in types.
 
+- [null](#null)
+- [true, false](#true-false)
+- [6, 7.0, "forty-two" and 'forty two'](#some_string-4-314)
+- [Foo\Bar::MY_SCALAR_CONST](#regular-class-constants)
+
 ### null
 
 This is the `null` value, destroyer of worlds. Use it sparingly. Psalm supports you writing `?Foo` to mean `null|Foo`.

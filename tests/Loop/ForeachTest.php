@@ -14,7 +14,7 @@ class ForeachTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -317,7 +317,7 @@ class ForeachTest extends TestCase
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'string',
                 ],
             ],
@@ -331,7 +331,7 @@ class ForeachTest extends TestCase
                         $tag = null;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null',
                 ],
             ],
@@ -350,7 +350,7 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null',
                 ],
             ],
@@ -364,7 +364,7 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null|string',
                 ],
             ],
@@ -378,7 +378,7 @@ class ForeachTest extends TestCase
                         $tag = null;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null|string',
                 ],
             ],
@@ -392,7 +392,7 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'int|null|string',
                 ],
             ],
@@ -407,7 +407,7 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null',
                 ],
             ],
@@ -424,7 +424,7 @@ class ForeachTest extends TestCase
                         $a = $s;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'mixed',
                 ],
                 'ignored_issues' => [
@@ -470,7 +470,7 @@ class ForeachTest extends TestCase
                         continue;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'mixed',
                 ],
                 'ignored_issues' => [
@@ -485,7 +485,7 @@ class ForeachTest extends TestCase
                       $a = true;
                       break;
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
@@ -497,7 +497,7 @@ class ForeachTest extends TestCase
                       $a = true;
                       continue;
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
@@ -514,7 +514,7 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
@@ -528,7 +528,7 @@ class ForeachTest extends TestCase
                         continue;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
@@ -547,7 +547,7 @@ class ForeachTest extends TestCase
                         continue;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
@@ -568,7 +568,7 @@ class ForeachTest extends TestCase
                             }
                         }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
@@ -583,7 +583,7 @@ class ForeachTest extends TestCase
 
                       break;
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
@@ -619,7 +619,7 @@ class ForeachTest extends TestCase
                         $r[] = $key;
                       }
                     }',
-                'assignments' => [],
+                'assertions' => [],
                 'ignored_issues' => [
                     'MixedAssignment', 'MixedArrayAccess',
                 ],
@@ -709,7 +709,7 @@ class ForeachTest extends TestCase
 
                     loopT(new C);
                     loopI(new C);',
-                'assignments' => [],
+                'assertions' => [],
                 'ignored_issues' => [
                     'MixedAssignment', 'UndefinedThisPropertyAssignment',
                 ],
@@ -1165,7 +1165,7 @@ class ForeachTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

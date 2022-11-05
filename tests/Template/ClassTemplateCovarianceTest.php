@@ -12,7 +12,7 @@ class ClassTemplateCovarianceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -487,7 +487,7 @@ class ClassTemplateCovarianceTest extends TestCase
                      */
                     interface IParentCollection {
                         /**
-                         * @return IParentCollection<array{0: T1}>
+                         * @return IParentCollection<strict-array{0: T1}>
                          */
                         public function getNested(): IParentCollection;
                     }
@@ -499,7 +499,7 @@ class ClassTemplateCovarianceTest extends TestCase
                      */
                     interface IChildCollection extends IParentCollection {
                         /**
-                         * @return IChildCollection<array{0: T2}>
+                         * @return IChildCollection<strict-array{0: T2}>
                          */
                         public function getNested(): IChildCollection;
                     }',
@@ -535,7 +535,7 @@ class ClassTemplateCovarianceTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

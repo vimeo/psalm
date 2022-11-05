@@ -6,10 +6,13 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -34,19 +37,23 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
         ];
     }
 
+    private static ?Union $fallback = null;
+
     public static function getGetObjectVarsReturnType(
         Union $first_arg_type,
         SourceAnalyzer $statements_source,
         Context $context,
         CodeLocation $location
     ): Union {
+        self::$fallback ??= new Union([new TArray([Type::getString(), Type::getMixed()])]);
+
         if ($first_arg_type->isSingle()) {
             $atomics = $first_arg_type->getAtomicTypes();
             $object_type = reset($atomics);
 
             if ($object_type instanceof TObjectWithProperties) {
                 if ([] === $object_type->properties) {
-                    return Type::parseString('array<string, mixed>');
+                    return self::$fallback;
                 }
                 return new Union([
                     new TKeyedArray($object_type->properties)
@@ -55,13 +62,13 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
 
             if ($object_type instanceof TNamedObject) {
                 if (strtolower($object_type->value) === strtolower(stdClass::class)) {
-                    return Type::parseString('array<string, mixed>');
+                    return self::$fallback;
                 }
                 $codebase = $statements_source->getCodebase();
                 $class_storage = $codebase->classlikes->getStorageFor($object_type->value);
 
                 if (null === $class_storage) {
-                    return Type::parseString('array<string, mixed>');
+                    return self::$fallback;
                 }
 
                 if ([] === $class_storage->appearing_property_ids) {
@@ -69,7 +76,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                         return Type::getEmptyArray();
                     }
 
-                    return Type::parseString('array<string, mixed>');
+                    return self::$fallback;
                 }
 
                 $properties = [];
@@ -88,7 +95,21 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                             $statements_source,
                             $context
                         );
-                        $properties[$name] = $property_type ?? Type::getMixed();
+                        if (!$property_type) {
+                            continue;
+                        }
+
+                        $property_type = $object_type instanceof TGenericObject
+                            ? AtomicPropertyFetchAnalyzer::localizePropertyType(
+                                $codebase,
+                                $property_type,
+                                $object_type,
+                                $class_storage,
+                                $class_storage
+                            )
+                            : $property_type
+                        ;
+                        $properties[$name] = $property_type;
                     }
                 }
 
@@ -97,15 +118,19 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                         return Type::getEmptyArray();
                     }
 
-                    return Type::parseString('array<string, mixed>');
+                    return self::$fallback;
                 }
 
                 return new Union([
-                    new TKeyedArray($properties)
+                    new TKeyedArray(
+                        $properties,
+                        null,
+                        $class_storage->final
+                    )
                 ]);
             }
         }
-        return Type::parseString('array<string, mixed>');
+        return self::$fallback;
     }
 
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union

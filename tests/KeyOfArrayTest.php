@@ -13,7 +13,7 @@ class KeyOfArrayTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -102,7 +102,7 @@ class KeyOfArrayTest extends TestCase
             'keyOfUnionListAndKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<list<int>|array{a: int, b: int}>
+                     * @return key-of<list<int>|strict-array{a: int, b: int}>
                      */
                     function getKey(bool $asInt) {
                         if ($asInt) {
@@ -155,7 +155,7 @@ class KeyOfArrayTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -217,7 +217,7 @@ class KeyOfArrayTest extends TestCase
             'noLiteralCAllowedInKeyOfUnionListAndKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<list<int>|array{a: int, b: int}>
+                     * @return key-of<list<int>|strict-array{a: int, b: int}>
                      */
                     function getKey() {
                         return "c";

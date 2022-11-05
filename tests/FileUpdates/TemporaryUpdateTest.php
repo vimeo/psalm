@@ -54,13 +54,13 @@ class TemporaryUpdateTest extends TestCase
      *
      * @param array<int, array<string, string>> $file_stages
      * @param array<int, array<int>> $error_positions
-     * @param array<string, string> $error_levels
+     * @param array<string, string> $ignored_issues
      *
      */
     public function testErrorFix(
         array $file_stages,
         array $error_positions,
-        array $error_levels = [],
+        array $ignored_issues = [],
         bool $test_save = true,
         bool $check_unused_code = false
     ): void {
@@ -73,7 +73,7 @@ class TemporaryUpdateTest extends TestCase
 
         $config = $codebase->config;
 
-        foreach ($error_levels as $error_type => $error_level) {
+        foreach ($ignored_issues as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
@@ -162,7 +162,7 @@ class TemporaryUpdateTest extends TestCase
     }
 
     /**
-     * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, ignored_issues?:array<string, string>, test_save?:bool}>
+     * @return array<string,strict-array{array<int, array<string, string>>,error_positions:array<int, array<int>>, ignored_issues?:array<string, string>, test_save?:bool, check_unused_code?: bool}>
      */
     public function providerTestErrorFix(): array
     {
@@ -310,7 +310,7 @@ class TemporaryUpdateTest extends TestCase
                     ],
                 ],
                 'error_positions' => [[373], [374], [375]],
-                [
+                'ignored_issues' => [
                     'MixedAssignment' => Config::REPORT_INFO,
                 ],
             ],
@@ -360,7 +360,7 @@ class TemporaryUpdateTest extends TestCase
                     ],
                 ],
                 'error_positions' => [[196, 144, 339, 290], [345, 296], []],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
@@ -404,7 +404,7 @@ class TemporaryUpdateTest extends TestCase
                     ],
                 ],
                 'error_positions' => [[333], []],
-                [
+                'ignored_issues' => [
                     'InvalidDocblock' => Config::REPORT_INFO,
                 ],
             ],
@@ -450,7 +450,7 @@ class TemporaryUpdateTest extends TestCase
                     ],
                 ],
                 'error_positions' => [[136, 273], [279], [193, 144]],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
@@ -486,10 +486,10 @@ class TemporaryUpdateTest extends TestCase
                     ],
                 ],
                 'error_positions' => [[136, 273], [144, 136, 275]],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
-                false,
+                'test_save' => false,
             ],
             'noChangeJustWeirdDocblocks' => [
                 [
@@ -1728,9 +1728,9 @@ class TemporaryUpdateTest extends TestCase
                     ],
                 ],
                 'error_positions' => [[84], [84]],
-                [],
-                false,
-                true
+                'ignored_issues' => [],
+                'test_save' => false,
+                'check_unused_code' => true
             ],
             'stillUnusedMethod' => [
                 [
@@ -1765,9 +1765,9 @@ class TemporaryUpdateTest extends TestCase
                     ],
                 ],
                 'error_positions' => [[201], [234]],
-                [],
-                false,
-                true
+                'ignored_issues' => [],
+                'test_save' => false,
+                'check_unused_code' => true
             ],
             'usedMethodWithNoAffectedConstantChanges' => [
                 [
@@ -1824,9 +1824,9 @@ class TemporaryUpdateTest extends TestCase
                     ],
                 ],
                 'error_positions' => [[], []],
-                [],
-                false,
-                true
+                'ignored_issues' => [],
+                'test_save' => false,
+                'check_unused_code' => true
             ],
             'syntaxErrorFixed' => [
                 [

@@ -13,7 +13,7 @@ class ValueOfTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -114,7 +114,7 @@ class ValueOfTest extends TestCase
             'acceptLiteralIntInValueOfUnionLiteralInts' => [
                 'code' => '<?php
                     /**
-                     * @return value-of<list<0|1|2>|array{0: 3, 1: 4}>
+                     * @return value-of<list<0|1|2>|strict-array{0: 3, 1: 4}>
                      */
                     function getValue(int $i) {
                         if ($i >= 0 && $i <= 4) {
@@ -213,7 +213,7 @@ class ValueOfTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -261,7 +261,7 @@ class ValueOfTest extends TestCase
             'noOtherStringAllowedForValueOfKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @return value-of<array{a: "foo", b: "bar"}>
+                     * @return value-of<strict-array{a: "foo", b: "bar"}>
                      */
                     function getValue() {
                         return "adams";
@@ -272,7 +272,7 @@ class ValueOfTest extends TestCase
             'noOtherIntAllowedInValueOfUnionLiteralInts' => [
                 'code' => '<?php
                     /**
-                     * @return value-of<list<0|1|2>|array{0: 3, 1: 4}>
+                     * @return value-of<list<0|1|2>|strict-array{0: 3, 1: 4}>
                      */
                     function getValue() {
                         return 5;

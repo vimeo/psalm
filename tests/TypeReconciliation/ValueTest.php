@@ -35,7 +35,7 @@ class ValueTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -569,7 +569,7 @@ class ValueTest extends TestCase
                 'code' => '<?php
                     class Foo {
                         /**
-                         * @var array{from:bool, to:bool}
+                         * @var strict-array{from:bool, to:bool}
                          */
                         protected $things = ["from" => false, "to" => false];
 
@@ -589,7 +589,7 @@ class ValueTest extends TestCase
                 'code' => '<?php
                     class Foo {
                         /**
-                         * @var array{from:bool, to:bool}
+                         * @var strict-array{from:bool, to:bool}
                          */
                         protected $things = ["from" => false, "to" => false];
 
@@ -802,7 +802,7 @@ class ValueTest extends TestCase
             'returnFromUnionLiteral' => [
                 'code' => '<?php
                     /**
-                     * @return array{"a1", "a2"}
+                     * @return strict-array{"a1", "a2"}
                      */
                     function getSupportedConsts() {
                         return ["a1", "a2"];
@@ -822,7 +822,7 @@ class ValueTest extends TestCase
             'returnFromUnionLiteralNegated' => [
                 'code' => '<?php
                     /**
-                     * @return array{"a1", "a2"}
+                     * @return strict-array{"a1", "a2"}
                      */
                     function getSupportedConsts() {
                         return ["a1", "a2"];
@@ -921,7 +921,7 @@ class ValueTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

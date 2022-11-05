@@ -1210,8 +1210,8 @@ return [
       'new' => ['string', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     ],
     'proc_get_status' => [
-      'old' => ['array{command: string, pid: int, running: bool, signaled: bool, stopped: bool, exitcode: int, termsig: int, stopsig: int}|false', 'process'=>'resource'],
-      'new' => ['array{command: string, pid: int, running: bool, signaled: bool, stopped: bool, exitcode: int, termsig: int, stopsig: int}', 'process'=>'resource'],
+      'old' => ['strict-array{command: string, pid: int, running: bool, signaled: bool, stopped: bool, exitcode: int, termsig: int, stopsig: int}|false', 'process'=>'resource'],
+      'new' => ['strict-array{command: string, pid: int, running: bool, signaled: bool, stopped: bool, exitcode: int, termsig: int, stopsig: int}', 'process'=>'resource'],
     ],
     'session_set_cookie_params' => [
       'old' => ['bool', 'lifetime'=>'int', 'path='=>'string', 'domain='=>'string', 'secure='=>'bool', 'httponly='=>'bool'],
@@ -1677,7 +1677,7 @@ return [
     'ReflectionType::isBuiltin' => ['bool'],
     'SplFileObject::fgetss' => ['string|false', 'allowable_tags='=>'string'],
     'create_function' => ['string', 'args'=>'string', 'code'=>'string'],
-    'each' => ['array{0:int|string,key:int|string,1:mixed,value:mixed}', '&r_arr'=>'array'],
+    'each' => ['strict-array{0:int|string,key:int|string,1:mixed,value:mixed}', '&r_arr'=>'array'],
     'gmp_random' => ['GMP', 'limiter='=>'int'],
     'gzgetss' => ['string|false', 'zp'=>'resource', 'length'=>'int', 'allowable_tags='=>'string'],
     'image2wbmp' => ['bool', 'im'=>'resource', 'filename='=>'?string', 'threshold='=>'int'],

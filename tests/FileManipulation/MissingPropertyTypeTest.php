@@ -4,9 +4,6 @@ namespace Psalm\Tests\FileManipulation;
 
 class MissingPropertyTypeTest extends FileManipulationTestCase
 {
-    /**
-     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
-     */
     public function providerValidCodeParse(): array
     {
         return [

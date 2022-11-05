@@ -89,6 +89,7 @@ use function is_numeric;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function str_starts_with;
 use function stripslashes;
 use function strlen;
 use function strpos;
@@ -104,8 +105,8 @@ class TypeParser
     /**
      * Parses a string type representation
      *
-     * @param  list<array{0: string, 1: int, 2?: string}> $type_tokens
-     * @param  array{int,int}|null   $php_version
+     * @param  list<strict-array{0: string, 1: int, 2?: string}> $type_tokens
+     * @param  strict-array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
@@ -1124,8 +1125,13 @@ class TypeParser
                 array_pop($intersection_types);
             }
 
+            $all_sealed = true;
+
             /** @var TKeyedArray $intersection_type */
             foreach ($intersection_types as $intersection_type) {
+                if (!$intersection_type->sealed) {
+                    $all_sealed = false;
+                }
                 foreach ($intersection_type->properties as $property => $property_type) {
                     if (!array_key_exists($property, $properties)) {
                         $properties[$property] = $property_type;
@@ -1161,7 +1167,7 @@ class TypeParser
             return new TKeyedArray(
                 $properties,
                 null,
-                false,
+                $all_sealed,
                 $previous_key_type ?? null,
                 $previous_value_type ?? null,
                 false,
@@ -1380,7 +1386,7 @@ class TypeParser
 
         $type = $parse_tree->value;
 
-        $is_tuple = true;
+        $is_list = true;
 
         foreach ($parse_tree->children as $i => $property_branch) {
             $class_string = false;
@@ -1417,7 +1423,7 @@ class TypeParser
                 } else {
                     $property_key = $property_branch->value;
                 }
-                $is_tuple = false;
+                $is_list = false;
             } else {
                 throw new TypeParseTreeException(
                     'Missing property type'
@@ -1442,7 +1448,31 @@ class TypeParser
             }
         }
 
-        if ($type !== 'array' && $type !== 'object' && $type !== 'callable-array') {
+        if ($type === 'object') {
+            return new TObjectWithProperties($properties, [], [], $from_docblock);
+        }
+
+        $callable = str_starts_with($type, 'callable-');
+        $class = TKeyedArray::class;
+        if ($callable) {
+            $class = TCallableKeyedArray::class;
+            $type = substr($type, 9);
+        }
+
+        $sealed = str_starts_with($type, 'strict-');
+        if ($sealed) {
+            $type = substr($type, 7);
+        }
+
+        if ($callable && !$sealed) {
+            throw new TypeParseTreeException('A callable array cannot be unsealed!');
+        }
+
+        if ($callable && !$properties) {
+            throw new TypeParseTreeException('A callable array cannot be empty!');
+        }
+
+        if ($type !== 'array' && $type !== 'list') {
             throw new TypeParseTreeException('Unexpected brace character');
         }
 
@@ -1450,22 +1480,13 @@ class TypeParser
             return new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock);
         }
 
-        if ($type === 'object') {
-            return new TObjectWithProperties($properties, [], [], $from_docblock);
-        }
-
-        $class = TKeyedArray::class;
-        if ($type === 'callable-array') {
-            $class = TCallableKeyedArray::class;
-        }
-
         return new $class(
             $properties,
             $class_strings,
-            $is_tuple,
+            $sealed,
             null,
             null,
-            $is_tuple,
+            $is_list,
             $from_docblock
         );
     }

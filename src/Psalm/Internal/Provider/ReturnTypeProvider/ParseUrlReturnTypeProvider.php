@@ -146,7 +146,11 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $component_types['port'] = new Union([new TInt()], ['possibly_undefined' => true]);
 
             self::$return_type = new Union([
-                new TKeyedArray($component_types),
+                new TKeyedArray(
+                    $component_types,
+                    null,
+                    true
+                ),
                 new TFalse(),
             ], [
                 'ignore_falsable_issues' => $statements_source->getCodebase()->config->ignore_internal_falsable_issues

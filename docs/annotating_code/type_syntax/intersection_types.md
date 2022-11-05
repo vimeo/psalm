@@ -15,8 +15,8 @@ required to implement multiple interfaces.
 Another use case is being able to merge object-like arrays:
 ```php
 /**
- * @psalm-type A=array{a: int}
- * @psalm-type B=array{b: int}
+ * @psalm-type A=strict-array{a: int}
+ * @psalm-type B=strict-array{b: int}
  *
  * @param A $a
  * @param B $b

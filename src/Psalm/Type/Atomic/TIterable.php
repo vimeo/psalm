@@ -21,12 +21,12 @@ final class TIterable extends Atomic
 {
     use HasIntersectionTrait;
     /**
-     * @use GenericTrait<array{Union, Union}>
+     * @use GenericTrait<strict-array{Union, Union}>
      */
     use GenericTrait;
 
     /**
-     * @var array{Union, Union}
+     * @var strict-array{Union, Union}
      */
     public array $type_params;
 
@@ -41,7 +41,7 @@ final class TIterable extends Atomic
     public $has_docblock_params = false;
 
     /**
-     * @param array{Union, Union}|array<never, never> $type_params
+     * @param strict-array{Union, Union}|array<never, never> $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
     public function __construct(array $type_params = [], array $extra_types = [], bool $from_docblock = false)

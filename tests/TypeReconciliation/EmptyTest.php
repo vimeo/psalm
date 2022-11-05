@@ -12,7 +12,7 @@ class EmptyTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -325,7 +325,7 @@ class EmptyTest extends TestCase
             'doubleEmptyCheckOnTKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @param array{a: array, b: array} $arr
+                     * @param strict-array{a: array, b: array} $arr
                      */
                     function foo(array $arr) : void {
                         if (empty($arr["a"]) && empty($arr["b"])) {}
@@ -383,7 +383,7 @@ class EmptyTest extends TestCase
             'reconcileNonEmptyArrayKey' => [
                 'code' => '<?php
                     /**
-                     * @param array{a?: string, b: string} $arr
+                     * @param strict-array{a?: string, b: string} $arr
                      */
                     function createFromString(array $arr): void
                     {
@@ -451,7 +451,7 @@ class EmptyTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -486,7 +486,7 @@ class EmptyTest extends TestCase
             ],
             'preventEmptyCreatingArray' => [
                 'code' => '<?php
-                    /** @return array{a:mixed} */
+                    /** @return strict-array{a:mixed} */
                     function foo(array $r) {
                         if (!empty($r["a"])) {}
                         return $r;
@@ -495,7 +495,7 @@ class EmptyTest extends TestCase
             ],
             'preventEmptyEquivalentCreatingArray' => [
                 'code' => '<?php
-                    /** @return array{a:mixed} */
+                    /** @return strict-array{a:mixed} */
                     function foo(array $r) {
                         if (isset($r["a"]) && $r["a"]) {}
                         return $r;

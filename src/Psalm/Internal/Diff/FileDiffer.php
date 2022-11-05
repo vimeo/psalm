@@ -29,7 +29,7 @@ class FileDiffer
      * @param list<string>    $a
      * @param list<string>    $b
      *
-     * @return array{0:non-empty-list<array<int, int>>, 1: int, 2: int}
+     * @return strict-array{0:non-empty-list<array<int, int>>, 1: int, 2: int}
      *
      * @psalm-pure
      */
@@ -122,7 +122,7 @@ class FileDiffer
     }
 
     /**
-     * @return array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}>
+     * @return array<int, strict-array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}>
      *
      * @psalm-pure
      */
@@ -140,7 +140,7 @@ class FileDiffer
 
         $last_diff_type = null;
 
-        /** @var array{0:int, 1:int, 2:int, 3:int, 4:int, 5:string}|null */
+        /** @var strict-array{0:int, 1:int, 2:int, 3:int, 4:int, 5:string}|null */
         $last_change = null;
 
         $changes = [];

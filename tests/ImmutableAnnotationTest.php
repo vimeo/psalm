@@ -11,7 +11,7 @@ class ImmutableAnnotationTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -216,7 +216,7 @@ class ImmutableAnnotationTest extends TestCase
                             return ["data" => $this->data];
                         }
 
-                        /** @param array{data: string} $data */
+                        /** @param strict-array{data: string} $data */
                         public function __unserialize(array $data): void {
                             $this->data = $data["data"];
                         }
@@ -551,7 +551,7 @@ class ImmutableAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

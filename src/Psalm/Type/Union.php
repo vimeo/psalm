@@ -15,7 +15,7 @@ use function get_object_vars;
 
 /**
  * @psalm-immutable
- * @psalm-type TProperties=array{
+ * @psalm-type TProperties=strict-array{
  *      from_docblock?: bool,
  *      from_calculation?: bool,
  *      from_property?: bool,
@@ -336,6 +336,7 @@ final class Union implements TypeNode, Stringable
      */
     public function getBuilder(): MutableUnion
     {
+        /** @psalm-suppress InvalidArgument It's actually filtered internally */
         return new MutableUnion($this->getAtomicTypes(), get_object_vars($this));
     }
 

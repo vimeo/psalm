@@ -12,7 +12,7 @@ class ConditionalTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -21,7 +21,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     $dummy = ["test" => 123];
 
-                    /** @var array{test: ?int} */
+                    /** @var strict-array{test: ?int} */
                     $a = ["test" => null];
 
                     if ($a["test"] === null) {
@@ -538,7 +538,7 @@ class ConditionalTest extends TestCase
                     }
 
                     /**
-                     * @param array{field:string,otherField:string} $array
+                     * @param strict-array{field:string,otherField:string} $array
                      */
                     function has_mix_of_fields($array) : void {
                         print_field($array);
@@ -652,7 +652,7 @@ class ConditionalTest extends TestCase
             ],
             'isArrayOnArrayKeyOffset' => [
                 'code' => '<?php
-                    /** @var array{s:array<mixed, array<int, string>|string>} */
+                    /** @var strict-array{s:array<mixed, array<int, string>|string>} */
                     $doc = [];
 
                     if (!is_array($doc["s"]["t"])) {
@@ -1101,8 +1101,8 @@ class ConditionalTest extends TestCase
             'dontRewriteNullableArrayAfterEmptyCheck' => [
                 'code' => '<?php
                     /**
-                     * @param array{x:int,y:int}|null $start_pos
-                     * @return array{x:int,y:int}|null
+                     * @param strict-array{x:int,y:int}|null $start_pos
+                     * @return strict-array{x:int,y:int}|null
                      */
                     function foo(?array $start_pos) : ?array {
                         if ($start_pos) {}
@@ -1419,7 +1419,7 @@ class ConditionalTest extends TestCase
             'assertCheckOnNonZeroArrayOffset' => [
                 'code' => '<?php
                     /**
-                     * @param array{string,array|null} $a
+                     * @param strict-array{string,array|null} $a
                      * @return string
                      */
                     function f(array $a) {
@@ -2934,7 +2934,7 @@ class ConditionalTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -3000,7 +3000,7 @@ class ConditionalTest extends TestCase
             'lessSpecificArrayFields' => [
                 'code' => '<?php
                     /**
-                     * @param array{field:string, otherField:string} $array
+                     * @param strict-array{field:string, otherField:string} $array
                      */
                     function print_field($array) : void {
                         echo $array["field"] . " " . $array["otherField"];

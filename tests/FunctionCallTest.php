@@ -15,7 +15,7 @@ class FunctionCallTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -272,7 +272,7 @@ class FunctionCallTest extends TestCase
             'objectLikeKeyChecksAgainstTKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @param array{a: string} $b
+                     * @param strict-array{a: string} $b
                      */
                     function a($b): string
                     {
@@ -674,7 +674,7 @@ class FunctionCallTest extends TestCase
                     $query = parse_url($url, PHP_URL_QUERY);
                     $fragment = parse_url($url, PHP_URL_FRAGMENT);',
                 'assertions' => [
-                    '$components' => 'array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
+                    '$components' => 'false|strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}',
                     '$scheme' => 'false|null|string',
                     '$host' => 'false|null|string',
                     '$port' => 'false|int|null',
@@ -693,9 +693,9 @@ class FunctionCallTest extends TestCase
                     $b = parse_url($url, -42);
                     $c = parse_url($url, $component);',
                 'assertions' => [
-                    '$a' => 'array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
-                    '$b' => 'array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
-                    '$c' => 'array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
+                    '$a' => 'false|strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}',
+                    '$b' => 'false|strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}',
+                    '$c' => 'false|strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}',
                 ],
             ],
             'triggerUserError' => [
@@ -1066,9 +1066,9 @@ class FunctionCallTest extends TestCase
                     $d = hrtime(false);',
                 'assertions' => [
                     '$a' => 'int',
-                    '$b' => 'array{int, int}',
-                    '$c' => 'array{int, int}|int',
-                    '$d' => 'array{int, int}',
+                    '$b' => 'strict-list{int, int}',
+                    '$c' => 'int|strict-list{int, int}',
+                    '$d' => 'strict-list{int, int}',
                 ],
             ],
             'hrtimeCanBeFloat' => [
@@ -1202,7 +1202,7 @@ class FunctionCallTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @param array{int, int, string} $x
+                     * @param strict-array{int, int, string} $x
                      * @return 3
                      */
                     function example($x) : int {
@@ -1367,7 +1367,7 @@ class FunctionCallTest extends TestCase
                     $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE);',
                 'assertions' => [
                     '$r===' => '0|1|false',
-                    '$matches===' => 'array<array-key, array{string, int<-1, max>}>',
+                    '$matches===' => 'array<array-key, strict-list{string, int<-1, max>}>',
                 ],
             ],
             'pregMatchWithFlagUnmatchedAsNull' => [
@@ -1383,7 +1383,7 @@ class FunctionCallTest extends TestCase
                     $r = preg_match("{foo}", "foo", $matches, PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL);',
                 'assertions' => [
                     '$r===' => '0|1|false',
-                    '$matches===' => 'array<array-key, array{null|string, int<-1, max>}>',
+                    '$matches===' => 'array<array-key, strict-list{null|string, int<-1, max>}>',
                 ],
             ],
             'pregReplaceCallback' => [
@@ -1413,7 +1413,7 @@ class FunctionCallTest extends TestCase
                     };',
                     'assertions' => [],
                     'ignored_issues' => [],
-                    '7.4'
+                    'php_version' => '7.4'
             ],
             'compactDefinedVariable' => [
                 'code' => '<?php
@@ -1843,7 +1843,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedMethodCall'],
+                'ignored_issues' => ['MixedMethodCall'],
                 'php_version' => '8.1',
             ],
             'refineWithEnumExists' => [
@@ -1854,7 +1854,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'refineWithClassExistsOrEnumExists' => [
@@ -1877,7 +1877,7 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'trimSavesLowercaseAttribute' => [
@@ -1911,7 +1911,7 @@ class FunctionCallTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -2081,7 +2081,7 @@ class FunctionCallTest extends TestCase
             'objectLikeKeyChecksAgainstDifferentTKeyedArray' => [
                 'code' => '<?php
                     /**
-                     * @param array{a: int} $b
+                     * @param strict-array{a: int} $b
                      */
                     function a($b): int
                     {
@@ -2450,6 +2450,14 @@ class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'array_is_list_literal_array' => [
+                'code' => '<?php
+                    $list = [1 => 0, 0 => 1];
+                    assert(array_is_list($list));',
+                'error_message' => 'TypeDoesNotContainType',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ]
         ];
     }
 

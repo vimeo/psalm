@@ -431,7 +431,7 @@ class ArrayAccessTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -528,7 +528,7 @@ class ArrayAccessTest extends TestCase
                     function takesBool(bool $b): void {}
 
                     /**
-                     * @param array{int, string, bool} $b
+                     * @param strict-array{int, string, bool} $b
                      */
                     function a(array $b): void {
                         takesInt($b[0]);
@@ -555,7 +555,7 @@ class ArrayAccessTest extends TestCase
                     namespace N;
 
                     /**
-                     * @psalm-param array{key?:string} $p
+                     * @psalm-param strict-array{key?:string} $p
                      */
                     function f(array $p): void
                     {
@@ -575,8 +575,8 @@ class ArrayAccessTest extends TestCase
                     unset($x3[$k]);',
                 'assertions' => [
                     '$x1===' => 'array<never, never>',
-                    '$x2===' => "array{b: 'value'}",
-                    '$x3===' => "array{b: 'value'}",
+                    '$x2===' => "strict-array{b: 'value'}",
+                    '$x3===' => "strict-array{b: 'value'}",
                 ]
             ],
             'domNodeListAccessible' => [
@@ -605,7 +605,7 @@ class ArrayAccessTest extends TestCase
             ],
             'suppressPossiblyUndefinedStringArrayOffet' => [
                 'code' => '<?php
-                    /** @var array{a?:string} */
+                    /** @var strict-array{a?:string} */
                     $entry = ["a"];
 
                     ["a" => $elt] = $entry;
@@ -886,7 +886,7 @@ class ArrayAccessTest extends TestCase
             'arrayAccessAfterByRefArrayOffsetAssignment' => [
                 'code' => '<?php
                     /**
-                     * @param array{param1: array} $params
+                     * @param strict-array{param1: array} $params
                      */
                     function dispatch(array $params) : void {
                         $params["param1"]["foo"] = "bar";
@@ -1021,7 +1021,7 @@ class ArrayAccessTest extends TestCase
             'assignmentListCheckForNull' => [
                 'code' => '<?php
                     /**
-                     * @return array{0: int, 1:string}|null
+                     * @return strict-array{0: int, 1:string}|null
                      */
                     function bar(int $i) {
                         if ( $i < 0)
@@ -1107,7 +1107,7 @@ class ArrayAccessTest extends TestCase
                     $_arr2[$index] = 5;',
                 'assertions' => [
                     '$_arr1===' => 'non-empty-array<1, 5>',
-                    '$_arr2===' => 'array{1: 5}',
+                    '$_arr2===' => 'strict-array{1: 5}',
                 ]
             ],
             'accessArrayWithSingleStringLiteralOffset' => [
@@ -1122,13 +1122,13 @@ class ArrayAccessTest extends TestCase
                 $a = ["a", "b"];
                 unset($a[0]);
                 ',
-                'assertions' => ['$a===' => "array{1: 'b'}"]
+                'assertions' => ['$a===' => "strict-array{1: 'b'}"]
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1181,7 +1181,7 @@ class ArrayAccessTest extends TestCase
                     $a = [];
                     echo $a[0];',
                 'error_message' => 'MixedArrayAccess',
-                'error_level' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'mixedArrayOffset' => [
                 'code' => '<?php
@@ -1189,7 +1189,7 @@ class ArrayAccessTest extends TestCase
                     $a = 5;
                     echo [1, 2, 3, 4][$a];',
                 'error_message' => 'MixedArrayOffset',
-                'error_level' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'nullArrayAccess' => [
                 'code' => '<?php
@@ -1245,7 +1245,7 @@ class ArrayAccessTest extends TestCase
             ],
             'possiblyUndefinedIntArrayOffet' => [
                 'code' => '<?php
-                    /** @var array{0?:string} */
+                    /** @var strict-array{0?:string} */
                     $entry = ["a"];
 
                     [$elt] = $entry;',
@@ -1253,7 +1253,7 @@ class ArrayAccessTest extends TestCase
             ],
             'possiblyUndefinedStringArrayOffet' => [
                 'code' => '<?php
-                    /** @var array{a?:string} */
+                    /** @var strict-array{a?:string} */
                     $entry = ["a"];
 
                     ["a" => $elt] = $entry;',
@@ -1370,7 +1370,7 @@ class ArrayAccessTest extends TestCase
                 'code' => '<?php
                     class Example {
                         /**
-                         * @param array{a: string, b: int} $context
+                         * @param strict-array{a: string, b: int} $context
                          */
                         function foo(array $context): void {
                             $context["c"];
@@ -1393,7 +1393,7 @@ class ArrayAccessTest extends TestCase
             'destructureTuple' => [
                 'code' => '<?php
                     /**
-                     * @return array{int, int}
+                     * @return strict-array{int, int}
                      */
                     function size(): array {
                         return [10, 20];

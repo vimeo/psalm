@@ -14,7 +14,7 @@ class InArrayTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -123,7 +123,7 @@ class InArrayTest extends TestCase
                         return $x;
                     }',
                 'assertions' => [],
-                'error_level' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
             ],
             'assertNegatedInArrayOfNotIntersectingTypeReturnsOriginalType' => [
                 'code' => '<?php
@@ -140,7 +140,7 @@ class InArrayTest extends TestCase
                         throw new \Exception();
                     }',
                 'assertions' => [],
-                'error_level' => ['RedundantConditionGivenDocblockType'],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'assertAgainstListOfLiteralsAndScalarUnion' => [
                 'code' => '<?php
@@ -232,7 +232,7 @@ class InArrayTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

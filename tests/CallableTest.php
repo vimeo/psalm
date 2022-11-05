@@ -10,9 +10,6 @@ class CallableTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -132,7 +129,7 @@ class CallableTest extends TestCase
                     /**
                      * @template T
                      * @param ArrayList<T> $list
-                     * @return ArrayList<array{T}>
+                     * @return ArrayList<strict-array{T}>
                      */
                     function asTupled(ArrayList $list): ArrayList
                     {
@@ -144,7 +141,7 @@ class CallableTest extends TestCase
                     $a = new ArrayList();
                     $b = asTupled($a);',
                 'assertions' => [
-                    '$b' => 'ArrayList<array{int}>',
+                    '$b' => 'ArrayList<strict-list{int}>',
                 ],
             ],
             'inferArgByPreviousFunctionArg' => [
@@ -430,8 +427,8 @@ class CallableTest extends TestCase
                     '$result1' => 'list<int>',
                     '$result2' => 'list<int>',
                 ],
-                'error_levels' => [],
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'inferPipelineWithPartiallyAppliedFunctions' => [
                 'code' => '<?php
@@ -514,8 +511,8 @@ class CallableTest extends TestCase
                 'assertions' => [
                     '$result' => 'non-empty-list<Item<string, bool>>|null',
                 ],
-                'error_levels' => [],
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'varReturnType' => [
                 'code' => '<?php
@@ -671,12 +668,12 @@ class CallableTest extends TestCase
                     $e = array_map([$a_instance, "bar"], ["one", "two"]);
                     $f = array_map("baz", ["one", "two"]);',
                 'assertions' => [
-                    '$a' => 'array{string, string}<string>',
-                    '$b' => 'array{string, string}<string>',
-                    '$c' => 'array{string, string}<string>',
-                    '$d' => 'array{string, string}<string>',
-                    '$e' => 'array{string, string}<string>',
-                    '$f' => 'array{string, string}<string>',
+                    '$a' => 'strict-list{string, string}',
+                    '$b' => 'strict-list{string, string}',
+                    '$c' => 'strict-list{string, string}',
+                    '$d' => 'strict-list{string, string}',
+                    '$e' => 'strict-list{string, string}',
+                    '$f' => 'strict-list{string, string}',
                 ],
             ],
             'arrayCallableMethod' => [
@@ -1334,7 +1331,7 @@ class CallableTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1720,7 +1717,7 @@ class CallableTest extends TestCase
                      * @template B
                      *
                      * @param ArrayList<T> $list
-                     * @return ArrayList<array{T}>
+                     * @return ArrayList<strict-array{T}>
                      */
                     function genericContext(ArrayList $list): ArrayList
                     {

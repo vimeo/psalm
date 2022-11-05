@@ -62,6 +62,7 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function assert;
+use function count;
 use function get_class;
 use function max;
 use function strpos;
@@ -512,7 +513,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         bool $is_equality,
-        ?int $min_count
+        ?int $count
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         $old_var_type_string = $existing_var_type->getId();
@@ -520,30 +521,63 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         if (isset($existing_var_atomic_types['array'])) {
             $array_atomic_type = $existing_var_atomic_types['array'];
-            $did_remove_type = false;
+            $redundant = true;
 
             if (($array_atomic_type instanceof TNonEmptyArray
                     || $array_atomic_type instanceof TNonEmptyList)
-                && ($min_count === null
-                    || $array_atomic_type->count >= $min_count
-                    || $array_atomic_type->min_count >= $min_count)
+                && ($count === null
+                    || $array_atomic_type->count >= $count
+                    || $array_atomic_type->min_count >= $count)
             ) {
-                $did_remove_type = true;
+                $redundant = false;
 
                 $existing_var_type->removeType('array');
             } elseif ($array_atomic_type instanceof TKeyedArray) {
-                $did_remove_type = true;
+                if ($array_atomic_type->sealed && $count !== null) {
+                    $prop_max_count = count($array_atomic_type->properties);
+                    $prop_min_count = 0;
+                    foreach ($array_atomic_type->properties as $property_type) {
+                        if (!$property_type->possibly_undefined) {
+                            $prop_min_count++;
+                        }
+                    }
 
-                foreach ($array_atomic_type->properties as $property_type) {
-                    if (!$property_type->possibly_undefined) {
-                        $did_remove_type = false;
-                        break;
+                    // !(count($a) >= 3)
+                    // count($a) < 3
+
+                    // We're asserting that count($a) < $count
+                    // If it's impossible, remove the type
+                    // If it's possible but redundant, mark as redundant
+                    // If it's possible, mark as not redundant
+
+                    // Impossible because count($a) >= $count always
+                    if ($prop_min_count >= $count) {
+                        $redundant = false;
+
+                        $existing_var_type->removeType('array');
+
+                        // Redundant because count($a) < $count always
+                    } elseif ($prop_max_count < $count) {
+                        $redundant = true;
+
+                        // Possible
+                    } else {
+                        $redundant = false;
+                    }
+                } else {
+                    $redundant = false;
+
+                    foreach ($array_atomic_type->properties as $property_type) {
+                        if (!$property_type->possibly_undefined) {
+                            $redundant = true;
+                            break;
+                        }
                     }
                 }
             } elseif (!$array_atomic_type instanceof TArray || !$array_atomic_type->isEmptyArray()) {
-                $did_remove_type = true;
+                $redundant = false;
 
-                if (!$min_count) {
+                if (!$count) {
                     $existing_var_type->addType(new TArray(
                         [
                             new Union([new TNever()]),
@@ -555,7 +589,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
             if (!$is_equality
                 && !$existing_var_type->hasMixed()
-                && (!$did_remove_type || $existing_var_type->isUnionEmpty())
+                && ($redundant || $existing_var_type->isUnionEmpty())
             ) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
@@ -563,7 +597,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $old_var_type_string,
                         $key,
                         $assertion,
-                        !$did_remove_type,
+                        $redundant,
                         $negated,
                         $code_location,
                         $suppressed_issues

@@ -70,7 +70,7 @@ abstract class Type
     /**
      * Parses a string type representation
      *
-     * @param  array{int,int}|null   $php_version
+     * @param  strict-array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
      */
     public static function parseString(

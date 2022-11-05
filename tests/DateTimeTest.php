@@ -8,9 +8,6 @@ class DateTimeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return array<string, array{code: string, assertions?:array<string,string>, error_levels?: list<string>}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [

@@ -18,13 +18,13 @@ abstract class TaintedInput extends CodeIssue
     public $journey_text;
 
     /**
-     * @var list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
+     * @var list<strict-array{location: ?CodeLocation, label: string, entry_path_type: string}>
      * @readonly
      */
     public $journey = [];
 
     /**
-     * @param list<array{location: ?CodeLocation, label: string, entry_path_type: string}> $journey
+     * @param list<strict-array{location: ?CodeLocation, label: string, entry_path_type: string}> $journey
      */
     public function __construct(
         string $message,
@@ -39,7 +39,7 @@ abstract class TaintedInput extends CodeIssue
     }
 
     /**
-     * @return list<DataFlowNodeData|array{label: string, entry_path_type: string}>
+     * @return list<DataFlowNodeData|strict-array{label: string, entry_path_type: string}>
      */
     public function getTaintTrace(): array
     {

@@ -53,9 +53,6 @@ class ClassLikeStringTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -82,7 +79,7 @@ class ClassLikeStringTest extends TestCase
                     class B {}
 
                     takesClassConstants(["A", "B"]);',
-                'annotations' => [],
+                'assertions' => [],
                 'ignored_issues' => ['ArgumentTypeCoercion'],
             ],
             'singleClassConstantAsConstant' => [
@@ -107,7 +104,7 @@ class ClassLikeStringTest extends TestCase
 
                     /** @psalm-suppress ArgumentTypeCoercion */
                     takesClassConstants("A");',
-                'annotations' => [],
+                'assertions' => [],
             ],
             'returnClassConstant' => [
                 'code' => '<?php
@@ -130,7 +127,7 @@ class ClassLikeStringTest extends TestCase
                     function takesClassConstants() : string {
                         return "A";
                     }',
-                'annotations' => [],
+                'assertions' => [],
                 'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'returnClassConstantArray' => [
@@ -156,7 +153,7 @@ class ClassLikeStringTest extends TestCase
                     function takesClassConstants() : array {
                         return ["A", "B"];
                     }',
-                'annotations' => [],
+                'assertions' => [],
                 'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'ifClassStringEquals' => [
@@ -815,12 +812,12 @@ class ClassLikeStringTest extends TestCase
                 'code' => '<?php
                     class A {}
                     class B {}
-                    
+
                     /** @param class-string<A> $s */
                     function takesAString(string $a): void {}
                     /** @param class-string<B> $s */
                     function takesBString(string $a): void {}
-                    
+
                     /** @param class-string $s */
                     function foo(string $s): void {
                         if (is_subclass_of($s, A::class)) {
@@ -840,7 +837,7 @@ class ClassLikeStringTest extends TestCase
                     function takesAString(string $a): void {}
                     /** @param class-string<B> $s */
                     function takesBString(string $a): void {}
-                    
+
                     function foo(string $s): void {
                         if (!class_exists($s, false)) {
                             return;
@@ -866,7 +863,7 @@ class ClassLikeStringTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

@@ -75,7 +75,7 @@ class ClassConstantMoveTest extends TestCase
     }
 
     /**
-     * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
+     * @return array<string,strict-array{input:string,output:string,migrations:array<string, string>}>
      */
     public function providerValidCodeParse(): array
     {

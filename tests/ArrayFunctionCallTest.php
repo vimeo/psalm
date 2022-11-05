@@ -13,7 +13,7 @@ class ArrayFunctionCallTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -28,7 +28,7 @@ class ArrayFunctionCallTest extends TestCase
                         }
                     );',
                 'assertions' => [
-                    '$d' => 'array{a?: int<1, 10>, b?: int<1, 10>}',
+                    '$d' => 'strict-array{a?: int<1, 10>, b?: int<1, 10>}',
                     '$e' => 'array<string, int<0, 10>|null>',
                 ],
             ],
@@ -39,7 +39,7 @@ class ArrayFunctionCallTest extends TestCase
                      * @param positive-int $positiveOne
                      * @param int<0,12> $d
                      * @param int<1,12> $f
-                     * @psalm-return array{a: numeric, b?: int, c: positive-int, d?: int<0, 12>, f: int<1,12>}
+                     * @psalm-return strict-array{a: numeric, b?: int, c: positive-int, d?: int<0, 12>, f: int<1,12>}
                      */
                     function makeAList($a, int $anyInt, int $positiveOne, int $d, int $f): array {
                         return array_filter(["a" => "1", "b" => $anyInt, "c" => $positiveOne, "d" => $d, "f" => $f]);
@@ -200,9 +200,9 @@ class ArrayFunctionCallTest extends TestCase
             'arrayCombineDynamicParams' => [
                 'code' => '<?php
                     /** @return array<string> */
-                    function getStrings(): array{ return []; }
+                    function getStrings(): array { return []; }
                     /** @return array<int> */
-                    function getInts(): array{ return []; }
+                    function getInts(): array { return []; }
                     $c = array_combine(getStrings(), getInts());',
                 'assertions' => [
                     '$c' => 'array<string, int>|false',
@@ -212,14 +212,14 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     $d = array_merge(["a", "b", "c", "d"], [1, 2, 3]);',
                 'assertions' => [
-                    '$d' => 'array{0: string, 1: string, 2: string, 3: string, 4: int, 5: int, 6: int}',
+                    '$d===' => "strict-list{'a', 'b', 'c', 'd', 1, 2, 3}",
                 ],
             ],
             'arrayMergePossiblyUndefined' => [
                 'code' => '<?php
                     /**
-                     * @param array{host?:string} $opts
-                     * @return array{host:string|int}
+                     * @param strict-array{host?:string} $opts
+                     * @return strict-array{host:string|int}
                      */
                     function b(array $opts): array {
                         return array_merge(["host" => 5], $opts);
@@ -248,8 +248,8 @@ class ArrayFunctionCallTest extends TestCase
             'arrayMergeTypes' => [
                 'code' => '<?php
                     /**
-                     * @psalm-type A=array{name: string}
-                     * @psalm-type B=array{age: int}
+                     * @psalm-type A=strict-array{name: string}
+                     * @psalm-type B=strict-array{age: int}
                      */
                     class Demo
                     {
@@ -268,14 +268,14 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     $d = array_replace(["a", "b", "c", "d"], [1, 2, 3]);',
                 'assertions' => [
-                    '$d' => 'array{0: int, 1: int, 2: int, 3: string}',
+                    '$d===' => "strict-list{1, 2, 3, 'd'}",
                 ],
             ],
             'arrayReplacePossiblyUndefined' => [
                 'code' => '<?php
                     /**
-                     * @param array{host?:string} $opts
-                     * @return array{host:string|int}
+                     * @param strict-array{host?:string} $opts
+                     * @return strict-array{host:string|int}
                      */
                     function b(array $opts): array {
                         return array_replace(["host" => 5], $opts);
@@ -304,8 +304,8 @@ class ArrayFunctionCallTest extends TestCase
             'arrayReplaceTypes' => [
                 'code' => '<?php
                     /**
-                     * @psalm-type A=array{name: string}
-                     * @psalm-type B=array{age: int}
+                     * @psalm-type A=strict-array{name: string}
+                     * @psalm-type B=strict-array{age: int}
                      */
                     class Demo
                     {
@@ -433,7 +433,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayShiftFunkyTKeyedArrayList' => [
                 'code' => '<?php
                     /**
-                     * @param non-empty-list<string>|array{null} $arr
+                     * @param non-empty-list<string>|strict-array{null} $arr
                      * @return array<int, string>
                      */
                     function foo(array $arr) {
@@ -723,7 +723,7 @@ class ArrayFunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{hi: int, bye: int}',
+                    '$a3' => 'strict-array{bye: int, hi: int}',
                 ],
             ],
             'arrayReplaceTKeyedArray' => [
@@ -743,7 +743,7 @@ class ArrayFunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{hi: int, bye: int}',
+                    '$a3' => 'strict-array{bye: int, hi: int}',
                 ],
             ],
             'arrayRand' => [
@@ -755,10 +755,10 @@ class ArrayFunctionCallTest extends TestCase
                     $e = array_rand($more_vars);',
 
                 'assertions' => [
-                    '$vars' => 'array{x: string, y: string}',
+                    '$vars' => 'strict-array{x: string, y: string}',
                     '$c' => 'string',
                     '$d' => 'string',
-                    '$more_vars' => 'array{string, string}',
+                    '$more_vars' => 'strict-list{string, string}',
                     '$e' => 'int',
                 ],
             ],
@@ -772,7 +772,7 @@ class ArrayFunctionCallTest extends TestCase
                     $f = array_rand($vars, $b);',
 
                 'assertions' => [
-                    '$vars' => 'array{x: string, y: string}',
+                    '$vars' => 'strict-array{x: string, y: string}',
                     '$c' => 'string',
                     '$e' => 'list<string>',
                     '$f' => 'list<string>|string',
@@ -797,7 +797,7 @@ class ArrayFunctionCallTest extends TestCase
                     function expectsInt(int $a) : void {}
 
                     /**
-                     * @param array<array-key, array{item:int}> $list
+                     * @param array<array-key, strict-array{item:int}> $list
                      */
                     function test(array $list) : void
                     {
@@ -913,7 +913,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayMapTKeyedArrayAndCallable' => [
                 'code' => '<?php
                     /**
-                     * @psalm-return array{key1:int,key2:int}
+                     * @psalm-return strict-array{key1:int,key2:int}
                      */
                     function foo(): array {
                         $v = ["key1"=> 1, "key2"=> "2"];
@@ -936,7 +936,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayMapTKeyedArrayAndClosure' => [
                 'code' => '<?php
                     /**
-                     * @psalm-return array{key1:int,key2:int}
+                     * @psalm-return strict-array{key1:int,key2:int}
                      */
                     function foo(): array {
                       $v = ["key1"=> 1, "key2"=> "2"];
@@ -1241,7 +1241,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayResetMaybeEmptyTKeyedArray' => [
                 'code' => '<?php
-                    /** @return array{foo?: int} */
+                    /** @return strict-array{foo?: int} */
                     function makeArray(): array { return []; }
                     $a = makeArray();
                     $b = reset($a);',
@@ -1317,7 +1317,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayEndMaybeEmptyTKeyedArray' => [
                 'code' => '<?php
-                    /** @return array{foo?: int} */
+                    /** @return strict-array{foo?: int} */
                     function makeArray(): array { return []; }
                     $a = makeArray();
                     $b = end($a);',
@@ -1330,11 +1330,11 @@ class ArrayFunctionCallTest extends TestCase
                     function makeMixedArray(): array { return []; }
                     /** @return array<array<int,bool>> */
                     function makeGenericArray(): array { return []; }
-                    /** @return array<array{0:string}> */
+                    /** @return array<strict-array{0:string}> */
                     function makeShapeArray(): array { return []; }
-                    /** @return array<array{0:string}|int> */
+                    /** @return array<strict-array{0:string}|int> */
                     function makeUnionArray(): array { return []; }
-                    /** @return array<string, array{x?:int, y?:int, width?:int, height?:int}> */
+                    /** @return array<string, strict-array{x?:int, y?:int, width?:int, height?:int}> */
                     function makeKeyedArray(): array { return []; }
                     $a = array_column([[1], [2], [3]], 0);
                     $b = array_column([["a" => 1], ["a" => 2], ["a" => 3]], "a");
@@ -1358,8 +1358,8 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$a' => 'non-empty-list<int>',
                     '$b' => 'non-empty-list<int>',
-                    '$c' => 'array<int, array{a: int}>',
-                    '$d' => 'array<array-key, array{a: int}>',
+                    '$c' => 'array<int, strict-array{a: int}>',
+                    '$d' => 'array<array-key, strict-array{a: int}>',
                     '$e' => 'array<array-key, mixed>',
                     '$f' => 'non-empty-array<string, int>',
                     '$g' => 'list<mixed>',
@@ -1528,8 +1528,8 @@ class ArrayFunctionCallTest extends TestCase
                     array_splice($a, rand(-10, 0), rand(0, 10), $b);',
                 'assertions' => [
                     '$a' => 'non-empty-list<int|string>',
-                    '$b' => 'array{string, string, string}',
-                    '$c' => 'array{int, int, int}',
+                    '$b' => 'strict-list{string, string, string}',
+                    '$c' => 'strict-list{int, int, int}',
                 ],
             ],
             'arraySpliceReturn' => [
@@ -1545,7 +1545,7 @@ class ArrayFunctionCallTest extends TestCase
                     $d = [["red"], ["green"], ["blue"]];
                     array_splice($d, -1, 1, "foo");',
                 'assertions' => [
-                    '$d' => 'array<int, array{string}|string>',
+                    '$d' => 'array<int, strict-list{string}|string>',
                 ],
             ],
             'ksortPreserveShape' => [
@@ -1555,7 +1555,7 @@ class ArrayFunctionCallTest extends TestCase
                     acceptsAShape($a);
 
                     /**
-                     * @param array{a:int,b:int} $a
+                     * @param strict-array{a:int,b:int} $a
                      */
                     function acceptsAShape(array $a): void {}',
             ],
@@ -1680,7 +1680,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayPadMixed' => [
                 'code' => '<?php
-                    /** @var array{foo: mixed, bar: mixed} $arr */
+                    /** @var strict-array{foo: mixed, bar: mixed} $arr */
                     $a = array_pad($arr, 5, null);
                     /** @var mixed $mixed */
                     $b = array_pad([$mixed, $mixed], 5, null);
@@ -1708,7 +1708,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayChunk' => [
                 'code' => '<?php
-                    /** @var array{a: int, b: int, c: int, d: int} $arr */
+                    /** @var strict-array{a: int, b: int, c: int, d: int} $arr */
                     $a = array_chunk($arr, 2);
                     /** @var list<string> $list */
                     $b = array_chunk($list, 2);
@@ -1723,7 +1723,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayChunkPreservedKeys' => [
                 'code' => '<?php
-                    /** @var array{a: int, b: int, c: int, d: int} $arr */
+                    /** @var strict-array{a: int, b: int, c: int, d: int} $arr */
                     $a = array_chunk($arr, 2, true);
                     /** @var list<string> $list */
                     $b = array_chunk($list, 2, true);
@@ -1745,7 +1745,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayChunkMixed' => [
                 'code' => '<?php
-                    /** @var array{a: mixed, b: mixed, c: mixed} $arr */
+                    /** @var strict-array{a: mixed, b: mixed, c: mixed} $arr */
                     $a = array_chunk($arr, 2);
                     /** @var list<mixed> $list */
                     $b = array_chunk($list, 2);
@@ -1781,7 +1781,7 @@ class ArrayFunctionCallTest extends TestCase
             'SKIPPED-arrayMapZip' => [
                 'code' => '<?php
                     /**
-                     * @return array<int, array{string,?string}>
+                     * @return array<int, strict-array{string,?string}>
                      */
                     function getCharPairs(string $line) : array {
                         $chars = str_split($line);
@@ -1972,6 +1972,19 @@ class ArrayFunctionCallTest extends TestCase
                     takesString($a[0]);
                     array_map("takesString", $a);',
             ],
+            'arrayMapZip' => [
+                'code' => '<?php
+                    $a = [1, 2, 3, 4, 5];
+                    $b = ["one", "two", "three", "four", "five"];
+                    $c = ["uno", "dos", "tres", "cuatro", "cinco", "seis"];
+
+                    $d = array_map(null, $a, $b, $c);',
+                'assertions' => [
+                    '$d===' => "strict-list{strict-list{1, 'one', 'uno'}, strict-list{2, 'two', 'dos'}, strict-list{3, 'three', 'tres'}, strict-list{4, 'four', 'cuatro'}, strict-list{5, 'five', 'cinco'}, strict-list{null, null, 'seis'}}"
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'arrayMapExplicitZip' => [
                 'code' => '<?php
                     $as = ["key"];
@@ -2029,7 +2042,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayMergeKeepLastKeysAndType' => [
                 'code' => '<?php
                     /**
-                     * @param array{A: int} $a
+                     * @param strict-array{A: int} $a
                      * @param array<string, string> $b
                      *
                      * @return array{A: int}
@@ -2041,7 +2054,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayMergeKeepFirstKeysSameType' => [
                 'code' => '<?php
                     /**
-                     * @param array{A: int} $a
+                     * @param strict-array{A: int} $a
                      * @param array<string, int> $b
                      *
                      * @return array{A: int}
@@ -2053,7 +2066,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayReplaceKeepLastKeysAndType' => [
                 'code' => '<?php
                     /**
-                     * @param array{A: int} $a
+                     * @param strict-array{A: int} $a
                      * @param array<string, string> $b
                      *
                      * @return array{A: int}
@@ -2065,7 +2078,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayReplaceKeepFirstKeysSameType' => [
                 'code' => '<?php
                     /**
-                     * @param array{A: int} $a
+                     * @param strict-array{A: int} $a
                      * @param array<string, int> $b
                      *
                      * @return array{A: int}
@@ -2103,7 +2116,7 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'countOnListIntoTuple' => [
                 'code' => '<?php
-                    /** @param array{string, string} $tuple */
+                    /** @param strict-array{string, string} $tuple */
                     function foo(array $tuple) : void {}
 
                     /** @param list<string> $list */
@@ -2116,7 +2129,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayColumnwithKeyedArrayWithoutRedundantUnion' => [
                 'code' => '<?php
                     /**
-                     * @param array<string, array{x?:int, y?:int, width?:int, height?:int}> $foos
+                     * @param array<string, strict-array{x?:int, y?:int, width?:int, height?:int}> $foos
                      */
                     function foo(array $foos): void {
                         array_multisort($formLayoutFields, SORT_ASC, array_column($foos, "y"));
@@ -2154,7 +2167,7 @@ class ArrayFunctionCallTest extends TestCase
 
                     $line = getLine();
 
-                    if (empty($line[0])) { // converts array<string> to array{0:string}<string>
+                    if (empty($line[0])) { // converts array<string> to strict-array{0:string}<string>
                         throw new InvalidArgumentException;
                     }
 
@@ -2203,7 +2216,7 @@ class ArrayFunctionCallTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -2351,7 +2364,7 @@ class ArrayFunctionCallTest extends TestCase
                     function expectsInt(int $a) : void {}
 
                     /**
-                     * @param array<array-key, array{item:int}> $list
+                     * @param array<array-key, strict-array{item:int}> $list
                      */
                     function test(array $list) : void
                     {
@@ -2408,7 +2421,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayMergeKeepFirstKeysButNotType' => [
                 'code' => '<?php
                     /**
-                     * @param array{A: int} $a
+                     * @param strict-array{A: int} $a
                      * @param array<string, string> $b
                      *
                      * @return array{A: int}
@@ -2421,7 +2434,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayReplaceKeepFirstKeysButNotType' => [
                 'code' => '<?php
                     /**
-                     * @param array{A: int} $a
+                     * @param strict-array{A: int} $a
                      * @param array<string, string> $b
                      *
                      * @return array{A: int}

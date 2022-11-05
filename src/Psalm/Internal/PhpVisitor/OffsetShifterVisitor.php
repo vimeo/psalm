@@ -32,7 +32,7 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
 
     public function enterNode(PhpParser\Node $node): ?int
     {
-        /** @var array{startFilePos: int, endFilePos: int, startLine: int} */
+        /** @var strict-array{startFilePos: int, endFilePos: int, startLine: int} */
         $attrs = $node->getAttributes();
 
         if ($cs = $node->getComments()) {

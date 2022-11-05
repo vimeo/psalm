@@ -13,7 +13,7 @@ class ClosureTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -98,7 +98,7 @@ class ClosureTest extends TestCase
                     $mirror = function(int $i) : int { return $i; };
                     $a = array_map($mirror, [1, 2, 3]);',
                 'assertions' => [
-                    '$a' => 'array{int, int, int}<int>',
+                    '$a' => 'strict-list{int, int, int}',
                 ],
             ],
             'inlineCallableFunction' => [
@@ -263,14 +263,14 @@ class ClosureTest extends TestCase
             'inferArrayMapReturnTypeWithoutTypehints' => [
                 'code' => '<?php
                     /**
-                     * @param array{0:string,1:string}[] $ret
-                     * @return array{0:string,1:int}[]
+                     * @param strict-array{0:string,1:string}[] $ret
+                     * @return strict-array{0:string,1:int}[]
                      */
                     function f(array $ret) : array
                     {
                         return array_map(
                             /**
-                             * @param array{0:string,1:string} $row
+                             * @param strict-array{0:string,1:string} $row
                              */
                             function (array $row) {
                                 return [
@@ -287,14 +287,14 @@ class ClosureTest extends TestCase
             'inferArrayMapReturnTypeWithTypehints' => [
                 'code' => '<?php
                     /**
-                     * @param array{0:string,1:string}[] $ret
-                     * @return array{0:string,1:int}[]
+                     * @param strict-array{0:string,1:string}[] $ret
+                     * @return strict-array{0:string,1:int}[]
                      */
                     function f(array $ret): array
                     {
                         return array_map(
                             /**
-                             * @param array{0:string,1:string} $row
+                             * @param strict-array{0:string,1:string} $row
                              */
                             function (array $row): array {
                                 return [
@@ -562,7 +562,7 @@ class ClosureTest extends TestCase
                     $maker = maker(stdClass::class);
                     $result = array_map($maker, ["abc"]);',
                 'assertions' => [
-                    '$result' => 'array{stdClass}<stdClass>'
+                    '$result' => 'strict-list{stdClass}'
                 ],
             ],
             'CallableWithArrayReduce' => [
@@ -785,8 +785,8 @@ class ClosureTest extends TestCase
 
                     takesIntToString(C::foo(...));',
                 'assertions' => [],
-                [],
-                '8.1',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:InheritedStaticMethodWithStaticTypeParameter' => [
                 'code' => '<?php
@@ -825,9 +825,9 @@ class ClosureTest extends TestCase
                     $result3 = array_map($closure(...), $array);
                 ',
                 'assertions' => [
-                    '$result1' => 'array{null, null, null}<null>',
-                    '$result2' => 'array{string, string, string}<string>',
-                    '$result3' => 'array{int, int, int}<int>',
+                    '$result1' => 'strict-list{null, null, null}',
+                    '$result2' => 'strict-list{string, string, string}',
+                    '$result3' => 'strict-list{int, int, int}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1'
@@ -906,7 +906,7 @@ class ClosureTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

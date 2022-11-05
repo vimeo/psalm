@@ -14,7 +14,7 @@ class ForTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -50,7 +50,7 @@ class ForTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
@@ -142,7 +142,7 @@ class ForTest extends TestCase
             'noCrashOnLongThing' => [
                 'code' => '<?php
                     /**
-                     * @param list<array{a: array{int, int}}> $data
+                     * @param list<strict-array{a: strict-array{int, int}}> $data
                      */
                     function makeData(array $data) : array {
                         while (rand(0, 1)) {
@@ -184,7 +184,7 @@ class ForTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

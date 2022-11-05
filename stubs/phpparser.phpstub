@@ -18,5 +18,5 @@ abstract class CallLike extends Expr {
      * @psalm-pure
      * @return list<Arg>
      */
-    public function getArgs(): array{}
+    public function getArgs(): array {}
 }

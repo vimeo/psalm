@@ -42,10 +42,10 @@ class UnusedVariableTest extends TestCase
      * @dataProvider providerValidCodeParse
      *
      * @param string $code
-     * @param array<string> $error_levels
+     * @param array<string> $ignored_issues
      *
      */
-    public function testValidCode($code, array $error_levels = [], string $php_version = '7.4'): void
+    public function testValidCode($code, array $ignored_issues = [], string $php_version = '7.4'): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -61,7 +61,7 @@ class UnusedVariableTest extends TestCase
             $code
         );
 
-        foreach ($error_levels as $error_level) {
+        foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
@@ -73,10 +73,10 @@ class UnusedVariableTest extends TestCase
      *
      * @param string $code
      * @param string $error_message
-     * @param array<string> $error_levels
+     * @param array<string> $ignored_issues
      *
      */
-    public function testInvalidCode($code, $error_message, $error_levels = []): void
+    public function testInvalidCode($code, $error_message, $ignored_issues = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -89,7 +89,7 @@ class UnusedVariableTest extends TestCase
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        foreach ($error_levels as $error_level) {
+        foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
@@ -102,7 +102,7 @@ class UnusedVariableTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return array<string, strict-array{code:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): array
     {
@@ -744,7 +744,7 @@ class UnusedVariableTest extends TestCase
             'arrayVarAssignmentInFunctionAndReturned' => [
                 'code' => '<?php
                     /**
-                     * @param array{string} $arr
+                     * @param strict-array{string} $arr
                      */
                     function far(array $arr): string {
                         [$a] = $arr;
@@ -755,7 +755,7 @@ class UnusedVariableTest extends TestCase
             'arrayUnpackInForeach' => [
                 'code' => '<?php
                     /**
-                     * @param list<array{string, string}> $arr
+                     * @param list<strict-array{string, string}> $arr
                      */
                     function far(array $arr): void {
                         foreach ($arr as [$a, $b]) {
@@ -767,7 +767,6 @@ class UnusedVariableTest extends TestCase
             'arraySubAppend' => [
                 'code' => '<?php
                     $rules = [0, 1, 2];
-                    
                     $report = ["runs" => []];
                     foreach ($rules as $rule) {
                         $report["runs"][] = $rule;
@@ -2412,7 +2411,7 @@ class UnusedVariableTest extends TestCase
                             }
                         }
                     }',
-                'error_levels' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'concatWithUnknownProperty' => [
@@ -2528,10 +2527,6 @@ class UnusedVariableTest extends TestCase
                     $b = 2;
                     echo $a;
                 ',
-                'assertions' => [
-                    '$b===' => '2',
-                    '$a===' => '2',
-                ],
             ],
             'referenceUsedAfterVariableReassignment' => [
                 'code' => '<?php
@@ -2621,7 +2616,7 @@ class UnusedVariableTest extends TestCase
     }
 
     /**
-     * @return array<string,array{code:string,error_message:string}>
+     * @return array<string,strict-array{code:string,error_message:string}>
      */
     public function providerInvalidCodeParse(): array
     {
@@ -3595,7 +3590,7 @@ class UnusedVariableTest extends TestCase
                         $arr = [$a];
                         takesArrayOfString($arr);
                     }',
-                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:44 - Argument 1 of takesArrayOfString expects array<array-key, string>, but parent type array{mixed} provided. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41'
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:44 - Argument 1 of takesArrayOfString expects array<array-key, string>, but parent type strict-list{mixed} provided. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41'
             ],
             'warnAboutUnusedVariableInTryReassignedInCatch' => [
                 'code' => '<?php

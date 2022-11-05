@@ -54,7 +54,7 @@ class TypeComparatorTest extends TestCase
     }
 
     /**
-     * @return array<array{string}>
+     * @return array<strict-array{string}>
      */
     public function getAllBasicTypes(): array
     {
@@ -78,8 +78,15 @@ class TypeComparatorTest extends TestCase
             [
                 'open-resource' => true, // unverifiable
                 'non-empty-countable' => true, // bit weird, maybe a bug?
+            ],
+            [
+                'strict-array' => true, // Requires a shape
+                'strict-list' => true, // Requires a shape
             ]
         );
+        $basic_types['strict-array{test: 123}'] = true;
+        $basic_types['strict-list{123}'] = true;
+
         return array_map(
             fn($type) => [$type],
             array_keys($basic_types)
@@ -104,7 +111,7 @@ class TypeComparatorTest extends TestCase
     }
 
     /**
-     * @return array<array{string, string}>
+     * @return array<strict-array{string, string}>
      */
     public function getAllowedChildTypes(): array
     {
@@ -122,11 +129,11 @@ class TypeComparatorTest extends TestCase
                 'array<never, never>',
             ],
             'arrayOptionalKeyed1AcceptsEmptyArray' => [
-                'array{foo?: string}',
+                'strict-array{foo?: string}',
                 'array<never, never>',
             ],
             'arrayOptionalKeyed2AcceptsEmptyArray' => [
-                'array{foo?: string}&array<string, mixed>',
+                'strict-array{foo?: string}&array<string, mixed>',
                 'array<never, never>',
             ],
             'Lowercase-stringAndCallable-string' => [

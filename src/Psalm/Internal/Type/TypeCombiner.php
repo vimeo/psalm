@@ -131,7 +131,9 @@ class TypeCombiner
 
         if (count($combination->value_types) === 1
             && !count($combination->objectlike_entries)
-            && !$combination->array_type_params
+            && (!$combination->array_type_params
+                || $combination->array_type_params[1]->isNever()
+            )
             && !$combination->builtin_type_params
             && !$combination->object_type_params
             && !$combination->named_object_types
@@ -1384,7 +1386,12 @@ class TypeCombiner
                     $objectlike = new TCallableKeyedArray(
                         $combination->objectlike_entries,
                         null,
-                        $combination->objectlike_sealed && !$combination->array_type_params,
+                        $combination->objectlike_sealed && (
+                            !$combination->array_type_params
+                            || (isset($combination->array_type_params[1])
+                                && $combination->array_type_params[1]->isNever()
+                            )
+                        ),
                         $previous_key_type,
                         $previous_value_type,
                         (bool)$combination->all_arrays_lists
@@ -1393,7 +1400,12 @@ class TypeCombiner
                     $objectlike = new TKeyedArray(
                         $combination->objectlike_entries,
                         null,
-                        $combination->objectlike_sealed && !$combination->array_type_params,
+                        $combination->objectlike_sealed && (
+                            !$combination->array_type_params
+                            || (isset($combination->array_type_params[1])
+                                && $combination->array_type_params[1]->isNever()
+                            )
+                        ),
                         $previous_key_type,
                         $previous_value_type,
                         (bool)$combination->all_arrays_lists
@@ -1419,7 +1431,7 @@ class TypeCombiner
     }
 
     /**
-     * @param  array{Union, Union}  $generic_type_params
+     * @param  strict-array{Union, Union}  $generic_type_params
      */
     private static function getArrayTypeFromGenericParams(
         ?Codebase $codebase,
@@ -1505,6 +1517,7 @@ class TypeCombiner
             if ($combination->all_arrays_lists) {
                 if ($combination->objectlike_entries
                     && $combination->objectlike_sealed
+                    && isset($combination->array_type_params[1])
                 ) {
                     $array_type = new TKeyedArray(
                         [$generic_type_params[1]],

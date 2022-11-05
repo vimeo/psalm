@@ -12,7 +12,7 @@ class TraitTemplateTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -389,10 +389,10 @@ class TraitTemplateTest extends TestCase
                 'code' => '<?php
                     /** @template TValue */
                     trait A {
-                        /** @psalm-var array{TValue} */
+                        /** @psalm-var strict-array{TValue} */
                         private $foo;
 
-                        /** @psalm-param array{TValue} $foo */
+                        /** @psalm-param strict-array{TValue} $foo */
                         public function __construct(array $foo)
                         {
                             $this->foo = $foo;
@@ -517,7 +517,7 @@ class TraitTemplateTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

@@ -91,7 +91,7 @@ class AssertAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -995,7 +995,7 @@ class AssertAnnotationTest extends TestCase
             'assertDifferentTypeOfArray' => [
                 'code' => '<?php
                     /**
-                     * @psalm-assert array{0: string, 1: string} $value
+                     * @psalm-assert strict-array{0: string, 1: string} $value
                      * @param mixed $value
                      */
                     function isStringTuple($value): void {
@@ -1038,7 +1038,7 @@ class AssertAnnotationTest extends TestCase
                     /**
                      * @param mixed $data
                      * @return bool
-                     * @psalm-assert-if-true array{type: string} $data
+                     * @psalm-assert-if-true strict-array{type: string} $data
                      */
                     function isBar($data) {
                         return isset($data["type"]);
@@ -1227,12 +1227,12 @@ class AssertAnnotationTest extends TestCase
             'parseLongAssertion' => [
                 'code' => '<?php
                     /**
-                     * @psalm-assert array{
-                     *      extensions: array<string, array{
+                     * @psalm-assert strict-array{
+                     *      extensions: array<string, strict-array{
                      *          version?: string,
                      *          type?: "bundled"|"pecl",
                      *          require?: list<string>,
-                     *          env?: array<string, array{
+                     *          env?: array<string, strict-array{
                      *              deps?: list<string>,
                      *              buildDeps?: list<string>,
                      *              configure?: string
@@ -1247,12 +1247,12 @@ class AssertAnnotationTest extends TestCase
             'intersectArraysAfterAssertion' => [
                 'code' => '<?php
                     /**
-                     * @psalm-assert array{foo: string} $v
+                     * @psalm-assert strict-array{foo: string} $v
                      */
                     function hasFoo(array $v): void {}
 
                     /**
-                     * @psalm-assert array{bar: int} $v
+                     * @psalm-assert strict-array{bar: int} $v
                      */
                     function hasBar(array $v): void {}
 
@@ -1612,7 +1612,7 @@ class AssertAnnotationTest extends TestCase
                     }',
                     'assertions' => [],
                     'ignored_issues' => [],
-                    '7.4'
+                    'php_version' => '7.4'
             ],
             'onPropertyOfImmutableArgument' => [
                 'code' => '<?php
@@ -2117,7 +2117,7 @@ class AssertAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

@@ -4,9 +4,6 @@ namespace Psalm\Tests\FileManipulation;
 
 class ReturnTypeManipulationTest extends FileManipulationTestCase
 {
-    /**
-     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
-     */
     public function providerValidCodeParse(): array
     {
         return [
@@ -235,7 +232,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                             /**
                              * @return B\C[]
                              *
-                             * @psalm-return array{0: B\C}
+                             * @psalm-return strict-list{B\C}
                              */
                             public function getArrayOfC(): array {
                                 return [new \A\B\C];
@@ -499,7 +496,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0: \'hello\'}
+                         * @psalm-return strict-list{\'hello\'}
                          */
                         public function foo(): ?array {
                             return ["hello"];
@@ -525,7 +522,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                         /**
                          * @return string[]
                          *
-                         * @psalm-return array{0: \'hello\'}
+                         * @psalm-return strict-list{\'hello\'}
                          */
                         public function foo(): array {
                             return ["hello"];
@@ -884,7 +881,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     function ret() {
                         /** @var container1<int>&container2<int> $a */
                         $a = new container1;
@@ -901,7 +898,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     /**
                      * @return container1&container2
                      *
@@ -929,7 +926,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     function ret() {
                         /** @var container1<int>&container2<int> $a */
                         $a = new container1;
@@ -946,7 +943,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                      * @extends container1<TT>
                      */
                     class container2 extends container1 {}
-                    
+
                     /**
                      * @psalm-return container1<int>&container2<int>
                      */

@@ -1818,7 +1818,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array{
+     * @return strict-array{
      *        MethodIdentifier|null,
      *        MethodIdentifier|null,
      *        ClassLikeStorage|null,

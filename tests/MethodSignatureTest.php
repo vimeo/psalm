@@ -290,7 +290,7 @@ class MethodSignatureTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -923,7 +923,7 @@ class MethodSignatureTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1565,7 +1565,7 @@ class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMismatch',
                 'ignored_issues' => [],
-                '8.0'
+                'php_version' => '8.0'
             ],
             'noTypehintInNativeDescendant' => [
                 'code' => '<?php
@@ -1577,7 +1577,7 @@ class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMustProvideReturnType',
                 'ignored_issues' => [],
-                '8.1'
+                'php_version' => '8.1'
             ],
         ];
     }

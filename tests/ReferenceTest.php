@@ -13,11 +13,22 @@ class ReferenceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
         return [
+            'referenceAssignmentToNonReferenceCountsAsUse' => [
+                'code' => '<?php
+                    $b = &$a;
+                    $b = 2;
+                    echo $a;
+                ',
+                'assertions' => [
+                    '$b===' => '2',
+                    '$a===' => '2',
+                ],
+            ],
             'updateReferencedTypes' => [
                 'code' => '<?php
                     $a = 1;
@@ -239,7 +250,7 @@ class ReferenceTest extends TestCase
             ],
             'dontCrashOnReferenceToArrayMixedOffset' => [
                 'code' => '<?php
-                    /** @param array{f: mixed} $a */
+                    /** @param strict-array{f: mixed} $a */
                     function func(array &$a): void
                     {
                         $_ = &$a["f"];
@@ -267,7 +278,7 @@ class ReferenceTest extends TestCase
                     $result = ($a === "not-a" && ($b || false));
                 ',
                 'assertions' => [
-                    '$reference===' => 'array{id: 1}',
+                    '$reference===' => 'strict-array{id: 1}',
                 ],
             ],
             'multipleReferencesToArrayVariableOffsetThatChangesDueToReconciliation' => [
@@ -282,15 +293,15 @@ class ReferenceTest extends TestCase
                     $reference1["id"] = 2;
                 ',
                 'assertions' => [
-                    '$reference1===' => 'array{id: 2}',
-                    '$reference2===' => 'array{id: 2}',
+                    '$reference1===' => 'strict-array{id: 2}',
+                    '$reference2===' => 'strict-array{id: 2}',
                 ],
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

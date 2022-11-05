@@ -12,7 +12,7 @@ class IssetTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -289,8 +289,8 @@ class IssetTest extends TestCase
             'returnArrayWithDefinedKeys' => [
                 'code' => '<?php
                     /**
-                     * @param array{bar?: int, foo: int|string} $arr
-                     * @return array{bar: int, foo: string}|null
+                     * @param strict-array{bar?: int, foo: int|string} $arr
+                     * @return strict-array{bar: int, foo: string}|null
                      */
                     function foo(array $arr) : ?array {
                         if (!isset($arr["bar"])) {
@@ -611,8 +611,8 @@ class IssetTest extends TestCase
             'issetOnNestedObjectlikeOneLevel' => [
                 'code' => '<?php
                     /**
-                     * @param array{a:array} $array
-                     * @return array{a:array{b:mixed}}
+                     * @param strict-array{a:array} $array
+                     * @return strict-array{a:array{b:mixed}}
                      * @throw \LogicException
                      */
                     function level3($array) {
@@ -1033,7 +1033,7 @@ class IssetTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1125,7 +1125,7 @@ class IssetTest extends TestCase
             'accessAfterIssetCheckOnFalsableArray' => [
                 'code' => '<?php
                     /**
-                     * @return array{b?: string}|false
+                     * @return strict-array{b?: string}|false
                      */
                     function returnPossiblyFalseArray() {
                         return rand(0, 1) ? false : (rand(0, 1) ? ["b" => "hello"] : []);

@@ -512,7 +512,7 @@ function sscanf(string $string, string $format, &...$vars) {}
  *
  * @return (
  *     func_num_args() is 1
- *     ? array{dirname: string, basename: string, extension?: string, filename: string}
+ *     ? strict-array{dirname: string, basename: string, extension?: string, filename: string}
  *     : string
  * )
  */
@@ -679,7 +679,7 @@ function explode(string $separator, string $string, int $limit = -1) : array {}
  *
  * @param TFlags $flags
  *
- * @return (TFlags is 0|2 ? non-empty-list<string>|false : (TFlags is 1|3 ? list<string>|false : list<array{string,int}>|false))
+ * @return (TFlags is 0|2 ? non-empty-list<string>|false : (TFlags is 1|3 ? list<string>|false : list<strict-array{string,int}>|false))
  *
  * @psalm-ignore-falsable-return
  */
@@ -1006,15 +1006,15 @@ function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &
  *          : (TFlags is 2
  *              ? list<array<string>>
  *              : (TFlags is 256|257
- *                  ? array<list<array{string, int}>>
+ *                  ? array<list<strict-array{string, int}>>
  *                  : (TFlags is 258
- *                      ? list<array<array{string, int}>>
+ *                      ? list<array<strict-array{string, int}>>
  *                      : (TFlags is 512|513
  *                          ? array<list<?string>>
  *                          : (TFlags is 514
  *                              ? list<array<?string>>
  *                              : (TFlags is 770
- *                                  ? list<array<array{?string, int}>>
+ *                                  ? list<array<strict-array{?string, int}>>
  *                                  : array
  *                              )
  *                          )
@@ -1036,9 +1036,9 @@ function preg_match_all($pattern, $subject, &$matches = [], int $flags = 1, int 
  * @param string $subject
  * @param mixed $matches
  * @param TFlags $flags
- * @param-out (TFlags is 256 ? array<array-key, array{string, 0|positive-int}|array{'', -1}> :
+ * @param-out (TFlags is 256 ? array<array-key, strict-array{string, 0|positive-int}|strict-array{'', -1}> :
  *             TFlags is 512 ? array<array-key, string|null> :
- *             TFlags is 768 ? array<array-key, array{string, 0|positive-int}|array{null, -1}> :
+ *             TFlags is 768 ? array<array-key, strict-array{string, 0|positive-int}|strict-array{null, -1}> :
  *                             array<array-key, string>
  *            ) $matches
  * @return 1|0|false
@@ -1138,7 +1138,7 @@ function bcdiv(string $num1, string $num2, int $scale = 0): ?string {}
 function strval ($value): string {}
 
 /**
- * @return ($string is non-empty-string ? non-empty-list<string> : non-empty-list<string>|array{null})
+ * @return ($string is non-empty-string ? non-empty-list<string> : non-empty-list<string>|strict-array{null})
  * @psalm-pure
  *
  * @psalm-flow ($string) -> return

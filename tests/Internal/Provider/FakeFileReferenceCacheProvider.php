@@ -65,10 +65,10 @@ class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
     /**
      * @var array<
      *      string,
-     *      array{
-     *          0: array<int, array{0: int, 1: non-empty-string}>,
-     *          1: array<int, array{0: int, 1: non-empty-string}>,
-     *          2: array<int, array{0: int, 1: non-empty-string, 2: int}>
+     *      strict-array{
+     *          0: array<int, strict-array{0: int, 1: non-empty-string}>,
+     *          1: array<int, strict-array{0: int, 1: non-empty-string}>,
+     *          2: array<int, strict-array{0: int, 1: non-empty-string, 2: int}>
      *      }
      *  >
      */
@@ -258,10 +258,10 @@ class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
     /**
      * @return array<
      *      string,
-     *      array{
-     *          0: array<int, array{0: int, 1: non-empty-string}>,
-     *          1: array<int, array{0: int, 1: non-empty-string}>,
-     *          2: array<int, array{0: int, 1: non-empty-string, 2: int}>
+     *      strict-array{
+     *          0: array<int, strict-array{0: int, 1: non-empty-string}>,
+     *          1: array<int, strict-array{0: int, 1: non-empty-string}>,
+     *          2: array<int, strict-array{0: int, 1: non-empty-string, 2: int}>
      *      }
      *  >
      */
@@ -273,10 +273,10 @@ class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
     /**
      * @param array<
      *      string,
-     *      array{
-     *          0: array<int, array{0: int, 1: non-empty-string}>,
-     *          1: array<int, array{0: int, 1: non-empty-string}>,
-     *          2: array<int, array{0: int, 1: non-empty-string, 2: int}>
+     *      strict-array{
+     *          0: array<int, strict-array{0: int, 1: non-empty-string}>,
+     *          1: array<int, strict-array{0: int, 1: non-empty-string}>,
+     *          2: array<int, strict-array{0: int, 1: non-empty-string, 2: int}>
      *      }
      *  > $file_maps
      */
@@ -286,7 +286,7 @@ class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
     }
 
     /**
-     * @param array<string, array{int, int}> $mixed_counts
+     * @param array<string, strict-array{int, int}> $mixed_counts
      */
     public function setTypeCoverage(array $mixed_counts): void
     {

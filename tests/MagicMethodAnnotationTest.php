@@ -148,7 +148,7 @@ class MagicMethodAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>}>
+     *
      */
     public function providerValidCodeParse(): iterable
     {
@@ -879,7 +879,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /** @var I<B> $i */
                     $c = $i->foo();',
-                [
+                'assertions' => [
                     '$b' => 'A<B>&static',
                     '$c' => 'I<B>&static',
                 ]
@@ -944,7 +944,7 @@ class MagicMethodAnnotationTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     *
      */
     public function providerInvalidCodeParse(): iterable
     {

@@ -205,7 +205,7 @@ trait CallableTrait
     }
 
     /**
-     * @return array{list<FunctionLikeParameter>|null, Union|null}|null
+     * @return strict-array{list<FunctionLikeParameter>|null, Union|null}|null
      */
     protected function replaceCallableTemplateTypesWithStandins(
         TemplateResult $template_result,
@@ -281,7 +281,7 @@ trait CallableTrait
 
 
     /**
-     * @return array{list<FunctionLikeParameter>|null, Union|null}|null
+     * @return strict-array{list<FunctionLikeParameter>|null, Union|null}|null
      */
     protected function replaceCallableTemplateTypesWithArgTypes(
         TemplateResult $template_result,

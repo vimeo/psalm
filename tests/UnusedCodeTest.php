@@ -45,10 +45,10 @@ class UnusedCodeTest extends TestCase
      * @dataProvider providerValidCodeParse
      *
      * @param string $code
-     * @param array<string> $error_levels
+     * @param array<string> $ignored_issues
      *
      */
-    public function testValidCode($code, array $error_levels = []): void
+    public function testValidCode($code, array $ignored_issues = []): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -64,7 +64,7 @@ class UnusedCodeTest extends TestCase
 
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
 
-        foreach ($error_levels as $error_level) {
+        foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
@@ -80,10 +80,10 @@ class UnusedCodeTest extends TestCase
      *
      * @param string $code
      * @param string $error_message
-     * @param array<string> $error_levels
+     * @param array<string> $ignored_issues
      *
      */
-    public function testInvalidCode($code, $error_message, $error_levels = []): void
+    public function testInvalidCode($code, $error_message, $ignored_issues = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -94,7 +94,7 @@ class UnusedCodeTest extends TestCase
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        foreach ($error_levels as $error_level) {
+        foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
@@ -175,7 +175,7 @@ class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string}>
+     * @return array<string, strict-array{code:string}>
      */
     public function providerValidCodeParse(): array
     {
@@ -1211,7 +1211,7 @@ class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{code:string,error_message:string,ignored_issues?:list<string>}>
+     * @return array<string,strict-array{code:string,error_message:string,ignored_issues?:list<string>}>
      */
     public function providerInvalidCodeParse(): array
     {

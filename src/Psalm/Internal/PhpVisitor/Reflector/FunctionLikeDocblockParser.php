@@ -548,7 +548,7 @@ class FunctionLikeDocblockParser
     /**
      * @psalm-pure
      * @param list<string> $line_parts
-     * @return array{string, string} $line_parts
+     * @return strict-array{string, string} $line_parts
      */
     private static function sanitizeAssertionLineParts(array $line_parts): array
     {
