@@ -7,7 +7,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Union;
 
 use function count;
 use function implode;

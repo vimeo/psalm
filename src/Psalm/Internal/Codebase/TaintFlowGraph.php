@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Codebase;
 
-use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;

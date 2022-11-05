@@ -200,9 +200,9 @@ class ArrayFunctionCallTest extends TestCase
             'arrayCombineDynamicParams' => [
                 'code' => '<?php
                     /** @return array<string> */
-                    function getStrings(): strict-array{ return []; }
+                    function getStrings(): array { return []; }
                     /** @return array<int> */
-                    function getInts(): strict-array{ return []; }
+                    function getInts(): array { return []; }
                     $c = array_combine(getStrings(), getInts());',
                 'assertions' => [
                     '$c' => 'array<string, int>|false',

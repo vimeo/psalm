@@ -812,7 +812,7 @@ class TypeParseTest extends TestCase
 
     public function testVeryLargeType(): void
     {
-        $very_large_type = 'strict-array{a: Closure():(array<array-key, mixed>|null), b?: Closure():array<array-key, mixed>, c?: Closure():array<array-key, mixed>, d?: Closure():array<array-key, mixed>, e?: Closure():(strict-array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: strict-array{0: string}}|null), p?: Closure():(strict-array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: strict-array{0: string}}|null), q: string, r?: Closure():(array<array-key, mixed>|null), s: array<array-key, mixed>}|null';
+        $very_large_type = 'null|strict-array{a: Closure():(array<array-key, mixed>|null), b?: Closure():array<array-key, mixed>, c?: Closure():array<array-key, mixed>, d?: Closure():array<array-key, mixed>, e?: Closure():(null|strict-array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: strict-array{0: string}}), p?: Closure():(null|strict-array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: strict-array{0: string}}), q: string, r?: Closure():(array<array-key, mixed>|null), s: array<array-key, mixed>}';
 
         $this->assertSame(
             $very_large_type,

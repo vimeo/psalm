@@ -674,7 +674,7 @@ class FunctionCallTest extends TestCase
                     $query = parse_url($url, PHP_URL_QUERY);
                     $fragment = parse_url($url, PHP_URL_FRAGMENT);',
                 'assertions' => [
-                    '$components' => 'strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
+                    '$components' => 'false|strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}',
                     '$scheme' => 'false|null|string',
                     '$host' => 'false|null|string',
                     '$port' => 'false|int|null',
@@ -693,9 +693,9 @@ class FunctionCallTest extends TestCase
                     $b = parse_url($url, -42);
                     $c = parse_url($url, $component);',
                 'assertions' => [
-                    '$a' => 'strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
-                    '$b' => 'strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
-                    '$c' => 'strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}|false',
+                    '$a' => 'false|strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}',
+                    '$b' => 'false|strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}',
+                    '$c' => 'false|strict-array{fragment?: string, host?: string, pass?: string, path?: string, port?: int, query?: string, scheme?: string, user?: string}',
                 ],
             ],
             'triggerUserError' => [

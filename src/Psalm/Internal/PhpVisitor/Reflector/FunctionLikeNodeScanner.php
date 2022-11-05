@@ -927,7 +927,7 @@ class FunctionLikeNodeScanner
     private function createStorageForFunctionLike(
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method
-    ) {
+    ): strict-array {
         $classlike_storage = null;
         $fq_classlike_name = null;
         $is_functionlike_override = false;

@@ -489,7 +489,7 @@ class IntRangeTest extends TestCase
 
 
                     /** @return array<int, string> */
-                    function getArray(): strict-array{
+                    function getArray(): array {
                         return [];
                     }'
             ],

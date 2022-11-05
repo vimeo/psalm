@@ -5,7 +5,6 @@ namespace Psalm\Internal\Codebase;
 use Closure;
 use InvalidArgumentException;
 use PhpParser;
-use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\FileManipulation;

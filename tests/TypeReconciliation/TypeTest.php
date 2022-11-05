@@ -41,7 +41,7 @@ class TypeTest extends TestCase
                     }',
                 'assertions' => [
                     '$a===' => 'strict-list{0?: 0, 1?: 1}',
-                    '$b===' => 'strict-list{0, 1}|null'
+                    '$b===' => 'null|strict-list{0, 1}'
                 ]
             ],
             'sealedArrayMagic' => [

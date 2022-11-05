@@ -1452,15 +1452,16 @@ class TypeParser
             return new TObjectWithProperties($properties, [], [], $from_docblock);
         }
 
-        $sealed = str_starts_with($type, 'strict-');
-        if ($sealed) {
-            $type = substr($type, 7);
-        }
         $callable = str_starts_with($type, 'callable-');
         $class = TKeyedArray::class;
         if ($callable) {
             $class = TCallableKeyedArray::class;
             $type = substr($type, 9);
+        }
+
+        $sealed = str_starts_with($type, 'strict-');
+        if ($sealed) {
+            $type = substr($type, 7);
         }
 
         if ($callable && !$sealed) {

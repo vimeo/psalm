@@ -250,7 +250,8 @@ class TKeyedArray extends Atomic
                 );
         }
 
-        return ($this->is_list ? static::NAME_LIST : static::NAME_ARRAY) . '{' .
+        return  ($this->sealed ? 'strict-' : '') .
+                ($this->is_list ? static::NAME_LIST : static::NAME_ARRAY) . '{' .
                 implode(', ', $suffixed_properties) . '}';
     }
 
