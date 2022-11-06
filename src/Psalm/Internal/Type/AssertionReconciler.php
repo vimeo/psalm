@@ -81,6 +81,8 @@ class AssertionReconciler extends Reconciler
         ?int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $negated = false
     ): Union {
+        var_dump($assertion);
+        var_dump($existing_var_type->getId());
         $codebase = $statements_analyzer->getCodebase();
 
         $is_strict_equality = false;

@@ -1193,6 +1193,10 @@ return [
       'old' => ['resource|false', 'certificate'=>'string|resource'],
       'new' => ['OpenSSLCertificate|false', 'certificate'=>'OpenSSLCertificate|string'],
     ],
+    'openssl_x509_verify' => [
+      'old' => ['int', 'certificate'=>'string|resource', 'public_key'=>'string|array|resource'],
+      'new' => ['int', 'certificate'=>'string|OpenSSLCertificate', 'public_key'=>'string|OpenSSLCertificate|OpenSSLAsymmetricKey|array'],
+    ],
     'parse_str' => [
       'old' => ['void', 'string'=>'string', '&w_result='=>'array'],
       'new' => ['void', 'string'=>'string', '&w_result'=>'array'],
