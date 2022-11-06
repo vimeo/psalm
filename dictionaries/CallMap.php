@@ -9415,6 +9415,7 @@ return [
 'openssl_x509_free' => ['void', 'certificate'=>'OpenSSLCertificate'],
 'openssl_x509_parse' => ['array|false', 'certificate'=>'OpenSSLCertificate|string', 'short_names='=>'bool'],
 'openssl_x509_read' => ['OpenSSLCertificate|false', 'certificate'=>'OpenSSLCertificate|string'],
+'openssl_x509_verify' => ['int', 'certificate'=>'string|OpenSSLCertificate', 'public_key'=>'string|OpenSSLCertificate|OpenSSLAsymmetricKey|array'],
 'ord' => ['int', 'character'=>'string'],
 'OuterIterator::current' => ['mixed'],
 'OuterIterator::getInnerIterator' => ['Iterator'],

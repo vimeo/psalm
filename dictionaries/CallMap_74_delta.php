@@ -18,6 +18,7 @@ return [
   'added' => [
     'ReflectionProperty::getType' => ['?ReflectionType'],
     'mb_str_split' => ['list<string>|false', 'string'=>'string', 'length='=>'positive-int', 'encoding='=>'string'],
+    'openssl_x509_verify' => ['int', 'certificate'=>'string|resource', 'public_key'=>'string|array|resource'],
   ],
   'changed' => [
     'array_merge' => [
