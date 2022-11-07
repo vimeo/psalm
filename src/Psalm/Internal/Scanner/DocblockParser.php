@@ -258,9 +258,11 @@ class DocblockParser
 
         if (isset($docblock->tags['param-out'])
             || isset($docblock->tags['psalm-param-out'])
+            || isset($docblock->tags['phpstan-param-out'])
         ) {
             $docblock->combined_tags['param-out']
                 = ($docblock->tags['param-out'] ?? [])
+                + ($docblock->tags['phpstan-param-out'] ?? [])
                 + ($docblock->tags['psalm-param-out'] ?? []);
         }
     }
