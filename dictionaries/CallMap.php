@@ -11445,7 +11445,7 @@ return [
 'ReflectionExtension::getFunctions' => ['array<string,ReflectionFunction>'],
 'ReflectionExtension::getINIEntries' => ['array<string,mixed>'],
 'ReflectionExtension::getName' => ['string'],
-'ReflectionExtension::getVersion' => ['string'],
+'ReflectionExtension::getVersion' => ['?string'],
 'ReflectionExtension::info' => ['void'],
 'ReflectionExtension::isPersistent' => ['bool'],
 'ReflectionExtension::isTemporary' => ['bool'],
