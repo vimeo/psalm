@@ -12476,7 +12476,7 @@ return [
     'join\'1' => ['string', 'separator'=>'array'],
     'jpeg2wbmp' => ['bool', 'jpegname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
     'json_decode' => ['mixed', 'json'=>'string', 'associative='=>'bool', 'depth='=>'int', 'flags='=>'int'],
-    'json_encode' => ['string|false', 'value'=>'mixed', 'flags='=>'int', 'depth='=>'int'],
+    'json_encode' => ['non-empty-string|false', 'value'=>'mixed', 'flags='=>'int', 'depth='=>'int'],
     'json_last_error' => ['int'],
     'json_last_error_msg' => ['string'],
     'judy_type' => ['int', 'array'=>'judy'],
