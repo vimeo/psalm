@@ -276,7 +276,6 @@ function avgCoefficient(array $params): float {
 
 You can also manually provide a `['a' => $arr['a'], 'b' => $arr['b']]`, but there's an even better way to seamlessly validate user-provided input:  
 
-<!--
 Use [Valinor](https://github.com/CuyZ/Valinor) in strict mode to easily assert sealed arrays @ runtime using Psalm array shape syntax (instead of manually asserting keys with isset):
 
 ```php
@@ -298,7 +297,7 @@ try {
 ```
 
 Valinor provides both runtime and static Psalm assertions with full Psalm syntax support and many other features, check out the [Valinor documentation](https://valinor.cuyz.io/latest/) for more info!  
--->
+
 
 Tip: if you find yourself copying the same complex sealed array shape over and over again to avoid `InvalidArgument` issues, try using [type aliases](utility_types.md#type-aliases), instead.
 
