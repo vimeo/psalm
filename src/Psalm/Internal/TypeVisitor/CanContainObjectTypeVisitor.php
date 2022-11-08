@@ -9,6 +9,7 @@ use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 
+/** @internal */
 class CanContainObjectTypeVisitor extends TypeVisitor
 {
     /**
