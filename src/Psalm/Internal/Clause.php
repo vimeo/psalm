@@ -111,6 +111,7 @@ class Clause
                 $possibility_strings[$i] = array_keys($v);
             }
 
+            /** @psalm-suppress ImpureFunctionCall */
             $data = serialize($possibility_strings);
             $this->hash = PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
         }

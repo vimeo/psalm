@@ -524,13 +524,24 @@ class Functions
 
             //gettext
             'bindtextdomain',
-            
+
             // hash
             'hash_update', 'hash_update_file', 'hash_update_stream',
+
+            // unserialize
+            'unserialize'
         ];
 
         if (in_array(strtolower($function_id), $impure_functions, true)) {
             return false;
+        }
+
+        if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
+            $serialize_type = $type_provider->getType($args[0]->value);
+
+            if ($serialize_type && $serialize_type->canContainObjectType($codebase)) {
+                return false;
+            }
         }
 
         if (strpos($function_id, 'image') === 0) {

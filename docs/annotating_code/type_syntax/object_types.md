@@ -1,8 +1,10 @@
 # Object types
 
-- [object](#unnamed-objects)
-- [object{foo: string}](#object-properties)
-- [Exception, Foo\MyClass and Foo\MyClass<Bar>](#named-objectsmd)
+_Click on the &raquo; next to each type to view detailed documentation and examples._
+
+- [object &raquo;](#unnamed-objects)
+- [object{foo: string} &raquo;](#object-properties)
+- [Exception, Foo\MyClass and Foo\MyClass&lt;Bar&gt; &raquo;](#named-objects)
 - [Generator](#generators)
 
 ### Unnamed objects

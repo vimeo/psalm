@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TIntRange;
@@ -20,6 +21,10 @@ use function array_merge;
 use function array_pop;
 use function array_push;
 use function array_reverse;
+use function count;
+use function is_array;
+
+use const PHP_INT_MAX;
 
 /**
  * @internal
@@ -131,6 +136,48 @@ class UnionTypeComparator
                     && !$input_type_part instanceof TFalse
                 ) {
                     continue;
+                }
+
+                // if params are specified
+                if ($container_type_part instanceof TCallable
+                    && is_array($container_type_part->params)
+                    && $input_type_part instanceof TCallable
+                ) {
+                    $container_all_param_count = count($container_type_part->params);
+                    $container_required_param_count = 0;
+                    foreach ($container_type_part->params as $index => $container_param) {
+                        if ($container_param->is_optional === false) {
+                            $container_required_param_count = $index + 1;
+                        }
+
+                        if ($container_param->is_variadic === true) {
+                            $container_all_param_count = PHP_INT_MAX;
+                        }
+                    }
+
+                    $input_required_param_count = 0;
+                    if (!is_array($input_type_part->params)) {
+                        // it's not declared, there can be an arbitrary number of params
+                        $input_all_param_count = PHP_INT_MAX;
+                    } else {
+                        $input_all_param_count = count($input_type_part->params);
+                        foreach ($input_type_part->params as $index => $input_param) {
+                            if ($input_param->is_optional === false) {
+                                $input_required_param_count = $index + 1;
+                            }
+
+                            if ($input_param->is_variadic === true) {
+                                $input_all_param_count = PHP_INT_MAX;
+                            }
+                        }
+                    }
+
+                    // too few or too many non-optional params provided in callback
+                    if ($container_required_param_count > $input_all_param_count
+                        || $container_all_param_count < $input_required_param_count
+                    ) {
+                        return false;
+                    }
                 }
 
                 if ($union_comparison_result) {

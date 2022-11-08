@@ -1,5 +1,7 @@
 # Scalar types
 
+_Click on the &raquo; next to each type to view detailed documentation and examples._
+
 * [bool &raquo;](scalar_types.md#scalar)
 * [int &raquo;](scalar_types.md#scalar)
 * [float &raquo;](scalar_types.md#scalar)

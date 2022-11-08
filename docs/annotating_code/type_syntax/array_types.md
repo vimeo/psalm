@@ -25,15 +25,17 @@ PHP treats all these arrays the same, essentially (though there are some optimis
 
 Psalm has a few different ways to represent arrays in its type system:
 
-- [array&lt;int, string&gt;](#generic-arrays)
-- [non-empty-array](#non-empty-array)
-- [string\[\]](#phpdoc-syntax)
-- [list & non-empty-list](#lists)
+_Click on the &raquo; next to each type to view detailed documentation and examples._
+
+- [array&lt;int, string&gt; &raquo;](#generic-arrays)
+- [non-empty-array &raquo;](#non-empty-array)
+- [string\[\] &raquo;](#phpdoc-syntax)
+- [list & non-empty-list &raquo;](#lists)
 - [list&lt;string&gt;](#lists)
 - [array{foo: int, bar: string} and list{int, string} &raquo;](#object-like-arrays)
   - [Sealed arrays &raquo;](#sealed-object-like-arrays)
   - [Unsealed arrays &raquo;](#unsealed-object-like-arrays)
-- [callable-array](#callable-arrays)
+- [callable-array &raquo;](#callable-arrays)
 
 ## Generic arrays
 
@@ -191,7 +193,7 @@ avgShape([123.1, 321.0, 1.0, new class {}, 'test']);
 
 The above examples contain bugs which can be detected by Psalm *only when using sealed arrays*.  
 
-The counterpart to sealed arrays are [unsealed arrays &rauo;](#unsealed-object-like-arrays), generated as intermediate types when asserting raw arrays.  
+The counterpart to sealed arrays are [unsealed arrays &raquo;](#unsealed-object-like-arrays), generated as intermediate types when asserting raw arrays.  
 Unsealed arrays are by definition uncertain, so Psalm can't reason well about them: always convert them to sealed arrays as specified [here &raquo;](#unsealed-object-like-arrays).  
 
 Tip: if you find yourself copying the same complex sealed array shape over and over again to avoid `InvalidArgument` issues, try using [type aliases](utility_types.md#type-aliases), instead.
@@ -274,7 +276,6 @@ function avgCoefficient(array $params): float {
 
 You can also manually provide a `['a' => $arr['a'], 'b' => $arr['b']]`, but there's an even better way to seamlessly validate user-provided input:  
 
-<!--
 Use [Valinor](https://github.com/CuyZ/Valinor) in strict mode to easily assert sealed arrays @ runtime using Psalm array shape syntax (instead of manually asserting keys with isset):
 
 ```php
@@ -296,7 +297,7 @@ try {
 ```
 
 Valinor provides both runtime and static Psalm assertions with full Psalm syntax support and many other features, check out the [Valinor documentation](https://valinor.cuyz.io/latest/) for more info!  
--->
+
 
 Tip: if you find yourself copying the same complex sealed array shape over and over again to avoid `InvalidArgument` issues, try using [type aliases](utility_types.md#type-aliases), instead.
 

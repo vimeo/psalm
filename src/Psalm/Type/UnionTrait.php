@@ -5,6 +5,7 @@ namespace Psalm\Type;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
@@ -496,6 +497,18 @@ trait UnionTrait
         }
 
         return false;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function canContainObjectType(Codebase $codebase): bool
+    {
+        $object_type_visitor = new CanContainObjectTypeVisitor($codebase);
+
+        $object_type_visitor->traverseArray($this->types);
+
+        return $object_type_visitor->matches();
     }
 
     /**
@@ -1258,6 +1271,7 @@ trait UnionTrait
             $phantom_classes
         );
 
+        /** @psalm-suppress ImpureMethodCall */
         $scanner_visitor->traverseArray($this->types);
     }
 
