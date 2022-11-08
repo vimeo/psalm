@@ -236,7 +236,7 @@ function avgCoefficient(array $params): float {
 ```
 
 In this example, we assume that `avg` takes an array with two elements, but what happens if the API (or some other function) also provides a third `c` parameter to a function that averages two elements?  
-And what would happen if a string `csrf` parameter were provided in `$_POST`?  
+And what would happen if a string `requestId` parameter is returned by the API call?  
 
 Clearly, just asserting the shape of the array is not enough: we need to guarantee that the array will contain only the array elements we need.  
 
