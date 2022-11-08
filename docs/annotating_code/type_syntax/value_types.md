@@ -2,10 +2,12 @@
 
 Psalm also allows you to specify values in types.
 
-- [null](#null)
-- [true, false](#true-false)
-- [6, 7.0, "forty-two" and 'forty two'](#some_string-4-314)
-- [Foo\Bar::MY_SCALAR_CONST](#regular-class-constants)
+_Click on the &raquo; next to each type to view detailed documentation and examples._
+
+- [null &raquo;](#null)
+- [true, false &raquo;](#true-false)
+- [6, 7.0, "forty-two" and 'forty two' &raquo;](#some_string-4-314)
+- [Foo\Bar::MY_SCALAR_CONST &raquo;](#regular-class-constants)
 
 ### null
 

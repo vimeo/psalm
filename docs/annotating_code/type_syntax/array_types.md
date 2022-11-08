@@ -25,15 +25,17 @@ PHP treats all these arrays the same, essentially (though there are some optimis
 
 Psalm has a few different ways to represent arrays in its type system:
 
-- [array&lt;int, string&gt;](#generic-arrays)
-- [non-empty-array](#non-empty-array)
-- [string\[\]](#phpdoc-syntax)
-- [list & non-empty-list](#lists)
+_Click on the &raquo; next to each type to view detailed documentation and examples._
+
+- [array&lt;int, string&gt; &raquo;](#generic-arrays)
+- [non-empty-array &raquo;](#non-empty-array)
+- [string\[\] &raquo;](#phpdoc-syntax)
+- [list & non-empty-list &raquo;](#lists)
 - [list&lt;string&gt;](#lists)
 - [array{foo: int, bar: string} and list{int, string} &raquo;](#object-like-arrays)
   - [Sealed arrays &raquo;](#sealed-object-like-arrays)
   - [Unsealed arrays &raquo;](#unsealed-object-like-arrays)
-- [callable-array](#callable-arrays)
+- [callable-array &raquo;](#callable-arrays)
 
 ## Generic arrays
 
