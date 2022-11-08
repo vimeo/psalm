@@ -193,7 +193,7 @@ avgShape([123.1, 321.0, 1.0, new class {}, 'test']);
 
 The above examples contain bugs which can be detected by Psalm *only when using sealed arrays*.  
 
-The counterpart to sealed arrays are [unsealed arrays &rauo;](#unsealed-object-like-arrays), generated as intermediate types when asserting raw arrays.  
+The counterpart to sealed arrays are [unsealed arrays &raquo;](#unsealed-object-like-arrays), generated as intermediate types when asserting raw arrays.  
 Unsealed arrays are by definition uncertain, so Psalm can't reason well about them: always convert them to sealed arrays as specified [here &raquo;](#unsealed-object-like-arrays).  
 
 Tip: if you find yourself copying the same complex sealed array shape over and over again to avoid `InvalidArgument` issues, try using [type aliases](utility_types.md#type-aliases), instead.
