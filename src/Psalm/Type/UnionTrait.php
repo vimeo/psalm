@@ -1271,6 +1271,7 @@ trait UnionTrait
             $phantom_classes
         );
 
+        /** @psalm-suppress ImpureMethodCall */
         $scanner_visitor->traverseArray($this->types);
     }
 

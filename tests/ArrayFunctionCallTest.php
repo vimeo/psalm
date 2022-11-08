@@ -1108,7 +1108,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'current' => [
-                '<?php
+                'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = current($a);',
                 'assertions' => [
@@ -1116,7 +1116,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'currentEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = current($a);',
                 'assertions' => [
@@ -1124,7 +1124,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'currentNonEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-array<int> $arr
                      * @return int
@@ -1134,7 +1134,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'reset' => [
-                '<?php
+                'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = reset($a);',
                 'assertions' => [
@@ -1142,7 +1142,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'resetEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = reset($a);',
                 'assertions' => [
@@ -1150,7 +1150,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'resetNonEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-array<int> $arr
                      * @return int
@@ -1160,7 +1160,7 @@ class ArrayFunctionCallTest extends TestCase
                     }',
             ],
             'end' => [
-                '<?php
+                'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
                     $b = end($a);',
                 'assertions' => [
@@ -1168,7 +1168,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'endEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = end($a);',
                 'assertions' => [
@@ -1176,7 +1176,7 @@ class ArrayFunctionCallTest extends TestCase
                 ],
             ],
             'endNonEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-array<int> $arr
                      * @return int

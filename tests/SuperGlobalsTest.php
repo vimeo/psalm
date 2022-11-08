@@ -24,7 +24,7 @@ class SuperGlobalsTest extends TestCase
         ];
 
         yield 'ENV has scalar entries only' => [
-            '<?php
+            'code' => '<?php
                 /** @return array<array-key, scalar> */
                 function f(): array {
                     return $_ENV;

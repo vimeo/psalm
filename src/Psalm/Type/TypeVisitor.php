@@ -8,8 +8,6 @@ abstract class TypeVisitor
     public const DONT_TRAVERSE_CHILDREN = 2;
 
     /**
-     * @internal Can only be called by a TypeNode
-     *
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     abstract protected function enterNode(TypeNode $type): ?int;

@@ -738,7 +738,7 @@ class UnusedCodeTest extends TestCase
                     new Foo();'
             ],
             'ignoreSerializeAndUnserialize' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public function __sleep(): array
