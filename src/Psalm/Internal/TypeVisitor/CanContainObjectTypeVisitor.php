@@ -3,11 +3,8 @@
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Codebase;
-use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TObject;
-use Psalm\Type\NodeVisitor;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
@@ -32,9 +29,9 @@ class CanContainObjectTypeVisitor extends TypeVisitor
     protected function enterNode(TypeNode $type): ?int
     {
         if (($type instanceof Union
-            && $type->hasObjectType()
+            && ($type->hasObjectType() || $type->hasIterable() || $type->hasMixed())
         ) || ($type instanceof Atomic
-            && $type->isObjectType()
+            && ($type->isObjectType() || $type->isIterable($this->codebase) || $type instanceof TMixed)
         )) {
             $this->contains_object_type = true;
             return self::STOP_TRAVERSAL;
