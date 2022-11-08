@@ -1086,7 +1086,7 @@ class ArrayFunctionCallTest extends TestCase
                     $a = ["one" => 1, "two" => 3];
                     $b = key($a);',
                 'assertions' => [
-                    '$b' => 'null|string',
+                    '$b' => 'string',
                 ],
             ],
             'keyEmptyArray' => [
@@ -1101,10 +1101,88 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param non-empty-array $arr
-                     * @return null|array-key
+                     * @return array-key
                      */
                     function foo(array $arr) {
                         return key($arr);
+                    }',
+            ],
+            'current' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = current($a);',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'currentEmptyArray' => [
+                '<?php
+                    $a = [];
+                    $b = current($a);',
+                'assertions' => [
+                    '$b' => 'false',
+                ],
+            ],
+            'currentNonEmptyArray' => [
+                '<?php
+                    /**
+                     * @param non-empty-array<int> $arr
+                     * @return int
+                     */
+                    function foo(array $arr) {
+                        return current($arr);
+                    }',
+            ],
+            'reset' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'resetEmptyArray' => [
+                '<?php
+                    $a = [];
+                    $b = reset($a);',
+                'assertions' => [
+                    '$b' => 'false',
+                ],
+            ],
+            'resetNonEmptyArray' => [
+                '<?php
+                    /**
+                     * @param non-empty-array<int> $arr
+                     * @return int
+                     */
+                    function foo(array $arr) {
+                        return reset($arr);
+                    }',
+            ],
+            'end' => [
+                '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'endEmptyArray' => [
+                '<?php
+                    $a = [];
+                    $b = end($a);',
+                'assertions' => [
+                    '$b' => 'false',
+                ],
+            ],
+            'endNonEmptyArray' => [
+                '<?php
+                    /**
+                     * @param non-empty-array<int> $arr
+                     * @return int
+                     */
+                    function foo(array $arr) {
+                        return end($arr);
                     }',
             ],
             'arrayKeyFirst' => [

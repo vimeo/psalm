@@ -571,7 +571,7 @@ class LimitIterator extends IteratorIterator implements OuterIterator {
     /**
      * @param TIterator $iterator
      */
-    public function __construct(Iterator $iterator, int $offset = 0, int $count = -1) {}
+    public function __construct(Iterator $iterator, int $offset = 0, int $limit = -1) {}
 
     /**
      * @return TValue|null current value or null when iterator is drained

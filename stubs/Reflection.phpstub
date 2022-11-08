@@ -100,6 +100,21 @@ class ReflectionProperty implements Reflector
      * @psalm-mutation-free
      */
     public function getType() : ?ReflectionType {}
+
+    /**
+    * @since 8.0
+    */
+    public function hasDefaultValue(): bool {}
+
+    /**
+    * @since 8.0
+    */
+    public function isPromoted(): bool {}
+
+    /**
+    * @since 8.1
+    */
+    public function isReadOnly(): bool {}
 }
 
 class ReflectionMethod implements Reflector
@@ -181,6 +196,11 @@ class ReflectionParameter implements Reflector {
      * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
+
+    /**
+    * @since 8.0
+    */
+    public function isPromoted(): bool {}
 }
 
 /**

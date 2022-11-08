@@ -259,7 +259,6 @@ class EmptyTest extends TestCase
 
                         while (!empty($needle)) {
                             $key = key($needle);
-                            if ($key === null) continue;
                             $val = $needle[$key];
                             unset($needle[$key]);
 

@@ -19,12 +19,22 @@ use UnexpectedValueException;
 
 use function array_merge;
 use function array_shift;
+use function in_array;
 
 /**
  * @internal
  */
 class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
+    /**
+     * These functions are already handled by the CoreGenericFunctions stub
+     */
+    const IGNORE_FUNCTION_IDS_FOR_FALSE_RETURN_TYPE = [
+        'reset',
+        'end',
+        'current',
+    ];
+
     /**
      * @return array<lowercase-string>
      */
@@ -85,7 +95,7 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
 
         if ($value_type->isNever()) {
             $value_type = Type::getFalse();
-        } elseif (($function_id !== 'reset' && $function_id !== 'end') || !$definitely_has_items) {
+        } elseif (!$definitely_has_items || self::isFunctionAlreadyHandledByStub($function_id)) {
             $value_type = $value_type->getBuilder()->addType(new TFalse);
 
             $codebase = $statements_source->getCodebase();
@@ -107,5 +117,10 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
         );
 
         return $value_type;
+    }
+
+    private static function isFunctionAlreadyHandledByStub(string $function_id): bool
+    {
+        return !in_array($function_id, self::IGNORE_FUNCTION_IDS_FOR_FALSE_RETURN_TYPE, true);
     }
 }
