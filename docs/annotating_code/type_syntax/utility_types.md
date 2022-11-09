@@ -119,7 +119,7 @@ properties with a certain visibility:
 - `private-properties-of<T>`
 
 
-### Limited template support
+### Sealed array support
 
 Use final classes if you want to properties-of and get_object_vars to return [sealed arrays](array_types.md#sealed-object-like-arrays):
 

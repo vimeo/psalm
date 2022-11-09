@@ -6,6 +6,7 @@
 This is the _top type_ in PHP's type system, and represents a lack of type information. Psalm warns about `mixed` types when the `reportMixedIssues` flag is turned on, or when you're on level 1.
 
 ## `never`
+
 It can be aliased to `no-return` or `never-return` in docblocks. Note: it replaced the old `empty` type that used to exist in Psalm
 
 This is the _bottom type_ in PHP's type system. It's used to describe a type that has no possible value. It can happen in multiple cases:
