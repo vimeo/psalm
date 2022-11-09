@@ -632,9 +632,9 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                 if ($lhs_type_part instanceof TObjectWithProperties
                     && $stmt->name instanceof PhpParser\Node\Identifier
-                    && isset($lhs_type_part->methods[$stmt->name->name])
+                    && isset($lhs_type_part->methods[strtolower($stmt->name->name)])
                 ) {
-                    $result->existent_method_ids[] = $lhs_type_part->methods[$stmt->name->name];
+                    $result->existent_method_ids[] = $lhs_type_part->methods[strtolower($stmt->name->name)];
                 } elseif (!$is_intersection) {
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
                         $codebase->analyzer->addMixedMemberName(

@@ -190,7 +190,7 @@ class ArrayAnalyzer
                     && !$atomic_key_type instanceof TTemplateParam
                     && !(
                         $atomic_key_type instanceof TObjectWithProperties
-                        && isset($atomic_key_type->methods['__toString'])
+                        && isset($atomic_key_type->methods['__tostring'])
                     )
                 ) {
                     IssueBuffer::maybeAdd(

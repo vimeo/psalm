@@ -832,7 +832,7 @@ class ArrayFetchAnalyzer
                             && !$atomic_key_type instanceof TTemplateParam
                             && !(
                                 $atomic_key_type instanceof TObjectWithProperties
-                                && isset($atomic_key_type->methods['__toString'])
+                                && isset($atomic_key_type->methods['__tostring'])
                             )
                         ) {
                             $bad_types[] = $atomic_key_type;

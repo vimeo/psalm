@@ -615,7 +615,7 @@ class AtomicTypeComparator
                     return true;
                 }
             } elseif ($input_type_part instanceof TObjectWithProperties
-                && isset($input_type_part->methods['__toString'])
+                && isset($input_type_part->methods['__tostring'])
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->to_string_cast = true;

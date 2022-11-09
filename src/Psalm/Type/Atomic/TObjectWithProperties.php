@@ -29,7 +29,7 @@ final class TObjectWithProperties extends TObject
     public $properties;
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $methods;
 
@@ -37,7 +37,7 @@ final class TObjectWithProperties extends TObject
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
-     * @param array<string, string> $methods
+     * @param array<lowercase-string, string> $methods
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
     public function __construct(
@@ -66,7 +66,7 @@ final class TObjectWithProperties extends TObject
     }
 
     /**
-     * @param array<string, string> $methods
+     * @param array<lowercase-string, string> $methods
      */
     public function setMethods(array $methods): self
     {
