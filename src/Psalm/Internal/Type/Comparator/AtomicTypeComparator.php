@@ -215,6 +215,28 @@ class AtomicTypeComparator
             return true;
         }
 
+        if ($container_type_part instanceof TObjectWithProperties
+            && $container_type_part->is_stringable_object_only
+        ) {
+            if (($input_type_part instanceof TObjectWithProperties
+                    && $input_type_part->is_stringable_object_only)
+                || ($input_type_part instanceof TNamedObject
+                    && $codebase->methodExists(new MethodIdentifier($input_type_part->value, '__tostring')))
+            ) {
+                return true;
+            }
+            return false;
+        }
+
+        if ($container_type_part instanceof TNamedObject
+            && $container_type_part->value === 'Stringable'
+            && $codebase->analysis_php_version_id >= 8_00_00
+            && $input_type_part instanceof TObjectWithProperties
+            && $input_type_part->is_stringable_object_only
+        ) {
+            return true;
+        }
+
         if (($container_type_part instanceof TKeyedArray
                 && $input_type_part instanceof TKeyedArray)
             || ($container_type_part instanceof TObjectWithProperties

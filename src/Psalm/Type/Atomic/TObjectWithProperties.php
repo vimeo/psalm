@@ -33,6 +33,9 @@ final class TObjectWithProperties extends TObject
      */
     public $methods;
 
+    /** @var bool */
+    public $is_stringable_object_only = false;
+
     /**
      * Constructs a new instance of a generic type
      *
@@ -50,6 +53,9 @@ final class TObjectWithProperties extends TObject
         $this->methods = $methods;
         $this->extra_types = $extra_types;
         $this->from_docblock = $from_docblock;
+
+        $this->is_stringable_object_only =
+            $this->properties === [] && $this->methods === ['__tostring' => 'string'];
     }
 
     /**
@@ -62,6 +68,10 @@ final class TObjectWithProperties extends TObject
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
+
+        $cloned->is_stringable_object_only =
+            $cloned->properties === [] && $cloned->methods === ['__tostring' => 'string'];
+
         return $cloned;
     }
 
@@ -75,6 +85,10 @@ final class TObjectWithProperties extends TObject
         }
         $cloned = clone $this;
         $cloned->methods = $methods;
+
+        $cloned->is_stringable_object_only =
+            $cloned->properties === [] && $cloned->methods === ['__tostring' => 'string'];
+
         return $cloned;
     }
 

@@ -2536,6 +2536,12 @@ class ArrayFunctionCallTest extends TestCase
                 ',
                 'error_message' => 'RawObjectIteration',
             ],
+            'implodeWithNonStringableArgs' => [
+                'code' => '<?php
+                    implode(",", [new stdClass]);
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
