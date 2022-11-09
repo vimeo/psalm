@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\ReservedWord;
@@ -192,14 +193,25 @@ class TypeChecker extends TypeVisitor
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
 
             if ($class_storage->deprecated) {
-                IssueBuffer::maybeAdd(
-                    new DeprecatedClass(
-                        'Class ' . $atomic->value . ' is marked as deprecated',
-                        $this->code_location,
-                        $atomic->value
-                    ),
-                    $this->source->getSuppressedIssues() + $this->suppressed_issues
-                );
+                if ($class_storage->is_interface) {
+                    IssueBuffer::maybeAdd(
+                        new DeprecatedInterface(
+                            'Interface ' . $atomic->value . ' is marked as deprecated',
+                            $this->code_location,
+                            $atomic->value
+                        ),
+                        $this->source->getSuppressedIssues() + $this->suppressed_issues
+                    );
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new DeprecatedClass(
+                            'Class ' . $atomic->value . ' is marked as deprecated',
+                            $this->code_location,
+                            $atomic->value
+                        ),
+                        $this->source->getSuppressedIssues() + $this->suppressed_issues
+                    );
+                }
             }
         }
 
