@@ -289,7 +289,28 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedConstant',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
-            ]
+            ],
+            'deprecatedInterfaceInGenerics' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    interface MyInterface {}
+
+                    /** @extends ArrayObject<array-key, MyInterface> */
+                    class MyClass extends ArrayObject {}
+                ',
+                'error_message' => 'DeprecatedInterface',
+            ],
+            'deprecatedTrait' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    trait T {}
+
+                    class C {
+                        use T;
+                    }
+                ',
+                'error_message' => 'DeprecatedTrait',
+            ],
         ];
     }
 }
