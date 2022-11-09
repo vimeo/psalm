@@ -9,7 +9,6 @@
 /UPGRADING.md export-ignore
 /psalm-baseline.xml export-ignore
 /dictionaries/scripts export-ignore
-/docs export-ignore
 /.editorconfig export-ignore
 /examples export-ignore
 /.gitattributes export-ignore
