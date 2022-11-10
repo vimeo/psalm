@@ -4,6 +4,7 @@ set -e
 set -x
 
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(realpath "$SCRIPT_DIR")"
 PSALM="$(readlink -f "$SCRIPT_DIR/../psalm")"
 PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../build/psalm.phar")"
 
@@ -33,6 +34,9 @@ psl)
 	cd endtoend-test-psl
 	git checkout 1.9.x
 	composer require --dev php-standard-library/psalm-plugin:^1.1.4 --ignore-platform-reqs
+	cd vendor/php-standard-library/psalm-plugin
+	patch -p1 < $SCRIPT_DIR/psl-psalm-plugin.diff
+	cd ../../../
 	cd tools/phpbench && composer install --ignore-platform-reqs && cd ../..
 	"$PSALM" --monochrome --config=tools/psalm/psalm.xml
 	;;

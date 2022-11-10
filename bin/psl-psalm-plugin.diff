@@ -1,0 +1,138 @@
+diff --git a/src/EventHandler/Iter/First/FunctionReturnTypeProvider.php b/src/EventHandler/Iter/First/FunctionReturnTypeProvider.php
+index 7168824..dfd0a8a 100644
+--- a/src/EventHandler/Iter/First/FunctionReturnTypeProvider.php
++++ b/src/EventHandler/Iter/First/FunctionReturnTypeProvider.php
+@@ -34,20 +34,20 @@ final class FunctionReturnTypeProvider implements FunctionReturnTypeProviderInte
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TNonEmptyArray) {
+-            return clone $array_argument_type->type_params[1];
++            return $array_argument_type->type_params[1];
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TNonEmptyList) {
+-            return clone $array_argument_type->type_param;
++            return $array_argument_type->type_param;
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TKeyedArray) {
+             // TODO(azjezz): add support for this once psalm starts enforcing the shape order ( if ever ).
+             //
+             // foreach ($properties as $property) {
+-            //     return clone $property;
++            //     return $property;
+             // }
+-            return clone $array_argument_type->getGenericValueType();
++            return $array_argument_type->getGenericValueType();
+         }
+ 
+         return null;
+diff --git a/src/EventHandler/Iter/FirstKey/FunctionReturnTypeProvider.php b/src/EventHandler/Iter/FirstKey/FunctionReturnTypeProvider.php
+index f95ebfd..d276046 100644
+--- a/src/EventHandler/Iter/FirstKey/FunctionReturnTypeProvider.php
++++ b/src/EventHandler/Iter/FirstKey/FunctionReturnTypeProvider.php
+@@ -34,7 +34,7 @@ final class FunctionReturnTypeProvider implements FunctionReturnTypeProviderInte
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TNonEmptyArray) {
+-            return clone $array_argument_type->type_params[0];
++            return $array_argument_type->type_params[0];
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TNonEmptyList) {
+@@ -45,9 +45,9 @@ final class FunctionReturnTypeProvider implements FunctionReturnTypeProviderInte
+             // TODO(azjezz): add support for this once psalm starts enforcing the shape order ( if ever ).
+             //
+             // foreach ($properties as $property) {
+-            //     return clone $property;
++            //     return $property;
+             // }
+-            return clone $array_argument_type->getGenericKeyType();
++            return $array_argument_type->getGenericKeyType();
+         }
+ 
+         return null;
+diff --git a/src/EventHandler/Iter/Last/FunctionReturnTypeProvider.php b/src/EventHandler/Iter/Last/FunctionReturnTypeProvider.php
+index 6a7a8c8..5f79bb7 100644
+--- a/src/EventHandler/Iter/Last/FunctionReturnTypeProvider.php
++++ b/src/EventHandler/Iter/Last/FunctionReturnTypeProvider.php
+@@ -34,11 +34,11 @@ final class FunctionReturnTypeProvider implements FunctionReturnTypeProviderInte
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TNonEmptyArray) {
+-            return clone $array_argument_type->type_params[1];
++            return $array_argument_type->type_params[1];
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TNonEmptyList) {
+-            return clone $array_argument_type->type_param;
++            return $array_argument_type->type_param;
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TKeyedArray) {
+@@ -50,8 +50,8 @@ final class FunctionReturnTypeProvider implements FunctionReturnTypeProviderInte
+             //     $last_property = $property;
+             // }
+             //
+-            // return clone $last_property;
+-            return clone $array_argument_type->getGenericValueType();
++            // return $last_property;
++            return $array_argument_type->getGenericValueType();
+         }
+ 
+         return null;
+diff --git a/src/EventHandler/Iter/LastKey/FunctionReturnTypeProvider.php b/src/EventHandler/Iter/LastKey/FunctionReturnTypeProvider.php
+index 7e98609..19abf16 100644
+--- a/src/EventHandler/Iter/LastKey/FunctionReturnTypeProvider.php
++++ b/src/EventHandler/Iter/LastKey/FunctionReturnTypeProvider.php
+@@ -34,7 +34,7 @@ final class FunctionReturnTypeProvider implements FunctionReturnTypeProviderInte
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TNonEmptyArray) {
+-            return clone $array_argument_type->type_params[0];
++            return $array_argument_type->type_params[0];
+         }
+ 
+         if ($array_argument_type instanceof Type\Atomic\TNonEmptyList) {
+@@ -50,8 +50,8 @@ final class FunctionReturnTypeProvider implements FunctionReturnTypeProviderInte
+             //     $last_property = $property;
+             // }
+             //
+-            // return clone $last_property;
+-            return clone $array_argument_type->getGenericKeyType();
++            // return $last_property;
++            return $array_argument_type->getGenericKeyType();
+         }
+ 
+         return null;
+diff --git a/src/EventHandler/Type/Optional/FunctionReturnTypeProvider.php b/src/EventHandler/Type/Optional/FunctionReturnTypeProvider.php
+index 2c0fbb3..896f434 100644
+--- a/src/EventHandler/Type/Optional/FunctionReturnTypeProvider.php
++++ b/src/EventHandler/Type/Optional/FunctionReturnTypeProvider.php
+@@ -28,9 +28,6 @@ final class FunctionReturnTypeProvider implements FunctionReturnTypeProviderInte
+             return null;
+         }
+ 
+-        $clone = clone $argument_type;
+-        $clone->possibly_undefined = true;
+-
+-        return $clone;
++        return $argument_type->setPossiblyUndefined(true);
+     }
+ }
+diff --git a/src/EventHandler/Type/Shape/FunctionReturnTypeProvider.php b/src/EventHandler/Type/Shape/FunctionReturnTypeProvider.php
+index 3650a1a..b51bf63 100644
+--- a/src/EventHandler/Type/Shape/FunctionReturnTypeProvider.php
++++ b/src/EventHandler/Type/Shape/FunctionReturnTypeProvider.php
+@@ -57,8 +57,9 @@ final class FunctionReturnTypeProvider implements FunctionReturnTypeProviderInte
+                 return null;
+             }
+ 
+-            $property_type = clone $type->type_params[0];
+-            $property_type->possibly_undefined = $value->possibly_undefined;
++            $property_type = $type->type_params[0]->setPossiblyUndefined(
++                $value->possibly_undefined
++            );
+ 
+             $properties[$name] = $property_type;
+         }

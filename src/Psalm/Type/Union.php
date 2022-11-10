@@ -4,6 +4,7 @@ namespace Psalm\Type;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -40,6 +41,7 @@ use function get_object_vars;
  */
 final class Union implements TypeNode, Stringable
 {
+    use ImmutableNonCloneableTrait;
     use UnionTrait;
 
     /**
