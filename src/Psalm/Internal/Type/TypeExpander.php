@@ -10,6 +10,7 @@ use Psalm\Internal\Type\SimpleAssertionReconciler;
 use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -37,7 +38,6 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
-use Psalm\Type;
 use ReflectionProperty;
 
 use function array_filter;

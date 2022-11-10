@@ -1582,7 +1582,7 @@ class ArrayFetchAnalyzer
                     $has_valid_offset = true;
 
                     $array_access_type = Type::getMixed();
-                } else { 
+                } else {
                     $object_like_keys = array_keys($properties);
 
                     $last_key = array_pop($object_like_keys);
