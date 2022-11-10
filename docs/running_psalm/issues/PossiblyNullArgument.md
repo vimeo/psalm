@@ -14,6 +14,8 @@ foo(rand(0, 1) ? "hello" : null);
 ### Using a Function Call inside `if`
 
 ```php
+<?php
+
 if (is_string($cat->getName()) {
     foo($cat->getName());
 }
@@ -24,6 +26,8 @@ This fails since it's not guaranteed that subsequent calls to `$cat->getName()` 
 
 * Use a variable:
     ```php
+    <?php
+    
     $catName = $cat->getName();
     if (is_string($catName) {
         foo($catName);
@@ -35,6 +39,8 @@ This fails since it's not guaranteed that subsequent calls to `$cat->getName()` 
 ### Calling Another Function After `if`
 
 ```php
+<?php
+
 if (is_string($cat->getName()) {
     changeCat();
     foo($cat->getName());
