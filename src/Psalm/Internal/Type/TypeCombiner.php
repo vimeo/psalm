@@ -679,21 +679,18 @@ class TypeCombiner
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
             $missing_entries = $combination->objectlike_entries;
             $combination->objectlike_sealed = $combination->objectlike_sealed
-                && $type->fallback_value_type === null;
+                && $type->fallback_params === null;
 
-            if ($type->fallback_value_type) {
-                $combination->objectlike_value_type = Type::combineUnionTypes(
-                    $type->fallback_value_type,
-                    $combination->objectlike_value_type,
+            if ($type->fallback_params) {
+                $combination->objectlike_key_type = Type::combineUnionTypes(
+                    $type->fallback_params[0],
+                    $combination->objectlike_key_type,
                     $codebase,
                     $overwrite_empty_array
                 );
-            }
-
-            if ($type->fallback_key_type) {
-                $combination->objectlike_key_type = Type::combineUnionTypes(
-                    $type->fallback_key_type,
-                    $combination->objectlike_key_type,
+                $combination->objectlike_value_type = Type::combineUnionTypes(
+                    $type->fallback_params[1],
+                    $combination->objectlike_value_type,
                     $codebase,
                     $overwrite_empty_array
                 );
@@ -1394,16 +1391,18 @@ class TypeCombiner
                     $objectlike = new TCallableKeyedArray(
                         $combination->objectlike_entries,
                         null,
-                        $sealed ? null : $fallback_key_type,
-                        $sealed ? null : $fallback_value_type,
+                        $sealed || $fallback_key_type === null || $fallback_value_type === null
+                            ? null
+                            : [$fallback_key_type, $fallback_value_type],
                         (bool)$combination->all_arrays_lists
                     );
                 } else {
                     $objectlike = new TKeyedArray(
                         $combination->objectlike_entries,
                         null,
-                        $sealed ? null : $fallback_key_type,
-                        $sealed ? null : $fallback_value_type,
+                        $sealed || $fallback_key_type === null || $fallback_value_type === null
+                            ? null
+                            : [$fallback_key_type, $fallback_value_type],
                         (bool)$combination->all_arrays_lists
                     );
                 }
@@ -1518,8 +1517,7 @@ class TypeCombiner
                     $array_type = new TKeyedArray(
                         [$generic_type_params[1]],
                         null,
-                        Type::getInt(),
-                        $combination->array_type_params[1],
+                        [Type::getInt(), $combination->array_type_params[1]],
                         true
                     );
                 } else {

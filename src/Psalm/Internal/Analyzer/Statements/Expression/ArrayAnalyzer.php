@@ -123,8 +123,9 @@ class ArrayAnalyzer
             $atomic_type = new TKeyedArray(
                 $array_creation_info->property_types,
                 $array_creation_info->class_strings,
-                $array_creation_info->can_create_objectlike ? null : ($item_key_type ?? Type::getArrayKey()),
-                $array_creation_info->can_create_objectlike ? null : ($item_value_type ?? Type::getMixed()),
+                $array_creation_info->can_create_objectlike
+                    ? null :
+                    [$item_key_type ?? Type::getArrayKey(), $item_value_type ?? Type::getMixed()],
                 $array_creation_info->all_list
             );
 

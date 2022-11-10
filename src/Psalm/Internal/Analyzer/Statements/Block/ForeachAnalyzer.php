@@ -470,7 +470,7 @@ class ForeachAnalyzer
                 || $iterator_atomic_type instanceof TList
             ) {
                 if ($iterator_atomic_type instanceof TKeyedArray) {
-                    if ($iterator_atomic_type->fallback_value_type === null) {
+                    if ($iterator_atomic_type->fallback_params === null) {
                         $all_possibly_undefined = true;
                         foreach ($iterator_atomic_type->properties as $prop) {
                             if (!$prop->possibly_undefined) {

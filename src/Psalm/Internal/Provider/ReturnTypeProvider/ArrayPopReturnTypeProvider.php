@@ -78,7 +78,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
             } else {
                 $value_type = $first_arg_array->getGenericValueType();
 
-                if ($first_arg_array->fallback_value_type === null) {
+                if ($first_arg_array->fallback_params === null) {
                     $nullable = true;
                 }
             }

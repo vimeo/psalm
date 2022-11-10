@@ -1030,8 +1030,7 @@ class TypeExpander
         return [new TKeyedArray(
             $properties,
             null,
-            $all_sealed ? null : Type::getString(),
-            $all_sealed ? null : Type::getMixed(),
+            $all_sealed ? null : [Type::getString(), Type::getMixed()],
         )];
     }
 

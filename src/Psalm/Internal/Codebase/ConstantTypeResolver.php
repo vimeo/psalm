@@ -265,7 +265,7 @@ class ConstantTypeResolver
                     new Union([new TNever()]),
                 ]);
             } else {
-                $resolved_type = new TKeyedArray($properties, null, null, null, $is_list);
+                $resolved_type = new TKeyedArray($properties, null, null, $is_list);
             }
 
             return $resolved_type;

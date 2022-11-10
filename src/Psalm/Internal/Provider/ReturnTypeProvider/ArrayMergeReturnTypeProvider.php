@@ -145,7 +145,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                                 $all_nonempty_lists = false;
                             }
 
-                            if ($unpacked_type_part->fallback_value_type === null) {
+                            if ($unpacked_type_part->fallback_params === null) {
                                 $any_nonempty = true;
                             }
 
@@ -242,8 +242,9 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             $objectlike = new TKeyedArray(
                 $generic_properties,
                 $class_strings ?: null,
-                $all_keyed_arrays ? null : $inner_key_type,
-                $all_keyed_arrays ? null : $inner_value_type,
+                $all_keyed_arrays || $inner_key_type === null || $inner_value_type === null
+                    ? null
+                    : [$inner_key_type, $inner_value_type],
                 $all_nonempty_lists || $all_int_offsets
             );
 

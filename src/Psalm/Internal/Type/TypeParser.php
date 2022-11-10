@@ -1130,7 +1130,7 @@ class TypeParser
             /** @var TKeyedArray $intersection_type */
             foreach ($intersection_types as $intersection_type) {
                 foreach ($intersection_type->properties as $property => $property_type) {
-                    if ($intersection_type->fallback_value_type !== null) {
+                    if ($intersection_type->fallback_params !== null) {
                         $all_sealed = false;
                     }
 
@@ -1160,22 +1160,21 @@ class TypeParser
                 ? $first_type
                 : ($last_type instanceof TArray ? $last_type : null);
 
-            $fallback_key_type = null;
-            $fallback_value_type = null;
+            $fallback_params = null;
 
             if ($first_or_last_type !== null) {
-                $fallback_key_type = $first_or_last_type->type_params[0];
-                $fallback_value_type = $first_or_last_type->type_params[1];
+                $fallback_params = [
+                    $first_or_last_type->type_params[0],
+                    $first_or_last_type->type_params[1],
+                ];
             } elseif (!$all_sealed) {
-                $fallback_key_type = Type::getArrayKey();
-                $fallback_value_type = Type::getMixed();
+                $fallback_params = [Type::getArrayKey(), Type::getMixed()];
             }
 
             return new TKeyedArray(
                 $properties,
                 null,
-                $fallback_key_type,
-                $fallback_value_type,
+                $fallback_params,
                 false,
                 $from_docblock
             );
@@ -1489,8 +1488,12 @@ class TypeParser
         return new $class(
             $properties,
             $class_strings,
-            $sealed ? null : ($is_list ? Type::getInt() : Type::getArrayKey()),
-            $sealed ? null : Type::getMixed(),
+            $sealed
+                ? null
+                : [
+                    ($is_list ? Type::getInt() : Type::getArrayKey()),
+                    Type::getMixed()
+                ],
             $is_list,
             $from_docblock
         );

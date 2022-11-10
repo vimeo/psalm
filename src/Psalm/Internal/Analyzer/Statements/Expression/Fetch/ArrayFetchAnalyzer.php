@@ -1136,16 +1136,15 @@ class ArrayFetchAnalyzer
                         $single_atomic instanceof TLiteralClassString ? [
                             $single_atomic->value => true
                         ] : null,
-                        $from_empty_array ? null : $fallback_key_type,
-                        $from_empty_array ? null : $fallback_value_type,
+                        $from_empty_array ? null : [$fallback_key_type, $fallback_value_type],
                     );
                 } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
                     $type = new TNonEmptyList($replacement_type);
                     return;
                 }
             } elseif ($type instanceof TKeyedArray
-                && $type->fallback_value_type
-                && $type->fallback_value_type->isMixed()
+                && $type->fallback_params !== null
+                && $type->fallback_params[1]->isMixed()
                 && count($key_values) === 1
             ) {
                 $properties = $type->properties;
@@ -1524,7 +1523,7 @@ class ArrayFetchAnalyzer
     ): void {
         $generic_key_type = $type->getGenericKeyType();
 
-        if (!$stmt->dim && $type->fallback_value_type === null && $type->is_list) {
+        if (!$stmt->dim && $type->fallback_params === null && $type->is_list) {
             $key_values[] = new TLiteralInt(count($type->properties));
         }
 
@@ -1552,7 +1551,7 @@ class ArrayFetchAnalyzer
                         $array_access_type,
                         $properties[$key_value->value]
                     );
-                } elseif ($type->fallback_value_type) {
+                } elseif ($type->fallback_params !== null) {
                     if ($codebase->config->ensure_array_string_offsets_exist) {
                         self::checkLiteralStringArrayOffset(
                             $offset_type,
@@ -1575,9 +1574,9 @@ class ArrayFetchAnalyzer
                         );
                     }
 
-                    $properties[$key_value->value] = $type->fallback_value_type;
+                    $properties[$key_value->value] = $type->fallback_params[1];
 
-                    $array_access_type = $type->fallback_value_type;
+                    $array_access_type = $type->fallback_params[1];
                 } elseif ($hasMixed) {
                     $has_valid_offset = true;
 
@@ -1654,7 +1653,7 @@ class ArrayFetchAnalyzer
                         $offset_type->isMixed() ? Type::getArrayKey() : $offset_type->freeze()
                     );
 
-                    $property_count = $type->fallback_value_type === null
+                    $property_count = $type->fallback_params === null
                         ? count($type->properties)
                         : null;
 
@@ -1689,7 +1688,7 @@ class ArrayFetchAnalyzer
                 $has_valid_offset = true;
             } else {
                 if (!$context->inside_isset
-                    || ($type->fallback_value_type === null && !$union_comparison_results->type_coerced)
+                    || ($type->fallback_params === null && !$union_comparison_results->type_coerced)
                 ) {
                     $expected_offset_types[] = $generic_key_type->getId();
                 }

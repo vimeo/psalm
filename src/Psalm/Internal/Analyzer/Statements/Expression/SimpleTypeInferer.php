@@ -578,7 +578,6 @@ class SimpleTypeInferer
                 $array_creation_info->property_types,
                 $array_creation_info->class_strings,
                 null,
-                null,
                 $array_creation_info->all_list
             );
             return new Union([$objectlike]);

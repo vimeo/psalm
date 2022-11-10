@@ -576,49 +576,37 @@ class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($left_type_part->fallback_value_type !== null) {
+                if ($left_type_part->fallback_params !== null) {
                     foreach ($definitely_existing_mixed_right_properties as $key => $type) {
                         $properties[$key] = Type::combineUnionTypes(Type::getMixed(), $type);
                     }
                 }
 
-                if ($left_type_part->fallback_key_type === null
-                    && $right_type_part->fallback_key_type === null
+                if ($left_type_part->fallback_params === null
+                    && $right_type_part->fallback_params === null
                 ) {
-                    $fallback_key_type = null;
-                } elseif ($left_type_part->fallback_key_type !== null
-                    && $right_type_part->fallback_key_type !== null
+                    $fallback_params = null;
+                } elseif ($left_type_part->fallback_params !== null
+                    && $right_type_part->fallback_params !== null
                 ) {
-                    $fallback_key_type = Type::combineUnionTypes(
-                        $left_type_part->fallback_key_type,
-                        $right_type_part->fallback_key_type
-                    );
+                    $fallback_params = [
+                        Type::combineUnionTypes(
+                            $left_type_part->fallback_params[0],
+                            $right_type_part->fallback_params[0]
+                        ),
+                        Type::combineUnionTypes(
+                            $left_type_part->fallback_params[1],
+                            $right_type_part->fallback_params[1]
+                        ),
+                    ];
                 } else {
-                    $fallback_key_type = $left_type_part->fallback_key_type
-                        ?: $right_type_part->fallback_key_type;
-                }
-
-                if ($left_type_part->fallback_value_type === null
-                    && $right_type_part->fallback_value_type === null
-                ) {
-                    $fallback_value_type = null;
-                } elseif ($left_type_part->fallback_value_type !== null
-                    && $right_type_part->fallback_value_type !== null
-                ) {
-                    $fallback_value_type = Type::combineUnionTypes(
-                        $left_type_part->fallback_value_type,
-                        $right_type_part->fallback_value_type
-                    );
-                } else {
-                    $fallback_value_type = $left_type_part->fallback_value_type
-                        ?: $right_type_part->fallback_value_type;
+                    $fallback_params = $left_type_part->fallback_params ?: $right_type_part->fallback_params;
                 }
 
                 $new_keyed_array = new TKeyedArray(
                     $properties,
                     null,
-                    $fallback_key_type,
-                    $fallback_value_type
+                    $fallback_params
                 );
                 $result_type_member = new Union([$new_keyed_array]);
             } else {

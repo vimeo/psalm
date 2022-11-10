@@ -613,7 +613,7 @@ class ArrayAssignmentAnalyzer
                     /** @psalm-suppress InaccessibleProperty We just created this object */
                     $array_atomic_type->count = $atomic_root_types['array']->count;
                 } elseif ($atomic_root_types['array'] instanceof TKeyedArray
-                    && $atomic_root_types['array']->fallback_value_type === null
+                    && $atomic_root_types['array']->fallback_params === null
                 ) {
                     /** @psalm-suppress InaccessibleProperty We just created this object */
                     $array_atomic_type->count = count($atomic_root_types['array']->properties);
