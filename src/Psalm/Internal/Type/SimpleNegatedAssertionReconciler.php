@@ -533,7 +533,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
                 $existing_var_type->removeType('array');
             } elseif ($array_atomic_type instanceof TKeyedArray) {
-                if ($array_atomic_type->sealed && $count !== null) {
+                if ($array_atomic_type->fallback_params === null && $count !== null) {
                     $prop_max_count = count($array_atomic_type->properties);
                     $prop_min_count = 0;
                     foreach ($array_atomic_type->properties as $property_type) {

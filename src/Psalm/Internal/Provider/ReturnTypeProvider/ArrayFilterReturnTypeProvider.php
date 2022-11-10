@@ -85,7 +85,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             $inner_type = $first_arg_array->getGenericValueType();
             $key_type = $first_arg_array->getGenericKeyType();
 
-            if (!isset($call_args[1]) && !$first_arg_array->previous_value_type) {
+            if (!isset($call_args[1]) && $first_arg_array->fallback_params === null) {
                 $had_one = count($first_arg_array->properties) === 1;
 
                 $new_properties = array_filter(
@@ -118,9 +118,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 return new Union([new TKeyedArray(
                     $new_properties,
                     null,
-                    $first_arg_array->sealed,
-                    null,
-                    null,
+                    $first_arg_array->fallback_params,
                     $first_arg_array->is_list && $had_one
                 )]);
             }

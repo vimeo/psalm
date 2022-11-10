@@ -10,6 +10,7 @@ use Psalm\Internal\Type\SimpleAssertionReconciler;
 use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -1029,7 +1030,7 @@ class TypeExpander
         return [new TKeyedArray(
             $properties,
             null,
-            $all_sealed
+            $all_sealed ? null : [Type::getString(), Type::getMixed()],
         )];
     }
 

@@ -775,9 +775,7 @@ class VariableFetchAnalyzer
             $detailed_type = new TKeyedArray(
                 $arr,
                 null,
-                false,
-                Type::getNonEmptyString(),
-                Type::getString()
+                [Type::getNonEmptyString(), Type::getString()]
             );
 
             return new Union([$detailed_type]);

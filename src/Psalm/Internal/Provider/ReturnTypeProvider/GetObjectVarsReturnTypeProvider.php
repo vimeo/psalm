@@ -125,7 +125,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                     new TKeyedArray(
                         $properties,
                         null,
-                        $class_storage->final
+                        $class_storage->final ? null : [Type::getString(), Type::getMixed()],
                     )
                 ]);
             }

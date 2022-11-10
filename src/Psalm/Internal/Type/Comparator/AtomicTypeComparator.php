@@ -60,7 +60,6 @@ class AtomicTypeComparator
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
     ): bool {
-
         if (($container_type_part instanceof TTemplateParam
                 || ($container_type_part instanceof TNamedObject
                     && $container_type_part->extra_types))

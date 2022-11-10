@@ -576,16 +576,37 @@ class ArithmeticOpAnalyzer
                     }
                 }
 
-                if (!$left_type_part->sealed) {
+                if ($left_type_part->fallback_params !== null) {
                     foreach ($definitely_existing_mixed_right_properties as $key => $type) {
                         $properties[$key] = Type::combineUnionTypes(Type::getMixed(), $type);
                     }
                 }
 
+                if ($left_type_part->fallback_params === null
+                    && $right_type_part->fallback_params === null
+                ) {
+                    $fallback_params = null;
+                } elseif ($left_type_part->fallback_params !== null
+                    && $right_type_part->fallback_params !== null
+                ) {
+                    $fallback_params = [
+                        Type::combineUnionTypes(
+                            $left_type_part->fallback_params[0],
+                            $right_type_part->fallback_params[0]
+                        ),
+                        Type::combineUnionTypes(
+                            $left_type_part->fallback_params[1],
+                            $right_type_part->fallback_params[1]
+                        ),
+                    ];
+                } else {
+                    $fallback_params = $left_type_part->fallback_params ?: $right_type_part->fallback_params;
+                }
+
                 $new_keyed_array = new TKeyedArray(
                     $properties,
                     null,
-                    $left_type_part->sealed && $right_type_part->sealed
+                    $fallback_params
                 );
                 $result_type_member = new Union([$new_keyed_array]);
             } else {

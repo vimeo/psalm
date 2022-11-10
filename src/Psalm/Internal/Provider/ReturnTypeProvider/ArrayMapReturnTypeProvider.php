@@ -86,7 +86,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 if ($call_arg_type
                     && $call_arg_type->isSingle()
                     && ($call_arg_atomic = $call_arg_type->getSingleAtomic()) instanceof TKeyedArray
-                    && $call_arg_atomic->sealed
+                    && $call_arg_atomic->fallback_params === null
                 ) {
                     $array_arg_types []= array_values($call_arg_atomic->properties);
                 } else {
@@ -103,13 +103,13 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         fn (?Union $t) => $t ?? $null,
                         $sub
                     );
-                    return new Union([new TKeyedArray($sub, null, true, null, null, true)]);
+                    return new Union([new TKeyedArray($sub, null, null, true)]);
                 },
                 $array_arg_types
             );
             assert(count($array_arg_types));
 
-            return new Union([new TKeyedArray($array_arg_types, null, true, null, null, true)]);
+            return new Union([new TKeyedArray($array_arg_types, null, null, true)]);
         }
 
         $array_arg = $call_args[1] ?? null;
@@ -215,9 +215,9 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $array_arg_atomic_type->properties
                     ),
                     null,
-                    $array_arg_atomic_type->sealed,
-                    $array_arg_atomic_type->previous_key_type,
-                    $array_arg_atomic_type->sealed ? null : $mapping_return_type,
+                    $array_arg_atomic_type->fallback_params === null
+                        ? null
+                        : [$array_arg_atomic_type->fallback_params[0], $mapping_return_type],
                     $array_arg_atomic_type->is_list
                 );
 

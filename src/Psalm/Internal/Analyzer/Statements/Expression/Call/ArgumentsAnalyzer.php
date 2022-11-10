@@ -1713,7 +1713,7 @@ class ArgumentsAnalyzer
                             ) {
                                 $packed_var_definite_args_tmp[] = 2;
                             } elseif ($atomic_arg_type instanceof TKeyedArray) {
-                                if (!$atomic_arg_type->sealed) {
+                                if ($atomic_arg_type->fallback_params !== null) {
                                     return;
                                 }
 

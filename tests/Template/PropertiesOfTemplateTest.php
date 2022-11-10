@@ -79,7 +79,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                 ',
                 'assertions' => [
-                    '$objAsArray===' => 'array{a: 42, b: bool, c: string}'
+                    '$objAsArray===' => 'array{a: 42, b: bool, c: string}<string, mixed>'
                 ]
             ],
             'privatePropertiesPicksPrivate' => [
@@ -213,7 +213,7 @@ class PropertiesOfTemplateTest extends TestCase
                         return $properties;
                     }
 
-                    class A {
+                    final class A {
                         /** @var int */
                         public $a = 42;
                         /** @var bool */
@@ -241,7 +241,7 @@ class PropertiesOfTemplateTest extends TestCase
                         return $properties;
                     }
 
-                    class A {
+                    final class A {
                         /** @var int */
                         public $a = 42;
                         /** @var bool */
@@ -269,7 +269,7 @@ class PropertiesOfTemplateTest extends TestCase
                         return $properties;
                     }
 
-                    class A {
+                    final class A {
                         /** @var int */
                         public $a = 42;
                         /** @var bool */
@@ -297,7 +297,7 @@ class PropertiesOfTemplateTest extends TestCase
                         return $properties;
                     }
 
-                    class A {
+                    final class A {
                         /** @var int */
                         public $a = 42;
                         /** @var bool */
@@ -325,7 +325,7 @@ class PropertiesOfTemplateTest extends TestCase
                         return $properties;
                     }
 
-                    class A {
+                    final class A {
                         /** @var int */
                         public $a = 42;
                         /** @var bool */
@@ -353,7 +353,7 @@ class PropertiesOfTemplateTest extends TestCase
                         return $properties;
                     }
 
-                    class A {
+                    final class A {
                         /** @var int */
                         public $a = 42;
                         /** @var bool */
@@ -381,7 +381,7 @@ class PropertiesOfTemplateTest extends TestCase
                         return $properties;
                     }
 
-                    class A {
+                    final class A {
                         /** @var int */
                         public $a = 42;
                         /** @var bool */
@@ -410,7 +410,7 @@ class PropertiesOfTemplateTest extends TestCase
                         return $properties;
                     }
 
-                    class A {
+                    final class A {
                         /** @var int */
                         public $a = 42;
                         /** @var bool */

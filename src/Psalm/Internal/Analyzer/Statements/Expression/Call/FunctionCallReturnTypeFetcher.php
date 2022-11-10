@@ -329,7 +329,7 @@ class FunctionCallReturnTypeFetcher
                     $keyed_array = new TKeyedArray([
                         Type::getInt(),
                         Type::getInt()
-                    ], null, true, null, null, true);
+                    ], null, null, true);
                     return new Union([$keyed_array]);
 
                 case 'get_called_class':
@@ -401,7 +401,7 @@ class FunctionCallReturnTypeFetcher
                                         }
                                     }
 
-                                    if ($atomic_types['array']->sealed) {
+                                    if ($atomic_types['array']->fallback_params === null) {
                                         //the KeyedArray is sealed, we can use the min and max
                                         if ($min === $max) {
                                             return new Union([new TLiteralInt($max)]);
@@ -438,7 +438,7 @@ class FunctionCallReturnTypeFetcher
                         $keyed_array = new TKeyedArray([
                             Type::getInt(),
                             Type::getInt()
-                        ], null, true, null, null, true);
+                        ], null, null, true);
 
                         if ((string) $first_arg_type === 'false') {
                             return new Union([$keyed_array]);

@@ -1129,47 +1129,52 @@ class TypeParser
 
             /** @var TKeyedArray $intersection_type */
             foreach ($intersection_types as $intersection_type) {
-                if (!$intersection_type->sealed) {
-                    $all_sealed = false;
-                }
                 foreach ($intersection_type->properties as $property => $property_type) {
+                    if ($intersection_type->fallback_params !== null) {
+                        $all_sealed = false;
+                    }
+
                     if (!array_key_exists($property, $properties)) {
                         $properties[$property] = $property_type;
                         continue;
                     }
 
-                    $intersection_type = Type::intersectUnionTypes(
+                    $new_type = Type::intersectUnionTypes(
                         $properties[$property],
                         $property_type,
                         $codebase
                     );
-                    if ($intersection_type === null) {
+
+                    if ($new_type === null) {
                         throw new TypeParseTreeException(
                             'Incompatible intersection types for "' . $property . '", '
                             . $properties[$property] . ' and ' . $property_type
                             . ' provided'
                         );
                     }
-                    $properties[$property] = $intersection_type;
+                    $properties[$property] = $new_type;
                 }
             }
 
-            $previous_key_type = null;
-            $previous_value_type = null;
-            if ($first_type instanceof TArray) {
-                $previous_key_type = $first_type->type_params[0];
-                $previous_value_type = $first_type->type_params[1];
-            } elseif ($last_type instanceof TArray) {
-                $previous_key_type = $last_type->type_params[0];
-                $previous_value_type = $last_type->type_params[1];
+            $first_or_last_type = $first_type instanceof TArray
+                ? $first_type
+                : ($last_type instanceof TArray ? $last_type : null);
+
+            $fallback_params = null;
+
+            if ($first_or_last_type !== null) {
+                $fallback_params = [
+                    $first_or_last_type->type_params[0],
+                    $first_or_last_type->type_params[1],
+                ];
+            } elseif (!$all_sealed) {
+                $fallback_params = [Type::getArrayKey(), Type::getMixed()];
             }
 
             return new TKeyedArray(
                 $properties,
                 null,
-                $all_sealed,
-                $previous_key_type ?? null,
-                $previous_value_type ?? null,
+                $fallback_params,
                 false,
                 $from_docblock
             );
@@ -1483,9 +1488,12 @@ class TypeParser
         return new $class(
             $properties,
             $class_strings,
-            $sealed,
-            null,
-            null,
+            $sealed
+                ? null
+                : [
+                    ($is_list ? Type::getInt() : Type::getArrayKey()),
+                    Type::getMixed()
+                ],
             $is_list,
             $from_docblock
         );

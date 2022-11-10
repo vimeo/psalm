@@ -577,8 +577,6 @@ class SimpleTypeInferer
             $objectlike = new TKeyedArray(
                 $array_creation_info->property_types,
                 $array_creation_info->class_strings,
-                true,
-                null,
                 null,
                 $array_creation_info->all_list
             );

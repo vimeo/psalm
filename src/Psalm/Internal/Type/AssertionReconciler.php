@@ -648,9 +648,7 @@ class AssertionReconciler extends Reconciler
                 return new TKeyedArray(
                     $type_2_atomic->properties,
                     null,
-                    false,
-                    Type::getInt(),
-                    $type_2_value,
+                    [Type::getInt(), $type_2_value],
                     true
                 );
             }
@@ -676,9 +674,7 @@ class AssertionReconciler extends Reconciler
                 return new TKeyedArray(
                     $type_1_atomic->properties,
                     null,
-                    false,
-                    Type::getInt(),
-                    $type_1_value,
+                    [Type::getInt(), $type_1_value],
                     true
                 );
             }
