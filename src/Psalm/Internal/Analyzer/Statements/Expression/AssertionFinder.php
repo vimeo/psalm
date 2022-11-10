@@ -3606,7 +3606,7 @@ class AssertionFinder
                         $value_type = $atomic_type->type_param;
                     } elseif ($atomic_type instanceof TKeyedArray) {
                         $value_type = $atomic_type->getGenericValueType();
-                        $is_sealed = $atomic_type->sealed;
+                        $is_sealed = $atomic_type->fallback_value_type === null;
                     } else {
                         $value_type = $atomic_type->type_params[1];
                     }

@@ -1126,7 +1126,7 @@ class ArrayFetchAnalyzer
                     $single_atomic = $key_values[0];
                     $from_mixed_array = $type->type_params[1]->isMixed();
 
-                    [$previous_key_type, $previous_value_type] = $type->type_params;
+                    [$fallback_key_type, $fallback_value_type] = $type->type_params;
 
                     // ok, type becomes an TKeyedArray
                     $type = new TKeyedArray(
@@ -1136,17 +1136,16 @@ class ArrayFetchAnalyzer
                         $single_atomic instanceof TLiteralClassString ? [
                             $single_atomic->value => true
                         ] : null,
-                        $from_empty_array,
-                        $from_empty_array ? null : $previous_key_type,
-                        $from_empty_array ? null : $previous_value_type,
+                        $from_empty_array ? null : $fallback_key_type,
+                        $from_empty_array ? null : $fallback_value_type,
                     );
                 } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
                     $type = new TNonEmptyList($replacement_type);
                     return;
                 }
             } elseif ($type instanceof TKeyedArray
-                && $type->previous_value_type
-                && $type->previous_value_type->isMixed()
+                && $type->fallback_value_type
+                && $type->fallback_value_type->isMixed()
                 && count($key_values) === 1
             ) {
                 $properties = $type->properties;
@@ -1525,7 +1524,7 @@ class ArrayFetchAnalyzer
     ): void {
         $generic_key_type = $type->getGenericKeyType();
 
-        if (!$stmt->dim && $type->sealed && $type->is_list) {
+        if (!$stmt->dim && $type->fallback_value_type === null && $type->is_list) {
             $key_values[] = new TLiteralInt(count($type->properties));
         }
 
@@ -1553,7 +1552,7 @@ class ArrayFetchAnalyzer
                         $array_access_type,
                         $properties[$key_value->value]
                     );
-                } elseif ($type->previous_value_type) {
+                } elseif ($type->fallback_value_type) {
                     if ($codebase->config->ensure_array_string_offsets_exist) {
                         self::checkLiteralStringArrayOffset(
                             $offset_type,
@@ -1576,38 +1575,36 @@ class ArrayFetchAnalyzer
                         );
                     }
 
-                    $properties[$key_value->value] = $type->previous_value_type;
+                    $properties[$key_value->value] = $type->fallback_value_type;
 
-                    $array_access_type = $type->previous_value_type;
+                    $array_access_type = $type->fallback_value_type;
                 } elseif ($hasMixed) {
                     $has_valid_offset = true;
 
                     $array_access_type = Type::getMixed();
-                } else {
-                    if ($type->sealed || !$context->inside_isset) {
-                        $object_like_keys = array_keys($properties);
+                } else { 
+                    $object_like_keys = array_keys($properties);
 
-                        $last_key = array_pop($object_like_keys);
+                    $last_key = array_pop($object_like_keys);
 
-                        $key_string = '';
+                    $key_string = '';
 
-                        if ($object_like_keys) {
-                            $formatted_keys = implode(
-                                ', ',
-                                array_map(
-                                    /** @param int|string $key */
-                                    static fn($key): string => is_int($key) ? "$key" : '\'' . $key . '\'',
-                                    $object_like_keys
-                                )
-                            );
+                    if ($object_like_keys) {
+                        $formatted_keys = implode(
+                            ', ',
+                            array_map(
+                                /** @param int|string $key */
+                                static fn($key): string => is_int($key) ? "$key" : '\'' . $key . '\'',
+                                $object_like_keys
+                            )
+                        );
 
-                            $key_string = $formatted_keys . ' or ';
-                        }
-
-                        $key_string .= is_int($last_key) ? $last_key : '\'' . $last_key . '\'';
-
-                        $expected_offset_types[] = $key_string;
+                        $key_string = $formatted_keys . ' or ';
                     }
+
+                    $key_string .= is_int($last_key) ? $last_key : '\'' . $last_key . '\'';
+
+                    $expected_offset_types[] = $key_string;
 
                     $array_access_type = Type::getMixed();
                 }
@@ -1657,7 +1654,9 @@ class ArrayFetchAnalyzer
                         $offset_type->isMixed() ? Type::getArrayKey() : $offset_type->freeze()
                     );
 
-                    $property_count = $type->sealed ? count($type->properties) : null;
+                    $property_count = $type->fallback_value_type === null
+                        ? count($type->properties)
+                        : null;
 
                     if (!$stmt->dim && $property_count) {
                         ++$property_count;
@@ -1690,7 +1689,7 @@ class ArrayFetchAnalyzer
                 $has_valid_offset = true;
             } else {
                 if (!$context->inside_isset
-                    || ($type->sealed && !$union_comparison_results->type_coerced)
+                    || ($type->fallback_value_type === null && !$union_comparison_results->type_coerced)
                 ) {
                     $expected_offset_types[] = $generic_key_type->getId();
                 }

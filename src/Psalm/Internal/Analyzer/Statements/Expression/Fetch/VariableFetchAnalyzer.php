@@ -775,7 +775,6 @@ class VariableFetchAnalyzer
             $detailed_type = new TKeyedArray(
                 $arr,
                 null,
-                false,
                 Type::getNonEmptyString(),
                 Type::getString()
             );

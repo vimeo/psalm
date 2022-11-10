@@ -375,8 +375,7 @@ class ArrayAssignmentAnalyzer
                     [$key_value->value => $current_type],
                     $key_value instanceof TLiteralClassString
                         ? [$key_value->value => true]
-                        : null,
-                    true
+                        : null
                 );
 
                 $array_assignment_type = new Union([
@@ -614,7 +613,7 @@ class ArrayAssignmentAnalyzer
                     /** @psalm-suppress InaccessibleProperty We just created this object */
                     $array_atomic_type->count = $atomic_root_types['array']->count;
                 } elseif ($atomic_root_types['array'] instanceof TKeyedArray
-                    && $atomic_root_types['array']->sealed
+                    && $atomic_root_types['array']->fallback_value_type === null
                 ) {
                     /** @psalm-suppress InaccessibleProperty We just created this object */
                     $array_atomic_type->count = count($atomic_root_types['array']->properties);

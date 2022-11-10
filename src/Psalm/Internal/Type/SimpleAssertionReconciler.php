@@ -622,7 +622,7 @@ class SimpleAssertionReconciler extends Reconciler
                 }
 
                 if ($assertion instanceof HasAtLeastCount) {
-                    if ($array_atomic_type->sealed) {
+                    if ($array_atomic_type->fallback_value_type === null) {
                         // count($a) > 3
                         // count($a) >= 4
 
@@ -668,7 +668,7 @@ class SimpleAssertionReconciler extends Reconciler
                             $properties = $array_atomic_type->properties;
                             for ($i = $prop_max_count; $i < $assertion->count; $i++) {
                                 $properties[$i]
-                                    = ($array_atomic_type->previous_value_type ?: Type::getMixed());
+                                    = $array_atomic_type->fallback_value_type;
                             }
                             $array_atomic_type = $array_atomic_type->setProperties($properties);
                             $existing_var_type->removeType('array');
@@ -734,7 +734,7 @@ class SimpleAssertionReconciler extends Reconciler
                     $non_empty_list
                 );
             } elseif ($array_atomic_type instanceof TKeyedArray) {
-                if ($array_atomic_type->sealed) {
+                if ($array_atomic_type->fallback_value_type === null) {
                     if (count($array_atomic_type->properties) === $count) {
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type->setProperties(
@@ -1675,9 +1675,8 @@ class SimpleAssertionReconciler extends Reconciler
                             $atomic_type->class_strings ?? [],
                             [$assertion => true]
                         ) : $atomic_type->class_strings,
-                        $atomic_type->sealed,
-                        $atomic_type->previous_key_type,
-                        $atomic_type->previous_value_type,
+                        $atomic_type->fallback_key_type,
+                        $atomic_type->fallback_value_type,
                         $atomic_type->is_list
                     );
                 }
@@ -2104,7 +2103,9 @@ class SimpleAssertionReconciler extends Reconciler
                 } else {
                     $array_types[] = $type;
                 }
-            } elseif ($type instanceof TArray || ($type instanceof TKeyedArray && !$type->sealed)) {
+            } elseif ($type instanceof TArray
+                || ($type instanceof TKeyedArray && $type->fallback_value_type !== null)
+            ) {
                 if ($type instanceof TKeyedArray) {
                     $type = $type->getGenericArrayType();
                 }

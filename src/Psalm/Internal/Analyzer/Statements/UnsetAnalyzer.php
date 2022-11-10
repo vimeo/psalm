@@ -83,13 +83,13 @@ class UnsetAnalyzer
 
                                 /** @psalm-suppress DocblockTypeContradiction https://github.com/vimeo/psalm/issues/8518 */
                                 if (!$properties) {
-                                    if ($atomic_root_type->previous_value_type) {
+                                    if ($atomic_root_type->fallback_value_type) {
                                         $root_types [] =
                                             new TArray([
-                                                $atomic_root_type->previous_key_type
-                                                    ? $atomic_root_type->previous_key_type
+                                                $atomic_root_type->fallback_key_type
+                                                    ? $atomic_root_type->fallback_key_type
                                                     : new Union([new TArrayKey]),
-                                                $atomic_root_type->previous_value_type,
+                                                $atomic_root_type->fallback_value_type,
                                             ])
                                         ;
                                     } else {
@@ -104,9 +104,8 @@ class UnsetAnalyzer
                                     $root_types []= new TKeyedArray(
                                         $properties,
                                         null,
-                                        $atomic_root_type->sealed,
-                                        $atomic_root_type->previous_key_type,
-                                        $atomic_root_type->previous_value_type,
+                                        $atomic_root_type->fallback_key_type,
+                                        $atomic_root_type->fallback_value_type,
                                         $is_list
                                     );
                                 }
@@ -118,9 +117,8 @@ class UnsetAnalyzer
                                 $root_types []= new TKeyedArray(
                                     $properties,
                                     null,
-                                    false,
-                                    $atomic_root_type->previous_key_type,
-                                    $atomic_root_type->previous_value_type,
+                                    $atomic_root_type->fallback_key_type,
+                                    $atomic_root_type->fallback_value_type,
                                     false,
                                 );
                             }

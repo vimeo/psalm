@@ -782,9 +782,9 @@ class Reconciler
                             $key_parts_key = str_replace('\'', '', $array_key);
 
                             if (!isset($array_properties[$key_parts_key])) {
-                                if ($existing_key_type_part->previous_value_type) {
+                                if ($existing_key_type_part->fallback_value_type) {
                                     $new_base_type_candidate = $existing_key_type_part
-                                        ->previous_value_type->setDifferent(true);
+                                        ->fallback_value_type->setDifferent(true);
                                 } else {
                                     return null;
                                 }
@@ -1134,30 +1134,28 @@ class Reconciler
                     $new_base_type = $existing_types[$base_key];
 
                     if ($base_atomic_type instanceof TArray) {
-                        $previous_key_type = $base_atomic_type->type_params[0];
-                        $previous_value_type = $base_atomic_type->type_params[1];
+                        $fallback_key_type = $base_atomic_type->type_params[0];
+                        $fallback_value_type = $base_atomic_type->type_params[1];
 
                         $base_atomic_type = new TKeyedArray(
                             [
                                 $array_key_offset => $result_type,
                             ],
                             null,
-                            false,
-                            $previous_key_type->isNever() ? null : $previous_key_type,
-                            $previous_value_type
+                            $fallback_key_type->isNever() ? null : $fallback_key_type,
+                            $fallback_value_type->isNever() ? null : $fallback_value_type
                         );
                     } elseif ($base_atomic_type instanceof TList) {
-                        $previous_key_type = Type::getInt();
-                        $previous_value_type = $base_atomic_type->type_param;
+                        $fallback_key_type = Type::getInt();
+                        $fallback_value_type = $base_atomic_type->type_param;
 
                         $base_atomic_type = new TKeyedArray(
                             [
                                 $array_key_offset => $result_type,
                             ],
                             null,
-                            false,
-                            $previous_key_type,
-                            $previous_value_type,
+                            $fallback_key_type,
+                            $fallback_value_type,
                             true
                         );
                     } elseif ($base_atomic_type instanceof TClassStringMap) {

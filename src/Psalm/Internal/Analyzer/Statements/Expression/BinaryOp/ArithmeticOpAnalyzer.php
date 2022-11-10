@@ -576,16 +576,49 @@ class ArithmeticOpAnalyzer
                     }
                 }
 
-                if (!$left_type_part->sealed) {
+                if ($left_type_part->fallback_value_type !== null) {
                     foreach ($definitely_existing_mixed_right_properties as $key => $type) {
                         $properties[$key] = Type::combineUnionTypes(Type::getMixed(), $type);
                     }
                 }
 
+                if ($left_type_part->fallback_key_type === null
+                    && $right_type_part->fallback_key_type === null
+                ) {
+                    $fallback_key_type = null;
+                } elseif ($left_type_part->fallback_key_type !== null
+                    && $right_type_part->fallback_key_type !== null
+                ) {
+                    $fallback_key_type = Type::combineUnionTypes(
+                        $left_type_part->fallback_key_type,
+                        $right_type_part->fallback_key_type
+                    );
+                } else {
+                    $fallback_key_type = $left_type_part->fallback_key_type
+                        ?: $right_type_part->fallback_key_type;
+                }
+
+                if ($left_type_part->fallback_value_type === null
+                    && $right_type_part->fallback_value_type === null
+                ) {
+                    $fallback_value_type = null;
+                } elseif ($left_type_part->fallback_value_type !== null
+                    && $right_type_part->fallback_value_type !== null
+                ) {
+                    $fallback_value_type = Type::combineUnionTypes(
+                        $left_type_part->fallback_value_type,
+                        $right_type_part->fallback_value_type
+                    );
+                } else {
+                    $fallback_value_type = $left_type_part->fallback_value_type
+                        ?: $right_type_part->fallback_value_type;
+                }
+
                 $new_keyed_array = new TKeyedArray(
                     $properties,
                     null,
-                    $left_type_part->sealed && $right_type_part->sealed
+                    $fallback_key_type,
+                    $fallback_value_type
                 );
                 $result_type_member = new Union([$new_keyed_array]);
             } else {

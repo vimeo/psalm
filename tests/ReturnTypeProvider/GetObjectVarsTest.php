@@ -13,13 +13,13 @@ class GetObjectVarsTest extends TestCase
     {
         yield 'returnsPublicProperties' => [
             'code' => '<?php
-                class C {
+                final class C {
                     /** @var string */
                     public $prop = "val";
                 }
                 $ret = get_object_vars(new C);
             ',
-            'assertions' => ['$ret' => 'array{prop: string}'],
+            'assertions' => ['$ret' => 'strict-array{prop: string}'],
         ];
 
         yield 'returnsSealedArrayForFinalClass' => [
@@ -103,12 +103,12 @@ class GetObjectVarsTest extends TestCase
 
         yield 'propertiesOfCastScalar' => [
             'code' => '<?php $ret = get_object_vars((object)true);',
-            'assertions' => ['$ret' => 'array{scalar: true}'],
+            'assertions' => ['$ret' => 'strict-array{scalar: true}'],
         ];
 
         yield 'propertiesOfPOPO' => [
             'code' => '<?php $ret = get_object_vars((object)["a" => 1]);',
-            'assertions' => ['$ret' => 'array{a: int}'],
+            'assertions' => ['$ret' => 'strict-array{a: int}'],
         ];
 
         yield 'templatedProperties' => [

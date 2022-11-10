@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
+use Psalm\Type;
 use ReflectionProperty;
 
 use function array_filter;
@@ -1029,7 +1030,8 @@ class TypeExpander
         return [new TKeyedArray(
             $properties,
             null,
-            $all_sealed
+            $all_sealed ? null : Type::getString(),
+            $all_sealed ? null : Type::getMixed(),
         )];
     }
 

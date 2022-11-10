@@ -678,20 +678,21 @@ class TypeCombiner
 
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
             $missing_entries = $combination->objectlike_entries;
-            $combination->objectlike_sealed = $combination->objectlike_sealed && $type->sealed;
+            $combination->objectlike_sealed = $combination->objectlike_sealed
+                && $type->fallback_value_type === null;
 
-            if ($type->previous_value_type) {
+            if ($type->fallback_value_type) {
                 $combination->objectlike_value_type = Type::combineUnionTypes(
-                    $type->previous_value_type,
+                    $type->fallback_value_type,
                     $combination->objectlike_value_type,
                     $codebase,
                     $overwrite_empty_array
                 );
             }
 
-            if ($type->previous_key_type) {
+            if ($type->fallback_key_type) {
                 $combination->objectlike_key_type = Type::combineUnionTypes(
-                    $type->previous_key_type,
+                    $type->fallback_key_type,
                     $combination->objectlike_key_type,
                     $codebase,
                     $overwrite_empty_array
@@ -1364,50 +1365,45 @@ class TypeCombiner
             }
 
             if ($combination->objectlike_entries) {
-                $previous_key_type = null;
+                $fallback_key_type = null;
                 if ($combination->objectlike_key_type) {
-                    $previous_key_type = $combination->objectlike_key_type;
+                    $fallback_key_type = $combination->objectlike_key_type;
                 } elseif ($combination->array_type_params
                     && $combination->array_type_params[0]->isArrayKey()
                 ) {
-                    $previous_key_type = $combination->array_type_params[0];
+                    $fallback_key_type = $combination->array_type_params[0];
                 }
 
-                $previous_value_type = null;
+                $fallback_value_type = null;
                 if ($combination->objectlike_value_type) {
-                    $previous_value_type = $combination->objectlike_value_type;
+                    $fallback_value_type = $combination->objectlike_value_type;
                 } elseif ($combination->array_type_params
                     && $combination->array_type_params[1]->isMixed()
                 ) {
-                    $previous_value_type = $combination->array_type_params[1];
+                    $fallback_value_type = $combination->array_type_params[1];
                 }
+
+                $sealed = $combination->objectlike_sealed && (
+                    !$combination->array_type_params
+                    || (isset($combination->array_type_params[1])
+                        && $combination->array_type_params[1]->isNever()
+                    )
+                );
 
                 if ($combination->all_arrays_callable) {
                     $objectlike = new TCallableKeyedArray(
                         $combination->objectlike_entries,
                         null,
-                        $combination->objectlike_sealed && (
-                            !$combination->array_type_params
-                            || (isset($combination->array_type_params[1])
-                                && $combination->array_type_params[1]->isNever()
-                            )
-                        ),
-                        $previous_key_type,
-                        $previous_value_type,
+                        $sealed ? null : $fallback_key_type,
+                        $sealed ? null : $fallback_value_type,
                         (bool)$combination->all_arrays_lists
                     );
                 } else {
                     $objectlike = new TKeyedArray(
                         $combination->objectlike_entries,
                         null,
-                        $combination->objectlike_sealed && (
-                            !$combination->array_type_params
-                            || (isset($combination->array_type_params[1])
-                                && $combination->array_type_params[1]->isNever()
-                            )
-                        ),
-                        $previous_key_type,
-                        $previous_value_type,
+                        $sealed ? null : $fallback_key_type,
+                        $sealed ? null : $fallback_value_type,
                         (bool)$combination->all_arrays_lists
                     );
                 }
@@ -1522,7 +1518,6 @@ class TypeCombiner
                     $array_type = new TKeyedArray(
                         [$generic_type_params[1]],
                         null,
-                        false,
                         Type::getInt(),
                         $combination->array_type_params[1],
                         true
