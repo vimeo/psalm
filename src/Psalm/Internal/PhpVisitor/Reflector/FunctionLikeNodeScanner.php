@@ -811,6 +811,7 @@ class FunctionLikeNodeScanner
         }
 
         $storage->external_mutation_free = true;
+        $storage->mutation_free_inferred = true;
 
         foreach ($assigned_properties as $property_name => $property_type) {
             $classlike_storage->properties[$property_name]->type = $property_type;
