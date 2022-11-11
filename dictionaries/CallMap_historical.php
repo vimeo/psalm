@@ -3698,7 +3698,7 @@ return [
     'MemcachePool::findServer' => [''],
     'MemcachePool::flush' => ['bool'],
     'MemcachePool::get' => ['array|string|false', 'key'=>'array|string', '&flags='=>'array|int'],
-    'MemcachePool::getExtendedStats' => ['array|false', 'type='=>'string', 'slabid='=>'int', 'limit='=>'int'],
+    'MemcachePool::getExtendedStats' => ['false|array<string, false|array<string, int|string>>', 'type='=>'string', 'slabid='=>'int', 'limit='=>'int'],
     'MemcachePool::getServerStatus' => ['int', 'host'=>'string', 'port='=>'int'],
     'MemcachePool::getStats' => ['array|false', 'type='=>'string', 'slabid='=>'int', 'limit='=>'int'],
     'MemcachePool::getVersion' => ['string|false'],
