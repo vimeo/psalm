@@ -1378,7 +1378,7 @@ class ClassLikeNodeScanner
                 $stmt->expr,
                 $this->aliases,
                 $this->file_scanner,
-                $storage->constants, // enum case value expressions cannot reference constants
+                $storage->constants,
                 $fq_classlike_name
             );
 
