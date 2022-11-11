@@ -29,13 +29,13 @@
 
 - [BC] The parameter `$php_version` of `Psalm\Type\Atomic::create()` renamed
   to `$analysis_php_version_id` and changed from `array|null` to `int|null`.
-  Previously it accepted PHP version as `strict-array{major_version, minor_version}`
+  Previously it accepted PHP version as `array{major_version, minor_version}`
   while now it accepts version ID, similar to how [`PHP_VERSION_ID` is
   calculated](https://www.php.net/manual/en/reserved.constants.php#constant.php-version-id).
 
 - [BC] The parameter `$php_version` of `Psalm\Type::parseString()` renamed to
   `$analysis_php_version_id` and changed from `array|null` to `int|null`.
-  Previously it accepted PHP version as `strict-array{major_version, minor_version}`
+  Previously it accepted PHP version as `array{major_version, minor_version}`
   while now it accepts version ID.
 
 - [BC] Parameter 0 of `canBeFullyExpressedInPhp()` of the classes listed below
@@ -805,7 +805,7 @@
     - [BC] Class `Psalm\Type\TaintKind` became final
     - [BC] Class `Psalm\Type\Union` became final
  - [BC] Property `Psalm\Config::$universal_object_crates` changed default value
-   from `strict-array{'stdClass','SimpleXMLElement','SimpleXMLIterator'}` to `null`
+   from `array{'stdClass','SimpleXMLElement','SimpleXMLIterator'}` to `null`
 
 ## Removed
  - [BC] Property `Psalm\Codebase::$php_major_version` was removed, use
