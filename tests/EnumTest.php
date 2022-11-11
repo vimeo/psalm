@@ -440,6 +440,22 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'constantAsACaseValueOfABackedEnum' => [
+                'code' => '<?php
+                    enum Test: string
+                    {
+                        public const ENUM_VALUE = "forty two";
+
+                        case TheAnswer = self::ENUM_VALUE;
+                    }
+                    $a = Test::TheAnswer->value;
+                ',
+                'assertions' => [
+                    '$a===' => "'forty two'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
