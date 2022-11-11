@@ -76,7 +76,7 @@ enum Status: string
 }
 ```
 
-## Case with a type that back an enum
+## Case with a type that cannot back an enum
 
 Case type should be either `int` or `string`.
 
