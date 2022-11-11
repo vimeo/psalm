@@ -808,7 +808,7 @@ class CastAnalyzer
                     }
 
                     if ($intersection_type instanceof TObjectWithProperties
-                        && isset($intersection_type->methods['__toString'])
+                        && isset($intersection_type->methods['__tostring'])
                     ) {
                         $castable_types[] = new TString();
 

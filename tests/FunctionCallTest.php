@@ -1907,6 +1907,56 @@ class FunctionCallTest extends TestCase
                     '$b===' => 'lowercase-string',
                 ],
             ],
+            'passingStringableObjectToStringableParam' => [
+                'code' => '<?php
+                    function acceptsStringable(Stringable $_p): void {}
+                    /** @param stringable-object $p */
+                    function f(object $p): void
+                    {
+                        f($p);
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'passingStringableToStringableObjectParam' => [
+                'code' => '<?php
+                    /** @param stringable-object $_o */
+                    function acceptsStringableObject(object $_o): void {}
+
+                    function f(Stringable $o): void
+                    {
+                        acceptsStringableObject($o);
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'passingImplicitStringableObjectToStringableObjectParam' => [
+                'code' => '<?php
+                    /** @param stringable-object $o */
+                    function acceptsStringableObject(object $o): void {}
+
+                    class C { public function __toString(): string { return __CLASS__; }}
+
+                    acceptsStringableObject(new C);
+                ',
+            ],
+            'passingExplicitStringableObjectToStringableObjectParam' => [
+                'code' => '<?php
+                    /** @param stringable-object $o */
+                    function acceptsStringableObject(object $o): void {}
+
+                    class C implements Stringable { public function __toString(): string { return __CLASS__; }}
+
+                    acceptsStringableObject(new C);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2457,7 +2507,35 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
-            ]
+            ],
+            'passingObjectToStringableObjectParam' => [
+                'code' => '<?php
+                    /** @param stringable-object $o */
+                    function acceptsStringableObject(object $o): void {}
+
+                    acceptsStringableObject((object)[]);
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'passingNonStringableObjectToStringableObjectParam' => [
+                'code' => '<?php
+                    /** @param stringable-object $o */
+                    function acceptsStringableObject(object $o): void {}
+
+                    class C {}
+                    acceptsStringableObject(new C);
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'passingStdClassToStringableObjectParam' => [
+                'code' => '<?php
+                    /** @param stringable-object $o */
+                    function acceptsStringableObject(object $o): void {}
+
+                    acceptsStringableObject(new stdClass);
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 

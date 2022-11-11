@@ -66,7 +66,7 @@ class MbInternalEncodingReturnTypeProvider implements FunctionReturnTypeProvider
             }
 
             if ($atomic_type instanceof Type\Atomic\TObjectWithProperties
-                && isset($atomic_type->methods['__toString'])
+                && isset($atomic_type->methods['__tostring'])
             ) {
                 $has_tostring = true;
                 continue;

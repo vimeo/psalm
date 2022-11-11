@@ -29,15 +29,18 @@ final class TObjectWithProperties extends TObject
     public $properties;
 
     /**
-     * @var array<string, string>
+     * @var array<lowercase-string, string>
      */
     public $methods;
+
+    /** @var bool */
+    public $is_stringable_object_only = false;
 
     /**
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
-     * @param array<string, string> $methods
+     * @param array<lowercase-string, string> $methods
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
     public function __construct(
@@ -50,6 +53,9 @@ final class TObjectWithProperties extends TObject
         $this->methods = $methods;
         $this->extra_types = $extra_types;
         $this->from_docblock = $from_docblock;
+
+        $this->is_stringable_object_only =
+            $this->properties === [] && $this->methods === ['__tostring' => 'string'];
     }
 
     /**
@@ -62,11 +68,15 @@ final class TObjectWithProperties extends TObject
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
+
+        $cloned->is_stringable_object_only =
+            $cloned->properties === [] && $cloned->methods === ['__tostring' => 'string'];
+
         return $cloned;
     }
 
     /**
-     * @param array<string, string> $methods
+     * @param array<lowercase-string, string> $methods
      */
     public function setMethods(array $methods): self
     {
@@ -75,6 +85,10 @@ final class TObjectWithProperties extends TObject
         }
         $cloned = clone $this;
         $cloned->methods = $methods;
+
+        $cloned->is_stringable_object_only =
+            $cloned->properties === [] && $cloned->methods === ['__tostring' => 'string'];
+
         return $cloned;
     }
 

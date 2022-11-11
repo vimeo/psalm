@@ -1118,6 +1118,42 @@ class ReturnTypeTest extends TestCase
                     }
                 ',
             ],
+            'returningExplicitStringableForStringableObjectReturnType' => [
+                'code' => '<?php
+                    class C implements Stringable { public function __toString(): string { return __CLASS__; } }
+
+                    /** @return stringable-object */
+                    function f(): object {
+                        return new C;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returningImplicitStringableForStringableObjectReturnType' => [
+                'code' => '<?php
+                    class C { public function __toString(): string { return __CLASS__; } }
+
+                    /** @return stringable-object */
+                    function f(): object {
+                        return new C;
+                    }
+                ',
+            ],
+            'returningStringableObjectForStringableReturnType' => [
+                'code' => '<?php
+                    class C implements Stringable { public function __toString(): string { return __CLASS__; } }
+
+                    /** @param stringable-object $p */
+                    function f(object $p): Stringable {
+                        return $p;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

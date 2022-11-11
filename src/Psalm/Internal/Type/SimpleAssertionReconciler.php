@@ -82,6 +82,7 @@ use function explode;
 use function get_class;
 use function min;
 use function strpos;
+use function strtolower;
 
 /**
  * This class receives a known type and an assertion (probably coming from AssertionFinder). The goal is to refine
@@ -802,10 +803,10 @@ class SimpleAssertionReconciler extends Reconciler
                         } elseif ($extra_type instanceof TObjectWithProperties) {
                             $match_found = true;
 
-                            if (!isset($extra_type->methods[$method_name])) {
+                            if (!isset($extra_type->methods[strtolower($method_name)])) {
                                 unset($extra_types[$k]);
                                 $extra_type = $extra_type->setMethods(array_merge($extra_type->methods, [
-                                    $method_name => 'object::' . $method_name
+                                    strtolower($method_name) => 'object::' . $method_name
                                 ]));
                                 $extra_types[$extra_type->getKey()] = $extra_type;
                                 $did_remove_type = true;
@@ -816,7 +817,7 @@ class SimpleAssertionReconciler extends Reconciler
                     if (!$match_found) {
                         $extra_type = new TObjectWithProperties(
                             [],
-                            [$method_name => $type->value . '::' . $method_name]
+                            [strtolower($method_name) => $type->value . '::' . $method_name]
                         );
                         $extra_types[$extra_type->getKey()] = $extra_type;
                         $did_remove_type = true;
@@ -826,9 +827,9 @@ class SimpleAssertionReconciler extends Reconciler
                 }
                 $object_types[] = $type;
             } elseif ($type instanceof TObjectWithProperties) {
-                if (!isset($type->methods[$method_name])) {
+                if (!isset($type->methods[strtolower($method_name)])) {
                     $type = $type->setMethods(array_merge($type->methods, [
-                        $method_name => 'object::' . $method_name
+                        strtolower($method_name) => 'object::' . $method_name
                     ]));
                     $did_remove_type = true;
                 }
@@ -836,7 +837,7 @@ class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject || $type instanceof TMixed) {
                 $object_types[] = new TObjectWithProperties(
                     [],
-                    [$method_name =>  'object::' . $method_name]
+                    [strtolower($method_name) =>  'object::' . $method_name]
                 );
                 $did_remove_type = true;
             } elseif ($type instanceof TString) {
