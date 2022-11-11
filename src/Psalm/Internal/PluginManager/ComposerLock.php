@@ -29,9 +29,9 @@ class ComposerLock
     /**
      * @param mixed $package
      *
-     * @psalm-assert-if-true strict-array{
+     * @psalm-assert-if-true array{
      *      name: string,
-     *      extra: strict-array{psalm: strict-array{pluginClass: string}}
+     *      extra: array{psalm: array{pluginClass: string}}
      * } $package
      *
      * @psalm-pure
@@ -76,7 +76,7 @@ class ComposerLock
     }
 
     /**
-     * @return list<strict-array{name:string,extra:strict-array{psalm:strict-array{pluginClass:string}}}>
+     * @return list<array{name:string,extra:array{psalm:array{pluginClass:string}}}>
      */
     private function getAllPluginPackages(): array
     {

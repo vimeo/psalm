@@ -23,7 +23,7 @@ class ArrayKeyExistsTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param string[] $a
-                     * @return array{b: string}
+                     * @return array{b: string, ...}
                      */
                     function foo(array $a) {
                         if (array_key_exists("b", $a)) {
@@ -178,7 +178,7 @@ class ArrayKeyExistsTest extends TestCase
                         public const F = "key";
                     }
 
-                    /** @param strict-array{key?: string} $a */
+                    /** @param array{key?: string} $a */
                     function one(array $a): void {
                         if (array_key_exists(Foo::F, $a)) {
                             echo $a[Foo::F];
@@ -279,7 +279,7 @@ class ArrayKeyExistsTest extends TestCase
                     {
                     }
                     /**
-                     * @param strict-array{0?: string, test?: string, pony?: string} $params
+                     * @param array{0?: string, test?: string, pony?: string} $params
                      * @return string|null
                      */
                     function a(array $params = [])
@@ -326,7 +326,7 @@ class ArrayKeyExistsTest extends TestCase
             'arrayKeyExistsTwoVars' => [
                 'code' => '<?php
                     /**
-                     * @param strict-array{a: string, b: string, c?: string} $info
+                     * @param array{a: string, b: string, c?: string} $info
                      */
                     function getReason(array $info, string $key, string $value): bool {
                         if (array_key_exists($key, $info) && $info[$key] === $value) {
@@ -410,8 +410,8 @@ class ArrayKeyExistsTest extends TestCase
             ],
             'arrayKeyExistsComplex2' => [
                 'code' => '<?php
-                            /** @var strict-array{
-                             *			address_components: list<strict-array{
+                            /** @var array{
+                             *			address_components: list<array{
                              *				long_name: string,
                              *				short_name: string,
                              *				types: list<("accounting"|"administrative_area_level_1"|"administrative_area_level_2"|"administrative_area_level_3"|
@@ -426,12 +426,12 @@ class ArrayKeyExistsTest extends TestCase
                              *		"transit_station"|"travel_agency"|"university"|"ward"|"zoo")>
                              *			}>,
                              *			formatted_address: string,
-                             *			geometry: strict-array{
-                             *				location: strict-array{ lat: float, lng: float },
+                             *			geometry: array{
+                             *				location: array{ lat: float, lng: float },
                              *				location_type: string,
-                             *				viewport: strict-array{
-                             *					northeast: strict-array{ lat: float, lng: float },
-                             *					southwest: strict-array{ lat: float, lng: float }
+                             *				viewport: array{
+                             *					northeast: array{ lat: float, lng: float },
+                             *					southwest: array{ lat: float, lng: float }
                              *				}
                              *			},
                              *			partial_match: bool,
@@ -495,7 +495,7 @@ class ArrayKeyExistsTest extends TestCase
             'dontCreateWeirdString' => [
                 'code' => '<?php
                     /**
-                     * @psalm-param strict-array{inner:string} $options
+                     * @psalm-param array{inner:string} $options
                      */
                     function go(array $options): void {
                         if (!array_key_exists(\'size\', $options)) {

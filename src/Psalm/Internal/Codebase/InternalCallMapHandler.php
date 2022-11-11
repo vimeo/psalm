@@ -392,9 +392,9 @@ class InternalCallMapHandler
                     continue;
                 }
                 /**
-                 * @var strict-array{
+                 * @var array{
                  *     added: array<string, array<int|string, string>>,
-                 *     changed: array<string, strict-array{
+                 *     changed: array<string, array{
                  *         old: array<int|string, string>,
                  *         new: array<int|string, string>
                  *     }>,

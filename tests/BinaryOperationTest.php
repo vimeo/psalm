@@ -627,8 +627,8 @@ class BinaryOperationTest extends TestCase
             'addArrays' => [
                 'code' => '<?php
                     /**
-                     * @param strict-array{host?:string} $opts
-                     * @return strict-array{host:string|int}
+                     * @param array{host?:string} $opts
+                     * @return array{host:string|int}
                      */
                     function a(array $opts): array {
                         return $opts + ["host" => 5];

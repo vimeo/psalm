@@ -487,7 +487,7 @@ class ClassTemplateCovarianceTest extends TestCase
                      */
                     interface IParentCollection {
                         /**
-                         * @return IParentCollection<strict-array{0: T1}>
+                         * @return IParentCollection<array{0: T1}>
                          */
                         public function getNested(): IParentCollection;
                     }
@@ -499,7 +499,7 @@ class ClassTemplateCovarianceTest extends TestCase
                      */
                     interface IChildCollection extends IParentCollection {
                         /**
-                         * @return IChildCollection<strict-array{0: T2}>
+                         * @return IChildCollection<array{0: T2}>
                          */
                         public function getNested(): IChildCollection;
                     }',

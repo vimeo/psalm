@@ -995,7 +995,7 @@ class AssertAnnotationTest extends TestCase
             'assertDifferentTypeOfArray' => [
                 'code' => '<?php
                     /**
-                     * @psalm-assert strict-array{0: string, 1: string} $value
+                     * @psalm-assert array{0: string, 1: string} $value
                      * @param mixed $value
                      */
                     function isStringTuple($value): void {
@@ -1038,7 +1038,7 @@ class AssertAnnotationTest extends TestCase
                     /**
                      * @param mixed $data
                      * @return bool
-                     * @psalm-assert-if-true strict-array{type: string} $data
+                     * @psalm-assert-if-true array{type: string} $data
                      */
                     function isBar($data) {
                         return isset($data["type"]);
@@ -1227,12 +1227,12 @@ class AssertAnnotationTest extends TestCase
             'parseLongAssertion' => [
                 'code' => '<?php
                     /**
-                     * @psalm-assert strict-array{
-                     *      extensions: array<string, strict-array{
+                     * @psalm-assert array{
+                     *      extensions: array<string, array{
                      *          version?: string,
                      *          type?: "bundled"|"pecl",
                      *          require?: list<string>,
-                     *          env?: array<string, strict-array{
+                     *          env?: array<string, array{
                      *              deps?: list<string>,
                      *              buildDeps?: list<string>,
                      *              configure?: string
@@ -1247,12 +1247,12 @@ class AssertAnnotationTest extends TestCase
             'intersectArraysAfterAssertion' => [
                 'code' => '<?php
                     /**
-                     * @psalm-assert strict-array{foo: string} $v
+                     * @psalm-assert array{foo: string} $v
                      */
                     function hasFoo(array $v): void {}
 
                     /**
-                     * @psalm-assert strict-array{bar: int} $v
+                     * @psalm-assert array{bar: int} $v
                      */
                     function hasBar(array $v): void {}
 

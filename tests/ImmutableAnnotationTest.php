@@ -216,7 +216,7 @@ class ImmutableAnnotationTest extends TestCase
                             return ["data" => $this->data];
                         }
 
-                        /** @param strict-array{data: string} $data */
+                        /** @param array{data: string} $data */
                         public function __unserialize(array $data): void {
                             $this->data = $data["data"];
                         }

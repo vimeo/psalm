@@ -8,6 +8,7 @@ use Psalm\Internal\Type\ParseTree\CallableTree;
 use Psalm\Internal\Type\ParseTree\CallableWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTree\ConditionalTree;
 use Psalm\Internal\Type\ParseTree\EncapsulationTree;
+use Psalm\Internal\Type\ParseTree\FieldEllipsis;
 use Psalm\Internal\Type\ParseTree\GenericTree;
 use Psalm\Internal\Type\ParseTree\IndexedAccessTree;
 use Psalm\Internal\Type\ParseTree\IntersectionTree;
@@ -41,7 +42,7 @@ class ParseTreeCreator
     /** @var ParseTree */
     private $current_leaf;
 
-    /** @var array<int, strict-array{0: string, 1: int, 2?: string}> */
+    /** @var array<int, array{0: string, 1: int, 2?: string}> */
     private $type_tokens;
 
     /** @var int */
@@ -51,7 +52,7 @@ class ParseTreeCreator
     private $t = 0;
 
     /**
-     * @param list<strict-array{0: string, 1: int, 2?: string}> $type_tokens
+     * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
      */
     public function __construct(array $type_tokens)
     {
@@ -168,7 +169,7 @@ class ParseTreeCreator
     }
 
     /**
-     * @param  strict-array{0: string, 1: int, 2?: string} $current_token
+     * @param  array{0: string, 1: int, 2?: string} $current_token
      */
     private function createMethodParam(array $current_token, ParseTree $current_parent): void
     {
@@ -374,7 +375,7 @@ class ParseTreeCreator
         $this->current_leaf = $context_node;
     }
 
-    /** @param strict-array{0: string, 1: int, 2?: string} $type_token */
+    /** @param array{0: string, 1: int, 2?: string} $type_token */
     private function handleEllipsisOrEquals(array $type_token): void
     {
         $prev_token = $this->t > 0 ? $this->type_tokens[$this->t - 1] : null;
@@ -390,6 +391,14 @@ class ParseTreeCreator
             return;
         }
 
+        if ($this->current_leaf instanceof KeyedArrayTree && $type_token[0] === '...') {
+            $leaf = new FieldEllipsis($this->current_leaf);
+            $this->current_leaf->children[] = $leaf;
+            $this->current_leaf = $leaf;
+
+            return;
+        }
+
         while ($current_parent
             && !$current_parent instanceof CallableTree
             && !$current_parent instanceof CallableParamTree
@@ -399,10 +408,12 @@ class ParseTreeCreator
         }
 
         if (!$current_parent) {
-            if ($this->current_leaf instanceof CallableTree
-                && $type_token[0] === '...'
-            ) {
-                $current_parent = $this->current_leaf;
+            if ($type_token[0] === '...') {
+                if ($this->current_leaf instanceof CallableTree) {
+                    $current_parent = $this->current_leaf;
+                } else {
+                    throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+                }
             } else {
                 throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
             }
@@ -681,7 +692,7 @@ class ParseTreeCreator
         $this->current_leaf = $new_parent_leaf;
     }
 
-    /** @param strict-array{0: string, 1: int, 2?: string} $type_token */
+    /** @param array{0: string, 1: int, 2?: string} $type_token */
     private function handleIsOrAs(array $type_token): void
     {
         if ($this->t === 0) {
@@ -724,7 +735,7 @@ class ParseTreeCreator
         }
     }
 
-    /** @param strict-array{0: string, 1: int, 2?: string} $type_token */
+    /** @param array{0: string, 1: int, 2?: string} $type_token */
     private function handleValue(array $type_token): void
     {
         $new_parent = !$this->current_leaf instanceof Root ? $this->current_leaf : null;

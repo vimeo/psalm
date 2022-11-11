@@ -996,7 +996,7 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @return strict-array{TLiteralInt|TLiteralString|null, string, bool}
+     * @return array{TLiteralInt|TLiteralString|null, string, bool}
      */
     private static function getArrayAssignmentOffsetType(
         StatementsAnalyzer $statements_analyzer,

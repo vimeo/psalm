@@ -27,14 +27,6 @@
     <exclude-pattern>src/Psalm/Internal/Stubs/</exclude-pattern>
     <exclude-pattern>tests/fixtures/</exclude-pattern>
 
-    <!-- temporarily bypassing these -->
-    <exclude-pattern>src/Psalm/Internal/Codebase/Analyzer.php</exclude-pattern>
-    <exclude-pattern>src/Psalm/Internal/Codebase/TaintFlowGraph.php</exclude-pattern>
-    <exclude-pattern>src/Psalm/Internal/Codebase/Scanner.php</exclude-pattern>
-    <exclude-pattern>src/Psalm/Type/Atomic/TNonEmptyArray.php</exclude-pattern>
-    <exclude-pattern>src/Psalm/Type/Atomic/TIterable.php</exclude-pattern>
-    <exclude-pattern>src/Psalm/Type/Atomic/TArray.php</exclude-pattern>
-
 
     <!-- **************************************************************************************************************
       *  STANDARD:  Generic                                                                                           *

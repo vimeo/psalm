@@ -501,7 +501,7 @@ class InternalCallMapHandlerTest extends TestCase
 
     /**
      *
-     * @return iterable<string, strict-array{0: callable-string, 1: array<int|string, string>}>
+     * @return iterable<string, array{0: callable-string, 1: array<int|string, string>}>
      */
     public function callMapEntryProvider(): iterable
     {
@@ -637,14 +637,14 @@ class InternalCallMapHandlerTest extends TestCase
     {
         /**
          * Parse the parameter names from the map.
-         * @var array<string, strict-array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
+         * @var array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
          */
         $normalizedEntries = [];
 
         foreach ($entryParameters as $key => $entry) {
             $normalizedKey = $key;
             /**
-             * @var strict-array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
+             * @var array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
              */
             $normalizedEntry = [
                 'variadic' => false,
@@ -693,7 +693,7 @@ class InternalCallMapHandlerTest extends TestCase
 
     /**
      *
-     * @param strict-array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
+     * @param array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
      */
     private function assertParameter(array $normalizedEntry, ReflectionParameter $param): void
     {

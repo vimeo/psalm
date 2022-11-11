@@ -89,7 +89,7 @@ class FileReferenceProvider
     /**
      * A lookup table used for getting all the files referenced by a file
      *
-     * @var array<string, strict-array{a:array<int, string>, i:array<int, string>}>
+     * @var array<string, array{a:array<int, string>, i:array<int, string>}>
      */
     private static $file_references = [];
 
@@ -159,7 +159,7 @@ class FileReferenceProvider
     private static $file_maps = [];
 
     /**
-     * @var array<string, strict-array{int, int}>
+     * @var array<string, array{int, int}>
      */
     private static $mixed_counts = [];
 
@@ -1255,7 +1255,7 @@ class FileReferenceProvider
     }
 
     /**
-     * @return array<string, strict-array{int, int}>
+     * @return array<string, array{int, int}>
      */
     public function getTypeCoverage(): array
     {
@@ -1263,7 +1263,7 @@ class FileReferenceProvider
     }
 
     /**
-     * @param array<string, strict-array{int, int}> $mixed_counts
+     * @param array<string, array{int, int}> $mixed_counts
      *
      */
     public function setTypeCoverage(array $mixed_counts): void

@@ -1357,7 +1357,7 @@ class CompletionTest extends TestCase
         $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(2, 26));
         $this->assertSame(
             [
-                'strict-array{bar: 2, foo: 1}',
+                'array{bar: 2, foo: 1}',
                 '[',
                 86,
             ],

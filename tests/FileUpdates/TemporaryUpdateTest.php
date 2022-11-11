@@ -162,7 +162,7 @@ class TemporaryUpdateTest extends TestCase
     }
 
     /**
-     * @return array<string,strict-array{array<int, array<string, string>>,error_positions:array<int, array<int>>, ignored_issues?:array<string, string>, test_save?:bool, check_unused_code?: bool}>
+     * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, ignored_issues?:array<string, string>, test_save?:bool, check_unused_code?: bool}>
      */
     public function providerTestErrorFix(): array
     {

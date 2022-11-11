@@ -125,7 +125,7 @@ class FileReferenceTest extends TestCase
     }
 
     /**
-     * @return array<string,strict-array{string,string,array<int,string>}>
+     * @return array<string,array{string,string,array<int,string>}>
      */
     public function providerReferenceLocations(): array
     {
@@ -152,7 +152,7 @@ class FileReferenceTest extends TestCase
     }
 
     /**
-     * @return array<string, strict-array{
+     * @return array<string, array{
      *              0: string,
      *              1: array<string,array<string,bool>>,
      *              2: array<string,array<string,bool>>,

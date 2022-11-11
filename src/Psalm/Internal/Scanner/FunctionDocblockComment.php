@@ -35,7 +35,7 @@ class FunctionDocblockComment
     /**
      * @var array<
      *     int,
-     *     strict-array{
+     *     array{
      *         name:string,
      *         type:string,
      *         line_number: int,
@@ -48,22 +48,22 @@ class FunctionDocblockComment
     public $params = [];
 
     /**
-     * @var array<int, strict-array{name:string, type:string, line_number: int}>
+     * @var array<int, array{name:string, type:string, line_number: int}>
      */
     public $params_out = [];
 
     /**
-     * @var strict-array{type:string, line_number: int}|null
+     * @var array{type:string, line_number: int}|null
      */
     public $self_out;
 
     /**
-     * @var strict-array{type:string, line_number: int}|null
+     * @var array{type:string, line_number: int}|null
      */
     public $if_this_is;
 
     /**
-     * @var array<int, strict-array{name:string, type:string, line_number: int}>
+     * @var array<int, array{name:string, type:string, line_number: int}>
      */
     public $globals = [];
 
@@ -127,7 +127,7 @@ class FunctionDocblockComment
     public $removed_taints = [];
 
     /**
-     * @var array<int, strict-array{name:string, taint: string}>
+     * @var array<int, array{name:string, taint: string}>
      */
     public $taint_sink_params = [];
 
@@ -137,7 +137,7 @@ class FunctionDocblockComment
     public $taint_source_types = [];
 
     /**
-     * @var array<int, strict-array{name:string}>
+     * @var array<int, array{name:string}>
      */
     public $assert_untainted_params = [];
 
@@ -161,27 +161,27 @@ class FunctionDocblockComment
     public $suppressed_issues = [];
 
     /**
-     * @var array<int, strict-array{0: string, 1: int, 2: int}>
+     * @var array<int, array{0: string, 1: int, 2: int}>
      */
     public $throws = [];
 
     /**
-     * @var array<int, strict-array{string, ?string, ?string, bool}>
+     * @var array<int, array{string, ?string, ?string, bool}>
      */
     public $templates = [];
 
     /**
-     * @var array<int, strict-array{type: string, param_name: string}>
+     * @var array<int, array{type: string, param_name: string}>
      */
     public $assertions = [];
 
     /**
-     * @var array<int, strict-array{type: string, param_name: string}>
+     * @var array<int, array{type: string, param_name: string}>
      */
     public $if_true_assertions = [];
 
     /**
-     * @var array<int, strict-array{type: string, param_name: string}>
+     * @var array<int, array{type: string, param_name: string}>
      */
     public $if_false_assertions = [];
 
@@ -223,6 +223,6 @@ class FunctionDocblockComment
      */
     public $description;
 
-    /** @var array<string, strict-array{lines:list<int>, suggested_replacement?:string}> */
+    /** @var array<string, array{lines:list<int>, suggested_replacement?:string}> */
     public $unexpected_tags = [];
 }

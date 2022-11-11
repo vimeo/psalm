@@ -102,7 +102,7 @@ class ErrorAfterUpdateTest extends TestCase
     }
 
     /**
-     * @return array<string,strict-array{file_stages:array<int,array<string,string>>,error_message:string}>
+     * @return array<string,array{file_stages:array<int,array<string,string>>,error_message:string}>
      */
     public function providerTestInvalidUpdates(): array
     {

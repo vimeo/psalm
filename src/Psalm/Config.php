@@ -491,7 +491,7 @@ class Config
     public $plugin_paths = [];
 
     /**
-     * @var array<strict-array{class:string,config:?SimpleXMLElement}>
+     * @var array<array{class:string,config:?SimpleXMLElement}>
      */
     private $plugin_classes = [];
 
@@ -581,7 +581,7 @@ class Config
 
     /**
      * @psalm-readonly-allow-private-mutation
-     * @var strict-array{
+     * @var array{
      *     decimal: bool,
      *     dom: bool,
      *     ds: bool,
@@ -1425,7 +1425,7 @@ class Config
         $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
     }
 
-    /** @return array<strict-array{class:string, config:?SimpleXMLElement}> */
+    /** @return array<array{class:string, config:?SimpleXMLElement}> */
     public function getPluginClasses(): array
     {
         return $this->plugin_classes;

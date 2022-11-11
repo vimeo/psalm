@@ -290,10 +290,10 @@ class BuildInfoCollector
 
                 if (isset($event_data['head_commit'])) {
                     /**
-                     * @var strict-array{
+                     * @var array{
                      *    id: string,
-                     *    author: strict-array{name: string, email: string},
-                     *    committer: strict-array{name: string, email: string},
+                     *    author: array{name: string, email: string},
+                     *    committer: array{name: string, email: string},
                      *    message: string,
                      *    timestamp: string
                      * }

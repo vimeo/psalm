@@ -28,7 +28,7 @@ class TypeTest extends TestCase
                     assert(count($a) === 1);
                     ',
                 'assertions' => [
-                    '$a===' => 'strict-array{a: mixed}'
+                    '$a===' => 'array{a: mixed}'
                 ]
             ],
             'sealedArrayCount' => [
@@ -40,14 +40,14 @@ class TypeTest extends TestCase
                         $b = $a;
                     }',
                 'assertions' => [
-                    '$a===' => 'strict-list{0?: 0, 1?: 1}',
-                    '$b===' => 'null|strict-list{0, 1}'
+                    '$a===' => 'list{0?: 0, 1?: 1}',
+                    '$b===' => 'list{0, 1}|null'
                 ]
             ],
             'sealedArrayMagic' => [
                 'code' => '<?php
 
-                /** @var strict-array{invoice?: string, utd?: "utd", cancel_agreement?: "test", installment?: "test"} */
+                /** @var array{invoice?: string, utd?: "utd", cancel_agreement?: "test", installment?: "test"} */
                 $b = [];
 
 
@@ -76,7 +76,7 @@ class TypeTest extends TestCase
 
 
                 /**
-                 * @param string|list<bool|strict-array{0:string, 1:string}> $time
+                 * @param string|list<bool|array{0:string, 1:string}> $time
                  */
                 function mapTime($time): void
                 {
@@ -96,13 +96,13 @@ class TypeTest extends TestCase
                 }',
                 'assertions' => [
                     '$buttons===' => 'list<string>',
-                    '$urls===' => 'strict-list{0?: non-falsy-string}',
+                    '$urls===' => 'list{0?: non-falsy-string}',
                     '$mainUrlSet===' => 'bool',
                 ]
             ],
             'validSealedArrayAssertions' => [
                 'code' => '<?php
-                    /** @var strict-array{a: string, b: string, c?: string} */
+                    /** @var array{a: string, b: string, c?: string} */
                     $a = [];
 
                     if (count($a) > 2) {
@@ -116,13 +116,13 @@ class TypeTest extends TestCase
             ],
             'validSealedArrayAssertions2' => [
                 'code' => '<?php
-                    /** @var strict-array{a: string, b: string, c?: string} */
+                    /** @var array{a: string, b: string, c?: string} */
                     $a = [];
 
                     assert(count($a) > 2);
                 ',
                 'assertions' => [
-                    '$a===' => 'strict-array{a: string, b: string, c: string}',
+                    '$a===' => 'array{a: string, b: string, c: string}',
                 ]
             ],
             'instanceOfInterface' => [
@@ -1254,7 +1254,7 @@ class TypeTest extends TestCase
                     }
 
                     /**
-                     * @param strict-array{0:string, 1: string} $input
+                     * @param array{0:string, 1: string} $input
                      */
                     function consume($input): void{}'
             ],
@@ -1315,7 +1315,7 @@ class TypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,strict-array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
@@ -1678,7 +1678,7 @@ class TypeTest extends TestCase
             ],
             'invalidSealedArrayAssertion1' => [
                 'code' => '<?php
-                    /** @var strict-array{a: string, b: string, c?: string} */
+                    /** @var array{a: string, b: string, c?: string} */
                     $a = [];
 
                     if (count($a) > 1) {
@@ -1687,7 +1687,7 @@ class TypeTest extends TestCase
             ],
             'invalidSealedArrayAssertion2' => [
                 'code' => '<?php
-                    /** @var strict-array{a: string, b: string, c?: string} */
+                    /** @var array{a: string, b: string, c?: string} */
                     $a = [];
 
                     if (count($a) > 3) {
@@ -1696,7 +1696,7 @@ class TypeTest extends TestCase
             ],
             'invalidSealedArrayAssertion3' => [
                 'code' => '<?php
-                    /** @var strict-array{a: string, b: string, c?: string} */
+                    /** @var array{a: string, b: string, c?: string} */
                     $a = [];
 
                     if (count($a) > 4) {
@@ -1705,7 +1705,7 @@ class TypeTest extends TestCase
             ],
             'invalidSealedArrayAssertion4' => [
                 'code' => '<?php
-                    /** @var strict-array{a: string, b: string, c?: string} */
+                    /** @var array{a: string, b: string, c?: string} */
                     $a = [];
 
                     if (count($a) < 1) {
@@ -1714,7 +1714,7 @@ class TypeTest extends TestCase
             ],
             'invalidSealedArrayAssertion5' => [
                 'code' => '<?php
-                    /** @var strict-array{a: string, b: string, c?: string} */
+                    /** @var array{a: string, b: string, c?: string} */
                     $a = [];
 
                     if (count($a) < 2) {
@@ -1723,7 +1723,7 @@ class TypeTest extends TestCase
             ],
             'invalidSealedArrayAssertion6' => [
                 'code' => '<?php
-                    /** @var strict-array{a: string, b: string, c?: string} */
+                    /** @var array{a: string, b: string, c?: string} */
                     $a = [];
 
                     if (count($a) < 4) {

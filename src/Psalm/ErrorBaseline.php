@@ -33,7 +33,7 @@ use const PHP_VERSION;
 final class ErrorBaseline
 {
     /**
-     * @param array<string,array<string,strict-array{o:int, s:array<int, string>}>> $existingIssues
+     * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
      *
      *
      * @psalm-pure
@@ -46,7 +46,7 @@ final class ErrorBaseline
             $totalIssues += array_reduce(
                 $existingIssue,
                 /**
-                 * @param strict-array{o:int, s:array<int, string>} $existingIssue
+                 * @param array{o:int, s:array<int, string>} $existingIssue
                  */
                 static fn(int $carry, array $existingIssue): int => $carry + $existingIssue['o'],
                 0
@@ -72,7 +72,7 @@ final class ErrorBaseline
     }
 
     /**
-     * @return array<string,array<string,strict-array{o:int, s: list<string>}>>
+     * @return array<string,array<string,array{o:int, s: list<string>}>>
      *
      * @throws ConfigException
      */
@@ -134,7 +134,7 @@ final class ErrorBaseline
     /**
      * @param array<string, list<IssueData>> $issues
      *
-     * @return array<string, array<string, strict-array{o: int, s: list<string>}>>
+     * @return array<string, array<string, array{o: int, s: list<string>}>>
      *
      * @throws ConfigException
      */
@@ -182,7 +182,7 @@ final class ErrorBaseline
     /**
      * @param array<string, list<IssueData>> $issues
      *
-     * @return array<string,array<string,strict-array{o:int, s:array<int, string>}>>
+     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     private static function countIssueTypesByFile(array $issues): array
     {
@@ -192,9 +192,9 @@ final class ErrorBaseline
         $groupedIssues = array_reduce(
             array_merge(...array_values($issues)),
             /**
-             * @param array<string,array<string,strict-array{o:int, s:array<int, string>}>> $carry
+             * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
              *
-             * @return array<string,array<string,strict-array{o:int, s:array<int, string>}>>
+             * @return array<string,array<string,array{o:int, s:array<int, string>}>>
              */
             static function (array $carry, IssueData $issue): array {
                 if ($issue->severity !== Config::REPORT_ERROR) {
@@ -236,7 +236,7 @@ final class ErrorBaseline
     }
 
     /**
-     * @param array<string,array<string,strict-array{o:int, s:array<int, string>}>> $groupedIssues
+     * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
      *
      */
     private static function writeToFile(

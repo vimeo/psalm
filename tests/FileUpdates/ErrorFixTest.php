@@ -104,7 +104,7 @@ class ErrorFixTest extends TestCase
     }
 
     /**
-     * @return array<string,strict-array{files: array<int, array<string,string>>,error_counts:array<int,int>,ignored_issues?:array<string,string>}>
+     * @return array<string,array{files: array<int, array<string,string>>,error_counts:array<int,int>,ignored_issues?:array<string,string>}>
      */
     public function providerTestErrorFix(): array
     {

@@ -79,7 +79,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                 ',
                 'assertions' => [
-                    '$objAsArray===' => 'array{a: 42, b: bool, c: string}<string, mixed>'
+                    '$objAsArray===' => 'array{a: 42, b: bool, c: string, ...<string, mixed>}'
                 ]
             ],
             'privatePropertiesPicksPrivate' => [

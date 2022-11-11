@@ -250,7 +250,7 @@ class ReferenceTest extends TestCase
             ],
             'dontCrashOnReferenceToArrayMixedOffset' => [
                 'code' => '<?php
-                    /** @param strict-array{f: mixed} $a */
+                    /** @param array{f: mixed} $a */
                     function func(array &$a): void
                     {
                         $_ = &$a["f"];
@@ -278,7 +278,7 @@ class ReferenceTest extends TestCase
                     $result = ($a === "not-a" && ($b || false));
                 ',
                 'assertions' => [
-                    '$reference===' => 'strict-array{id: 1}',
+                    '$reference===' => 'array{id: 1}',
                 ],
             ],
             'multipleReferencesToArrayVariableOffsetThatChangesDueToReconciliation' => [
@@ -293,8 +293,8 @@ class ReferenceTest extends TestCase
                     $reference1["id"] = 2;
                 ',
                 'assertions' => [
-                    '$reference1===' => 'strict-array{id: 2}',
-                    '$reference2===' => 'strict-array{id: 2}',
+                    '$reference1===' => 'array{id: 2}',
+                    '$reference2===' => 'array{id: 2}',
                 ],
             ],
         ];

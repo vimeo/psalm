@@ -18,12 +18,12 @@ use function get_class;
 class TArray extends Atomic
 {
     /**
-     * @use GenericTrait<strict-array{Union, Union}>
+     * @use GenericTrait<array{Union, Union}>
      */
     use GenericTrait;
 
     /**
-     * @var strict-array{Union, Union}
+     * @var array{Union, Union}
      */
     public array $type_params;
 
@@ -35,7 +35,7 @@ class TArray extends Atomic
     /**
      * Constructs a new instance of a generic type
      *
-     * @param strict-array{Union, Union} $type_params
+     * @param array{Union, Union} $type_params
      */
     public function __construct(array $type_params, bool $from_docblock = false)
     {

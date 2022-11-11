@@ -92,7 +92,7 @@ class FunctionDocblockManipulator
     /** @var array<string, int> */
     private $param_offsets = [];
 
-    /** @var array<string, strict-array{int, int}> */
+    /** @var array<string, array{int, int}> */
     private $param_typehint_offsets = [];
 
     /** @var bool */

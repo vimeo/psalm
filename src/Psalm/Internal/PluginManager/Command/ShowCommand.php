@@ -59,7 +59,7 @@ class ShowCommand extends Command
 
         $formatRow =
             /**
-             * @return strict-array{0: null|string, 1: string}
+             * @return array{0: null|string, 1: string}
              */
             static fn(string $class, ?string $package): array => [$package, $class];
 

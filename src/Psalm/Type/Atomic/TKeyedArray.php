@@ -48,7 +48,7 @@ class TKeyedArray extends Atomic
     /**
      * If the shape has fallback params then they are here
      *
-     * @var ?strict-list{Union, Union}
+     * @var ?list{Union, Union}
      */
     public $fallback_params;
 
@@ -66,7 +66,7 @@ class TKeyedArray extends Atomic
      * Constructs a new instance of a generic type
      *
      * @param non-empty-array<string|int, Union> $properties
-     * @param ?strict-list{Union, Union} $fallback_params
+     * @param ?list{Union, Union} $fallback_params
      * @param array<string, bool> $class_strings
      */
     public function __construct(
@@ -151,18 +151,12 @@ class TKeyedArray extends Atomic
             sort($property_strings);
         }
 
-        $shape_part = ($this->fallback_params === null && !($this instanceof TCallableKeyedArray) ? 'strict-' : '')
-            . $key . '{' .
-            implode(', ', $property_strings) .
-            '}';
-
         $params_part = $this->fallback_params !== null
-            && (!$this->fallback_params[1]->isMixed() || !$this->fallback_params[0]->isArrayKey())
-            ? '<' . $this->fallback_params[0]->getId($exact) . ', '
+            ? ', ...<' . $this->fallback_params[0]->getId($exact) . ', '
                 . $this->fallback_params[1]->getId($exact) . '>'
             : '';
 
-        return $shape_part . $params_part;
+        return $key . '{' . implode(', ', $property_strings) . $params_part . '}';
     }
 
     /**
@@ -225,9 +219,10 @@ class TKeyedArray extends Atomic
                 );
         }
 
-        return  ($this->fallback_params === null && !($this instanceof TCallableKeyedArray) ? 'strict-' : '')
-                . ($this->is_list ? static::NAME_LIST : static::NAME_ARRAY)
-                . '{' . implode(', ', $suffixed_properties) . '}';
+        $params_part = $this->fallback_params !== null ? ',...' : '';
+
+        return  ($this->is_list ? static::NAME_LIST : static::NAME_ARRAY)
+                . '{' . implode(', ', $suffixed_properties) . $params_part . '}';
     }
 
     /**
