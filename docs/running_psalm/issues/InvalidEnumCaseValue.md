@@ -75,3 +75,28 @@ enum Status: string
     case Open = "open";
 }
 ```
+
+## Case with a type that cannot back an enum
+
+Case type should be either `int` or `string`.
+
+```php
+<?php
+
+enum Status: int {
+    case Open = [];
+}
+```
+
+### How to fix
+
+Change the case value so that it's one of the allowed types (and matches the backing type)
+
+```php
+<?php
+
+enum Status: int
+{
+    case Open = 1;
+}
+```

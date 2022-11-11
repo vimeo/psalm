@@ -43,6 +43,7 @@ use Psalm\Issue\DuplicateConstant;
 use Psalm\Issue\DuplicateEnumCase;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidEnumBackingType;
+use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\ParseError;
@@ -314,6 +315,17 @@ class ClassLikeNodeScanner
             if ($node->scalarType) {
                 if ($node->scalarType->name === 'string' || $node->scalarType->name === 'int') {
                     $storage->enum_type = $node->scalarType->name;
+                    $storage->class_implements['backedenum'] = 'BackedEnum';
+                    $storage->direct_class_interfaces['backedenum'] = 'BackedEnum';
+                    $this->file_storage->required_interfaces['backedenum'] = 'BackedEnum';
+                    $this->codebase->scanner->queueClassLikeForScanning('BackedEnum');
+                    $storage->declaring_method_ids['from'] = new MethodIdentifier('BackedEnum', 'from');
+                    $storage->appearing_method_ids['from'] = $storage->declaring_method_ids['from'];
+                    $storage->declaring_method_ids['tryfrom'] = new MethodIdentifier(
+                        'BackedEnum',
+                        'tryfrom'
+                    );
+                    $storage->appearing_method_ids['tryfrom'] = $storage->declaring_method_ids['tryfrom'];
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidEnumBackingType(
@@ -325,17 +337,6 @@ class ClassLikeNodeScanner
                     $this->file_storage->has_visitor_issues = true;
                     $storage->has_visitor_issues = true;
                 }
-                $storage->class_implements['backedenum'] = 'BackedEnum';
-                $storage->direct_class_interfaces['backedenum'] = 'BackedEnum';
-                $this->file_storage->required_interfaces['backedenum'] = 'BackedEnum';
-                $this->codebase->scanner->queueClassLikeForScanning('BackedEnum');
-                $storage->declaring_method_ids['from'] = new MethodIdentifier('BackedEnum', 'from');
-                $storage->appearing_method_ids['from'] = $storage->declaring_method_ids['from'];
-                $storage->declaring_method_ids['tryfrom'] = new MethodIdentifier(
-                    'BackedEnum',
-                    'tryfrom'
-                );
-                $storage->appearing_method_ids['tryfrom'] = $storage->declaring_method_ids['tryfrom'];
             }
 
             $this->codebase->scanner->queueClassLikeForScanning('UnitEnum');
@@ -710,7 +711,11 @@ class ClassLikeNodeScanner
             } elseif ($node_stmt instanceof PhpParser\Node\Stmt\EnumCase
                 && $node instanceof PhpParser\Node\Stmt\Enum_
             ) {
-                $this->visitEnumDeclaration($node_stmt, $storage, $fq_classlike_name);
+                $this->visitEnumDeclaration(
+                    $node_stmt,
+                    $storage,
+                    $fq_classlike_name
+                );
             }
         }
 
@@ -1364,6 +1369,8 @@ class ClassLikeNodeScanner
 
         $enum_value = null;
 
+        $case_location = new CodeLocation($this->file_scanner, $stmt);
+
         if ($stmt->expr !== null) {
             $case_type = SimpleTypeInferer::infer(
                 $this->codebase,
@@ -1381,8 +1388,12 @@ class ClassLikeNodeScanner
                 } elseif ($case_type->isSingleStringLiteral()) {
                     $enum_value = $case_type->getSingleStringLiteral()->value;
                 } else {
-                    throw new RuntimeException(
-                        'Unexpected: case value for ' . $stmt->name->name . ' is ' . $case_type->getId()
+                    IssueBuffer::maybeAdd(
+                        new InvalidEnumCaseValue(
+                            'Case of a backed enum should have either string or int value',
+                            $case_location,
+                            $fq_classlike_name
+                        )
                     );
                 }
             } else {
@@ -1390,7 +1401,6 @@ class ClassLikeNodeScanner
             }
         }
 
-        $case_location = new CodeLocation($this->file_scanner, $stmt);
 
         if (!isset($storage->enum_cases[$stmt->name->name])) {
             $case = new EnumCaseStorage(

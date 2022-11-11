@@ -575,6 +575,16 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'invalidCaseTypeForBackedEnum' => [
+                'code' => '<?php
+                    enum Status: int {
+                        case Open = [];
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'duplicateValues' => [
                 'code' => '<?php
                     enum Status: string
