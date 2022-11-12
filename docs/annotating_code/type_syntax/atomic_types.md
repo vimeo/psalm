@@ -26,7 +26,7 @@ _Click on the &raquo; next to each type to view detailed documentation and examp
     * [object &raquo;](object_types.md#unnamed-objects)
     * [object{foo: string} &raquo;](object_types.md#object-properties)
     * [Exception, Foo\MyClass and `Foo\MyClass<Bar>` &raquo;](object_types.md#named-objectsmd)
-    * [Generator](object_types.md#generators)
+    * [Generator &raquo;](object_types.md#generators)
 * [Array types &raquo;](array_types.md)
     * [array&lt;int, string&gt;  &raquo;](array_types.md#generic-arrays)
     * [non-empty-array &raquo;](array_types.md#non-empty-array)

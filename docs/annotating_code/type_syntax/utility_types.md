@@ -144,7 +144,7 @@ final class B extends A {
 }
 
 $a = asArray(new A);
-/** @psalm-trace $a */; // unsealed-array{foo: string, bar: int}
+/** @psalm-trace $a */; // array{foo: string, bar: int, ...}
 
 $b = asArray(new B);
 /** @psalm-trace $b */; // array{foo: string, bar: int, baz: float}
