@@ -1,12 +1,5 @@
 # Object types
 
-_Click on the &raquo; next to each type to view detailed documentation and examples._
-
-- [object &raquo;](#unnamed-objects)
-- [object{foo: string} &raquo;](#object-properties)
-- [Exception, Foo\MyClass and Foo\MyClass&lt;Bar&gt; &raquo;](#named-objects)
-- [Generator &raquo;](#generators)
-
 ## Unnamed objects
 
 `object` are examples of unnamed object types. This type is also a valid type in PHP.
