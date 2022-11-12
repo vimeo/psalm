@@ -1,17 +1,6 @@
 # Utility types
 
-Psalm supports some _magical_ utility types that brings superpower to the PHP type system.
-
-_Click on the &raquo; next to each type to view detailed documentation and examples._
-
-- [(T is true ? string : bool) &raquo;](conditional_types.md)
-- [`key-of<T>` &raquo;](#key-oft)
-- [`value-of<T>` &raquo;](#value-oft)
-- [`properties-of<T>` &raquo;](#properties-oft)
-- [`class-string-map<T as Foo, T>` &raquo;](#class-string-mapt-as-foo-t)
-- [`T[K]` &raquo;](#tk)
-- [Type aliases &raquo;](#type-aliases)
-- [Variable templates &raquo;](#variable-templates)
+Psalm supports some _magical_ utility types that brings superpower to the PHP type system.Re
 
 ## `key-of<T>`
 
