@@ -430,7 +430,7 @@ Please note that changing this setting might introduce unwanted side effects and
   maxShapedArraySize="100"
 >
 ```
-This setting controls the maximum size of shaped arrays that will be transformed into a shaped `strict-array{key1: "value", key2: T}` type during Psalm analysis.  
+This setting controls the maximum size of shaped arrays that will be transformed into a shaped `array{key1: "value", key2: T}` type during Psalm analysis.  
 Arrays bigger than this value (100 by default) will be transformed in a generic `non-empty-array` type, instead.  
 
 Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.  
@@ -524,8 +524,8 @@ The  following configuration declares custom types for super-globals (`$GLOBALS`
 
 ```xml
 <globals>
-  <var name="GLOBALS" type="strict-array{DB: MyVendor\DatabaseConnection, VIEW: MyVendor\TemplateView}" />
-  <var name="_GET" type="strict-array{data: array<string, string>}" />
+  <var name="GLOBALS" type="array{DB: MyVendor\DatabaseConnection, VIEW: MyVendor\TemplateView}" />
+  <var name="_GET" type="array{data: array<string, string>}" />
 </globals>
 ```
 
@@ -545,6 +545,6 @@ Plugins can access or modify the global configuration in plugins using
 ```php
 $config = \Psalm\Config::getInstance();
 if (!isset($config->globals['$GLOBALS'])) {
-    $config->globals['$GLOBALS'] = 'strict-array{data: array<string, string>}';
+    $config->globals['$GLOBALS'] = 'array{data: array<string, string>}';
 }
 ```

@@ -5,7 +5,7 @@ _Click on the &raquo; next to each type to view detailed documentation and examp
 - [object &raquo;](#unnamed-objects)
 - [object{foo: string} &raquo;](#object-properties)
 - [Exception, Foo\MyClass and Foo\MyClass&lt;Bar&gt; &raquo;](#named-objects)
-- [Generator](#generators)
+- [Generator &raquo;](#generators)
 
 ## Unnamed objects
 

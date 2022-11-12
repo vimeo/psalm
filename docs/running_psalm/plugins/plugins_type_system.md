@@ -172,8 +172,8 @@ if (true === $first) {
 `TKeyedArray` represents an 'object-like array' - an array with known keys.
 
 ``` php
-$x = ["a" => 1, "b" => 2]; // is TKeyedArray, strict-array{a: int, b: int}
-$y = rand(0, 1) ? ["a" => null] : ["a" => 1, "b" => "b"]; // is TKeyedArray with optional keys/values, strict-array{a: ?int, b?: string}
+$x = ["a" => 1, "b" => 2]; // is TKeyedArray, array{a: int, b: int}
+$y = rand(0, 1) ? ["a" => null] : ["a" => 1, "b" => "b"]; // is TKeyedArray with optional keys/values, array{a: ?int, b?: string}
 ```
 
 Note that not all associative arrays are considered object-like. If the keys are not known, the array is treated as a mapping between two types.
