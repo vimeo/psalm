@@ -22,7 +22,7 @@ class UnresolvableIncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,strict-array{code:string,expectedExceptionLine:int}>
+     * @return array<string,array{code:string,expectedExceptionLine:int}>
      */
     public function providerUnresolvableInclude(): array
     {
@@ -51,7 +51,7 @@ class UnresolvableIncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,strict-array{code:string}>
+     * @return array<string,array{code:string}>
      */
     public function providerNoUnresolvableInclude(): array
     {

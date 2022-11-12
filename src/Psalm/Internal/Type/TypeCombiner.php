@@ -1426,7 +1426,7 @@ class TypeCombiner
     }
 
     /**
-     * @param  strict-array{Union, Union}  $generic_type_params
+     * @param  array{Union, Union}  $generic_type_params
      */
     private static function getArrayTypeFromGenericParams(
         ?Codebase $codebase,

@@ -96,7 +96,7 @@ class Reconciler
      * @param  array<string, bool>       $referenced_var_ids
      * @param  array<string, array<string, Union>> $template_type_map
      *
-     * @return strict-array{array<string, Union>, array<string, string>}
+     * @return array{array<string, Union>, array<string, string>}
      *
      * @psalm-suppress ComplexMethod
      */

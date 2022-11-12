@@ -18,12 +18,12 @@ class NamespaceStatementsDiffer extends AstDiffer
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
      *
-     * @return strict-array{
+     * @return array{
      *      0: list<string>,
      *      1: list<string>,
      *      2: list<string>,
-     *      3: list<strict-array{int, int, int, int}>,
-     *      4: list<strict-array{int, int}>
+     *      3: list<array{int, int, int, int}>,
+     *      4: list<array{int, int}>
      * }
      */
     public static function diff(string $name, array $a, array $b, string $a_code, string $b_code): array

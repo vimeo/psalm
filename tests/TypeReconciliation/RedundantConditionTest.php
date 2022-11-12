@@ -894,7 +894,7 @@ class RedundantConditionTest extends TestCase
             'secondFalsyTwiceWithChange' => [
                 'code' => '<?php
                     /**
-                     * @param strict-array{a?:int,b?:string} $p
+                     * @param array{a?:int,b?:string} $p
                      */
                     function f(array $p) : void {
                         if (!$p) {
@@ -1517,7 +1517,7 @@ class RedundantConditionTest extends TestCase
             'secondFalsyTwiceWithoutChange' => [
                 'code' => '<?php
                     /**
-                     * @param strict-array{a?:int,b?:string} $p
+                     * @param array{a?:int,b?:string} $p
                      */
                     function f(array $p) : void {
                         if (!$p) {
@@ -1530,7 +1530,7 @@ class RedundantConditionTest extends TestCase
             'secondFalsyTwiceWithoutChangeWithElse' => [
                 'code' => '<?php
                     /**
-                     * @param strict-array{a?:int,b?:string} $p
+                     * @param array{a?:int,b?:string} $p
                      */
                     function f(array $p) : void {
                         if (!$p) {

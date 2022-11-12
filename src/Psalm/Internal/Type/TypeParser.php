@@ -12,6 +12,7 @@ use Psalm\Internal\Type\ParseTree\CallableTree;
 use Psalm\Internal\Type\ParseTree\CallableWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTree\ConditionalTree;
 use Psalm\Internal\Type\ParseTree\EncapsulationTree;
+use Psalm\Internal\Type\ParseTree\FieldEllipsis;
 use Psalm\Internal\Type\ParseTree\GenericTree;
 use Psalm\Internal\Type\ParseTree\IndexedAccessTree;
 use Psalm\Internal\Type\ParseTree\IntersectionTree;
@@ -105,8 +106,8 @@ class TypeParser
     /**
      * Parses a string type representation
      *
-     * @param  list<strict-array{0: string, 1: int, 2?: string}> $type_tokens
-     * @param  strict-array{int,int}|null   $php_version
+     * @param  list<array{0: string, 1: int, 2?: string}> $type_tokens
+     * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      *
@@ -1393,8 +1394,22 @@ class TypeParser
 
         $is_list = true;
 
+        $sealed = true;
+
         foreach ($parse_tree->children as $i => $property_branch) {
             $class_string = false;
+
+            if ($property_branch instanceof FieldEllipsis) {
+                if ($i !== count($parse_tree->children) - 1) {
+                    throw new TypeParseTreeException(
+                        'Unexpected ...'
+                    );
+                }
+
+                $sealed = false;
+
+                break;
+            }
 
             if (!$property_branch instanceof KeyedArrayPropertyTree) {
                 $property_type = self::getTypeFromTree(
@@ -1464,15 +1479,6 @@ class TypeParser
             $type = substr($type, 9);
         }
 
-        $sealed = str_starts_with($type, 'strict-');
-        if ($sealed) {
-            $type = substr($type, 7);
-        }
-
-        if ($callable && !$sealed) {
-            throw new TypeParseTreeException('A callable array cannot be unsealed!');
-        }
-
         if ($callable && !$properties) {
             throw new TypeParseTreeException('A callable array cannot be empty!');
         }
@@ -1490,10 +1496,7 @@ class TypeParser
             $class_strings,
             $sealed
                 ? null
-                : [
-                    ($is_list ? Type::getInt() : Type::getArrayKey()),
-                    Type::getMixed()
-                ],
+                : [$is_list ? Type::getInt() : Type::getArrayKey(), Type::getMixed()],
             $is_list,
             $from_docblock
         );

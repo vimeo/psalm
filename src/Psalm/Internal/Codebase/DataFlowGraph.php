@@ -109,7 +109,7 @@ abstract class DataFlowGraph
     }
 
     /**
-     * @return strict-array{int, int, int, float}
+     * @return array{int, int, int, float}
      */
     public function getEdgeStats(): array
     {

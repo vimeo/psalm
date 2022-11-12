@@ -172,7 +172,7 @@ class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @return list<strict-array{location: ?CodeLocation, label: string, entry_path_type: string}>
+     * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
      */
     public function getIssueTrace(DataFlowNode $source): array
     {

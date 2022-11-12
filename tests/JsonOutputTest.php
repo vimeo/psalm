@@ -68,7 +68,7 @@ class JsonOutputTest extends TestCase
     }
 
     /**
-     * @return array<string,strict-array{code:string,error_count:int,message:string,line:int,error:string}>
+     * @return array<string,array{code:string,error_count:int,message:string,line:int,error:string}>
      */
     public function providerTestJsonOutputErrors(): array
     {

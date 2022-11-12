@@ -914,7 +914,7 @@ class FunctionLikeNodeScanner
 
     //phpcs:disable -- Remove this once the phpstan phpdoc parser MR is merged
     /**
-     * @return strict-array{
+     * @return array{
      *     string,
      *     FunctionStorage|MethodStorage,
      *     null|string,

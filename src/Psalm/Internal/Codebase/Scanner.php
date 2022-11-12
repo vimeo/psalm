@@ -4,7 +4,6 @@ namespace Psalm\Internal\Codebase;
 
 use Closure;
 use Psalm\Codebase;
-use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -41,7 +40,7 @@ use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
 
 /**
- * @psalm-type  ThreadData = strict-array{
+ * @psalm-type  ThreadData = array{
  *     array<string, string>,
  *     array<string, string>,
  *     array<string, string>,
@@ -53,8 +52,8 @@ use const PHP_EOL;
  *     array<string, bool>
  * }
  *
- * @psalm-type  PoolData = strict-array{
- *     classlikes_data:strict-array{
+ * @psalm-type  PoolData = array{
+ *     classlikes_data:array{
  *         array<lowercase-string, bool>,
  *         array<lowercase-string, bool>,
  *         array<lowercase-string, bool>,
@@ -69,8 +68,8 @@ use const PHP_EOL;
  *     issues:array<string, list<IssueData>>,
  *     changed_members:array<string, array<string, bool>>,
  *     unchanged_signature_members:array<string, array<string, bool>>,
- *     diff_map:array<string, array<int, strict-array{int, int, int, int}>>,
- *     deletion_ranges:array<string, array<int, strict-array{int, int}>>,
+ *     diff_map:array<string, array<int, array{int, int, int, int}>>,
+ *     deletion_ranges:array<string, array<int, array{int, int}>>,
  *     errors:array<string, bool>,
  *     classlike_storage:array<string, ClassLikeStorage>,
  *     file_storage:array<lowercase-string, FileStorage>,

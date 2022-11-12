@@ -55,7 +55,7 @@ class ArrayColumnTest extends TestCase
         yield 'arrayColumnWithShapes' => [
             'code' => '<?php
                 /**
-                 * @param strict-array{id:int} $shape
+                 * @param array{id:int} $shape
                  * @return non-empty-list<int>
                  */
                 function f(array $shape): array {
@@ -145,7 +145,7 @@ class ArrayColumnTest extends TestCase
     {
         yield 'arrayColumnWithArrayAndColumnNameNull' => [
             'code' => '<?php
-                /** @var list<strict-array{name: string, instance: object}> $arrays */
+                /** @var list<array{name: string, instance: object}> $arrays */
                 $arrays = [];
                 foreach (array_column($arrays, null, "name") as $array) {
                     $array["instance"]->foo();

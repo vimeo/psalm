@@ -233,7 +233,7 @@ class PsalmEndToEndTest extends TestCase
     }
 
     /**
-     * @return strict-array{STDOUT: string, STDERR: string, CODE: int|null}
+     * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
     private function runPsalmInit(?int $level = null, ?string $php_version = null): array
     {

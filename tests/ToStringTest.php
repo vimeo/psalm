@@ -444,7 +444,7 @@ class ToStringTest extends TestCase
                     interface S {
                         public function __toString(): string;
                     }
-                    /** @return strict-array{string} */
+                    /** @return array{string} */
                     function f(S $s): array {
                         return [$s];
                     }
@@ -456,7 +456,7 @@ class ToStringTest extends TestCase
                     interface S {
                         public function __toString(): string;
                     }
-                    /** @return strict-array{0:string} */
+                    /** @return array{0:string} */
                     function f(S $s): array {
                         return [$s];
                     }

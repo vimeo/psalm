@@ -569,7 +569,7 @@ class ValueTest extends TestCase
                 'code' => '<?php
                     class Foo {
                         /**
-                         * @var strict-array{from:bool, to:bool}
+                         * @var array{from:bool, to:bool}
                          */
                         protected $things = ["from" => false, "to" => false];
 
@@ -589,7 +589,7 @@ class ValueTest extends TestCase
                 'code' => '<?php
                     class Foo {
                         /**
-                         * @var strict-array{from:bool, to:bool}
+                         * @var array{from:bool, to:bool}
                          */
                         protected $things = ["from" => false, "to" => false];
 
@@ -802,7 +802,7 @@ class ValueTest extends TestCase
             'returnFromUnionLiteral' => [
                 'code' => '<?php
                     /**
-                     * @return strict-array{"a1", "a2"}
+                     * @return array{"a1", "a2"}
                      */
                     function getSupportedConsts() {
                         return ["a1", "a2"];
@@ -822,7 +822,7 @@ class ValueTest extends TestCase
             'returnFromUnionLiteralNegated' => [
                 'code' => '<?php
                     /**
-                     * @return strict-array{"a1", "a2"}
+                     * @return array{"a1", "a2"}
                      */
                     function getSupportedConsts() {
                         return ["a1", "a2"];

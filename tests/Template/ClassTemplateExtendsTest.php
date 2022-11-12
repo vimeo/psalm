@@ -1769,7 +1769,7 @@ class ClassTemplateExtendsTest extends TestCase
                         }
                     }
 
-                    /** @extends DataBag<strict-array{a: int, b: string}> */
+                    /** @extends DataBag<array{a: int, b: string}> */
                     class FooBag extends DataBag {}
 
                     $foo = new FooBag(["a" => 5, "b" => "hello"]);
@@ -1794,7 +1794,7 @@ class ClassTemplateExtendsTest extends TestCase
                     abstract class Foo {}
 
                     /**
-                     * @template-extends Foo<strict-array{id:int}>
+                     * @template-extends Foo<array{id:int}>
                      *
                      * @internal
                      */
@@ -1843,7 +1843,7 @@ class ClassTemplateExtendsTest extends TestCase
                     }
 
                     /**
-                     * @template-extends Foo<strict-array{id:int, name:string}>
+                     * @template-extends Foo<array{id:int, name:string}>
                      */
                     class FooChild extends Foo {
                         public function getIdProperty() : string {
@@ -4130,7 +4130,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                     /**
                      * @extends WriteModelInterface<
-                     *     strict-array{
+                     *     array{
                      *         ulid: string,
                      *         senderPersonId: int
                      *     }
@@ -4142,7 +4142,7 @@ class ClassTemplateExtendsTest extends TestCase
 
                     /**
                      * @psalm-immutable
-                     * @extends WriteModel<strict-array{
+                     * @extends WriteModel<array{
                      *    ulid: string,
                      *    senderPersonId: int
                      * }>

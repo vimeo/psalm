@@ -22,12 +22,12 @@ class ClassStatementsDiffer extends AstDiffer
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
      *
-     * @return strict-array{
+     * @return array{
      *      0: list<string>,
      *      1: list<string>,
      *      2: list<string>,
-     *      3: array<int, strict-array{int, int, int, int}>,
-     *      4: list<strict-array{int, int}>
+     *      3: array<int, array{int, int, int, int}>,
+     *      4: list<array{int, int}>
      * }
      */
     public static function diff(string $name, array $a, array $b, string $a_code, string $b_code): array
@@ -245,7 +245,7 @@ class ClassStatementsDiffer extends AstDiffer
             }
         }
 
-        /** @var array<int, strict-array{int, int, int, int}> $diff_map */
+        /** @var array<int, array{int, int, int, int}> $diff_map */
         return [$keep, $keep_signature, $add_or_delete, $diff_map, $deletion_ranges];
     }
 }

@@ -65,7 +65,7 @@ class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, strict-array{code:string}>
+     * @return array<string, array{code:string}>
      */
     public function providerValidCodeParse(): array
     {
@@ -726,7 +726,7 @@ class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, strict-array{code: string, error_message: string}>
+     * @return array<string, array{code: string, error_message: string}>
      */
     public function providerInvalidCodeParse(): array
     {
@@ -2404,7 +2404,7 @@ class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, strict-array{code: string, expectedIssueTypes: list<string>}>
+     * @return array<string, array{code: string, expectedIssueTypes: list<string>}>
      */
     public function multipleTaintIssuesAreDetectedDataProvider(): array
     {

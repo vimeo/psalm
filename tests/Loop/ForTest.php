@@ -142,7 +142,7 @@ class ForTest extends TestCase
             'noCrashOnLongThing' => [
                 'code' => '<?php
                     /**
-                     * @param list<strict-array{a: strict-array{int, int}}> $data
+                     * @param list<array{a: array{int, int}}> $data
                      */
                     function makeData(array $data) : array {
                         while (rand(0, 1)) {

@@ -61,9 +61,9 @@ class FileDiffTest extends TestCase
 
         $found_offsets = array_map(
             /**
-             * @param strict-array{0: int, 1: int, 2: int, 3: int} $arr
+             * @param array{0: int, 1: int, 2: int, 3: int} $arr
              *
-             * @return strict-array{0: int, 1: int}
+             * @return array{0: int, 1: int}
              */
             fn(array $arr): array => [$arr[2], $arr[3]],
             $diff[3]
@@ -80,7 +80,7 @@ class FileDiffTest extends TestCase
      * @param string[] $same_methods
      * @param string[] $same_signatures
      * @param string[] $changed_methods
-     * @param array<array-key,strict-array{int,int}> $diff_map_offsets
+     * @param array<array-key,array{int,int}> $diff_map_offsets
      *
      */
     public function testPartialAstDiff(
@@ -135,9 +135,9 @@ class FileDiffTest extends TestCase
 
         $found_offsets = array_map(
             /**
-             * @param strict-array{0: int, 1: int, 2: int, 3: int} $arr
+             * @param array{0: int, 1: int, 2: int, 3: int} $arr
              *
-             * @return strict-array{0: int, 1: int}
+             * @return array{0: int, 1: int}
              */
             fn(array $arr): array => [$arr[2], $arr[3]],
             $diff[3]
@@ -204,7 +204,7 @@ class FileDiffTest extends TestCase
     }
 
     /**
-     * @return array<string,strict-array{string,string,string[],string[],string[],array<array-key,strict-array{int,int}>,list<strict-array{int,int}>}>
+     * @return array<string,array{string,string,string[],string[],string[],array<array-key,array{int,int}>,list<array{int,int}>}>
      */
     public function getChanges(): array
     {

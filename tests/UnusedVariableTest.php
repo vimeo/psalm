@@ -102,7 +102,7 @@ class UnusedVariableTest extends TestCase
     }
 
     /**
-     * @return array<string, strict-array{code:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return array<string, array{code:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerValidCodeParse(): array
     {
@@ -744,7 +744,7 @@ class UnusedVariableTest extends TestCase
             'arrayVarAssignmentInFunctionAndReturned' => [
                 'code' => '<?php
                     /**
-                     * @param strict-array{string} $arr
+                     * @param array{string} $arr
                      */
                     function far(array $arr): string {
                         [$a] = $arr;
@@ -755,7 +755,7 @@ class UnusedVariableTest extends TestCase
             'arrayUnpackInForeach' => [
                 'code' => '<?php
                     /**
-                     * @param list<strict-array{string, string}> $arr
+                     * @param list<array{string, string}> $arr
                      */
                     function far(array $arr): void {
                         foreach ($arr as [$a, $b]) {
@@ -2616,7 +2616,7 @@ class UnusedVariableTest extends TestCase
     }
 
     /**
-     * @return array<string,strict-array{code:string,error_message:string}>
+     * @return array<string,array{code:string,error_message:string}>
      */
     public function providerInvalidCodeParse(): array
     {
@@ -3590,7 +3590,7 @@ class UnusedVariableTest extends TestCase
                         $arr = [$a];
                         takesArrayOfString($arr);
                     }',
-                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:44 - Argument 1 of takesArrayOfString expects array<array-key, string>, but parent type strict-list{mixed} provided. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41'
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:44 - Argument 1 of takesArrayOfString expects array<array-key, string>, but parent type list{mixed} provided. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41'
             ],
             'warnAboutUnusedVariableInTryReassignedInCatch' => [
                 'code' => '<?php

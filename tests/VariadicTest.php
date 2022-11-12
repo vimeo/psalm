@@ -71,7 +71,7 @@ class VariadicTest extends TestCase
     }
 
     /**
-     * @return iterable<string,strict-array{code: string}>
+     * @return iterable<string,array{code: string}>
      */
     public function providerValidCodeParse(): iterable
     {

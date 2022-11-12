@@ -157,7 +157,7 @@ class TypeAnnotationTest extends TestCase
                     }
 
                     /**
-                      * @psalm-type _A=strict-array{elt:int}
+                      * @psalm-type _A=array{elt:int}
                       * @param _A $p
                       * @return _A
                       */
@@ -171,7 +171,7 @@ class TypeAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace Bar;
 
-                    /** @psalm-type PhoneType = strict-array{phone: string} */
+                    /** @psalm-type PhoneType = array{phone: string} */
                     class Phone {
                         /** @psalm-return PhoneType */
                         public function toArray(): array {
@@ -179,7 +179,7 @@ class TypeAnnotationTest extends TestCase
                         }
                     }
 
-                    /** @psalm-type NameType = strict-array{name: string} */
+                    /** @psalm-type NameType = array{name: string} */
                     class Name {
                         /** @psalm-return NameType */
                         function toArray(): array {
@@ -207,7 +207,7 @@ class TypeAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace Bar;
 
-                    /** @psalm-type PhoneType = strict-array{phone: string} */
+                    /** @psalm-type PhoneType = array{phone: string} */
                     class Phone {
                         /** @psalm-return PhoneType */
                         public function toArray(): array {
@@ -229,7 +229,7 @@ class TypeAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace Bar;
 
-                    /** @psalm-type PhoneType = strict-array{phone: string} */
+                    /** @psalm-type PhoneType = array{phone: string} */
                     class Phone {
                         /** @psalm-return PhoneType */
                         public function toArray(): array {
@@ -250,7 +250,7 @@ class TypeAnnotationTest extends TestCase
             'classTypeAliasFromExternalNamespace' => [
                 'code' => '<?php
                 namespace Foo {
-                    /** @psalm-type PhoneType = strict-array{phone: string} */
+                    /** @psalm-type PhoneType = array{phone: string} */
                     class Phone {
                         /** @psalm-return PhoneType */
                         public function toArray(): array {
@@ -311,7 +311,7 @@ class TypeAnnotationTest extends TestCase
             ],
             'usedInVarForForeach' => [
                 'code' => '<?php
-                /** @psalm-type _B=strict-array{p1:string} */
+                /** @psalm-type _B=array{p1:string} */
                 function e(array $a): void
                 {
                     /** @var _B $elt */
@@ -621,7 +621,7 @@ class TypeAnnotationTest extends TestCase
                      * @psalm-type aType null|"a"|"b"|"c"|"d"
                      */
 
-                    /** @psalm-return strict-array{0:bool,1:aType} */
+                    /** @psalm-return array{0:bool,1:aType} */
                     function f(): array {
                         return [(bool)rand(0,1), rand(0,1) ? "z" : null];
                     }',
@@ -631,7 +631,7 @@ class TypeAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace Barrr;
 
-                    /** @psalm-type PhoneType = strict-array{phone: string} */
+                    /** @psalm-type PhoneType = array{phone: string} */
                     class Phone {
                         /** @psalm-return PhoneType */
                         public function toArray(): array {
@@ -639,7 +639,7 @@ class TypeAnnotationTest extends TestCase
                         }
                     }
 
-                    /** @psalm-type NameType = strict-array{name: string} */
+                    /** @psalm-type NameType = array{name: string} */
                     class Name {
                         /** @psalm-return NameType */
                         function toArray(): array {
@@ -731,7 +731,7 @@ class TypeAnnotationTest extends TestCase
                     namespace Barrr;
 
                     /**
-                     * @psalm-type _C=strict-array{c:_CC}
+                     * @psalm-type _C=array{c:_CC}
                      * @psalm-type _CC=float
                      */
                     class A {
@@ -747,11 +747,11 @@ class TypeAnnotationTest extends TestCase
                     namespace A\B;
 
                     /**
-                     * @psalm-type _A=strict-array{
+                     * @psalm-type _A=array{
                      *      id:int
                      * }
                      *
-                     * @psalm-type _B=strict-array{
+                     * @psalm-type _B=array{
                      *      id:int,
                      *      something:int
                      * }
@@ -781,7 +781,7 @@ class TypeAnnotationTest extends TestCase
             'noCrashWithSelfReferencingType' => [
                 'code' => '<?php
                     /**
-                     * @psalm-type SomeType = strict-array{
+                     * @psalm-type SomeType = array{
                      *     parent?: SomeType,
                      *     foo?: int,
                      * }

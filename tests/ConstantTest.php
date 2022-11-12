@@ -308,12 +308,12 @@ class ConstantTest extends TestCase
             'lateConstantResolutionParentArrayPlus' => [
                 'code' => '<?php
                     class A {
-                        /** @var array{a: true} */
+                        /** @var array{a: true, ...} */
                         public const ARR = ["a" => true];
                     }
 
                     class B extends A {
-                        /** @var array{a: true, b: true} */
+                        /** @var array{a: true, b: true, ...} */
                         public const ARR = parent::ARR + ["b" => true];
                     }
 
@@ -321,7 +321,7 @@ class ConstantTest extends TestCase
                         public const ARR = parent::ARR + ["c" => true];
                     }
 
-                    /** @param strict-array{a: true, b: true, c: true} $arg */
+                    /** @param array{a: true, b: true, c: true} $arg */
                     function foo(array $arg): void {}
                     foo(C::ARR);
                 ',
@@ -329,12 +329,12 @@ class ConstantTest extends TestCase
             'lateConstantResolutionParentArraySpread' => [
                 'code' => '<?php
                     class A {
-                        /** @var list{"a"} */
+                        /** @var list{"a", ...} */
                         public const ARR = ["a"];
                     }
 
                     class B extends A {
-                        /** @var list{"a", "b"} */
+                        /** @var list{"a", "b", ...} */
                         public const ARR = [...parent::ARR, "b"];
                     }
 
@@ -342,7 +342,7 @@ class ConstantTest extends TestCase
                         public const ARR = [...parent::ARR, "c"];
                     }
 
-                    /** @param strict-array{"a", "b", "c"} $arg */
+                    /** @param array{"a", "b", "c"} $arg */
                     function foo(array $arg): void {}
                     foo(C::ARR);
                 ',
@@ -1268,7 +1268,7 @@ class ConstantTest extends TestCase
                     $arr = C::A;
                 ',
                 'assertions' => [
-                    '$arr===' => 'strict-list{1, 2}',
+                    '$arr===' => 'list{1, 2}',
                 ],
             ],
             'keysInUnpackedArrayAreReset' => [
@@ -1279,7 +1279,7 @@ class ConstantTest extends TestCase
                     $arr = C::A;
                 ',
                 'assertions' => [
-                    '$arr===' => 'strict-list{2}',
+                    '$arr===' => 'list{2}',
                 ],
             ],
             'arrayKeysSequenceContinuesAfterExplicitIntKey' => [
@@ -1290,7 +1290,7 @@ class ConstantTest extends TestCase
                     $arr = C::A;
                 ',
                 'assertions' => [
-                    '$arr===' => "strict-array{10: 'aa', 11: 'zz', 5: 'a', 6: 'z'}",
+                    '$arr===' => "array{10: 'aa', 11: 'zz', 5: 'a', 6: 'z'}",
                 ],
             ],
             'arrayKeysSequenceContinuesAfterNonIntKey' => [
@@ -1301,7 +1301,7 @@ class ConstantTest extends TestCase
                     $arr = C::A;
                 ',
                 'assertions' => [
-                    '$arr===' => "strict-array{5: 'a', 6: 'aa', zz: 'z'}",
+                    '$arr===' => "array{5: 'a', 6: 'aa', zz: 'z'}",
                 ],
             ],
             'unresolvedConstWithUnaryMinus' => [

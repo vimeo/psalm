@@ -400,7 +400,7 @@ class AnnotationTest extends TestCase
             ],
             'allowOptionalParamsToBeEmptyArray' => [
                 'code' => '<?php
-                    /** @param strict-array{b?: int, c?: string} $_a */
+                    /** @param array{b?: int, c?: string} $_a */
                     function foo(array $_a = []) : void {}',
             ],
             'allowEmptyVarAnnotation' => [
@@ -421,7 +421,7 @@ class AnnotationTest extends TestCase
             ],
             'megaClosureAnnotationWithoutSpacing' => [
                 'code' => '<?php
-                    /** @var strict-array{a:Closure():(array<mixed, mixed>|null), b?:Closure():array<mixed, mixed>, c?:Closure():array<mixed, mixed>, d?:Closure():array<mixed, mixed>, e?:Closure():(strict-array{f:null|string, g:null|string, h:null|string, i:string, j:mixed, k:mixed, l:mixed, m:mixed, n:bool, o?:strict-array{0:string}}|null), p?:Closure():(strict-array{f:null|string, g:null|string, h:null|string, q:string, i:string, j:mixed, k:mixed, l:mixed, m:mixed, n:bool, o?:strict-array{0:string}}|null), r?:Closure():(array<mixed, mixed>|null), s:array<mixed, mixed>} */
+                    /** @var array{a:Closure():(array<mixed, mixed>|null), b?:Closure():array<mixed, mixed>, c?:Closure():array<mixed, mixed>, d?:Closure():array<mixed, mixed>, e?:Closure():(array{f:null|string, g:null|string, h:null|string, i:string, j:mixed, k:mixed, l:mixed, m:mixed, n:bool, o?:array{0:string}}|null), p?:Closure():(array{f:null|string, g:null|string, h:null|string, q:string, i:string, j:mixed, k:mixed, l:mixed, m:mixed, n:bool, o?:array{0:string}}|null), r?:Closure():(array<mixed, mixed>|null), s:array<mixed, mixed>} */
                     $arr = [];
 
                     $arr["a"]();',
@@ -429,12 +429,12 @@ class AnnotationTest extends TestCase
             'megaClosureAnnotationWithSpacing' => [
                 'code' => '<?php
                     /**
-                     * @var strict-array{
+                     * @var array{
                      * a: Closure() : (array<mixed, mixed>|null),
                      * b?: Closure() : array<mixed, mixed>,
                      * c?: Closure() : array<mixed, mixed>,
                      * d?: Closure() : array<mixed, mixed>,
-                     * e?: Closure() : (strict-array{
+                     * e?: Closure() : (array{
                      *   f: null|string,
                      *   g: null|string,
                      *   h: null|string,
@@ -444,9 +444,9 @@ class AnnotationTest extends TestCase
                      *   l: mixed,
                      *   m: mixed,
                      *   n: bool,
-                     *   o?: strict-array{0:string}
+                     *   o?: array{0:string}
                      * }|null),
-                     * p?: Closure() : (strict-array{
+                     * p?: Closure() : (array{
                      *   f: null|string,
                      *   g: null|string,
                      *   h: null|string,
@@ -457,7 +457,7 @@ class AnnotationTest extends TestCase
                      *   l: mixed,
                      *   m: mixed,
                      *   n: bool,
-                     *   o?: strict-array{0:string}
+                     *   o?: array{0:string}
                      * }|null),
                      * r?: Closure() : (array<mixed, mixed>|null),
                      * s: array<mixed, mixed>
@@ -477,7 +477,7 @@ class AnnotationTest extends TestCase
                      *     array<int, string>
                      * >
                      *
-                     * @psalm-type RuleArray = strict-array{
+                     * @psalm-type RuleArray = array{
                      *     rule: string,
                      *     controller?: class-string<\Exception>,
                      *     redirect?: string,
@@ -493,7 +493,7 @@ class AnnotationTest extends TestCase
             'builtInClassInAShape' => [
                 'code' => '<?php
                     /**
-                     * @return strict-array{d:Exception}
+                     * @return array{d:Exception}
                      * @psalm-suppress InvalidReturnType
                      */
                     function f() {}'
@@ -711,7 +711,7 @@ class AnnotationTest extends TestCase
                     }
 
                     /**
-                     * @psalm-type _A=strict-array{elt:int}
+                     * @psalm-type _A=array{elt:int}
                      * @param _A $p
                      * @return _A
                      */
@@ -921,10 +921,10 @@ class AnnotationTest extends TestCase
             'allowClosingComma' => [
                 'code' => '<?php
                     /**
-                     * @psalm-type _Alias=strict-array{
+                     * @psalm-type _Alias=array{
                      *    foo: string,
                      *    bar: string,
-                     *    baz: strict-array{
+                     *    baz: array{
                      *       a: int,
                      *    },
                      * }
@@ -932,10 +932,10 @@ class AnnotationTest extends TestCase
                     class Foo { }
 
                     /**
-                     * @param strict-array{
+                     * @param array{
                      *    foo: string,
                      *    bar: string,
-                     *    baz: strict-array{
+                     *    baz: array{
                      *       a: int,
                      *    },
                      * } $foo
@@ -945,7 +945,7 @@ class AnnotationTest extends TestCase
                     }
 
                     /**
-                     * @var strict-array{
+                     * @var array{
                      *    foo:string,
                      *    bar:string,
                      *    baz:string,
@@ -976,7 +976,7 @@ class AnnotationTest extends TestCase
             'psalmTypeAnnotationAboveReturn' => [
                 'code' => '<?php
                     /**
-                     * @psalm-type Person = strict-array{name: string, age: int}
+                     * @psalm-type Person = array{name: string, age: int}
                      */
 
                     /**
@@ -993,7 +993,7 @@ class AnnotationTest extends TestCase
                     /** @param non-empty-array $_bar */
                     function foo(array $_bar) : void { }
 
-                    /** @var strict-array{0:list<string>, 1:list<int>} */
+                    /** @var array{0:list<string>, 1:list<int>} */
                     $bar = [[], []];
 
                     foo($bar);'
@@ -1029,7 +1029,7 @@ class AnnotationTest extends TestCase
             'parseTrailingCommaInReturn' => [
                 'code' => '<?php
                     /**
-                     * @psalm-return strict-array{
+                     * @psalm-return array{
                      *     a: int,
                      *     b: string,
                      * }
@@ -1076,7 +1076,7 @@ class AnnotationTest extends TestCase
                 'code' => '<?php
                     $_arr = ["foo\\bar\nbaz" => "literal"];',
                 'assertions' => [
-                    '$_arr' => 'strict-array{\'foo\\\\bar\nbaz\': string}'
+                    '$_arr' => 'array{\'foo\\\\bar\nbaz\': string}'
                 ]
             ],
             'doubleSpaceBeforeAt' => [
@@ -1098,7 +1098,7 @@ class AnnotationTest extends TestCase
 
                     function example(string $s): void {
                         if (preg_match(\'{foo-(\w+)}\', $s, $m)) {
-                          /** @var strict-array{string, string} $m */
+                          /** @var array{string, string} $m */
                           takesString($m[1]);
                         }
                     }
@@ -1558,7 +1558,7 @@ class AnnotationTest extends TestCase
                      * @psalm-type aType null|"a"|"b"|"c"|"d"
                      */
 
-                    /** @psalm-return strict-array{0:bool,1:aType} */
+                    /** @psalm-return array{0:bool,1:aType} */
                     function f(): array {
                         return [(bool)rand(0,1), rand(0,1) ? "z" : null];
                     }',
@@ -1575,7 +1575,7 @@ class AnnotationTest extends TestCase
             'noCrashOnHalfDoneTKeyedArrayPropertyType' => [
                 'code' => '<?php
                     class A {
-                        /** @var strict-array{ */
+                        /** @var array{ */
                         private $foo = [];
                     }',
                 'error_message' => 'InvalidDocblock',
@@ -1626,7 +1626,7 @@ class AnnotationTest extends TestCase
             'badPsalmType' => [
                 'code' => '<?php
                     /**
-                     * @psalm-type Foo = strict-array{a:}
+                     * @psalm-type Foo = array{a:}
                      */',
                 'error_message' => 'InvalidDocblock',
             ],
@@ -1726,7 +1726,7 @@ class AnnotationTest extends TestCase
             ],
             'identifyReturnType' => [
                 'code' => '<?php
-                    /** @return strict-array{hello: string} */
+                    /** @return array{hello: string} */
                     function foo() {}',
                 'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
             ],
