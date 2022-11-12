@@ -34,8 +34,6 @@ _Click on the &raquo; next to each type to view detailed documentation and examp
     * [list & non-empty-list &raquo;](array_types.md#lists)
     * [list&lt;string&gt; &raquo;](array_types.md#lists)
     * [array{foo: int, bar: string} and list{int, string} &raquo;](array_types.md#object-like-arrays)
-        * [Sealed arrays &raquo;](array_types.md#sealed-object-like-arrays)
-        * [Unsealed arrays &raquo;](array_types.md#unsealed-object-like-arrays)
     * [callable-array &raquo;](array_types.md#callable-arrays)
 * [Callable types &raquo;](callable_types.md)
 * [Value types &raquo;](value_types.md)
