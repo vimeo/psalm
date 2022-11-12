@@ -638,7 +638,7 @@ final class Psalm
     }
 
     /**
-     * @param array{"set-baseline": string}&array $options
+     * @param array{"set-baseline": string, ...} $options
      * @return array<string,array<string,array{o:int, s: list<string>}>>
      */
     private static function generateBaseline(
