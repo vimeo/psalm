@@ -595,12 +595,8 @@ class TypeAnnotationTest extends TestCase
             ],
             'importedTypeUsedInAssertion' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-type Foo = string
-                     */
-                    class A
-                    {
-                    }
+                    /** @psalm-type Foo = string */
+                    class A {}
 
                     /**
                      * @psalm-immutable
