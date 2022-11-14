@@ -615,7 +615,8 @@ class FunctionLikeDocblockScanner
                     true
                 ),
                 null,
-                $template_types
+                $template_types,
+                $type_aliases
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
