@@ -63,9 +63,12 @@ use function count;
 use function dirname;
 use function explode;
 use function extension_loaded;
+use function fclose;
 use function file_exists;
 use function file_get_contents;
 use function filetype;
+use function flock;
+use function fopen;
 use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
@@ -77,6 +80,7 @@ use function is_a;
 use function is_array;
 use function is_dir;
 use function is_file;
+use function is_resource;
 use function is_string;
 use function json_decode;
 use function libxml_clear_errors;
@@ -103,6 +107,7 @@ use function substr;
 use function substr_count;
 use function sys_get_temp_dir;
 use function unlink;
+use function usleep;
 use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
@@ -112,6 +117,7 @@ use const LIBXML_ERR_ERROR;
 use const LIBXML_ERR_FATAL;
 use const LIBXML_NONET;
 use const LIBXML_NOWARNING;
+use const LOCK_EX;
 use const PHP_EOL;
 use const PHP_VERSION_ID;
 use const PSALM_VERSION;
@@ -2403,9 +2409,33 @@ class Config
                 if (filetype($full_path) === 'dir') {
                     self::removeCacheDirectory($full_path);
                 } else {
+                    $fp = fopen($full_path, 'c');
+                    if ($fp === false) {
+                        continue;
+                    }
+
+                    $max_wait_cycles = 5;
+                    $has_lock = false;
+                    while ($max_wait_cycles > 0) {
+                        if (flock($fp, LOCK_EX)) {
+                            $has_lock = true;
+                            break;
+                        }
+                        $max_wait_cycles--;
+                        usleep(50_000);
+                    }
+
                     try {
+                        if (!$has_lock) {
+                            throw new RuntimeException('Could not acquire lock for deletion of ' . $full_path);
+                        }
+
                         unlink($full_path);
+                        fclose($fp);
                     } catch (RuntimeException $e) {
+                        if (is_resource($fp)) {
+                            fclose($fp);
+                        }
                         clearstatcache(true, $full_path);
                         if (file_exists($full_path)) {
                             // rethrow the error with default message
