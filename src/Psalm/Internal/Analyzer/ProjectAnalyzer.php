@@ -348,15 +348,22 @@ class ProjectAnalyzer
 
     private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void
     {
+        $cache_directory = $this->config->getCacheDirectory();
+        if ($cache_directory === null) {
+            return;
+        }
+
         if ($this->project_cache_provider
             && $this->project_cache_provider->hasLockfileChanged()
         ) {
-            $this->progress->debug(
-                'Composer lockfile change detected, clearing cache' . "\n"
-            );
+            // we only clear the cache if it actually exists
+            // if it's not populated yet, we don't clear anything but populate the cache instead
+            clearstatcache(true, $cache_directory);
+            if (is_dir($cache_directory)) {
+                $this->progress->debug(
+                    'Composer lockfile change detected, clearing cache directory ' . $cache_directory . "\n"
+                );
 
-            $cache_directory = $this->config->getCacheDirectory();
-            if ($cache_directory !== null) {
                 Config::removeCacheDirectory($cache_directory);
             }
 
@@ -368,12 +375,12 @@ class ProjectAnalyzer
         } elseif ($this->file_reference_provider->cache
             && $this->file_reference_provider->cache->hasConfigChanged()
         ) {
-            $this->progress->debug(
-                'Config change detected, clearing cache' . "\n"
-            );
+            clearstatcache(true, $cache_directory);
+            if (is_dir($cache_directory)) {
+                $this->progress->debug(
+                    'Config change detected, clearing cache directory ' . $cache_directory . "\n"
+                );
 
-            $cache_directory = $this->config->getCacheDirectory();
-            if ($cache_directory !== null) {
                 Config::removeCacheDirectory($cache_directory);
             }
 
