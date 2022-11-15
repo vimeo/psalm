@@ -64,6 +64,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_shift;
+use function clearstatcache;
 use function cli_set_process_title;
 use function count;
 use function defined;
