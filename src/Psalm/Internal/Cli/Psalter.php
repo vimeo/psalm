@@ -86,7 +86,8 @@ final class Psalter
         'find-unused-code', 'threads:', 'codeowner:',
         'allow-backwards-incompatible-changes:',
         'add-newline-between-docblock-annotations:',
-        'no-cache'
+        'no-cache',
+        'no-progress'
     ];
 
     /** @param array<int,string> $argv */
@@ -129,6 +130,9 @@ final class Psalter
 
                 -m, --monochrome
                     Enable monochrome output
+
+                --no-progress
+                    Disable the progress indicator
 
                 -r, --root
                     If running Psalm globally you'll need to specify a project root. Defaults to cwd
@@ -257,9 +261,13 @@ final class Psalter
         }
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
-        $progress = $debug
-            ? new DebugProgress()
-            : new DefaultProgress();
+        if ($debug) {
+            $progress = new DebugProgress();
+        } elseif (isset($options['no-progress'])) {
+            $progress = new VoidProgress();
+        } else {
+            $progress = new DefaultProgress();
+        }
 
         $stdout_report_options = new ReportOptions();
         $stdout_report_options->use_color = !array_key_exists('m', $options);
