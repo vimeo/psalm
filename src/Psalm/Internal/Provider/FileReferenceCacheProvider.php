@@ -67,7 +67,9 @@ class FileReferenceCacheProvider
     {
         $new_hash = $this->config->computeHash();
         $has_changed = $new_hash !== $this->getConfigHashCache();
-        $this->setConfigHashCache($new_hash);
+        if ($has_changed) {
+            $this->setConfigHashCache($new_hash);
+        }
         return $has_changed;
     }
 
