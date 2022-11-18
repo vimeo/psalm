@@ -369,7 +369,7 @@ class ProjectAnalyzer
             }
 
             if ($this->file_reference_provider->cache) {
-                $this->file_reference_provider->cache->hasConfigChanged();
+                $this->file_reference_provider->cache->setConfigHashCache();
             }
 
             $this->project_cache_provider->updateComposerLockHash();
@@ -385,8 +385,10 @@ class ProjectAnalyzer
                 Config::removeCacheDirectory($cache_directory);
             }
 
+            $this->file_reference_provider->cache->setConfigHashCache();
+
             if ($this->project_cache_provider) {
-                $this->project_cache_provider->hasLockfileChanged();
+                $this->project_cache_provider->updateComposerLockHash();
             }
         }
     }
