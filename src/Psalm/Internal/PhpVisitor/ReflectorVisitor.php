@@ -32,6 +32,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use UnexpectedValueException;
 
+use function array_merge;
 use function array_pop;
 use function end;
 use function explode;
@@ -187,7 +188,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
             }
 
-            $this->type_aliases += $classlike_node_scanner->type_aliases;
+            $this->type_aliases = array_merge($this->type_aliases, $classlike_node_scanner->type_aliases);
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
             foreach ($node->catches as $catch) {
                 foreach ($catch->types as $catch_type) {
