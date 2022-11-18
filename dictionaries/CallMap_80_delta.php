@@ -49,6 +49,10 @@ return [
        'old' => ['int|false'],
        'new' => ['int'],
     ],
+    'DateTimeZone::getOffset' => [
+      'old' => ['int|false', 'datetime'=>'DateTimeInterface'],
+      'new' => ['int', 'datetime'=>'DateTimeInterface'],
+    ],
     'DateTimeZone::listIdentifiers' => [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
       'new' => ['list<string>', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
@@ -1420,6 +1424,10 @@ return [
     'timezone_identifiers_list' => [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'?string'],
       'new' => ['list<string>', 'timezoneGroup='=>'int', 'countryCode='=>'?string'],
+    ],
+    'timezone_offset_get' => [
+      'old' => ['int|false', 'object'=>'DateTimeZone', 'datetime'=>'DateTimeInterface'],
+      'new' => ['int', 'object'=>'DateTimeZone', 'datetime'=>'DateTimeInterface'],
     ],
     'xml_get_current_byte_index' => [
       'old' => ['int|false', 'parser'=>'resource'],

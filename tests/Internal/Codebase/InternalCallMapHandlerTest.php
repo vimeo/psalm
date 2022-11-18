@@ -430,8 +430,6 @@ class InternalCallMapHandlerTest extends TestCase
         'stream_set_chunk_size',
         'substr',
         'substr_compare',
-        'timezone_abbreviations_list',
-        'timezone_offset_get',
         'user_error',
         'xml_get_current_byte_index',
         'xml_get_current_column_number',
