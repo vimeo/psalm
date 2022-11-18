@@ -135,6 +135,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
         $doc = '/**
  * @psalm-import-type abcd
  * @var int $p
+ * @psalm-consistent-constructor
  */
 ';
         $php_parser_doc = new Doc($doc, 0);
@@ -147,6 +148,10 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
             [
                 'psalm-import-type' => ['lines' => [1]],
                 'var' => ['lines' => [2], 'suggested_replacement' => 'param'],
+                'psalm-consistent-constructor' => [
+                    'lines' => [3],
+                    'suggested_replacement' => 'psalm-consistent-constructor on a class level'
+                ]
             ],
             $function_docblock->unexpected_tags
         );
