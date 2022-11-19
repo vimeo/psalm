@@ -804,15 +804,6 @@ class ClassTest extends TestCase
                     '$o2===' => 'stdClass',
                 ],
             ],
-            'newOnObject' => [
-                'code' => '<?php
-                    /** @var object $o */;
-                    $o2 = new $o;
-                ',
-                'assertions' => [
-                    '$o2===' => 'object',
-                ],
-            ],
             'newOnObjectOfAnonymousClass' => [
                 'code' => '<?php
                     function f(): object {
@@ -1207,7 +1198,16 @@ class ClassTest extends TestCase
                 class Bar {}
                 ',
                 'error_message' => 'ReservedWord',
-            ]
+            ],
+            'newOnObject' => [
+                'code' => '<?php
+                    function f(object $o): object
+                    {
+                        return new $o;
+                    }
+                ',
+                'error_message' => 'MixedMethodCall',
+            ],
         ];
     }
 }

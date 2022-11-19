@@ -849,7 +849,9 @@ class NewAnalyzer extends CallAnalyzer
                 )) {
                     // fall through
                 }
-            } elseif ($lhs_type_part instanceof TMixed) {
+            } elseif ($lhs_type_part instanceof TMixed
+                || $lhs_type_part instanceof TObject
+            ) {
                 IssueBuffer::maybeAdd(
                     new MixedMethodCall(
                         'Cannot call constructor on an unknown class',
@@ -865,9 +867,7 @@ class NewAnalyzer extends CallAnalyzer
                 && $stmt_class_type->ignore_nullable_issues
             ) {
                 // do nothing
-            } elseif ($lhs_type_part instanceof TObject
-                || $lhs_type_part instanceof TNamedObject
-            ) {
+            } elseif ($lhs_type_part instanceof TNamedObject) {
                 $new_type = Type::combineUnionTypes($new_type, new Union([$lhs_type_part]));
                 continue;
             } elseif (IssueBuffer::accepts(
