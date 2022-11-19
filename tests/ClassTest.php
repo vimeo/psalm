@@ -795,6 +795,62 @@ class ClassTest extends TestCase
                     abstract class C implements I {}
                 ',
             ],
+            'newOnNamedObject' => [
+                'code' => '<?php
+                    $o = new stdClass;
+                    $o2 = new $o;
+                ',
+                'assertions' => [
+                    '$o2===' => 'stdClass',
+                ],
+            ],
+            'newOnObject' => [
+                'code' => '<?php
+                    /** @var object $o */;
+                    $o2 = new $o;
+                ',
+                'assertions' => [
+                    '$o2===' => 'object',
+                ],
+            ],
+            'newOnObjectOfAnonymousClass' => [
+                'code' => '<?php
+                    function f(): object {
+                        $o = new class {};
+                        return new $o;
+                    }
+                ',
+            ],
+            'newOnObjectOfAnonymousExtendingNamed' => [
+                'code' => '<?php
+                    function f(): Exception {
+                        $o = new class extends Exception {};
+                        return new $o;
+                    }
+                ',
+            ],
+            'newOnObjectOfAnonymousClassImplementingNamed' => [
+                'code' => '<?php
+                    interface I {}
+                    function f(): I {
+                        $o = new class implements I {};
+                        return new $o;
+                    }
+                ',
+            ],
+            'throwAnonymousObjects' => [
+                'code' => '<?php
+                    throw new class extends Exception {};
+                ',
+            ],
+            'throwTheResultOfNewOnAnAnonymousClass' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    $test = new class extends \Exception { };
+                    throw new $test();
+                '
+            ]
         ];
     }
 

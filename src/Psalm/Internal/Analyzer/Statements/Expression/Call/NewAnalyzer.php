@@ -865,6 +865,11 @@ class NewAnalyzer extends CallAnalyzer
                 && $stmt_class_type->ignore_nullable_issues
             ) {
                 // do nothing
+            } elseif ($lhs_type_part instanceof TObject
+                || $lhs_type_part instanceof TNamedObject
+            ) {
+                $new_type = Type::combineUnionTypes($new_type, new Union([$lhs_type_part]));
+                continue;
             } elseif (IssueBuffer::accepts(
                 new UndefinedClass(
                     'Type ' . $lhs_type_part . ' cannot be called as a class',
