@@ -1,0 +1,7 @@
+<?php
+namespace {
+    class ReflectionClass implements Reflector {
+        /** @psalm-pure */
+        public function isReadOnly(): bool {}
+    }
+}
