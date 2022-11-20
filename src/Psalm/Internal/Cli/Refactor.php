@@ -72,7 +72,7 @@ final class Refactor
         gc_collect_cycles();
         gc_disable();
 
-        ErrorHandler::install();
+        ErrorHandler::install($argv);
 
         $args = array_slice($argv, 1);
 
