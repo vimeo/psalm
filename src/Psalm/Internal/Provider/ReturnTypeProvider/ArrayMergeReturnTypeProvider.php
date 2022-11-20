@@ -179,15 +179,33 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                         continue;
                     }
 
+                    if ($unpacked_type_part instanceof TMixed
+                        && $unpacked_type_part->from_loop_isset
+                    ) {
+                        $unpacked_type_part = new TArray([
+                            Type::getArrayKey(),
+                            Type::getMixed(true),
+                        ]);
+                    }
 
                     if ($unpacked_type_part instanceof TList) {
                         $all_keyed_arrays = false;
 
-                        if ($unpacked_type_part instanceof TNonEmptyList && !$unpacking_possibly_empty) {
-                            $any_nonempty = true;
-                        } else {
-                            $all_nonempty_lists = false;
+                        if ($is_replace) {
+                            foreach ($generic_properties as $key => $keyed_type) {
+                                if (is_string($key)) {
+                                    continue;
+                                }
+                                $generic_properties[$key] = Type::combineUnionTypes(
+                                    $keyed_type,
+                                    $unpacked_type_part->type_param,
+                                    $codebase
+                                );
+                            }
                         }
+
+                        $all_nonempty_lists = false;
+
                     } elseif ($unpacked_type_part instanceof TArray) {
                         if ($unpacked_type_part->isEmptyArray()) {
                             continue;
@@ -211,13 +229,6 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                         if ($unpacked_type_part instanceof TNonEmptyArray && !$unpacking_possibly_empty) {
                             $any_nonempty = true;
                         }
-                    } elseif ($unpacked_type_part instanceof TMixed
-                        && $unpacked_type_part->from_loop_isset
-                    ) {
-                        $unpacked_type_part = new TArray([
-                            Type::getArrayKey(),
-                            Type::getMixed(true),
-                        ]);
                     } else {
                         return Type::getArray();
                     }

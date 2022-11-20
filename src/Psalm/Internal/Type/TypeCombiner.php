@@ -1520,13 +1520,22 @@ class TypeCombiner
                         [Type::getInt(), $combination->array_type_params[1]],
                         true
                     );
+                } else if ($combination->array_counts && count($combination->array_counts) === 1) {
+                    $cnt = array_keys($combination->array_counts)[0];
+                    $properties = [];
+                    for ($x = 0; $x < $cnt; $x++) {
+                        $properties []= $generic_type_params[1];
+                    }
+                    $array_type = new TKeyedArray(
+                        $properties,
+                        null,
+                        null,
+                        true
+                    );
                 } else {
                     /** @psalm-suppress ArgumentTypeCoercion */
                     $array_type = new TNonEmptyList(
                         $generic_type_params[1],
-                        $combination->array_counts && count($combination->array_counts) === 1
-                            ? array_keys($combination->array_counts)[0]
-                            : null,
                         $combination->array_min_counts
                             ? min(array_keys($combination->array_min_counts))
                             : null
@@ -1536,9 +1545,6 @@ class TypeCombiner
                 /** @psalm-suppress ArgumentTypeCoercion */
                 $array_type = new TNonEmptyArray(
                     $generic_type_params,
-                    $combination->array_counts && count($combination->array_counts) === 1
-                        ? array_keys($combination->array_counts)[0]
-                        : null,
                     $combination->array_min_counts
                         ? min(array_keys($combination->array_min_counts))
                         : null

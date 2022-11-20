@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -454,7 +455,12 @@ abstract class Type
      */
     public static function getNonEmptyList(): Union
     {
-        $type = new TNonEmptyList(new Union([new TMixed]));
+        $type = new TKeyedArray(
+            [self::getMixed()],
+            null,
+            [self::getInt(), self::getMixed()],
+            true
+        );
 
         return new Union([$type]);
     }

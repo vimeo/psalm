@@ -345,7 +345,7 @@ class ArrayAssignmentAnalyzer
                 && $key_values[0] instanceof TLiteralInt
             ) {
                 $key_value = $key_values[0];
-                $count = ($type->count ?? $type->min_count) ?? 1;
+                $count = $type->getMinCount() ?? 1;
                 if ($key_value->value < $count) {
                     $has_matching_objectlike_property = true;
 

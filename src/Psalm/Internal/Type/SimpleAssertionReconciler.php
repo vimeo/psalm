@@ -722,15 +722,23 @@ class SimpleAssertionReconciler extends Reconciler
                     $count
                 );
 
+                $existing_var_type->removeType('array');
                 $existing_var_type->addType(
                     $non_empty_array
                 );
             } elseif ($array_atomic_type instanceof TList) {
-                $non_empty_list = new TNonEmptyList(
-                    $array_atomic_type->type_param,
-                    $count
+                $properties = [];
+                for ($x = 0; $x < $count; $x++) {
+                    $properties []= $array_atomic_type->type_param;
+                }
+                $non_empty_list = new TKeyedArray(
+                    $properties,
+                    null,
+                    null,
+                    true
                 );
 
+                $existing_var_type->removeType('array');
                 $existing_var_type->addType(
                     $non_empty_list
                 );
