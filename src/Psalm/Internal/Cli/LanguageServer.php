@@ -62,7 +62,7 @@ final class LanguageServer
     public static function run(array $argv): void
     {
         gc_disable();
-        ErrorHandler::install();
+        ErrorHandler::install($argv);
         $valid_short_options = [
             'h',
             'v',

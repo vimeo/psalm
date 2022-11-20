@@ -168,7 +168,7 @@ final class Psalm
         gc_collect_cycles();
         gc_disable();
 
-        ErrorHandler::install();
+        ErrorHandler::install($argv);
 
         $args = array_slice($argv, 1);
 
@@ -190,7 +190,6 @@ final class Psalm
             fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
             exit(1);
         }
-
 
         if (array_key_exists('h', $options)) {
             echo self::getHelpText();

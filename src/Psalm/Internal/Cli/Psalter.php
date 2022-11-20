@@ -97,7 +97,7 @@ final class Psalter
         gc_collect_cycles();
         gc_disable();
 
-        ErrorHandler::install();
+        ErrorHandler::install($argv);
 
         self::setMemoryLimit();
 
