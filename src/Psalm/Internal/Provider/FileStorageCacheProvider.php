@@ -20,6 +20,7 @@ use function igbinary_unserialize;
 use function is_dir;
 use function mkdir;
 use function serialize;
+use function strlen;
 use function strtolower;
 use function unlink;
 use function unserialize;
@@ -81,9 +82,22 @@ class FileStorageCacheProvider
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
         if ($this->config->use_igbinary) {
-            file_put_contents($cache_location, igbinary_serialize($storage), LOCK_EX);
+            $serialized = igbinary_serialize($storage);
         } else {
-            file_put_contents($cache_location, serialize($storage), LOCK_EX);
+            $serialized = serialize($storage);
+        }
+
+        $result = file_put_contents($cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 

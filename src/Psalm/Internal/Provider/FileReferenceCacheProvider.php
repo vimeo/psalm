@@ -17,6 +17,8 @@ use function is_dir;
 use function is_readable;
 use function mkdir;
 use function serialize;
+use function strlen;
+use function unlink;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
@@ -575,9 +577,22 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($file_references), LOCK_EX);
+            $serialized = igbinary_serialize($file_references);
         } else {
-            file_put_contents($reference_cache_location, serialize($file_references), LOCK_EX);
+            $serialized = serialize($file_references);
+        }
+
+        $result = file_put_contents($reference_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($reference_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -592,9 +607,22 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASSLIKE_FILE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($file_references), LOCK_EX);
+            $serialized = igbinary_serialize($file_references);
         } else {
-            file_put_contents($reference_cache_location, serialize($file_references), LOCK_EX);
+            $serialized = serialize($file_references);
+        }
+
+        $result = file_put_contents($reference_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($reference_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -609,9 +637,22 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::NONMETHOD_CLASS_REFERENCE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($file_class_references), LOCK_EX);
+            $serialized = igbinary_serialize($file_class_references);
         } else {
-            file_put_contents($reference_cache_location, serialize($file_class_references), LOCK_EX);
+            $serialized = serialize($file_class_references);
+        }
+
+        $result = file_put_contents($reference_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($reference_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -626,9 +667,22 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_CLASS_REFERENCE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($method_class_references), LOCK_EX);
+            $serialized = igbinary_serialize($method_class_references);
         } else {
-            file_put_contents($reference_cache_location, serialize($method_class_references), LOCK_EX);
+            $serialized = serialize($method_class_references);
+        }
+
+        $result = file_put_contents($reference_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($reference_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -643,9 +697,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
+            $serialized = igbinary_serialize($member_references);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
+            $serialized = serialize($member_references);
+        }
+
+        $result = file_put_contents($member_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($member_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -660,9 +727,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_DEPENDENCIES_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
+            $serialized = igbinary_serialize($member_references);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
+            $serialized = serialize($member_references);
+        }
+
+        $result = file_put_contents($member_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($member_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -677,9 +757,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_PROPERTY_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($property_references), LOCK_EX);
+            $serialized = igbinary_serialize($property_references);
         } else {
-            file_put_contents($member_cache_location, serialize($property_references), LOCK_EX);
+            $serialized = serialize($property_references);
+        }
+
+        $result = file_put_contents($member_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($member_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -694,9 +787,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_RETURN_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($method_return_references), LOCK_EX);
+            $serialized = igbinary_serialize($method_return_references);
         } else {
-            file_put_contents($member_cache_location, serialize($method_return_references), LOCK_EX);
+            $serialized = serialize($method_return_references);
+        }
+
+        $result = file_put_contents($member_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($member_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -711,9 +817,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_MISSING_MEMBER_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
+            $serialized = igbinary_serialize($member_references);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
+            $serialized = serialize($member_references);
+        }
+
+        $result = file_put_contents($member_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($member_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -728,9 +847,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_MEMBER_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
+            $serialized = igbinary_serialize($member_references);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
+            $serialized = serialize($member_references);
+        }
+
+        $result = file_put_contents($member_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($member_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -745,9 +877,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_PROPERTY_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($property_references), LOCK_EX);
+            $serialized = igbinary_serialize($property_references);
         } else {
-            file_put_contents($member_cache_location, serialize($property_references), LOCK_EX);
+            $serialized = serialize($property_references);
+        }
+
+        $result = file_put_contents($member_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($member_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -762,9 +907,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_METHOD_RETURN_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($method_return_references), LOCK_EX);
+            $serialized = igbinary_serialize($method_return_references);
         } else {
-            file_put_contents($member_cache_location, serialize($method_return_references), LOCK_EX);
+            $serialized = serialize($method_return_references);
+        }
+
+        $result = file_put_contents($member_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($member_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -779,9 +937,22 @@ class FileReferenceCacheProvider
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MISSING_MEMBER_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
+            $serialized = igbinary_serialize($member_references);
         } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
+            $serialized = serialize($member_references);
+        }
+
+        $result = file_put_contents($member_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($member_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -796,9 +967,22 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($references), LOCK_EX);
+            $serialized = igbinary_serialize($references);
         } else {
-            file_put_contents($reference_cache_location, serialize($references), LOCK_EX);
+            $serialized = serialize($references);
+        }
+
+        $result = file_put_contents($reference_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($reference_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -813,9 +997,22 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($uses), LOCK_EX);
+            $serialized = igbinary_serialize($uses);
         } else {
-            file_put_contents($reference_cache_location, serialize($uses), LOCK_EX);
+            $serialized = serialize($uses);
+        }
+
+        $result = file_put_contents($reference_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($reference_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -830,9 +1027,22 @@ class FileReferenceCacheProvider
         $issues_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ISSUES_CACHE_NAME;
 
         if ($this->config->use_igbinary) {
-            file_put_contents($issues_cache_location, igbinary_serialize($issues), LOCK_EX);
+            $serialized = igbinary_serialize($issues);
         } else {
-            file_put_contents($issues_cache_location, serialize($issues), LOCK_EX);
+            $serialized = serialize($issues);
+        }
+
+        $result = file_put_contents($issues_cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($issues_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
@@ -869,13 +1079,26 @@ class FileReferenceCacheProvider
 
         if ($cache_directory) {
             $analyzed_methods_cache_location = $cache_directory
-                . DIRECTORY_SEPARATOR
-                . self::ANALYZED_METHODS_CACHE_NAME;
+                                               . DIRECTORY_SEPARATOR
+                                               . self::ANALYZED_METHODS_CACHE_NAME;
 
             if ($this->config->use_igbinary) {
-                file_put_contents($analyzed_methods_cache_location, igbinary_serialize($analyzed_methods), LOCK_EX);
+                $serialized = igbinary_serialize($analyzed_methods);
             } else {
-                file_put_contents($analyzed_methods_cache_location, serialize($analyzed_methods), LOCK_EX);
+                $serialized = serialize($analyzed_methods);
+            }
+
+            $result = file_put_contents($analyzed_methods_cache_location, $serialized, LOCK_EX);
+            if ($result === false) {
+                throw new RuntimeException(
+                    'Failed to write cache data for unknown reasons'
+                );
+            } elseif (strlen($serialized) !== $result) {
+                // remove the invalid file again
+                @unlink($analyzed_methods_cache_location);
+                throw new RuntimeException(
+                    'Failed to fully write cache data for unknown reasons'
+                );
             }
         }
     }
@@ -921,9 +1144,22 @@ class FileReferenceCacheProvider
             $file_maps_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MAPS_CACHE_NAME;
 
             if ($this->config->use_igbinary) {
-                file_put_contents($file_maps_cache_location, igbinary_serialize($file_maps), LOCK_EX);
+                $serialized = igbinary_serialize($file_maps);
             } else {
-                file_put_contents($file_maps_cache_location, serialize($file_maps), LOCK_EX);
+                $serialized = serialize($file_maps);
+            }
+
+            $result = file_put_contents($file_maps_cache_location, $serialized, LOCK_EX);
+            if ($result === false) {
+                throw new RuntimeException(
+                    'Failed to write cache data for unknown reasons'
+                );
+            } elseif (strlen($serialized) !== $result) {
+                // remove the invalid file again
+                @unlink($file_maps_cache_location);
+                throw new RuntimeException(
+                    'Failed to fully write cache data for unknown reasons'
+                );
             }
         }
     }
@@ -971,9 +1207,22 @@ class FileReferenceCacheProvider
             $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
 
             if ($this->config->use_igbinary) {
-                file_put_contents($type_coverage_cache_location, igbinary_serialize($mixed_counts), LOCK_EX);
+                $serialized = igbinary_serialize($mixed_counts);
             } else {
-                file_put_contents($type_coverage_cache_location, serialize($mixed_counts), LOCK_EX);
+                $serialized = serialize($mixed_counts);
+            }
+
+            $result = file_put_contents($type_coverage_cache_location, $serialized, LOCK_EX);
+            if ($result === false) {
+                throw new RuntimeException(
+                    'Failed to write cache data for unknown reasons'
+                );
+            } elseif (strlen($serialized) !== $result) {
+                // remove the invalid file again
+                @unlink($type_coverage_cache_location);
+                throw new RuntimeException(
+                    'Failed to fully write cache data for unknown reasons'
+                );
             }
         }
     }
@@ -1028,10 +1277,17 @@ class FileReferenceCacheProvider
 
         $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
 
-        file_put_contents(
-            $config_hash_cache_location,
-            $hash,
-            LOCK_EX
-        );
+        $result = file_put_contents($config_hash_cache_location, $hash, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($hash) !== $result) {
+            // remove the invalid file again
+            @unlink($config_hash_cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
+        }
     }
 }

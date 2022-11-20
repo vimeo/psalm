@@ -28,6 +28,7 @@ use function json_encode;
 use function mkdir;
 use function scandir;
 use function serialize;
+use function strlen;
 use function touch;
 use function unlink;
 use function unserialize;
@@ -243,9 +244,22 @@ class ParserCacheProvider
             touch($cache_location);
         } else {
             if ($this->config->use_igbinary) {
-                file_put_contents($cache_location, igbinary_serialize($stmts), LOCK_EX);
+                $serialized = igbinary_serialize($stmts);
             } else {
-                file_put_contents($cache_location, serialize($stmts), LOCK_EX);
+                $serialized = serialize($stmts);
+            }
+
+            $result = file_put_contents($cache_location, $serialized, LOCK_EX);
+            if ($result === false) {
+                throw new RuntimeException(
+                    'Failed to write cache data for unknown reasons'
+                );
+            } elseif (strlen($serialized) !== $result) {
+                // remove the invalid file again
+                @unlink($cache_location);
+                throw new RuntimeException(
+                    'Failed to fully write cache data for unknown reasons'
+                );
             }
 
             $file_cache_key = $this->getParserCacheKey($file_path);
@@ -292,13 +306,22 @@ class ParserCacheProvider
 
         $file_content_hashes = $this->new_file_content_hashes + $this->getExistingFileContentHashes();
 
-        $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
+        $cache_location = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
 
-        file_put_contents(
-            $file_hashes_path,
-            json_encode($file_content_hashes, JSON_THROW_ON_ERROR),
-            LOCK_EX
-        );
+        $json_encoded = json_encode($file_content_hashes, JSON_THROW_ON_ERROR);
+        $result = file_put_contents($cache_location, $json_encoded, LOCK_EX);
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($json_encoded) !== $result) {
+            // remove the invalid file again
+            @unlink($cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
+        }
     }
 
     public function cacheFileContents(string $file_path, string $file_contents): void
@@ -309,7 +332,18 @@ class ParserCacheProvider
 
         $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY, true);
 
-        file_put_contents($cache_location, $file_contents, LOCK_EX);
+        $result = file_put_contents($cache_location, $file_contents, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($file_contents) !== $result) {
+            // remove the invalid file again
+            @unlink($cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
+        }
     }
 
     public function deleteOldParserCaches(float $time_before): int

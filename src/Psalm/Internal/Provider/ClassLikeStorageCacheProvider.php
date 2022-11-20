@@ -21,6 +21,7 @@ use function is_dir;
 use function is_null;
 use function mkdir;
 use function serialize;
+use function strlen;
 use function strtolower;
 use function unlink;
 use function unserialize;
@@ -88,9 +89,22 @@ class ClassLikeStorageCacheProvider
 
         $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path, true);
         if ($this->config->use_igbinary) {
-            file_put_contents($cache_location, igbinary_serialize($storage), LOCK_EX);
+            $serialized = igbinary_serialize($storage);
         } else {
-            file_put_contents($cache_location, serialize($storage), LOCK_EX);
+            $serialized = serialize($storage);
+        }
+
+        $result = file_put_contents($cache_location, $serialized, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        } elseif (strlen($serialized) !== $result) {
+            // remove the invalid file again
+            @unlink($cache_location);
+            throw new RuntimeException(
+                'Failed to fully write cache data for unknown reasons'
+            );
         }
     }
 
