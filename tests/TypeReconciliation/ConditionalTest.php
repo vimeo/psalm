@@ -1586,11 +1586,7 @@ class ConditionalTest extends TestCase
                         echo $a;
                     }'
             ],
-            // It is technically non-empty, but creating
-            // array{a: int}|array{b: int} will produce:
-            // array{a?: int, b?: int}, which is technically correct.
-            // Unmark as skipped when (if) support for unions of shapes is added.
-            'SKIPPED-nonEmptyArrayAfterIsset' => [
+            'nonEmptyArrayAfterIsset' => [
                 'code' => '<?php
                     /**
                      * @param array<string, int> $arr
