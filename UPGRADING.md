@@ -1,6 +1,8 @@
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 
+- [BC] Psalm 5.1 will switch its internal representation of `list<T>` and `non-empty-list<T>` from the TList and TNonEmptyList classes to an unsealed list shape (TKeyedArray with `is_list=true` and non-null `fallback_params`): the TList and TNonEmptyList classes will be removed, and the type of the first parameter of `TKeyedArray::getGenericArrayType()` will also change. Nothing will change for users: `list<T>` and `non-empty-list<T>` syntax will remain supported.
+
 - [BC] Shaped arrays can now be sealed: this brings many assertion improvements and bugfixes, see [the docs for more info](https://psalm.dev/docs/annotating_code/type_syntax/array_types/#sealed-object-like-arrays).
 
 - [BC] All atomic types, `Psalm\Type\Union`, `Psalm\CodeLocation` and storages are fully immutable, use the new setter methods or the new constructors to change properties: these setter methods will return new instances without altering the original instance.  
