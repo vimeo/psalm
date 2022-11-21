@@ -6,6 +6,9 @@ use Psalm\Type\Union;
 
 /**
  * Represents a non-empty list
+ *
+ * @deprecated Will be removed and replaced with TKeyedArray in Psalm 5.1
+ *
  * @psalm-immutable
  */
 class TNonEmptyList extends TList

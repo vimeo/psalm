@@ -19,6 +19,8 @@ use function get_class;
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
  *
+ * @deprecated Will be removed and replaced with TKeyedArray in Psalm 5.1
+ *
  * @psalm-immutable
  */
 class TList extends Atomic
