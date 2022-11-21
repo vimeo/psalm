@@ -786,10 +786,6 @@ abstract class Atomic implements TypeNode
             return true;
         }
 
-        if ($this instanceof TNonEmptyList) {
-            return true;
-        }
-
         if ($this instanceof TNonEmptyMixed) {
             return true;
         }
@@ -829,11 +825,7 @@ abstract class Atomic implements TypeNode
         }
 
         if ($this instanceof TKeyedArray) {
-            foreach ($this->properties as $property) {
-                if ($property->possibly_undefined === false) {
-                    return true;
-                }
-            }
+            return $this->isNonEmpty();
         }
 
         if ($this instanceof TTemplateParam && $this->as->isAlwaysTruthy()) {

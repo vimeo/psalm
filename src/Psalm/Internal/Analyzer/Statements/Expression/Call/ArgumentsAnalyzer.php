@@ -1717,9 +1717,7 @@ class ArgumentsAnalyzer
 
                                 //we did not return. The number of packed params is the number of properties
                                 $packed_var_definite_args_tmp[] = count($atomic_arg_type->properties);
-                            } elseif ($atomic_arg_type instanceof TNonEmptyArray ||
-                                $atomic_arg_type instanceof TNonEmptyList
-                            ) {
+                            } elseif ($atomic_arg_type instanceof TNonEmptyArray) {
                                 if ($atomic_arg_type->count === null) {
                                     return;
                                 }
