@@ -290,7 +290,7 @@ class TKeyedArray extends Atomic
     /**
      * @return TArray|TNonEmptyArray
      */
-    public function getGenericArrayType(bool $allow_non_empty = true): TArray
+    public function getGenericArrayType(): TArray
     {
         $key_types = [];
         $value_type = null;
@@ -322,7 +322,7 @@ class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($allow_non_empty && ($this->fallback_params !== null || $has_defined_keys)) {
+        if ($has_defined_keys) {
             $array_type = new TNonEmptyArray([$key_type, $value_type]);
         } else {
             $array_type = new TArray([$key_type, $value_type]);
