@@ -725,23 +725,6 @@ class Reconciler
                                     $new_base_type_candidate = $new_base_type_candidate->setPossiblyUndefined(true);
                                 }
                             }
-                        } elseif ($existing_key_type_part instanceof TList) {
-                            if ($has_empty) {
-                                return null;
-                            }
-
-                            $new_base_type_candidate = $existing_key_type_part->type_param;
-
-                            if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
-                                if ($has_inverted_isset && $new_base_key === $key) {
-                                    $new_base_type_candidate = $new_base_type_candidate->getBuilder();
-                                    $new_base_type_candidate->addType(new TNull);
-                                    $new_base_type_candidate->possibly_undefined = true;
-                                    $new_base_type_candidate = $new_base_type_candidate->freeze();
-                                } else {
-                                    $new_base_type_candidate = $new_base_type_candidate->setPossiblyUndefined(true);
-                                }
-                            }
                         } elseif ($existing_key_type_part instanceof TNull
                             || $existing_key_type_part instanceof TFalse
                         ) {

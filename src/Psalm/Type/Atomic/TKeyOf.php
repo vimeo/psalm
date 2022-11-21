@@ -56,7 +56,6 @@ final class TKeyOf extends TArrayKey
             if (!$type instanceof TArray
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
-                && !$type instanceof TList
                 && !$type instanceof TPropertiesOf
             ) {
                 return false;
@@ -74,8 +73,6 @@ final class TKeyOf extends TArrayKey
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TArray) {
                 $array_key_atomics = $atomic_type->type_params[0];
-            } elseif ($atomic_type instanceof TList) {
-                $array_key_atomics = Type::getInt();
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $array_key_atomics = $atomic_type->getGenericKeyType();
             } elseif ($atomic_type instanceof TTemplateParam) {

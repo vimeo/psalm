@@ -172,10 +172,6 @@ trait GenericTrait
         bool $add_lower_bound = false,
         int $depth = 0
     ): ?array {
-        if ($input_type instanceof TList) {
-            $input_type = new TArray([Type::getInt(), $input_type->type_param]);
-        }
-
         $input_object_type_params = [];
 
         $container_type_params_covariant = [];

@@ -244,6 +244,13 @@ class TKeyedArray extends Atomic
 
     public function getGenericKeyType(bool $possibly_undefined = false): Union
     {
+        if ($this->is_list) {
+            if ($this->fallback_params === null) {
+                return new Union([new TIntRange(0, count($this->properties))]);
+            }
+            return new Union([new TIntRange(0, null)]);
+        }
+
         $key_types = [];
 
         foreach ($this->properties as $key => $_) {
@@ -311,7 +318,7 @@ class TKeyedArray extends Atomic
             $value_type = Type::combineUnionTypes($property, $value_type);
 
             if (!$property->possibly_undefined) {
-                $has_defined_keys++;
+                $has_defined_keys = true;
             }
         }
 

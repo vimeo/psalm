@@ -24,6 +24,7 @@ use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -409,7 +410,9 @@ trait UnionTrait
      */
     public function hasList(): bool
     {
-        return isset($this->types['array']) && $this->types['array'] instanceof TList;
+        return isset($this->types['array'])
+            && $this->types['array'] instanceof TKeyedArray
+            && $this->types['array']->is_list;
     }
 
     /**
