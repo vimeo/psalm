@@ -8,9 +8,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLowercaseString;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
@@ -60,8 +58,8 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                 return new Union([
                     $can_return_empty
-                        ? new TList($inner_type)
-                        : new TNonEmptyList($inner_type)
+                        ? Type::getListAtomic($inner_type)
+                        : Type::getNonEmptyListAtomic($inner_type)
                 ]);
             }
 
@@ -80,8 +78,8 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 if ($can_be_false) {
                     $array_type = new Union([
                         $can_return_empty
-                            ? new TList($inner_type)
-                            : new TNonEmptyList($inner_type),
+                            ? Type::getListAtomic($inner_type)
+                            : Type::getNonEmptyListAtomic($inner_type),
                         new TFalse
                     ], [
                         'ignore_falsable_issues' =>
@@ -90,8 +88,8 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 } else {
                     $array_type = new Union([
                         $can_return_empty
-                            ? new TList($inner_type)
-                            : new TNonEmptyList($inner_type),
+                            ? Type::getListAtomic($inner_type)
+                            : Type::getNonEmptyListAtomic($inner_type),
                     ]);
                 }
 

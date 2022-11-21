@@ -19,14 +19,12 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
@@ -589,7 +587,7 @@ class SimpleTypeInferer
 
         if ($array_creation_info->all_list) {
             return new Union([
-                new TNonEmptyList($item_value_type),
+                Type::getNonEmptyListAtomic($item_value_type),
             ]);
         }
 

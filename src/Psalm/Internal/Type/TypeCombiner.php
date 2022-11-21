@@ -1520,7 +1520,7 @@ class TypeCombiner
                         [Type::getInt(), $combination->array_type_params[1]],
                         true
                     );
-                } else if ($combination->array_counts && count($combination->array_counts) === 1) {
+                } elseif ($combination->array_counts && count($combination->array_counts) === 1) {
                     $cnt = array_keys($combination->array_counts)[0];
                     $properties = [];
                     for ($x = 0; $x < $cnt; $x++) {
@@ -1534,7 +1534,7 @@ class TypeCombiner
                     );
                 } else {
                     /** @psalm-suppress ArgumentTypeCoercion */
-                    $array_type = new TNonEmptyList(
+                    $array_type = Type::getNonEmptyListAtomic(
                         $generic_type_params[1],
                         $combination->array_min_counts
                             ? min(array_keys($combination->array_min_counts))
@@ -1561,7 +1561,7 @@ class TypeCombiner
                     $generic_type_params[1]
                 );
             } elseif ($combination->all_arrays_lists) {
-                $array_type = new TList($generic_type_params[1]);
+                $array_type = Type::getListAtomic($generic_type_params[1]);
             } else {
                 $array_type = new TArray($generic_type_params);
             }

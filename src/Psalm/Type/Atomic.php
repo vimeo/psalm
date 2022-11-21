@@ -18,7 +18,6 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
-use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
@@ -36,7 +35,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -262,10 +260,10 @@ abstract class Atomic implements TypeNode
                 ]);
 
             case 'list':
-                return new TList(Type::getMixed(false, $from_docblock));
+                return Type::getListAtomic(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-list':
-                return new TNonEmptyList(Type::getMixed(false, $from_docblock));
+                return Type::getNonEmptyListAtomic(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-string':
                 return new TNonEmptyString();

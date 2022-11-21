@@ -2,7 +2,6 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type;
 use Psalm\Type\Union;
 
 use function array_merge;

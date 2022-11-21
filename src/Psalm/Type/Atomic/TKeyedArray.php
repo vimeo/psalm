@@ -15,9 +15,7 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function addslashes;
 use function count;
@@ -369,6 +367,20 @@ class TKeyedArray extends Atomic
         return false;
     }
 
+    /**
+     * Whether all keys are always defined (ignores unsealedness).
+     */
+    public function allShapeKeysAlwaysDefined(): bool
+    {
+        foreach ($this->properties as $property) {
+            if ($property->possibly_undefined) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function getKey(bool $include_extra = true): string
     {
         return 'array';
@@ -492,17 +504,6 @@ class TKeyedArray extends Atomic
     public function getAssertionString(): string
     {
         return $this->is_list ? 'list' : 'array';
-    }
-
-    public function getList(): TList
-    {
-        if (!$this->is_list) {
-            throw new UnexpectedValueException('Object-like array must be a list for conversion');
-        }
-
-        return $this->isNonEmpty()
-            ? new TNonEmptyList($this->getGenericValueType())
-            : new TList($this->getGenericValueType());
     }
 
     /**

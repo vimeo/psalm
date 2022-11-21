@@ -39,7 +39,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -565,14 +564,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $redundant = false;
                     }
                 } else {
-                    $redundant = false;
-
-                    foreach ($array_atomic_type->properties as $property_type) {
-                        if (!$property_type->possibly_undefined) {
-                            $redundant = true;
-                            break;
-                        }
-                    }
+                    $redundant = $array_atomic_type->isNonEmpty();
                 }
             } elseif (!$array_atomic_type instanceof TArray || !$array_atomic_type->isEmptyArray()) {
                 $redundant = false;

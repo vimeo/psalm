@@ -1139,7 +1139,7 @@ class ArrayFetchAnalyzer
                         $from_empty_array ? null : [$fallback_key_type, $fallback_value_type],
                     );
                 } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
-                    $type = new TNonEmptyList($replacement_type);
+                    $type = Type::getNonEmptyListAtomic($replacement_type);
                     return;
                 }
             } elseif ($type instanceof TKeyedArray
@@ -1665,7 +1665,7 @@ class ArrayFetchAnalyzer
                         ], $property_count);
                     } else {
                         if (!$stmt->dim && $type->is_list) {
-                            $type = new TList($generic_params);
+                            $type = Type::getListAtomic($generic_params);
                         } else {
                             $type = new TArray([
                                 $new_key_type,

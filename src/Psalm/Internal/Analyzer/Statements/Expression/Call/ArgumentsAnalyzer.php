@@ -42,7 +42,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
-use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -1712,11 +1711,10 @@ class ArgumentsAnalyzer
                                     return;
                                 }
 
-                                foreach ($atomic_arg_type->properties as $property_type) {
-                                    if ($property_type->possibly_undefined) {
-                                        return;
-                                    }
+                                if (!$atomic_arg_type->allShapeKeysAlwaysDefined()) {
+                                    return;
                                 }
+
                                 //we did not return. The number of packed params is the number of properties
                                 $packed_var_definite_args_tmp[] = count($atomic_arg_type->properties);
                             } elseif ($atomic_arg_type instanceof TNonEmptyArray ||

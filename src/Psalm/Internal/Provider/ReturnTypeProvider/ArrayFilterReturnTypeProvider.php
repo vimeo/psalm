@@ -20,7 +20,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -138,7 +137,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 && $key_type->getSingleIntLiteral()->value === 0
             ) {
                 return new Union([
-                    new TList(
+                    Type::getListAtomic(
                         $inner_type
                     ),
                 ]);

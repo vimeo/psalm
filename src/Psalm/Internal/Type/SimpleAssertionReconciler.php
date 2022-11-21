@@ -35,7 +35,6 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
-use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
@@ -604,7 +603,7 @@ class SimpleAssertionReconciler extends Reconciler
                     || ($assertion instanceof HasAtLeastCount
                         && $array_atomic_type->count < $assertion->count)
                 ) {
-                    $non_empty_list = new TNonEmptyList(
+                    $non_empty_list = Type::getNonEmptyListAtomic(
                         $array_atomic_type->type_param,
                         null,
                         $assertion instanceof HasAtLeastCount ? $assertion->count : null
@@ -754,15 +753,7 @@ class SimpleAssertionReconciler extends Reconciler
                         ));
                     }
                 } else {
-                    $has_possibly_undefined = false;
-                    foreach ($array_atomic_type->properties as $property) {
-                        if ($property->possibly_undefined) {
-                            $has_possibly_undefined = true;
-                            break;
-                        }
-                    }
-
-                    if (!$has_possibly_undefined && count($array_atomic_type->properties) === $count) {
+                    if ($array_atomic_type->allShapeKeysAlwaysDefined() && count($array_atomic_type->properties) === $count) {
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type->makeSealed());
                     }
@@ -2106,7 +2097,7 @@ class SimpleAssertionReconciler extends Reconciler
                 || ($type instanceof TKeyedArray && $type->is_list)
             ) {
                 if ($is_non_empty && $type instanceof TList && !$type instanceof TNonEmptyList) {
-                    $array_types[] = new TNonEmptyList($type->type_param);
+                    $array_types[] = Type::getNonEmptyListAtomic($type->type_param);
                     $did_remove_type = true;
                 } else {
                     $array_types[] = $type;
@@ -2122,9 +2113,9 @@ class SimpleAssertionReconciler extends Reconciler
                     || $type->type_params[0]->hasInt()
                 ) {
                     if ($type instanceof TNonEmptyArray) {
-                        $array_types[] = new TNonEmptyList($type->type_params[1]);
+                        $array_types[] = Type::getNonEmptyListAtomic($type->type_params[1]);
                     } else {
-                        $array_types[] = new TList($type->type_params[1]);
+                        $array_types[] = Type::getListAtomic($type->type_params[1]);
                     }
                 }
 
@@ -2142,7 +2133,7 @@ class SimpleAssertionReconciler extends Reconciler
 
                 $did_remove_type = true;
             } elseif ($type instanceof TIterable) {
-                $array_types[] = new TList($type->type_params[1]);
+                $array_types[] = Type::getListAtomic($type->type_params[1]);
 
                 $did_remove_type = true;
             } else {
@@ -2213,7 +2204,7 @@ class SimpleAssertionReconciler extends Reconciler
                 if (get_class($type) === TArray::class) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
                 } elseif (get_class($type) === TList::class) {
-                    $array_types[] = new TNonEmptyList($type->type_param);
+                    $array_types[] = Type::getNonEmptyListAtomic($type->type_param);
                 } else {
                     $array_types[] = $type;
                 }

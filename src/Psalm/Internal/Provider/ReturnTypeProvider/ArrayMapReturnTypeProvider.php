@@ -229,14 +229,14 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             ) {
                 if ($array_arg_atomic_type instanceof TNonEmptyList) {
                     return new Union([
-                        new TNonEmptyList(
+                        Type::getNonEmptyListAtomic(
                             $mapping_return_type
                         ),
                     ]);
                 }
 
                 return new Union([
-                    new TList(
+                    Type::getListAtomic(
                         $mapping_return_type
                     ),
                 ]);

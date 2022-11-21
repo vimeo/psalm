@@ -29,7 +29,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -146,7 +145,7 @@ class ArrayAnalyzer
 
         if ($array_creation_info->all_list) {
             if ($array_creation_info->can_be_empty) {
-                $array_type = new TList($item_value_type ?? Type::getMixed());
+                $array_type = Type::getListAtomic($item_value_type ?? Type::getMixed());
             } else {
                 $array_type = new TKeyedArray(
                     [$item_value_type ?? Type::getMixed()],

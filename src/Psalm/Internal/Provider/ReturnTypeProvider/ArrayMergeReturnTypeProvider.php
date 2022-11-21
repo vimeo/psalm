@@ -14,7 +14,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
@@ -23,7 +22,7 @@ use function array_values;
 use function count;
 use function is_string;
 use function max;
-use function mb_strcut;
+use function substr;
 
 /**
  * @internal
@@ -76,13 +75,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                     if ($type_part instanceof TKeyedArray) {
                         $unpacked_type_parts = $type_part->getGenericValueType();
                         $unpacking_indefinite_number_of_args = $type_part->fallback_params !== null;
-                        $unpacking_possibly_empty = true;
-                        foreach ($type_part->properties as $property) {
-                            if (!$property->possibly_undefined) {
-                                $unpacking_possibly_empty = false;
-                                break;
-                            }
-                        }
+                        $unpacking_possibly_empty = !$type_part->isNonEmpty();
                     } elseif ($type_part instanceof TArray) {
                         $unpacked_type_parts = $type_part->type_params[1];
                         $unpacking_indefinite_number_of_args = true;
@@ -201,7 +194,6 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                         }
 
                         $all_nonempty_lists = false;
-
                     } elseif ($unpacked_type_part instanceof TArray) {
                         if ($unpacked_type_part->isEmptyArray()) {
                             continue;
@@ -283,12 +275,12 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             if ($all_int_offsets) {
                 if ($any_nonempty) {
                     return new Union([
-                        new TNonEmptyList($inner_value_type),
+                        Type::getNonEmptyListAtomic($inner_value_type),
                     ]);
                 }
 
                 return new Union([
-                    new TList($inner_value_type),
+                    Type::getListAtomic($inner_value_type),
                 ]);
             }
 

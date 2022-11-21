@@ -9,9 +9,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
 use function count;
@@ -55,8 +53,8 @@ class ArrayPadReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $array_type->is_list
                     ? (
                         $can_return_empty
-                            ? new TList($value_type)
-                            : new TNonEmptyList($value_type)
+                            ? Type::getListAtomic($value_type)
+                            : Type::getNonEmptyListAtomic($value_type)
                     )
                     : (
                         $can_return_empty

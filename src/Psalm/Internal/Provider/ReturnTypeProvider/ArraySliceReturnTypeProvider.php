@@ -8,7 +8,6 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -81,7 +80,7 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 && ((string) $third_arg_type === 'false'));
 
         if ($dont_preserve_int_keys && $return_atomic_type->type_params[0]->isInt()) {
-            $return_atomic_type = new TList($return_atomic_type->type_params[1]);
+            $return_atomic_type = Type::getListAtomic($return_atomic_type->type_params[1]);
         }
 
         return new Union([$return_atomic_type]);

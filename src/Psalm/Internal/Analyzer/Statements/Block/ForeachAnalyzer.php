@@ -40,18 +40,14 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -470,14 +466,7 @@ class ForeachAnalyzer
             ) {
                 if ($iterator_atomic_type instanceof TKeyedArray) {
                     if ($iterator_atomic_type->fallback_params === null) {
-                        $all_possibly_undefined = true;
-                        foreach ($iterator_atomic_type->properties as $prop) {
-                            if (!$prop->possibly_undefined) {
-                                $all_possibly_undefined = false;
-                                break;
-                            }
-                        }
-                        if ($all_possibly_undefined) {
+                        if (!$iterator_atomic_type->isNonEmpty()) {
                             $always_non_empty_array = false;
                         }
                     } else {

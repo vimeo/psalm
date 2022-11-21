@@ -76,11 +76,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -1428,15 +1426,7 @@ class AssignmentAnalyzer
                             );
                         }
 
-                        $can_be_empty = $assign_value_atomic_type->fallback_params !== null;
-                        if (!$can_be_empty) {
-                            foreach ($assign_value_atomic_type->properties as $prop) {
-                                if ($prop->possibly_undefined) {
-                                    $can_be_empty = true;
-                                    break;
-                                }
-                            }
-                        }
+                        $can_be_empty = !$assign_value_atomic_type->isNonEmpty();
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
                         ForeachAnalyzer::getKeyValueParamsForTraversableObject(
                             $assign_value_atomic_type,

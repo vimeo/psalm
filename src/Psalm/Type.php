@@ -22,7 +22,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -31,7 +30,6 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
@@ -445,16 +443,7 @@ abstract class Type
      */
     public static function getList(?Union $of = null): Union
     {
-        $type = new TKeyedArray(
-            [$of !== null
-                ? $of->setPossiblyUndefined(true)
-                : new Union([new TMixed()], ['possibly_undefined' => true])],
-            null,
-            [self::getInt(), $of],
-            true
-        );
-
-        return new Union([$type]);
+        return new Union([self::getListAtomic($of)]);
     }
 
     /**
@@ -462,7 +451,30 @@ abstract class Type
      */
     public static function getNonEmptyList(?Union $of = null): Union
     {
-        $type = new TKeyedArray(
+        return new Union([self::getNonEmptyListAtomic($of)]);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getListAtomic(?Union $of = null): TKeyedArray
+    {
+        return new TKeyedArray(
+            [$of !== null
+                ? $of->setPossiblyUndefined(true)
+                : new Union([new TMixed()], ['possibly_undefined' => true])],
+            null,
+            [self::getInt(), $of],
+            true
+        );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getNonEmptyListAtomic(?Union $of = null): TKeyedArray
+    {
+        return new TKeyedArray(
             [$of !== null
                 ? $of->setPossiblyUndefined(false)
                 : new Union([new TMixed()], ['possibly_undefined' => false])],
@@ -470,8 +482,6 @@ abstract class Type
             [self::getInt(), $of],
             true
         );
-
-        return new Union([$type]);
     }
 
     /**
