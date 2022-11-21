@@ -467,7 +467,6 @@ class ForeachAnalyzer
 
             if ($iterator_atomic_type instanceof TArray
                 || $iterator_atomic_type instanceof TKeyedArray
-                || $iterator_atomic_type instanceof TList
             ) {
                 if ($iterator_atomic_type instanceof TKeyedArray) {
                     if ($iterator_atomic_type->fallback_params === null) {
@@ -484,26 +483,13 @@ class ForeachAnalyzer
                     } else {
                         $always_non_empty_array = false;
                     }
-                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType();
-                } elseif ($iterator_atomic_type instanceof TList) {
-                    $list_var_id = ExpressionIdentifier::getExtendedVarId(
-                        $expr,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer
+                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType(
+                        ExpressionIdentifier::getExtendedVarId(
+                            $expr,
+                            $statements_analyzer->getFQCLN(),
+                            $statements_analyzer
+                        )
                     );
-
-                    if (!$iterator_atomic_type instanceof TNonEmptyList) {
-                        $always_non_empty_array = false;
-                    }
-
-                    $iterator_atomic_type = new TArray([
-                        $list_var_id
-                            ? new Union([
-                                new TDependentListKey($list_var_id)
-                            ])
-                            : new Union([new TIntRange(0, null)]),
-                        $iterator_atomic_type->type_param
-                    ]);
                 } elseif (!$iterator_atomic_type instanceof TNonEmptyArray) {
                     $always_non_empty_array = false;
                 }

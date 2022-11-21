@@ -251,7 +251,6 @@ class CastAnalyzer
                     } elseif ($type instanceof TNull) {
                         $permissible_atomic_types[] = new TArray([Type::getNever(), Type::getNever()]);
                     } elseif ($type instanceof TArray
-                        || $type instanceof TList
                         || $type instanceof TKeyedArray
                     ) {
                         $permissible_atomic_types[] = $type;
@@ -424,7 +423,6 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TArray
-                || $atomic_type instanceof TList
                 || $atomic_type instanceof TKeyedArray
             ) {
                 // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not
@@ -610,7 +608,6 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TArray
-                || $atomic_type instanceof TList
                 || $atomic_type instanceof TKeyedArray
             ) {
                 // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not

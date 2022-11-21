@@ -290,7 +290,7 @@ class TKeyedArray extends Atomic
     /**
      * @return TArray|TNonEmptyArray
      */
-    public function getGenericArrayType(bool $allow_non_empty = true): TArray
+    public function getGenericArrayType(?string $list_var_id = null): TArray
     {
         $key_types = [];
         $value_type = null;
@@ -298,7 +298,9 @@ class TKeyedArray extends Atomic
         $has_defined_keys = false;
 
         foreach ($this->properties as $key => $property) {
-            if (is_int($key)) {
+            if ($this->is_list) {
+                // Do nothing
+            } elseif (is_int($key)) {
                 $key_types[] = new TLiteralInt($key);
             } elseif (isset($this->class_strings[$key])) {
                 $key_types[] = new TLiteralClassString($key);
@@ -309,8 +311,29 @@ class TKeyedArray extends Atomic
             $value_type = Type::combineUnionTypes($property, $value_type);
 
             if (!$property->possibly_undefined) {
-                $has_defined_keys = true;
+                $has_defined_keys++;
             }
+        }
+
+        if ($this->is_list) {
+            if ($this->fallback_params !== null) {
+                $value_type = Type::combineUnionTypes($this->fallback_params[1], $value_type);
+            }
+
+            $value_type = $value_type->setPossiblyUndefined(false);
+
+            if ($list_var_id !== null) {
+                $key_type = new Union([new TDependentListKey($list_var_id)]);
+            } elseif ($this->fallback_params === null) {
+                $key_type = new Union([new TIntRange(0, count($this->properties))]);
+            } else {
+                $key_type = new Union([new TIntRange(0, null)]);
+            }
+
+            if ($has_defined_keys) {
+                return new TNonEmptyArray([$key_type, $value_type]);
+            }
+            return new TArray([$key_type, $value_type]);
         }
 
         $key_type = TypeCombiner::combine($key_types);
@@ -322,13 +345,10 @@ class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($allow_non_empty && ($this->fallback_params !== null || $has_defined_keys)) {
-            $array_type = new TNonEmptyArray([$key_type, $value_type]);
-        } else {
-            $array_type = new TArray([$key_type, $value_type]);
+        if ($has_defined_keys) {
+            return new TNonEmptyArray([$key_type, $value_type]);
         }
-
-        return $array_type;
+        return new TArray([$key_type, $value_type]);
     }
 
     public function isNonEmpty(): bool

@@ -121,13 +121,6 @@ class UnsetAnalyzer
                             $root_types []= new TArray($atomic_root_type->type_params);
                         } elseif ($atomic_root_type instanceof TNonEmptyMixed) {
                             $root_types []= new TMixed();
-                        } elseif ($atomic_root_type instanceof TList) {
-                            $root_types []=
-                                new TArray([
-                                    Type::getInt(),
-                                    $atomic_root_type->type_param
-                                ])
-                            ;
                         } else {
                             $root_types []= $atomic_root_type;
                         }

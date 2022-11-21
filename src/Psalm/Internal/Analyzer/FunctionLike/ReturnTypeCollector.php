@@ -263,10 +263,6 @@ class ReturnTypeCollector
                 $type = $type->getGenericArrayType();
             }
 
-            if ($type instanceof TList) {
-                $type = new TArray([Type::getInt(), $type->type_param]);
-            }
-
             if ($type instanceof TArray) {
                 [$key_type_param, $value_type_param] = $type->type_params;
 

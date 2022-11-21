@@ -3599,12 +3599,9 @@ class AssertionFinder
             foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof TArray
                     || $atomic_type instanceof TKeyedArray
-                    || $atomic_type instanceof TList
                 ) {
                     $is_sealed = false;
-                    if ($atomic_type instanceof TList) {
-                        $value_type = $atomic_type->type_param;
-                    } elseif ($atomic_type instanceof TKeyedArray) {
+                    if ($atomic_type instanceof TKeyedArray) {
                         $value_type = $atomic_type->getGenericValueType();
                         $is_sealed = $atomic_type->fallback_params === null;
                     } else {

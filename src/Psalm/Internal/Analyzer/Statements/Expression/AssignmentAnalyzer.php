@@ -1297,7 +1297,6 @@ class AssignmentAnalyzer
                     $has_null = true;
                 } elseif (!$assign_value_atomic_type instanceof TArray
                     && !$assign_value_atomic_type instanceof TKeyedArray
-                    && !$assign_value_atomic_type instanceof TList
                     && !$assign_value_type->hasArrayAccessInterface($codebase)
                 ) {
                     if ($assign_value_type->hasArray()) {
@@ -1334,13 +1333,6 @@ class AssignmentAnalyzer
                 ) {
                     if ($assign_value_atomic_type instanceof TKeyedArray) {
                         $assign_value_atomic_type = $assign_value_atomic_type->getGenericArrayType();
-                    }
-
-                    if ($assign_value_atomic_type instanceof TList) {
-                        $assign_value_atomic_type = new TArray([
-                            Type::getInt(),
-                            $assign_value_atomic_type->type_param
-                        ]);
                     }
 
                     $array_value_type = $assign_value_atomic_type instanceof TArray
@@ -1404,21 +1396,6 @@ class AssignmentAnalyzer
                         }
 
                         $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyArray;
-                    } elseif ($assign_value_atomic_type instanceof TList) {
-                        $new_assign_type = $assign_value_atomic_type->type_param;
-
-                        if ($statements_analyzer->data_flow_graph && $assign_value) {
-                            $temp = Type::getArrayKey();
-                            ArrayFetchAnalyzer::taintArrayFetch(
-                                $statements_analyzer,
-                                $assign_value,
-                                null,
-                                $new_assign_type,
-                                $temp
-                            );
-                        }
-
-                        $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyList;
                     } elseif ($assign_value_atomic_type instanceof TKeyedArray) {
                         if (($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                             || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
@@ -1452,6 +1429,14 @@ class AssignmentAnalyzer
                         }
 
                         $can_be_empty = $assign_value_atomic_type->fallback_params !== null;
+                        if (!$can_be_empty) {
+                            foreach ($assign_value_atomic_type->properties as $prop) {
+                                if ($prop->possibly_undefined) {
+                                    $can_be_empty = true;
+                                    break;
+                                }
+                            }
+                        }
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
                         ForeachAnalyzer::getKeyValueParamsForTraversableObject(
                             $assign_value_atomic_type,
