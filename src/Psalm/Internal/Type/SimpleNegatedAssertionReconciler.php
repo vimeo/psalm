@@ -1583,7 +1583,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif (!$type instanceof TArray
                 && !$type instanceof TKeyedArray
-                && !$type instanceof TList
             ) {
                 $non_array_types[] = $type;
             } else {

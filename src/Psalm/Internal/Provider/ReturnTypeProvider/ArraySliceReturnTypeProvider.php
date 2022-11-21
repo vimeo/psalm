@@ -69,11 +69,6 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 continue;
             }
 
-            if ($atomic_type instanceof TList) {
-                $return_atomic_type = new TArray([Type::getInt(), $atomic_type->type_param]);
-                continue;
-            }
-
             return Type::getArray();
         }
 

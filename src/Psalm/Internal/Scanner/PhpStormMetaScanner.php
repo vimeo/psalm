@@ -233,10 +233,6 @@ class PhpStormMetaScanner
                                 return $array_atomic_type->getGenericValueType();
                             }
 
-                            if ($array_atomic_type instanceof TList) {
-                                return $array_atomic_type->type_param;
-                            }
-
                             return $array_atomic_type->type_params[1];
                         }
 
@@ -375,10 +371,6 @@ class PhpStormMetaScanner
 
                             if ($array_atomic_type instanceof TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
-                            }
-
-                            if ($array_atomic_type instanceof TList) {
-                                return $array_atomic_type->type_param;
                             }
 
                             return $array_atomic_type->type_params[1];

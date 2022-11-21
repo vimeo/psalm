@@ -143,32 +143,6 @@ class CallableTypeComparator
         TCallable $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
-        if ($input_type_part instanceof TList) {
-            if ($input_type_part->type_param->isMixed()
-                || $input_type_part->type_param->hasScalar()
-            ) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced_from_mixed = true;
-                    $atomic_comparison_result->type_coerced = true;
-                }
-
-                return false;
-            }
-
-            if (!$input_type_part->type_param->hasString()) {
-                return false;
-            }
-
-            if (!$input_type_part instanceof TCallableList) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced_from_mixed = true;
-                    $atomic_comparison_result->type_coerced = true;
-                }
-
-                return false;
-            }
-        }
-
         if ($input_type_part instanceof TArray) {
             if ($input_type_part->type_params[1]->isMixed()
                 || $input_type_part->type_params[1]->hasScalar()

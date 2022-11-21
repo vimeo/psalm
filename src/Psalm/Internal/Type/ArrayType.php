@@ -51,14 +51,6 @@ class ArrayType
             );
         }
 
-        if ($type instanceof TList) {
-            return new self(
-                Type::getInt(),
-                $type->type_param,
-                true
-            );
-        }
-
         if ($type instanceof TArray) {
             return new self(
                 $type->type_params[0],

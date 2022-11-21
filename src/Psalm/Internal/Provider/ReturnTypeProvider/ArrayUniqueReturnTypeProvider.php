@@ -41,8 +41,7 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
         ? $array_atomic_type
         : null;
 
@@ -58,8 +57,8 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return new Union([$first_arg_array]);
         }
 
-        if ($first_arg_array instanceof TList) {
-            if ($first_arg_array instanceof TNonEmptyList) {
+        if ($first_arg_array instanceof TKeyedArray && $first_arg_array->is_list) {
+            if (!$first_arg_array->properties[0]->possibly_undefined) {
                 return new Union([
                     new TNonEmptyArray([
                         Type::getInt(),

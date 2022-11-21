@@ -37,10 +37,10 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
         $first_arg_array = $first_arg
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
             && $first_arg_type->hasType('array')
+            && $first_arg_type->isArray()
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
         ? $array_atomic_type
         : null;
 
@@ -49,10 +49,10 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
         }
 
         if ($first_arg_array instanceof TArray) {
-            return new Union([$first_arg_array]);
+            return $first_arg_type;
         }
 
-        if ($first_arg_array instanceof TList) {
+        if ($first_arg_array instanceof TKeyedArray && $first_arg_array->is_list) {
             $second_arg = $call_args[1]->value ?? null;
 
             if (!$second_arg
@@ -60,10 +60,10 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
                     && $second_arg_type->isFalse()
                 )
             ) {
-                return new Union([$first_arg_array]);
+                return $first_arg_type;
             }
 
-            return new Union([new TArray([Type::getInt(), $first_arg_array->type_param])]);
+            return $first_arg_array->setProperties(array_reverse($first_arg_array->properties));
         }
 
         return new Union([$first_arg_array->getGenericArrayType()]);

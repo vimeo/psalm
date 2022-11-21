@@ -362,7 +362,6 @@ class FunctionCallReturnTypeFetcher
                         if (count($atomic_types) === 1) {
                             if (isset($atomic_types['array'])) {
                                 if ($atomic_types['array'] instanceof TCallableArray
-                                    || $atomic_types['array'] instanceof TCallableList
                                     || $atomic_types['array'] instanceof TCallableKeyedArray
                                 ) {
                                     return Type::getInt(false, 2);
@@ -467,10 +466,6 @@ class FunctionCallReturnTypeFetcher
 
                                 if ($array_type instanceof TArray) {
                                     return $array_type->type_params[1];
-                                }
-
-                                if ($array_type instanceof TList) {
-                                    return $array_type->type_param;
                                 }
                             } elseif ($first_arg_type->hasScalarType()
                                 && ($second_arg = ($call_args[1]->value ?? null))

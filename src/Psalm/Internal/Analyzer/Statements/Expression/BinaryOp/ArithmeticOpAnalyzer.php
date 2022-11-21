@@ -511,19 +511,14 @@ class ArithmeticOpAnalyzer
             || $right_type_part instanceof TArray
             || $left_type_part instanceof TKeyedArray
             || $right_type_part instanceof TKeyedArray
-            || $left_type_part instanceof TList
-            || $right_type_part instanceof TList
         ) {
             if ((!$right_type_part instanceof TArray
-                    && !$right_type_part instanceof TKeyedArray
-                    && !$right_type_part instanceof TList)
+                    && !$right_type_part instanceof TKeyedArray)
                 || (!$left_type_part instanceof TArray
-                    && !$left_type_part instanceof TKeyedArray
-                    && !$left_type_part instanceof TList)
+                    && !$left_type_part instanceof TKeyedArray)
             ) {
                 if (!$left_type_part instanceof TArray
                     && !$left_type_part instanceof TKeyedArray
-                    && !$left_type_part instanceof TList
                 ) {
                     $invalid_left_messages[] = 'Cannot add an array to a non-array ' . $left_type_part;
                 } else {
@@ -532,12 +527,10 @@ class ArithmeticOpAnalyzer
 
                 if ($left_type_part instanceof TArray
                     || $left_type_part instanceof TKeyedArray
-                    || $left_type_part instanceof TList
                 ) {
                     $has_valid_left_operand = true;
                 } elseif ($right_type_part instanceof TArray
                     || $right_type_part instanceof TKeyedArray
-                    || $right_type_part instanceof TList
                 ) {
                     $has_valid_right_operand = true;
                 }

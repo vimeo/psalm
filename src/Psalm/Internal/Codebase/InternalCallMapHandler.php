@@ -172,8 +172,6 @@ class InternalCallMapHandler
 
                         if ($array_atomic_type instanceof TKeyedArray) {
                             $arg_type = $array_atomic_type->getGenericValueType();
-                        } elseif ($array_atomic_type instanceof TList) {
-                            $arg_type = $array_atomic_type->type_param;
                         } else {
                             $arg_type = $array_atomic_type->type_params[1];
                         }

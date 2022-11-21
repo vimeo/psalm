@@ -2359,10 +2359,6 @@ class SimpleAssertionReconciler extends Reconciler
                 $type = new TCallableArray($type->type_params);
                 $callable_types[] = $type;
                 $did_remove_type = true;
-            } elseif ($type instanceof TList) {
-                $type = new TCallableList($type->type_param);
-                $callable_types[] = $type;
-                $did_remove_type = true;
             } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
                 $type = new TCallableKeyedArray($type->properties);
                 $callable_types[] = $type;
@@ -2509,11 +2505,14 @@ class SimpleAssertionReconciler extends Reconciler
             ) {
                 unset($types['array']);
                 $types [] = new TNonEmptyArray($array_atomic_type->type_params);
-            } elseif ($array_atomic_type instanceof TList
-                && !$array_atomic_type instanceof TNonEmptyList
+            } elseif ($array_atomic_type instanceof TKeyedArray
+                && $array_atomic_type->is_list
+                && $array_atomic_type->properties[0]->possibly_undefined
             ) {
                 unset($types['array']);
-                $types [] = new TNonEmptyList($array_atomic_type->type_param);
+                $properties = $array_atomic_type->properties;
+                $properties[0] = $properties[0]->setPossiblyUndefined(false);
+                $types [] = $array_atomic_type->setProperties($properties);
             }
         }
 

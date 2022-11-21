@@ -1491,10 +1491,6 @@ class ArgumentsAnalyzer
                     $array_type = $array_type->getGenericArrayType();
                 }
 
-                if ($array_type instanceof TList) {
-                    $array_type = new TArray([Type::getInt(), $array_type->type_param]);
-                }
-
                 $by_ref_type = new Union([$array_type]);
 
                 AssignmentAnalyzer::assignByRefParam(
@@ -1708,7 +1704,6 @@ class ArgumentsAnalyzer
                         foreach ($arg_value_type->getAtomicTypes() as $atomic_arg_type) {
                             $packed_var_definite_args_tmp = [];
                             if ($atomic_arg_type instanceof TCallableArray ||
-                                $atomic_arg_type instanceof TCallableList ||
                                 $atomic_arg_type instanceof TCallableKeyedArray
                             ) {
                                 $packed_var_definite_args_tmp[] = 2;

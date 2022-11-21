@@ -39,8 +39,7 @@ class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
         ? $array_atomic_type
         : null;
 

@@ -70,8 +70,6 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $array_arg_type = $arg_type->getSingleAtomic();
                         if ($array_arg_type instanceof TKeyedArray) {
                             $possibly_unpacked_arg_types = $array_arg_type->properties;
-                        } elseif ($array_arg_type instanceof TList) {
-                            $possibly_unpacked_arg_types = [$array_arg_type->type_param];
                         } else {
                             assert($array_arg_type instanceof TArray);
                             $possibly_unpacked_arg_types = [$array_arg_type->type_params[1]];

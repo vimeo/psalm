@@ -87,10 +87,6 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                         $unpacked_type_parts = $type_part->type_params[1];
                         $unpacking_indefinite_number_of_args = true;
                         $unpacking_possibly_empty = !$type_part instanceof TNonEmptyArray;
-                    } elseif ($type_part instanceof TList) {
-                        $unpacked_type_parts = $type_part->type_param;
-                        $unpacking_indefinite_number_of_args = true;
-                        $unpacking_possibly_empty = !$type_part instanceof TNonEmptyList;
                     } else {
                         return Type::getArray();
                     }

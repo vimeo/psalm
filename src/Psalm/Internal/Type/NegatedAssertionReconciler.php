@@ -207,7 +207,6 @@ class NegatedAssertionReconciler extends Reconciler
             // fall through
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
-                || $assertion->getAtomicType() instanceof TList
                 || $assertion->getAtomicType() instanceof TKeyedArray)
         ) {
             //if both types are arrays, try to combine them

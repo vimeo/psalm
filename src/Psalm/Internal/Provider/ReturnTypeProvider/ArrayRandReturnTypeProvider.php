@@ -41,8 +41,7 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
         ? $array_atomic_type
         : null;
 
@@ -52,8 +51,6 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         if ($first_arg_array instanceof TArray) {
             $key_type = $first_arg_array->type_params[0];
-        } elseif ($first_arg_array instanceof TList) {
-            $key_type = Type::getInt();
         } else {
             $key_type = $first_arg_array->getGenericKeyType();
         }
@@ -64,11 +61,7 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return $key_type;
         }
 
-        $arr_type = new Union([
-            new TList(
-                $key_type
-            ),
-        ]);
+        $arr_type = Type::getList($key_type);
 
         if ($second_arg instanceof PhpParser\Node\Scalar\LNumber) {
             return $arr_type;

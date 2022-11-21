@@ -537,20 +537,6 @@ class TypeExpander
             }
             unset($property_type);
             $return_type = $return_type->setProperties($properties);
-        } elseif ($return_type instanceof TList) {
-            $return_type = $return_type->setTypeParam(self::expandUnion(
-                $codebase,
-                $return_type->type_param,
-                $self_class,
-                $static_class_type,
-                $parent_class,
-                $evaluate_class_constants,
-                $evaluate_conditional_types,
-                $final,
-                $expand_generic,
-                $expand_templates,
-                $throw_on_unresolvable_constant,
-            ));
         }
 
         if ($return_type instanceof TObjectWithProperties) {

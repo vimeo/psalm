@@ -52,8 +52,6 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 $row_type = $input_array->getGenericArrayType()->type_params[1];
             } elseif ($input_array instanceof TArray) {
                 $row_type = $input_array->type_params[1];
-            } elseif ($input_array instanceof TList) {
-                $row_type = $input_array->type_param;
             }
 
             if ($row_type && $row_type->isSingle()) {

@@ -727,7 +727,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $has_valid_function_call_type = true;
                 } elseif ($var_type_part instanceof TString
                     || $var_type_part instanceof TArray
-                    || $var_type_part instanceof TList
                     || ($var_type_part instanceof TKeyedArray
                         && count($var_type_part->properties) === 2)
                 ) {

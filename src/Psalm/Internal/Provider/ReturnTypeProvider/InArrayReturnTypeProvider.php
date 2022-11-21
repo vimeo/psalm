@@ -65,10 +65,6 @@ class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $array_arg_type = $array_arg_type->getGenericArrayType();
         }
 
-        if ($array_arg_type instanceof TList) {
-            $array_arg_type = new TArray([Type::getInt(), $array_arg_type->type_param]);
-        }
-
         if (!$array_arg_type instanceof TArray) {
             return $bool;
         }

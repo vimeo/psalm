@@ -263,11 +263,9 @@ class AtomicTypeComparator
         }
 
         if (($input_type_part instanceof TArray
-                || $input_type_part instanceof TList
                 || $input_type_part instanceof TKeyedArray
                 || $input_type_part instanceof TClassStringMap)
             && ($container_type_part instanceof TArray
-                || $container_type_part instanceof TList
                 || $container_type_part instanceof TKeyedArray
                 || $container_type_part instanceof TClassStringMap)
         ) {
@@ -535,12 +533,9 @@ class AtomicTypeComparator
         if ($container_type_part instanceof TIterable) {
             if ($input_type_part instanceof TArray
                 || $input_type_part instanceof TKeyedArray
-                || $input_type_part instanceof TList
             ) {
                 if ($input_type_part instanceof TKeyedArray) {
                     $input_type_part = $input_type_part->getGenericArrayType();
-                } elseif ($input_type_part instanceof TList) {
-                    $input_type_part = new TArray([Type::getInt(), $input_type_part->type_param]);
                 }
 
                 $all_types_contain = true;
@@ -653,7 +648,6 @@ class AtomicTypeComparator
                 || $input_type_part instanceof TCallableString
                 || $input_type_part instanceof TArray
                 || $input_type_part instanceof TKeyedArray
-                || $input_type_part instanceof TList
                 || (
                     $input_type_part instanceof TNamedObject &&
                     $codebase->classOrInterfaceExists($input_type_part->value) &&

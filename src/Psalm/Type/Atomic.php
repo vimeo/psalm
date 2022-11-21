@@ -452,7 +452,6 @@ abstract class Atomic implements TypeNode
             || $this instanceof TCallableObject
             || $this instanceof TCallableString
             || $this instanceof TCallableArray
-            || $this instanceof TCallableList
             || $this instanceof TCallableKeyedArray
             || $this instanceof TClosure;
     }
@@ -462,8 +461,7 @@ abstract class Atomic implements TypeNode
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof TKeyedArray
-            || $this instanceof TList;
+            || $this instanceof TKeyedArray;
     }
 
     /**
@@ -476,9 +474,6 @@ abstract class Atomic implements TypeNode
         }
         if ($this instanceof TArray) {
             return new TIterable($this->type_params);
-        }
-        if ($this instanceof TList) {
-            return new TIterable([new Union([new TIntRange(0, null)]), $this->type_param]);
         }
         if ($this instanceof TKeyedArray) {
             return new TIterable([$this->getGenericKeyType(), $this->getGenericValueType()]);
@@ -505,8 +500,7 @@ abstract class Atomic implements TypeNode
     {
         return $this->hasCountableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof TKeyedArray
-            || $this instanceof TList;
+            || $this instanceof TKeyedArray;
     }
 
     /**
@@ -562,7 +556,6 @@ abstract class Atomic implements TypeNode
     {
         return $this instanceof TArray
             || $this instanceof TKeyedArray
-            || $this instanceof TList
             || $this instanceof TClassStringMap
             || $this->hasArrayAccessInterface($codebase)
             || ($this instanceof TNamedObject && $this->value === 'SimpleXMLElement');

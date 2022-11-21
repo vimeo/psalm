@@ -443,9 +443,16 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getList(): Union
+    public static function getList(?Union $of = null): Union
     {
-        $type = new TList(new Union([new TMixed]));
+        $type = new TKeyedArray(
+            [$of !== null
+                ? $of->setPossiblyUndefined(true)
+                : new Union([new TMixed()], ['possibly_undefined' => true])],
+            null,
+            [self::getInt(), $of],
+            true
+        );
 
         return new Union([$type]);
     }
@@ -453,12 +460,14 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getNonEmptyList(): Union
+    public static function getNonEmptyList(?Union $of = null): Union
     {
         $type = new TKeyedArray(
-            [self::getMixed()],
+            [$of !== null
+                ? $of->setPossiblyUndefined(false)
+                : new Union([new TMixed()], ['possibly_undefined' => false])],
             null,
-            [self::getInt(), self::getMixed()],
+            [self::getInt(), $of],
             true
         );
 

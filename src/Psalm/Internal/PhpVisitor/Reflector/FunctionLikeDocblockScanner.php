@@ -836,8 +836,6 @@ class FunctionLikeDocblockScanner
 
                 if ($array_type instanceof TKeyedArray) {
                     $new_param_type = $array_type->getGenericValueType();
-                } elseif ($array_type instanceof TList) {
-                    $new_param_type = $array_type->type_param;
                 } else {
                     $new_param_type = $array_type->type_params[1];
                 }

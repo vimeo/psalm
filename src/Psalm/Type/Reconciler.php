@@ -1111,7 +1111,6 @@ class Reconciler
                 if ($base_atomic_type instanceof TKeyedArray
                     || ($base_atomic_type instanceof TArray
                         && !$base_atomic_type->isEmptyArray())
-                    || $base_atomic_type instanceof TList
                     || $base_atomic_type instanceof TClassStringMap
                 ) {
                     $new_base_type = $existing_types[$base_key];

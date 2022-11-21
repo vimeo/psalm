@@ -93,10 +93,6 @@ class ArrayFunctionArgumentsAnalyzer
                 $array_arg_type = $array_arg_type->getGenericArrayType();
             }
 
-            if ($array_arg_type instanceof TList) {
-                $array_arg_type = new TArray([Type::getInt(), $array_arg_type->type_param]);
-            }
-
             $array_arg_types[] = $array_arg_type;
         }
 

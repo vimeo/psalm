@@ -66,8 +66,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
             ? $array_atomic_type
             : null;
 
@@ -78,9 +77,6 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         if ($first_arg_array instanceof TArray) {
             $inner_type = $first_arg_array->type_params[1];
             $key_type = $first_arg_array->type_params[0];
-        } elseif ($first_arg_array instanceof TList) {
-            $inner_type = $first_arg_array->type_param;
-            $key_type = Type::getInt();
         } else {
             $inner_type = $first_arg_array->getGenericValueType();
             $key_type = $first_arg_array->getGenericKeyType();

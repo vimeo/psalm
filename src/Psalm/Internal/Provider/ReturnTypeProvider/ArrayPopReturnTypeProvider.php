@@ -44,8 +44,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
             && !$first_arg_type->hasMixed()
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
         ? $array_atomic_type
         : null;
 
@@ -92,7 +91,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($codebase->config->ignore_internal_nullable_issues) {
                 $value_type->ignore_nullable_issues = true;
             }
-            
+
             $value_type = $value_type->freeze();
         }
 
