@@ -480,8 +480,9 @@
     </MoreSpecificReturnType>
   </file>
   <file src="src/Psalm/Internal/Type/SimpleAssertionReconciler.php">
-    <DeprecatedClass occurrences="9">
+    <DeprecatedClass occurrences="10">
       <code>TList::class</code>
+      <code>new TCallableList($type-&gt;type_param)</code>
       <code>new TList($type-&gt;type_params[1])</code>
       <code>new TList($type-&gt;type_params[1])</code>
       <code>new TNonEmptyList($array_atomic_type-&gt;type_param)</code>
