@@ -3684,16 +3684,9 @@ class AssertionFinder
                     || $atomic_type instanceof TKeyedArray
                 ) {
                     if ($atomic_type instanceof TKeyedArray) {
-                        $key_possibly_undefined = false;
-
-                        foreach ($atomic_type->properties as $property_type) {
-                            if ($property_type->possibly_undefined) {
-                                $key_possibly_undefined = true;
-                                break;
-                            }
-                        }
-
-                        $key_type = $atomic_type->getGenericKeyType($key_possibly_undefined);
+                        $key_type = $atomic_type->getGenericKeyType(
+                            !$atomic_type->allShapeKeysAlwaysDefined()
+                        );
                     } else {
                         $key_type = $atomic_type->type_params[0];
                     }
