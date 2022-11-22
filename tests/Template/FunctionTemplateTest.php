@@ -1657,7 +1657,8 @@ class FunctionTemplateTest extends TestCase
                         $n->normalize($value);
                     }
 
-                    normalizeField("foo", new StringNorm());'
+                    normalizeField("foo", new StringNorm());',
+                'php_version' => '8.0'
             ]
         ];
     }
