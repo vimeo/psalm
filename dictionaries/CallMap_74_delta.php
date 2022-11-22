@@ -46,8 +46,8 @@ return [
       'new' => ['resource|false', 'command'=>'string|array', 'descriptor_spec'=>'array', '&pipes'=>'resource[]', 'cwd='=>'?string', 'env_vars='=>'?array', 'options='=>'?array'],
     ],
     'strip_tags' => [
-      'old' => ['string', 'string'=>'string', 'allowed_tags='=>'?string'],
-      'new' => ['string', 'string'=>'string', 'allowed_tags='=>'string|null|list<non-empty-string>'],
+      'old' => ['string', 'string'=>'string', 'allowed_tags='=>'string'],
+      'new' => ['string', 'string'=>'string', 'allowed_tags='=>'string|list<non-empty-string>'],
     ],
   ],
   'removed' => [
