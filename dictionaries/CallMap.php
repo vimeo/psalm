@@ -13907,7 +13907,7 @@ return [
 'streamWrapper::unlink' => ['bool', 'path'=>'string'],
 'streamWrapper::url_stat' => ['array', 'path'=>'string', 'flags'=>'int'],
 'strftime' => ['string|false', 'format'=>'string', 'timestamp='=>'?int'],
-'strip_tags' => ['string', 'string'=>'string', 'allowed_tags='=>'string'],
+'strip_tags' => ['string', 'string'=>'string', 'allowed_tags='=>'string|list<non-empty-string>|null'],
 'stripcslashes' => ['string', 'string'=>'string'],
 'stripos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int'],
 'stripslashes' => ['string', 'string'=>'string'],
