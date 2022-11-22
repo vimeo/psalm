@@ -1658,6 +1658,8 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     normalizeField("foo", new StringNorm());',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0'
             ]
         ];
