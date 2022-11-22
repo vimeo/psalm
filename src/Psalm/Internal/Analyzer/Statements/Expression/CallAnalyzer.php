@@ -1096,10 +1096,6 @@ class CallAnalyzer
                                         $statements_analyzer->getCodebase(),
                                         $lower_bound->type,
                                         $bound_with_equality->type
-                                    ) && UnionTypeComparator::isContainedBy(
-                                        $statements_analyzer->getCodebase(),
-                                        $bound_with_equality->type,
-                                        $lower_bound->type
                                     )) {
                                         continue 2;
                                     }
