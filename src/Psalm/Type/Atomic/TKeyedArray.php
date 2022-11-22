@@ -16,7 +16,6 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function addslashes;
 use function count;

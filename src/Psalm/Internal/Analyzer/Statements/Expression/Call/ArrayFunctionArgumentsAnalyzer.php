@@ -283,9 +283,13 @@ class ArrayFunctionArgumentsAnalyzer
 
                             if ($was_list) {
                                 if ($arg_value_atomic_type instanceof TNonEmptyArray) {
-                                    $arg_value_atomic_type = Type::getNonEmptyListAtomic($arg_value_atomic_type->type_params[1]);
+                                    $arg_value_atomic_type = Type::getNonEmptyListAtomic(
+                                        $arg_value_atomic_type->type_params[1]
+                                    );
                                 } else {
-                                    $arg_value_atomic_type = Type::getListAtomic($arg_value_atomic_type->type_params[1]);
+                                    $arg_value_atomic_type = Type::getListAtomic(
+                                        $arg_value_atomic_type->type_params[1]
+                                    );
                                 }
                             }
 
