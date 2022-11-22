@@ -44,7 +44,6 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -52,7 +51,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -688,11 +686,11 @@ class TypeParser
         }
 
         if ($generic_type_value === 'list') {
-            return new TList($generic_params[0], $from_docblock);
+            return Type::getListAtomic($generic_params[0], $from_docblock);
         }
 
         if ($generic_type_value === 'non-empty-list') {
-            return new TNonEmptyList($generic_params[0], null, null, $from_docblock);
+            return Type::getNonEmptyListAtomic($generic_params[0], $from_docblock);
         }
 
         if ($generic_type_value === 'class-string'

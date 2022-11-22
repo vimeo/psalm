@@ -60,11 +60,11 @@ class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         if (!$array_type->type_params[0]->hasString()) {
             if ($array_type->type_params[1]->isString()) {
-                $array_type = new TList(Type::getString());
+                $array_type = Type::getListAtomic(Type::getString());
             } elseif ($array_type->type_params[1]->isInt()) {
-                $array_type = new TList(Type::getInt());
+                $array_type = Type::getListAtomic(Type::getInt());
             } else {
-                $array_type = new TList(Type::getMixed());
+                $array_type = Type::getListAtomic(Type::getMixed());
             }
         }
 

@@ -11,7 +11,6 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -91,7 +90,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                     && ((string) $second_arg_type === 'false')
                 ) {
                     return new Union([
-                        new TList($value_type),
+                        Type::getListAtomic($value_type),
                     ]);
                 }
 

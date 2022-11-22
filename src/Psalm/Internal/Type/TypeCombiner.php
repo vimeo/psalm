@@ -1555,7 +1555,7 @@ class TypeCombiner
                     $generic_type_params[1]
                 );
             } elseif ($combination->all_arrays_lists) {
-                $array_type = new TList($generic_type_params[1]);
+                $array_type = Type::getListAtomic($generic_type_params[1]);
             } else {
                 $array_type = new TArray($generic_type_params);
             }

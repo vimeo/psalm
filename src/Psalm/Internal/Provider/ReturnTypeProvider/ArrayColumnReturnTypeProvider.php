@@ -133,8 +133,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 : new TArray([$result_key_type, $result_element_type ?? Type::getMixed()]);
         } else {
             $type = $have_at_least_one_res ?
-                new TNonEmptyList($result_element_type ?? Type::getMixed())
-                : new TList($result_element_type ?? Type::getMixed());
+                Type::getNonEmptyListAtomic($result_element_type ?? Type::getMixed())
+                : Type::getListAtomic($result_element_type ?? Type::getMixed());
         }
 
         return new Union([$type]);

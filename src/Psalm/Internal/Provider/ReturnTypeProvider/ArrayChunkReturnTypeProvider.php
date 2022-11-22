@@ -8,9 +8,7 @@ use Psalm\Internal\Type\ArrayType;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
 use function count;
@@ -43,16 +41,16 @@ class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 && (string) $preserve_keys_arg_type !== 'false';
 
             return new Union([
-                new TList(
+                Type::getListAtomic(
                     new Union([
                         $preserve_keys
                             ? new TNonEmptyArray([$array_type->key, $array_type->value])
-                            : new TNonEmptyList($array_type->value)
+                            : Type::getNonEmptyListAtomic($array_type->value)
                     ])
                 )
             ]);
         }
 
-        return new Union([new TList(Type::getArray())]);
+        return new Union([Type::getListAtomic(Type::getArray())]);
     }
 }

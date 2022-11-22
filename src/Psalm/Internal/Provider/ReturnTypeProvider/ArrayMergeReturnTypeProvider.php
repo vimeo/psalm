@@ -255,12 +255,12 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             if ($all_int_offsets) {
                 if ($any_nonempty) {
                     return new Union([
-                        new TNonEmptyList($inner_value_type),
+                        Type::getNonEmptyListAtomic($inner_value_type),
                     ]);
                 }
 
                 return new Union([
-                    new TList($inner_value_type),
+                    Type::getListAtomic($inner_value_type),
                 ]);
             }
 

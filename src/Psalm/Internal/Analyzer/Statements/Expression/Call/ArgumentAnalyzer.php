@@ -59,7 +59,6 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
 use function count;
@@ -1445,9 +1444,9 @@ class ArgumentAnalyzer
                     && $unpacked_atomic_array->is_list
                 ) {
                     if ($unpacked_atomic_array->isNonEmpty()) {
-                        $unpacked_atomic_array = new TNonEmptyList($input_type);
+                        $unpacked_atomic_array = Type::getNonEmptyListAtomic($input_type);
                     } else {
-                        $unpacked_atomic_array = new TList($input_type);
+                        $unpacked_atomic_array = Type::getListAtomic($input_type);
                     }
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);

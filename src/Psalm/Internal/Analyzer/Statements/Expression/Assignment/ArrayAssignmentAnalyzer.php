@@ -533,7 +533,7 @@ class ArrayAssignmentAnalyzer
                 && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)
             ) {
                 if ($parent_type->hasList()) {
-                    $array_atomic_type = new TNonEmptyList(
+                    $array_atomic_type = Type::getNonEmptyListAtomic(
                         $value_type
                     );
                 } elseif ($parent_type->hasClassStringMap()
@@ -591,7 +591,7 @@ class ArrayAssignmentAnalyzer
                 ]);
             }
         } else {
-            $array_atomic_type = new TNonEmptyList($value_type);
+            $array_atomic_type = Type::getNonEmptyListAtomic($value_type);
         }
 
         $from_countable_object_like = false;
@@ -629,7 +629,7 @@ class ArrayAssignmentAnalyzer
                         ]);
                     }
                 } elseif ($array_atomic_type instanceof TList) {
-                    $array_atomic_type = new TNonEmptyList(
+                    $array_atomic_type = Type::getNonEmptyListAtomic(
                         $array_atomic_type->type_param
                     );
                 } else {
@@ -881,7 +881,7 @@ class ArrayAssignmentAnalyzer
             } else {
                 if (!$current_dim) {
                     $array_assignment_type = new Union([
-                        new TList($current_type),
+                        Type::getListAtomic($current_type),
                     ]);
                 } else {
                     $key_type = $statements_analyzer->node_data->getType($current_dim);

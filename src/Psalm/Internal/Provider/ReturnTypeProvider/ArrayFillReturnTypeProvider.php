@@ -8,9 +8,7 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
 /**
@@ -48,14 +46,14 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 && self::isPositiveNumericType($second_arg_type)
             ) {
                 return new Union([
-                    new TNonEmptyList(
+                    Type::getNonEmptyListAtomic(
                         $value_type_from_third_arg
                     )
                 ]);
             }
 
             return new Union([
-                new TList(
+                Type::getListAtomic(
                     $value_type_from_third_arg
                 )
             ]);

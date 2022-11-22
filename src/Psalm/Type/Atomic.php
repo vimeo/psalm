@@ -262,10 +262,10 @@ abstract class Atomic implements TypeNode
                 ]);
 
             case 'list':
-                return new TList(Type::getMixed(false, $from_docblock));
+                return Type::getListAtomic(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-list':
-                return new TNonEmptyList(Type::getMixed(false, $from_docblock));
+                return Type::getNonEmptyListAtomic(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-string':
                 return new TNonEmptyString();

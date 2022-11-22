@@ -87,7 +87,9 @@ class ArrayTypeComparator
             && $input_type_part instanceof TKeyedArray
         ) {
             if ($input_type_part->is_list) {
-                $input_type_part = $input_type_part->getList();
+                $input_type_part = $input_type_part->isNonEmpty()
+                    ? Type::getNonEmptyListAtomic($input_type_part->getGenericValueType())
+                    : Type::getListAtomic($input_type_part->getGenericValueType());
             } else {
                 return false;
             }
@@ -145,7 +147,9 @@ class ArrayTypeComparator
 
         if ($container_type_part instanceof TKeyedArray) {
             if ($container_type_part->is_list) {
-                $container_type_part = $container_type_part->getList();
+                $container_type_part = $container_type_part->isNonEmpty()
+                    ? Type::getNonEmptyListAtomic($container_type_part->getGenericValueType())
+                    : Type::getListAtomic($container_type_part->getGenericValueType());
 
                 return self::isContainedBy(
                     $codebase,

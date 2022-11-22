@@ -65,7 +65,7 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         $arr_type = new Union([
-            new TList(
+            Type::getListAtomic(
                 $key_type
             ),
         ]);

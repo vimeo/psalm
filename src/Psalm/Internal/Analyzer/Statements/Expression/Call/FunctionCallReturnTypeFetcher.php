@@ -503,7 +503,7 @@ class FunctionCallReturnTypeFetcher
                     ]);
 
                     $call_map_return_type = new Union([
-                        new TNonEmptyList(
+                        Type::getNonEmptyListAtomic(
                             $string_type
                         ),
                         new TFalse,

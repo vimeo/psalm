@@ -14,6 +14,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
@@ -442,21 +443,63 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getList(): Union
+    public static function getList(?Union $of = null, bool $from_docblock = false): Union
     {
-        $type = new TList(new Union([new TMixed]));
-
-        return new Union([$type]);
+        return new Union([self::getListAtomic($of ?? self::getMixed($from_docblock), $from_docblock)]);
     }
 
     /**
      * @psalm-pure
      */
-    public static function getNonEmptyList(): Union
+    public static function getNonEmptyList(?Union $of = null, bool $from_docblock = false): Union
     {
-        $type = new TNonEmptyList(new Union([new TMixed]));
+        return new Union([self::getNonEmptyListAtomic($of ?? self::getMixed($from_docblock), $from_docblock)]);
+    }
 
-        return new Union([$type]);
+    /**
+     * @psalm-pure
+     */
+    public static function getListAtomic(Union $of, bool $from_docblock = false): Atomic
+    {
+        // The following code will be uncommented in Psalm 5.1
+        //return new TKeyedArray(
+        //    [$of->setPossiblyUndefined(true)],
+        //    null,
+        //    [self::getInt(), $of],
+        //    true
+        //);
+        return new TList($of, $from_docblock);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getNonEmptyListAtomic(Union $of, bool $from_docblock = false): Atomic
+    {
+        // The following code will be uncommented in Psalm 5.1
+        //return new TKeyedArray(
+        //    [$of->setPossiblyUndefined(false)],
+        //    null,
+        //    [self::getInt(), $of],
+        //    true
+        //);
+        return new TNonEmptyList($of, $from_docblock);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getCallableListAtomic(Union $of, bool $from_docblock = false): Atomic
+    {
+        // The following code will be uncommented in Psalm 5.1
+        //$of = $of->setPossiblyUndefined(false);
+        //return new TCallableKeyedArray(
+        //    [$of, $of],
+        //    null,
+        //    [self::getInt(), $of],
+        //    true
+        //);
+        return new TCallableList($of, $from_docblock);
     }
 
     /**
