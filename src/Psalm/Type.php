@@ -483,7 +483,7 @@ abstract class Type
         //    [self::getInt(), $of],
         //    true
         //);
-        return new TNonEmptyList($of, $from_docblock);
+        return new TNonEmptyList($of, null, null, $from_docblock);
     }
 
     /**
@@ -499,7 +499,7 @@ abstract class Type
         //    [self::getInt(), $of],
         //    true
         //);
-        return new TCallableList($of, $from_docblock);
+        return new TCallableList($of, null, null, $from_docblock);
     }
 
     /**

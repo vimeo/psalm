@@ -1139,6 +1139,7 @@ class ArrayFetchAnalyzer
                         $from_empty_array ? null : [$fallback_key_type, $fallback_value_type],
                     );
                 } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
+                    /** @var TNonEmptyList */
                     $type = Type::getNonEmptyListAtomic($replacement_type);
                     return;
                 }
@@ -1665,6 +1666,7 @@ class ArrayFetchAnalyzer
                         ], $property_count);
                     } else {
                         if (!$stmt->dim && $type->is_list) {
+                            /** @var TList */
                             $type = Type::getListAtomic($generic_params);
                         } else {
                             $type = new TArray([

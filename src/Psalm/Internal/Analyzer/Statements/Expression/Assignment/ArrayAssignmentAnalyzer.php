@@ -533,6 +533,7 @@ class ArrayAssignmentAnalyzer
                 && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)
             ) {
                 if ($parent_type->hasList()) {
+                    /** @var TNonEmptyList */
                     $array_atomic_type = Type::getNonEmptyListAtomic(
                         $value_type
                     );
@@ -591,6 +592,7 @@ class ArrayAssignmentAnalyzer
                 ]);
             }
         } else {
+            /** @var TNonEmptyList */
             $array_atomic_type = Type::getNonEmptyListAtomic($value_type);
         }
 
@@ -629,6 +631,7 @@ class ArrayAssignmentAnalyzer
                         ]);
                     }
                 } elseif ($array_atomic_type instanceof TList) {
+                    /** @var TNonEmptyList */
                     $array_atomic_type = Type::getNonEmptyListAtomic(
                         $array_atomic_type->type_param
                     );

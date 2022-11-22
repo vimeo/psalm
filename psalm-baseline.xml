@@ -37,11 +37,6 @@
       <code>$uninitialized_variables[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Internal/Analyzer/FunctionLikeAnalyzer.php">
-    <DeprecatedClass occurrences="1">
-      <code>new TList($param_type)</code>
-    </DeprecatedClass>
-  </file>
   <file src="src/Psalm/Internal/Analyzer/ProjectAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="4">
       <code>$destination_parts[1]</code>
@@ -75,12 +70,6 @@
       <code>$switch_scope-&gt;leftover_statements[0]</code>
       <code>$traverser-&gt;traverse([$switch_condition])[0]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/ArrayAnalyzer.php">
-    <DeprecatedClass occurrences="2">
-      <code>new TList($item_value_type ?? Type::getMixed())</code>
-      <code>new TNonEmptyList($item_value_type ?? Type::getMixed())</code>
-    </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssertionFinder.php">
     <DeprecatedClass occurrences="1">
@@ -118,9 +107,10 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/ArrayAssignmentAnalyzer.php">
-    <DeprecatedClass occurrences="4">
-      <code>new TList($current_type)</code>
-      <code>new TNonEmptyList($value_type)</code>
+    <DeprecatedClass occurrences="3">
+      <code>$array_atomic_type</code>
+      <code>$array_atomic_type</code>
+      <code>$array_atomic_type</code>
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/ArithmeticOpAnalyzer.php">
@@ -133,13 +123,11 @@
     <ComplexMethod occurrences="1">
       <code>verifyType</code>
     </ComplexMethod>
-    <DeprecatedClass occurrences="6">
+    <DeprecatedClass occurrences="4">
       <code>$array_type</code>
       <code>$unpacked_atomic_array</code>
       <code>TKeyedArray|TArray|TList|TClassStringMap</code>
       <code>TKeyedArray|TArray|TList|TClassStringMap|null</code>
-      <code>new TList($input_type)</code>
-      <code>new TNonEmptyList($input_type)</code>
     </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$non_existent_method_ids[0]</code>
@@ -157,24 +145,11 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArrayFunctionArgumentsAnalyzer.php">
-    <DeprecatedClass occurrences="17">
+    <DeprecatedClass occurrences="4">
       <code>$array_arg_type</code>
       <code>$array_type</code>
       <code>$array_type</code>
       <code>$replacement_array_type</code>
-      <code>new TList($arg_value_atomic_type-&gt;type_params[1])</code>
-      <code>new TList($array_atomic_type-&gt;type_param)</code>
-      <code>new TList($array_type-&gt;type_params[1])</code>
-      <code>new TList($array_type-&gt;type_params[1])</code>
-      <code>new TList($replacement_array_type-&gt;type_params[1])</code>
-      <code>new TList(Type::getNever())</code>
-      <code>new TList(Type::getNever())</code>
-      <code>new TNonEmptyList($arg_value_atomic_type-&gt;type_params[1])</code>
-      <code>new TNonEmptyList($arg_value_type)</code>
-      <code>new TNonEmptyList($array_type-&gt;getGenericValueType())</code>
-      <code>new TNonEmptyList($array_type-&gt;type_params[1])</code>
-      <code>new TNonEmptyList($array_type-&gt;type_params[1])</code>
-      <code>new TNonEmptyList($replacement_array_type-&gt;type_params[1])</code>
     </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="4">
       <code>$args[0]</code>
@@ -188,9 +163,6 @@
       <code>$parts[1]</code>
       <code>$stmt-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallReturnTypeFetcher.php">
-    <DeprecatedClass occurrences="1"/>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/MethodCallAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="6">
@@ -212,10 +184,10 @@
     <DeprecatedClass occurrences="6">
       <code>$array_type</code>
       <code>$array_type</code>
+      <code>$type</code>
+      <code>$type</code>
       <code>TArray|TKeyedArray|TList|TClassStringMap</code>
       <code>TList</code>
-      <code>new TList($generic_params)</code>
-      <code>new TNonEmptyList($replacement_type)</code>
     </DeprecatedClass>
     <ReferenceConstraintViolation occurrences="3">
       <code>$stmt_type</code>
@@ -232,18 +204,6 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$invalid_fetch_types[0]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/VariableFetchAnalyzer.php">
-    <DeprecatedClass occurrences="3">
-      <code>new TList(Type::getNonEmptyString())</code>
-      <code>new TNonEmptyList(Type::getString())</code>
-      <code>new TNonEmptyList(Type::getString())</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/SimpleTypeInferer.php">
-    <DeprecatedClass occurrences="1">
-      <code>new TNonEmptyList($item_value_type)</code>
-    </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/YieldAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
@@ -380,77 +340,9 @@
       <code>$cs[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayChunkReturnTypeProvider.php">
-    <DeprecatedClass occurrences="3">
-      <code>new TList(Type::getArray())</code>
-      <code>new TNonEmptyList($array_type-&gt;value)</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayColumnReturnTypeProvider.php">
-    <DeprecatedClass occurrences="2">
-      <code>new TList($result_element_type ?? Type::getMixed())</code>
-      <code>new TNonEmptyList($result_element_type ?? Type::getMixed())</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayFillReturnTypeProvider.php">
-    <DeprecatedClass occurrences="2"/>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayFilterReturnTypeProvider.php">
-    <DeprecatedClass occurrences="1"/>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayMapReturnTypeProvider.php">
-    <DeprecatedClass occurrences="2"/>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayMergeReturnTypeProvider.php">
-    <DeprecatedClass occurrences="2">
-      <code>new TList($inner_value_type)</code>
-      <code>new TNonEmptyList($inner_value_type)</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayPadReturnTypeProvider.php">
-    <DeprecatedClass occurrences="2">
-      <code>new TList($value_type)</code>
-      <code>new TNonEmptyList($value_type)</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayRandReturnTypeProvider.php">
-    <DeprecatedClass occurrences="1"/>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArraySliceReturnTypeProvider.php">
-    <DeprecatedClass occurrences="1">
-      <code>new TList($return_atomic_type-&gt;type_params[1])</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArraySpliceReturnTypeProvider.php">
-    <DeprecatedClass occurrences="3">
-      <code>new TList(Type::getInt())</code>
-      <code>new TList(Type::getMixed())</code>
-      <code>new TList(Type::getString())</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ExplodeReturnTypeProvider.php">
-    <DeprecatedClass occurrences="6">
-      <code>new TList($inner_type)</code>
-      <code>new TList($inner_type)</code>
-      <code>new TList($inner_type)</code>
-      <code>new TNonEmptyList($inner_type)</code>
-      <code>new TNonEmptyList($inner_type)</code>
-      <code>new TNonEmptyList($inner_type)</code>
-    </DeprecatedClass>
-  </file>
   <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/InArrayReturnTypeProvider.php">
     <DeprecatedClass occurrences="1">
       <code>$array_arg_type</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/IteratorToArrayReturnTypeProvider.php">
-    <DeprecatedClass occurrences="1">
-      <code>new TList($value_type)</code>
-    </DeprecatedClass>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/PdoStatementReturnTypeProvider.php">
-    <DeprecatedClass occurrences="2">
-      <code>new TList(Type::getScalar())</code>
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Scanner/PhpStormMetaScanner.php">
@@ -460,7 +352,11 @@
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/ArrayTypeComparator.php">
-    <DeprecatedClass occurrences="2">
+    <DeprecatedClass occurrences="6">
+      <code>$container_type_part</code>
+      <code>$container_type_part</code>
+      <code>$input_type_part</code>
+      <code>$input_type_part</code>
       <code>TArray|TKeyedArray|TList|TClassStringMap</code>
       <code>TArray|TKeyedArray|TList|TClassStringMap</code>
     </DeprecatedClass>
@@ -480,15 +376,8 @@
     </MoreSpecificReturnType>
   </file>
   <file src="src/Psalm/Internal/Type/SimpleAssertionReconciler.php">
-    <DeprecatedClass occurrences="10">
+    <DeprecatedClass occurrences="3">
       <code>TList::class</code>
-      <code>new TCallableList($type-&gt;type_param)</code>
-      <code>new TList($type-&gt;type_params[1])</code>
-      <code>new TList($type-&gt;type_params[1])</code>
-      <code>new TNonEmptyList($array_atomic_type-&gt;type_param)</code>
-      <code>new TNonEmptyList($type-&gt;type_param)</code>
-      <code>new TNonEmptyList($type-&gt;type_param)</code>
-      <code>new TNonEmptyList($type-&gt;type_params[1])</code>
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php">
@@ -498,9 +387,7 @@
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
-    <DeprecatedClass occurrences="2">
-      <code>new TList($generic_type_params[1])</code>
-    </DeprecatedClass>
+    <DeprecatedClass occurrences="1"/>
     <PossiblyUndefinedIntArrayOffset occurrences="6">
       <code>$combination-&gt;array_type_params[1]</code>
       <code>$combination-&gt;array_type_params[1]</code>
@@ -511,10 +398,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/TypeParser.php">
-    <DeprecatedClass occurrences="2">
-      <code>new TList($generic_params[0], $from_docblock)</code>
-      <code>new TNonEmptyList($generic_params[0], null, null, $from_docblock)</code>
-    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="8">
       <code>$intersection_types[0]</code>
       <code>$parse_tree-&gt;children[0]</code>
@@ -540,16 +423,13 @@
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Type.php">
-    <DeprecatedClass occurrences="2">
-      <code>new TList(new Union([new TMixed]))</code>
-      <code>new TNonEmptyList(new Union([new TMixed]))</code>
+    <DeprecatedClass occurrences="3">
+      <code>new TCallableList($of, null, null, $from_docblock)</code>
+      <code>new TList($of, $from_docblock)</code>
+      <code>new TNonEmptyList($of, null, null, $from_docblock)</code>
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Type/Atomic.php">
-    <DeprecatedClass occurrences="2">
-      <code>new TList(Type::getMixed(false, $from_docblock))</code>
-      <code>new TNonEmptyList(Type::getMixed(false, $from_docblock))</code>
-    </DeprecatedClass>
     <ImpureMethodCall occurrences="12">
       <code>classExtendsOrImplements</code>
       <code>classExtendsOrImplements</code>
@@ -621,11 +501,6 @@
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Type/Atomic/TKeyedArray.php">
-    <DeprecatedClass occurrences="3">
-      <code>TList</code>
-      <code>new TList($this-&gt;getGenericValueType())</code>
-      <code>new TNonEmptyList($this-&gt;getGenericValueType())</code>
-    </DeprecatedClass>
     <ImpureMethodCall occurrences="10">
       <code>combine</code>
       <code>combine</code>
