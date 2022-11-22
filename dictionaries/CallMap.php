@@ -1696,7 +1696,7 @@ return [
 'curl_share_strerror' => ['?string', 'error_code'=>'int'],
 'curl_strerror' => ['?string', 'error_code'=>'int'],
 'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
-'curl_unescape' => ['string|false', 'handle'=>'CurlShareHandle', 'string'=>'string'],
+'curl_unescape' => ['string|false', 'handle'=>'CurlHandle', 'string'=>'string'],
 'curl_version' => ['array', 'version='=>'int'],
 'CURLFile::__construct' => ['void', 'filename'=>'string', 'mimetype='=>'string', 'postfilename='=>'string'],
 'CURLFile::__wakeup' => ['void'],

@@ -347,7 +347,7 @@ return [
     ],
     'curl_unescape' => [
       'old' => ['string|false', 'ch'=>'resource', 'string'=>'string'],
-      'new' => ['string|false', 'handle'=>'CurlShareHandle', 'string'=>'string'],
+      'new' => ['string|false', 'handle'=>'CurlHandle', 'string'=>'string'],
     ],
     'date' => [
       'old' => ['string', 'format'=>'string', 'timestamp='=>'int'],
