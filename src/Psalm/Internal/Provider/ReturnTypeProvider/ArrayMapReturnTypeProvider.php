@@ -100,7 +100,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 /** @param non-empty-array<?Union> $sub */
                 function (array $sub) use ($null) {
                     $sub = array_map(
-                        fn (?Union $t) => $t ?? $null,
+                        fn(?Union $t) => $t ?? $null,
                         $sub
                     );
                     return new Union([new TKeyedArray($sub, null, null, true)]);

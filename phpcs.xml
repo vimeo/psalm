@@ -245,4 +245,17 @@
             <property name="allowNested" value="true"/>
         </properties>
     </rule>
+
+    <!-- 
+        Forces uniform arrow function style
+        https://github.com/slevomat/coding-standard/blob/master/doc/functions.md#slevomatcodingstandardfunctionsarrowfunctiondeclaration-
+    -->
+    <rule ref="SlevomatCodingStandard.Functions.ArrowFunctionDeclaration">
+        <properties>
+            <property name="spacesCountAfterKeyword" value="0"/>
+            <property name="spacesCountBeforeArrow" value="1"/>
+            <property name="spacesCountAfterArrow" value="1"/>
+            <property name="allowMultiLine" value="true"/>
+        </properties>
+    </rule>
 </ruleset>
