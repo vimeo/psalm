@@ -3361,7 +3361,6 @@ return [
     'IntlDateFormatter::setLenient' => ['bool', 'lenient'=>'bool'],
     'IntlDateFormatter::setPattern' => ['bool', 'pattern'=>'string'],
     'IntlDateFormatter::setTimeZone' => ['null|false', 'zone'=>'IntlTimeZone|DateTimeZone|string|null'],
-    'IntlDateFormatter::setTimeZoneId' => ['bool', 'zone'=>'string', 'fmt='=>'IntlDateFormatter'],
     'IntlException::__clone' => ['void'],
     'IntlException::__construct' => ['void'],
     'IntlException::__toString' => ['string'],
