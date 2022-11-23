@@ -89,6 +89,18 @@ return [
         'old' => ['string', 'which='=>'int'],
         'new' => ['string|false', 'type='=>'int'],
     ],
+    'IntlDateFormatter::getPattern' => [
+        'old' => ['string'],
+        'new' => ['string|false'],
+    ],
+    'IntlDateFormatter::getTimeType' => [
+        'old' => ['int'],
+        'new' => ['int|false'],
+    ],
+    'IntlDateFormatter::getTimeZoneId' => [
+        'old' => ['string'],
+        'new' => ['string|false'],
+    ],
     'IntlDateFormatter::localtime' => [
         'old' => ['array', 'value'=>'string', '&rw_position='=>'int'],
         'new' => ['array|false', 'string'=>'string', '&rw_offset='=>'int'],
@@ -100,6 +112,10 @@ return [
     'IntlDateFormatter::setCalendar' => [
         'old' => ['bool', 'which'=>'IntlCalendar|int|null'],
         'new' => ['bool', 'calendar'=>'IntlCalendar|int|null'],
+    ],
+    'IntlDateFormatter::setLenient' => [
+        'old' => ['bool', 'lenient'=>'bool'],
+        'new' => ['void', 'lenient'=>'bool'],
     ],
     'IntlDateFormatter::setTimeZone' => [
         'old' => ['null|false', 'zone'=>'IntlTimeZone|DateTimeZone|string|null'],
