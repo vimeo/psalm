@@ -649,7 +649,7 @@ class SimpleAssertionReconciler extends Reconciler
                             $existing_var_type->removeType('array');
                             $existing_var_type->addType($array_atomic_type->setProperties(
                                 array_map(
-                                    fn (Union $union) => $union->setPossiblyUndefined(false),
+                                    fn(Union $union) => $union->setPossiblyUndefined(false),
                                     $array_atomic_type->properties
                                 )
                             ));
@@ -740,7 +740,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type->setProperties(
                             array_map(
-                                fn (Union $union) => $union->setPossiblyUndefined(false),
+                                fn(Union $union) => $union->setPossiblyUndefined(false),
                                 $array_atomic_type->properties
                             )
                         ));
