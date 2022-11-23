@@ -81,7 +81,7 @@ class Clause
     /** @var array<string, bool> */
     public $redefined_vars = [];
 
-    /** @var string|int */
+    /** @var string */
     public $hash;
 
     /**
