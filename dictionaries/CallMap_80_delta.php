@@ -1393,6 +1393,10 @@ return [
       'old' => ['string|false', 'format'=>'string', 'timestamp='=>'int'],
       'new' => ['string|false', 'format'=>'string', 'timestamp='=>'?int'],
     ],
+    'strip_tags' => [
+      'old' => ['string', 'string'=>'string', 'allowed_tags='=>'string|list<non-empty-string>'],
+      'new' => ['string', 'string'=>'string', 'allowed_tags='=>'string|list<non-empty-string>|null'],
+    ],
     'stripos' => [
       'old' => ['int|false', 'haystack'=>'string', 'needle'=>'string|int', 'offset='=>'int'],
       'new' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int'],
