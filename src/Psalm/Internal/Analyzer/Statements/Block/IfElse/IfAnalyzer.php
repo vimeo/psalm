@@ -66,8 +66,7 @@ class IfAnalyzer
 
         $active_if_types = [];
 
-        $reconcilable_if_types = Algebra::getTruthsFromFormula(
-            $if_context->clauses,
+        $reconcilable_if_types = $if_context->clauses->getTruthsFromFormula(
             spl_object_id($stmt->cond),
             $cond_referenced_var_ids,
             $active_if_types
@@ -89,7 +88,7 @@ class IfAnalyzer
             );
 
             $omit_keys = array_combine($omit_keys, $omit_keys);
-            $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($outer_context->clauses));
+            $omit_keys = array_diff_key($omit_keys, $outer_context->clauses->getTruthsFromFormula());
 
             $cond_referenced_var_ids = array_diff_key(
                 $cond_referenced_var_ids,

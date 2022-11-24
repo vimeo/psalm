@@ -27,6 +27,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -1798,13 +1799,13 @@ class AssignmentAnalyzer
                         $right_clauses
                     );
 
-                    $assignment_clauses = Algebra::combineOredClauses(
-                        [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
+                    $assignment_clauses = new ClauseConjunction([new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)]);
+                    $assignment_clauses = $assignment_clauses->combineOrredClauses(
                         $right_clauses,
                         $cond_object_id
                     );
 
-                    $context->clauses = [...$context->clauses, ...$assignment_clauses];
+                    $context->clauses = $context->clauses->and($assignment_clauses);
                 }
             }
         } else {

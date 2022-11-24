@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type\Reconciler;
@@ -117,12 +118,11 @@ class AndAnalyzer
             }
         }
 
-        $simplified_clauses = Algebra::simplifyCNF($context_clauses);
+        $simplified_clauses = ClauseConjunction::simplified($context_clauses);
 
         $active_left_assertions = [];
 
-        $left_type_assertions = Algebra::getTruthsFromFormula(
-            $simplified_clauses,
+        $left_type_assertions = $simplified_clauses->getTruthsFromFormula(
             $left_cond_id,
             $left_referenced_var_ids,
             $active_left_assertions
@@ -199,7 +199,7 @@ class AndAnalyzer
             );
 
             $if_body_context->reconciled_expression_clauses = [
-                ...$if_body_context->reconciled_expression_clauses,
+                ...$if_body_context->reconciled_expression_clauses->clauses,
                 ...array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,

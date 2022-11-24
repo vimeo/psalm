@@ -141,11 +141,9 @@ class SwitchAnalyzer
         $all_options_matched = $has_default;
 
         if (!$has_default && $switch_scope->negated_clauses && $switch_var_id) {
-            $entry_clauses = Algebra::simplifyCNF(
-                [...$original_context->clauses, ...$switch_scope->negated_clauses]
-            );
+            $entry_clauses = $original_context->clauses->andSimplified($switch_scope->negated_clauses);
 
-            $reconcilable_if_types = Algebra::getTruthsFromFormula($entry_clauses);
+            $reconcilable_if_types = $entry_clauses->getTruthsFromFormula();
 
             // if the if has an || in the conditional, we cannot easily reason about it
             if ($reconcilable_if_types && isset($reconcilable_if_types[$switch_var_id])) {

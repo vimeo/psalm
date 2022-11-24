@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Node\Expr\VirtualBooleanNot;
@@ -150,7 +151,7 @@ class OrAnalyzer
         );
 
         try {
-            $negated_left_clauses = Algebra::negateFormula($left_clauses);
+            $negated_left_clauses = $left_clauses->getNegation();
         } catch (ComplicatedExpressionException $e) {
             try {
                 $negated_left_clauses = FormulaGenerator::getFormula(
@@ -172,7 +173,7 @@ class OrAnalyzer
 
             $negated_left_clauses = array_values(
                 array_filter(
-                    $negated_left_clauses,
+                    $negated_left_clauses->clauses,
                     static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
                 )
             );
@@ -183,16 +184,15 @@ class OrAnalyzer
             ) {
                 $negated_left_clauses = [];
             }
+
+            $negated_left_clauses = new ClauseConjunction($negated_left_clauses);
         }
 
-        $clauses_for_right_analysis = Algebra::simplifyCNF(
-            [...$context->clauses, ...$negated_left_clauses]
-        );
+        $clauses_for_right_analysis = $context->clauses->andSimplified($negated_left_clauses);
 
         $active_negated_type_assertions = [];
 
-        $negated_type_assertions = Algebra::getTruthsFromFormula(
-            $clauses_for_right_analysis,
+        $negated_type_assertions = $clauses_for_right_analysis->getTruthsFromFormula(
             $left_cond_id,
             $left_referenced_var_ids,
             $active_negated_type_assertions
@@ -288,14 +288,11 @@ class OrAnalyzer
             $right_assigned_var_ids
         )[0];
 
-        $combined_right_clauses = Algebra::simplifyCNF(
-            [...$clauses_for_right_analysis, ...$right_clauses]
-        );
+        $combined_right_clauses = $clauses_for_right_analysis->andSimplified($right_clauses);
 
         $active_right_type_assertions = [];
 
-        $right_type_assertions = Algebra::getTruthsFromFormula(
-            $combined_right_clauses,
+        $right_type_assertions = $combined_right_clauses->getTruthsFromFormula(
             $right_cond_id,
             $right_referenced_var_ids,
             $active_right_type_assertions

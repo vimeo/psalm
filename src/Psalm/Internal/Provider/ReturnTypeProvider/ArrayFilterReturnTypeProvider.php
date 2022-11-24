@@ -10,6 +10,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
@@ -276,11 +277,10 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                                 $codebase
                             );
                         } catch (ComplicatedExpressionException $e) {
-                            $filter_clauses = [];
+                            $filter_clauses = new ClauseConjunction([]);
                         }
 
-                        $assertions = Algebra::getTruthsFromFormula(
-                            $filter_clauses,
+                        $assertions = $filter_clauses->getTruthsFromFormula(
                             $cond_object_id
                         );
 

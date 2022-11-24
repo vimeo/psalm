@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
@@ -30,19 +31,17 @@ class AlgebraAnalyzer
      * if ($a) { }
      * elseif ($a) { }
      *
-     * @param  list<Clause>   $formula_1
-     * @param  list<Clause>   $formula_2
      * @param  array<string, int>  $new_assigned_var_ids
      */
     public static function checkForParadox(
-        array $formula_1,
-        array $formula_2,
+        ClauseConjunction $formula_1,
+        ClauseConjunction $formula_2,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
         array $new_assigned_var_ids
     ): void {
         try {
-            $negated_formula2 = Algebra::negateFormula($formula_2);
+            $negated_formula2 = $formula_2->getNegation();
         } catch (ComplicatedExpressionException $e) {
             return;
         }
@@ -109,7 +108,7 @@ class AlgebraAnalyzer
                 }
 
                 if ($negated_clause_2_contains_1_possibilities) {
-                    $mini_formula_2 = Algebra::negateFormula([$negated_clause_2]);
+                    $mini_formula_2 = (new ClauseConjunction([$negated_clause_2]))->getNegation();
 
                     if (!$mini_formula_2[0]->wedge) {
                         if (count($mini_formula_2) > 1) {

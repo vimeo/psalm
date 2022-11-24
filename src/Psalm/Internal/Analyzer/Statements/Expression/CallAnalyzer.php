@@ -845,16 +845,14 @@ class CallAnalyzer
                         $statements_analyzer->getCodebase()
                     );
                 } elseif ($single_rule instanceof Falsy) {
-                    $assert_clauses = Algebra::negateFormula(
-                        FormulaGenerator::getFormula(
-                            spl_object_id($arg_value),
-                            spl_object_id($arg_value),
-                            $arg_value,
-                            $context->self,
-                            $statements_analyzer,
-                            $codebase
-                        )
-                    );
+                    $assert_clauses = FormulaGenerator::getFormula(
+                        spl_object_id($arg_value),
+                        spl_object_id($arg_value),
+                        $arg_value,
+                        $context->self,
+                        $statements_analyzer,
+                        $codebase
+                    )->getNegation();
                 } elseif ($single_rule instanceof IsType
                     && $single_rule->type instanceof TTrue
                 ) {
@@ -873,13 +871,9 @@ class CallAnalyzer
                     );
                 }
 
-                $simplified_clauses = Algebra::simplifyCNF(
-                    [...$context->clauses, ...$assert_clauses]
-                );
+                $simplified_clauses = $context->clauses->andSimplified($assert_clauses);
 
-                $assert_type_assertions = Algebra::getTruthsFromFormula(
-                    $simplified_clauses
-                );
+                $assert_type_assertions = $simplified_clauses->getTruthsFromFormula();
 
                 $type_assertions = array_merge($type_assertions, $assert_type_assertions);
             }

@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Node\Expr\VirtualBooleanNot;
@@ -127,11 +128,9 @@ class TernaryAnalyzer
             $assigned_in_conditional_var_ids
         );
 
-        $if_clauses = Algebra::simplifyCNF($if_clauses);
+        $if_clauses = ClauseConjunction::simplified($if_clauses);
 
-        $ternary_context_clauses = $entry_clauses
-            ? Algebra::simplifyCNF([...$entry_clauses, ...$if_clauses])
-            : $if_clauses;
+        $ternary_context_clauses = $entry_clauses->andSimplified($if_clauses);
 
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
@@ -153,7 +152,7 @@ class TernaryAnalyzer
         }
 
         try {
-            $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+            $if_scope->negated_clauses = $if_clauses->getNegation();
         } catch (ComplicatedExpressionException $e) {
             try {
                 $if_scope->negated_clauses = FormulaGenerator::getFormula(
@@ -170,16 +169,13 @@ class TernaryAnalyzer
             }
         }
 
-        $if_scope->negated_types = Algebra::getTruthsFromFormula(
-            Algebra::simplifyCNF(
-                [...$context->clauses, ...$if_scope->negated_clauses]
-            )
-        );
+        $if_scope->negated_types = $context->clauses
+            ->andSimplified($if_scope->negated_clauses)
+            ->getTruthsFromFormula();
 
         $active_if_types = [];
 
-        $reconcilable_if_types = Algebra::getTruthsFromFormula(
-            $ternary_context_clauses,
+        $reconcilable_if_types = $ternary_context_clauses->getTruthsFromFormula(
             $cond_object_id,
             $cond_referenced_var_ids,
             $active_if_types
@@ -215,9 +211,7 @@ class TernaryAnalyzer
             );
         }
 
-        $t_else_context->clauses = Algebra::simplifyCNF(
-            [...$t_else_context->clauses, ...$if_scope->negated_clauses]
-        );
+        $t_else_context->clauses = $t_else_context->clauses->andSimplified($if_scope->negated_clauses);
 
         $changed_var_ids = [];
 

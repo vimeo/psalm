@@ -2327,7 +2327,7 @@ class AssertionFinder
             $notif_types = $notif_types[0];
 
             if (count($notif_types) === 1) {
-                $if_types = Algebra::negateTypes($notif_types);
+                $if_types = $notif_types->getNegation();
             }
         }
 
@@ -3026,7 +3026,7 @@ class AssertionFinder
             $notif_types = $notif_types[0];
 
             if (count($notif_types) === 1) {
-                $if_types = Algebra::negateTypes($notif_types);
+                $if_types = $notif_types->getNegation();
             }
         }
 

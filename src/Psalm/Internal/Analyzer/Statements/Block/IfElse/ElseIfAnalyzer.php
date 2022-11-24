@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ConflictingReferenceConstraint;
@@ -149,7 +150,7 @@ class ElseIfAnalyzer
             );
         }
 
-        $elseif_context->clauses = Algebra::simplifyCNF($elseif_context_clauses);
+        $elseif_context->clauses = ClauseConjunction::simplified($elseif_context_clauses);
 
         $active_elseif_types = [];
 
@@ -170,22 +171,19 @@ class ElseIfAnalyzer
                 );
 
                 $omit_keys = array_combine($omit_keys, $omit_keys);
-                $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($entry_clauses));
+                $omit_keys = array_diff_key($omit_keys, $entry_clauses->getTruthsFromFormula());
 
                 $cond_referenced_var_ids = array_diff_key(
                     $cond_referenced_var_ids,
                     $omit_keys
                 );
             }
-            $reconcilable_elseif_types = Algebra::getTruthsFromFormula(
-                $elseif_context->clauses,
+            $reconcilable_elseif_types = $elseif_context->clauses->getTruthsFromFormula(
                 spl_object_id($elseif->cond),
                 $cond_referenced_var_ids,
                 $active_elseif_types
             );
-            $negated_elseif_types = Algebra::getTruthsFromFormula(
-                Algebra::negateFormula($elseif_clauses)
-            );
+            $negated_elseif_types = $elseif_clauses->getNegation()->getTruthsFromFormula();
         } catch (ComplicatedExpressionException $e) {
             $reconcilable_elseif_types = [];
             $negated_elseif_types = [];
@@ -328,8 +326,7 @@ class ElseIfAnalyzer
             $reasonable_clause_count = count($if_scope->reasonable_clauses);
 
             if ($reasonable_clause_count && $reasonable_clause_count < 20_000 && $elseif_clauses) {
-                $if_scope->reasonable_clauses = Algebra::combineOredClauses(
-                    $if_scope->reasonable_clauses,
+                $if_scope->reasonable_clauses = $if_scope->reasonable_clauses->combineOrredClauses(
                     $elseif_clauses,
                     $elseif_cond_id
                 );
@@ -412,8 +409,8 @@ class ElseIfAnalyzer
         }
 
         try {
-            $if_scope->negated_clauses = Algebra::simplifyCNF(
-                [...$if_scope->negated_clauses, ...Algebra::negateFormula($elseif_clauses)]
+            $if_scope->negated_clauses = $if_scope->negated_clauses->andSimplified(
+                $elseif_clauses->getNegation()
             );
         } catch (ComplicatedExpressionException $e) {
             $if_scope->negated_clauses = [];

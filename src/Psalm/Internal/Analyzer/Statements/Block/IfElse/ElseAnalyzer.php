@@ -50,11 +50,9 @@ class ElseAnalyzer
             return null;
         }
 
-        $else_context->clauses = Algebra::simplifyCNF(
-            [...$else_context->clauses, ...$if_scope->negated_clauses]
-        );
+        $else_context->clauses = $else_context->clauses->andSimplified($if_scope->negated_clauses);
 
-        $else_types = Algebra::getTruthsFromFormula($else_context->clauses);
+        $else_types = $else_context->clauses->getTruthsFromFormula();
 
         $original_context = clone $else_context;
 

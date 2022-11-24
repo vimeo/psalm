@@ -10,6 +10,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
@@ -91,7 +92,7 @@ class DoAnalyzer
         );
 
         if (!$while_clauses) {
-            $while_clauses = [new Clause([], $cond_id, $cond_id, true)];
+            $while_clauses = new ClauseConjunction([new Clause([], $cond_id, $cond_id, true)]);
         }
 
         if (LoopAnalyzer::analyze(
@@ -112,13 +113,11 @@ class DoAnalyzer
             throw new UnexpectedValueException('There should be an inner loop context');
         }
 
-        $negated_while_clauses = Algebra::negateFormula($while_clauses);
+        $negated_while_clauses = $while_clauses->getNegation();
 
-        $negated_while_types = Algebra::getTruthsFromFormula(
-            Algebra::simplifyCNF(
-                [...$context->clauses, ...$negated_while_clauses]
-            )
-        );
+        $negated_while_types = $context->clauses
+            ->andSimplified($negated_while_clauses)
+            ->getTruthsFromFormula();
 
         if ($negated_while_types) {
             $changed_var_ids = [];

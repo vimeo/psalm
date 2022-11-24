@@ -10,6 +10,7 @@ use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -43,7 +44,7 @@ class IfConditionalAnalyzer
 
         // used when evaluating elseifs
         if ($if_scope->negated_clauses) {
-            $entry_clauses = [...$outer_context->clauses, ...$if_scope->negated_clauses];
+            $entry_clauses = [...$outer_context->clauses->clauses, ...$if_scope->negated_clauses->clauses];
 
             $changed_var_ids = [];
 
@@ -224,7 +225,7 @@ class IfConditionalAnalyzer
             $post_if_context,
             $cond_referenced_var_ids,
             $assigned_in_conditional_var_ids,
-            $entry_clauses
+            new ClauseConjunction($entry_clauses)
         );
     }
 

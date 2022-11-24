@@ -324,13 +324,13 @@ class FunctionLikeNodeScanner
                         );
 
                         try {
-                            $negated_formula = Algebra::negateFormula($if_clauses);
+                            $negated_formula = $if_clauses->getNegation();
                         } catch (ComplicatedExpressionException $e) {
                             $var_assertions = [];
                             break;
                         }
 
-                        $rules = Algebra::getTruthsFromFormula($negated_formula);
+                        $rules = $negated_formula->getTruthsFromFormula();
 
                         if (!$rules) {
                             $var_assertions = [];

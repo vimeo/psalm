@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
@@ -156,7 +157,7 @@ class IfElseAnalyzer
             $if_clauses_handled[] = $clause;
         }
 
-        $if_clauses = $if_clauses_handled;
+        $if_clauses = ClauseConjunction::simplified($if_clauses_handled);
 
         $entry_clauses = $context->clauses;
 
@@ -169,13 +170,7 @@ class IfElseAnalyzer
             $assigned_in_conditional_var_ids
         );
 
-        $if_clauses = Algebra::simplifyCNF($if_clauses);
-
-        $if_context_clauses = [...$entry_clauses, ...$if_clauses];
-
-        $if_context->clauses = $entry_clauses
-            ? Algebra::simplifyCNF($if_context_clauses)
-            : $if_context_clauses;
+        $if_context->clauses = $entry_clauses->andSimplified($if_clauses);
 
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
@@ -200,7 +195,7 @@ class IfElseAnalyzer
         $if_scope->reasonable_clauses = $if_context->clauses;
 
         try {
-            $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+            $if_scope->negated_clauses = $if_clauses->getNegation();
         } catch (ComplicatedExpressionException $e) {
             try {
                 $if_scope->negated_clauses = FormulaGenerator::getFormula(
@@ -213,15 +208,13 @@ class IfElseAnalyzer
                     false
                 );
             } catch (ComplicatedExpressionException $e) {
-                $if_scope->negated_clauses = [];
+                $if_scope->negated_clauses = new ClauseConjunction([]);
             }
         }
 
-        $if_scope->negated_types = Algebra::getTruthsFromFormula(
-            Algebra::simplifyCNF(
-                [...$context->clauses, ...$if_scope->negated_clauses]
-            )
-        );
+        $if_scope->negated_types = $context->clauses
+            ->andSimplified($if_scope->negated_clauses)
+            ->getTruthsFromFormula();
 
         $temp_else_context = clone $post_if_context;
 
@@ -409,9 +402,7 @@ class IfElseAnalyzer
         if ($if_scope->reasonable_clauses
             && (count($if_scope->reasonable_clauses) > 1 || !$if_scope->reasonable_clauses[0]->wedge)
         ) {
-            $context->clauses = Algebra::simplifyCNF(
-                [...$if_scope->reasonable_clauses, ...$context->clauses]
-            );
+            $context->clauses = $if_scope->reasonable_clauses->and($context->clauses);
         }
 
         if ($if_scope->possibly_redefined_vars) {

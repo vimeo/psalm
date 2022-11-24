@@ -948,9 +948,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
             []
         );
 
-        $simplified_clauses = Algebra::simplifyCNF([...$context->clauses, ...$assert_clauses]);
+        $simplified_clauses = $context->clauses->andSimplified($assert_clauses);
 
-        $assert_type_assertions = Algebra::getTruthsFromFormula($simplified_clauses);
+        $assert_type_assertions = $simplified_clauses->getTruthsFromFormula()
 
         $changed_var_ids = [];
 
