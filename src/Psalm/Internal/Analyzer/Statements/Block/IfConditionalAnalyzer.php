@@ -43,7 +43,7 @@ class IfConditionalAnalyzer
         $entry_clauses = [];
 
         // used when evaluating elseifs
-        if ($if_scope->negated_clauses) {
+        if ($if_scope->negated_clauses->clauses) {
             $entry_clauses = [...$outer_context->clauses->clauses, ...$if_scope->negated_clauses->clauses];
 
             $changed_var_ids = [];

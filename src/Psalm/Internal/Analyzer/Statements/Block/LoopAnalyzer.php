@@ -461,7 +461,11 @@ class LoopAnalyzer
             // and apply it to the current context
 
             try {
-                $negated_pre_condition_clauses = (new ClauseConjunction(array_merge(...$pre_condition_clauses)))->getNegation();
+                $negated_pre_condition_clauses = [];
+                foreach ($pre_condition_clauses as $pre) {
+                    $negated_pre_condition_clauses = [...$negated_pre_condition_clauses, ...$pre->clauses];
+                }
+                $negated_pre_condition_clauses = (new ClauseConjunction($negated_pre_condition_clauses))->getNegation();
             } catch (ComplicatedExpressionException $e) {
                 $negated_pre_condition_clauses = new ClauseConjunction([]);
             }
@@ -568,14 +572,12 @@ class LoopAnalyzer
     }
 
     /**
-     * @param  list<Clause>  $pre_condition_clauses
-     *
      * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $pre_condition,
-        array $pre_condition_clauses,
+        ClauseConjunction $pre_condition_clauses,
         Context $loop_context,
         Context $outer_context,
         bool $is_do

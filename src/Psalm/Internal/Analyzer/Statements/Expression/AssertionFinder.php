@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -2327,7 +2328,7 @@ class AssertionFinder
             $notif_types = $notif_types[0];
 
             if (count($notif_types) === 1) {
-                $if_types = $notif_types->getNegation();
+                $if_types = (new ClauseConjunction($notif_types))->getNegation()->clauses;
             }
         }
 
@@ -3026,7 +3027,7 @@ class AssertionFinder
             $notif_types = $notif_types[0];
 
             if (count($notif_types) === 1) {
-                $if_types = $notif_types->getNegation();
+                $if_types = (new ClauseConjunction($if_types))->getNegation()->clauses;
             }
         }
 

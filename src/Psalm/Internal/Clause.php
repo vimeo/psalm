@@ -242,7 +242,7 @@ class Clause
      * $a && !$b && $c === null && !is_string($d) && !is_int($d)
      *
      *
-     * @return array<string, Assertion>
+     * @return array<string, non-empty-list<Assertion>>
      */
     public function getNegation(): array
     {

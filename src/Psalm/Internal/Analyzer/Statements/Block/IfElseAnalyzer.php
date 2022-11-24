@@ -135,12 +135,12 @@ class IfElseAnalyzer
             $codebase
         );
 
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
+        if (count($if_clauses->clauses) > 200) {
+            $if_clauses = new ClauseConjunction([]);
         }
 
         $if_clauses_handled = [];
-        foreach ($if_clauses as $clause) {
+        foreach ($if_clauses->clauses as $clause) {
             $keys = array_keys($clause->possibilities);
 
             $mixed_var_ids = array_diff($mixed_var_ids, $keys);
@@ -175,18 +175,15 @@ class IfElseAnalyzer
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
 
-            $if_context->clauses = array_values(
-                array_filter(
-                    $if_context->clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
-                )
+            $if_context->clauses = $if_context->clauses->filter(
+                static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
             );
 
-            if (count($if_context->clauses) === 1
-                && $if_context->clauses[0]->wedge
-                && !$if_context->clauses[0]->possibilities
+            if (count($if_context->clauses->clauses) === 1
+                && $if_context->clauses->clauses[0]->wedge
+                && !$if_context->clauses->clauses[0]->possibilities
             ) {
-                $if_context->clauses = [];
+                $if_context->clauses = new ClauseConjunction([]);
                 $if_context->reconciled_expression_clauses = [];
             }
         }
@@ -388,7 +385,7 @@ class IfElseAnalyzer
                 $context->vars_in_scope[$var_id] = $type;
                 $if_scope->updated_vars[$var_id] = true;
 
-                if ($if_scope->reasonable_clauses) {
+                if ($if_scope->reasonable_clauses->clauses) {
                     $if_scope->reasonable_clauses = Context::filterClauses(
                         $var_id,
                         $if_scope->reasonable_clauses,
@@ -399,8 +396,8 @@ class IfElseAnalyzer
             }
         }
 
-        if ($if_scope->reasonable_clauses
-            && (count($if_scope->reasonable_clauses) > 1 || !$if_scope->reasonable_clauses[0]->wedge)
+        if ($if_scope->reasonable_clauses->clauses
+            && (count($if_scope->reasonable_clauses->clauses) > 1 || !$if_scope->reasonable_clauses->clauses[0]->wedge)
         ) {
             $context->clauses = $if_scope->reasonable_clauses->and($context->clauses);
         }

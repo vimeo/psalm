@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -73,11 +74,11 @@ class IfAnalyzer
         );
 
         if (array_filter(
-            $outer_context->clauses,
+            $outer_context->clauses->clauses,
             static fn(Clause $clause): bool => (bool) $clause->possibilities
         )) {
             $omit_keys = array_reduce(
-                $outer_context->clauses,
+                $outer_context->clauses->clauses,
                 /**
                  * @param array<string> $carry
                  * @return array<string>
@@ -233,7 +234,7 @@ class IfAnalyzer
                 $if_scope->if_cond_changed_var_ids
             );
 
-            if ($if_scope->reasonable_clauses) {
+            if ($if_scope->reasonable_clauses->clauses) {
                 // remove all reasonable clauses that would be negated by the if stmts
                 foreach ($new_assigned_var_ids as $var_id => $_) {
                     $if_scope->reasonable_clauses = Context::filterClauses(
@@ -246,7 +247,7 @@ class IfAnalyzer
             }
         } else {
             if (!$has_break_statement) {
-                $if_scope->reasonable_clauses = [];
+                $if_scope->reasonable_clauses = new ClauseConjunction([]);
 
                 // If we're assigning inside
                 if ($if_conditional_scope->assigned_in_conditional_var_ids

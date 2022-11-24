@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\PhpVisitor\ConditionCloningVisitor;
 use Psalm\Internal\PhpVisitor\TypeMappingVisitor;
 use Psalm\Internal\Scope\CaseScope;
@@ -354,7 +355,7 @@ class SwitchCaseAnalyzer
             );
         }
 
-        if ($switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
+        if ($switch_scope->negated_clauses->clauses && count($switch_scope->negated_clauses->clauses) < 50) {
             $entry_clauses = $original_context->clauses->andSimplified($switch_scope->negated_clauses);
         } else {
             $entry_clauses = $original_context->clauses;
@@ -370,7 +371,7 @@ class SwitchCaseAnalyzer
                 []
             );
 
-            if (count($entry_clauses) + count($case_clauses) < 50) {
+            if (count($entry_clauses->clauses) + count($case_clauses->clauses) < 50) {
                 $case_context->clauses = $entry_clauses->andSimplified($case_clauses);
             } else {
                 $case_context->clauses = $entry_clauses->and($case_clauses);
@@ -450,7 +451,7 @@ class SwitchCaseAnalyzer
                         false
                     );
                 } catch (ComplicatedExpressionException $e) {
-                    $negated_case_clauses = [];
+                    $negated_case_clauses = new ClauseConjunction([]);
                 }
             }
 

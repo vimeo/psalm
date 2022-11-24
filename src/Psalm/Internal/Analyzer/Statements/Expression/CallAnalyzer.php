@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -831,7 +832,7 @@ class CallAnalyzer
             } elseif ($arg_value
                 && count($var_possibilities->rule) === 1
             ) {
-                $assert_clauses = [];
+                $assert_clauses = new ClauseConjunction([]);
 
                 $single_rule = $var_possibilities->rule[0];
 

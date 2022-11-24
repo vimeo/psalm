@@ -122,7 +122,7 @@ class AlgebraTest extends TestCase
             $statements_analyzer
         );
 
-        $this->assertCount(6_561, $dnf_clauses);
+        $this->assertCount(6_561, $dnf_clauses->clauses);
 
         $simplified_dnf_clauses = ClauseConjunction::simplified($dnf_clauses->clauses);
 

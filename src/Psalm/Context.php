@@ -677,8 +677,6 @@ final class Context
         $clauses_to_keep = [];
 
         foreach ($clauses->clauses as $clause) {
-            $clause->calculateNegation();
-
             $quoted_remove_var_id = preg_quote($remove_var_id, '/');
 
             foreach ($clause->possibilities as $var_id => $_) {
@@ -805,7 +803,7 @@ final class Context
 
         $clauses_to_keep = [];
 
-        foreach ($this->clauses as $clause) {
+        foreach ($this->clauses->clauses as $clause) {
             $abandon_clause = false;
 
             foreach (array_keys($clause->possibilities) as $key) {
@@ -822,7 +820,7 @@ final class Context
             }
         }
 
-        $this->clauses = $clauses_to_keep;
+        $this->clauses = new ClauseConjunction($clauses_to_keep);
     }
 
     public function updateChecks(Context $op_context): void

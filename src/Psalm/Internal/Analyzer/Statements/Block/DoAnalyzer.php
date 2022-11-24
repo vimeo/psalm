@@ -70,28 +70,25 @@ class DoAnalyzer
             $codebase
         );
 
-        $while_clauses = array_values(
-            array_filter(
-                $while_clauses,
-                static function (Clause $c) use ($mixed_var_ids): bool {
-                    $keys = array_keys($c->possibilities);
+        $while_clauses = $while_clauses->filter(
+            static function (Clause $c) use ($mixed_var_ids): bool {
+                $keys = array_keys($c->possibilities);
 
-                    $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
-                    foreach ($keys as $key) {
-                        foreach ($mixed_var_ids as $mixed_var_id) {
-                            if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return false;
-                            }
+                foreach ($keys as $key) {
+                    foreach ($mixed_var_ids as $mixed_var_id) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                            return false;
                         }
                     }
-
-                    return true;
                 }
-            )
+
+                return true;
+            }
         );
 
-        if (!$while_clauses) {
+        if (!$while_clauses->clauses) {
             $while_clauses = new ClauseConjunction([new Clause([], $cond_id, $cond_id, true)]);
         }
 

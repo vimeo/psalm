@@ -27,7 +27,7 @@ abstract class Assertion
         $negation = $this->makeNegation();
         /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Used for caching */
         $negation->negationOf = $this;
-        /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Used for caching */
+        /** @psalm-suppress InaccessibleProperty Used for caching */
         $this->negationOf = $negation;
         return $negation;
     }

@@ -8,6 +8,7 @@ use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ConflictingReferenceConstraint;
@@ -40,12 +41,12 @@ class ElseAnalyzer
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$else && !$if_scope->negated_clauses && !$else_context->clauses) {
+        if (!$else && !$if_scope->negated_clauses->clauses && !$else_context->clauses->clauses) {
             $if_scope->final_actions = array_merge([ScopeAnalyzer::ACTION_NONE], $if_scope->final_actions);
             $if_scope->assigned_var_ids = [];
             $if_scope->new_vars = [];
             $if_scope->redefined_vars = [];
-            $if_scope->reasonable_clauses = [];
+            $if_scope->reasonable_clauses = new ClauseConjunction([]);
 
             return null;
         }
@@ -171,7 +172,7 @@ class ElseAnalyzer
                 true
             );
 
-            $if_scope->reasonable_clauses = [];
+            $if_scope->reasonable_clauses = new ClauseConjunction([]);
         }
 
         // update the parent context as necessary

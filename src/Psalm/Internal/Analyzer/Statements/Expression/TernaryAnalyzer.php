@@ -80,8 +80,8 @@ class TernaryAnalyzer
             $codebase
         );
 
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
+        if (count($if_clauses->clauses) > 200) {
+            $if_clauses = new ClauseConjunction([]);
         }
 
         $mixed_var_ids = [];
@@ -114,8 +114,10 @@ class TernaryAnalyzer
 
                 return $c;
             },
-            $if_clauses
+            $if_clauses->clauses
         );
+
+        $if_clauses = ClauseConjunction::simplified($if_clauses);
 
         $entry_clauses = $context->clauses;
 
@@ -128,25 +130,20 @@ class TernaryAnalyzer
             $assigned_in_conditional_var_ids
         );
 
-        $if_clauses = ClauseConjunction::simplified($if_clauses);
-
         $ternary_context_clauses = $entry_clauses->andSimplified($if_clauses);
 
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
 
-            $ternary_context_clauses = array_values(
-                array_filter(
-                    $ternary_context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
-                )
+            $ternary_context_clauses = $ternary_context_clauses->filter(
+                static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
             );
 
-            if (count($if_context->clauses) === 1
-                && $if_context->clauses[0]->wedge
-                && !$if_context->clauses[0]->possibilities
+            if (count($if_context->clauses->clauses) === 1
+                && $if_context->clauses->clauses[0]->wedge
+                && !$if_context->clauses->clauses[0]->possibilities
             ) {
-                $if_context->clauses = [];
+                $if_context->clauses = new ClauseConjunction([]);
                 $if_context->reconciled_expression_clauses = [];
             }
         }
@@ -165,7 +162,7 @@ class TernaryAnalyzer
                     false
                 );
             } catch (ComplicatedExpressionException $e) {
-                $if_scope->negated_clauses = [];
+                $if_scope->negated_clauses = new ClauseConjunction([]);
             }
         }
 

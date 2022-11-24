@@ -140,7 +140,7 @@ class SwitchAnalyzer
 
         $all_options_matched = $has_default;
 
-        if (!$has_default && $switch_scope->negated_clauses && $switch_var_id) {
+        if (!$has_default && $switch_scope->negated_clauses->clauses && $switch_var_id) {
             $entry_clauses = $original_context->clauses->andSimplified($switch_scope->negated_clauses);
 
             $reconcilable_if_types = $entry_clauses->getTruthsFromFormula();

@@ -240,14 +240,14 @@ class OrAnalyzer
             $right_context->clauses = $partitioned_clauses[0];
             $right_context->reconciled_expression_clauses = $context->reconciled_expression_clauses;
 
-            foreach ($partitioned_clauses[1] as $clause) {
+            foreach ($partitioned_clauses[1]->clauses as $clause) {
                 $right_context->reconciled_expression_clauses[] = $clause->hash;
             }
 
             $partitioned_clauses = Context::removeReconciledClauses($context->clauses, $changed_var_ids);
             $context->clauses = $partitioned_clauses[0];
 
-            foreach ($partitioned_clauses[1] as $clause) {
+            foreach ($partitioned_clauses[1]->clauses as $clause) {
                 $context->reconciled_expression_clauses[] = $clause->hash;
             }
         }

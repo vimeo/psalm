@@ -98,7 +98,7 @@ class AndAnalyzer
 
         $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
 
-        $context_clauses = array_merge($left_context->clauses, $left_clauses);
+        $context_clauses = array_merge($left_context->clauses->clauses, $left_clauses->clauses);
 
         if ($left_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $left_context->reconciled_expression_clauses;
@@ -199,11 +199,11 @@ class AndAnalyzer
             );
 
             $if_body_context->reconciled_expression_clauses = [
-                ...$if_body_context->reconciled_expression_clauses->clauses,
+                ...$if_body_context->reconciled_expression_clauses,
                 ...array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,
-                    $partitioned_clauses[1]
+                    $partitioned_clauses[1]->clauses
                 )
             ];
 

@@ -95,7 +95,7 @@ class ElseIfAnalyzer
 
         $elseif_clauses_handled = [];
 
-        foreach ($elseif_clauses as $clause) {
+        foreach ($elseif_clauses->clauses as $clause) {
             $keys = array_keys($clause->possibilities);
             $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
@@ -115,7 +115,7 @@ class ElseIfAnalyzer
 
         $entry_clauses = [];
 
-        foreach ($if_conditional_scope->entry_clauses as $c) {
+        foreach ($if_conditional_scope->entry_clauses->clauses as $c) {
             foreach ($c->possibilities as $key => $_value) {
                 foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
                     if (preg_match('/^'.preg_quote($conditional_assigned_var_id, '/').'(\[|-|$)/', $key)) {
@@ -128,6 +128,9 @@ class ElseIfAnalyzer
             $entry_clauses[] = $c;
         }
 
+        $entry_clauses = new ClauseConjunction($entry_clauses);
+        $elseif_clauses = new ClauseConjunction($elseif_clauses);
+
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
             $entry_clauses,
@@ -137,30 +140,27 @@ class ElseIfAnalyzer
             $assigned_in_conditional_var_ids
         );
 
-        $elseif_context_clauses = [...$entry_clauses, ...$elseif_clauses];
+        $elseif_context_clauses = $entry_clauses->and($elseif_clauses);
 
         if ($elseif_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $elseif_context->reconciled_expression_clauses;
 
-            $elseif_context_clauses = array_values(
-                array_filter(
-                    $elseif_context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
-                )
+            $elseif_context_clauses = $elseif_context_clauses->filter(
+                static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
             );
         }
 
-        $elseif_context->clauses = ClauseConjunction::simplified($elseif_context_clauses);
+        $elseif_context->clauses = ClauseConjunction::simplified($elseif_context_clauses->clauses);
 
         $active_elseif_types = [];
 
         try {
             if (array_filter(
-                $entry_clauses,
+                $entry_clauses->clauses,
                 static fn(Clause $clause): bool => (bool) $clause->possibilities
             )) {
                 $omit_keys = array_reduce(
-                    $entry_clauses,
+                    $entry_clauses->clauses,
                     /**
                      * @param array<string> $carry
                      * @return array<string>
@@ -323,18 +323,18 @@ class ElseIfAnalyzer
                 $newly_reconciled_var_ids
             );
 
-            $reasonable_clause_count = count($if_scope->reasonable_clauses);
+            $reasonable_clause_count = $if_scope->reasonable_clauses->count();
 
-            if ($reasonable_clause_count && $reasonable_clause_count < 20_000 && $elseif_clauses) {
+            if ($reasonable_clause_count && $reasonable_clause_count < 20_000 && $elseif_clauses->clauses) {
                 $if_scope->reasonable_clauses = $if_scope->reasonable_clauses->combineOrredClauses(
                     $elseif_clauses,
                     $elseif_cond_id
                 );
             } else {
-                $if_scope->reasonable_clauses = [];
+                $if_scope->reasonable_clauses = new ClauseConjunction([]);
             }
         } else {
-            $if_scope->reasonable_clauses = [];
+            $if_scope->reasonable_clauses = new ClauseConjunction([]);
         }
 
         if ($negated_elseif_types) {
@@ -413,7 +413,7 @@ class ElseIfAnalyzer
                 $elseif_clauses->getNegation()
             );
         } catch (ComplicatedExpressionException $e) {
-            $if_scope->negated_clauses = [];
+            $if_scope->negated_clauses = new ClauseConjunction([]);
         }
 
         // Track references set in the elseif to make sure they aren't reused later
