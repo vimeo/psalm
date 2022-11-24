@@ -89,7 +89,7 @@ class DoAnalyzer
         );
 
         if (!$while_clauses->clauses) {
-            $while_clauses = ClauseConjunction::new([new Clause([], $cond_id, $cond_id, true)]);
+            $while_clauses = new ClauseConjunction([new Clause([], $cond_id, $cond_id, true)]);
         }
 
         if (LoopAnalyzer::analyze(

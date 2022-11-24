@@ -1799,7 +1799,7 @@ class AssignmentAnalyzer
                         $right_clauses
                     );
 
-                    $assignment_clauses = ClauseConjunction::new([new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)]);
+                    $assignment_clauses = new ClauseConjunction([new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)]);
                     $assignment_clauses = $assignment_clauses->combineOrredClauses(
                         $right_clauses,
                         $cond_object_id

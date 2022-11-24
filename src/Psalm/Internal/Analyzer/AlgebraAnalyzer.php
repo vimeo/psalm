@@ -108,7 +108,7 @@ class AlgebraAnalyzer
                 }
 
                 if ($negated_clause_2_contains_1_possibilities) {
-                    $mini_formula_2 = (ClauseConjunction::new([$negated_clause_2]))->getNegation();
+                    $mini_formula_2 = (new ClauseConjunction([$negated_clause_2]))->getNegation();
 
                     if (!$mini_formula_2->clauses[0]->wedge) {
                         if (count($mini_formula_2->clauses) > 1) {

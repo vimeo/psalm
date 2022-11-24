@@ -159,7 +159,12 @@ class IfElseAnalyzer
             $if_clauses_handled[] = $clause;
         }
 
-        $if_clauses = ClauseConjunction::simplified($if_clauses_handled);
+        $if_clauses = !$has_extra
+            && $if_clauses->count() === count($if_clauses_handled)
+            ? $if_clauses
+            : new ClauseConjunction($if_clauses_handled);
+
+        $if_clauses = $if_clauses->simplify();
 
         $entry_clauses = $context->clauses;
 

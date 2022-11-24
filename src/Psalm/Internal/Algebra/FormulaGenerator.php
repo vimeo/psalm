@@ -170,7 +170,7 @@ class FormulaGenerator
                     }
                 }
 
-                return (ClauseConjunction::new($clauses))->getNegation();
+                return (new ClauseConjunction($clauses))->getNegation();
             }
 
             if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
@@ -432,14 +432,14 @@ class FormulaGenerator
         }
 
         if ($clauses) {
-            return ClauseConjunction::new($clauses);
+            return new ClauseConjunction($clauses);
         }
 
         /** @psalm-suppress MixedOperand */
         $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
             . ':' . $conditional->getAttribute('endFilePos');
 
-        return ClauseConjunction::new([
+        return new ClauseConjunction([
             new Clause(
                 [$conditional_ref => ['truthy' => new Truthy()]],
                 $conditional_object_id,

@@ -28,7 +28,7 @@ class AlgebraTest extends TestCase
 {
     public function testNegateFormula(): void
     {
-        $formula = ClauseConjunction::new([
+        $formula = new ClauseConjunction([
             new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
         ]);
 
@@ -37,7 +37,7 @@ class AlgebraTest extends TestCase
         $this->assertCount(1, $negated_formula->clauses);
         $this->assertSame('!$a', (string)$negated_formula->clauses[0]);
 
-        $formula = ClauseConjunction::new([
+        $formula = new ClauseConjunction([
             new Clause(['$a' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 1),
         ]);
 
@@ -47,7 +47,7 @@ class AlgebraTest extends TestCase
         $this->assertSame('!$a', (string)$negated_formula->clauses[0]);
         $this->assertSame('!$b', (string)$negated_formula->clauses[1]);
 
-        $formula = ClauseConjunction::new([
+        $formula = new ClauseConjunction([
             new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
             new Clause(['$b' => ['truthy' => new Truthy()]], 1, 2),
         ]);
@@ -60,7 +60,7 @@ class AlgebraTest extends TestCase
         $a1 = new IsType(new TInt());
         $a2 = new IsType(new TString());
 
-        $formula = ClauseConjunction::new([
+        $formula = new ClauseConjunction([
             new Clause(
                 [
                     '$a' => [(string)$a1 => $a1, (string)$a2 => $a2],
@@ -82,7 +82,7 @@ class AlgebraTest extends TestCase
     public function testNegateFormulaWithUnreconcilableTerm(): void
     {
         $a1 = new IsType(new TInt());
-        $formula = ClauseConjunction::new([
+        $formula = new ClauseConjunction([
             new Clause(['$a' => [(string)$a1 => $a1]], 1, 1),
             new Clause(['$b' => [(string)$a1 => $a1]], 1, 2, false, false),
         ]);
@@ -124,7 +124,7 @@ class AlgebraTest extends TestCase
 
         $this->assertCount(6_561, $dnf_clauses->clauses);
 
-        $simplified_dnf_clauses = ClauseConjunction::simplified($dnf_clauses->clauses);
+        $simplified_dnf_clauses = (new ClauseConjunction($dnf_clauses->clauses))->simplify();
 
         $this->assertCount(23, $simplified_dnf_clauses->clauses);
     }
@@ -177,7 +177,7 @@ class AlgebraTest extends TestCase
             new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['falsy' => new Falsy()]], 1, 2),
         ];
 
-        $simplified_formula = ClauseConjunction::simplified($formula);
+        $simplified_formula = (new ClauseConjunction($formula))->simplify();
 
         $this->assertCount(2, $simplified_formula->clauses);
         $this->assertSame('$a', (string)$simplified_formula->clauses[0]);
@@ -192,7 +192,7 @@ class AlgebraTest extends TestCase
             new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['truthy' => new Truthy()]], 1, 2),
         ];
 
-        $simplified_formula = ClauseConjunction::simplified($formula);
+        $simplified_formula = (new ClauseConjunction($formula))->simplify();
 
         $this->assertCount(1, $simplified_formula->clauses);
         $this->assertSame('$b', (string)$simplified_formula->clauses[0]);
@@ -205,7 +205,7 @@ class AlgebraTest extends TestCase
             new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['falsy' => new Falsy()]], 1, 2),
         ];
 
-        $simplified_formula = ClauseConjunction::simplified($formula);
+        $simplified_formula = (new ClauseConjunction($formula))->simplify();
 
         $this->assertCount(2, $simplified_formula->clauses);
         $this->assertSame('($a) || ($b)', (string)$simplified_formula->clauses[0]);
@@ -221,7 +221,7 @@ class AlgebraTest extends TestCase
             new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['truthy' => new Truthy()]], 1, 3),
         ];
 
-        $simplified_formula = ClauseConjunction::simplified($formula);
+        $simplified_formula = (new ClauseConjunction($formula))->simplify();
 
         $this->assertCount(1, $simplified_formula->clauses);
         $this->assertSame('$b', (string)$simplified_formula->clauses[0]);

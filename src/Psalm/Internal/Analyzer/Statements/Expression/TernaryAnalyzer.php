@@ -78,10 +78,10 @@ class TernaryAnalyzer
             $context->self,
             $statements_analyzer,
             $codebase
-        );
+        )->clauses;
 
-        if (count($if_clauses->clauses) > 200) {
-            $if_clauses = ClauseConjunction::empty();
+        if (count($if_clauses) > 200) {
+            $if_clauses = [];
         }
 
         $mixed_var_ids = [];
@@ -114,10 +114,11 @@ class TernaryAnalyzer
 
                 return $c;
             },
-            $if_clauses->clauses
+            $if_clauses
         );
 
-        $if_clauses = ClauseConjunction::simplified($if_clauses);
+        $if_clauses = new ClauseConjunction($if_clauses);
+        $if_clauses = $if_clauses->simplify();
 
         $entry_clauses = $context->clauses;
 

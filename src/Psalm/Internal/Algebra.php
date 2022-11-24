@@ -75,7 +75,7 @@ class Algebra
         int $conditional_object_id
     ): ?ClauseConjunction {
         if (!$left_clauses && !$right_clauses) {
-            return ClauseConjunction::new(
+            return new ClauseConjunction(
                 [new Clause([], $conditional_object_id, $conditional_object_id, true)]
             );
         }

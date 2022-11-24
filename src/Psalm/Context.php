@@ -666,10 +666,10 @@ final class Context
 
         $included_clauses = count($included_clauses) === count($clauses->clauses)
             ? $clauses
-            : ClauseConjunction::new($included_clauses);
+            : new ClauseConjunction($included_clauses);
         $rejected_clauses = count($rejected_clauses) === count($clauses->clauses)
             ? $clauses
-            : ClauseConjunction::new($rejected_clauses);
+            : new ClauseConjunction($rejected_clauses);
 
         return [$included_clauses, $rejected_clauses];
     }
@@ -738,7 +738,7 @@ final class Context
 
         return count($clauses_to_keep) === $clauses->count()
             ? $clauses
-            : ClauseConjunction::new($clauses_to_keep);
+            : new ClauseConjunction($clauses_to_keep);
     }
 
     public function removeVarFromConflictingClauses(
@@ -830,7 +830,7 @@ final class Context
         }
 
         if (count($clauses_to_keep) !== $this->clauses->count()) {
-            $this->clauses = ClauseConjunction::new($clauses_to_keep);
+            $this->clauses = new ClauseConjunction($clauses_to_keep);
         }
     }
 

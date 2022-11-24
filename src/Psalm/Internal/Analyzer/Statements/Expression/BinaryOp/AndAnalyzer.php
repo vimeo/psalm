@@ -98,27 +98,24 @@ class AndAnalyzer
 
         $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
 
-        $context_clauses = array_merge($left_context->clauses->clauses, $left_clauses->clauses);
+        $context_clauses = $left_context->clauses->and($left_clauses->clauses);
 
         if ($left_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $left_context->reconciled_expression_clauses;
 
-            $context_clauses = array_values(
-                array_filter(
-                    $context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
-                )
+            $context_clauses = $context_clauses->filter(
+                static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
             );
 
-            if (count($context_clauses) === 1
-                && $context_clauses[0]->wedge
-                && !$context_clauses[0]->possibilities
+            if ($context_clauses->count() === 1
+                && $context_clauses->clauses[0]->wedge
+                && !$context_clauses->clauses[0]->possibilities
             ) {
-                $context_clauses = [];
+                $context_clauses = ClauseConjunction::empty();
             }
         }
 
-        $simplified_clauses = ClauseConjunction::simplified($context_clauses);
+        $simplified_clauses = $context_clauses->simplify()
 
         $active_left_assertions = [];
 

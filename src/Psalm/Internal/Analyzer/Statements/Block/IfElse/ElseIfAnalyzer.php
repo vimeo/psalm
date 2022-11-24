@@ -113,9 +113,9 @@ class ElseIfAnalyzer
             $elseif_clauses_handled[] = $clause;
         }
 
-        $elseif_clauses = count($entry_clauses) === $elseif_clauses->clauses->count() && !$has_extra_clauses
-            ? $elseif_clauses->clauses
-            : ClauseConjunction::new($elseif_clauses_handled);
+        $elseif_clauses = count($elseif_clauses_handled) === $elseif_clauses->clauses->count() && !$has_extra_clauses
+            ? $elseif_clauses
+            : new ClauseConjunction($elseif_clauses_handled);
 
         $entry_clauses = [];
         $has_extra_clauses = false;
@@ -136,7 +136,7 @@ class ElseIfAnalyzer
 
         $entry_clauses = count($entry_clauses) === $if_conditional_scope->entry_clauses->count() && !$has_extra_clauses
             ? $if_conditional_scope->entry_clauses
-            : ClauseConjunction::new($entry_clauses);
+            : new ClauseConjunction($entry_clauses);
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
@@ -157,7 +157,7 @@ class ElseIfAnalyzer
             );
         }
 
-        $elseif_context->clauses = ClauseConjunction::simplified($elseif_context_clauses->clauses);
+        $elseif_context->clauses = $elseif_context_clauses->simplify();
 
         $active_elseif_types = [];
 
