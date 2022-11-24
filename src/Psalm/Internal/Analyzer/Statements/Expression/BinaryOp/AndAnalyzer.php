@@ -98,7 +98,7 @@ class AndAnalyzer
 
         $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
 
-        $context_clauses = $left_context->clauses->and($left_clauses->clauses);
+        $context_clauses = $left_context->clauses->and($left_clauses);
 
         if ($left_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $left_context->reconciled_expression_clauses;

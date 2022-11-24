@@ -113,7 +113,7 @@ class ElseIfAnalyzer
             $elseif_clauses_handled[] = $clause;
         }
 
-        $elseif_clauses = count($elseif_clauses_handled) === $elseif_clauses->clauses->count() && !$has_extra_clauses
+        $elseif_clauses = count($elseif_clauses_handled) === $elseif_clauses->count() && !$has_extra_clauses
             ? $elseif_clauses
             : new ClauseConjunction($elseif_clauses_handled);
 
