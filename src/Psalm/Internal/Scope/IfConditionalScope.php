@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
-use Psalm\Internal\Clause;
 use Psalm\Internal\ClauseConjunction;
 
 /**

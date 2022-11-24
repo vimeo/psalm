@@ -5,8 +5,6 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Exception\ComplicatedExpressionException;
-use Psalm\Internal\Algebra;
-use Psalm\Internal\Clause;
 use Psalm\Internal\ClauseConjunction;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;

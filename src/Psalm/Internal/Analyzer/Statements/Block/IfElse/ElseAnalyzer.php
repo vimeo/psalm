@@ -5,7 +5,6 @@ namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\ClauseConjunction;

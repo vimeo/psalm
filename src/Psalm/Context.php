@@ -4,7 +4,6 @@ namespace Psalm;
 
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Clause;
 use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;

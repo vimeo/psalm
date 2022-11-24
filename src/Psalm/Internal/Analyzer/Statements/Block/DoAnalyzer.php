@@ -5,7 +5,6 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -17,10 +16,8 @@ use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
 use function array_diff;
-use function array_filter;
 use function array_keys;
 use function array_merge;
-use function array_values;
 use function in_array;
 use function preg_match;
 use function preg_quote;

@@ -7,7 +7,6 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
@@ -27,9 +26,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
-use function array_filter;
 use function array_merge;
-use function array_values;
 use function count;
 use function in_array;
 use function spl_object_id;

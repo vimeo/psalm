@@ -5,7 +5,6 @@ namespace Psalm\Internal\Algebra;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\FileSource;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -240,14 +239,14 @@ class FormulaGenerator
                     || $conditional->right instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
                 return self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->right),
-                        $conditional->right,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache
+                    $conditional_object_id,
+                    spl_object_id($conditional->right),
+                    $conditional->right,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    !$inside_negation,
+                    $cache
                 )->getNegation();
             }
 
@@ -301,14 +300,14 @@ class FormulaGenerator
                     || $conditional->left instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
                 return self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->left),
-                        $conditional->left,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache
+                    $conditional_object_id,
+                    spl_object_id($conditional->left),
+                    $conditional->left,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    !$inside_negation,
+                    $cache
                 )->getNegation();
             }
 

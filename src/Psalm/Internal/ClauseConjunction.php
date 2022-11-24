@@ -4,35 +4,19 @@ namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
-use Psalm\Storage\ImmutableNonCloneableTrait;
-use Psalm\Type\Atomic\TClassConstant;
-use Psalm\Type\Atomic\TEnumCase;
-use Psalm\Type\Atomic\TLiteralFloat;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
-use UnexpectedValueException;
 use Psalm\Storage\Assertion\Falsy;
-use Psalm\Tests\TypeReconciliation\ConditionalTest;
 
 use function array_filter;
 use function array_intersect_key;
+use function array_keys;
 use function array_merge;
 use function array_pop;
 use function array_values;
-use function assert;
+use function count;
+use function implode;
 use function in_array;
 use function mt_rand;
-use function array_diff;
-use function array_keys;
-use function count;
-use function hash;
-use function implode;
-use function ksort;
 use function reset;
-use function serialize;
-use function substr;
-
-use const PHP_VERSION_ID;
 
 /**
  * Represents a CNF expression ((A||B) && (C||D) && ...)
@@ -66,7 +50,7 @@ final class ClauseConjunction
         $this->isSimplified = $simplified;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return '('.implode(') && (', $this->clauses).')';
     }
@@ -85,7 +69,6 @@ final class ClauseConjunction
 
     /**
      * @param pure-callable(Clause): bool $cb
-     * @return self
      */
     public function filter(callable $cb): self
     {
@@ -95,13 +78,15 @@ final class ClauseConjunction
     /**
      * @return int<0, max>
      */
-    public function count(): int {
+    public function count(): int
+    {
         return count($this->clauses);
     }
     /**
      * Conjunct another set of clauses to this one.
      */
-    public function and(self $other): self {
+    public function and(self $other): self
+    {
         if ($other === $this) {
             return $this;
         }

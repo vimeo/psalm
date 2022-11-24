@@ -21,10 +21,8 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
-use function array_filter;
 use function array_keys;
 use function array_merge;
-use function array_values;
 use function count;
 
 /**

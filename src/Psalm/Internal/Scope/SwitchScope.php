@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Scope;
 
 use PhpParser;
-use Psalm\Internal\Clause;
 use Psalm\Internal\ClauseConjunction;
 use Psalm\Type\Union;
 

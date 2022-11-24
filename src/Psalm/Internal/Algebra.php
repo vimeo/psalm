@@ -2,23 +2,10 @@
 
 namespace Psalm\Internal;
 
-use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
-use Psalm\Storage\Assertion\Falsy;
-use Psalm\Tests\TypeReconciliation\ConditionalTest;
-use UnexpectedValueException;
 
-use function array_filter;
-use function array_intersect_key;
-use function array_keys;
-use function array_merge;
-use function array_pop;
-use function array_values;
 use function assert;
 use function count;
-use function in_array;
-use function mt_rand;
-use function reset;
 
 /**
  * @internal

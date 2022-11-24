@@ -13,7 +13,6 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -1799,7 +1798,9 @@ class AssignmentAnalyzer
                         $right_clauses
                     );
 
-                    $assignment_clauses = new ClauseConjunction([new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)]);
+                    $assignment_clauses = new ClauseConjunction([
+                        new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)
+                    ]);
                     $assignment_clauses = $assignment_clauses->combineOrredClauses(
                         $right_clauses,
                         $cond_object_id
