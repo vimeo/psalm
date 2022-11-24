@@ -54,6 +54,6 @@ class SwitchScope
 
     public function __construct()
     {
-        $this->negated_clauses = new ClauseConjunction([]);
+        $this->negated_clauses = ClauseConjunction::empty();
     }
 }

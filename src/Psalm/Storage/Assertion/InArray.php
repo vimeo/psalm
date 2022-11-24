@@ -17,7 +17,7 @@ final class InArray extends Assertion
         $this->type = $type;
     }
 
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return new NotInArray($this->type);
     }

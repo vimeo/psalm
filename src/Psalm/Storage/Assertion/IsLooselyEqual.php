@@ -17,7 +17,7 @@ final class IsLooselyEqual extends Assertion
         $this->type = $type;
     }
 
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return new IsNotLooselyEqual($this->type);
     }

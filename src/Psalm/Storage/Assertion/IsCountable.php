@@ -9,7 +9,7 @@ use Psalm\Storage\Assertion;
  */
 final class IsCountable extends Assertion
 {
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return new IsNotCountable(true);
     }

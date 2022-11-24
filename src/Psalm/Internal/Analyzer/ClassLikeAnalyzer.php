@@ -141,7 +141,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
                 $method_analyzer->analyze($context, new NodeDataProvider(), null, true);
 
-                $context->clauses = new ClauseConjunction([]);
+                $context->clauses = ClauseConjunction::empty();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(

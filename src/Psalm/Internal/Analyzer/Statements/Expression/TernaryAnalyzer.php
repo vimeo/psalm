@@ -81,7 +81,7 @@ class TernaryAnalyzer
         );
 
         if (count($if_clauses->clauses) > 200) {
-            $if_clauses = new ClauseConjunction([]);
+            $if_clauses = ClauseConjunction::empty();
         }
 
         $mixed_var_ids = [];
@@ -143,7 +143,7 @@ class TernaryAnalyzer
                 && $if_context->clauses->clauses[0]->wedge
                 && !$if_context->clauses->clauses[0]->possibilities
             ) {
-                $if_context->clauses = new ClauseConjunction([]);
+                $if_context->clauses = ClauseConjunction::empty();
                 $if_context->reconciled_expression_clauses = [];
             }
         }
@@ -162,7 +162,7 @@ class TernaryAnalyzer
                     false
                 );
             } catch (ComplicatedExpressionException $e) {
-                $if_scope->negated_clauses = new ClauseConjunction([]);
+                $if_scope->negated_clauses = ClauseConjunction::empty();
             }
         }
 

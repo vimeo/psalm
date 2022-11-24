@@ -465,9 +465,9 @@ class LoopAnalyzer
                 foreach ($pre_condition_clauses as $pre) {
                     $negated_pre_condition_clauses = [...$negated_pre_condition_clauses, ...$pre->clauses];
                 }
-                $negated_pre_condition_clauses = (new ClauseConjunction($negated_pre_condition_clauses))->getNegation();
+                $negated_pre_condition_clauses = (ClauseConjunction::new($negated_pre_condition_clauses))->getNegation();
             } catch (ComplicatedExpressionException $e) {
-                $negated_pre_condition_clauses = new ClauseConjunction([]);
+                $negated_pre_condition_clauses = ClauseConjunction::empty();
             }
 
             $negated_pre_condition_types = $negated_pre_condition_clauses->getTruthsFromFormula();

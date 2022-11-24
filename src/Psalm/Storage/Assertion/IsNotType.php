@@ -22,7 +22,7 @@ final class IsNotType extends Assertion
         return true;
     }
 
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return new IsType($this->type);
     }

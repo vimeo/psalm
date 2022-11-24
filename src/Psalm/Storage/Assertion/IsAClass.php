@@ -21,7 +21,7 @@ final class IsAClass extends Assertion
         $this->allow_string = $allow_string;
     }
 
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return new IsNotAClass($this->type, $this->allow_string);
     }

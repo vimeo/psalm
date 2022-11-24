@@ -171,21 +171,16 @@ class OrAnalyzer
         if ($left_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $left_context->reconciled_expression_clauses;
 
-            $negated_left_clauses = array_values(
-                array_filter(
-                    $negated_left_clauses->clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
-                )
+            $negated_left_clauses = $negated_left_clauses->filter(
+                static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
             );
 
-            if (count($negated_left_clauses) === 1
-                && $negated_left_clauses[0]->wedge
-                && !$negated_left_clauses[0]->possibilities
+            if (count($negated_left_clauses->clauses) === 1
+                && $negated_left_clauses->clauses[0]->wedge
+                && !$negated_left_clauses->clauses[0]->possibilities
             ) {
-                $negated_left_clauses = [];
+                $negated_left_clauses = ClauseConjunction::empty();
             }
-
-            $negated_left_clauses = new ClauseConjunction($negated_left_clauses);
         }
 
         $clauses_for_right_analysis = $context->clauses->andSimplified($negated_left_clauses);

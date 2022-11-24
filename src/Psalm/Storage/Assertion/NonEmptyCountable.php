@@ -16,7 +16,7 @@ final class NonEmptyCountable extends Assertion
         $this->is_negatable = $is_negatable;
     }
 
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return $this->is_negatable ? new NotNonEmptyCountable() : new Any();
     }

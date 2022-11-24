@@ -22,7 +22,7 @@ final class NestedAssertions extends Assertion
         $this->assertions = $assertions;
     }
 
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return new NotNestedAssertions($this->assertions);
     }

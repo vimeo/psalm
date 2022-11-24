@@ -10,7 +10,7 @@ use UnexpectedValueException;
  */
 final class HasStringArrayAccess extends Assertion
 {
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         throw new UnexpectedValueException('This should never be called');
     }

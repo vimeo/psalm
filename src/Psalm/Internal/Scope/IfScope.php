@@ -94,7 +94,7 @@ class IfScope
 
     public function __construct()
     {
-        $this->reasonable_clauses = new ClauseConjunction([]);
-        $this->negated_clauses = new ClauseConjunction([]);
+        $this->reasonable_clauses = ClauseConjunction::empty();
+        $this->negated_clauses = ClauseConjunction::empty();
     }
 }

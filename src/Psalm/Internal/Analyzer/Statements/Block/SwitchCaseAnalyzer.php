@@ -451,7 +451,7 @@ class SwitchCaseAnalyzer
                         false
                     );
                 } catch (ComplicatedExpressionException $e) {
-                    $negated_case_clauses = new ClauseConjunction([]);
+                    $negated_case_clauses = ClauseConjunction::empty();
                 }
             }
 

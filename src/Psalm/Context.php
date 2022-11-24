@@ -426,7 +426,7 @@ final class Context
     public function __construct(?string $self = null)
     {
         $this->self = $self;
-        $this->clauses = new ClauseConjunction([]);
+        $this->clauses = ClauseConjunction::empty();
     }
 
     public function __destruct()
@@ -664,7 +664,14 @@ final class Context
             $included_clauses[] = $c;
         }
 
-        return [new ClauseConjunction($included_clauses), new ClauseConjunction($rejected_clauses)];
+        $included_clauses = count($included_clauses) === count($clauses->clauses)
+            ? $clauses
+            : ClauseConjunction::new($included_clauses);
+        $rejected_clauses = count($rejected_clauses) === count($clauses->clauses)
+            ? $clauses
+            : ClauseConjunction::new($rejected_clauses);
+
+        return [$included_clauses, $rejected_clauses];
     }
 
     public static function filterClauses(
@@ -729,7 +736,9 @@ final class Context
             }
         }
 
-        return new ClauseConjunction($clauses_to_keep);
+        return count($clauses_to_keep) === $clauses->count()
+            ? $clauses
+            : ClauseConjunction::new($clauses_to_keep);
     }
 
     public function removeVarFromConflictingClauses(
@@ -820,7 +829,9 @@ final class Context
             }
         }
 
-        $this->clauses = new ClauseConjunction($clauses_to_keep);
+        if (count($clauses_to_keep) !== $this->clauses->count()) {
+            $this->clauses = ClauseConjunction::new($clauses_to_keep);
+        }
     }
 
     public function updateChecks(Context $op_context): void

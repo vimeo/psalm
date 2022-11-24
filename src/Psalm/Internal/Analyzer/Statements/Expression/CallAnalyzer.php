@@ -832,7 +832,7 @@ class CallAnalyzer
             } elseif ($arg_value
                 && count($var_possibilities->rule) === 1
             ) {
-                $assert_clauses = new ClauseConjunction([]);
+                $assert_clauses = ClauseConjunction::empty();
 
                 $single_rule = $var_possibilities->rule[0];
 

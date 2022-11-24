@@ -2328,7 +2328,7 @@ class AssertionFinder
             $notif_types = $notif_types[0];
 
             if (count($notif_types) === 1) {
-                $if_types = (new ClauseConjunction($notif_types))->getNegation()->clauses;
+                $if_types = (ClauseConjunction::new($notif_types))->getNegation()->clauses;
             }
         }
 
@@ -3027,7 +3027,7 @@ class AssertionFinder
             $notif_types = $notif_types[0];
 
             if (count($notif_types) === 1) {
-                $if_types = (new ClauseConjunction($if_types))->getNegation()->clauses;
+                $if_types = (ClauseConjunction::new($if_types))->getNegation()->clauses;
             }
         }
 

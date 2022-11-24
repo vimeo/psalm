@@ -94,6 +94,7 @@ class ElseIfAnalyzer
         );
 
         $elseif_clauses_handled = [];
+        $has_extra_clauses = false;
 
         foreach ($elseif_clauses->clauses as $clause) {
             $keys = array_keys($clause->possibilities);
@@ -103,6 +104,7 @@ class ElseIfAnalyzer
                 foreach ($mixed_var_ids as $mixed_var_id) {
                     if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
                         $elseif_clauses_handled[] = new Clause([], $elseif_cond_id, $elseif_cond_id, true);
+                        $has_extra_clauses = true;
                         break 2;
                     }
                 }
@@ -111,15 +113,19 @@ class ElseIfAnalyzer
             $elseif_clauses_handled[] = $clause;
         }
 
-        $elseif_clauses = $elseif_clauses_handled;
+        $elseif_clauses = count($entry_clauses) === $elseif_clauses->clauses->count() && !$has_extra_clauses
+            ? $elseif_clauses->clauses
+            : ClauseConjunction::new($elseif_clauses_handled);
 
         $entry_clauses = [];
+        $has_extra_clauses = false;
 
         foreach ($if_conditional_scope->entry_clauses->clauses as $c) {
             foreach ($c->possibilities as $key => $_value) {
                 foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
                     if (preg_match('/^'.preg_quote($conditional_assigned_var_id, '/').'(\[|-|$)/', $key)) {
                         $entry_clauses[] =  new Clause([], $elseif_cond_id, $elseif_cond_id, true);
+                        $has_extra_clauses = true;
                         break 2;
                     }
                 }
@@ -128,8 +134,9 @@ class ElseIfAnalyzer
             $entry_clauses[] = $c;
         }
 
-        $entry_clauses = new ClauseConjunction($entry_clauses);
-        $elseif_clauses = new ClauseConjunction($elseif_clauses);
+        $entry_clauses = count($entry_clauses) === $if_conditional_scope->entry_clauses->count() && !$has_extra_clauses
+            ? $if_conditional_scope->entry_clauses
+            : ClauseConjunction::new($entry_clauses);
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
@@ -331,10 +338,10 @@ class ElseIfAnalyzer
                     $elseif_cond_id
                 );
             } else {
-                $if_scope->reasonable_clauses = new ClauseConjunction([]);
+                $if_scope->reasonable_clauses = ClauseConjunction::empty();
             }
         } else {
-            $if_scope->reasonable_clauses = new ClauseConjunction([]);
+            $if_scope->reasonable_clauses = ClauseConjunction::empty();
         }
 
         if ($negated_elseif_types) {
@@ -413,7 +420,7 @@ class ElseIfAnalyzer
                 $elseif_clauses->getNegation()
             );
         } catch (ComplicatedExpressionException $e) {
-            $if_scope->negated_clauses = new ClauseConjunction([]);
+            $if_scope->negated_clauses = ClauseConjunction::empty();
         }
 
         // Track references set in the elseif to make sure they aren't reused later

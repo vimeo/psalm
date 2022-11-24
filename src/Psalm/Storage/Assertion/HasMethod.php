@@ -16,7 +16,7 @@ final class HasMethod extends Assertion
         $this->method = $method;
     }
 
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return new DoesNotHaveMethod($this->method);
     }

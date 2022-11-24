@@ -28,7 +28,7 @@ class AlgebraTest extends TestCase
 {
     public function testNegateFormula(): void
     {
-        $formula = new ClauseConjunction([
+        $formula = ClauseConjunction::new([
             new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
         ]);
 
@@ -37,7 +37,7 @@ class AlgebraTest extends TestCase
         $this->assertCount(1, $negated_formula->clauses);
         $this->assertSame('!$a', (string)$negated_formula->clauses[0]);
 
-        $formula = new ClauseConjunction([
+        $formula = ClauseConjunction::new([
             new Clause(['$a' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 1),
         ]);
 
@@ -47,7 +47,7 @@ class AlgebraTest extends TestCase
         $this->assertSame('!$a', (string)$negated_formula->clauses[0]);
         $this->assertSame('!$b', (string)$negated_formula->clauses[1]);
 
-        $formula = new ClauseConjunction([
+        $formula = ClauseConjunction::new([
             new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
             new Clause(['$b' => ['truthy' => new Truthy()]], 1, 2),
         ]);
@@ -60,7 +60,7 @@ class AlgebraTest extends TestCase
         $a1 = new IsType(new TInt());
         $a2 = new IsType(new TString());
 
-        $formula = new ClauseConjunction([
+        $formula = ClauseConjunction::new([
             new Clause(
                 [
                     '$a' => [(string)$a1 => $a1, (string)$a2 => $a2],
@@ -82,7 +82,7 @@ class AlgebraTest extends TestCase
     public function testNegateFormulaWithUnreconcilableTerm(): void
     {
         $a1 = new IsType(new TInt());
-        $formula = new ClauseConjunction([
+        $formula = ClauseConjunction::new([
             new Clause(['$a' => [(string)$a1 => $a1]], 1, 1),
             new Clause(['$b' => [(string)$a1 => $a1]], 1, 2, false, false),
         ]);

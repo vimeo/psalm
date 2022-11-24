@@ -247,7 +247,7 @@ class IfAnalyzer
             }
         } else {
             if (!$has_break_statement) {
-                $if_scope->reasonable_clauses = new ClauseConjunction([]);
+                $if_scope->reasonable_clauses = ClauseConjunction::empty();
 
                 // If we're assigning inside
                 if ($if_conditional_scope->assigned_in_conditional_var_ids

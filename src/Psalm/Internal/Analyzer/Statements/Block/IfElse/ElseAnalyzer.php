@@ -46,7 +46,7 @@ class ElseAnalyzer
             $if_scope->assigned_var_ids = [];
             $if_scope->new_vars = [];
             $if_scope->redefined_vars = [];
-            $if_scope->reasonable_clauses = new ClauseConjunction([]);
+            $if_scope->reasonable_clauses = ClauseConjunction::empty();
 
             return null;
         }
@@ -172,7 +172,7 @@ class ElseAnalyzer
                 true
             );
 
-            $if_scope->reasonable_clauses = new ClauseConjunction([]);
+            $if_scope->reasonable_clauses = ClauseConjunction::empty();
         }
 
         // update the parent context as necessary

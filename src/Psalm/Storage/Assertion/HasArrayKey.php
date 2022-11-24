@@ -17,7 +17,7 @@ final class HasArrayKey extends Assertion
         $this->key = $key;
     }
 
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         throw new UnexpectedValueException('This should never be called');
     }

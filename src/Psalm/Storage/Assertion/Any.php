@@ -9,7 +9,7 @@ use Psalm\Storage\Assertion;
  */
 final class Any extends Assertion
 {
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return $this;
     }

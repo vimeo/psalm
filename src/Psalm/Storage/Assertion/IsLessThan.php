@@ -16,7 +16,7 @@ final class IsLessThan extends Assertion
         $this->value = $value;
     }
 
-    protected function makeNegation(): Assertion
+    public function getNegation(): Assertion
     {
         return new IsGreaterThanOrEqualTo($this->value);
     }

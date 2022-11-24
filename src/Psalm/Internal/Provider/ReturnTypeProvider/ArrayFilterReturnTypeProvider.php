@@ -277,7 +277,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                                 $codebase
                             );
                         } catch (ComplicatedExpressionException $e) {
-                            $filter_clauses = new ClauseConjunction([]);
+                            $filter_clauses = ClauseConjunction::empty();
                         }
 
                         $assertions = $filter_clauses->getTruthsFromFormula(

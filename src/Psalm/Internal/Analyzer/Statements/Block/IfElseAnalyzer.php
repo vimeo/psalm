@@ -136,10 +136,11 @@ class IfElseAnalyzer
         );
 
         if (count($if_clauses->clauses) > 200) {
-            $if_clauses = new ClauseConjunction([]);
+            $if_clauses = ClauseConjunction::empty();
         }
 
         $if_clauses_handled = [];
+        $has_extra = false;
         foreach ($if_clauses->clauses as $clause) {
             $keys = array_keys($clause->possibilities);
 
@@ -149,6 +150,7 @@ class IfElseAnalyzer
                 foreach ($mixed_var_ids as $mixed_var_id) {
                     if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
                         $clause = new Clause([], $cond_object_id, $cond_object_id, true);
+                        $has_extra = true;
                         break 2;
                     }
                 }
@@ -183,7 +185,7 @@ class IfElseAnalyzer
                 && $if_context->clauses->clauses[0]->wedge
                 && !$if_context->clauses->clauses[0]->possibilities
             ) {
-                $if_context->clauses = new ClauseConjunction([]);
+                $if_context->clauses = ClauseConjunction::empty();
                 $if_context->reconciled_expression_clauses = [];
             }
         }
@@ -205,7 +207,7 @@ class IfElseAnalyzer
                     false
                 );
             } catch (ComplicatedExpressionException $e) {
-                $if_scope->negated_clauses = new ClauseConjunction([]);
+                $if_scope->negated_clauses = ClauseConjunction::empty();
             }
         }
 
