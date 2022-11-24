@@ -64,7 +64,12 @@ final class ClauseConjunction
         if ($this->isSimplified) {
             return $this;
         }
-        return new self(self::simplifyCNF($this->clauses), true);
+        $simplified = new self(self::simplifyCNF($this->clauses), true);
+        if ($this->negation) {
+            $simplified->negation = new self($this->negation->clauses, true);
+            $simplified->negation->negation = $simplified;
+        }
+        return $simplified;
     }
 
     /**
