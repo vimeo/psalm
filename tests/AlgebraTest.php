@@ -36,6 +36,7 @@ class AlgebraTest extends TestCase
 
         $this->assertCount(1, $negated_formula->clauses);
         $this->assertSame('!$a', (string)$negated_formula->clauses[0]);
+        $this->assertSame($formula, $negated_formula->getNegation());
 
         $formula = new ClauseConjunction([
             new Clause(['$a' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 1),
@@ -46,6 +47,7 @@ class AlgebraTest extends TestCase
         $this->assertCount(2, $negated_formula->clauses);
         $this->assertSame('!$a', (string)$negated_formula->clauses[0]);
         $this->assertSame('!$b', (string)$negated_formula->clauses[1]);
+        $this->assertSame($formula, $negated_formula->getNegation());
 
         $formula = new ClauseConjunction([
             new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
@@ -56,6 +58,7 @@ class AlgebraTest extends TestCase
 
         $this->assertCount(1, $negated_formula->clauses);
         $this->assertSame('(!$a) || (!$b)', (string)$negated_formula->clauses[0]);
+        $this->assertSame($formula, $negated_formula->getNegation());
 
         $a1 = new IsType(new TInt());
         $a2 = new IsType(new TString());
@@ -77,6 +80,7 @@ class AlgebraTest extends TestCase
         $this->assertSame('$a is not int', (string)$negated_formula->clauses[0]);
         $this->assertSame('$a is not string', (string)$negated_formula->clauses[1]);
         $this->assertSame('!$b', (string)$negated_formula->clauses[2]);
+        $this->assertSame($formula, $negated_formula->getNegation());
     }
 
     public function testNegateFormulaWithUnreconcilableTerm(): void
@@ -172,16 +176,17 @@ class AlgebraTest extends TestCase
 
     public function testSimplifySimpleCNF(): void
     {
-        $formula = [
+        $formula = new ClauseConjunction([
             new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
             new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['falsy' => new Falsy()]], 1, 2),
-        ];
+        ]);
 
-        $simplified_formula = (new ClauseConjunction($formula))->simplify();
+        $simplified_formula = $formula->simplify();
 
         $this->assertCount(2, $simplified_formula->clauses);
         $this->assertSame('$a', (string)$simplified_formula->clauses[0]);
         $this->assertSame('!$b', (string)$simplified_formula->clauses[1]);
+        $this->assertSame($simplified_formula, $simplified_formula->simplify());
     }
 
     public function testSimplifyCNFWithOneUselessTerm(): void
@@ -227,7 +232,7 @@ class AlgebraTest extends TestCase
         $this->assertSame('$b', (string)$simplified_formula->clauses[0]);
     }
 
-    /*public function testGroupImpossibilities(): void
+    public function testGroupImpossibilities(): void
     {
         $a1 = new IsIdentical(new TArray([Type::getArrayKey(), Type::getMixed()]));
 
@@ -241,7 +246,7 @@ class AlgebraTest extends TestCase
             true,
             true,
             []
-        ))->calculateNegation();
+        ));
 
         $a2 = new IsIsset();
 
@@ -255,10 +260,11 @@ class AlgebraTest extends TestCase
             true,
             true,
             []
-        ))->calculateNegation();
+        ));
 
-        $result_clauses = Algebra::groupImpossibilities([$clause1, $clause2]);
+        $result_clauses = (new ClauseConjunction([$clause1, $clause2]))->getNegation()->clauses;
 
-        $this->assertCount(0, $result_clauses);
-    }*/
+        $this->assertCount(1, $result_clauses);
+        $this->assertCount(0, $result_clauses[0]->possibilities);
+    }
 }
