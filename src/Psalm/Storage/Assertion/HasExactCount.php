@@ -18,7 +18,7 @@ final class HasExactCount extends Assertion
         $this->count = $count;
     }
 
-    public function getNegation(): Assertion
+    protected function makeNegation(): Assertion
     {
         return new DoesNotHaveExactCount($this->count);
     }

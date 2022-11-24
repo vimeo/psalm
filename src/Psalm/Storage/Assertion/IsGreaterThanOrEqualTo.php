@@ -21,7 +21,7 @@ final class IsGreaterThanOrEqualTo extends Assertion
         return true;
     }
 
-    public function getNegation(): Assertion
+    protected function makeNegation(): Assertion
     {
         return new IsLessThan($this->value);
     }

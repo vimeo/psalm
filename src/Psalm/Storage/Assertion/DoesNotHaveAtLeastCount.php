@@ -18,7 +18,7 @@ final class DoesNotHaveAtLeastCount extends Assertion
         $this->count = $count;
     }
 
-    public function getNegation(): Assertion
+    protected function makeNegation(): Assertion
     {
         return new HasAtLeastCount($this->count);
     }

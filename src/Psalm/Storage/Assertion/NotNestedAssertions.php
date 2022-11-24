@@ -27,7 +27,7 @@ final class NotNestedAssertions extends Assertion
         return true;
     }
 
-    public function getNegation(): Assertion
+    protected function makeNegation(): Assertion
     {
         return new NestedAssertions($this->assertions);
     }

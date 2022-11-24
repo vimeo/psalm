@@ -22,7 +22,7 @@ final class IsNotLooselyEqual extends Assertion
         return true;
     }
 
-    public function getNegation(): Assertion
+    protected function makeNegation(): Assertion
     {
         return new IsLooselyEqual($this->type);
     }

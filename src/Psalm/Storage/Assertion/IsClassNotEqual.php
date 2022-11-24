@@ -21,7 +21,7 @@ final class IsClassNotEqual extends Assertion
         return true;
     }
 
-    public function getNegation(): Assertion
+    protected function makeNegation(): Assertion
     {
         return new IsClassEqual($this->type);
     }

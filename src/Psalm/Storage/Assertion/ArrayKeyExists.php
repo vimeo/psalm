@@ -9,7 +9,7 @@ use Psalm\Storage\Assertion;
  */
 final class ArrayKeyExists extends Assertion
 {
-    public function getNegation(): Assertion
+    protected function makeNegation(): Assertion
     {
         return new ArrayKeyDoesNotExist();
     }

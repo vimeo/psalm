@@ -22,7 +22,7 @@ final class IsNotIdentical extends Assertion
         return true;
     }
 
-    public function getNegation(): Assertion
+    protected function makeNegation(): Assertion
     {
         return new IsIdentical($this->type);
     }
