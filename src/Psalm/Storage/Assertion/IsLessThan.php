@@ -31,7 +31,7 @@ final class IsLessThan extends Assertion
         return $assertion instanceof IsGreaterThanOrEqualTo && $this->value === $assertion->value;
     }
 
-    public function doesFilterNull(): bool
+    public function doesFilterNullOrFalse(): bool
     {
         return $this->value === 0;
     }
