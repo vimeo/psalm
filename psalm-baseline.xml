@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@53e3889745852409b704e0035d93e0819d522912">
+<files psalm-version="dev-master@12188caad4b2e4fd7a49a7199e97af2ba1d4c58e">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -28,6 +28,11 @@
       <code>$matches[1]</code>
       <code>$matches[2]</code>
       <code>$matches[3]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/AlgebraAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$mini_formula_2-&gt;clauses[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassAnalyzer.php">
@@ -101,6 +106,11 @@
       <code>$getclass_expr-&gt;getArgs()[0]</code>
       <code>$gettype_expr-&gt;getArgs()[0]</code>
       <code>$gettype_expr-&gt;getArgs()[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/AndAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$context_clauses-&gt;clauses[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/ArithmeticOpAnalyzer.php">
@@ -190,6 +200,22 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$stmt-&gt;expr-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/ClauseConjunction.php">
+    <ImpureByReferenceAssignment occurrences="1">
+      <code>$active_truths</code>
+    </ImpureByReferenceAssignment>
+    <ImpureFunctionCall occurrences="3">
+      <code>mt_rand</code>
+      <code>mt_rand</code>
+      <code>mt_rand</code>
+    </ImpureFunctionCall>
+    <ImpureMethodCall occurrences="1">
+      <code>empty</code>
+    </ImpureMethodCall>
+    <InaccessibleProperty occurrences="1">
+      <code>$this-&gt;negation</code>
+    </InaccessibleProperty>
   </file>
   <file src="src/Psalm/Internal/Codebase/InternalCallMapHandler.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">

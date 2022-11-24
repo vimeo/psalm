@@ -84,7 +84,7 @@ final class SarifReport extends Report
                 ],
             ];
 
-            if ($issue_data->taint_trace != null) {
+            if ($issue_data->taint_trace !== null) {
                 $jsonEntry['codeFlows'] = [
                     [
                         'message' => [

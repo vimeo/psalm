@@ -461,11 +461,11 @@ class LoopAnalyzer
             // and apply it to the current context
 
             try {
-                $negated_pre_condition_clauses = [];
+                $acc = array_pop($pre_condition_clauses);
                 foreach ($pre_condition_clauses as $pre) {
-                    $negated_pre_condition_clauses = [...$negated_pre_condition_clauses, ...$pre->clauses];
+                    $acc = $pre->and($acc);
                 }
-                $negated_pre_condition_clauses = (new ClauseConjunction($negated_pre_condition_clauses))->getNegation();
+                $negated_pre_condition_clauses = $acc->getNegation();
             } catch (ComplicatedExpressionException $e) {
                 $negated_pre_condition_clauses = ClauseConjunction::empty();
             }

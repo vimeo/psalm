@@ -78,10 +78,10 @@ class TernaryAnalyzer
             $context->self,
             $statements_analyzer,
             $codebase
-        )->clauses;
+        );
 
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
+        if ($if_clauses->count() > 200) {
+            $if_clauses = ClauseConjunction::empty();
         }
 
         $mixed_var_ids = [];
@@ -98,27 +98,27 @@ class TernaryAnalyzer
             }
         }
 
-        $if_clauses = array_map(
-            static function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
-                $keys = array_keys($c->possibilities);
+        $changed = false;
+        $if_clauses_clauses = $if_clauses->clauses;
+        foreach ($if_clauses_clauses as $k => $c) {
+            $keys = array_keys($c->possibilities);
 
-                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
-                foreach ($keys as $key) {
-                    foreach ($mixed_var_ids as $mixed_var_id) {
-                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new Clause([], $cond_object_id, $cond_object_id, true);
-                        }
+            foreach ($keys as $key) {
+                foreach ($mixed_var_ids as $mixed_var_id) {
+                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                        $if_clauses_clauses[$k] = new Clause([], $cond_object_id, $cond_object_id, true);
+                        $changed = true;
                     }
                 }
+            }
+        }
 
-                return $c;
-            },
-            $if_clauses
-        );
-
-        $if_clauses = new ClauseConjunction($if_clauses);
-        $if_clauses = $if_clauses->simplify();
+        if ($changed) {
+            $if_clauses = new ClauseConjunction($if_clauses_clauses);
+            $if_clauses = $if_clauses->simplify();
+        }
 
         $entry_clauses = $context->clauses;
 

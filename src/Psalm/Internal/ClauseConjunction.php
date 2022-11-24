@@ -66,6 +66,10 @@ final class ClauseConjunction
         $this->isSimplified = $simplified;
     }
 
+    public function __toString()
+    {
+        return '('.implode(') && (', $this->clauses).')';
+    }
     public static function empty(): self
     {
         return self::$empty ??= new self([], true);
@@ -95,10 +99,10 @@ final class ClauseConjunction
         return count($this->clauses);
     }
     /**
-     * Conjunct another set of clauses to this one, simplifying the resulting expression.
+     * Conjunct another set of clauses to this one.
      */
     public function and(self $other): self {
-        if ($other === $this || $other->clauses === $this->clauses) {
+        if ($other === $this) {
             return $this;
         }
         if (!$this->clauses) {
@@ -118,7 +122,7 @@ final class ClauseConjunction
      */
     public function andSimplified(self $other): self
     {
-        if ($other === $this || $other->clauses === $this->clauses) {
+        if ($other === $this) {
             return $this;
         }
         if (!$this->clauses) {
