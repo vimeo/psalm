@@ -161,8 +161,6 @@ class IfElseAnalyzer
             ? $if_clauses
             : new ClauseConjunction($if_clauses_handled);
 
-        $if_clauses = $if_clauses->simplify();
-
         $entry_clauses = $context->clauses;
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
@@ -173,6 +171,8 @@ class IfElseAnalyzer
             $stmt->cond,
             $assigned_in_conditional_var_ids
         );
+
+        $if_clauses = $if_clauses->simplify();
 
         $if_context->clauses = $entry_clauses->andSimplified($if_clauses);
 
