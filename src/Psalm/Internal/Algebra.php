@@ -65,26 +65,4 @@ class Algebra
 
         return $negated_types;
     }
-
-    /**
-     * @psalm-pure
-     */
-    public static function combineOrredClauses(
-        ?ClauseConjunction $left_clauses,
-        ?ClauseConjunction $right_clauses,
-        int $conditional_object_id
-    ): ?ClauseConjunction {
-        if (!$left_clauses && !$right_clauses) {
-            return new ClauseConjunction(
-                [new Clause([], $conditional_object_id, $conditional_object_id, true)]
-            );
-        }
-        if (!$left_clauses) {
-            return $right_clauses;
-        }
-        if (!$right_clauses) {
-            return $left_clauses;
-        }
-        return $left_clauses->combineOrredClauses($right_clauses, $conditional_object_id);
-    }
 }
