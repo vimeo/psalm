@@ -810,7 +810,7 @@ class ArgumentAnalyzer
         if ($input_type->isNever()) {
             IssueBuffer::maybeAdd(
                 new NoValue(
-                    'This function or method call never returns output',
+                    'All possible types for this argument were invalidated - This may be dead code',
                     $arg_location
                 ),
                 $statements_analyzer->getSuppressedIssues()
