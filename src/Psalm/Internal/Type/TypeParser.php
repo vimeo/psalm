@@ -90,7 +90,6 @@ use function is_numeric;
 use function preg_match;
 use function preg_replace;
 use function reset;
-use function str_starts_with;
 use function stripslashes;
 use function strlen;
 use function strpos;
@@ -1472,7 +1471,7 @@ class TypeParser
             return new TObjectWithProperties($properties, [], [], $from_docblock);
         }
 
-        $callable = str_starts_with($type, 'callable-');
+        $callable = strpos($type, 'callable-') === 0;
         $class = TKeyedArray::class;
         if ($callable) {
             $class = TCallableKeyedArray::class;
