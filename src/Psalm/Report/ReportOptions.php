@@ -43,4 +43,7 @@ final class ReportOptions
 
     /** @var bool */
     public $in_ci = false;
+
+    /** @var bool */
+    public $pretty_print_array = false;
 }

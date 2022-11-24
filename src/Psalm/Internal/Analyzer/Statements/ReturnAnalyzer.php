@@ -25,6 +25,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\InvolvedTypes;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
@@ -481,7 +482,11 @@ class ReturnAnalyzer
                                     'The inferred type \'' . $inferred_type->getId()
                                         . '\' does not match the declared return '
                                         . 'type \'' . $local_return_type->getId() . '\' for ' . $cased_method_id,
-                                    new CodeLocation($source, $stmt->expr)
+                                    new CodeLocation($source, $stmt->expr),
+                                    new InvolvedTypes(
+                                        $inferred_type->getId(),
+                                        $local_return_type->getId()
+                                    )
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             );

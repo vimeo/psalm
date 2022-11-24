@@ -2,6 +2,8 @@
 
 namespace Psalm\Internal\Analyzer;
 
+use Psalm\InvolvedTypes;
+
 use function str_pad;
 
 use const STR_PAD_LEFT;
@@ -128,6 +130,12 @@ class IssueData
     public $dupe_key;
 
     /**
+     * @var ?InvolvedTypes
+     * @readonly
+     */
+    public $involvedTypes;
+
+    /**
      * @param ?list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      * @param ?list<DataFlowNodeData> $other_references
      */
@@ -151,7 +159,8 @@ class IssueData
         int $error_level = -1,
         ?array $taint_trace = null,
         array $other_references = null,
-        ?string $dupe_key = null
+        ?string $dupe_key = null,
+        ?InvolvedTypes $involvedTypes = null
     ) {
         $this->severity = $severity;
         $this->line_from = $line_from;
@@ -174,5 +183,6 @@ class IssueData
         $this->taint_trace = $taint_trace;
         $this->other_references = $other_references;
         $this->dupe_key = $dupe_key;
+        $this->involvedTypes = $involvedTypes;
     }
 }

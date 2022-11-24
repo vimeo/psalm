@@ -6,6 +6,10 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
+use Psalm\Report\PrettyPrintArray\PrettyCompare;
+use Psalm\Report\PrettyPrintArray\PrettyFormat;
+use Psalm\Report\PrettyPrintArray\PrettyHelper;
+use Throwable;
 
 use function basename;
 use function get_cfg_var;
@@ -13,6 +17,8 @@ use function ini_get;
 use function strlen;
 use function strtr;
 use function substr;
+
+use const PHP_EOL;
 
 final class ConsoleReport extends Report
 {
@@ -65,6 +71,10 @@ final class ConsoleReport extends Report
             }
         }
 
+        if ($this->pretty_print_array === true) {
+            $issue_string .= $this->prettyPrintArray($issue_data);
+        }
+
         if ($issue_data->other_references) {
             if ($this->show_snippet) {
                 $issue_string .= "\n";
@@ -74,6 +84,28 @@ final class ConsoleReport extends Report
         }
 
         return $issue_string;
+    }
+
+    private function prettyPrintArray(IssueData $issue_data): string
+    {
+        $prettyFormat = new PrettyFormat();
+        $prettyPaired = new PrettyCompare();
+
+        try {
+            $involvedTypes = $issue_data->involvedTypes;
+            if (!$involvedTypes) {
+                return '';
+            }
+
+            $arrayPrettyPrinted0 = $prettyFormat->format($involvedTypes->getDeclaredType());
+            $arrayPrettyPrinted1 = $prettyFormat->format($involvedTypes->getInferredType());
+            $toIssue = PHP_EOL.$prettyPaired->compare($arrayPrettyPrinted0, $arrayPrettyPrinted1);
+
+            return PrettyHelper::revertNormalizedTokens($toIssue);
+        } catch (Throwable $throwable) {
+            //todo: log ?
+            return 'Pretty Print Array failed for unexpected error. Error: ' . $throwable->getMessage();
+        }
     }
 
     /**

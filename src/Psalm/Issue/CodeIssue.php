@@ -4,6 +4,7 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\InvolvedTypes;
 
 use function array_pop;
 use function explode;
@@ -32,12 +33,19 @@ abstract class CodeIssue
      */
     public $dupe_key;
 
+    /**
+     * @var ?InvolvedTypes
+     */
+    public $involvedTypes;
+
     public function __construct(
         string $message,
-        CodeLocation $code_location
+        CodeLocation $code_location,
+        ?InvolvedTypes $involvedTypes = null
     ) {
         $this->code_location = $code_location;
         $this->message = $message;
+        $this->involvedTypes = $involvedTypes;
     }
 
     public function getShortLocationWithPrevious(): string
@@ -103,7 +111,8 @@ abstract class CodeIssue
                     )
                 ]
                 : null,
-            $this->dupe_key
+            $this->dupe_key,
+            $this->involvedTypes ?? null
         );
     }
 }
