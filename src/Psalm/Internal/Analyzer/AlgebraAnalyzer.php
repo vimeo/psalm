@@ -93,7 +93,7 @@ class AlgebraAnalyzer
                         break;
                     }
 
-                    if ($negated_clause_2->possibilities[$key] !== $keyed_possibilities) {
+                    if ($negated_clause_2->possibilities[$key] != $keyed_possibilities) {
                         $negated_clause_2_contains_1_possibilities = false;
                         break;
                     }
