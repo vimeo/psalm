@@ -113,7 +113,6 @@ class TernaryAnalyzer
 
         if ($changed) {
             $if_clauses = new ClauseConjunction($if_clauses_clauses);
-            $if_clauses = $if_clauses->simplify();
         }
 
         $entry_clauses = $context->clauses;
@@ -126,6 +125,8 @@ class TernaryAnalyzer
             $stmt->cond,
             $assigned_in_conditional_var_ids
         );
+
+        $if_clauses = $if_clauses->simplify();
 
         $ternary_context_clauses = $entry_clauses->andSimplified($if_clauses);
 
