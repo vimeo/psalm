@@ -2759,7 +2759,7 @@ class ConditionalTest extends TestCase
             'falseErasureWithSmallerAndGreater' => [
                 'code' => '<?php
                     /** @return int|false */
-                    function getIntOrFalse(): int|bool {return false;}
+                    function getIntOrFalse() {return false;}
                     $a = getIntOrFalse();
 
                     if ($a < 0) {
