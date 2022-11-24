@@ -30,3 +30,12 @@ function foo(string $_a): void{}
 
 foo(shutdown()); // foo() will never be called
 ```
+
+```php
+<?php
+$a = [];
+/** @psalm-suppress TypeDoesNotContainType */
+assert(!empty($a));
+
+count($a); // Assert above always fail. There is no possible type that $a can have here
+```
