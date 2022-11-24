@@ -115,7 +115,7 @@ class AndAnalyzer
             }
         }
 
-        $simplified_clauses = $context_clauses->simplify()
+        $simplified_clauses = $context_clauses->simplify();
 
         $active_left_assertions = [];
 
