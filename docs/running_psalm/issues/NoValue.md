@@ -1,6 +1,6 @@
 # NoValue
 
-Emitted when Psalm invalidated all possible types for a given expression
+Emitted when Psalm invalidated all possible types for a given expression. It is often an indication that Psalm found dead code or that documented types were not exhaustive
 
 ```php
 <?php
