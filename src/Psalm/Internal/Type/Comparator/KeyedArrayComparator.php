@@ -9,6 +9,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 
+use function array_keys;
 use function is_string;
 
 /**
@@ -42,11 +43,11 @@ class KeyedArrayComparator
         $input_properties = $input_type_part->properties;
         foreach ($container_type_part->properties as $key => $container_property_type) {
             if (!isset($input_properties[$key])) {
-                if (!$container_property_type->possibly_undefined) {
-                    $all_types_contain = false;
+                if ($container_property_type->possibly_undefined) {
+                    continue;
                 }
 
-                continue;
+                $all_types_contain = false;
             }
 
             $input_property_type = $input_properties[$key];
@@ -95,6 +96,9 @@ class KeyedArrayComparator
             }
         }
         if ($container_sealed && $input_properties) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->missing_shape_fields = array_keys($input_properties);
+            }
             return false;
         }
         return $all_types_contain;

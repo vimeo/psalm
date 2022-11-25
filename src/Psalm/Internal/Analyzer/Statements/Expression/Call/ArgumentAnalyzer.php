@@ -64,6 +64,7 @@ use Psalm\Type\Union;
 
 use function count;
 use function explode;
+use function implode;
 use function in_array;
 use function ord;
 use function preg_split;
@@ -1044,8 +1045,14 @@ class ArgumentAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', but ' . $type . ' provided',
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId()
+                            . ', but ' . $type
+                            . ($union_comparison_results->missing_shape_fields
+                                ? ' with additional array shape fields ('
+                                    . implode(', ', $union_comparison_results->missing_shape_fields)
+                                    . ') was'
+                                : '')
+                            . ' provided',
                         $arg_location,
                         $cased_method_id
                     ),

@@ -5,6 +5,8 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 class ArgTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -792,7 +794,7 @@ class ArgTest extends TestCase
                     $sealedExtraKeys = ["test" => "str", "somethingElse" => "test"];
                     a($sealedExtraKeys);
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidArgument - src'  . DIRECTORY_SEPARATOR . 'somefile.php:8:23 - Argument 1 of a expects array{test: string}, but array{somethingElse: \'test\', test: \'str\'} with additional array shape fields (somethingElse) was provided',
             ],
             'callbackArgsCountMismatch' => [
                 'code' => '<?php
