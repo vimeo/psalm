@@ -3,9 +3,9 @@
 namespace Psalm\Tests;
 
 use InvalidArgumentException;
-use Prophecy\Argument;
-use Prophecy\PhpUnit\ProphecyTrait;
-use Prophecy\Prophecy\ObjectProphecy;
+use Mockery;
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\MockInterface;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
 use Psalm\Internal\PluginManager\Command\ShowCommand;
@@ -21,12 +21,12 @@ use function preg_quote;
 /** @group PluginManager */
 class PsalmPluginTest extends TestCase
 {
-    use ProphecyTrait;
+    use MockeryPHPUnitIntegration;
 
-    /** @var ObjectProphecy */
+    /** @var PluginList&MockInterface */
     private $plugin_list;
 
-    /** @var ObjectProphecy */
+    /** @var PluginListFactory&MockInterface */
     private $plugin_list_factory;
 
     /** @var Application */
@@ -35,15 +35,18 @@ class PsalmPluginTest extends TestCase
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
-        $this->plugin_list = $this->prophesize(PluginList::class);
-        $this->plugin_list_factory = $this->prophesize(PluginListFactory::class);
-        $this->plugin_list_factory->__invoke(Argument::any(), Argument::any())->willReturn($this->plugin_list->reveal());
+        $this->plugin_list = Mockery::mock(PluginList::class);
+        $this->plugin_list_factory = Mockery::mock(PluginListFactory::class);
+        $this->plugin_list_factory
+            ->allows()->__invoke(Mockery::andAnyOtherArgs())
+            ->andReturns($this->plugin_list)
+            ->byDefault();
 
         $this->app = new Application('psalm-plugin', '0.1');
         $this->app->addCommands([
-            new ShowCommand($this->plugin_list_factory->reveal()),
-            new EnableCommand($this->plugin_list_factory->reveal()),
-            new DisableCommand($this->plugin_list_factory->reveal()),
+            new ShowCommand($this->plugin_list_factory),
+            new EnableCommand($this->plugin_list_factory),
+            new DisableCommand($this->plugin_list_factory),
         ]);
 
         $this->app->getDefinition()->addOption(
@@ -52,8 +55,8 @@ class PsalmPluginTest extends TestCase
 
         $this->app->setDefaultCommand('show');
 
-        $this->plugin_list->getEnabled()->willReturn([]);
-        $this->plugin_list->getAvailable()->willReturn([]);
+        $this->plugin_list->allows()->getEnabled()->andReturns([])->byDefault();
+        $this->plugin_list->allows()->getAvailable()->andReturns([])->byDefault();
     }
 
     /**
@@ -74,7 +77,7 @@ class PsalmPluginTest extends TestCase
      */
     public function showsEnabledPlugins(): void
     {
-        $this->plugin_list->getEnabled()->willReturn(['a\b\c' => 'vendor/package']);
+        $this->plugin_list->expects()->getEnabled()->andReturns(['a\b\c' => 'vendor/package']);
 
         $show_command = new CommandTester($this->app->find('show'));
         $show_command->execute([]);
@@ -89,7 +92,7 @@ class PsalmPluginTest extends TestCase
      */
     public function showsAvailablePlugins(): void
     {
-        $this->plugin_list->getAvailable()->willReturn(['a\b\c' => 'vendor/package']);
+        $this->plugin_list->expects()->getAvailable()->andReturns(['a\b\c' => 'vendor/package']);
 
         $show_command = new CommandTester($this->app->find('show'));
         $show_command->execute([]);
@@ -104,7 +107,7 @@ class PsalmPluginTest extends TestCase
      */
     public function passesExplicitConfigToPluginListFactory(): void
     {
-        $this->plugin_list_factory->__invoke(Argument::any(), '/a/b/c')->willReturn($this->plugin_list->reveal());
+        $this->plugin_list_factory->expects()->__invoke(Mockery::any(), '/a/b/c')->andReturns($this->plugin_list);
 
         $show_command = new CommandTester($this->app->find('show'));
         $show_command->execute([
@@ -117,8 +120,9 @@ class PsalmPluginTest extends TestCase
      */
     public function showsColumnHeaders(): void
     {
-        $this->plugin_list->getAvailable()->willReturn(['a\b\c' => 'vendor/package']);
-        $this->plugin_list->getAvailable()->willReturn(['c\d\e' => 'another-vendor/package']);
+        $this->plugin_list
+            ->shouldReceive('getAvailable')->andReturn(['a\b\c' => 'vendor/package'])
+            ->shouldReceive('getAvailable')->andReturn(['c\d\e' => 'another-vendor/package']);
 
         $show_command = new CommandTester($this->app->find('show'));
         $show_command->execute([]);
@@ -168,7 +172,7 @@ class PsalmPluginTest extends TestCase
      */
     public function enableComplainsWhenPassedUnresolvablePlugin(): void
     {
-        $this->plugin_list->resolvePluginClass(Argument::any())->willThrow(new InvalidArgumentException);
+        $this->plugin_list->expects()->resolvePluginClass(Mockery::any())->andThrows(new InvalidArgumentException());
 
         $enable_command = new CommandTester($this->app->find('enable'));
         $enable_command->execute(['pluginName' => 'vendor/package']);
@@ -185,13 +189,9 @@ class PsalmPluginTest extends TestCase
      */
     public function enableComplainsWhenPassedAlreadyEnabledPlugin(): void
     {
-        $this->plugin_list->resolvePluginClass('vendor/package')->will(
-            function (array $_args, ObjectProphecy $plugin_list): string {
-                        $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(true);
-
-                return 'Vendor\Package\PluginClass';
-            }
-        );
+        $plugin_class = 'Vendor\Package\PluginClass';
+        $this->plugin_list->expects()->resolvePluginClass('vendor/package')->andReturns($plugin_class);
+        $this->plugin_list->expects()->isEnabled($plugin_class)->andReturns(true);
 
         $enable_command = new CommandTester($this->app->find('enable'));
         $enable_command->execute(['pluginName' => 'vendor/package']);
@@ -206,15 +206,10 @@ class PsalmPluginTest extends TestCase
      */
     public function enableReportsSuccessWhenItEnablesPlugin(): void
     {
-        $this->plugin_list->resolvePluginClass('vendor/package')->will(
-            function (array $_args, ObjectProphecy $plugin_list): string {
-                $plugin_class = 'Vendor\Package\PluginClass';
-                        $plugin_list->isEnabled($plugin_class)->willReturn(false);
-                        $plugin_list->enable($plugin_class)->shouldBeCalled();
-
-                return $plugin_class;
-            }
-        );
+        $plugin_class = 'Vendor\Package\PluginClass';
+        $this->plugin_list->expects()->resolvePluginClass('vendor/package')->andReturns($plugin_class);
+        $this->plugin_list->expects()->isEnabled($plugin_class)->andReturns(false);
+        $this->plugin_list->expects()->enable($plugin_class);
 
         $enable_command = new CommandTester($this->app->find('enable'));
         $enable_command->execute(['pluginName' => 'vendor/package']);
@@ -239,7 +234,7 @@ class PsalmPluginTest extends TestCase
      */
     public function disableComplainsWhenPassedUnresolvablePlugin(): void
     {
-        $this->plugin_list->resolvePluginClass(Argument::any())->willThrow(new InvalidArgumentException);
+        $this->plugin_list->expects()->resolvePluginClass(Mockery::any())->andThrows(new InvalidArgumentException());
 
         $disable_command = new CommandTester($this->app->find('disable'));
         $disable_command->execute(['pluginName' => 'vendor/package']);
@@ -256,13 +251,9 @@ class PsalmPluginTest extends TestCase
      */
     public function disableComplainsWhenPassedNotEnabledPlugin(): void
     {
-        $this->plugin_list->resolvePluginClass('vendor/package')->will(
-            function (array $_args, ObjectProphecy $plugin_list): string {
-                        $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(false);
-
-                return 'Vendor\Package\PluginClass';
-            }
-        );
+        $plugin_class = 'Vendor\Package\PluginClass';
+        $this->plugin_list->expects()->resolvePluginClass('vendor/package')->andReturns($plugin_class);
+        $this->plugin_list->expects()->isEnabled($plugin_class)->andReturns(false);
 
         $disable_command = new CommandTester($this->app->find('disable'));
         $disable_command->execute(['pluginName' => 'vendor/package']);
@@ -277,15 +268,10 @@ class PsalmPluginTest extends TestCase
      */
     public function disableReportsSuccessWhenItDisablesPlugin(): void
     {
-        $this->plugin_list->resolvePluginClass('vendor/package')->will(
-            function (array $_args, ObjectProphecy $plugin_list): string {
-                $plugin_class = 'Vendor\Package\PluginClass';
-                        $plugin_list->isEnabled($plugin_class)->willReturn(true);
-                        $plugin_list->disable($plugin_class)->shouldBeCalled();
-
-                return $plugin_class;
-            }
-        );
+        $plugin_class = 'Vendor\Package\PluginClass';
+        $this->plugin_list->expects()->resolvePluginClass('vendor/package')->andReturns($plugin_class);
+        $this->plugin_list->expects()->isEnabled($plugin_class)->andReturns(true);
+        $this->plugin_list->expects()->disable($plugin_class);
 
         $disable_command = new CommandTester($this->app->find('disable'));
         $disable_command->execute(['pluginName' => 'vendor/package']);
