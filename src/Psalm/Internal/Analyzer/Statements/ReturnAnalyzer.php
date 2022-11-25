@@ -177,7 +177,7 @@ class ReturnAnalyzer
                 if ($stmt_type->isNever()) {
                     IssueBuffer::maybeAdd(
                         new NoValue(
-                            'This function or method call never returns output',
+                            'All possible types for this return were invalidated - This may be dead code',
                             new CodeLocation($source, $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
