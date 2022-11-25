@@ -83,6 +83,11 @@ class KeyedArrayComparator
                         ) {
                             $atomic_comparison_result->type_coerced = true;
                         }
+
+                        if ($property_type_comparison->missing_shape_fields) {
+                            $atomic_comparison_result->missing_shape_fields
+                                = $property_type_comparison->missing_shape_fields;
+                        }
                     }
 
                     $all_types_contain = false;
