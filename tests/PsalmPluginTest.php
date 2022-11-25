@@ -5,6 +5,7 @@ namespace Psalm\Tests;
 use InvalidArgumentException;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\MockInterface;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
 use Psalm\Internal\PluginManager\Command\ShowCommand;
@@ -14,7 +15,6 @@ use Psalm\Internal\RuntimeCaches;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Tester\CommandTester;
-use Mockery\MockInterface;
 
 use function preg_quote;
 
