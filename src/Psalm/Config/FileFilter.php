@@ -434,7 +434,7 @@ class FileFilter
     private static function isRegularExpression(string $string): bool
     {
         set_error_handler(
-            static fn(): bool => false,
+            static fn(): bool => true,
             E_WARNING
         );
         $is_regexp = preg_match($string, '') !== false;
