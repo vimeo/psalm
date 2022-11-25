@@ -43,11 +43,11 @@ class KeyedArrayComparator
         $input_properties = $input_type_part->properties;
         foreach ($container_type_part->properties as $key => $container_property_type) {
             if (!isset($input_properties[$key])) {
-                if ($container_property_type->possibly_undefined) {
-                    continue;
+                if (!$container_property_type->possibly_undefined) {
+                    $all_types_contain = false;
                 }
 
-                $all_types_contain = false;
+                continue;
             }
 
             $input_property_type = $input_properties[$key];
