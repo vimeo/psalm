@@ -2176,7 +2176,7 @@ class Config
         }
 
         if (extension_loaded('random')) {
-            $ext_random_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-random.phpstub';
+            $ext_random_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'extensions' . DIRECTORY_SEPARATOR . 'ext-random.phpstub';
             $this->internal_stubs[] = $ext_random_path;
         }
 

@@ -234,7 +234,7 @@ class PsalmPluginTest extends TestCase
      */
     public function disableComplainsWhenPassedUnresolvablePlugin(): void
     {
-        $this->plugin_list->expects()->resolvePluginClass(Mockery::any())->andThrows(new InvalidArgumentException);
+        $this->plugin_list->expects()->resolvePluginClass(Mockery::any())->andThrows(new InvalidArgumentException());
 
         $disable_command = new CommandTester($this->app->find('disable'));
         $disable_command->execute(['pluginName' => 'vendor/package']);
