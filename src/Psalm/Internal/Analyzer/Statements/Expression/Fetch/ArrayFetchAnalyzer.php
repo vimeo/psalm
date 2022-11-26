@@ -238,9 +238,6 @@ class ArrayFetchAnalyzer
                     $array_value_type = Type::getMixed();
                 } elseif ($array_type instanceof TArray) {
                     $array_value_type = $array_type->type_params[1];
-                } elseif ($array_type instanceof TList) {
-                    $array_value_type = $array_type->type_param;
-                } else {
                     $array_value_type = $array_type->getGenericValueType();
                 }
 
@@ -266,8 +263,6 @@ class ArrayFetchAnalyzer
 
                 if ($array_type instanceof TArray) {
                     $const_array_key_type = $array_type->type_params[0];
-                } elseif ($array_type instanceof TList) {
-                    $const_array_key_type = Type::getInt();
                 } else {
                     $const_array_key_type = $array_type->getGenericKeyType();
                 }
@@ -634,7 +629,6 @@ class ArrayFetchAnalyzer
 
             if ($type instanceof TArray
                 || $type instanceof TKeyedArray
-                || $type instanceof TList
                 || $type instanceof TClassStringMap
             ) {
                 self::handleArrayAccessOnArray(
