@@ -370,6 +370,9 @@ class TKeyedArray extends Atomic
         return false;
     }
 
+    /**
+     * @return int<0, max>
+     */
     public function getMinCount(): int
     {
         if ($this->is_list) {
@@ -380,7 +383,7 @@ class TKeyedArray extends Atomic
             }
         }
         $prop_min_count = 0;
-        foreach ($this->properties as $k => $property) {
+        foreach ($this->properties as $property) {
             if (!$property->possibly_undefined) {
                 $prop_min_count++;
             }
@@ -390,6 +393,7 @@ class TKeyedArray extends Atomic
 
     /**
      * Returns null if there is no upper limit.
+     * @return int<1, max>|null
      */
     public function getMaxCount(): ?int
     {

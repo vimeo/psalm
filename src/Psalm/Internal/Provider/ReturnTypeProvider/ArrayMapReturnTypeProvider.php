@@ -225,7 +225,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if (($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->is_list)
                 || count($call_args) !== 2
             ) {
-                if ($array_arg_atomic_type->isNonEmpty()) {
+                if ($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->isNonEmpty()) {
                     return Type::getNonEmptyList(
                         $mapping_return_type
                     );

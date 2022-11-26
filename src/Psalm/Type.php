@@ -464,7 +464,8 @@ abstract class Type
             [$of->setPossiblyUndefined(true)],
             null,
             [self::getInt(), $of],
-            true
+            true,
+            $from_docblock
         );
     }
 
@@ -477,24 +478,9 @@ abstract class Type
             [$of->setPossiblyUndefined(false)],
             null,
             [self::getInt(), $of],
-            true
+            true,
+            $from_docblock
         );
-    }
-
-    /**
-     * @psalm-pure
-     */
-    public static function getCallableListAtomic(Union $of, bool $from_docblock = false): Atomic
-    {
-        // The following code will be uncommented in Psalm 5.1
-        //$of = $of->setPossiblyUndefined(false);
-        //return new TCallableKeyedArray(
-        //    [$of, $of],
-        //    null,
-        //    [self::getInt(), $of],
-        //    true
-        //);
-        return new TCallableList($of, null, null, $from_docblock);
     }
 
     /**

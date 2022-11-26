@@ -46,7 +46,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
@@ -359,7 +358,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         if ($assertion_type instanceof TKeyedArray
             && $assertion_type->is_list
-            && $assertion_type->type_param->isMixed()
+            && $assertion_type->getGenericValueType()->isMixed()
         ) {
             return self::reconcileList(
                 $assertion,
@@ -690,6 +689,9 @@ class SimpleAssertionReconciler extends Reconciler
         return $existing_var_type->freeze();
     }
 
+    /**
+     * @param array<string> $suppressed_issues
+     */
     private static function reconcileExactlyCountable(
         Union $existing_var_type,
         HasExactCount $assertion,
@@ -747,12 +749,10 @@ class SimpleAssertionReconciler extends Reconciler
                                 $array_atomic_type->properties
                             )
                         ));
-                    } elseif ($existing_var_type->is_list) {
+                    } elseif ($array_atomic_type->is_list) {
                         $properties = $array_atomic_type->properties;
                         for ($x = $prop_min_count; $x < $assertion->count; $x++) {
-                            $properties[$x] = isset($properties[$x])
-                                ? $properties[$x]->setPossiblyUndefined(false)
-                                : $array_atomic_type->fallback_params[1];
+                            $properties[$x] = $properties[$x]->setPossiblyUndefined(false);
                         }
                         $array_atomic_type = new TKeyedArray(
                             $properties,

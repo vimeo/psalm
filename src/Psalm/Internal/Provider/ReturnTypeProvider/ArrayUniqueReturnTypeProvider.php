@@ -55,24 +55,6 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return new Union([$first_arg_array]);
         }
 
-        if ($first_arg_array instanceof TKeyedArray && $first_arg_array->is_list) {
-            if (!$first_arg_array->properties[0]->possibly_undefined) {
-                return new Union([
-                    new TNonEmptyArray([
-                        Type::getInt(),
-                        $first_arg_array->type_param
-                    ])
-                ]);
-            }
-
-            return new Union([
-                new TArray([
-                    Type::getInt(),
-                    $first_arg_array->type_param
-                ])
-            ]);
-        }
-
         return new Union([$first_arg_array->getGenericArrayType()]);
     }
 }

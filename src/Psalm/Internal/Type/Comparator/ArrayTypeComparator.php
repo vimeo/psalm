@@ -3,21 +3,15 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
-
-use function array_map;
-use function range;
 
 /**
  * @internal
@@ -128,40 +122,7 @@ class ArrayTypeComparator
             );
         }
 
-        if ($input_type_part instanceof TList
-            && $container_type_part instanceof TList
-        ) {
-            if (!UnionTypeComparator::isContainedBy(
-                $codebase,
-                $input_type_part->type_param,
-                $container_type_part->type_param,
-                $input_type_part->type_param->ignore_nullable_issues,
-                $input_type_part->type_param->ignore_falsable_issues,
-                $atomic_comparison_result,
-                $allow_interface_equality
-            )) {
-                return false;
-            }
-
-            return $input_type_part instanceof TNonEmptyList
-                || !$container_type_part instanceof TNonEmptyList;
-        }
-
         if ($container_type_part instanceof TKeyedArray) {
-            if ($container_type_part->is_list) {
-                $container_type_part = $container_type_part->isNonEmpty()
-                    ? Type::getNonEmptyListAtomic($container_type_part->getGenericValueType())
-                    : Type::getListAtomic($container_type_part->getGenericValueType());
-
-                return self::isContainedBy(
-                    $codebase,
-                    $input_type_part,
-                    $container_type_part,
-                    $allow_interface_equality,
-                    $atomic_comparison_result
-                );
-            }
-
             $container_type_part = $container_type_part->getGenericArrayType();
         }
 
@@ -181,37 +142,6 @@ class ArrayTypeComparator
                 $container_type_part->getStandinKeyParam(),
                 $container_type_part->value_param
             ]);
-        }
-
-        if ($container_type_part instanceof TList) {
-            $all_types_contain = false;
-
-            if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = true;
-            }
-
-            $container_type_part = new TArray([Type::getInt(), $container_type_part->type_param]);
-        }
-
-        if ($input_type_part instanceof TList) {
-            if ($input_type_part instanceof TNonEmptyList) {
-                // if the array has a known size < 10, make sure the array keys are literal ints
-                if ($input_type_part->count !== null && $input_type_part->count < 10) {
-                    $literal_ints = array_map(
-                        static fn($i): TLiteralInt => new TLiteralInt($i),
-                        range(0, $input_type_part->count - 1)
-                    );
-
-                    $input_type_part = new TNonEmptyArray([
-                        new Union($literal_ints),
-                        $input_type_part->type_param
-                    ]);
-                } else {
-                    $input_type_part = new TNonEmptyArray([Type::getInt(), $input_type_part->type_param]);
-                }
-            } else {
-                $input_type_part = new TArray([Type::getInt(), $input_type_part->type_param]);
-            }
         }
 
         foreach ($input_type_part->type_params as $i => $input_param) {

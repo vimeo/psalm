@@ -20,13 +20,11 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -740,18 +738,6 @@ class AtomicTypeComparator
         Atomic $type2_part,
         bool $allow_interface_equality = true
     ): bool {
-        if ((get_class($type1_part) === TList::class
-                && $type2_part instanceof TNonEmptyList)
-            || (get_class($type2_part) === TList::class
-                && $type1_part instanceof TNonEmptyList)
-        ) {
-            return UnionTypeComparator::canExpressionTypesBeIdentical(
-                $codebase,
-                $type1_part->type_param,
-                $type2_part->type_param
-            );
-        }
-
         if ((get_class($type1_part) === TArray::class
                 && $type2_part instanceof TNonEmptyArray)
             || (get_class($type2_part) === TArray::class

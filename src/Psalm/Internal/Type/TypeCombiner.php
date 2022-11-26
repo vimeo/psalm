@@ -1488,12 +1488,21 @@ class TypeCombiner
                         true
                     );
                 } else {
-                    /** @psalm-suppress ArgumentTypeCoercion */
-                    $array_type = Type::getNonEmptyListAtomic(
-                        $generic_type_params[1],
-                        $combination->array_min_counts
-                            ? min(array_keys($combination->array_min_counts))
-                            : null
+                    $cnt = $combination->array_min_counts
+                        ? min(array_keys($combination->array_min_counts))
+                        : 0;
+                    $properties = [];
+                    for ($x = 0; $x < $cnt; $x++) {
+                        $properties []= $generic_type_params[1];
+                    }
+                    if (!$properties) {
+                        $properties []= $generic_type_params[1]->setPossiblyUndefined(true);
+                    }
+                    $array_type = new TKeyedArray(
+                        $properties,
+                        null,
+                        [new Union([new TIntRange($cnt, null)]), $generic_type_params[1]],
+                        true
                     );
                 }
             } else {

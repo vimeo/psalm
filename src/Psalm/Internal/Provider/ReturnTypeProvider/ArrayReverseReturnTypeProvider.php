@@ -53,7 +53,7 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
             return $first_arg_type;
         }
 
-        if ($first_arg_array instanceof TKeyedArray && $first_arg_array->is_list) {
+        if ($first_arg_array->is_list) {
             $second_arg = $call_args[1]->value ?? null;
 
             if (!$second_arg
@@ -64,7 +64,7 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
                 return $first_arg_type;
             }
 
-            return $first_arg_array->setProperties(array_reverse($first_arg_array->properties));
+            return new Union([$first_arg_array->setProperties(array_reverse($first_arg_array->properties))]);
         }
 
         return new Union([$first_arg_array->getGenericArrayType()]);

@@ -59,12 +59,9 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function assert;
-use function count;
 use function get_class;
 use function max;
 use function strpos;
-
-use const INF;
 
 /**
  * @internal

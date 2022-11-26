@@ -597,21 +597,30 @@ class ArrayAssignmentAnalyzer
                         && $atomic_root_types['array']->isNonEmpty()
                     )
                 ) {
+                    $prop_count = null;
+                    if ($atomic_root_types['array'] instanceof TNonEmptyArray) {
+                        $prop_count = $atomic_root_types['array']->count;
+                    } else {
+                        $min_count = $atomic_root_types['array']->getMinCount();
+                        if ($min_count === $atomic_root_types['array']->getMaxCount()) {
+                            $prop_count = $min_count;
+                        }
+                    }
                     if ($array_atomic_type_array) {
                         $array_atomic_type = new TNonEmptyArray(
                             $array_atomic_type_array,
-                            $atomic_root_types['array']->count
+                            $prop_count
                         );
-                    } else {
+                    } else if ($prop_count !== null) {
                         $array_atomic_type = new TKeyedArray(
                             array_fill(
                                 0,
-                                $atomic_root_types['array']->count,
+                                $prop_count,
                                 $array_atomic_type_list
                             ),
                             null,
                             [
-                                new Union([new TIntRange($atomic_root_types['array']->count, null)]),
+                                new Union([new TIntRange($prop_count, null)]),
                                 $array_atomic_type_list
                             ],
                             true
@@ -623,7 +632,7 @@ class ArrayAssignmentAnalyzer
                     if ($array_atomic_type_array) {
                         $array_atomic_type = new TNonEmptyArray(
                             $array_atomic_type_array,
-                            $atomic_root_types['array']->count
+                            count($atomic_root_types['array']->properties)
                         );
                     } elseif ($atomic_root_types['array']->is_list) {
                         $array_atomic_type = $atomic_root_types['array'];
@@ -634,12 +643,12 @@ class ArrayAssignmentAnalyzer
                         $array_atomic_type = new TKeyedArray(
                             array_fill(
                                 0,
-                                $atomic_root_types['array']->count,
+                                count($atomic_root_types['array']->properties),
                                 $array_atomic_type_list
                             ),
                             null,
                             [
-                                new Union([new TIntRange($atomic_root_types['array']->count, null)]),
+                                new Union([new TIntRange(count($atomic_root_types['array']->properties), null)]),
                                 $array_atomic_type_list
                             ],
                             true

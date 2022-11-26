@@ -33,7 +33,7 @@ class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         $first_arg = $call_args[0]->value ?? null;
 
-        $first_arg_array = $first_arg
+        $array_type = $first_arg
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
             && $first_arg_type->hasType('array')
             && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
@@ -42,18 +42,12 @@ class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         ? $array_atomic_type
         : null;
 
-        if (!$first_arg_array) {
+        if (!$array_type) {
             return Type::getArray();
         }
 
-        if ($first_arg_array instanceof TKeyedArray) {
-            $first_arg_array = $first_arg_array->getGenericArrayType();
-        }
-
-        if ($first_arg_array instanceof TArray) {
-            $array_type = new TArray($first_arg_array->type_params);
-        } else {
-            $array_type = new TArray([Type::getInt(), $first_arg_array->type_param]);
+        if ($array_type instanceof TKeyedArray) {
+            $array_type = $array_type->getGenericArrayType();
         }
 
         if (!$array_type->type_params[0]->hasString()) {

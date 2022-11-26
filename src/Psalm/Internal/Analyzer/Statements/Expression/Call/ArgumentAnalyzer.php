@@ -127,8 +127,8 @@ class ArgumentAnalyzer
                     $array_type = $param_type->getAtomicTypes()['array'];
 
                     if ($array_type instanceof TKeyedArray && $array_type->is_list) {
-                        $param_type = $array_type->type_param;
-                    } else {
+                        $param_type = $array_type->getGenericValueType();
+                    } elseif ($array_type instanceof TArray) {
                         $param_type = $array_type->type_params[1];
                     }
                 }
