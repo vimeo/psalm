@@ -14,7 +14,7 @@ if [[ ! -f build/phar-versions.php ]] ; then
    exit;
 fi
 
-vendor/bin/box compile
+vendor/bin/box compile --no-parallel
 
 if [[ "$GPG_SIGNING" != '' ]] ; then
     if [[ "$GPG_SECRET_KEY" != '' ]] ; then
