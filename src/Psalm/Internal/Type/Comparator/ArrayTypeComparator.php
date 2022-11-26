@@ -62,9 +62,11 @@ class ArrayTypeComparator
 
             $properties = [];
 
+            $value = $input_type_part->type_params[1]->setPossiblyUndefined(true);
+
             foreach ($input_type_part->type_params[0]->getAtomicTypes() as $atomic_key_type) {
                 if ($atomic_key_type instanceof TLiteralString || $atomic_key_type instanceof TLiteralInt) {
-                    $properties[$atomic_key_type->value] = $input_type_part->type_params[1]->setPossiblyUndefined(true);
+                    $properties[$atomic_key_type->value] = $value;
                 } else {
                     $all_string_int_literals = false;
                 }
@@ -83,33 +85,32 @@ class ArrayTypeComparator
             }
         }
 
-        if ($container_type_part instanceof TList
+        if ($container_type_part instanceof TKeyedArray
             && $input_type_part instanceof TKeyedArray
+            && $container_type_part->is_list
+            && !$input_type_part->is_list
         ) {
-            if ($input_type_part->is_list) {
-                /** @var TList|TNonEmptyList */
-                $input_type_part = $input_type_part->isNonEmpty()
-                    ? Type::getNonEmptyListAtomic($input_type_part->getGenericValueType())
-                    : Type::getListAtomic($input_type_part->getGenericValueType());
-            } else {
-                return false;
-            }
+            return false;
         }
 
-        if ($container_type_part instanceof TList
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_list
             && $input_type_part instanceof TClassStringMap
         ) {
             return false;
         }
 
-        if ($container_type_part instanceof TList
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_list
             && $input_type_part instanceof TArray
             && $input_type_part->isEmptyArray()
         ) {
-            return !$container_type_part instanceof TNonEmptyList;
+            return !$container_type_part->isNonEmpty();
         }
 
-        if ($container_type_part instanceof TNonEmptyList
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_list
+            && $container_type_part->isNonEmpty()
             && $input_type_part instanceof TNonEmptyArray
             && $input_type_part->type_params[0]->isSingleIntLiteral()
             && $input_type_part->type_params[0]->getSingleIntLiteral()->value === 0
@@ -119,7 +120,7 @@ class ArrayTypeComparator
             return UnionTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part->type_params[1],
-                $container_type_part->type_param,
+                $container_type_part->getGenericValueType(),
                 $input_type_part->type_params[1]->ignore_nullable_issues,
                 $input_type_part->type_params[1]->ignore_falsable_issues,
                 $atomic_comparison_result,
