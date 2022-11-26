@@ -75,6 +75,9 @@ class TKeyedArray extends Atomic
         bool $is_list = false,
         bool $from_docblock = false
     ) {
+        if ($is_list && $fallback_params) {
+            $fallback_params[0] = Type::getListKey();
+        }
         $this->properties = $properties;
         $this->class_strings = $class_strings;
         $this->fallback_params = $fallback_params;
@@ -258,7 +261,13 @@ class TKeyedArray extends Atomic
     public function getGenericKeyType(bool $possibly_undefined = false): Union
     {
         if ($this->is_list) {
-            return Type::getListKey($this->getMaxCount());
+            if ($this->fallback_params) {
+                return Type::getListKey();
+            }
+            if (count($this->properties) === 1) {
+                return new Union([new TLiteralInt(0)]);
+            }
+            return new Union([new TIntRange(0, count($this->properties)-1)]);
         }
 
         $key_types = [];

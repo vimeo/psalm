@@ -485,9 +485,9 @@ abstract class Type
     /**
      * @param int<1, max>|null $max_count
      */
-    public static function getListKey(?int $max_count = null): Union
+    public static function getListKey(): Union
     {
-        return new Union([new TIntRange(0, $max_count ? $max_count-1 : null)]);
+        return new Union([new TIntRange(0, null)]);
     }
     /**
      * @psalm-pure
