@@ -1508,7 +1508,13 @@ class ArrayFetchAnalyzer
         if ($key_values) {
             $properties = $type->properties;
             foreach ($key_values as $key_value) {
-                if (isset($properties[$key_value->value]) || $replacement_type) {
+                if ($type->is_list && (!$key_value instanceof TLiteralInt
+                        || $key_value->value < 0
+                    )
+                ) {
+                    $expected_offset_types[] = $type->getGenericKeyType();
+                    $has_valid_offset = false;
+                } elseif (isset($properties[$key_value->value]) || $replacement_type) {
                     $has_valid_offset = true;
 
                     if ($replacement_type) {
