@@ -608,73 +608,72 @@ class SimpleAssertionReconciler extends Reconciler
                 $prop_min_count = $array_atomic_type->getMinCount();
 
                 if ($assertion instanceof HasAtLeastCount) {
-                    if ($array_atomic_type->fallback_params === null) {
-                        // count($a) > 3
-                        // count($a) >= 4
+                    // count($a) > 3
+                    // count($a) >= 4
 
-                        // 4
-                        $count = $assertion->count;
+                    // 4
+                    $count = $assertion->count;
+                } else {
+                    // count($a) >= 1
+                    $count = 1;
+                }
+                if ($array_atomic_type->fallback_params === null) {
+                    // We're asserting that count($a) >= $count
+                    // If it's impossible, remove the type
+                    // If it's possible but redundant, mark as redundant
+                    // If it's possible, mark as not redundant
 
-                        // We're asserting that count($a) >= $count
-                        // If it's impossible, remove the type
-                        // If it's possible but redundant, mark as redundant
-                        // If it's possible, mark as not redundant
+                    // Impossible because count($a) < $count always
+                    if ($prop_max_count < $count) {
+                        $redundant = false;
+                        $existing_var_type->removeType('array');
 
-                        // Impossible because count($a) < $count always
-                        if ($prop_max_count < $count) {
-                            $redundant = false;
-                            $existing_var_type->removeType('array');
+                        // Redundant because count($a) >= $count always
+                    } elseif ($prop_min_count >= $count) {
+                        $redundant = true;
 
-                            // Redundant because count($a) >= $count always
-                        } elseif ($prop_min_count >= $count) {
-                            $redundant = true;
+                        // If count($a) === $count and there are possibly undefined properties
+                    } elseif ($prop_max_count === $count && $prop_min_count !== $prop_max_count) {
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type->setProperties(
+                            array_map(
+                                fn(Union $union) => $union->setPossiblyUndefined(false),
+                                $array_atomic_type->properties
+                            )
+                        ));
+                        $redundant = false;
 
-                            // If count($a) === $count and there are possibly undefined properties
-                        } elseif ($prop_max_count === $count && $prop_min_count !== $prop_max_count) {
-                            $existing_var_type->removeType('array');
-                            $existing_var_type->addType($array_atomic_type->setProperties(
-                                array_map(
-                                    fn(Union $union) => $union->setPossiblyUndefined(false),
-                                    $array_atomic_type->properties
-                                )
-                            ));
-                            $redundant = false;
-
-                            // Possible, alter type if we're a list
-                        } elseif ($array_atomic_type->is_list) {
-                            // Possible
-
-                            $redundant = false;
-                            $properties = $array_atomic_type->properties;
-                            for ($i = $prop_min_count; $i < $assertion->count; $i++) {
-                                $properties[$i] = $properties[$i]->setPossiblyUndefined(false);
-                            }
-                            $array_atomic_type = $array_atomic_type->setProperties($properties);
-                            $existing_var_type->removeType('array');
-                            $existing_var_type->addType($array_atomic_type);
-
-                        } else {
-                            $redundant = false;
-                        }
+                        // Possible, alter type if we're a list
                     } elseif ($array_atomic_type->is_list) {
-                        if ($assertion->count <= $prop_min_count) {
-                            $redundant = true;
-                        } else {
-                            $redundant = false;
-                            $properties = $array_atomic_type->properties;
-                            for ($i = $prop_min_count; $i < $assertion->count; $i++) {
-                                $properties[$i] = isset($properties[$i])
-                                    ? $properties[$i]->setPossiblyUndefined(false)
-                                    : $array_atomic_type->fallback_params[1];
-                            }
-                            $array_atomic_type = $array_atomic_type->setProperties($properties);
-                            $existing_var_type->removeType('array');
-                            $existing_var_type->addType($array_atomic_type);
+                        // Possible
+
+                        $redundant = false;
+                        $properties = $array_atomic_type->properties;
+                        for ($i = $prop_min_count; $i < $count; $i++) {
+                            $properties[$i] = $properties[$i]->setPossiblyUndefined(false);
                         }
+                        $array_atomic_type = $array_atomic_type->setProperties($properties);
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type);
                     } else {
                         $redundant = false;
                     }
-                } elseif ($prop_min_count !== $prop_max_count) {
+                } elseif ($array_atomic_type->is_list) {
+                    if ($count <= $prop_min_count) {
+                        $redundant = true;
+                    } else {
+                        $redundant = false;
+                        $properties = $array_atomic_type->properties;
+                        for ($i = $prop_min_count; $i < $count; $i++) {
+                            $properties[$i] = isset($properties[$i])
+                                ? $properties[$i]->setPossiblyUndefined(false)
+                                : $array_atomic_type->fallback_params[1];
+                        }
+                        $array_atomic_type = $array_atomic_type->setProperties($properties);
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type);
+                    }
+                } else {
                     $redundant = false;
                 }
             }
