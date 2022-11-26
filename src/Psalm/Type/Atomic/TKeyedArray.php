@@ -522,7 +522,7 @@ class TKeyedArray extends Atomic
             );
         }
         $fallback_params = $this->fallback_params;
-        foreach ($fallback_params as $offset => $property) {
+        foreach ($fallback_params ?? [] as $offset => $property) {
             $fallback_params[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
