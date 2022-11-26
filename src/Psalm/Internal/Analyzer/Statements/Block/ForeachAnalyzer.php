@@ -463,13 +463,10 @@ class ForeachAnalyzer
                 || $iterator_atomic_type instanceof TKeyedArray
             ) {
                 if ($iterator_atomic_type instanceof TKeyedArray) {
-                    if ($iterator_atomic_type->fallback_params === null) {
-                        if (!$iterator_atomic_type->isNonEmpty()) {
-                            $always_non_empty_array = false;
-                        }
-                    } else {
+                    if (!$iterator_atomic_type->isNonEmpty()) {
                         $always_non_empty_array = false;
                     }
+
                     $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType(
                         ExpressionIdentifier::getExtendedVarId(
                             $expr,
