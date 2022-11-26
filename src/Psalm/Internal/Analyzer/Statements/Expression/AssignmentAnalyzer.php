@@ -528,7 +528,7 @@ class AssignmentAnalyzer
             if ($context->vars_in_scope[$var_id]->isNever()) {
                 if (IssueBuffer::accepts(
                     new NoValue(
-                        'This function or method call never returns output',
+                        'All possible types for this assignment were invalidated - This may be dead code',
                         new CodeLocation($statements_analyzer->getSource(), $assign_var)
                     ),
                     $statements_analyzer->getSuppressedIssues()

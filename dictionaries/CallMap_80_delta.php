@@ -57,6 +57,70 @@ return [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
       'new' => ['list<string>', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
     ],
+    'IntlDateFormatter::__construct' => [
+        'old' => ['void', 'locale'=>'?string', 'datetype'=>'null|int', 'timetype'=>'null|int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
+        'new' => ['void', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
+    ],
+    'IntlDateFormatter::create' => [
+        'old' => ['?IntlDateFormatter', 'locale'=>'?string', 'datetype'=>'null|int', 'timetype'=>'null|int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
+        'new' => ['?IntlDateFormatter', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
+    ],
+    'IntlDateFormatter::format' => [
+        'old' => ['string|false', 'value'=>'IntlCalendar|DateTimeInterface|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
+        'new' => ['string|false', 'datetime'=>'IntlCalendar|DateTimeInterface|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
+    ],
+    'IntlDateFormatter::formatObject' => [
+        'old' => ['string|false', 'object'=>'IntlCalendar|DateTime', 'format='=>'array{0: int, 1: int}|int|string|null', 'locale='=>'?string'],
+        'new' => ['string|false', 'datetime'=>'IntlCalendar|DateTimeInterface', 'format='=>'array{0: int, 1: int}|int|string|null', 'locale='=>'?string'],
+    ],
+    'IntlDateFormatter::getCalendar' => [
+        'old' => ['int'],
+        'new' => ['int|false'],
+    ],
+    'IntlDateFormatter::getCalendarObject' => [
+        'old' => ['IntlCalendar'],
+        'new' => ['IntlCalendar|false|null'],
+    ],
+    'IntlDateFormatter::getDateType' => [
+        'old' => ['int'],
+        'new' => ['int|false'],
+    ],
+    'IntlDateFormatter::getLocale' => [
+        'old' => ['string', 'which='=>'int'],
+        'new' => ['string|false', 'type='=>'int'],
+    ],
+    'IntlDateFormatter::getPattern' => [
+        'old' => ['string'],
+        'new' => ['string|false'],
+    ],
+    'IntlDateFormatter::getTimeType' => [
+        'old' => ['int'],
+        'new' => ['int|false'],
+    ],
+    'IntlDateFormatter::getTimeZoneId' => [
+        'old' => ['string'],
+        'new' => ['string|false'],
+    ],
+    'IntlDateFormatter::localtime' => [
+        'old' => ['array', 'value'=>'string', '&rw_position='=>'int'],
+        'new' => ['array|false', 'string'=>'string', '&rw_offset='=>'int'],
+    ],
+    'IntlDateFormatter::parse' => [
+        'old' => ['int|float', 'value'=>'string', '&rw_position='=>'int'],
+        'new' => ['int|float|false', 'string'=>'string', '&rw_offset='=>'int'],
+    ],
+    'IntlDateFormatter::setCalendar' => [
+        'old' => ['bool', 'which'=>'IntlCalendar|int|null'],
+        'new' => ['bool', 'calendar'=>'IntlCalendar|int|null'],
+    ],
+    'IntlDateFormatter::setLenient' => [
+        'old' => ['bool', 'lenient'=>'bool'],
+        'new' => ['void', 'lenient'=>'bool'],
+    ],
+    'IntlDateFormatter::setTimeZone' => [
+        'old' => ['null|false', 'zone'=>'IntlTimeZone|DateTimeZone|string|null'],
+        'new' => ['null|false', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
+    ],
     'PDOStatement::bindColumn' => [
       'old' => ['bool', 'column'=>'mixed', '&rw_param'=>'mixed', 'type='=>'int', 'maxlen='=>'int', 'driverdata='=>'mixed'],
       'new' => ['bool', 'column'=>'mixed', '&rw_var'=>'mixed', 'type='=>'int', 'maxLength='=>'int', 'driverOptions='=>'mixed'],
@@ -347,7 +411,7 @@ return [
     ],
     'curl_unescape' => [
       'old' => ['string|false', 'ch'=>'resource', 'string'=>'string'],
-      'new' => ['string|false', 'handle'=>'CurlShareHandle', 'string'=>'string'],
+      'new' => ['string|false', 'handle'=>'CurlHandle', 'string'=>'string'],
     ],
     'date' => [
       'old' => ['string', 'format'=>'string', 'timestamp='=>'int'],
@@ -1392,6 +1456,10 @@ return [
     'strftime' => [
       'old' => ['string|false', 'format'=>'string', 'timestamp='=>'int'],
       'new' => ['string|false', 'format'=>'string', 'timestamp='=>'?int'],
+    ],
+    'strip_tags' => [
+      'old' => ['string', 'string'=>'string', 'allowed_tags='=>'string|list<non-empty-string>'],
+      'new' => ['string', 'string'=>'string', 'allowed_tags='=>'string|list<non-empty-string>|null'],
     ],
     'stripos' => [
       'old' => ['int|false', 'haystack'=>'string', 'needle'=>'string|int', 'offset='=>'int'],

@@ -158,7 +158,7 @@ class MethodCallPurityAnalyzer
                     && !isset($class_storage->declaring_property_ids[$name]);
 
                 if ($this_property_didnt_exist) {
-                    $context->vars_in_scope[$mutation_var_id] = Type::getMixed();
+                    unset($context->vars_in_scope[$mutation_var_id]);
                 } else {
                     $new_type = AssignmentAnalyzer::getExpandedPropertyType(
                         $codebase,

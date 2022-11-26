@@ -100,6 +100,8 @@ class UnionTypeComparator
             $some_type_coerced = false;
             $some_type_coerced_from_mixed = false;
 
+            $some_missing_shape_fields = null;
+
             if ($input_type_part instanceof TArrayKey
                 && ($container_type->hasInt() && $container_type->hasString())
             ) {
@@ -272,6 +274,10 @@ class UnionTypeComparator
                     } else {
                         $all_type_coerced_from_as_mixed = true;
                     }
+
+                    if ($atomic_comparison_result->missing_shape_fields) {
+                        $some_missing_shape_fields = $atomic_comparison_result->missing_shape_fields;
+                    }
                 }
 
                 if ($is_atomic_contained_by) {
@@ -330,6 +336,10 @@ class UnionTypeComparator
 
                     if (!$scalar_type_match_found) {
                         $union_comparison_result->scalar_type_match_found = false;
+                    }
+
+                    if ($some_missing_shape_fields && !$some_type_coerced && !$scalar_type_match_found) {
+                        $union_comparison_result->missing_shape_fields = $some_missing_shape_fields;
                     }
                 }
 

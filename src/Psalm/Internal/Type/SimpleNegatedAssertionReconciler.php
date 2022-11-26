@@ -1693,9 +1693,12 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $did_remove_type = false;
 
-        if ($existing_var_type->hasType('null') && $assertion->doesFilterNull()) {
+        if ($assertion->doesFilterNullOrFalse() &&
+            ($existing_var_type->hasType('null') || $existing_var_type->hasType('false'))
+        ) {
             $did_remove_type = true;
             $existing_var_type->removeType('null');
+            $existing_var_type->removeType('false');
         }
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
@@ -1801,9 +1804,12 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
         $did_remove_type = false;
 
-        if ($existing_var_type->hasType('null') && $assertion->doesFilterNull()) {
+        if ($assertion->doesFilterNullOrFalse() &&
+            ($existing_var_type->hasType('null') || $existing_var_type->hasType('false'))
+        ) {
             $did_remove_type = true;
             $existing_var_type->removeType('null');
+            $existing_var_type->removeType('false');
         }
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {

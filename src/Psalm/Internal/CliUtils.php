@@ -4,7 +4,6 @@ namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
 use JsonException;
-use PackageVersions\Versions;
 use Phar;
 use Psalm\Config;
 use Psalm\Config\Creator;
@@ -158,8 +157,8 @@ final class CliUtils
             exit(1);
         }
 
-        define('PSALM_VERSION', Versions::getVersion('vimeo/psalm'));
-        define('PHP_PARSER_VERSION', Versions::getVersion('nikic/php-parser'));
+        define('PSALM_VERSION', VersionUtils::getPsalmVersion());
+        define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
 
         return $first_autoloader;
     }
