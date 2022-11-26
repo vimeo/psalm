@@ -340,7 +340,7 @@ class TKeyedArray extends Atomic
             $value_type = $value_type->setPossiblyUndefined(false);
 
             if ($this->fallback_params === null) {
-                $key_type = new Union([new TIntRange(0, count($this->properties), false, $list_var_id)]);
+                $key_type = new Union([new TIntRange(0, count($this->properties)-1, false, $list_var_id)]);
             } else {
                 $key_type = new Union([new TIntRange(0, null, false, $list_var_id)]);
             }
