@@ -672,7 +672,7 @@ class ArrayAssignmentAnalyzer
 
         $array_atomic_type ??= $array_atomic_type_class_string
             ?? ($array_atomic_type_list !== null
-                ? Type::getNonEmptyList($array_atomic_type_list)
+                ? Type::getNonEmptyListAtomic($array_atomic_type_list)
                 : null
             ) ?? ($array_atomic_type_array !== null
                 ? new TNonEmptyArray($array_atomic_type_array)
