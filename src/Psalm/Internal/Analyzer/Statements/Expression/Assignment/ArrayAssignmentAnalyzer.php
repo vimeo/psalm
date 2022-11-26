@@ -29,7 +29,6 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
@@ -684,14 +683,34 @@ class ArrayAssignmentAnalyzer
         if ($from_countable_object_like) {
             $atomic_root_types = $new_child_type->getAtomicTypes();
 
-            if (isset($atomic_root_types['array'])
-                && ($atomic_root_types['array'] instanceof TNonEmptyArray
-                    || $atomic_root_types['array'] instanceof TNonEmptyList)
-                && $atomic_root_types['array']->count !== null
-            ) {
-                $atomic_root_types['array'] =
-                    $atomic_root_types['array']->setCount($atomic_root_types['array']->count+1);
-                $new_child_type = new Union($atomic_root_types);
+            if (isset($atomic_root_types['array'])) {
+                if ($atomic_root_types['array'] instanceof TNonEmptyArray
+                    && $atomic_root_types['array']->count !== null
+                ) {
+                    $atomic_root_types['array'] =
+                        $atomic_root_types['array']->setCount($atomic_root_types['array']->count+1);
+                    $new_child_type = new Union($atomic_root_types);
+                } elseif ($atomic_root_types['array'] instanceof TKeyedArray
+                    && $atomic_root_types['array']->is_list) {
+                    $properties = $atomic_root_types['array']->properties;
+                    $had_undefined = false;
+                    foreach ($properties as &$property) {
+                        if ($property->possibly_undefined) {
+                            $property = $property->setPossiblyUndefined(true);
+                            $had_undefined = true;
+                            break;
+                        }
+                    }
+
+                    if (!$had_undefined && $atomic_root_types['array']->fallback_params) {
+                        $properties []= $atomic_root_types['array']->fallback_params[1];
+                    }
+
+                    $atomic_root_types['array'] =
+                        $atomic_root_types['array']->setProperties($properties);
+
+                    $new_child_type = new Union($atomic_root_types);
+                }
             }
         }
 

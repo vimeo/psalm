@@ -35,7 +35,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;

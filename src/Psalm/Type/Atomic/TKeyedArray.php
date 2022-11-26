@@ -370,6 +370,34 @@ class TKeyedArray extends Atomic
         return false;
     }
 
+    public function getMinCount(): int
+    {
+        if ($this->is_list) {
+            foreach ($this->properties as $k => $property) {
+                if ($property->possibly_undefined) {
+                    return $k;
+                }
+            }
+        }
+        $prop_min_count = 0;
+        foreach ($this->properties as $k => $property) {
+            if (!$property->possibly_undefined) {
+                $prop_min_count++;
+            }
+        }
+        return $prop_min_count;
+    }
+
+    /**
+     * Returns null if there is no upper limit.
+     */
+    public function getMaxCount(): ?int
+    {
+        if ($this->fallback_params) {
+            return null;
+        }
+        return count($this->properties);
+    }
     /**
      * Whether all keys are always defined (ignores unsealedness).
      */

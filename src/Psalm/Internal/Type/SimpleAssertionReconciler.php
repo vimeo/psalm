@@ -54,7 +54,6 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
@@ -607,12 +606,7 @@ class SimpleAssertionReconciler extends Reconciler
                 }
             } elseif ($array_atomic_type instanceof TKeyedArray) {
                 $prop_max_count = count($array_atomic_type->properties);
-                $prop_min_count = 0;
-                foreach ($array_atomic_type->properties as $property_type) {
-                    if (!$property_type->possibly_undefined) {
-                        $prop_min_count++;
-                    }
-                }
+                $prop_min_count = $array_atomic_type->getMinCount();
 
                 if ($assertion instanceof HasAtLeastCount) {
                     if ($array_atomic_type->fallback_params === null) {
@@ -731,12 +725,7 @@ class SimpleAssertionReconciler extends Reconciler
                 }
             } elseif ($array_atomic_type instanceof TKeyedArray) {
                 $prop_max_count = count($array_atomic_type->properties);
-                $prop_min_count = 0;
-                foreach ($array_atomic_type->properties as $prop) {
-                    if (!$prop->possibly_undefined) {
-                        $prop_min_count++;
-                    }
-                }
+                $prop_min_count = $array_atomic_type->getMinCount();
 
                 if ($assertion->count < $prop_min_count) {
                     // Impossible

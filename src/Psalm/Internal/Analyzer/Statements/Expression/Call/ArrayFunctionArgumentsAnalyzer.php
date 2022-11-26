@@ -36,7 +36,6 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -540,15 +539,25 @@ class ArrayFunctionArgumentsAnalyzer
                         }
 
                         $array_atomic_types[] = $array_atomic_type;
-                    } elseif ($array_atomic_type instanceof TNonEmptyList) {
-                        if (!$context->inside_loop && $array_atomic_type->count !== null) {
-                            if ($array_atomic_type->count === 1) {
-                                $array_atomic_type = Type::getListAtomic(Type::getNever());
+                    } elseif ($array_atomic_type instanceof TKeyedArray && $array_atomic_type->is_list) {
+                        if (!$context->inside_loop
+                            && ($prop_count = $array_atomic_type->getMaxCount())
+                            && $prop_count === $array_atomic_type->getMinCount()
+                        ) {
+                            if ($prop_count === 1) {
+                                $array_atomic_type = new TArray(
+                                    [
+                                        Type::getNever(),
+                                        Type::getNever(),
+                                    ]
+                                );
                             } else {
-                                $array_atomic_type = $array_atomic_type->setCount($array_atomic_type->count-1);
+                                $properties = $array_atomic_type->properties;
+                                unset($properties[$prop_count-1]);
+                                $array_atomic_type = $array_atomic_type->setProperties($properties);
                             }
                         } else {
-                            $array_atomic_type = Type::getListAtomic($array_atomic_type->type_param);
+                            $array_atomic_type = Type::getListAtomic($array_atomic_type->getGenericValueType());
                         }
 
                         $array_atomic_types[] = $array_atomic_type;
