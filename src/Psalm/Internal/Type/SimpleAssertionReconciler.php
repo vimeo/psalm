@@ -733,11 +733,11 @@ class SimpleAssertionReconciler extends Reconciler
                     // Impossible
                     $existing_var_type->removeType('array');
                     $redundant = false;
-                } elseif ($assertion->count === $prop_min_count) {
-                    // Redundant
-                    $redundant = true;
                 } elseif ($array_atomic_type->fallback_params === null) {
-                    if ($assertion->count > $prop_max_count) {
+                    if ($assertion->count === $prop_min_count) {
+                        // Redundant
+                        $redundant = true;
+                    } elseif ($assertion->count > $prop_max_count) {
                         // Impossible
                         $existing_var_type->removeType('array');
                         $redundant = false;

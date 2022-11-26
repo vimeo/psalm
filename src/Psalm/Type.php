@@ -463,7 +463,7 @@ abstract class Type
         return new TKeyedArray(
             [$of->setPossiblyUndefined(true)],
             null,
-            [self::getInt(), $of],
+            [new Union([new TIntRange(0, null)]), $of],
             true,
             $from_docblock
         );
@@ -477,7 +477,7 @@ abstract class Type
         return new TKeyedArray(
             [$of->setPossiblyUndefined(false)],
             null,
-            [self::getInt(), $of],
+            [new Union([new TIntRange(0, null)]), $of],
             true,
             $from_docblock
         );
