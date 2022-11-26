@@ -7,8 +7,9 @@ use PackageVersions\Versions;
 use Phar;
 
 use function class_exists;
-use function is_array;
-use function is_string;
+use function dirname;
+use function file_put_contents;
+use function var_export;
 
 /**
  * @internal
@@ -22,6 +23,7 @@ final class VersionUtils
     /** @var null|_VersionData */
     private static $versions = null;
 
+    /** @psalm-suppress UnusedConstructor it's here to prevent instantiations */
     private function __construct()
     {
     }
@@ -36,6 +38,7 @@ final class VersionUtils
         return self::getVersions()[self::PHP_PARSER_PACKAGE];
     }
 
+    /** @psalm-suppress UnusedMethod called from bin/build-phar.sh */
     public static function dump(): void
     {
         $versions = self::loadComposerVersions();
@@ -74,7 +77,10 @@ final class VersionUtils
             return null;
         }
 
-        /** @var _VersionData */
+        /**
+         * @psalm-suppress UnresolvableInclude
+         * @var _VersionData
+         */
         return require($phar_filename . '/phar-versions.php');
     }
 

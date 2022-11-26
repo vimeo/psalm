@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Cli;
 
-use PackageVersions\Versions;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
