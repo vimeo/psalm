@@ -224,22 +224,18 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 return new Union([$atomic_type]);
             }
 
-            if ($array_arg_atomic_type instanceof TList
+            if (($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->is_list)
                 || count($call_args) !== 2
             ) {
-                if ($array_arg_atomic_type instanceof TNonEmptyList) {
-                    return new Union([
-                        Type::getNonEmptyListAtomic(
-                            $mapping_return_type
-                        ),
-                    ]);
+                if ($array_arg_atomic_type->isNonEmpty()) {
+                    return Type::getNonEmptyList(
+                        $mapping_return_type
+                    );
                 }
 
-                return new Union([
-                    Type::getListAtomic(
-                        $mapping_return_type
-                    ),
-                ]);
+                return Type::getList(
+                    $mapping_return_type
+                );
             }
 
             if ($array_arg_atomic_type instanceof TNonEmptyArray) {

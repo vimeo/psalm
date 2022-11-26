@@ -48,7 +48,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         ) {
             $input_array = $first_arg_type->getAtomicTypes()['array'];
             if ($input_array instanceof TKeyedArray) {
-                $row_type = $input_array->getGenericArrayType()->type_params[1];
+                $row_type = $input_array->getGenericValueType();
             } elseif ($input_array instanceof TArray) {
                 $row_type = $input_array->type_params[1];
             }

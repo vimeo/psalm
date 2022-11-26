@@ -64,20 +64,18 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if (!$first_arg_array instanceof TNonEmptyArray) {
                 $nullable = true;
             }
-        } elseif ($first_arg_array instanceof TList) {
-            $value_type = $first_arg_array->type_param;
-
-            if (!$first_arg_array instanceof TNonEmptyList) {
-                $nullable = true;
-            }
         } else {
             // special case where we know the type of the first element
             if ($function_id === 'array_shift' && $first_arg_array->is_list && isset($first_arg_array->properties[0])) {
                 $value_type = $first_arg_array->properties[0];
+                if ($value_type->possibly_undefined) {
+                    $value_type = $value_type->setPossiblyUndefined(false);
+                    $nullable = true;
+                }
             } else {
                 $value_type = $first_arg_array->getGenericValueType();
 
-                if ($first_arg_array->fallback_params === null) {
+                if (!$first_arg_array->isNonEmpty()) {
                     $nullable = true;
                 }
             }

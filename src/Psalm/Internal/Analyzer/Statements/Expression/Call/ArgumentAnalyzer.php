@@ -123,11 +123,11 @@ class ArgumentAnalyzer
                 ) {
                     /**
                      * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                     * @var TList|TArray
+                     * @var TKeyedArray|TArray
                      */
                     $array_type = $param_type->getAtomicTypes()['array'];
 
-                    if ($array_type instanceof TList) {
+                    if ($array_type instanceof TKeyedArray && $array_type->is_list) {
                         $param_type = $array_type->type_param;
                     } else {
                         $param_type = $array_type->type_params[1];
@@ -331,13 +331,10 @@ class ArgumentAnalyzer
 
                 foreach ($arg_value_type->getAtomicTypes() as $arg_atomic_type) {
                     if ($arg_atomic_type instanceof TArray
-                        || $arg_atomic_type instanceof TList
                         || $arg_atomic_type instanceof TKeyedArray
                     ) {
                         if ($arg_atomic_type instanceof TKeyedArray) {
                             $arg_type_param = $arg_atomic_type->getGenericValueType();
-                        } elseif ($arg_atomic_type instanceof TList) {
-                            $arg_type_param = $arg_atomic_type->type_param;
                         } else {
                             $arg_type_param = $arg_atomic_type->type_params[1];
                         }
@@ -509,8 +506,6 @@ class ArgumentAnalyzer
                     } else {
                         $arg_value_type = Type::getMixed();
                     }
-                } elseif ($unpacked_atomic_array instanceof TList) {
-                    $arg_value_type = $unpacked_atomic_array->type_param;
                 } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
                     $arg_value_type = Type::getMixed();
                 } else {
@@ -1215,12 +1210,10 @@ class ArgumentAnalyzer
                     $param_array_type = $param_type->getAtomicTypes()['array'];
 
                     $row_type = null;
-                    if ($param_array_type instanceof TList) {
-                        $row_type = $param_array_type->type_param;
-                    } elseif ($param_array_type instanceof TArray) {
+                    if ($param_array_type instanceof TArray) {
                         $row_type = $param_array_type->type_params[1];
                     } elseif ($param_array_type instanceof TKeyedArray) {
-                        $row_type = $param_array_type->getGenericArrayType()->type_params[1];
+                        $row_type = $param_array_type->getGenericValueType();
                     }
 
                     if ($row_type &&
@@ -1429,11 +1422,7 @@ class ArgumentAnalyzer
             }
 
             if ($unpack) {
-                if ($unpacked_atomic_array instanceof TList) {
-                    $unpacked_atomic_array = $unpacked_atomic_array->setTypeParam($input_type);
-
-                    $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
-                } elseif ($unpacked_atomic_array instanceof TArray) {
+                if ($unpacked_atomic_array instanceof TArray) {
                     $unpacked_atomic_array = $unpacked_atomic_array->setTypeParams([
                         $unpacked_atomic_array->type_params[0],
                         $input_type
