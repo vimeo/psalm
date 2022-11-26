@@ -1,7 +1,11 @@
 {
     "output" : "build/psalm.phar",
     "files": [
-        "psalm"
+        "psalm",
+        "build/phar-versions.php"
+    ],
+    "map": [
+        {"build/phar-versions.php" : "phar-versions.php"}
     ],
     "files-bin": ["config.xsd"],
     "directories-bin" : [

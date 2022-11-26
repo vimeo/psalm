@@ -8,7 +8,13 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 php $DIR/improve_class_alias.php
 
-vendor/bin/box compile
+php -r 'require "vendor/autoload.php"; Psalm\Internal\VersionUtils::dump();'
+if [[ ! -f build/phar-versions.php ]] ; then
+   echo "failed to dump versions";
+   exit;
+fi
+
+vendor/bin/box compile --no-parallel
 
 if [[ "$GPG_SIGNING" != '' ]] ; then
     if [[ "$GPG_SECRET_KEY" != '' ]] ; then
