@@ -1336,7 +1336,7 @@ trait UnionTrait
         self $other_type,
         bool $ensure_source_equality = true,
         bool $ensure_parent_node_equality = true,
-        bool $ensure_possibly_undefined_equality = true,
+        bool $ensure_possibly_undefined_equality = true
     ): bool {
         if ($other_type === $this) {
             return true;

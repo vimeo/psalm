@@ -115,6 +115,7 @@ class TKeyedArray extends Atomic
 
         if ($this->is_list) {
             if (count($this->properties) === 1
+                && $this->fallback_params
                 && $this->properties[0]->equals($this->fallback_params[1], true, true, false)
             ) {
                 $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
@@ -186,6 +187,7 @@ class TKeyedArray extends Atomic
 
         if ($this->is_list) {
             if (count($this->properties) === 1
+                && $this->fallback_params
                 && $this->properties[0]->equals($this->fallback_params[1], true, true, false)
             ) {
                 $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
