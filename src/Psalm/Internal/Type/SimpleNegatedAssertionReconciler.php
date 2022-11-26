@@ -522,18 +522,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             $array_atomic_type = $existing_var_atomic_types['array'];
             $redundant = true;
 
-            if (($array_atomic_type instanceof TNonEmptyArray
-                    || $array_atomic_type instanceof TNonEmptyList)
-                && ($count === null
-                    || $array_atomic_type->count >= $count
-                    || $array_atomic_type->min_count >= $count)
-            ) {
-                $redundant = false;
-
-                $existing_var_type->removeType('array');
-            } elseif ($array_atomic_type instanceof TKeyedArray) {
-                if ($array_atomic_type->fallback_params === null && $count !== null) {
-                    $prop_max_count = count($array_atomic_type->properties);
+            if ($array_atomic_type instanceof TKeyedArray) {
+                if ($count !== null) {
+                    $prop_max_count = $array_atomic_type->fallback_params === null
+                        ? count($array_atomic_type->properties)
+                        : INF;
                     $prop_min_count = 0;
                     foreach ($array_atomic_type->properties as $property_type) {
                         if (!$property_type->possibly_undefined) {
