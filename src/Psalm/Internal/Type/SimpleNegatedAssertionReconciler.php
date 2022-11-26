@@ -547,7 +547,21 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $redundant = false;
                     }
                 } else {
-                    $redundant = $array_atomic_type->isNonEmpty();
+                    if ($array_atomic_type->isNonEmpty()) {
+                        // Impossible, never empty
+                        $redundant = false;
+                        $existing_var_type->removeType('array');
+                    } else {
+                        // Possible, can be empty
+                        $redundant = false;
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType(new TArray(
+                            [
+                                new Union([new TNever()]),
+                                new Union([new TNever()]),
+                            ]
+                        ));
+                    }
                 }
             } elseif (!$array_atomic_type instanceof TArray || !$array_atomic_type->isEmptyArray()) {
                 $redundant = false;
