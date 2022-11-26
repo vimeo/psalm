@@ -625,7 +625,7 @@ class AssertionReconciler extends Reconciler
             return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
-        if ($type_2_atomic instanceof TKeyedArray
+        /*if ($type_2_atomic instanceof TKeyedArray
             && $type_1_atomic instanceof TList
         ) {
             $type_2_key = $type_2_atomic->getGenericKeyType();
@@ -678,7 +678,7 @@ class AssertionReconciler extends Reconciler
                     true
                 );
             }
-        }
+        }*/
 
         if ($type_2_atomic instanceof TTemplateParam
             && $type_1_atomic instanceof TTemplateParam
@@ -730,7 +730,7 @@ class AssertionReconciler extends Reconciler
         }
 
         //we filter the second part of a list with the second part of standard iterables
-        if (($type_2_atomic instanceof TArray
+        /*if (($type_2_atomic instanceof TArray
                 || $type_2_atomic instanceof TIterable)
             && $type_1_atomic instanceof TList
         ) {
@@ -756,7 +756,7 @@ class AssertionReconciler extends Reconciler
 
             $matching_atomic_type = $type_1_atomic;
             $atomic_comparison_results->type_coerced = true;
-        }
+        }*/
 
         //we filter each property of a Keyed Array with the second part of standard iterables
         if (($type_2_atomic instanceof TArray

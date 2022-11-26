@@ -261,7 +261,12 @@ class SimpleAssertionReconciler extends Reconciler
         if ($assertion instanceof HasExactCount) {
             return self::reconcileExactlyCountable(
                 $existing_var_type,
-                $assertion->count
+                $assertion,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $is_equality,
             );
         }
 
@@ -653,7 +658,7 @@ class SimpleAssertionReconciler extends Reconciler
                             $redundant = false;
                             $properties = $array_atomic_type->properties;
                             for ($i = $prop_max_count; $i < $assertion->count; $i++) {
-                                $properties[$i] = $properties[$i]
+                                $properties[$i] = isset($properties[$i])
                                     ? $properties[$i]->setPossiblyUndefined(false)
                                     : $array_atomic_type->fallback_params[1];
                             }
@@ -691,46 +696,61 @@ class SimpleAssertionReconciler extends Reconciler
         return $existing_var_type->freeze();
     }
 
-    /**
-     * @param   positive-int $count
-     */
     private static function reconcileExactlyCountable(
         Union $existing_var_type,
-        int $count
+        HasExactCount $assertion,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        bool $is_equality
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         if ($existing_var_type->hasType('array')) {
+            $old_var_type_string = $existing_var_type->getId();
             $array_atomic_type = $existing_var_type->getAtomicTypes()['array'];
+            $redundant = true;
 
             if ($array_atomic_type instanceof TArray) {
-                $non_empty_array = new TNonEmptyArray(
-                    $array_atomic_type->type_params,
-                    $count
-                );
+                if (!$array_atomic_type instanceof TNonEmptyArray
+                    || $array_atomic_type->count !== $assertion->count
+                ) {
+                    $non_empty_array = new TNonEmptyArray(
+                        $array_atomic_type->type_params,
+                        $assertion->count
+                    );
 
-                $existing_var_type->removeType('array');
-                $existing_var_type->addType(
-                    $non_empty_array
-                );
-            } elseif ($array_atomic_type instanceof TList) {
-                $properties = [];
-                for ($x = 0; $x < $count; $x++) {
-                    $properties []= $array_atomic_type->type_param;
+                    $existing_var_type->removeType('array');
+                    $existing_var_type->addType(
+                        $non_empty_array
+                    );
+
+                    $redundant = false;
+                } else {
+                    $redundant = true;
                 }
-                $non_empty_list = new TKeyedArray(
-                    $properties,
-                    null,
-                    null,
-                    true
-                );
-
-                $existing_var_type->removeType('array');
-                $existing_var_type->addType(
-                    $non_empty_list
-                );
             } elseif ($array_atomic_type instanceof TKeyedArray) {
-                if ($array_atomic_type->fallback_params === null) {
-                    if (count($array_atomic_type->properties) === $count) {
+                $prop_max_count = count($array_atomic_type->properties);
+                $prop_min_count = 0;
+                foreach ($array_atomic_type->properties as $prop) {
+                    if (!$prop->possibly_undefined) {
+                        $prop_min_count++;
+                    }
+                }
+
+                if ($assertion->count < $prop_min_count) {
+                    // Impossible
+                    $existing_var_type->removeType('array');
+                    $redundant = false;
+                } elseif ($assertion->count === $prop_min_count) {
+                    // Redundant
+                    $redundant = true;
+                } elseif ($array_atomic_type->fallback_params === null) {
+                    if ($assertion->count > $prop_max_count) {
+                        // Impossible
+                        $existing_var_type->removeType('array');
+                        $redundant = false;
+                    } elseif ($assertion->count === $prop_max_count) {
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type->setProperties(
                             array_map(
@@ -738,12 +758,60 @@ class SimpleAssertionReconciler extends Reconciler
                                 $array_atomic_type->properties
                             )
                         ));
+                    } elseif ($existing_var_type->is_list) {
+                        $properties = $array_atomic_type->properties;
+                        for ($x = $prop_min_count; $x < $assertion->count; $x++) {
+                            $properties[$x] = isset($properties[$x])
+                                ? $properties[$x]->setPossiblyUndefined(false)
+                                : $array_atomic_type->fallback_params[1];
+                        }
+                        $array_atomic_type = new TKeyedArray(
+                            $properties,
+                            null,
+                            null,
+                            true
+                        );
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type);
                     }
                 } else {
-                    if ($array_atomic_type->allShapeKeysAlwaysDefined() && count($array_atomic_type->properties) === $count) {
+                    if ($array_atomic_type->is_list) {
+                        $properties = $array_atomic_type->properties;
+                        for ($x = $prop_min_count; $x < $assertion->count; $x++) {
+                            $properties[$x] = isset($properties[$x])
+                                ? $properties[$x]->setPossiblyUndefined(false)
+                                : $array_atomic_type->fallback_params[1];
+                        }
+                        $array_atomic_type = new TKeyedArray(
+                            $properties,
+                            null,
+                            null,
+                            true
+                        );
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type);
+                    } elseif ($prop_max_count === $prop_min_count && $prop_max_count === $assertion->count) {
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type->makeSealed());
                     }
+                }
+            }
+
+            if (!$is_equality
+                && !$existing_var_type->hasMixed()
+                && ($redundant || $existing_var_type->isUnionEmpty())
+            ) {
+                if ($key && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $key,
+                        $assertion,
+                        $redundant,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues
+                    );
                 }
             }
         }
