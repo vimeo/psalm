@@ -280,7 +280,8 @@ class ScalarTypeComparator
             return true;
         }
 
-        if (get_class($container_type_part) === TDependentListKey::class
+        if ($container_type_part instanceof TIntRange
+            && $container_type_part->dependent_list_key
             && $input_type_part instanceof TLiteralInt
         ) {
             return true;
@@ -336,7 +337,8 @@ class ScalarTypeComparator
             return true;
         }
 
-        if (get_class($container_type_part) === TDependentListKey::class
+        if ($container_type_part instanceof TIntRange
+            && $container_type_part->dependent_list_key
             && $input_type_part instanceof TInt
         ) {
             return true;

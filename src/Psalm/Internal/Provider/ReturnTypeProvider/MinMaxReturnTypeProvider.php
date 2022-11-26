@@ -93,9 +93,6 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         } elseif (get_class($atomic_type) === TInt::class) {
                             $min_bounds[] = null;
                             $max_bounds[] = null;
-                        } elseif ($atomic_type instanceof TDependentListKey) {
-                            $min_bounds[] = 0;
-                            $max_bounds[] = null;
                         } else {
                             throw new UnexpectedValueException('Unexpected type');
                         }

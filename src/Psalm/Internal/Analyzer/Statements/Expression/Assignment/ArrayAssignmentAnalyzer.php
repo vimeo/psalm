@@ -478,8 +478,8 @@ class ArrayAssignmentAnalyzer
                 if ($key_type->isSingle()) {
                     $key_type_type = $key_type->getSingleAtomic();
 
-                    if ($key_type_type instanceof TDependentListKey
-                        && $key_type_type->getVarId() === $parent_var_id
+                    if ($key_type_type instanceof TIntRange
+                        && $key_type_type->dependent_list_key === $parent_var_id
                     ) {
                         $offset_already_existed = true;
                     }
