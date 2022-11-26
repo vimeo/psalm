@@ -4,7 +4,7 @@ use Composer\Autoload\ClassLoader;
 
 return [
     'patchers' => [
-        function ($filePath, $prefix, $contents) {
+        function (string $filePath, string $prefix, string $contents): string {
             //
             // PHP-Parser patch
             //
@@ -20,14 +20,14 @@ return [
 
             return $contents;
         },
-        function ($filePath, $prefix, $contents) {
+        function (string $_filePath, string $prefix, string $contents): string {
             return str_replace(
-                '\\'.$prefix.'\Composer\Autoload\ClassLoader',
+                '\\' . $prefix . '\Composer\Autoload\ClassLoader',
                 '\Composer\Autoload\ClassLoader',
                 $contents
             );
         },
-        function ($filePath, $prefix, $contents) {
+        function (string $filePath, string $prefix, string $contents): string {
             if (strpos($filePath, 'src/Psalm') === 0) {
                 return str_replace(
                     [' \\PhpParser\\'],
@@ -38,7 +38,7 @@ return [
 
             return $contents;
         },
-        function ($filePath, $prefix, $contents) {
+        function (string $filePath, string $prefix, string $contents): string {
             if (strpos($filePath, 'vendor/openlss') === 0) {
                 return str_replace(
                     $prefix . '\\DomDocument',
@@ -49,32 +49,19 @@ return [
 
             return $contents;
         },
-        function ($filePath, $prefix, $contents) {
-            if ($filePath === 'src/Psalm/Internal/Cli/Psalm.php') {
-                return str_replace(
-                    '\\' . $prefix . '\\PSALM_VERSION',
-                    'PSALM_VERSION',
-                    $contents
-                );
-            }
-
-            return $contents;
-        },
-        function ($filePath, $prefix, $contents) {
-            $ret = str_replace(
-                $prefix . '\\Psalm\\',
-                'Psalm\\',
-                $contents
-            );
-            return $ret;
-        },
     ],
-    'whitelist' => [
+    'exclude-classes' => [
         ClassLoader::class,
         Stringable::class,
-        'Psalm\*',
     ],
-    'files-whitelist' => [
+    'exclude-namespaces' => [
+        'Psalm',
+    ],
+    'exclude-constants' => [
+        'PSALM_VERSION',
+        'PHP_PARSER_VERSION',
+    ],
+    'exclude-files' => [
         'src/spl_object_id.php',
         'vendor/symfony/polyfill-php80/Php80.php',
         'vendor/symfony/polyfill-php80/PhpToken.php',
