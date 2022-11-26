@@ -149,7 +149,6 @@ class ArrayTypeComparator
 
         if ($container_type_part instanceof TKeyedArray) {
             if ($container_type_part->is_list) {
-                /** @var TList|TNonEmptyList */
                 $container_type_part = $container_type_part->isNonEmpty()
                     ? Type::getNonEmptyListAtomic($container_type_part->getGenericValueType())
                     : Type::getListAtomic($container_type_part->getGenericValueType());

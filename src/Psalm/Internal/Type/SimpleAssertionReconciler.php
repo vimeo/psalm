@@ -2247,8 +2247,10 @@ class SimpleAssertionReconciler extends Reconciler
             if ($type->isArrayAccessibleWithStringKey($codebase)) {
                 if (get_class($type) === TArray::class) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
-                } elseif (get_class($type) === TList::class) {
-                    $array_types[] = Type::getNonEmptyListAtomic($type->type_param);
+                } elseif ($type instanceof TKeyedArray && $type->is_list) {
+                    $properties = $type->properties;
+                    $properties[0] = $properties[0]->setPossiblyUndefined(false);
+                    $array_types[] = $type->setProperties($properties);
                 } else {
                     $array_types[] = $type;
                 }
