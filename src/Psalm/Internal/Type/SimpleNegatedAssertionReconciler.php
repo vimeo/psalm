@@ -524,9 +524,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
             if ($array_atomic_type instanceof TKeyedArray) {
                 if ($count !== null) {
-                    $prop_max_count = $array_atomic_type->fallback_params === null
-                        ? count($array_atomic_type->properties)
-                        : INF;
+                    $prop_max_count = $array_atomic_type->getMaxCount();
                     $prop_min_count = $array_atomic_type->getMinCount();
 
                     // !(count($a) >= 3)
@@ -544,7 +542,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $existing_var_type->removeType('array');
 
                         // Redundant because count($a) < $count always
-                    } elseif ($prop_max_count < $count) {
+                    } elseif ($prop_max_count && $prop_max_count < $count) {
                         $redundant = true;
 
                         // Possible
