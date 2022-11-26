@@ -1501,7 +1501,7 @@ class TypeCombiner
                     $array_type = new TKeyedArray(
                         $properties,
                         null,
-                        [new Union([new TIntRange($cnt, null)]), $generic_type_params[1]],
+                        [new Union([new TIntRange(0, null)]), $generic_type_params[1]],
                         true
                     );
                 }

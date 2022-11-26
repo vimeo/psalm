@@ -257,7 +257,7 @@ class TKeyedArray extends Atomic
     public function getGenericKeyType(bool $possibly_undefined = false): Union
     {
         if ($this->is_list) {
-            return new Union([new TIntRange($this->getMinCount(), $this->getMaxCount())]);
+            return new Union([new TIntRange(0, $this->getMaxCount())]);
         }
 
         $key_types = [];
@@ -313,12 +313,8 @@ class TKeyedArray extends Atomic
 
         $has_defined_keys = false;
 
-        $min_count = 0;
         foreach ($this->properties as $key => $property) {
             if ($this->is_list) {
-                if (!$property->possibly_undefined) {
-                    $min_count++;
-                }
                 // Do nothing
             } elseif (is_int($key)) {
                 $key_types[] = new TLiteralInt($key);
@@ -343,9 +339,9 @@ class TKeyedArray extends Atomic
             $value_type = $value_type->setPossiblyUndefined(false);
 
             if ($this->fallback_params === null) {
-                $key_type = new Union([new TIntRange($min_count, count($this->properties), false, $list_var_id)]);
+                $key_type = new Union([new TIntRange(0, count($this->properties), false, $list_var_id)]);
             } else {
-                $key_type = new Union([new TIntRange($min_count, null, false, $list_var_id)]);
+                $key_type = new Union([new TIntRange(0, null, false, $list_var_id)]);
             }
 
             if ($has_defined_keys) {

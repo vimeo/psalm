@@ -621,7 +621,7 @@ class ArrayAssignmentAnalyzer
                             ),
                             null,
                             [
-                                new Union([new TIntRange($prop_count, null)]),
+                                new Union([new TIntRange(0, null)]),
                                 $array_atomic_type_list
                             ],
                             true
@@ -650,7 +650,7 @@ class ArrayAssignmentAnalyzer
                             ),
                             null,
                             [
-                                new Union([new TIntRange(count($atomic_root_types['array']->properties), null)]),
+                                new Union([new TIntRange(0, null)]),
                                 $array_atomic_type_list
                             ],
                             true
