@@ -109,7 +109,10 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             } elseif (!$is_replace) {
                                 if ($unpacking_indefinite_number_of_args) {
                                     $added_inner_values = true;
-                                    $inner_value_types[] = $type;
+                                    $inner_value_types = array_merge(
+                                        $inner_value_types,
+                                        array_values($type->getAtomicTypes())
+                                    );
                                 } else {
                                     $generic_properties[] = $type;
                                 }

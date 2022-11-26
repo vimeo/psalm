@@ -341,6 +341,7 @@ class TKeyedArray extends Atomic
             return new TArray([$key_type, $value_type]);
         }
 
+        assert($key_types !== []);
         $key_type = TypeCombiner::combine($key_types);
 
         if ($this->fallback_params !== null) {

@@ -45,7 +45,7 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
         ? $array_atomic_type
         : null;
 
-        if (!$first_arg_array) {
+        if (!$first_arg_array || !$first_arg_type) {
             return Type::getArray();
         }
 

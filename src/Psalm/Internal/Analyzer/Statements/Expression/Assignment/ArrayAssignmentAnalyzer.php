@@ -612,6 +612,7 @@ class ArrayAssignmentAnalyzer
                             $prop_count
                         );
                     } else if ($prop_count !== null) {
+                        assert($array_atomic_type_list !== null);
                         $array_atomic_type = new TKeyedArray(
                             array_fill(
                                 0,
@@ -640,6 +641,7 @@ class ArrayAssignmentAnalyzer
                             'parent_nodes' => $root_type->parent_nodes
                         ]);
                     } else {
+                        assert($array_atomic_type_list !== null);
                         $array_atomic_type = new TKeyedArray(
                             array_fill(
                                 0,
@@ -660,6 +662,7 @@ class ArrayAssignmentAnalyzer
                         $array_atomic_type_list
                     );
                 } else {
+                    assert($array_atomic_type_array !== null);
                     $array_atomic_type = new TNonEmptyArray(
                         $array_atomic_type_array
                     );
@@ -671,7 +674,12 @@ class ArrayAssignmentAnalyzer
             ?? ($array_atomic_type_list !== null
                 ? Type::getNonEmptyList($array_atomic_type_list)
                 : null
-            ) ?? new TNonEmptyArray($array_atomic_type_array);
+            ) ?? ($array_atomic_type_array !== null
+                ? new TNonEmptyArray($array_atomic_type_array)
+                : null
+            )
+        ;
+        assert($array_atomic_type !== null);
 
         $array_assignment_type = new Union([$array_atomic_type]);
 
