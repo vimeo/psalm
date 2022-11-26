@@ -341,24 +341,6 @@ class ArrayAssignmentAnalyzer
                         }
                     }
                 }
-            } elseif ($type instanceof TNonEmptyList
-                && count($key_values) === 1
-                && $key_values[0] instanceof TLiteralInt
-            ) {
-                $key_value = $key_values[0];
-                $count = $type->getMinCount() ?? 1;
-                if ($key_value->value < $count) {
-                    $has_matching_objectlike_property = true;
-
-                    $changed = true;
-                    $type = $type->setTypeParam(Type::combineUnionTypes(
-                        $current_type,
-                        $type->type_param,
-                        $codebase,
-                        true,
-                        false
-                    ));
-                }
             }
             $types[$type->getKey()] = $type;
             $changed = $changed || $old_type !== $type;

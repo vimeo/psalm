@@ -551,7 +551,7 @@ class ArrayAnalyzer
             } else {
                 $codebase = $statements_analyzer->getCodebase();
 
-                if (!$unpacked_atomic_type instanceof TNonEmptyList
+                if (!($unpacked_atomic_type instanceof TKeyedArray && $unpacked_atomic_type->isNonEmpty())
                     && !$unpacked_atomic_type instanceof TNonEmptyArray
                 ) {
                     $all_non_empty = false;

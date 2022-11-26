@@ -412,7 +412,7 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNonEmptyArray
-                || $atomic_type instanceof TNonEmptyList
+                || ($atomic_type instanceof TKeyedArray && $atomic_type->isNonEmpty())
             ) {
                 $risky_cast[] = $atomic_type->getId();
 
@@ -597,7 +597,7 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNonEmptyArray
-                || $atomic_type instanceof TNonEmptyList
+                || ($atomic_type instanceof TKeyedArray && $atomic_type->isNonEmpty())
             ) {
                 $risky_cast[] = $atomic_type->getId();
 
