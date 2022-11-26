@@ -23,6 +23,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TDependentListKey;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -482,6 +483,9 @@ class ArrayAssignmentAnalyzer
     ): Union {
         $templated_assignment = false;
 
+        $array_atomic_type_class_string = null;
+        $array_atomic_type_array = null;
+        $array_atomic_type_list = null;
         if ($current_dim) {
             $key_type = $statements_analyzer->node_data->getType($current_dim);
 
@@ -533,9 +537,7 @@ class ArrayAssignmentAnalyzer
                 && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)
             ) {
                 if ($parent_type->hasList()) {
-                    $array_atomic_type = Type::getNonEmptyListAtomic(
-                        $value_type
-                    );
+                    $array_atomic_type_list = $value_type;
                 } elseif ($parent_type->hasClassStringMap()
                     && $key_type
                     && $key_type->isTemplatedClassString()
@@ -573,76 +575,115 @@ class ArrayAssignmentAnalyzer
                         $codebase
                     );
 
-                    $array_atomic_type = new TClassStringMap(
+                    $array_atomic_type_class_string = new TClassStringMap(
                         $class_string_map->param_name,
                         $class_string_map->as_type,
                         $value_type
                     );
                 } else {
-                    $array_atomic_type = new TNonEmptyArray([
+                    $array_atomic_type_array = [
                         $array_atomic_key_type,
                         $value_type,
-                    ]);
+                    ];
                 }
             } else {
-                $array_atomic_type = new TNonEmptyArray([
+                $array_atomic_type_array = [
                     $array_atomic_key_type,
                     $value_type,
-                ]);
+                ];
             }
         } else {
-            $array_atomic_type = Type::getNonEmptyListAtomic($value_type);
+            $array_atomic_type_list = $value_type;
         }
 
         $from_countable_object_like = false;
 
         $new_child_type = null;
 
+        $array_atomic_type = null;
         if (!$current_dim && !$context->inside_loop) {
             $atomic_root_types = $root_type->getAtomicTypes();
 
             if (isset($atomic_root_types['array'])) {
-                if ($array_atomic_type instanceof TClassStringMap) {
+                if ($array_atomic_type_class_string) {
                     $array_atomic_type = new TNonEmptyArray([
-                        $array_atomic_type->getStandinKeyParam(),
-                        $array_atomic_type->value_param
+                        $array_atomic_type_class_string->getStandinKeyParam(),
+                        $array_atomic_type_class_string->value_param
                     ]);
                 } elseif ($atomic_root_types['array'] instanceof TNonEmptyArray
-                    || $atomic_root_types['array'] instanceof TNonEmptyList
+                    || ($atomic_root_types['array'] instanceof TKeyedArray
+                        && $atomic_root_types['array']->is_list
+                        && $atomic_root_types['array']->isNonEmpty()
+                    )
                 ) {
-                    /** @psalm-suppress InaccessibleProperty We just created this object */
-                    $array_atomic_type->count = $atomic_root_types['array']->count;
+                    if ($array_atomic_type_array) {
+                        $array_atomic_type = new TNonEmptyArray(
+                            $array_atomic_type_array,
+                            $atomic_root_types['array']->count
+                        );
+                    } else {
+                        $array_atomic_type = new TKeyedArray(
+                            array_fill(
+                                0,
+                                $atomic_root_types['array']->count,
+                                $array_atomic_type_list
+                            ),
+                            null,
+                            [
+                                new Union([new TIntRange($atomic_root_types['array']->count, null)]),
+                                $array_atomic_type_list
+                            ],
+                            true
+                        );
+                    }
                 } elseif ($atomic_root_types['array'] instanceof TKeyedArray
                     && $atomic_root_types['array']->fallback_params === null
                 ) {
-                    /** @psalm-suppress InaccessibleProperty We just created this object */
-                    $array_atomic_type->count = count($atomic_root_types['array']->properties);
-                    $from_countable_object_like = true;
-
-                    if ($atomic_root_types['array']->is_list
-                        && $array_atomic_type instanceof TList
-                    ) {
+                    if ($array_atomic_type_array) {
+                        $array_atomic_type = new TNonEmptyArray(
+                            $array_atomic_type_array,
+                            $atomic_root_types['array']->count
+                        );
+                    } elseif ($atomic_root_types['array']->is_list) {
                         $array_atomic_type = $atomic_root_types['array'];
-
                         $new_child_type = new Union([$array_atomic_type], [
                             'parent_nodes' => $root_type->parent_nodes
                         ]);
+                    } else {
+                        $array_atomic_type = new TKeyedArray(
+                            array_fill(
+                                0,
+                                $atomic_root_types['array']->count,
+                                $array_atomic_type_list
+                            ),
+                            null,
+                            [
+                                new Union([new TIntRange($atomic_root_types['array']->count, null)]),
+                                $array_atomic_type_list
+                            ],
+                            true
+                        );
                     }
-                } elseif ($array_atomic_type instanceof TList) {
+                    $from_countable_object_like = true;
+                } elseif ($array_atomic_type_list) {
                     $array_atomic_type = Type::getNonEmptyListAtomic(
-                        $array_atomic_type->type_param
+                        $array_atomic_type_list
                     );
                 } else {
                     $array_atomic_type = new TNonEmptyArray(
-                        $array_atomic_type->type_params
+                        $array_atomic_type_array
                     );
                 }
             }
         }
 
-        $array_assignment_type = new Union([
-            $array_atomic_type,
-        ]);
+        $array_atomic_type ??= $array_atomic_type_class_string
+            ?? ($array_atomic_type_list !== null
+                ? Type::getNonEmptyList($array_atomic_type_list)
+                : null
+            ) ?? new TNonEmptyArray($array_atomic_type_array);
+
+        $array_assignment_type = new Union([$array_atomic_type]);
 
         if (!$new_child_type) {
             if ($templated_assignment) {
