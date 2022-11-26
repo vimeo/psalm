@@ -482,13 +482,15 @@ abstract class Type
         );
     }
 
+    private static ?Union $listKey = null;
     /**
      * @param int<1, max>|null $max_count
      */
     public static function getListKey(): Union
     {
-        return new Union([new TIntRange(0, null)]);
+        return self::$listKey ??= new Union([new TIntRange(0, null)]);
     }
+
     /**
      * @psalm-pure
      */
