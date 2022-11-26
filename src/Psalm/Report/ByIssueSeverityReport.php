@@ -33,6 +33,9 @@ final class ByIssueSeverityReport extends Report
         return $output;
     }
 
+    /**
+     * Copied from ConsoleReport with only very minor changes. Todo consider reducing code duplication
+     */
     private function format(IssueData $issue_data): string
     {
         $issue_string = '';
@@ -82,6 +85,7 @@ final class ByIssueSeverityReport extends Report
     }
 
     /**
+     * Copied from ConsoleReport unchanged. Todo consider reducing code duplication
      * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
     private function getTaintSnippets(array $taint_trace): string
