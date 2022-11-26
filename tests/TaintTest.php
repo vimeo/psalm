@@ -1182,7 +1182,6 @@ class TaintTest extends TestCase
             'taintOverMixed' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedArgument
                      */
                     function foo() : void {

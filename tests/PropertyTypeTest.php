@@ -587,7 +587,6 @@ class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'MissingPropertyType',
-                    'MixedAssignment',
                 ],
             ],
             'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
@@ -603,7 +602,6 @@ class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedThisPropertyFetch',
-                    'MixedAssignment',
                     'MixedArgument',
                     'MixedMethodCall',
                     'MixedPropertyFetch',
@@ -752,7 +750,7 @@ class PropertyTypeTest extends TestCase
                     $c->is = [new A1, new A1];
                     $c->is = [new A1, new B1];',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'issetPropertyDoesNotExist' => [
                 'code' => '<?php
@@ -1269,13 +1267,10 @@ class PropertyTypeTest extends TestCase
                         /** @param mixed $a */
                         public function barBar($a): void
                         {
+                            /** @psalm-suppress MixedPropertyAssignmentValue */
                             $this->foo = $a;
                         }
                     }',
-                'assertions' => [],
-                'ignored_issues' => [
-                    'MixedAssignment',
-                ],
             ],
             'propertyAssignmentToMixed' => [
                 'code' => '<?php
@@ -1287,12 +1282,9 @@ class PropertyTypeTest extends TestCase
                     /** @param mixed $a */
                     function barBar(C $c, $a): void
                     {
+                        /** @psalm-suppress MixedPropertyAssignmentValue */
                         $c->foo = $a;
                     }',
-                'assertions' => [],
-                'ignored_issues' => [
-                    'MixedAssignment',
-                ],
             ],
             'propertySetInBothIfBranches' => [
                 'code' => '<?php
@@ -2938,7 +2930,6 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MixedPropertyFetch',
                 'ignored_issues' => [
                     'MissingPropertyType',
-                    'MixedAssignment',
                 ],
             ],
             'mixedPropertyAssignment' => [
@@ -2955,7 +2946,6 @@ class PropertyTypeTest extends TestCase
                 'error_message' => 'MixedPropertyAssignment',
                 'ignored_issues' => [
                     'MissingPropertyType',
-                    'MixedAssignment',
                 ],
             ],
             'possiblyNullablePropertyAssignment' => [
@@ -3324,7 +3314,7 @@ class PropertyTypeTest extends TestCase
                             $this->mixed = $value;
                         }
                     }',
-                'error_message' => 'MixedAssignment',
+                'error_message' => 'MixedPropertyAssignmentValue',
             ],
             'assertPropertyTypeHasImpossibleType' => [
                 'code' => '<?php

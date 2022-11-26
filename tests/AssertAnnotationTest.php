@@ -427,7 +427,6 @@ class AssertAnnotationTest extends TestCase
                      * @param iterable<mixed,mixed> $i
                      */
                     function assertAllStrings(iterable $i): void {
-                        /** @psalm-suppress MixedAssignment */
                         foreach ($i as $s) {
                             if (!is_string($s)) {
                                 throw new \UnexpectedValueException("");
@@ -510,8 +509,6 @@ class AssertAnnotationTest extends TestCase
                             throw new \Exception("bad");
                         }
                     }
-
-                    /** @psalm-suppress MixedAssignment */
                     $a = $GLOBALS["a"];
 
                     assertIntOrFoo($a);

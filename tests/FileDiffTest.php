@@ -1557,7 +1557,6 @@ class FileDiffTest extends TestCase
                     class C {
                         public function foo(array $a) : void {
                             /**
-                             * @psalm-suppress MixedAssignment
                              */
                             foreach ($a as $b) {
                                 $b->bar();

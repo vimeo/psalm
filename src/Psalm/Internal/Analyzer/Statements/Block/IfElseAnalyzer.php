@@ -19,7 +19,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
-use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
@@ -340,12 +339,6 @@ class IfElseAnalyzer
                             $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
                         }
                     }
-
-                    IssueBuffer::remove(
-                        $statements_analyzer->getFilePath(),
-                        'MixedAssignment',
-                        $first_appearance->raw_file_start
-                    );
                 }
             }
         }

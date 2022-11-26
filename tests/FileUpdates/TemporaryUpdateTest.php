@@ -253,7 +253,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[136, 317, 273], [323, 279], [329]],
+                'error_positions' => [[136, 273], [279], []],
             ],
             'addSpaceAffectingOffsets' => [
                 [
@@ -309,10 +309,8 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[373], [374], [375]],
-                'ignored_issues' => [
-                    'MixedAssignment' => Config::REPORT_INFO,
-                ],
+                'error_positions' => [[], [], []],
+                'ignored_issues' => [],
             ],
             'fixReturnType' => [
                 [

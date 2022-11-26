@@ -45,6 +45,19 @@ class CloneTest extends TestCase
                         }
                     }',
             ],
+            'mixedTypeInferredIfErrors' => [
+                'code' => '<?php
+                    class A {}
+                    /**
+                     * @param A|string $a
+                     */
+                    function foo($a): void {
+                        /**
+                         * @psalm-suppress PossiblyInvalidClone
+                         */
+                        $cloned = clone $a;
+                    }',
+            ],
         ];
     }
 
@@ -136,20 +149,6 @@ class CloneTest extends TestCase
                         clone $a;
                     }',
                 'error_message' => 'MixedClone',
-            ],
-            'mixedTypeInferredIfErrors' => [
-                'code' => '<?php
-                    class A {}
-                    /**
-                     * @param A|string $a
-                     */
-                    function foo($a): void {
-                        /**
-                         * @psalm-suppress PossiblyInvalidClone
-                         */
-                        $cloned = clone $a;
-                    }',
-                'error_message' => 'MixedAssignment',
             ],
             'missingClass' => [
                 'code' => '<?php

@@ -449,7 +449,6 @@ class TryCatchTest extends TestCase
                 'code' => '<?php
                     /**
                      * @return array<int, mixed>
-                     * @psalm-suppress MixedAssignment
                      */
                     function fetchFromCache(mixed $m)
                     {

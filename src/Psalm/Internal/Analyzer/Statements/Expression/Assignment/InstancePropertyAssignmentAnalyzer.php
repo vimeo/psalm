@@ -42,8 +42,8 @@ use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\LoopInvalidation;
-use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\MixedPropertyAssignment;
+use Psalm\Issue\MixedPropertyAssignmentValue;
 use Psalm\Issue\MixedPropertyTypeCoercion;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
@@ -1419,7 +1419,7 @@ class InstancePropertyAssignmentAnalyzer
                 }
 
                 IssueBuffer::maybeAdd(
-                    new MixedAssignment(
+                    new MixedPropertyAssignmentValue(
                         $message,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $origin_location

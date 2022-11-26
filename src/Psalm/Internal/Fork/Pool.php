@@ -110,8 +110,6 @@ class Pool
      * A closure to execute upon shutting down a child
      * @param Closure(mixed $data):void $task_done_closure
      * A closure to execute when a task is done
-     *
-     * @psalm-suppress MixedAssignment
      */
     public function __construct(
         Config $config,
@@ -325,9 +323,6 @@ class Pool
      * Read the results that each child process has serialized on their write streams.
      * The results are returned in an array, one for each worker. The order of the results
      * is not maintained.
-     *
-     *
-     * @psalm-suppress MixedAssignment
      *
      * @return list<mixed>
      */

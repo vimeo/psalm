@@ -519,7 +519,7 @@ class ArrayAccessTest extends TestCase
                 'assertions' => [
                     '$x' => 'mixed',
                 ],
-                'ignored_issues' => ['EmptyArrayAccess', 'MixedAssignment'],
+                'ignored_issues' => ['EmptyArrayAccess'],
             ],
             'objectLikeWithoutKeys' => [
                 'code' => '<?php
@@ -634,7 +634,6 @@ class ArrayAccessTest extends TestCase
             'noEmptyArrayAccessInLoop' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedOperand
                      * @psalm-suppress MixedArrayAssignment
                      * @param mixed[] $line
@@ -921,9 +920,6 @@ class ArrayAccessTest extends TestCase
                         protected array $b = [];
                         protected array $c = [];
 
-                        /**
-                         * @psalm-suppress MixedAssignment
-                         */
                         public function pop(): void {
                             if (!$this->a) {
                                 return;
@@ -1181,7 +1177,7 @@ class ArrayAccessTest extends TestCase
                     $a = [];
                     echo $a[0];',
                 'error_message' => 'MixedArrayAccess',
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'mixedArrayOffset' => [
                 'code' => '<?php
@@ -1189,7 +1185,7 @@ class ArrayAccessTest extends TestCase
                     $a = 5;
                     echo [1, 2, 3, 4][$a];',
                 'error_message' => 'MixedArrayOffset',
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'nullArrayAccess' => [
                 'code' => '<?php
@@ -1338,7 +1334,6 @@ class ArrayAccessTest extends TestCase
             ],
             'recogniseBadVar' => [
                 'code' => '<?php
-                    /** @psalm-suppress MixedAssignment */
                     $array = $_GET["foo"] ?? [];
 
                     $array[$a] = "b";',

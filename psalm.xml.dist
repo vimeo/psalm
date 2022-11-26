@@ -168,10 +168,10 @@
             </errorLevel>
         </PropertyTypeCoercion>
 
-        <MixedAssignment>
+        <MixedPropertyAssignmentValue>
             <errorLevel type="suppress">
                 <directory name="vendor/nikic/php-parser" />
             </errorLevel>
-        </MixedAssignment>
+        </MixedPropertyAssignmentValue>
     </issueHandlers>
 </psalm>

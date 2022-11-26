@@ -153,13 +153,13 @@ class Config
         'MixedArrayAssignment',
         'MixedArrayOffset',
         'MixedArrayTypeCoercion',
-        'MixedAssignment',
         'MixedFunctionCall',
         'MixedInferredReturnType',
         'MixedMethodCall',
         'MixedOperand',
         'MixedPropertyFetch',
         'MixedPropertyAssignment',
+        'MixedPropertyAssignmentValue',
         'MixedReturnStatement',
         'MixedStringOffsetAssignment',
         'MixedArgumentTypeCoercion',
@@ -943,7 +943,6 @@ class Config
      * @param non-empty-string $file_contents
      *
      * @psalm-suppress MixedMethodCall
-     * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
      *
@@ -2499,7 +2498,6 @@ class Config
     }
 
     /**
-     * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
     public function getPHPVersionFromComposerJson(): ?string

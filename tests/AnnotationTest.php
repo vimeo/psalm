@@ -843,9 +843,7 @@ class AnnotationTest extends TestCase
                         if (is_null($item)) {}
                     }',
                 'assertions' => [],
-                'ignored_issues' => [
-                    'MixedAssignment',
-                ],
+                'ignored_issues' => [],
             ],
             'extraneousDocblockParamName' => [
                 'code' => '<?php

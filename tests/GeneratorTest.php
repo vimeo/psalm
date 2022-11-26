@@ -120,7 +120,7 @@ class GeneratorTest extends TestCase
                     '$gen' => 'Generator<int, int, mixed, int>',
                     '$gen2' => 'int',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'yieldFromArray' => [
                 'code' => '<?php

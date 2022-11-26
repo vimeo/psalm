@@ -46,7 +46,7 @@ use Psalm\Issue\InvalidScope;
 use Psalm\Issue\LoopInvalidation;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\MixedArrayAccess;
-use Psalm\Issue\MixedAssignment;
+use Psalm\Issue\MixedPropertyAssignmentValue;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
@@ -381,12 +381,6 @@ class AssignmentAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($assign_value_type->hasMixed()) {
-            $root_var_id = ExpressionIdentifier::getRootVarId(
-                $assign_var,
-                $statements_analyzer->getFQCLN(),
-                $statements_analyzer
-            );
-
             if (!$context->collect_initializations
                 && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
@@ -397,10 +391,8 @@ class AssignmentAnalyzer
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
 
-            if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch
-                && !strpos($root_var_id ?? '', '->')
+            if ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch
                 && !$comment_type
-                && strpos($var_id ?? '', '$_') !== 0
             ) {
                 $origin_locations = [];
 
@@ -426,7 +418,7 @@ class AssignmentAnalyzer
                 }
 
                 IssueBuffer::maybeAdd(
-                    new MixedAssignment(
+                    new MixedPropertyAssignmentValue(
                         $message,
                         $issue_location,
                         $origin_location

@@ -1761,7 +1761,6 @@ class UnusedVariableTest extends TestCase
             ],
             'loopOverUnknown' => [
                 'code' => '<?php
-                    /** @psalm-suppress MixedAssignment */
                     function foo(Traversable $t) : void {
                         foreach ($t as $u) {
                             if ($u instanceof stdClass) {}
@@ -1909,7 +1908,6 @@ class UnusedVariableTest extends TestCase
             ],
             'assignToGlobalVar' => [
                 'code' => '<?php
-                    /** @psalm-suppress MixedAssignment */
                     function foo(array $args) : void {
                         foreach ($args as $key => $value) {
                             $_GET[$key] = $value;
@@ -1994,7 +1992,6 @@ class UnusedVariableTest extends TestCase
                 'code' => '<?php
                     function foo(array $arr): array {
                         /**
-                         * @psalm-suppress MixedAssignment
                          * @psalm-suppress MixedArrayAssignment
                          */
                         foreach ($arr as &$element) {
@@ -2062,7 +2059,6 @@ class UnusedVariableTest extends TestCase
             'sourcemaps' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedArgument
                      * @param iterable<mixed, int> $keys
                      */
@@ -2160,8 +2156,6 @@ class UnusedVariableTest extends TestCase
                         if (rand(0, 1)) {
                             $maybe_undefined = $arr;
                         }
-
-                        /** @psalm-suppress MixedAssignment */
                         $maybe_undefined = $maybe_undefined ?? [0];
 
                         print_r($maybe_undefined);
@@ -2197,7 +2191,6 @@ class UnusedVariableTest extends TestCase
             'clips' => [
                 'code' => '<?php declare(strict_types=1);
                     function foo(array $clips) : void {
-                        /** @psalm-suppress MixedAssignment */
                         foreach ($clips as &$clip) {
                             /** @psalm-suppress MixedArgument */
                             if (!empty($clip)) {
@@ -2219,7 +2212,6 @@ class UnusedVariableTest extends TestCase
                     function validate($b, string $source) : void {
                         /**
                          * @psalm-suppress DocblockTypeContradiction
-                         * @psalm-suppress MixedAssignment
                          */
                         if (!is_bool($b)) {
                             $source = $b;
@@ -2343,7 +2335,6 @@ class UnusedVariableTest extends TestCase
                 'code' => '<?php
                     function takesResults(array $arr) : void {
                         /**
-                         * @psalm-suppress MixedAssignment
                          */
                         foreach ($arr as $item) {
                             /**
@@ -3522,8 +3513,6 @@ class UnusedVariableTest extends TestCase
                     }
 
                     $arr = makeArray();
-
-                    /** @psalm-suppress MixedAssignment */
                     foreach ($arr as $a) {
                         echo $a;
                     }',
@@ -3536,8 +3525,6 @@ class UnusedVariableTest extends TestCase
                     }
 
                     $arr = makeArray();
-
-                    /** @psalm-suppress MixedAssignment */
                     foreach ($arr as $a) {
                         $a->foo();
                     }',
@@ -3551,8 +3538,6 @@ class UnusedVariableTest extends TestCase
 
                     function foo() : string {
                         $arr = makeArray();
-
-                        /** @psalm-suppress MixedAssignment */
                         foreach ($arr as $a) {
                             return $a;
                         }

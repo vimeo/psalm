@@ -36,7 +36,6 @@ class MagicMethodAnnotationTest extends TestCase
 
                 $a = $child->getString();
                 $child->setInteger(4);
-                /** @psalm-suppress MixedAssignment */
                 $b = $child->setString(5);
                 $c = $child->getBool("hello");
                 $d = $child->getArray();
@@ -177,7 +176,6 @@ class MagicMethodAnnotationTest extends TestCase
 
                     $a = $child->getString();
                     $child->setInteger(4);
-                    /** @psalm-suppress MixedAssignment */
                     $b = $child->setString(5);
                     $c = $child->getBool("hello");
                     $d = $child->getArray();

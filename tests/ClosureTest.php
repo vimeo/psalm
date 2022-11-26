@@ -1333,9 +1333,9 @@ class ClosureTest extends TestCase
                         }
                     }
                     $closure = Test::length(...);
-                    $length = $closure();
+                    echo($closure());
                 ',
-                'error_message' => 'MixedAssignment',
+                'error_message' => 'MixedArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

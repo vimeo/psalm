@@ -887,7 +887,6 @@ final class Psalm
 
         if (isset($options['disable-extension'])) {
             if (is_array($options['disable-extension'])) {
-                /** @psalm-suppress MixedAssignment */
                 foreach ($options['disable-extension'] as $extension) {
                     if (is_string($extension)) {
                         $ini_handler->disableExtension($extension);

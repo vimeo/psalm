@@ -970,7 +970,6 @@ class SwitchTypeTest extends TestCase
                     class C {}
 
                     /**
-                     * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedArrayAccess
                      */
                     function foo(array $columns) : bool

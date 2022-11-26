@@ -427,9 +427,7 @@ class ForeachTest extends TestCase
                 'assertions' => [
                     '$a' => 'mixed',
                 ],
-                'ignored_issues' => [
-                    'MixedAssignment',
-                ],
+                'ignored_issues' => [],
             ],
             'noMixedAssigmentWithIfAssertion' => [
                 'code' => '<?php
@@ -473,9 +471,7 @@ class ForeachTest extends TestCase
                 'assertions' => [
                     '$a' => 'mixed',
                 ],
-                'ignored_issues' => [
-                    'MixedAssignment',
-                ],
+                'ignored_issues' => [],
             ],
             'falseToBoolExplicitBreak' => [
                 'code' => '<?php
@@ -621,7 +617,7 @@ class ForeachTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedAssignment', 'MixedArrayAccess',
+                    'MixedArrayAccess',
                 ],
             ],
             'foreachLoopWithOKManipulation' => [
@@ -711,7 +707,7 @@ class ForeachTest extends TestCase
                     loopI(new C);',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedAssignment', 'UndefinedThisPropertyAssignment',
+                    'UndefinedThisPropertyAssignment',
                 ],
             ],
             'intersectionIterator' => [
@@ -992,7 +988,6 @@ class ForeachTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-suppress RawObjectIteration
-                     * @psalm-suppress MixedAssignment
                      */
                     function foo(array $a) : void {
                         if (isset($a["a"]["b"])) {

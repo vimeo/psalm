@@ -176,6 +176,7 @@ class DocumentationTest extends TestCase
         $all_issues = IssueHandler::getAllIssueTypes();
         $all_issues[] = 'ParseError';
         $all_issues[] = 'PluginIssue';
+        $all_issues[] = 'MixedAssignment'; // deprecated
 
         sort($all_issues);
 
@@ -269,6 +270,7 @@ class DocumentationTest extends TestCase
                 case 'RedundantIdentityWithTrue':
                 case 'TraitMethodSignatureMismatch':
                 case 'UncaughtThrowInGlobalScope':
+                case 'MixedAssignment': // deprecated
                     continue 2;
 
                 /** @todo reinstate this test when the issue is restored */
@@ -292,7 +294,7 @@ class DocumentationTest extends TestCase
                     break;
 
                 case 'MixedStringOffsetAssignment':
-                    $ignored_issues = ['MixedAssignment'];
+                    $ignored_issues = [];
                     break;
 
                 case 'ParadoxicalCondition':
@@ -450,6 +452,10 @@ class DocumentationTest extends TestCase
 
         $issue_files = array_filter(array_map(function (string $issue_file) {
             if ($issue_file === "." || $issue_file === "..") {
+                return false;
+            }
+            if ($issue_file === 'MixedAssignment.md') {
+                // deprecated issue
                 return false;
             }
             $this->assertStringEndsWith(".md", $issue_file, "Invalid file in issues documentation: $issue_file");

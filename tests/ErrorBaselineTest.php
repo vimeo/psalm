@@ -36,10 +36,6 @@ class ErrorBaselineTest extends TestCase
             '<?xml version="1.0" encoding="UTF-8"?>
             <files>
               <file src="sample/sample-file.php">
-                <MixedAssignment occurrences="2">
-                  <code>foo</code>
-                  <code>bar</code>
-                </MixedAssignment>
                 <InvalidReturnStatement occurrences="1"/>
               </file>
               <file src="sample\sample-file2.php">
@@ -53,39 +49,10 @@ class ErrorBaselineTest extends TestCase
 
         $expectedParsedBaseline = [
             'sample/sample-file.php' => [
-                'MixedAssignment' => ['o' => 2, 's' => ['foo', 'bar']],
                 'InvalidReturnStatement' => ['o' => 1, 's' => []],
             ],
             'sample/sample-file2.php' => [
                 'PossiblyUnusedMethod' => ['o' => 2, 's' => ['foo', 'bar']],
-            ],
-        ];
-
-        $this->assertSame(
-            $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider, $baselineFilePath)
-        );
-    }
-
-    public function testLoadShouldIgnoreLineEndingsInIssueSnippet(): void
-    {
-        $baselineFilePath = 'baseline.xml';
-
-        $this->fileProvider->allows()->fileExists($baselineFilePath)->andReturns(true);
-        $this->fileProvider->allows()->getContents($baselineFilePath)->andReturns(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-            <files>
-              <file src=\"sample/sample-file.php\">
-                <MixedAssignment occurrences=\"1\">
-                  <code>foo\r</code>
-                </MixedAssignment>
-              </file>
-            </files>"
-        );
-
-        $expectedParsedBaseline = [
-            'sample/sample-file.php' => [
-                'MixedAssignment' => ['o' => 1, 's' => ['foo']],
             ],
         ];
 
@@ -127,7 +94,6 @@ class ErrorBaselineTest extends TestCase
     {
         $existingIssues = [
             'sample/sample-file.php' => [
-                'MixedAssignment' => ['o' => 2, 's' => ['bar']],
                 'MixedOperand' => ['o' => 2, 's' => []],
             ],
             'sample/sample-file2.php' => [
@@ -152,57 +118,6 @@ class ErrorBaselineTest extends TestCase
             $baselineFile,
             [
                 'sample/sample-file.php' => [
-                    new IssueData(
-                        'error',
-                        0,
-                        0,
-                        'MixedAssignment',
-                        'Message',
-                        'sample/sample-file.php',
-                        'sample/sample-file.php',
-                        'foo',
-                        'foo',
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0
-                    ),
-                    new IssueData(
-                        'error',
-                        0,
-                        0,
-                        'MixedAssignment',
-                        'Message',
-                        'sample/sample-file.php',
-                        'sample/sample-file.php',
-                        'bar',
-                        'bar',
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0
-                    ),
-                    new IssueData(
-                        'error',
-                        0,
-                        0,
-                        'MixedAssignment',
-                        'Message',
-                        'sample/sample-file.php',
-                        'sample/sample-file.php',
-                        'bat',
-                        'bat',
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0
-                    ),
                     new IssueData(
                         'error',
                         0,
@@ -239,40 +154,6 @@ class ErrorBaselineTest extends TestCase
                     ),
                 ],
                 'sample/sample-file2.php' => [
-                    new IssueData(
-                        'error',
-                        0,
-                        0,
-                        'MixedAssignment',
-                        'Message',
-                        'sample/sample-file2.php',
-                        'sample/sample-file2.php',
-                        'boardy',
-                        'boardy',
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0
-                    ),
-                    new IssueData(
-                        'error',
-                        0,
-                        0,
-                        'MixedAssignment',
-                        'Message',
-                        'sample/sample-file2.php',
-                        'sample/sample-file2.php',
-                        'bardy',
-                        'bardy',
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0
-                    ),
                     new IssueData(
                         'error',
                         0,
@@ -315,26 +196,14 @@ class ErrorBaselineTest extends TestCase
                     /** @var DOMElement[] $file2Issues */
                     $file2Issues = $file2->childNodes;
 
-                    $this->assertSame('MixedAssignment', $file1Issues[0]->tagName);
-                    $this->assertSame(
-                        '3',
-                        $file1Issues[0]->getAttribute('occurrences'),
-                        'MixedAssignment should have occured 3 times'
-                    );
-                    $this->assertSame('MixedOperand', $file1Issues[1]->tagName);
+                    $this->assertSame('MixedOperand', $file1Issues[0]->tagName);
                     $this->assertSame(
                         '1',
-                        $file1Issues[1]->getAttribute('occurrences'),
+                        $file1Issues[0]->getAttribute('occurrences'),
                         'MixedOperand should have occured 1 time'
                     );
 
-                    $this->assertSame('MixedAssignment', $file2Issues[0]->tagName);
-                    $this->assertSame(
-                        '2',
-                        $file2Issues[0]->getAttribute('occurrences'),
-                        'MixedAssignment should have occured 2 times',
-                    );
-                    $this->assertSame('TypeCoercion', $file2Issues[1]->tagName);
+                    $this->assertSame('TypeCoercion', $file2Issues[0]->tagName);
                     $this->assertSame(
                         '1',
                         $file2Issues[1]->getAttribute('occurrences'),
@@ -355,18 +224,10 @@ class ErrorBaselineTest extends TestCase
             '<?xml version="1.0" encoding="UTF-8"?>
             <files>
               <file src="sample/sample-file.php">
-                <MixedAssignment occurrences="3">
-                    <code>bar</code>
-                    <code>bat</code>
-                </MixedAssignment>
                 <MixedOperand occurrences="1"/>
               </file>
               <file src="sample/sample-file2.php">
-                <MixedAssignment occurrences="2"/>
                 <TypeCoercion occurrences="1"/>
-              </file>
-              <file src="sample/sample-file3.php">
-                <MixedAssignment occurrences="1"/>
               </file>
             </files>'
         );
@@ -375,40 +236,6 @@ class ErrorBaselineTest extends TestCase
 
         $newIssues = [
             'sample/sample-file.php' => [
-                new IssueData(
-                    'error',
-                    0,
-                    0,
-                    'MixedAssignment',
-                    'Message',
-                    'sample/sample-file.php',
-                    'sample/sample-file.php',
-                    'foo',
-                    'foo',
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0
-                ),
-                new IssueData(
-                    'error',
-                    0,
-                    0,
-                    'MixedAssignment',
-                    'Message',
-                    'sample/sample-file.php',
-                    'sample/sample-file.php',
-                    'bar',
-                    'bar',
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0
-                ),
                 new IssueData(
                     'error',
                     0,
@@ -474,7 +301,6 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame([
             'sample/sample-file.php' => [
-                'MixedAssignment' => ['o' => 2, 's' => ['bar']],
                 'MixedOperand' => ['o' => 1, 's' => []],
             ],
             'sample/sample-file2.php' => [
@@ -493,10 +319,6 @@ class ErrorBaselineTest extends TestCase
             <files>
               <file src="sample/sample-file.php">
                 <!-- here is a comment ! //-->
-                <MixedAssignment occurrences="2">
-                  <code>foo</code>
-                  <code>bar</code>
-                </MixedAssignment>
                 <InvalidReturnStatement occurrences="1"/>
               </file>
               <!-- And another one ! //-->
@@ -511,7 +333,6 @@ class ErrorBaselineTest extends TestCase
 
         $expectedParsedBaseline = [
             'sample/sample-file.php' => [
-                'MixedAssignment' => ['o' => 2, 's' => ['foo', 'bar']],
                 'InvalidReturnStatement' => ['o' => 1, 's' => []],
             ],
             'sample/sample-file2.php' => [

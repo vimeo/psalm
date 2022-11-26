@@ -379,7 +379,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$a' => 'mixed',
                     '$b' => 'mixed',
                 ],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'arrayPopNonEmpty' => [
                 'code' => '<?php
@@ -660,9 +660,6 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$b' => 'mixed|string',
                 ],
-                'ignored_issues' => [
-                    'MixedAssignment',
-                ],
             ],
             'uasort' => [
                 'code' => '<?php
@@ -790,7 +787,7 @@ class ArrayFunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArgumentTypeCoercion', 'NoValue'],
+                'ignored_issues' => ['MixedArgument', 'MixedArgumentTypeCoercion', 'NoValue'],
             ],
             'arrayPopNotNullable' => [
                 'code' => '<?php
@@ -1596,7 +1593,7 @@ class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'assertions' => [],
-                'ignored_issues' => ['MissingClosureReturnType', 'MixedAssignment'],
+                'ignored_issues' => ['MissingClosureReturnType'],
             ],
             'arraySpliceArray' => [
                 'code' => '<?php
@@ -2187,7 +2184,7 @@ class ArrayFunctionCallTest extends TestCase
                      * @param mixed|array<never, never> $lengths
                      */
                     function doStuff($lengths): void {
-                        /** @psalm-suppress MixedArgument, MixedAssignment */
+                        /** @psalm-suppress MixedArgument */
                         $length = array_shift($lengths);
                         if ($length !== null) {}
                     }'

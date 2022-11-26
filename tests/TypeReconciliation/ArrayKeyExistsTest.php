@@ -319,7 +319,7 @@ class ArrayKeyExistsTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset',
+                    'MixedArrayAccess', 'MixedArrayOffset',
                     'MixedArgument',
                 ],
             ],

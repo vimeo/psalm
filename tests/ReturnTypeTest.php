@@ -494,7 +494,7 @@ class ReturnTypeTest extends TestCase
                     foreach (foo3() as $i) echo $i;
                     foreach (foo4() as $i) echo $i;',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'objectLikeArrayOptionalKeyReturn' => [
                 'code' => '<?php

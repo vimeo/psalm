@@ -223,7 +223,6 @@ final class Creator
 
     /**
      * @return list<string>
-     * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
      */
     private static function getPsr4Or0Paths(string $current_dir, array $composer_json): array

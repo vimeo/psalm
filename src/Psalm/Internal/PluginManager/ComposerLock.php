@@ -82,7 +82,6 @@ class ComposerLock
     {
         $packages = $this->getAllPackages();
         $ret = [];
-        /** @psalm-suppress MixedAssignment */
         foreach ($packages as $package) {
             if ($this->isPlugin($package)) {
                 $ret[] = $package;

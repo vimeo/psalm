@@ -225,7 +225,7 @@ class MagicPropertyTest extends TestCase
                         $a->__set("foo", $b);
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedPropertyTypeCoercion'],
+                'ignored_issues' => ['MixedPropertyTypeCoercion'],
             ],
             'namedPropertyByVariable' => [
                 'code' => '<?php
@@ -1107,7 +1107,7 @@ class MagicPropertyTest extends TestCase
                         $a->__set("foo", $b);
                     }',
                 'error_message' => 'MixedPropertyTypeCoercion',
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'magicInterfacePropertyWrongProperty' => [
                 'code' => '<?php

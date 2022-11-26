@@ -565,7 +565,6 @@ final class Psalter
     private static function loadCodeownersFiles(array $desired_codeowners, array $codeowner_files): array
     {
         $paths_to_check = [];
-        /** @psalm-suppress MixedAssignment */
         foreach ($desired_codeowners as $desired_codeowner) {
             if (!is_string($desired_codeowner)) {
                 die('Invalid --codeowner ' . (string)$desired_codeowner . PHP_EOL);

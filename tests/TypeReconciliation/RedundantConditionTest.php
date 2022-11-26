@@ -183,7 +183,7 @@ class RedundantConditionTest extends TestCase
                     }
                     if ($a) {}',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedArrayAccess'],
             ],
             'noComplaintWithIsNumericThenIsEmpty' => [
                 'code' => '<?php
@@ -277,7 +277,7 @@ class RedundantConditionTest extends TestCase
                       }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedArrayAccess'],
             ],
             'hardPhpTypeAssertionsOnDocblockBoolType' => [
                 'code' => '<?php
@@ -369,7 +369,7 @@ class RedundantConditionTest extends TestCase
                         if ($a === false) {}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MissingReturnType', 'MixedArrayAccess'],
+                'ignored_issues' => ['MissingReturnType', 'MixedArrayAccess'],
             ],
             'nullCoalescePossiblyUndefined' => [
                 'code' => '<?php
@@ -382,7 +382,7 @@ class RedundantConditionTest extends TestCase
 
                     if ($option) {}',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedArrayAccess'],
             ],
             'allowIntValueCheckAfterComparisonDueToOverflow' => [
                 'code' => '<?php
@@ -557,7 +557,7 @@ class RedundantConditionTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayOffset'],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedArrayOffset'],
             ],
             'emptyKnowingArrayType' => [
                 'code' => '<?php

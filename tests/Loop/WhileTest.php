@@ -372,7 +372,6 @@ class WhileTest extends TestCase
                         while (rand(0, 1)) {
                             $t = true;
                             if (!empty($arr[0])) {
-                                /** @psalm-suppress MixedAssignment */
                                 $t = $arr[0];
                             }
                             if ($t === true) {}
@@ -391,8 +390,6 @@ class WhileTest extends TestCase
                             if (!isset($values[$field])) {
                                 continue;
                             }
-
-                            /** @psalm-suppress MixedAssignment */
                             $value = $values[$field];
 
                             /** @psalm-suppress MixedArgument */

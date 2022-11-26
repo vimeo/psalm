@@ -600,10 +600,8 @@ abstract class Atomic implements TypeNode
     public function visit(TypeVisitor $visitor): bool
     {
         foreach ($this->getChildNodeKeys() as $key) {
-            /** @psalm-suppress MixedAssignment */
             $value = $this->{$key};
             if (is_array($value)) {
-                /** @psalm-suppress MixedAssignment */
                 foreach ($value as $type) {
                     if (!$type instanceof TypeNode) {
                         continue;
@@ -625,12 +623,10 @@ abstract class Atomic implements TypeNode
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         foreach ($node->getChildNodeKeys() as $key) {
-            /** @psalm-suppress MixedAssignment */
             $value = $node->{$key};
             $result = true;
             if (is_array($value)) {
                 $changed = false;
-                /** @psalm-suppress MixedAssignment */
                 foreach ($value as &$type) {
                     if (!$type instanceof TypeNode) {
                         continue;

@@ -440,7 +440,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedMethodCall'],
+                'ignored_issues' => ['MixedMethodCall'],
             ],
             'methodResolution' => [
                 'code' => '<?php
@@ -512,7 +512,6 @@ class MethodCallTest extends TestCase
                     $stmt = $db->prepare("select \"a\" as a");
                     $stmt->setFetchMode(PDO::FETCH_CLASS, A::class);
                     $stmt->execute();
-                    /** @psalm-suppress MixedAssignment */
                     $a = $stmt->fetch();',
             ],
             'datePeriodConstructor' => [
@@ -1072,7 +1071,6 @@ class MethodCallTest extends TestCase
                 'error_message' => 'MixedMethodCall',
                 'ignored_issues' => [
                     'MissingPropertyType',
-                    'MixedAssignment',
                 ],
             ],
             'invalidMethodCall' => [
@@ -1155,8 +1153,8 @@ class MethodCallTest extends TestCase
                     }
                     $foo = "A";
                     /** @psalm-suppress InvalidStringClass */
-                    $b = $foo::bar();',
-                'error_message' => 'MixedAssignment',
+                    echo($foo::bar());',
+                'error_message' => 'MixedArgument',
             ],
             'possiblyNullFunctionCall' => [
                 'code' => '<?php

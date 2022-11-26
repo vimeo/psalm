@@ -2,12 +2,10 @@
 
 namespace Psalm\Tests;
 
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class AssignmentTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
     public function providerValidCodeParse(): iterable
@@ -90,22 +88,6 @@ class AssignmentTest extends TestCase
                     '$a' => 'int',
                     '$B' => 'int',
                 ]
-            ],
-        ];
-    }
-
-    /**
-     *
-     */
-    public function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'mixedAssignment' => [
-                'code' => '<?php
-                    /** @var mixed */
-                    $a = 5;
-                    $b = $a;',
-                'error_message' => 'MixedAssignment',
             ],
         ];
     }
