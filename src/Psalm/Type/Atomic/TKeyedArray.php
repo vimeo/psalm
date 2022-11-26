@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
 
 use function addslashes;
+use function assert;
 use function count;
 use function get_class;
 use function implode;
@@ -257,7 +258,7 @@ class TKeyedArray extends Atomic
     public function getGenericKeyType(bool $possibly_undefined = false): Union
     {
         if ($this->is_list) {
-            return new Union([new TIntRange(0, $this->getMaxCount())]);
+            return Type::getListKey($this->getMaxCount());
         }
 
         $key_types = [];

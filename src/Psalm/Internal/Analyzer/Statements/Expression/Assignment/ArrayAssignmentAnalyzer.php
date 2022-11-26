@@ -22,7 +22,6 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -611,7 +610,7 @@ class ArrayAssignmentAnalyzer
                             $array_atomic_type_array,
                             $prop_count
                         );
-                    } else if ($prop_count !== null) {
+                    } elseif ($prop_count !== null) {
                         assert($array_atomic_type_list !== null);
                         $array_atomic_type = new TKeyedArray(
                             array_fill(
@@ -621,7 +620,7 @@ class ArrayAssignmentAnalyzer
                             ),
                             null,
                             [
-                                new Union([new TIntRange(0, null)]),
+                                Type::getListKey(),
                                 $array_atomic_type_list
                             ],
                             true
@@ -650,7 +649,7 @@ class ArrayAssignmentAnalyzer
                             ),
                             null,
                             [
-                                new Union([new TIntRange(0, null)]),
+                                Type::getListKey(),
                                 $array_atomic_type_list
                             ],
                             true

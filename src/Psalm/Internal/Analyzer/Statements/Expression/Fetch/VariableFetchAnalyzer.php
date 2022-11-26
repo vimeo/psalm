@@ -785,7 +785,7 @@ class VariableFetchAnalyzer
                 'name' => $str,
                 'type' => $str,
                 'tmp_name' => $str,
-                'size' => new Union([new TIntRange(0, null)]),
+                'size' => Type::getListKey(),
                 'error' => new Union([new TIntRange(0, 8)]),
             ];
 

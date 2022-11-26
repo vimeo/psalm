@@ -14,7 +14,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
@@ -463,7 +462,7 @@ abstract class Type
         return new TKeyedArray(
             [$of->setPossiblyUndefined(true)],
             null,
-            [new Union([new TIntRange(0, null)]), $of],
+            [self::getListKey(), $of],
             true,
             $from_docblock
         );
@@ -477,12 +476,19 @@ abstract class Type
         return new TKeyedArray(
             [$of->setPossiblyUndefined(false)],
             null,
-            [new Union([new TIntRange(0, null)]), $of],
+            [self::getListKey(), $of],
             true,
             $from_docblock
         );
     }
 
+    /**
+     * @param int<1, max>|null $max_count
+     */
+    public static function getListKey(?int $max_count = null): Union
+    {
+        return new Union([new TIntRange(0, $max_count ? $max_count-1 : null)]);
+    }
     /**
      * @psalm-pure
      */

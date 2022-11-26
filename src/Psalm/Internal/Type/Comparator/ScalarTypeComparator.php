@@ -12,7 +12,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
-use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;

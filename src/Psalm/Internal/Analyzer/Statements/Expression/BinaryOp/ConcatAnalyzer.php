@@ -28,7 +28,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -210,7 +209,7 @@ class ConcatAnalyzer
                 $has_numeric_type = $left_is_numeric || $right_is_numeric;
 
                 if ($left_is_numeric) {
-                    $right_uint = new Union([new TIntRange(0, null)]);
+                    $right_uint = Type::getListKey();
                     $right_is_uint = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $right_type,

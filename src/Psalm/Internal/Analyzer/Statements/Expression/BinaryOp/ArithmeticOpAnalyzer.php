@@ -815,7 +815,7 @@ class ArithmeticOpAnalyzer
                             }
                         } else {
                             if ($always_positive) {
-                                $result_type = new Union([new TIntRange(0, null)]);
+                                $result_type = Type::getListKey();
                             } else {
                                 $result_type = Type::getInt();
                             }
@@ -1384,7 +1384,7 @@ class ArithmeticOpAnalyzer
                         [new TIntRange(0, $right_type_part->max_bound - 1)]
                     );
                 } else {
-                    $new_result_type = new Union([new TIntRange(0, null)]);
+                    $new_result_type = Type::getListKey();
                 }
             } elseif ($left_type_part->isNegativeOrZero()) {
                 $new_result_type = new Union([new TIntRange(null, 0)]);
