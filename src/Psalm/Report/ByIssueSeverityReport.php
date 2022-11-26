@@ -152,22 +152,6 @@ final class ByIssueSeverityReport extends Report
         return "\033]8;;" . $link . "\033\\" . $reference . "\033]8;;\033\\";
     }
 
-    /**
-     * @param $severity
-     */
-    public function errorLevelMessage(int $severity): string
-    {
-        if ($severity < -1) {
-            return "Issues reported based on feature-specific config:";
-        }
-
-        if ($severity < 0) {
-            return "Issues always reported:";
-        }
-
-        return "Issues reported at error level $severity" .
-        ($severity === 1) ? ":" : " or less:";
-    }
     public function sortIssuesByLevelAndType(): void
     {
         usort($this->issues_data, function (IssueData $left, IssueData $right): int {
