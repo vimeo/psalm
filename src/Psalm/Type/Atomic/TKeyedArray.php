@@ -475,11 +475,32 @@ class TKeyedArray extends Atomic
             );
         }
 
-        if ($properties === $this->properties) {
+        $fallback_params = $this->fallback_params;
+
+        foreach ($fallback_params ?? [] as $offset => $property) {
+            $fallback_params[$offset] = TemplateStandinTypeReplacer::replace(
+                $property,
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type_param,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                null,
+                $depth
+            );
+        }
+
+
+        if ($properties === $this->properties && $fallback_params === $this->fallback_params) {
             return $this;
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
+        $cloned->fallback_params = $fallback_params;
         return $cloned;
     }
 
@@ -498,7 +519,15 @@ class TKeyedArray extends Atomic
                 $codebase
             );
         }
-        if ($properties !== $this->properties) {
+        $fallback_params = $this->fallback_params;
+        foreach ($fallback_params as $offset => $property) {
+            $fallback_params[$offset] = TemplateInferredTypeReplacer::replace(
+                $property,
+                $template_result,
+                $codebase
+            );
+        }
+        if ($properties !== $this->properties || $fallback_params !== $this->fallback_params) {
             $cloned = clone $this;
             $cloned->properties = $properties;
             return $cloned;
