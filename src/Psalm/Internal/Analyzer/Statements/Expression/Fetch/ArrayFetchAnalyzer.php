@@ -1150,12 +1150,13 @@ class ArrayFetchAnalyzer
 
         $offset_type = self::replaceOffsetTypeWithInts($offset_type->freeze())->getBuilder();
 
-        if ($type instanceof TList
+        if ($type instanceof TKeyedArray
+            && $type->is_list
             && (($in_assignment && $stmt->dim)
                 || $original_type instanceof TTemplateParam
                 || !$offset_type->isInt())
         ) {
-            $temp = new TArray([Type::getInt(), $type->type_param]);
+            $temp = $type->getGenericArrayType();
             self::handleArrayAccessOnTArray(
                 $statements_analyzer,
                 $codebase,
@@ -1185,22 +1186,6 @@ class ArrayFetchAnalyzer
                 $expected_offset_types,
                 $array_access_type,
                 $original_type,
-                $has_valid_offset
-            );
-        } elseif ($type instanceof TList) {
-            self::handleArrayAccessOnList(
-                $statements_analyzer,
-                $codebase,
-                $stmt,
-                $type,
-                $offset_type,
-                $extended_var_id,
-                $key_values,
-                $context,
-                $in_assignment,
-                $expected_offset_types,
-                $replacement_type,
-                $array_access_type,
                 $has_valid_offset
             );
         } elseif ($type instanceof TClassStringMap) {
@@ -1691,77 +1676,6 @@ class ArrayFetchAnalyzer
                 $array_access_type = Type::getMixed();
             }
         }
-    }
-
-    /**
-     * @param list<string> $expected_offset_types
-     * @param list<TLiteralString|TLiteralInt> $key_values
-     * @param-out TList $type
-     */
-    private static function handleArrayAccessOnList(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        TList &$type,
-        MutableUnion $offset_type,
-        ?string $extended_var_id,
-        array $key_values,
-        Context $context,
-        bool $in_assignment,
-        array &$expected_offset_types,
-        ?Union $replacement_type,
-        ?Union &$array_access_type,
-        bool &$has_valid_offset
-    ): void {
-        // if we're assigning to an empty array with a key offset, refashion that array
-        if (!$in_assignment) {
-            if (!$type instanceof TNonEmptyList
-                || (count($key_values) === 1
-                    && $key_values[0] instanceof TLiteralInt
-                    && $key_values[0]->value > 0
-                    && $key_values[0]->value > ($type->count - 1)
-                    && $key_values[0]->value > ($type->min_count - 1))
-            ) {
-                $expected_offset_type = Type::getInt();
-
-                if ($codebase->config->ensure_array_int_offsets_exist) {
-                    self::checkLiteralIntArrayOffset(
-                        $offset_type,
-                        $expected_offset_type,
-                        $extended_var_id,
-                        $stmt,
-                        $context,
-                        $statements_analyzer
-                    );
-                }
-                $has_valid_offset = true;
-            } elseif (count($key_values) === 1
-                && $key_values[0] instanceof TLiteralInt
-                && $key_values[0]->value < 0
-            ) {
-                $expected_offset_types[] = 'positive-int';
-                $has_valid_offset = false;
-            } else {
-                $has_valid_offset = true;
-            }
-        }
-
-        if ($in_assignment && $type instanceof TNonEmptyList && $type->count !== null) {
-            $type = $type->setCount($type->count+1);
-        }
-
-        if ($in_assignment && $replacement_type) {
-            $type = $type->setTypeParam(Type::combineUnionTypes(
-                $type->type_param,
-                $replacement_type,
-                $codebase
-            ));
-        }
-
-        $array_access_type = Type::combineUnionTypes(
-            $array_access_type,
-            $type->type_param
-        );
     }
 
     private static function handleArrayAccessOnNamedObject(
