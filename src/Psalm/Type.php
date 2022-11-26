@@ -458,7 +458,7 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getListAtomic(Union $of, bool $from_docblock = false): Atomic
+    public static function getListAtomic(Union $of, bool $from_docblock = false): TKeyedArray
     {
         return new TKeyedArray(
             [$of->setPossiblyUndefined(true)],
@@ -471,7 +471,7 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getNonEmptyListAtomic(Union $of, bool $from_docblock = false): Atomic
+    public static function getNonEmptyListAtomic(Union $of, bool $from_docblock = false): TKeyedArray
     {
         return new TKeyedArray(
             [$of->setPossiblyUndefined(false)],

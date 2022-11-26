@@ -25,8 +25,8 @@ use function range;
 class ArrayTypeComparator
 {
     /**
-     * @param TArray|TKeyedArray|TList|TClassStringMap $input_type_part
-     * @param TArray|TKeyedArray|TList|TClassStringMap $container_type_part
+     * @param TArray|TKeyedArray|TClassStringMap $input_type_part
+     * @param TArray|TKeyedArray|TClassStringMap $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,

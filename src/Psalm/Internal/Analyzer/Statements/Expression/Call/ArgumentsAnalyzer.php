@@ -44,10 +44,8 @@ use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -892,7 +890,7 @@ class ArgumentsAnalyzer
                     && $arg_value_type->hasArray()) {
                     /**
                      * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                     * @var TArray|TList|TKeyedArray
+                     * @var TArray|TKeyedArray
                      */
                     $array_type = $arg_value_type->getAtomicTypes()['array'];
 
@@ -1482,7 +1480,7 @@ class ArgumentsAnalyzer
             ) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TList|TKeyedArray
+                 * @var TArray|TKeyedArray
                  */
                 $array_type = $arg_value_type->getAtomicTypes()['array'];
 

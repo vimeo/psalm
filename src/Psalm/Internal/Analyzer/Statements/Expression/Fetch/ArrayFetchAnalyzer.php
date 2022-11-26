@@ -230,7 +230,7 @@ class ArrayFetchAnalyzer
             if ($stmt->dim && $stmt_var_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TKeyedArray|TList|TClassStringMap
+                 * @var TArray|TKeyedArray|TClassStringMap
                  */
                 $array_type = $stmt_var_type->getAtomicTypes()['array'];
 
@@ -238,6 +238,7 @@ class ArrayFetchAnalyzer
                     $array_value_type = Type::getMixed();
                 } elseif ($array_type instanceof TArray) {
                     $array_value_type = $array_type->type_params[1];
+                } else {
                     $array_value_type = $array_type->getGenericValueType();
                 }
 
@@ -257,7 +258,7 @@ class ArrayFetchAnalyzer
             ) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TKeyedArray|TList
+                 * @var TArray|TKeyedArray
                  */
                 $array_type = $stmt_var_type->getAtomicTypes()['array'];
 
@@ -1086,8 +1087,8 @@ class ArrayFetchAnalyzer
 
     /**
      * @param list<string> $expected_offset_types
-     * @param TArray|TKeyedArray|TList|TClassStringMap $type
-     * @param-out TArray|TKeyedArray|TList|TClassStringMap $type
+     * @param TArray|TKeyedArray|TClassStringMap $type
+     * @param-out TArray|TKeyedArray|TClassStringMap $type
      * @param list<TLiteralInt|TLiteralString> $key_values
      *
      * @psalm-suppress ConflictingReferenceConstraint Ignore
@@ -1497,7 +1498,7 @@ class ArrayFetchAnalyzer
     /**
      * @param list<string> $expected_offset_types
      * @param list<TLiteralString|TLiteralInt> $key_values
-     * @param-out TArray|TKeyedArray|TList $type
+     * @param-out TArray|TKeyedArray $type
      */
     private static function handleArrayAccessOnKeyedArray(
         StatementsAnalyzer $statements_analyzer,

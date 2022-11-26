@@ -93,9 +93,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
         $value_types = [];
 
         foreach ($array_like_type->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof Type\Atomic\TList) {
-                $value_types[] = $atomic->type_param;
-            } elseif ($atomic instanceof Type\Atomic\TArray) {
+            if ($atomic instanceof Type\Atomic\TArray) {
                 $value_types[] = $atomic->type_params[1];
             } elseif ($atomic instanceof Type\Atomic\TKeyedArray) {
                 $value_types[] = $atomic->getGenericValueType();
@@ -152,9 +150,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
     {
         $last_callable_arg = $all_expected_callables[count($all_expected_callables) - 1];
 
-        return new Union([
-            new Type\Atomic\TList($last_callable_arg->return_type ?? Type::getMixed())
-        ]);
+        return Type::getList($last_callable_arg->return_type ?? Type::getMixed());
     }
 
     /**

@@ -44,7 +44,6 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;

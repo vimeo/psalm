@@ -1885,7 +1885,7 @@ class AssertionFinder
             case 'is_object':
                 return new IsType(new Atomic\TObject());
             case 'array_is_list':
-                return new IsType(new Atomic\TList(Type::getMixed()));
+                return new IsType(Type::getListAtomic(Type::getMixed()));
             case 'is_array':
                 return new IsType(new Atomic\TArray([Type::getArrayKey(), Type::getMixed()]));
             case 'is_numeric':

@@ -14,7 +14,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\TaintKind;
 use UnexpectedValueException;
 
@@ -166,7 +165,7 @@ class InternalCallMapHandler
                     if ($arg_type->hasArray()) {
                         /**
                          * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                         * @var TArray|TKeyedArray|TList
+                         * @var TArray|TKeyedArray
                          */
                         $array_atomic_type = $arg_type->getAtomicTypes()['array'];
 

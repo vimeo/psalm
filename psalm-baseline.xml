@@ -126,8 +126,8 @@
     <DeprecatedClass occurrences="4">
       <code>$array_type</code>
       <code>$unpacked_atomic_array</code>
-      <code>TKeyedArray|TArray|TList|TClassStringMap</code>
-      <code>TKeyedArray|TArray|TList|TClassStringMap|null</code>
+      <code>TKeyedArray|TArray|TClassStringMap</code>
+      <code>TKeyedArray|TArray|TClassStringMap|null</code>
     </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$non_existent_method_ids[0]</code>
@@ -186,7 +186,7 @@
       <code>$array_type</code>
       <code>$type</code>
       <code>$type</code>
-      <code>TArray|TKeyedArray|TList|TClassStringMap</code>
+      <code>TArray|TKeyedArray|TClassStringMap</code>
       <code>TList</code>
     </DeprecatedClass>
     <ReferenceConstraintViolation occurrences="3">
@@ -357,8 +357,8 @@
       <code>$container_type_part</code>
       <code>$input_type_part</code>
       <code>$input_type_part</code>
-      <code>TArray|TKeyedArray|TList|TClassStringMap</code>
-      <code>TArray|TKeyedArray|TList|TClassStringMap</code>
+      <code>TArray|TKeyedArray|TClassStringMap</code>
+      <code>TArray|TKeyedArray|TClassStringMap</code>
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/AtomicTypeComparator.php">

@@ -7,7 +7,6 @@ namespace Psalm\Internal\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 /**
@@ -34,9 +33,7 @@ class ArrayType
     /**
      * @return (
      *     $type is TArrayKey ? self : (
-     *         $type is TArray ? self : (
-     *             $type is TList ? self : null
-     *         )
+     *         $type is TArray ? self : null
      *     )
      * )
      */

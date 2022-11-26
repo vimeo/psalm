@@ -35,7 +35,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
@@ -81,7 +80,7 @@ class ArrayFunctionArgumentsAnalyzer
 
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TKeyedArray|TArray|TList|null
+             * @var TKeyedArray|TArray|null
              */
             $array_arg_type = ($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     && ($types = $arg_value_type->getAtomicTypes())
@@ -218,7 +217,7 @@ class ArrayFunctionArgumentsAnalyzer
         ) {
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|TKeyedArray|TList
+             * @var TArray|TKeyedArray
              */
             $array_type = $array_arg_type->getAtomicTypes()['array'];
 
@@ -417,7 +416,7 @@ class ArrayFunctionArgumentsAnalyzer
         ) {
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|TKeyedArray|TList
+             * @var TArray|TKeyedArray
              */
             $array_type = $array_arg_type->getAtomicTypes()['array'];
 
@@ -442,7 +441,7 @@ class ArrayFunctionArgumentsAnalyzer
 
             /**
              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|TKeyedArray|TList
+             * @var TArray|TKeyedArray
              */
             $replacement_array_type = $replacement_arg_type->getAtomicTypes()['array'];
 

@@ -41,7 +41,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKindGroup;
@@ -831,7 +830,7 @@ class FunctionLikeDocblockScanner
             if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TKeyedArray|TList
+                 * @var TArray|TKeyedArray
                  */
                 $array_type = $new_param_type->getAtomicTypes()['array'];
 

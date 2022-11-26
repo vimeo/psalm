@@ -55,7 +55,6 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -470,7 +469,7 @@ class ArgumentAnalyzer
             if ($arg_value_type->hasArray()) {
                 /**
                  * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TList|TKeyedArray|TClassStringMap
+                 * @var TArray|TKeyedArray|TClassStringMap
                  */
                 $unpacked_atomic_array = $arg_value_type->getAtomicTypes()['array'];
                 $arg_key_allowed = true;
@@ -654,7 +653,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param TKeyedArray|TArray|TList|TClassStringMap|null $unpacked_atomic_array
+     * @param TKeyedArray|TArray|TClassStringMap|null $unpacked_atomic_array
      * @return  null|false
      */
     public static function verifyType(
@@ -1327,7 +1326,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param TKeyedArray|TArray|TList|TClassStringMap $unpacked_atomic_array
+     * @param TKeyedArray|TArray|TClassStringMap $unpacked_atomic_array
      */
     private static function coerceValueAfterGatekeeperArgument(
         StatementsAnalyzer $statements_analyzer,

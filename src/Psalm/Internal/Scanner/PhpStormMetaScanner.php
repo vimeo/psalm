@@ -10,7 +10,6 @@ use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -225,7 +224,7 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var TArray|TKeyedArray|TList
+                             * @var TArray|TKeyedArray
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
@@ -365,7 +364,7 @@ class PhpStormMetaScanner
                         ) {
                             /**
                              * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var TArray|TKeyedArray|TList
+                             * @var TArray|TKeyedArray
                              */
                             $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
 
