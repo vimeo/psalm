@@ -279,13 +279,6 @@ class ScalarTypeComparator
             return true;
         }
 
-        if ($container_type_part instanceof TIntRange
-            && $container_type_part->dependent_list_key
-            && $input_type_part instanceof TLiteralInt
-        ) {
-            return true;
-        }
-
         if (get_class($container_type_part) === TFloat::class && $input_type_part instanceof TLiteralFloat) {
             return true;
         }
@@ -332,13 +325,6 @@ class ScalarTypeComparator
                 || get_class($container_type_part) === TNonFalsyString::class
                 || get_class($container_type_part) === TSingleLetter::class)
             && $input_type_part instanceof TLiteralString
-        ) {
-            return true;
-        }
-
-        if ($container_type_part instanceof TIntRange
-            && $container_type_part->dependent_list_key
-            && $input_type_part instanceof TInt
         ) {
             return true;
         }
