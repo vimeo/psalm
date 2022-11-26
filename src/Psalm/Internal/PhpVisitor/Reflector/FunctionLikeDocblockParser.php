@@ -15,6 +15,7 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 
+use function array_keys;
 use function array_shift;
 use function array_unique;
 use function count;
@@ -704,17 +705,44 @@ class FunctionLikeDocblockParser
         PhpParser\Comment\Doc $comment
     ): void {
         if (isset($parsed_docblock->tags['psalm-import-type'])) {
-            foreach ($parsed_docblock->tags['psalm-import-type'] as $offset => $_) {
-                $info->unexpected_tags['psalm-import-type']['lines'][] = self::docblockLineNumber($comment, $offset);
-            }
+            $info->unexpected_tags['psalm-import-type']['lines'] = self::tagOffsetsToLines(
+                array_keys($parsed_docblock->tags['psalm-import-type']),
+                $comment
+            );
         }
 
         if (isset($parsed_docblock->combined_tags['var'])) {
-            $info->unexpected_tags['var'] = ['lines' => [], 'suggested_replacement' => 'param'];
-            foreach ($parsed_docblock->combined_tags['var'] as $offset => $_) {
-                $info->unexpected_tags['var']['lines'][] = self::docblockLineNumber($comment, $offset);
-            }
+            $info->unexpected_tags['var'] = [
+                'lines' => self::tagOffsetsToLines(
+                    array_keys($parsed_docblock->combined_tags['var']),
+                    $comment
+                ),
+                'suggested_replacement' => 'param'
+            ];
         }
+
+        if (isset($parsed_docblock->tags['psalm-consistent-constructor'])) {
+            $info->unexpected_tags['psalm-consistent-constructor'] = [
+                'lines' => self::tagOffsetsToLines(
+                    array_keys($parsed_docblock->tags['psalm-consistent-constructor']),
+                    $comment
+                ),
+                'suggested_replacement' => 'psalm-consistent-constructor on a class level',
+            ];
+        }
+    }
+
+    /**
+     * @param list<int> $offsets
+     * @return list<int>
+     */
+    private static function tagOffsetsToLines(array $offsets, PhpParser\Comment\Doc $comment): array
+    {
+        $ret = [];
+        foreach ($offsets as $offset) {
+            $ret[] = self::docblockLineNumber($comment, $offset);
+        }
+        return $ret;
     }
 
     private static function docblockLineNumber(PhpParser\Comment\Doc $comment, int $offset): int

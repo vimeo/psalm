@@ -690,7 +690,7 @@ class TypeParser
         }
 
         if ($generic_type_value === 'non-empty-list') {
-            return Type::getNonEmptyListAtomic($generic_params[0], null, null, $from_docblock);
+            return Type::getNonEmptyListAtomic($generic_params[0], $from_docblock);
         }
 
         if ($generic_type_value === 'class-string'

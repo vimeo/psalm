@@ -64,6 +64,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_shift;
+use function clearstatcache;
 use function cli_set_process_title;
 use function count;
 use function defined;
@@ -348,37 +349,46 @@ class ProjectAnalyzer
 
     private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void
     {
+        $cache_directory = $this->config->getCacheDirectory();
+        if ($cache_directory === null) {
+            return;
+        }
+
         if ($this->project_cache_provider
             && $this->project_cache_provider->hasLockfileChanged()
         ) {
-            $this->progress->debug(
-                'Composer lockfile change detected, clearing cache' . "\n"
-            );
+            // we only clear the cache if it actually exists
+            // if it's not populated yet, we don't clear anything but populate the cache instead
+            clearstatcache(true, $cache_directory);
+            if (is_dir($cache_directory)) {
+                $this->progress->debug(
+                    'Composer lockfile change detected, clearing cache directory ' . $cache_directory . "\n"
+                );
 
-            $cache_directory = $this->config->getCacheDirectory();
-            if ($cache_directory !== null) {
                 Config::removeCacheDirectory($cache_directory);
             }
 
             if ($this->file_reference_provider->cache) {
-                $this->file_reference_provider->cache->hasConfigChanged();
+                $this->file_reference_provider->cache->setConfigHashCache();
             }
 
             $this->project_cache_provider->updateComposerLockHash();
         } elseif ($this->file_reference_provider->cache
             && $this->file_reference_provider->cache->hasConfigChanged()
         ) {
-            $this->progress->debug(
-                'Config change detected, clearing cache' . "\n"
-            );
+            clearstatcache(true, $cache_directory);
+            if (is_dir($cache_directory)) {
+                $this->progress->debug(
+                    'Config change detected, clearing cache directory ' . $cache_directory . "\n"
+                );
 
-            $cache_directory = $this->config->getCacheDirectory();
-            if ($cache_directory !== null) {
                 Config::removeCacheDirectory($cache_directory);
             }
 
+            $this->file_reference_provider->cache->setConfigHashCache();
+
             if ($this->project_cache_provider) {
-                $this->project_cache_provider->hasLockfileChanged();
+                $this->project_cache_provider->updateComposerLockHash();
             }
         }
     }

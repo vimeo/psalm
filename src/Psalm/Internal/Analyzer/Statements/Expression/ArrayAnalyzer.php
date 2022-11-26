@@ -147,12 +147,7 @@ class ArrayAnalyzer
             if ($array_creation_info->can_be_empty) {
                 $array_type = Type::getListAtomic($item_value_type ?? Type::getMixed());
             } else {
-                $array_type = new TKeyedArray(
-                    [$item_value_type ?? Type::getMixed()],
-                    null,
-                    [Type::getInt(), Type::getMixed()],
-                    true
-                );
+                $array_type = Type::getNonEmptyListAtomic($item_value_type ?? Type::getMixed());
             }
 
             $stmt_type = new Union([

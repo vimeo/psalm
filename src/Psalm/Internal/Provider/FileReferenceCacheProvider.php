@@ -66,9 +66,7 @@ class FileReferenceCacheProvider
     public function hasConfigChanged(): bool
     {
         $new_hash = $this->config->computeHash();
-        $has_changed = $new_hash !== $this->getConfigHashCache();
-        $this->setConfigHashCache($new_hash);
-        return $has_changed;
+        return $new_hash !== $this->getConfigHashCache();
     }
 
     /**
@@ -998,12 +996,16 @@ class FileReferenceCacheProvider
         return false;
     }
 
-    public function setConfigHashCache(string $hash): void
+    public function setConfigHashCache(string $hash = ''): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$cache_directory) {
             return;
+        }
+
+        if ($hash === '') {
+            $hash = $this->config->computeHash();
         }
 
         if (!is_dir($cache_directory)) {

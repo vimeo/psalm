@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@53e3889745852409b704e0035d93e0819d522912">
+<files psalm-version="dev-master@12188caad4b2e4fd7a49a7199e97af2ba1d4c58e">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -72,6 +72,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssertionFinder.php">
+    <DeprecatedClass occurrences="1">
+      <code>new Atomic\TList(Type::getMixed())</code>
+    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="28">
       <code>$assertion-&gt;rule[0]</code>
       <code>$assertion-&gt;rule[0]</code>
@@ -103,6 +106,13 @@
       <code>$gettype_expr-&gt;getArgs()[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/ArrayAssignmentAnalyzer.php">
+    <DeprecatedClass occurrences="3">
+      <code>$array_atomic_type</code>
+      <code>$array_atomic_type</code>
+      <code>$array_atomic_type</code>
+    </DeprecatedClass>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/ArithmeticOpAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$invalid_left_messages[0]</code>
@@ -113,6 +123,12 @@
     <ComplexMethod occurrences="1">
       <code>verifyType</code>
     </ComplexMethod>
+    <DeprecatedClass occurrences="4">
+      <code>$array_type</code>
+      <code>$unpacked_atomic_array</code>
+      <code>TKeyedArray|TArray|TList|TClassStringMap</code>
+      <code>TKeyedArray|TArray|TList|TClassStringMap|null</code>
+    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="3">
       <code>$non_existent_method_ids[0]</code>
       <code>$parts[1]</code>
@@ -120,11 +136,21 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentsAnalyzer.php">
+    <DeprecatedClass occurrences="2">
+      <code>$array_type</code>
+      <code>$array_type</code>
+    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$arg_function_params[$argument_offset][0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArrayFunctionArgumentsAnalyzer.php">
+    <DeprecatedClass occurrences="4">
+      <code>$array_arg_type</code>
+      <code>$array_type</code>
+      <code>$array_type</code>
+      <code>$replacement_array_type</code>
+    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="4">
       <code>$args[0]</code>
       <code>$args[0]</code>
@@ -155,6 +181,14 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/ArrayFetchAnalyzer.php">
+    <DeprecatedClass occurrences="6">
+      <code>$array_type</code>
+      <code>$array_type</code>
+      <code>$type</code>
+      <code>$type</code>
+      <code>TArray|TKeyedArray|TList|TClassStringMap</code>
+      <code>TList</code>
+    </DeprecatedClass>
     <ReferenceConstraintViolation occurrences="3">
       <code>$stmt_type</code>
       <code>$stmt_type</code>
@@ -192,6 +226,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Codebase/InternalCallMapHandler.php">
+    <DeprecatedClass occurrences="1">
+      <code>$array_atomic_type</code>
+    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$callables[0]</code>
       <code>$callables[0]</code>
@@ -286,6 +323,9 @@
     </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
+    <DeprecatedClass occurrences="1">
+      <code>$array_type</code>
+    </DeprecatedClass>
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$flow_parts[0]</code>
     </PossiblyUndefinedIntArrayOffset>
@@ -300,6 +340,33 @@
       <code>$cs[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/InArrayReturnTypeProvider.php">
+    <DeprecatedClass occurrences="1">
+      <code>$array_arg_type</code>
+    </DeprecatedClass>
+  </file>
+  <file src="src/Psalm/Internal/Scanner/PhpStormMetaScanner.php">
+    <DeprecatedClass occurrences="2">
+      <code>$array_atomic_type</code>
+      <code>$array_atomic_type</code>
+    </DeprecatedClass>
+  </file>
+  <file src="src/Psalm/Internal/Type/Comparator/ArrayTypeComparator.php">
+    <DeprecatedClass occurrences="6">
+      <code>$container_type_part</code>
+      <code>$container_type_part</code>
+      <code>$input_type_part</code>
+      <code>$input_type_part</code>
+      <code>TArray|TKeyedArray|TList|TClassStringMap</code>
+      <code>TArray|TKeyedArray|TList|TClassStringMap</code>
+    </DeprecatedClass>
+  </file>
+  <file src="src/Psalm/Internal/Type/Comparator/AtomicTypeComparator.php">
+    <DeprecatedClass occurrences="2">
+      <code>TList::class</code>
+      <code>TList::class</code>
+    </DeprecatedClass>
+  </file>
   <file src="src/Psalm/Internal/Type/Comparator/CallableTypeComparator.php">
     <LessSpecificReturnStatement occurrences="1">
       <code>$callable</code>
@@ -308,6 +375,11 @@
       <code>TCallable|TClosure|null</code>
     </MoreSpecificReturnType>
   </file>
+  <file src="src/Psalm/Internal/Type/SimpleAssertionReconciler.php">
+    <DeprecatedClass occurrences="3">
+      <code>TList::class</code>
+    </DeprecatedClass>
+  </file>
   <file src="src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php">
     <ImpureMethodCall occurrences="2">
       <code>getClassTemplateTypes</code>
@@ -315,6 +387,7 @@
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
+    <DeprecatedClass occurrences="1"/>
     <PossiblyUndefinedIntArrayOffset occurrences="6">
       <code>$combination-&gt;array_type_params[1]</code>
       <code>$combination-&gt;array_type_params[1]</code>
@@ -348,6 +421,13 @@
       <code>traverse</code>
       <code>traverse</code>
     </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type.php">
+    <DeprecatedClass occurrences="3">
+      <code>new TCallableList($of, null, null, $from_docblock)</code>
+      <code>new TList($of, $from_docblock)</code>
+      <code>new TNonEmptyList($of, null, null, $from_docblock)</code>
+    </DeprecatedClass>
   </file>
   <file src="src/Psalm/Type/Atomic.php">
     <ImpureMethodCall occurrences="12">
@@ -393,6 +473,11 @@
     <ImpureMethodCall occurrences="1">
       <code>getMostSpecificTypeFromBounds</code>
     </ImpureMethodCall>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TCallableList.php">
+    <DeprecatedClass occurrences="1">
+      <code>TNonEmptyList</code>
+    </DeprecatedClass>
   </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
     <ImpureMethodCall occurrences="1">
@@ -440,6 +525,11 @@
     <ImpurePropertyAssignment occurrences="1">
       <code>$cloned-&gt;type_param</code>
     </ImpurePropertyAssignment>
+  </file>
+  <file src="src/Psalm/Type/Atomic/TNonEmptyList.php">
+    <DeprecatedClass occurrences="1">
+      <code>TList</code>
+    </DeprecatedClass>
   </file>
   <file src="src/Psalm/Type/Atomic/TObjectWithProperties.php">
     <ImpureMethodCall occurrences="2">
@@ -505,6 +595,11 @@
       <code>allFloatLiterals</code>
       <code>allFloatLiterals</code>
     </PossiblyUnusedMethod>
+  </file>
+  <file src="tests/Config/Plugin/Hook/CustomArrayMapFunctionStorageProvider.php">
+    <DeprecatedClass occurrences="1">
+      <code>new Type\Atomic\TList($last_callable_arg-&gt;return_type ?? Type::getMixed())</code>
+    </DeprecatedClass>
   </file>
   <file src="tests/Internal/Codebase/InternalCallMapHandlerTest.php">
     <UnusedPsalmSuppress occurrences="1">

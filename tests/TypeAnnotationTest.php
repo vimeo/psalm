@@ -593,6 +593,69 @@ class TypeAnnotationTest extends TestCase
                     '$output' => 'string',
                 ],
             ],
+            'importedTypeUsedInAssertion' => [
+                'code' => '<?php
+                    /** @psalm-type Foo = string */
+                    class A {}
+
+                    /**
+                     * @psalm-immutable
+                     * @psalm-import-type Foo from A as FooAlias
+                     */
+                    class B {
+                        /**
+                         * @param mixed $input
+                         * @psalm-return FooAlias
+                         */
+                        public function convertToFoo($input) {
+                            $this->assertFoo($input);
+                            return $input;
+                        }
+
+                        /**
+                         * @param mixed $value
+                         * @psalm-assert FooAlias $value
+                         */
+                        private function assertFoo($value): void {
+                            if(!is_string($value)) {
+                                throw new \InvalidArgumentException();
+                            }
+                        }
+                    }
+
+                    $instance = new B();
+                    $output = $instance->convertToFoo("hallo");
+                ',
+                'assertions' => [
+                    '$output' => 'string',
+                ]
+            ],
+            'importedTypeUsedInOtherType' => [
+                'code' => '<?php
+                    /** @psalm-type OpeningTypes=self::TYPE_A|self::TYPE_B */
+                    class Foo {
+                        public const TYPE_A = 1;
+                        public const TYPE_B = 2;
+                    }
+
+                    /**
+                     * @psalm-import-type OpeningTypes from Foo
+                     * @psalm-type OpeningTypeAssignment=list<OpeningTypes>
+                     */
+                    class Main {
+                        /** @return OpeningTypeAssignment */
+                        public function doStuff(): array {
+                            return [];
+                        }
+                    }
+
+                    $instance = new Main();
+                    $output = $instance->doStuff();
+                ',
+                'assertions' => [
+                    '$output===' => 'list<1|2>',
+                ]
+            ]
         ];
     }
 
