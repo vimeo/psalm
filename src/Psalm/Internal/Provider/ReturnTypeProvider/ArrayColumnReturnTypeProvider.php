@@ -70,9 +70,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 }
             }
 
-            $input_array_not_empty = $input_array instanceof TNonEmptyList ||
-                $input_array instanceof TNonEmptyArray ||
-                $input_array instanceof TKeyedArray;
+            $input_array_not_empty = $input_array instanceof TNonEmptyArray ||
+                ($input_array instanceof TKeyedArray && $input_array->isNonEmpty());
         }
 
         $value_column_name = null;

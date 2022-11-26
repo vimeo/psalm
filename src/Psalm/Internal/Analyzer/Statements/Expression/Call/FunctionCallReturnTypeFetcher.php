@@ -373,14 +373,6 @@ class FunctionCallReturnTypeFetcher
                                     ]);
                                 }
 
-                                if ($atomic_types['array'] instanceof TNonEmptyList) {
-                                    return new Union([
-                                        $atomic_types['array']->count !== null
-                                            ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TIntRange(1, null)
-                                    ]);
-                                }
-
                                 if ($atomic_types['array'] instanceof TKeyedArray) {
                                     $min = 0;
                                     $max = 0;
