@@ -353,7 +353,8 @@ class SimpleAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion_type instanceof TList
+        if ($assertion_type instanceof TKeyedArray
+            && $assertion_type->is_list
             && $assertion_type->type_param->isMixed()
         ) {
             return self::reconcileList(
@@ -365,7 +366,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $suppressed_issues,
                 $failed_reconciliation,
                 $is_equality,
-                $assertion_type instanceof TNonEmptyList
+                $assertion_type->isNonEmpty()
             );
         }
 

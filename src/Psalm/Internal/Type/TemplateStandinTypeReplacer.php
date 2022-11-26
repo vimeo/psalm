@@ -175,7 +175,7 @@ class TemplateStandinTypeReplacer
                     'had_template' => $had_template
                 ]);
             }
-            
+
             return new Union($atomic_types, [
                 'ignore_nullable_issues' => $union_type->ignore_nullable_issues,
                 'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
@@ -322,7 +322,6 @@ class TemplateStandinTypeReplacer
                 foreach ($template_type->getAtomicTypes() as $template_atomic) {
                     if (!$template_atomic instanceof TKeyedArray
                         && !$template_atomic instanceof TArray
-                        && !$template_atomic instanceof TList
                     ) {
                         return [$atomic_type];
                     }
@@ -330,16 +329,12 @@ class TemplateStandinTypeReplacer
                     if ($atomic_type instanceof TTemplateKeyOf) {
                         if ($template_atomic instanceof TKeyedArray) {
                             $template_atomic = $template_atomic->getGenericKeyType();
-                        } elseif ($template_atomic instanceof TList) {
-                            $template_atomic = Type::getInt();
                         } else {
                             $template_atomic = $template_atomic->type_params[0];
                         }
                     } else {
                         if ($template_atomic instanceof TKeyedArray) {
                             $template_atomic = $template_atomic->getGenericValueType();
-                        } elseif ($template_atomic instanceof TList) {
-                            $template_atomic = $template_atomic->type_param;
                         } else {
                             $template_atomic = $template_atomic->type_params[1];
                         }
@@ -479,8 +474,7 @@ class TemplateStandinTypeReplacer
             }
 
             if (($atomic_input_type instanceof TArray
-                    || $atomic_input_type instanceof TKeyedArray
-                    || $atomic_input_type instanceof TList)
+                    || $atomic_input_type instanceof TKeyedArray)
                 && $key === 'iterable'
             ) {
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
@@ -721,12 +715,9 @@ class TemplateStandinTypeReplacer
 
                         if ($keyed_template instanceof TKeyedArray
                             || $keyed_template instanceof TArray
-                            || $keyed_template instanceof TList
                         ) {
                             if ($keyed_template instanceof TKeyedArray) {
                                 $key_type = $keyed_template->getGenericKeyType();
-                            } elseif ($keyed_template instanceof TList) {
-                                $key_type = Type::getInt();
                             } else {
                                 $key_type = $keyed_template->type_params[0];
                             }

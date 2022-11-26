@@ -1126,18 +1126,6 @@ class Reconciler
                             null,
                             $fallback_key_type->isNever() ? null : [$fallback_key_type, $fallback_value_type]
                         );
-                    } elseif ($base_atomic_type instanceof TList) {
-                        $fallback_key_type = Type::getInt();
-                        $fallback_value_type = $base_atomic_type->type_param;
-
-                        $base_atomic_type = new TKeyedArray(
-                            [
-                                $array_key_offset => $result_type,
-                            ],
-                            null,
-                            [$fallback_key_type, $fallback_value_type],
-                            true
-                        );
                     } elseif ($base_atomic_type instanceof TClassStringMap) {
                         // do nothing
                     } else {

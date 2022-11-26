@@ -145,16 +145,13 @@ final class TClassStringMap extends Atomic
                 $input_type_param = $input_type->type_params[$offset];
             } elseif ($input_type instanceof TKeyedArray) {
                 if ($offset === 0) {
+                    if ($input_type->is_list) {
+                        continue;
+                    }
                     $input_type_param = $input_type->getGenericKeyType();
                 } else {
                     $input_type_param = $input_type->getGenericValueType();
                 }
-            } elseif ($input_type instanceof TList) {
-                if ($offset === 0) {
-                    continue;
-                }
-
-                $input_type_param = $input_type->type_param;
             }
 
             $value_param = TemplateStandinTypeReplacer::replace(
