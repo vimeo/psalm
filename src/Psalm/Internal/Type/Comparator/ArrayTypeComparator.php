@@ -80,9 +80,12 @@ class ArrayTypeComparator
         }
 
         if ($container_type_part instanceof TKeyedArray
-            && $input_type_part instanceof TKeyedArray
             && $container_type_part->is_list
-            && !$input_type_part->is_list
+            && (
+                ($input_type_part instanceof TKeyedArray
+                && !$input_type_part->is_list)
+                || $input_type_part instanceof TArray
+            )
         ) {
             return false;
         }
