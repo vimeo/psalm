@@ -1335,7 +1335,8 @@ trait UnionTrait
     public function equals(
         self $other_type,
         bool $ensure_source_equality = true,
-        bool $ensure_parent_node_equality = true
+        bool $ensure_parent_node_equality = true,
+        bool $ensure_possibly_undefined_equality = true,
     ): bool {
         if ($other_type === $this) {
             return true;
@@ -1349,7 +1350,7 @@ trait UnionTrait
             return false;
         }
 
-        if ($this->possibly_undefined !== $other_type->possibly_undefined) {
+        if ($this->possibly_undefined !== $other_type->possibly_undefined && $ensure_possibly_undefined_equality) {
             return false;
         }
 

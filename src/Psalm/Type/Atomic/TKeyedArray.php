@@ -114,6 +114,12 @@ class TKeyedArray extends Atomic
         $property_strings = [];
 
         if ($this->is_list) {
+            if (count($this->properties) === 1
+                && $this->properties[0]->equals($this->fallback_params[1], true, true, false)
+            ) {
+                $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
+                return "$t<".$this->fallback_params[1]->getId($exact).'>';
+            }
             $use_list_syntax = true;
             foreach ($this->properties as $property) {
                 if ($property->possibly_undefined) {
@@ -179,6 +185,12 @@ class TKeyedArray extends Atomic
         $suffixed_properties = [];
 
         if ($this->is_list) {
+            if (count($this->properties) === 1
+                && $this->properties[0]->equals($this->fallback_params[1], true, true, false)
+            ) {
+                $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
+                return "$t<".$this->fallback_params[1]->getId().'>';
+            }
             $use_list_syntax = true;
             foreach ($this->properties as $property) {
                 if ($property->possibly_undefined) {
