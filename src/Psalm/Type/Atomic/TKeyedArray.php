@@ -358,6 +358,9 @@ class TKeyedArray extends Atomic
 
     public function isNonEmpty(): bool
     {
+        if ($this->is_list) {
+            return !$this->properties[0]->possibly_undefined;
+        }
         foreach ($this->properties as $property) {
             if (!$property->possibly_undefined) {
                 return true;

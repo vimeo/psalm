@@ -2000,7 +2000,7 @@ class SimpleAssertionReconciler extends Reconciler
         $did_remove_type = false;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TArray || $type instanceof TKeyedArray || $type instanceof TList) {
+            if ($type instanceof TArray || $type instanceof TKeyedArray) {
                 $array_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableKeyedArray([
@@ -2094,11 +2094,11 @@ class SimpleAssertionReconciler extends Reconciler
         $did_remove_type = false;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TList
-                || ($type instanceof TKeyedArray && $type->is_list)
-            ) {
-                if ($is_non_empty && $type instanceof TList && !$type instanceof TNonEmptyList) {
-                    $array_types[] = Type::getNonEmptyListAtomic($type->type_param);
+            if ($type instanceof TKeyedArray && $type->is_list) {
+                if ($is_non_empty && !$type->isNonEmpty()) {
+                    $properties = $type->properties;
+                    $properties[0] = $properties[0]->setPossiblyUndefined(false);
+                    $array_types[] = $type->setProperties($properties);
                     $did_remove_type = true;
                 } else {
                     $array_types[] = $type;
