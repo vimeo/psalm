@@ -107,10 +107,8 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                         foreach ($unpacked_type_part->properties as $key => $type) {
                             if (is_string($key)) {
                                 $all_int_offsets = false;
-                            } else {
-                                if ($is_replace) {
-                                    $generic_properties[$key] = $type;
-                                } elseif ($unpacking_indefinite_number_of_args) {
+                            } elseif (!$is_replace) {
+                                if ($unpacking_indefinite_number_of_args) {
                                     $added_inner_values = true;
                                     $inner_value_types[] = $type;
                                 } else {
@@ -177,24 +175,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                         ]);
                     }
 
-                    if ($unpacked_type_part instanceof TList) {
-                        $all_keyed_arrays = false;
-
-                        if ($is_replace) {
-                            foreach ($generic_properties as $key => $keyed_type) {
-                                if (is_string($key)) {
-                                    continue;
-                                }
-                                $generic_properties[$key] = Type::combineUnionTypes(
-                                    $keyed_type,
-                                    $unpacked_type_part->type_param,
-                                    $codebase
-                                );
-                            }
-                        }
-
-                        $all_nonempty_lists = false;
-                    } elseif ($unpacked_type_part instanceof TArray) {
+                    if ($unpacked_type_part instanceof TArray) {
                         if ($unpacked_type_part->isEmptyArray()) {
                             continue;
                         }
@@ -223,15 +204,11 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
 
                     $inner_key_types = array_merge(
                         $inner_key_types,
-                        $unpacked_type_part instanceof TList
-                            ? [new TInt()]
-                            : array_values($unpacked_type_part->type_params[0]->getAtomicTypes())
+                        array_values($unpacked_type_part->type_params[0]->getAtomicTypes())
                     );
                     $inner_value_types = array_merge(
                         $inner_value_types,
-                        $unpacked_type_part instanceof TList
-                            ? array_values($unpacked_type_part->type_param->getAtomicTypes())
-                            : array_values($unpacked_type_part->type_params[1]->getAtomicTypes())
+                        array_values($unpacked_type_part->type_params[1]->getAtomicTypes())
                     );
                 }
             }
