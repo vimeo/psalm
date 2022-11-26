@@ -562,6 +562,7 @@ class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
+     * @param NonEmptyCountable|HasAtLeastCount $assertion
      * @param   string[]  $suppressed_issues
      */
     private static function reconcileNonEmptyCountable(
@@ -598,20 +599,6 @@ class SimpleAssertionReconciler extends Reconciler
                     }
 
                     $redundant = false;
-                }
-            } elseif ($array_atomic_type instanceof TList) {
-                if (!$array_atomic_type instanceof TNonEmptyList
-                    || ($assertion instanceof HasAtLeastCount
-                        && $array_atomic_type->count < $assertion->count)
-                ) {
-                    $non_empty_list = Type::getNonEmptyListAtomic(
-                        $array_atomic_type->type_param,
-                        null,
-                        $assertion instanceof HasAtLeastCount ? $assertion->count : null
-                    );
-
-                    $redundant = false;
-                    $existing_var_type->addType($non_empty_list);
                 }
             } elseif ($array_atomic_type instanceof TKeyedArray) {
                 $prop_max_count = count($array_atomic_type->properties);
@@ -659,17 +646,16 @@ class SimpleAssertionReconciler extends Reconciler
                         } else {
                             $redundant = false;
                         }
-                    } elseif ($array_atomic_type->is_list
-                        && $prop_min_count === $prop_max_count
-                    ) {
+                    } elseif ($array_atomic_type->is_list) {
                         if ($assertion->count <= $prop_min_count) {
                             $redundant = true;
                         } else {
                             $redundant = false;
                             $properties = $array_atomic_type->properties;
                             for ($i = $prop_max_count; $i < $assertion->count; $i++) {
-                                $properties[$i]
-                                    = $array_atomic_type->fallback_params[1];
+                                $properties[$i] = $properties[$i]
+                                    ? $properties[$i]->setPossiblyUndefined(false)
+                                    : $array_atomic_type->fallback_params[1];
                             }
                             $array_atomic_type = $array_atomic_type->setProperties($properties);
                             $existing_var_type->removeType('array');
