@@ -816,7 +816,7 @@ class ArrayFunctionCallTest extends TestCase
                         }
                     );',
                 'assertions' => [
-                    '$a' => 'array<int, string>',
+                    '$a' => 'array<int<0, 3>, string>',
                 ],
                 'ignored_issues' => [
                     'MissingClosureParamType',
@@ -1461,7 +1461,7 @@ class ArrayFunctionCallTest extends TestCase
 
                     $bar = array_intersect(... $foo);',
                 'assertions' => [
-                    '$bar' => 'array<int, int>',
+                    '$bar' => 'array<int<0, 2>, int>',
                 ],
             ],
             'arrayIntersectIsVariadic' => [

@@ -640,7 +640,19 @@ class SimpleAssertionReconciler extends Reconciler
                             ));
                             $redundant = false;
 
+                            // Possible, alter type if we're a list
+                        } elseif ($array_atomic_type->is_list) {
                             // Possible
+
+                            $redundant = false;
+                            $properties = $array_atomic_type->properties;
+                            for ($i = $prop_min_count; $i < $assertion->count; $i++) {
+                                $properties[$i] = $properties[$i]->setPossiblyUndefined(false);
+                            }
+                            $array_atomic_type = $array_atomic_type->setProperties($properties);
+                            $existing_var_type->removeType('array');
+                            $existing_var_type->addType($array_atomic_type);
+
                         } else {
                             $redundant = false;
                         }
@@ -650,7 +662,7 @@ class SimpleAssertionReconciler extends Reconciler
                         } else {
                             $redundant = false;
                             $properties = $array_atomic_type->properties;
-                            for ($i = $prop_max_count; $i < $assertion->count; $i++) {
+                            for ($i = $prop_min_count; $i < $assertion->count; $i++) {
                                 $properties[$i] = isset($properties[$i])
                                     ? $properties[$i]->setPossiblyUndefined(false)
                                     : $array_atomic_type->fallback_params[1];
@@ -742,6 +754,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->removeType('array');
                         $redundant = false;
                     } elseif ($assertion->count === $prop_max_count) {
+                        $redundant = false;
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type->setProperties(
                             array_map(
@@ -750,21 +763,20 @@ class SimpleAssertionReconciler extends Reconciler
                             )
                         ));
                     } elseif ($array_atomic_type->is_list) {
+                        $redundant = false;
                         $properties = $array_atomic_type->properties;
                         for ($x = $prop_min_count; $x < $assertion->count; $x++) {
                             $properties[$x] = $properties[$x]->setPossiblyUndefined(false);
                         }
-                        $array_atomic_type = new TKeyedArray(
-                            $properties,
-                            null,
-                            null,
-                            true
-                        );
+                        $array_atomic_type = $array_atomic_type->setProperties($properties);
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type);
+                    } else {
+                        $redundant = false;
                     }
                 } else {
                     if ($array_atomic_type->is_list) {
+                        $redundant = false;
                         $properties = $array_atomic_type->properties;
                         for ($x = $prop_min_count; $x < $assertion->count; $x++) {
                             $properties[$x] = isset($properties[$x])
