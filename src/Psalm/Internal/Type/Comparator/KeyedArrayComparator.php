@@ -9,6 +9,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 
+use function array_keys;
 use function is_string;
 
 /**
@@ -82,6 +83,11 @@ class KeyedArrayComparator
                         ) {
                             $atomic_comparison_result->type_coerced = true;
                         }
+
+                        if ($property_type_comparison->missing_shape_fields) {
+                            $atomic_comparison_result->missing_shape_fields
+                                = $property_type_comparison->missing_shape_fields;
+                        }
                     }
 
                     $all_types_contain = false;
@@ -95,6 +101,9 @@ class KeyedArrayComparator
             }
         }
         if ($container_sealed && $input_properties) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->missing_shape_fields = array_keys($input_properties);
+            }
             return false;
         }
         return $all_types_contain;

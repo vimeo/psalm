@@ -56,6 +56,7 @@ use function array_diff;
 use function array_filter;
 use function array_values;
 use function count;
+use function implode;
 use function in_array;
 use function strpos;
 use function strtolower;
@@ -568,7 +569,13 @@ class ReturnTypeAnalyzer
                                 . $declared_return_type->getId()
                                 . '\' for ' . $cased_method_id
                                 . ' is incorrect, got \''
-                                . $inferred_return_type->getId() . '\'',
+                                . $inferred_return_type->getId()
+                                . '\''
+                                . ($union_comparison_results->missing_shape_fields
+                                    ? ' which is different due to additional array shape fields ('
+                                        . implode(', ', $union_comparison_results->missing_shape_fields)
+                                        . ')'
+                                    : ''),
                             $return_type_location
                         ),
                         $suppressed_issues,

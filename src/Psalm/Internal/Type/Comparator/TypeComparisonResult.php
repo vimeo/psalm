@@ -48,4 +48,7 @@ class TypeComparisonResult
 
     /** @var ?Atomic */
     public $replacement_atomic_type;
+
+    /** @var ?non-empty-list<int|string> */
+    public $missing_shape_fields;
 }

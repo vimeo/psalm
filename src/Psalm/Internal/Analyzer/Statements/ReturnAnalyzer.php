@@ -45,6 +45,7 @@ use Psalm\Type\Union;
 
 use function count;
 use function explode;
+use function implode;
 use function reset;
 use function strtolower;
 
@@ -480,7 +481,12 @@ class ReturnAnalyzer
                                 new InvalidReturnStatement(
                                     'The inferred type \'' . $inferred_type->getId()
                                         . '\' does not match the declared return '
-                                        . 'type \'' . $local_return_type->getId() . '\' for ' . $cased_method_id,
+                                        . 'type \'' . $local_return_type->getId() . '\' for ' . $cased_method_id
+                                        . ($union_comparison_results->missing_shape_fields
+                                            ? ' due to additional array shape fields ('
+                                                . implode(', ', $union_comparison_results->missing_shape_fields)
+                                                . ')'
+                                            : ''),
                                     new CodeLocation($source, $stmt->expr)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
