@@ -52,7 +52,7 @@
         "phpunit/phpunit": "^9.5",
         "psalm/plugin-mockery": "^1.1",
         "psalm/plugin-phpunit": "^0.18",
-        "slevomat/coding-standard": "^7.2 || ^8.0",
+        "slevomat/coding-standard": "^8.4",
         "squizlabs/php_codesniffer": "^3.6",
         "symfony/process": "^4.4 || ^5.0 || ^6.0"
     },
