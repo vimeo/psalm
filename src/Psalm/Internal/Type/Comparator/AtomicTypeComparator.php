@@ -729,7 +729,7 @@ class AtomicTypeComparator
         return $input_type_part->getKey() === $container_type_part->getKey();
     }
 
-    private static function isLegacyTListLike(TKeyedArray $array): bool
+    private static function isLegacyTListLike(Atomic $array): bool
     {
         return $array instanceof TKeyedArray
             && $array->is_list
@@ -739,7 +739,7 @@ class AtomicTypeComparator
             && $array->properties[0]->equals($array->fallback_params[1], true, true, false)
         ;
     }
-    private static function isLegacyTNonEmptyListLike(TKeyedArray $array): bool
+    private static function isLegacyTNonEmptyListLike(Atomic $array): bool
     {
         return $array instanceof TKeyedArray
             && $array->is_list
