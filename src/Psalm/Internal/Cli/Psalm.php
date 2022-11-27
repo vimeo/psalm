@@ -165,6 +165,7 @@ final class Psalm
      */
     public static function run(array $argv): void
     {
+        CliUtils::checkRuntimeRequirements();
         gc_collect_cycles();
         gc_disable();
 
