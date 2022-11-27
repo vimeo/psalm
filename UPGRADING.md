@@ -863,3 +863,4 @@
    - :information_source: migration possible using `Psalm\PluginFileExtensionsSocket`
  - [BC] Method `\Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent::getClasslikeStorage()` was removed,
    use correct `\Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent::getFunctionlikeStorage()` instead
+ - [BC] Issue `MixedAssignment` and its corresponding class `Psalm\Issue\MixedAssignment` was removed. Extraneous `@psalm-suppress MixedAssignment` annotations will now generate an `UnusedPsalmSuppress` issue if the `findUnusedPsalmSuppress` option is true or `--find-unused-psalm-suppress` is passed as a command-line flag.
