@@ -71,6 +71,24 @@ class NamespaceTest extends TestCase
                         $c = $argv;
                     }',
             ],
+            'varsAreNotScoped' => [
+                'code' => '<?php
+                    namespace A {
+                        $a = "1";
+                    }
+                    namespace B\C {
+                        $bc = "2";
+                    }
+                    namespace {
+                        echo $a . PHP_EOL;
+                        echo $bc . PHP_EOL;
+                    }
+                ',
+                'assertions' => [
+                    '$a===' => "'1'",
+                    '$bc===' => "'2'",
+                ],
+            ],
         ];
     }
 

@@ -87,16 +87,17 @@ class NamespaceAnalyzer extends SourceAnalyzer
 
         if ($leftover_stmts) {
             $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider());
-            $context = new Context();
-            $context->is_global = true;
-            $context->defineGlobals();
-            $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
-            $statements_analyzer->analyze($leftover_stmts, $context, null, true);
-
             $file_context = $this->source->context;
-            if ($file_context) {
-                $file_context->mergeExceptions($context);
+
+            if ($file_context !== null) {
+                $context = $file_context;
+            } else {
+                $context = new Context();
+                $context->is_global = true;
+                $context->defineGlobals();
+                $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
             }
+            $statements_analyzer->analyze($leftover_stmts, $context, null, true);
         }
     }
 

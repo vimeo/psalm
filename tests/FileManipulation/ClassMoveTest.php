@@ -749,6 +749,29 @@ class ClassMoveTest extends TestCase
                     'Foo\Hello' => 'Foo\Bar\Hello',
                 ],
             ],
+            'renamesAllStaticPropReferences' => [
+                'input' => '<?php
+                    namespace Foo;
+
+                    class Bar {
+                        public static $props = [1, 2, 3];
+                    }
+                    echo Bar::$props[1];
+                    echo Bar::$props[2];
+                ',
+                'output' => '<?php
+                    namespace Zoo;
+
+                    class Baz {
+                        public static $props = [1, 2, 3];
+                    }
+                    echo \Zoo\Baz::$props[1];
+                    echo \Zoo\Baz::$props[2];
+                ',
+                'migrations' => [
+                    'Foo\Bar' => 'Zoo\Baz',
+                ],
+            ],
         ];
     }
 }
