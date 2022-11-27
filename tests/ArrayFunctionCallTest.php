@@ -759,7 +759,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$c' => 'string',
                     '$d' => 'string',
                     '$more_vars' => 'list{string, string}',
-                    '$e' => 'int',
+                    '$e' => 'int<0, 1>',
                 ],
             ],
             'arrayRandMultiple' => [

@@ -1119,8 +1119,6 @@ class ArrayFetchAnalyzer
                     $single_atomic = $key_values[0];
                     $from_mixed_array = $type->type_params[1]->isMixed();
 
-                    [$fallback_key_type, $fallback_value_type] = $type->type_params;
-
                     // ok, type becomes an TKeyedArray
                     $type = new TKeyedArray(
                         [
@@ -1129,10 +1127,15 @@ class ArrayFetchAnalyzer
                         $single_atomic instanceof TLiteralClassString ? [
                             $single_atomic->value => true
                         ] : null,
-                        $from_empty_array ? null : [$fallback_key_type, $fallback_value_type],
+                        $from_empty_array ? null : $type->type_params,
                     );
                 } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
-                    $type = Type::getNonEmptyListAtomic($replacement_type);
+                    $type = new TKeyedArray(
+                        [$replacement_type],
+                        null,
+                        null,
+                        true
+                    );
                     return;
                 }
             } elseif ($type instanceof TKeyedArray
@@ -1508,7 +1511,7 @@ class ArrayFetchAnalyzer
         if ($key_values) {
             $properties = $type->properties;
             foreach ($key_values as $key_value) {
-                if ($type->is_list && is_numeric($key_value->value) && $key_value->value < 0) {
+                if ($type->is_list && (!is_numeric($key_value->value) || $key_value->value < 0)) {
                     $expected_offset_types[] = $type->getGenericKeyType();
                     $has_valid_offset = false;
                 } elseif (isset($properties[$key_value->value]) || $replacement_type) {
