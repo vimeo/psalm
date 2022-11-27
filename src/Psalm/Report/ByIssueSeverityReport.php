@@ -156,7 +156,7 @@ final class ByIssueSeverityReport extends Report
         return "\033]8;;" . $link . "\033\\" . $reference . "\033]8;;\033\\";
     }
 
-    public function sortIssuesByLevelAndType(): void
+    private function sortIssuesByLevelAndType(): void
     {
         usort($this->issues_data, function (IssueData $left, IssueData $right): int {
             $leftLevel = $left->error_level;
