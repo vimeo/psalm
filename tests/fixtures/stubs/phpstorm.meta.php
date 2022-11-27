@@ -1,12 +1,25 @@
 <?php
 namespace PHPSTORM_META {
 
+    // tests with argument offset (0)
     override(\Ns\MyClass::crEate(0), map([
         '' => '@',
         'exception' => \Exception::class,
         'object' => \stdClass::class,
     ]));
     override(\create(0), map([
+        '' => '@',
+        'exception' => \Exception::class,
+        'object' => \stdClass::class,
+    ]));
+
+    // tests without argument offset (0 by default)
+    override(\Ns\MyClass::crEate2(), map([
+        '' => '@',
+        'exception' => \Exception::class,
+        'object' => \stdClass::class,
+    ]));
+    override(\create2(), map([
         '' => '@',
         'exception' => \Exception::class,
         'object' => \stdClass::class,

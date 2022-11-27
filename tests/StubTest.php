@@ -22,6 +22,9 @@ use function explode;
 use function getcwd;
 use function implode;
 use function reset;
+use function strlen;
+use function strpos;
+use function substr;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -322,6 +325,12 @@ class StubTest extends TestCase
                         public function create(string $s) {}
 
                         /**
+                         * @return mixed
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        public function create2(string $s) {}
+
+                        /**
                          * @param mixed $s
                          * @return mixed
                          * @psalm-suppress InvalidReturnType
@@ -343,6 +352,12 @@ class StubTest extends TestCase
                     function create(string $s) {}
 
                     /**
+                     * @return mixed
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function create2(string $s) {}
+
+                    /**
                      * @param mixed $s
                      * @return mixed
                      * @psalm-suppress InvalidReturnType
@@ -358,10 +373,18 @@ class StubTest extends TestCase
                     $a1 = (new \Ns\MyClass)->creAte("object");
                     $a2 = (new \Ns\MyClass)->creaTe("exception");
 
+                    $y1 = (new \Ns\MyClass)->creAte2("object");
+                    $y2 = (new \Ns\MyClass)->creaTe2("exception");
+
                     $b1 = \Create("object");
                     $b2 = \cReate("exception");
 
                     $e2 = \creAte(\LogicException::class);
+
+                    $z1 = \Create2("object");
+                    $z2 = \cReate2("exception");
+
+                    $x2 = \creAte2(\LogicException::class);
 
                     $c1 = (new \Ns\MyClass)->foo(5);
                     $c2 = (new \Ns\MyClass)->bar(["hello"]);
@@ -373,6 +396,57 @@ class StubTest extends TestCase
 
         $context = new Context();
         $this->analyzeFile($file_path, $context);
+
+        $this->assertContextVars(
+            [
+                '$a1===' => 'stdClass',
+                '$a2===' => 'Exception',
+
+                '$y1===' => 'stdClass',
+                '$y2===' => 'Exception',
+
+                '$b1===' => 'stdClass',
+                '$b2===' => 'Exception',
+
+                '$e2===' => 'LogicException',
+
+                '$z1===' => 'stdClass',
+                '$z2===' => 'Exception',
+
+                '$x2===' => 'LogicException',
+
+                '$c1===' => "5",
+                '$c2===' => "'hello'",
+
+                '$d1===' => "5",
+                '$d2===' => "'hello'"
+            ],
+            $context
+        );
+    }
+
+    /** @param array<string, string> $assertions */
+    private function assertContextVars(array $assertions, Context $context): void
+    {
+        $actual_vars = [];
+        foreach ($assertions as $var => $_) {
+            $exact = false;
+
+            if ($var && strpos($var, '===') === strlen($var) - 3) {
+                $var = substr($var, 0, -3);
+                $exact = true;
+            }
+
+            if (isset($context->vars_in_scope[$var])) {
+                $value = $context->vars_in_scope[$var]->getId($exact);
+                if ($exact) {
+                    $actual_vars[$var . '==='] = $value;
+                } else {
+                    $actual_vars[$var] = $value;
+                }
+            }
+        }
+        $this->assertSame($assertions, $actual_vars);
     }
 
     public function testNamespacedStubClass(): void
