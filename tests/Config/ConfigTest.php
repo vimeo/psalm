@@ -152,7 +152,7 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath(__DIR__.'/../../').'/does/not/exist/FileAnalyzer.php'));
+        $this->assertFalse($config->isInProjectDirs(realpath(__DIR__ . '/../../') . '/does/not/exist/FileAnalyzer.php'));
         $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
     }
 
@@ -1159,15 +1159,18 @@ class ConfigTest extends TestCase
                         ord($_GET["str"]);
                     }
 
-                    $glob1 = 0;
-                    error_reporting($glob1);
+                    $z = $glob1;
+                    $z = 0;
+                    error_reporting($z);
 
+                    $old = $_GET["str"];
                     $_GET["str"] = 0;
                     error_reporting($_GET["str"]);
+                    $_GET["str"] = $old;
 
                     function example2(): void {
-                        global $glob1, $glob2, $glob3;
-                        error_reporting($glob1);
+                        global $z, $glob2, $glob3;
+                        error_reporting($z);
                         ord($glob2["str"]);
                         $glob3->func();
                         ord($_GET["str"]);
