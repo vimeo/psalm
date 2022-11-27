@@ -62,6 +62,34 @@ class ErrorBaselineTest extends TestCase
         );
     }
 
+    public function testLoadShouldIgnoreLineEndingsInIssueSnippet(): void
+    {
+        $baselineFilePath = 'baseline.xml';
+
+        $this->fileProvider->allows()->fileExists($baselineFilePath)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFilePath)->andReturns(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+            <files>
+              <file src=\"sample/sample-file.php\">
+                <MixedArgument occurrences=\"1\">
+                  <code>foo\r</code>
+                </MixedArgument>
+              </file>
+            </files>"
+        );
+
+        $expectedParsedBaseline = [
+            'sample/sample-file.php' => [
+                'MixedArgument' => ['o' => 1, 's' => ['foo']],
+            ],
+        ];
+
+        $this->assertSame(
+            $expectedParsedBaseline,
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath)
+        );
+    }
+
     public function testLoadShouldThrowExceptionWhenFilesAreNotDefinedInBaselineFile(): void
     {
         $this->expectException(ConfigException::class);

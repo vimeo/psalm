@@ -1327,11 +1327,6 @@ class CallableTest extends TestCase
                         use TestTrait;
                     }'
             ],
-            'stringFunctionCall' => [
-                'code' => '<?php
-                    $bad_one = "hello";
-                    $a = $bad_one(1);',
-            ],
         ];
     }
 
@@ -1433,6 +1428,12 @@ class CallableTest extends TestCase
 
                     foo("trime");',
                 'error_message' => 'UndefinedFunction',
+            ],
+            'stringFunctionCall' => [
+                'code' => '<?php
+                    $bad_one = "hello";
+                    echo $bad_one(1);',
+                'error_message' => 'MixedArgument',
             ],
             'wrongCallableReturnType' => [
                 'code' => '<?php
