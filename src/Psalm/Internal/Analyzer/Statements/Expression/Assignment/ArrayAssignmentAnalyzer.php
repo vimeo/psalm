@@ -590,6 +590,11 @@ class ArrayAssignmentAnalyzer
                         $array_atomic_type_class_string->getStandinKeyParam(),
                         $array_atomic_type_class_string->value_param
                     ]);
+                } elseif ($atomic_root_types['array'] instanceof TKeyedArray
+                    && $atomic_root_types['array']->is_list
+                    && $atomic_root_types['array']->fallback_params === null
+                ) {
+                    $array_atomic_type = $atomic_root_types['array'];
                 } elseif ($atomic_root_types['array'] instanceof TNonEmptyArray
                     || ($atomic_root_types['array'] instanceof TKeyedArray
                         && $atomic_root_types['array']->is_list

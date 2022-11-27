@@ -2011,6 +2011,21 @@ class ArrayAssignmentTest extends TestCase
                 if (\array_key_exists($currentAction, $items)) {
                     $items[$currentAction]["active"] = true;
                 }'
+            ],
+            'listAppendShape' => [
+                'code' => '<?php
+                    $a = [];
+                    $a[]= 0;
+                    $a[]= 1;
+                    $a[]= 2;
+
+                    $b = [0];
+                    $b[]= 1;
+                    $b[]= 2;',
+                'assertions' => [
+                    '$a===' => 'list{0, 1, 2}',
+                    '$b===' => 'list{0, 1, 2}'
+                ]
             ]
         ];
     }
