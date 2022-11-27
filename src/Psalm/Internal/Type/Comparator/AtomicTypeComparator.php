@@ -729,6 +729,26 @@ class AtomicTypeComparator
         return $input_type_part->getKey() === $container_type_part->getKey();
     }
 
+    private static function isLegacyTListLike(TKeyedArray $array): bool
+    {
+        return $array instanceof TKeyedArray
+            && $array->is_list
+            && $array->fallback_params
+            && count($array->properties) === 1
+            && $array->properties[0]->possibly_undefined
+            && $array->properties[0]->equals($array->fallback_params[1], true, true, false)
+        ;
+    }
+    private static function isLegacyTNonEmptyListLike(TKeyedArray $array): bool
+    {
+        return $array instanceof TKeyedArray
+            && $array->is_list
+            && $array->fallback_params
+            && count($array->properties) === 1
+            && !$array->properties[0]->possibly_undefined
+            && $array->properties[0]->equals($array->fallback_params[1])
+        ;
+    }
     /**
      * Does the input param atomic type match the given param atomic type
      */
@@ -738,6 +758,18 @@ class AtomicTypeComparator
         Atomic $type2_part,
         bool $allow_interface_equality = true
     ): bool {
+        if ((self::isLegacyTListLike($type1_part)
+                && self::isLegacyTNonEmptyListLike($type2_part))
+            || (self::isLegacyTListLike($type2_part)
+                && self::isLegacyTNonEmptyListLike($type1_part))
+        ) {
+            return UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                $type1_part->fallback_params[1],
+                $type2_part->fallback_params[1]
+            );
+        }
+
         if ((get_class($type1_part) === TArray::class
                 && $type2_part instanceof TNonEmptyArray)
             || (get_class($type2_part) === TArray::class
