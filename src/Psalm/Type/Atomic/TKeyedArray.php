@@ -486,6 +486,14 @@ class TKeyedArray extends Atomic
         $fallback_params = $this->fallback_params;
 
         foreach ($fallback_params ?? [] as $offset => $property) {
+            $input_type_param = null;
+
+            if ($input_type instanceof TKeyedArray
+                && isset($input_type->fallback_params[$offset])
+            ) {
+                $input_type_param = $input_type->fallback_params[$offset];
+            }
+
             $fallback_params[$offset] = TemplateStandinTypeReplacer::replace(
                 $property,
                 $template_result,

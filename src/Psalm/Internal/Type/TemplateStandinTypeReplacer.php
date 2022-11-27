@@ -808,6 +808,7 @@ class TemplateStandinTypeReplacer
                     return array_values($generic_param->getAtomicTypes());
                 }
 
+                $generic_param->possibly_undefined = false;
                 $generic_param = $generic_param->setFromDocblock()->freeze();
 
                 if (isset(
