@@ -369,6 +369,8 @@ class StaticPropertyFetchAnalyzer
                     }
                 }
             }
+
+            return true;
         }
 
         if ($var_id) {
