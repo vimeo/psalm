@@ -1595,11 +1595,11 @@ class ConfigTest extends TestCase
                 <issueHandlers>
                     <xi:include href="zz.xml">
                         <xi:fallback>
-                            <MixedAssignment>
+                            <MixedArgument>
                                 <errorLevel type="suppress">
                                     <file name="src/Psalm/Type.php" />
                                 </errorLevel>
-                            </MixedAssignment>
+                            </MixedArgument>
                         </xi:fallback>
                     </xi:include>
                 </issueHandlers>
@@ -1609,6 +1609,6 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertFalse($config->reportIssueInFile('MixedAssignment', realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->reportIssueInFile('MixedArgument', realpath('src/Psalm/Type.php')));
     }
 }

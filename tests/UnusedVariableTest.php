@@ -142,7 +142,7 @@ class UnusedVariableTest extends TestCase
                     'PossiblyUndefinedVariable',
                     'MixedArrayAccess',
                     'MixedOperand',
-                    'MixedAssignment',
+                    'MixedArgument',
                     'InvalidStringClass',
                 ],
             ],
@@ -541,7 +541,6 @@ class UnusedVariableTest extends TestCase
                         return $ret;
                     }',
                 'ignored_issues' => [
-                    'MixedAssignment',
                     'MixedMethodCall',
                     'MixedArrayOffset',
                 ],
@@ -3443,9 +3442,11 @@ class UnusedVariableTest extends TestCase
             'warnAboutOriginalBadArray' => [
                 'code' => '<?php
                     function takesArray(array $arr) : void {
-                        foreach ($arr as $a) {}
+                        foreach ($arr as $a) {
+                            echo $a;
+                        }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
             ],
             'warnAboutOriginalBadFunctionCall' => [
                 'code' => '<?php
@@ -3458,7 +3459,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutOriginalBadStaticCall' => [
                 'code' => '<?php
@@ -3473,7 +3474,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
             ],
             'warnAboutOriginalBadInstanceCall' => [
                 'code' => '<?php
@@ -3488,7 +3489,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
             ],
             'warnAboutDocblockReturnType' => [
                 'code' => '<?php
@@ -3504,7 +3505,7 @@ class UnusedVariableTest extends TestCase
                             echo $a;
                         }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:47 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:34 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
             ],
             'warnAboutMixedArgument' => [
                 'code' => '<?php
@@ -3516,7 +3517,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutMixedMethodCall' => [
                 'code' => '<?php
@@ -3528,7 +3529,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         $a->foo();
                     }',
-                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - Cannot determine the type of $a when calling method foo. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Cannot determine the type of $a when calling method foo. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutMixedReturnStatement' => [
                 'code' => '<?php
@@ -3544,22 +3545,26 @@ class UnusedVariableTest extends TestCase
 
                         return "";
                     }',
-                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Could not infer a return type. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36 - Could not infer a return type. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutIterableKeySource' => [
                 'code' => '<?php
                     function foo(iterable $arr) : void {
-                        foreach ($arr as $key => $_) {}
+                        foreach ($arr as $key => $_) {
+                            echo $key;
+                        }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43'
             ],
             'warnAboutMixedKeySource' => [
                 'code' => '<?php
                     /** @param mixed $arr */
                     function foo($arr) : void {
-                        foreach ($arr as $key => $_) {}
+                        foreach ($arr as $key => $_) {
+                            echo $key;
+                        }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:34 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
             ],
             'warnAboutMixedArgumentTypeCoercionSource' => [
                 'code' => '<?php

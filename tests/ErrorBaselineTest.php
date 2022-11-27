@@ -103,7 +103,7 @@ class ErrorBaselineTest extends TestCase
 
         $totalIssues = ErrorBaseline::countTotalIssues($existingIssues);
 
-        $this->assertSame($totalIssues, 5);
+        $this->assertSame($totalIssues, 3);
     }
 
     public function testCreateShouldAggregateIssuesPerFile(): void
@@ -206,7 +206,7 @@ class ErrorBaselineTest extends TestCase
                     $this->assertSame('TypeCoercion', $file2Issues[0]->tagName);
                     $this->assertSame(
                         '1',
-                        $file2Issues[1]->getAttribute('occurrences'),
+                        $file2Issues[0]->getAttribute('occurrences'),
                         'TypeCoercion should have occured 1 time'
                     );
 
