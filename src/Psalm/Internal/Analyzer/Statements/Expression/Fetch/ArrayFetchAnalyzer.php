@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -1514,7 +1515,11 @@ class ArrayFetchAnalyzer
                 if ($type->is_list && (!is_numeric($key_value->value) || $key_value->value < 0)) {
                     $expected_offset_types[] = $type->getGenericKeyType();
                     $has_valid_offset = false;
-                } elseif (isset($properties[$key_value->value]) || $replacement_type) {
+                } elseif ((isset($properties[$key_value->value]) && !(
+                    $key_value->value === 0 && AtomicTypeComparator::isLegacyTListLike($type)
+                ))
+                    || $replacement_type
+                ) {
                     $has_valid_offset = true;
 
                     if ($replacement_type) {
