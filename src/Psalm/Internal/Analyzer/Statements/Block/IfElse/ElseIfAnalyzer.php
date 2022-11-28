@@ -111,7 +111,8 @@ class ElseIfAnalyzer
             $elseif_clauses_handled[] = $clause;
         }
 
-        $elseif_clauses = count($elseif_clauses_handled) === $elseif_clauses->count() && !$has_extra_clauses
+        $elseif_clauses = count($elseif_clauses_handled) === count($elseif_clauses->clauses)
+            && !$has_extra_clauses
             ? $elseif_clauses
             : new ClauseConjunction($elseif_clauses_handled);
 
@@ -132,7 +133,8 @@ class ElseIfAnalyzer
             $entry_clauses[] = $c;
         }
 
-        $entry_clauses = count($entry_clauses) === $if_conditional_scope->entry_clauses->count() && !$has_extra_clauses
+        $entry_clauses = count($entry_clauses) === count($if_conditional_scope->entry_clauses->clauses)
+            && !$has_extra_clauses
             ? $if_conditional_scope->entry_clauses
             : new ClauseConjunction($entry_clauses);
 
@@ -328,7 +330,7 @@ class ElseIfAnalyzer
                 $newly_reconciled_var_ids
             );
 
-            $reasonable_clause_count = $if_scope->reasonable_clauses->count();
+            $reasonable_clause_count = count($if_scope->reasonable_clauses->clauses);
 
             if ($reasonable_clause_count && $reasonable_clause_count < 20_000 && $elseif_clauses->clauses) {
                 $if_scope->reasonable_clauses = $if_scope->reasonable_clauses->combineOrredClauses(

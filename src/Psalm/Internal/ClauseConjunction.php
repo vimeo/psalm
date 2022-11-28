@@ -80,13 +80,7 @@ final class ClauseConjunction
         $new = array_filter($this->clauses, $cb);
         return count($new) === count($this->clauses) ? $this : new self(array_values($new), false);
     }
-    /**
-     * @return int<0, max>
-     */
-    public function count(): int
-    {
-        return count($this->clauses);
-    }
+
     /**
      * Conjunct another set of clauses to this one.
      */

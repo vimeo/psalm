@@ -735,7 +735,7 @@ final class Context
             }
         }
 
-        return count($clauses_to_keep) === $clauses->count()
+        return count($clauses_to_keep) === count($clauses->clauses)
             ? $clauses
             : new ClauseConjunction($clauses_to_keep);
     }
@@ -828,7 +828,7 @@ final class Context
             }
         }
 
-        if (count($clauses_to_keep) !== $this->clauses->count()) {
+        if (count($clauses_to_keep) !== count($this->clauses->clauses)) {
             $this->clauses = new ClauseConjunction($clauses_to_keep);
         }
     }

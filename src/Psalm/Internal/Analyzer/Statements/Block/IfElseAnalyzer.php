@@ -157,7 +157,7 @@ class IfElseAnalyzer
         }
 
         $if_clauses = !$has_extra
-            && $if_clauses->count() === count($if_clauses_handled)
+            && count($if_clauses->clauses) === count($if_clauses_handled)
             ? $if_clauses
             : new ClauseConjunction($if_clauses_handled);
 

@@ -76,7 +76,7 @@ class TernaryAnalyzer
             $codebase
         );
 
-        if ($if_clauses->count() > 200) {
+        if (count($if_clauses->clauses) > 200) {
             $if_clauses = ClauseConjunction::empty();
         }
 

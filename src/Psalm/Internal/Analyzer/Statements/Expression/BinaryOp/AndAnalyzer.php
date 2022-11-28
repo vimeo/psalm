@@ -19,6 +19,7 @@ use Psalm\Type\Reconciler;
 use function array_diff_key;
 use function array_map;
 use function array_merge;
+use function count;
 use function in_array;
 use function spl_object_id;
 
@@ -103,7 +104,7 @@ class AndAnalyzer
                 static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
             );
 
-            if ($context_clauses->count() === 1
+            if (count($context_clauses->clauses) === 1
                 && $context_clauses->clauses[0]->wedge
                 && !$context_clauses->clauses[0]->possibilities
             ) {
