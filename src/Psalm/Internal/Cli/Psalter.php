@@ -94,6 +94,7 @@ final class Psalter
     /** @param array<int,string> $argv */
     public static function run(array $argv): void
     {
+        CliUtils::checkRuntimeRequirements();
         gc_collect_cycles();
         gc_disable();
 

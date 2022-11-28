@@ -26,6 +26,7 @@ final class Plugin
 {
     public static function run(): void
     {
+        CliUtils::checkRuntimeRequirements();
         $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
         $vendor_dir = CliUtils::getVendorDir($current_dir);
         CliUtils::requireAutoloaders($current_dir, false, $vendor_dir);
