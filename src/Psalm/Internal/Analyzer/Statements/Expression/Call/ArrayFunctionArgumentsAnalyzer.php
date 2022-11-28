@@ -226,16 +226,7 @@ class ArrayFunctionArgumentsAnalyzer
                 if ($array_type->is_list) {
                     $objectlike_list = $array_type;
                 }
-
                 $array_type = $array_type->getGenericArrayType();
-
-                if ($objectlike_list) {
-                    if ($array_type instanceof TNonEmptyArray) {
-                        $array_type = Type::getNonEmptyListAtomic($array_type->type_params[1]);
-                    } else {
-                        $array_type = Type::getListAtomic($array_type->type_params[1]);
-                    }
-                }
             }
 
             $by_ref_type = new Union([$array_type]);
@@ -298,6 +289,10 @@ class ArrayFunctionArgumentsAnalyzer
                         array_unshift($properties, $arg_value_type);
 
                         $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
+                    } elseif ($array_type->isEmptyArray()) {
+                        $by_ref_type = new Union([new TKeyedArray([
+                            $arg_value_type
+                        ], null, null, true)]);
                     } else {
                         $by_ref_type = Type::combineUnionTypes(
                             $by_ref_type,

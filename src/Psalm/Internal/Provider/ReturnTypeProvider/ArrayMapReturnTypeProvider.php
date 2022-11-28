@@ -209,7 +209,9 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($array_arg_atomic_type instanceof TKeyedArray && count($call_args) === 2) {
                 $atomic_type = new TKeyedArray(
                     array_map(
-                        static fn(Union $_): Union => $mapping_return_type,
+                        static fn(Union $in): Union => $mapping_return_type->setPossiblyUndefined(
+                            $in->possibly_undefined
+                        ),
                         $array_arg_atomic_type->properties
                     ),
                     null,

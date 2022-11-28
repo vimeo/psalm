@@ -550,16 +550,16 @@ class ArrayFunctionCallTest extends TestCase
                         echo $rightCount[0];
                     }',
             ],
-            'arrayNotEmptyArrayAfterCountLessThanTwo' => [
+            'arrayNotEmptyArrayAfterCountBiggerThanTwo' => [
                 'code' => '<?php
                     /** @var list<int> */
                     $leftCount = [1, 2, 3];
-                    if (count($leftCount) < 2) {
+                    if (count($leftCount) > 2) {
                         echo $leftCount[0];
                     }
                     /** @var list<int> */
                     $rightCount = [1, 2, 3];
-                    if (2 > count($rightCount)) {
+                    if (2 < count($rightCount)) {
                         echo $rightCount[0];
                     }',
             ],
@@ -1809,7 +1809,7 @@ class ArrayFunctionCallTest extends TestCase
                     $c = array_chunk($arr, 2, true);',
                 'assertions' => [
                     '$a' => 'list<non-empty-array<string, int>>',
-                    '$b' => 'list<non-empty-array<int, string>>',
+                    '$b' => 'list<non-empty-array<int<0, max>, string>>',
                     '$c' => 'list<non-empty-array<string, float>>',
                 ],
             ],
@@ -1991,8 +1991,9 @@ class ArrayFunctionCallTest extends TestCase
                         fn($x) => $x instanceof B
                     );',
                 'assertions' => [
-                    '$a' => 'array<int, B>',
-                    '$b' => 'array<int, B>',
+                    // TODO: improve key type
+                    '$a' => 'array<int<0, 1>, B>',
+                    '$b' => 'array<int<0, 1>, B>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '7.4',

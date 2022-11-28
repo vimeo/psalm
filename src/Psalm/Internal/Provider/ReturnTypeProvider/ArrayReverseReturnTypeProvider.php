@@ -61,10 +61,20 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
                     && $second_arg_type->isFalse()
                 )
             ) {
-                return $first_arg_type;
+                return $first_arg_array->fallback_params
+                    ? ($first_arg_array->isNonEmpty()
+                        ? Type::getNonEmptyList($first_arg_array->getGenericValueType())
+                        : Type::getList($first_arg_array->getGenericValueType())
+                    )
+                    : new Union([$first_arg_array->setProperties(array_reverse($first_arg_array->properties))]);
             }
 
-            return new Union([$first_arg_array->setProperties(array_reverse($first_arg_array->properties))]);
+            return new Union([new TKeyedArray(
+                $first_arg_array->properties,
+                null,
+                $first_arg_array->fallback_params,
+                false
+            )]);
         }
 
         return new Union([$first_arg_array->getGenericArrayType()]);

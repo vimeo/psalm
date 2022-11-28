@@ -1710,7 +1710,7 @@ class TypeTest extends TestCase
 
                     if (count($a) < 1) {
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType'
+                'error_message' => 'DocblockTypeContradiction'
             ],
             'invalidSealedArrayAssertion5' => [
                 'code' => '<?php
