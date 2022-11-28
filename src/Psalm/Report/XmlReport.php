@@ -29,12 +29,18 @@ final class XmlReport extends Report
                             );
                         }
 
+                        // replace null values, as XML serializers tend to have problems with them
+                        $issue_data['taint_trace'] ??= '';
+
                         if (null !== $issue_data['other_references']) {
                             $issue_data['other_references'] = array_map(
                                 static fn(DataFlowNodeData $reference): array => (array) $reference,
                                 $issue_data['other_references']
                             );
                         }
+
+                        // replace null values, as XML serializers tend to have problems with them
+                        $issue_data['other_references'] ??= '';
 
                         return $issue_data;
                     },
