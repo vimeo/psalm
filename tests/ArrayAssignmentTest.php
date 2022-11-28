@@ -43,7 +43,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $out[] = 4;',
                 'assertions' => [
-                    '$out' => 'non-empty-list<int>',
+                    '$out' => 'list{int}',
                 ],
             ],
             'genericArrayCreationWithInt' => [
@@ -98,7 +98,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = new B();
                     }',
                 'assertions' => [
-                    '$out' => 'list<B>',
+                    '$out' => 'list{0?: B}',
                 ],
             ],
             'genericArrayCreationWithElementAddedInSwitch' => [
@@ -131,7 +131,7 @@ class ArrayAssignmentTest extends TestCase
                             break;
                     }',
                 'assertions' => [
-                    '$out' => 'list<int|string>',
+                    '$out' => 'list{0?: int|string}',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitchWithNothing' => [
@@ -151,7 +151,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'list<int|string>',
+                    '$out' => 'list{0?: int|string}',
                 ],
             ],
             'implicit2dIntArrayCreation' => [
@@ -847,7 +847,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$a' => 'list{string, int}',
                     '$a_values' => 'non-empty-list<int|string>',
-                    '$a_keys' => 'non-empty-list<int>',
+                    '$a_keys' => 'non-empty-list<int<0, 1>>',
                 ],
             ],
             'changeIntOffsetKeyValuesWithDirectAssignment' => [
@@ -920,7 +920,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'list<int>|null',
+                    '$a' => 'list{0?: int}|null',
                 ],
             ],
             'assignArrayOrSetNullInElse' => [
@@ -936,7 +936,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>|null',
+                    '$a' => 'list{int}|null',
                 ],
             ],
             'mixedMethodCallArrayAccess' => [
@@ -1118,7 +1118,7 @@ class ArrayAssignmentTest extends TestCase
 
                     takesArray($a);',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>'
+                    '$a' => 'list{int, int}'
                 ],
             ],
             'listTakesEmptyArray' => [

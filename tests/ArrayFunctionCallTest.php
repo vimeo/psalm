@@ -338,7 +338,7 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     $d = array_reverse(["a", "b", 1], true);',
                 'assertions' => [
-                    '$d' => 'non-empty-array<int, int|string>',
+                    '$d' => 'array{0: string, 1: string, 2: int}',
                 ],
             ],
             'arrayDiff' => [
