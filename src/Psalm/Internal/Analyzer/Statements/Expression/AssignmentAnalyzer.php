@@ -52,6 +52,7 @@ use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
+use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReferenceReusedFromConfusingScope;
 use Psalm\Issue\UnnecessaryVarAnnotation;
@@ -1417,13 +1418,15 @@ class AssignmentAnalyzer
                             && $assign_value_atomic_type->is_list
                             && $assign_value_atomic_type->fallback_params
                         ) {
-                            IssueBuffer::maybeAdd(
-                                new PossiblyUndefinedArrayOffset(
-                                    'Possibly undefined array key',
-                                    new CodeLocation($statements_analyzer->getSource(), $var)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            );
+                            if ($codebase->config->ensure_array_int_offsets_exist) {
+                                IssueBuffer::maybeAdd(
+                                    new PossiblyUndefinedIntArrayOffset(
+                                        'Possibly undefined array key',
+                                        new CodeLocation($statements_analyzer->getSource(), $var)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                );
+                            }
 
                             $new_assign_type =
                                 $assign_value_atomic_type->fallback_params[1];
