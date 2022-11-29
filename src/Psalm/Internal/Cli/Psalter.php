@@ -233,6 +233,11 @@ final class Psalter
             Report::TYPE_CONSOLE,
             $first_autoloader
         );
+
+        if (isset($options['no-cache'])) {
+            $config->cache_directory = null;
+        }
+
         $config->setIncludeCollector($include_collector);
 
         if ($config->resolve_from_config_file) {

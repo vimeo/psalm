@@ -241,6 +241,10 @@ final class Psalm
             $options
         );
 
+        if (isset($options['no-cache'])) {
+            $config->cache_directory = null;
+        }
+
         $config->setIncludeCollector($include_collector);
 
         $in_ci = CliUtils::runningInCI();        // disable progressbar on CI
