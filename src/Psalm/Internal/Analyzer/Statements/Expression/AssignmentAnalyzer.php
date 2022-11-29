@@ -1413,6 +1413,20 @@ class AssignmentAnalyzer
 
                                 $new_assign_type = $new_assign_type->setPossiblyUndefined(false);
                             }
+                        } elseif (!$assign_var_item->key instanceof PhpParser\Node\Scalar\String_
+                            && $assign_value_atomic_type->is_list
+                            && $assign_value_atomic_type->fallback_params
+                        ) {
+                            IssueBuffer::maybeAdd(
+                                new PossiblyUndefinedArrayOffset(
+                                    'Possibly undefined array key',
+                                    new CodeLocation($statements_analyzer->getSource(), $var)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            );
+
+                            $new_assign_type =
+                                $assign_value_atomic_type->fallback_params[1];
                         }
 
                         if ($statements_analyzer->data_flow_graph && $assign_value && $new_assign_type) {

@@ -554,7 +554,7 @@ class TKeyedArray extends Atomic
 
     protected function getChildNodeKeys(): array
     {
-        return ['properties'];
+        return ['properties', 'fallback_params'];
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
