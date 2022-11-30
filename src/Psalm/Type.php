@@ -850,12 +850,16 @@ abstract class Type
         ) {
             /** @psalm-suppress TypeDoesNotContainType */
             if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
-                $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
-                $second = $codebase->classlike_storage_provider->get($type_2_atomic->value);
-                $first_is_class = !$first->is_interface && !$first->is_trait;
-                $second_is_class = !$second->is_interface && !$second->is_trait;
-                if ($first_is_class && $second_is_class) {
-                    return $intersection_atomic;
+                try {
+                    $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
+                    $second = $codebase->classlike_storage_provider->get($type_2_atomic->value);
+                    $first_is_class = !$first->is_interface && !$first->is_trait;
+                    $second_is_class = !$second->is_interface && !$second->is_trait;
+                    if ($first_is_class && $second_is_class) {
+                        return $intersection_atomic;
+                    }
+                } catch (InvalidArgumentException $e) {
+                    // Ignore non-existing classes during initial scan
                 }
             }
             if ($intersection_atomic === null && $wider_type === null) {
@@ -914,7 +918,12 @@ abstract class Type
         if (!$type instanceof TNamedObject) {
             return false;
         }
-        $storage = $codebase->classlike_storage_provider->get($type->value);
+        try {
+            $storage = $codebase->classlike_storage_provider->get($type->value);
+        } catch (InvalidArgumentException $e) {
+            // Ignore non-existing classes during initial scan
+            return true;
+        }
         return !$storage->final;
     }
 
