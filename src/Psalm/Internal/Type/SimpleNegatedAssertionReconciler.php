@@ -58,6 +58,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -402,6 +403,19 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
+        if ($assertion_type instanceof TTrue && !$existing_var_type->hasMixed()) {
+            return self::reconcileTrue(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality
+            );
+        }
+
         if ($assertion_type instanceof TCallable) {
             return self::reconcileCallable(
                 $existing_var_type
@@ -702,6 +716,14 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         $old_var_type_string = $existing_var_type->getId();
         $did_remove_type = false;
 
+        if (isset($types['scalar'])) {
+            $did_remove_type = true;
+        }
+        if (isset($types['bool'])) {
+            $did_remove_type = true;
+            $types[] = new TTrue();
+            unset($types['bool']);
+        }
         if (isset($types['false'])) {
             $did_remove_type = true;
             unset($types['false']);
@@ -710,6 +732,86 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         foreach ($types as &$type) {
             if ($type instanceof TTemplateParam) {
                 $new = $type->replaceAs(self::reconcileFalse(
+                    $assertion,
+                    $type->as,
+                    null,
+                    false,
+                    null,
+                    $suppressed_issues,
+                    $failed_reconciliation,
+                    $is_equality
+                ));
+
+                $did_remove_type = $did_remove_type || $new !== $type;
+                $type = $new;
+            }
+        }
+        unset($type);
+
+        if (!$did_remove_type || !$types) {
+            if ($key && $code_location && !$is_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    !$did_remove_type,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+
+            if (!$did_remove_type) {
+                $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
+            }
+        }
+
+        if ($types) {
+            return $existing_var_type->setTypes($types);
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
+    }
+
+    /**
+     * @param string[] $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileTrue(
+        Assertion $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ): Union {
+        $types = $existing_var_type->getAtomicTypes();
+        $old_var_type_string = $existing_var_type->getId();
+        $did_remove_type = false;
+
+        if (isset($types['scalar'])) {
+            $did_remove_type = true;
+        }
+        if (isset($types['bool'])) {
+            $did_remove_type = true;
+            $types[] = new TFalse();
+            unset($types['bool']);
+        }
+        if (isset($types['true'])) {
+            $did_remove_type = true;
+            unset($types['true']);
+        }
+
+        foreach ($types as &$type) {
+            if ($type instanceof TTemplateParam) {
+                $new = $type->replaceAs(self::reconcileTrue(
                     $assertion,
                     $type->as,
                     null,

@@ -93,30 +93,21 @@ class NegatedAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
         $existing_var_type = $existing_var_type->getBuilder();
 
-        if ($assertion_type instanceof TFalse && isset($existing_var_atomic_types['bool'])) {
-            $existing_var_type->removeType('bool');
-            $existing_var_type->addType(new TTrue);
-        } elseif ($assertion_type instanceof TTrue && isset($existing_var_atomic_types['bool'])) {
-            $existing_var_type = $existing_var_type->getBuilder();
-            $existing_var_type->removeType('bool');
-            $existing_var_type->addType(new TFalse);
-        } else {
-            $simple_negated_type = SimpleNegatedAssertionReconciler::reconcile(
-                $statements_analyzer->getCodebase(),
-                $assertion,
-                $existing_var_type->freeze(),
-                $key,
-                $negated,
-                $code_location,
-                $suppressed_issues,
-                $failed_reconciliation,
-                $is_equality,
-                $inside_loop
-            );
+        $simple_negated_type = SimpleNegatedAssertionReconciler::reconcile(
+            $statements_analyzer->getCodebase(),
+            $assertion,
+            $existing_var_type->freeze(),
+            $key,
+            $negated,
+            $code_location,
+            $suppressed_issues,
+            $failed_reconciliation,
+            $is_equality,
+            $inside_loop
+        );
 
-            if ($simple_negated_type) {
-                return $simple_negated_type;
-            }
+        if ($simple_negated_type) {
+            return $simple_negated_type;
         }
 
         $assertion_type = $assertion->getAtomicType();
