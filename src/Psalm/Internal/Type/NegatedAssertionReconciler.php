@@ -17,7 +17,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEnumCase;
-use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
@@ -30,7 +29,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
