@@ -33,6 +33,7 @@
         <ignoreFiles>
             <file name="src/Psalm/Internal/PhpTraverser/CustomTraverser.php"/>
             <file name="tests/ErrorBaselineTest.php"/>
+            <file name="tests/Internal/CallMapTest.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
             <directory name="tests/fixtures"/>
             <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
