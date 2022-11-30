@@ -171,22 +171,16 @@ class SymbolLookupTest extends TestCase
         $this->assertSame('b\qux', $information->title);
         $this->assertNull($information->description);
 
-        /* TODO: what was the intention here?
-        $information = $this->codebase->getSymbolInformation('somefile.php', '$_SESSION');
-        $this->assertNotNull($information);
-        $this->assertSame("<?php array<string, mixed>", $information['type']);
-        */
-
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(
                 'somefile.php',
-                '$_SERVER',
+                '$_SESSION',
                 $range
             )
         );
         $this->assertNotNull($information);
-        $this->assertSame("array<array-key, mixed>", $information->code);
-        $this->assertSame('$_SERVER', $information->title);
+        $this->assertSame("array<string, mixed>", $information->code);
+        $this->assertSame('$_SESSION', $information->title);
         $this->assertNull($information->description);
 
         $information = $this->codebase->getMarkupContentForSymbol(
