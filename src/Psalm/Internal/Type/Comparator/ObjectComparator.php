@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -32,6 +33,17 @@ class ObjectComparator
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
+        if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TTemplateParam
+            && 1 == count($container_type_part->as->getAtomicTypes()) && 1 == count($input_type_part->as->getAtomicTypes())) {
+            $containerAs = current($container_type_part->as->getAtomicTypes());
+            $inputAs = current($input_type_part->as->getAtomicTypes());
+            if ($containerAs instanceof TNamedObject && $inputAs instanceof TNamedObject) {
+                return self::isShallowlyContainedBy($codebase, current($input_type_part->as->getAtomicTypes()), current($container_type_part->as->getAtomicTypes()), $allow_interface_equality, $atomic_comparison_result);
+            } else if ($containerAs instanceof TMixed && $inputAs instanceof TMixed) {
+                return true;
+            }
+        }
+
         $intersection_input_types = self::getIntersectionTypes($input_type_part);
         $intersection_container_types = self::getIntersectionTypes($container_type_part);
 
