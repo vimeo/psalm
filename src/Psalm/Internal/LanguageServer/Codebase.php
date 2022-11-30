@@ -260,7 +260,7 @@ class Codebase extends PsalmCodebase
 
         //Procedural Variable
         if (strpos($reference->symbol, '$') === 0) {
-            $type = VariableFetchAnalyzer::getGlobalType($reference->symbol);
+            $type = VariableFetchAnalyzer::getGlobalType($reference->symbol, $this->analysis_php_version_id);
             if (!$type->isMixed()) {
                 return new PHPMarkdownContent(
                     (string) $type,
@@ -720,7 +720,7 @@ class Codebase extends PsalmCodebase
             ) {
                 $file_contents = $this->getFileContents($file_path);
 
-                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name);
+                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name, 1);
 
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset(

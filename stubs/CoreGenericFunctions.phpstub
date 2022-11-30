@@ -136,11 +136,51 @@ function array_flip(array $array)
  *
  * @param TArray $array
  *
- * @return (TArray is array<empty, empty> ? null : TKey|null)
+ * @return (TArray is array<empty,empty> ? null : (TArray is non-empty-list ? int<0,max> : (TArray is non-empty-array ? TKey : TKey|null)))
  * @psalm-pure
  * @psalm-ignore-nullable-return
  */
 function key($array)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ * @psalm-template TArray as array<TKey, TValue>
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is array<empty,empty> ? false : (TArray is non-empty-array ? TValue : TValue|false))
+ * @psalm-pure
+ */
+function current($array)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ * @psalm-template TArray as array<TKey, TValue>
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is array<empty,empty> ? false : (TArray is non-empty-array ? TValue : TValue|false))
+ */
+function reset(&$array)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ * @psalm-template TArray as array<TKey, TValue>
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is array<empty,empty> ? false : (TArray is non-empty-array ? TValue : TValue|false))
+ */
+function end(&$array)
 {
 }
 
@@ -333,6 +373,22 @@ function preg_grep($pattern, array $array, $flags = 0)
 function fclose(&$stream) : bool
 {
 }
+
+/**
+ * @psalm-pure
+ * @template T as string
+ * @param T $string
+ * @return (T is non-empty-string ? non-empty-string : string)
+ */
+function sodium_bin2base64(string $string, int $id): string
+
+/**
+ * @psalm-pure
+ * @template T as string
+ * @param T $string
+ * @return (T is non-empty-string ? non-empty-string : string)
+ */
+function sodium_bin2hex(string $string): string {}
 
 /**
  * @param string $string
@@ -550,6 +606,12 @@ function strpos($haystack, $needle, int $offset = 0) : int {}
 /**
  * @psalm-pure
  *
+ * @return (
+ *      $string is class-string
+ *          ? ($characters is '\\' ? class-string : string)
+ *          : ($string is lowercase-string ? lowercase-string : string)
+ * )
+ *
  * @psalm-flow ($string) -> return
  */
 function trim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
@@ -557,7 +619,11 @@ function trim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 /**
  * @psalm-pure
  *
- * @return ($string is class-string ? ($characters is '\\' ? class-string : string) : string)
+ * @return (
+ *      $string is class-string
+ *          ? ($characters is '\\' ? class-string : string)
+ *          : ($string is lowercase-string ? lowercase-string : string)
+ * )
  *
  * @psalm-flow ($string) -> return
  */
@@ -565,6 +631,8 @@ function ltrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
 
 /**
  * @psalm-pure
+ *
+ * @return ($string is lowercase-string ? lowercase-string : string)
  *
  * @psalm-flow ($string) -> return
  */
@@ -1308,8 +1376,20 @@ function base64_decode(string $string, bool $strict = false) {}
  * @psalm-pure
  *
  * @psalm-flow ($string) -> return
+ * @template T as string
+ * @param T $string
+ * @return (T is non-empty-string ? non-empty-string : string)
  */
 function base64_encode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @template T as string
+ * @param T $string
+ * @return (T is non-empty-string ? non-empty-string : string)
+ */
+function bin2hex(string $string): string {}
 
 /**
  * @psalm-pure

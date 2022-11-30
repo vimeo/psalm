@@ -26,6 +26,7 @@ use function implode;
 use function in_array;
 use function ini_set;
 use function is_array;
+use function is_numeric;
 use function is_string;
 use function preg_replace;
 use function realpath;
@@ -101,7 +102,7 @@ final class LanguageServer
         array_map(
             function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
+                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if (!in_array($arg_name, $valid_long_options, true)
                         && !in_array($arg_name . ':', $valid_long_options, true)
@@ -308,8 +309,8 @@ HELP;
             }
         }
 
-        if (isset($options['disable-on-change'])) {
-            $clientConfiguration->onchangeLineLimit = (int) $options['disable-on-change'];
+        if (isset($options['disable-on-change']) && is_numeric($options['disable-on-change'])) {
+            $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
         }
 
         if (isset($options['on-change-debounce-ms'])) {

@@ -194,6 +194,11 @@ class ProjectAnalyzer
     public $provide_completion = false;
 
     /**
+     * @var list<string>
+     */
+    public $check_paths_files = [];
+
+    /**
      * @var array<string,string>
      */
     private $project_files = [];
@@ -1069,6 +1074,7 @@ class ProjectAnalyzer
             if (is_dir($path)) {
                 $this->checkDirWithConfig($path, $this->config, true);
             } elseif (is_file($path)) {
+                $this->check_paths_files[] = $path;
                 $this->codebase->addFilesToAnalyze([$path => $path]);
                 $this->config->hide_external_errors = $this->config->isInProjectDirs($path);
             }
@@ -1180,7 +1186,7 @@ class ProjectAnalyzer
      */
     public function setPhpVersion(string $version, string $source): void
     {
-        if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[01])(\..*)?$/', $version)) {
+        if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[012])(\..*)?$/', $version)) {
             throw new UnexpectedValueException('Expecting a version number in the format x.y');
         }
 

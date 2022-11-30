@@ -249,6 +249,32 @@ class AttributeTest extends TestCase
                 [],
                 '8.1'
             ],
+            'allowDynamicProperties' => [
+                '<?php
+
+                    namespace AllowDynamicPropertiesAttribute;
+
+                    use AllowDynamicProperties;
+
+                    #[AllowDynamicProperties]
+                    class Foo
+                    {}
+                ',
+            ],
+            'sensitiveParameter' => [
+                '<?php
+
+                    namespace SensitiveParameter;
+
+                    use SensitiveParameter;
+
+                    class HelloWorld {
+                        public function __construct(
+                            #[SensitiveParameter] string $password
+                        ) {}
+                    }
+                ',
+            ],
             'createObjectAsAttributeArg' => [
                 '<?php
                     #[Attribute]
@@ -760,6 +786,22 @@ class AttributeTest extends TestCase
                 [],
                 false,
                 '8.1',
+            ],
+            'sensitiveParameterOnMethod' => [
+                '<?php
+
+                    namespace SensitiveParameter;
+
+                    use SensitiveParameter;
+
+                    class HelloWorld {
+                        #[SensitiveParameter]
+                        public function __construct(
+                            string $password
+                        ) {}
+                    }
+                ',
+                'error_message' => 'Attribute SensitiveParameter cannot be used on a method',
             ],
         ];
     }

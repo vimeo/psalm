@@ -720,7 +720,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!$is_expected) {
-                $missingThrowsDocblockErrors[] = $possibly_thrown_exception;
+                $missing_docblock_exception = new TNamedObject($possibly_thrown_exception);
+                $missingThrowsDocblockErrors[] = $missing_docblock_exception->toNamespacedString(
+                    $this->source->getNamespace(),
+                    $this->source->getAliasedClassesFlipped(),
+                    $this->source->getFQCLN(),
+                    true
+                );
+
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
                     IssueBuffer::maybeAdd(

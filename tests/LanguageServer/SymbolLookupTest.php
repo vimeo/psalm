@@ -90,7 +90,7 @@ class SymbolLookupTest extends TestCase
                     return $a + $b;
                 }
 
-                $_SERVER;'
+                $_SESSION;'
         );
 
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
@@ -170,6 +170,10 @@ class SymbolLookupTest extends TestCase
         $this->assertSame("function B\qux(\n    int \$a,\n    int \$b\n): int", $information->code);
         $this->assertSame('b\qux', $information->title);
         $this->assertNull($information->description);
+
+        $information = $codebase->getSymbolInformation('somefile.php', '$_SESSION');
+        $this->assertNotNull($information);
+        $this->assertSame("<?php array<string, mixed>", $information['type']);
 
         $information = $this->codebase->getMarkupContentForSymbol(
             new Reference(

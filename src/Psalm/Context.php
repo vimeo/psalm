@@ -752,7 +752,7 @@ class Context
             return false;
         }
 
-        $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name);
+        $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name, 1);
 
         if ($stripped_var !== '$this' || $var_name !== $stripped_var) {
             $this->referenced_var_ids[$var_name] = true;

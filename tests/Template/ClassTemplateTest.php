@@ -1425,7 +1425,7 @@ class ClassTemplateTest extends TestCase
                     }
 
                     /** @psalm-suppress MixedArgument */
-                    $c = new ArrayCollection($_GET["a"]);',
+                    $c = new ArrayCollection($GLOBALS["a"]);',
                 [
                     '$c' => 'ArrayCollection<array-key, mixed>',
                 ],
@@ -3799,6 +3799,49 @@ class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
+            'static is the return type of an analyzed static method' => [
+                '<?php
+
+                    abstract class A
+                    {
+                    }
+
+                    final class B extends A
+                    {
+                        public static function create(): static
+                        {
+                            return new self();
+                        }
+                    }
+
+                    final class Service
+                    {
+                        public function do(): void
+                        {
+                            $this->acceptA(B::create());
+                        }
+
+                        private function acceptA(A $_a): void
+                        {
+                        }
+                    }',
+            ],
+            'undefined class in function dockblock' => [
+                '<?php
+                    /**
+                     * @psalm-suppress UndefinedDocblockClass
+                     *
+                     * @param DoesNotExist<int> $baz
+                     */
+                    function foobar(DoesNotExist $baz): void {}
+
+                    /**
+                     * @psalm-suppress UndefinedDocblockClass, UndefinedClass
+                     * @var DoesNotExist
+                     */
+                    $baz = new DoesNotExist();
+                    foobar($baz);',
+            ],
         ];
     }
 
@@ -3909,7 +3952,7 @@ class ClassTemplateTest extends TestCase
                             type($closure);
                         }
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34 - Argument 1 of type expects string, callable(State):(T:AlmostFooMap as mixed)&Foo provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34 - Argument 1 of type expects string, but callable(State):(T:AlmostFooMap as mixed)&Foo provided',
             ],
             'templateWithNoReturn' => [
                 '<?php
@@ -4091,7 +4134,7 @@ class ClassTemplateTest extends TestCase
                     $mario = new CharacterRow(["id" => 5, "name" => "Mario", "height" => 3.5]);
 
                     $mario->ame = "Luigi";',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:47:29 - Argument 1 of CharacterRow::__set expects "height"|"id"|"name", "ame" provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:47:29 - Argument 1 of CharacterRow::__set expects "height"|"id"|"name", but "ame" provided',
             ],
             'specialiseTypeBeforeReturning' => [
                 '<?php

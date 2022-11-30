@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
@@ -1490,6 +1491,15 @@ class Union implements TypeNode
         $literal_visitor->traverseArray($this->types);
 
         return $literal_visitor->matches();
+    }
+
+    public function canContainObjectType(Codebase $codebase): bool
+    {
+        $object_type_visitor = new CanContainObjectTypeVisitor($codebase);
+
+        $object_type_visitor->traverseArray($this->types);
+
+        return $object_type_visitor->matches();
     }
 
     /**

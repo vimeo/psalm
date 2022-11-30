@@ -41,10 +41,6 @@ return [
       'old' => ['string|false', 'format'=>'string'],
       'new' => ['string', 'format'=>'string'],
     ],
-    'DateTimeImmutable::format' => [
-      'old' => ['string|false', 'format'=>'string'],
-      'new' => ['string', 'format'=>'string'],
-    ],
     'DateTimeZone::listIdentifiers' => [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
       'new' => ['list<string>', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
@@ -112,6 +108,10 @@ return [
     'ReflectionClass::newInstanceArgs' => [
         'old' => ['object', 'args='=>'list<mixed>'],
         'new' => ['object', 'args='=>'array<array-key, mixed>'],
+    ],
+    'ReflectionProperty::getValue' => [
+        'old' => ['mixed', 'object='=>'object'],
+        'new' => ['mixed', 'object='=>'null|object'],
     ],
     'XMLWriter::flush' => [
       'old' => ['string|int|false', 'empty='=>'bool'],
@@ -214,7 +214,7 @@ return [
       'new' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'true'],
     ],
     'count' => [
-        'old' => ['int', 'value'=>'Countable|array|SimpleXMLElement|ResourceBundle', 'mode='=>'int'],
+        'old' => ['int', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
         'new' => ['int', 'value'=>'Countable|array', 'mode='=>'int'],
     ],
     'count_chars' => [
@@ -278,8 +278,8 @@ return [
       'new' => ['int', 'multi_handle'=>'CurlMultiHandle', '&w_still_running'=>'int'],
     ],
     'curl_multi_getcontent' => [
-      'old' => ['?string', 'ch'=>'resource'],
-      'new' => ['?string', 'handle'=>'CurlHandle'],
+      'old' => ['string', 'ch'=>'resource'],
+      'new' => ['string', 'handle'=>'CurlHandle'],
     ],
     'curl_multi_info_read' => [
       'old' => ['array|false', 'mh'=>'resource', '&w_msgs_in_queue='=>'int'],
@@ -381,9 +381,21 @@ return [
       'old' => ['string|false', 'format'=>'string', 'timestamp='=>'int'],
       'new' => ['string|false', 'format'=>'string', 'timestamp='=>'?int'],
     ],
+    'hash' => [
+      'old' => ['string|false', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
+    ],
+    'hash_hmac' => [
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
+    ],
     'hash_init' => [
       'old' => ['HashContext|false', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
       'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
+    ],
+    'hash_hkdf' => [
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
     ],
     'hash_update_file' => [
       'old' => ['bool', 'context'=>'HashContext', 'filename'=>'string', 'stream_context='=>'resource'],
@@ -647,7 +659,7 @@ return [
     ],
     'imageinterlace' => [
       'old' => ['int|false', 'image'=>'resource', 'enable='=>'int'],
-      'new' => ['int|false', 'image'=>'GdImage', 'enable='=>'int'],
+      'new' => ['int|bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
     ],
     'imageistruecolor' => [
       'old' => ['bool', 'image'=>'resource'],
@@ -1180,6 +1192,10 @@ return [
     'openssl_x509_read' => [
       'old' => ['resource|false', 'certificate'=>'string|resource'],
       'new' => ['OpenSSLCertificate|false', 'certificate'=>'OpenSSLCertificate|string'],
+    ],
+    'openssl_x509_verify' => [
+      'old' => ['int', 'certificate'=>'string|resource', 'public_key'=>'string|array|resource'],
+      'new' => ['int', 'certificate'=>'string|OpenSSLCertificate', 'public_key'=>'string|OpenSSLCertificate|OpenSSLAsymmetricKey|array'],
     ],
     'parse_str' => [
       'old' => ['void', 'string'=>'string', '&w_result='=>'array'],

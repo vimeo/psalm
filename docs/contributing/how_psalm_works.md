@@ -66,7 +66,7 @@ At each line the `Context` object may or may not be manipulated. At branching po
 
 The `NodeDataProvider` stores a type for each PhpParser node.
 
-After all the statements have been analysed we gather up all the return types and compare to the given return type.
+After all the statements have been analysed we gather up all the return types and compare them to the given return type.
 
 ### Type Reconciliation
 

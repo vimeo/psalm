@@ -141,8 +141,8 @@ return [
       'new' => ['HashContext', 'context'=>'HashContext'],
     ],
     'hash_final' => [
-      'old' => ['string', 'context'=>'resource', 'raw_output='=>'bool'],
-      'new' => ['string', 'context'=>'HashContext', 'binary='=>'bool'],
+      'old' => ['non-empty-string', 'context'=>'resource', 'raw_output='=>'bool'],
+      'new' => ['non-empty-string', 'context'=>'HashContext', 'binary='=>'bool'],
     ],
     'hash_init' => [
       'old' => ['resource', 'algo'=>'string', 'options='=>'int', 'key='=>'string'],

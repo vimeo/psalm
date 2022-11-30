@@ -229,7 +229,7 @@ class TemporaryUpdateTest extends TestCase
                                 }
 
                                 public function bar() {
-                                    $a = $_GET["foo"];
+                                    $a = $GLOBALS["foo"];
                                     return $this->foo();
                                 }
                             }',
@@ -244,7 +244,7 @@ class TemporaryUpdateTest extends TestCase
                                 }
 
                                 public function bar() {
-                                    $a = $_GET["foo"];
+                                    $a = $GLOBALS["foo"];
                                     return $this->foo();
                                 }
                             }',
@@ -259,7 +259,7 @@ class TemporaryUpdateTest extends TestCase
                                 }
 
                                 public function bar() : int {
-                                    $a = $_GET["foo"];
+                                    $a = $GLOBALS["foo"];
                                     return $this->foo();
                                 }
                             }',
@@ -280,7 +280,7 @@ class TemporaryUpdateTest extends TestCase
                                 }
 
                                 public function bar() : int {
-                                    $a = $_GET["foo"];
+                                    $a = $GLOBALS["foo"];
                                     return $this->foo();
                                 }
                             }',
@@ -297,7 +297,7 @@ class TemporaryUpdateTest extends TestCase
                                 }
 
                                 public function bar() : int {
-                                    $a = $_GET["foo"];
+                                    $a = $GLOBALS["foo"];
                                     return $this->foo();
                                 }
                             }',
@@ -315,7 +315,7 @@ class TemporaryUpdateTest extends TestCase
                                 }
 
                                 public function bar() : int {
-                                    $a = $_GET["foo"];
+                                    $a = $GLOBALS["foo"];
                                     return $this->foo();
                                 }
                             }',

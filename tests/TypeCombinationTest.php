@@ -717,6 +717,13 @@ class TypeCombinationTest extends TestCase
                     'non-empty-string'
                 ]
             ],
+            'combineTruthyStringAndNonEmptyString' => [
+                'non-empty-string',
+                [
+                    'truthy-string',
+                    'non-empty-string'
+                ]
+            ],
             'combineNonFalsyNonEmptyString' => [
                 'non-empty-string',
                 [
