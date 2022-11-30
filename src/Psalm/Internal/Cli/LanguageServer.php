@@ -310,10 +310,10 @@ HELP;
         }
 
         if (isset($options['disable-on-change']) && is_numeric($options['disable-on-change'])) {
-            $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
+            $clientConfiguration->onchangeLineLimit = (int) $options['disable-on-change'];
         }
 
-        if (isset($options['on-change-debounce-ms'])) {
+        if (isset($options['on-change-debounce-ms']) && is_numeric($options['on-change-debounce-ms'])) {
             $clientConfiguration->onChangeDebounceMs = (int) $options['on-change-debounce-ms'];
         }
 
