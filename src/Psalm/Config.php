@@ -204,9 +204,13 @@ class Config
     /**
      * The directory to store PHP Parser (and other) caches
      *
+     * @internal
+     *
      * @var string|null
      */
     public $cache_directory;
+
+    private bool $cache_directory_initialized = false;
 
     /**
      * The directory to store all Psalm project caches
@@ -1093,32 +1097,6 @@ class Config
         $config->global_cache_directory = $config->cache_directory;
 
         $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
-
-        $cwd = null;
-
-        if ($config->resolve_from_config_file) {
-            $cwd = getcwd();
-            chdir($config->base_dir);
-        }
-
-        if (!is_dir($config->cache_directory)) {
-            try {
-                if (mkdir($config->cache_directory, 0777, true) === false) {
-                    // any other error than directory already exists/permissions issue
-                    throw new RuntimeException('Failed to create Psalm cache directory for unknown reasons');
-                }
-            } catch (RuntimeException $e) {
-                if (!is_dir($config->cache_directory)) {
-                    // rethrow the error with default message
-                    // it contains the reason why creation failed
-                    throw $e;
-                }
-            }
-        }
-
-        if ($cwd) {
-            chdir($cwd);
-        }
 
         if (isset($config_xml['serializer'])) {
             $attribute_text = (string) $config_xml['serializer'];
@@ -2221,6 +2199,44 @@ class Config
 
     public function getCacheDirectory(): ?string
     {
+        if ($this->cache_directory === null) {
+            return null;
+        }
+
+        if ($this->cache_directory_initialized) {
+            return $this->cache_directory;
+        }
+
+        $cwd = null;
+
+        if ($this->resolve_from_config_file) {
+            $cwd = getcwd();
+            chdir($this->base_dir);
+        }
+
+        try {
+            if (!is_dir($this->cache_directory)) {
+                try {
+                    if (mkdir($this->cache_directory, 0777, true) === false) {
+                        // any other error than directory already exists/permissions issue
+                        throw new RuntimeException('Failed to create Psalm cache directory for unknown reasons');
+                    }
+                } catch (RuntimeException $e) {
+                    if (!is_dir($this->cache_directory)) {
+                        // rethrow the error with default message
+                        // it contains the reason why creation failed
+                        throw $e;
+                    }
+                }
+            }
+        } finally {
+            if ($cwd) {
+                chdir($cwd);
+            }
+        }
+
+        $this->cache_directory_initialized = true;
+
         return $this->cache_directory;
     }
 
@@ -2457,7 +2473,9 @@ class Config
 
     public function setServerMode(): void
     {
-        $this->cache_directory .= '-s';
+        if ($this->cache_directory !== null) {
+            $this->cache_directory .= '-s';
+        }
     }
 
     public function addStubFile(string $stub_file): void

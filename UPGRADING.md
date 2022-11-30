@@ -27,6 +27,9 @@
 
 - [BC] TPositiveInt has been removed and replaced by TIntRange
 
+- [BC] Property `Psalm\Config::$cache_directory` is now internal. Use
+  `Psalm\Config::getCacheDirectory()` instead.
+
 - [BC] The parameter `$php_version` of `Psalm\Type\Atomic::create()` renamed
   to `$analysis_php_version_id` and changed from `array|null` to `int|null`.
   Previously it accepted PHP version as `array{major_version, minor_version}`
