@@ -1505,18 +1505,8 @@ class ArrayFetchAnalyzer
     ): void {
         $generic_key_type = $type->getGenericKeyType();
 
-        if (!$stmt->dim && $type->fallback_params === null) {
-            if ($type->is_list) {
-                $key_values[] = new TLiteralInt(count($type->properties));
-            } else {
-                $init = -1;
-                foreach ($type->properties as $k => $_) {
-                    if (is_int($k)) {
-                        $init = $k;
-                    }
-                }
-                $key_values[] = new TLiteralInt($init+1);
-            }
+        if (!$stmt->dim && $type->fallback_params === null && $type->is_list) {
+            $key_values[] = new TLiteralInt(count($type->properties));
         }
 
         if ($key_values) {
@@ -1652,20 +1642,14 @@ class ArrayFetchAnalyzer
                         $offset_type->isMixed() ? Type::getArrayKey() : $offset_type->freeze()
                     );
 
-                    // Happens only if $type is an unsealed array or list
                     if (!$stmt->dim) {
-                        assert($type->fallback_params !== null);
                         if ($type->is_list) {
-                            if ($new_key_type !== $type->fallback_params[0]
-                                || $generic_params !== $type->fallback_params[1]
-                            ) {
-                                $type = new TKeyedArray(
-                                    $type->properties,
-                                    null,
-                                    [$new_key_type, $generic_params],
-                                    true
-                                );
-                            }
+                            $type = new TKeyedArray(
+                                $type->properties,
+                                null,
+                                [$new_key_type, $generic_params],
+                                true
+                            );
                         } else {
                             $type = new TNonEmptyArray([
                                 $new_key_type,
@@ -1673,12 +1657,18 @@ class ArrayFetchAnalyzer
                             ], null, $type->getMinCount()+1);
                         }
                     } else {
-                        $type = new TKeyedArray(
-                            $type->properties,
-                            null,
-                            [$new_key_type, $generic_params],
-                            false
-                        );
+                        $min_count = $type->getMinCount();
+                        if ($min_count) {
+                            $type = new TNonEmptyArray([
+                                $new_key_type,
+                                $generic_params,
+                            ], null, $min_count);
+                        } else {
+                            $type = new TArray([
+                                $new_key_type,
+                                $generic_params,
+                            ]);
+                        }
                     }
 
                     $array_access_type = Type::combineUnionTypes(
