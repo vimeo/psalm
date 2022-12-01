@@ -15,7 +15,7 @@ use function strtr;
 use function substr;
 use function usort;
 
-final class ByIssueSeverityReport extends Report
+final class ByIssueLevelAndTypeReport extends Report
 {
     /** @var string|null */
     private $link_format;
