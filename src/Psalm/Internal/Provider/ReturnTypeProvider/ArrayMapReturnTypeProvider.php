@@ -38,7 +38,6 @@ use function array_map;
 use function array_shift;
 use function array_slice;
 use function array_values;
-use function assert;
 use function count;
 use function explode;
 use function in_array;
@@ -79,6 +78,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             array_shift($call_args);
 
             $array_arg_types = [];
+            $orig_types = [];
 
             foreach ($call_args as $call_arg) {
                 $call_arg_type = $statements_source->node_data->getType($call_arg->value);
@@ -89,9 +89,21 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     && $call_arg_atomic->fallback_params === null
                 ) {
                     $array_arg_types []= array_values($call_arg_atomic->properties);
+                    $orig_types []= $call_arg_type;
+                } elseif ($call_arg_type
+                    && $call_arg_type->isSingle()
+                    && ($call_arg_atomic = $call_arg_type->getSingleAtomic()) instanceof TArray
+                    && $call_arg_atomic->isEmptyArray()
+                ) {
+                    $array_arg_types []= [];
+                    $orig_types []= $call_arg_type;
                 } else {
                     return Type::getArray();
                 }
+            }
+
+            if (count($orig_types) === 1) {
+                return $orig_types[0];
             }
 
             $null = Type::getNull();
@@ -107,7 +119,10 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 },
                 $array_arg_types
             );
-            assert(count($array_arg_types));
+
+            if (!$array_arg_types) {
+                return Type::getEmptyArray();
+            }
 
             return new Union([new TKeyedArray($array_arg_types, null, null, true)]);
         }
