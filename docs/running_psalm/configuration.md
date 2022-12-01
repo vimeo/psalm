@@ -537,6 +537,16 @@ The example above declares global variables as shown below
 - `$_GET`
     - `data` e.g. like `["id" => "123", "title" => "Nice"]`
 
+#### &lt;forbiddenFunctions&gt;
+Optional. Allows you to specify a list of functions that should emit the [`ForbiddenCode`](issues/ForbiddenCode.md) issue type.
+
+```xml
+<forbiddenFunctions>
+  <function name="var_dump" />
+  <function name="dd" />
+</forbiddenFunctions>
+```
+
 ## Accessing Psalm configuration in plugins
 
 Plugins can access or modify the global configuration in plugins using
