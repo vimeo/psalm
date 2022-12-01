@@ -492,7 +492,7 @@ class ArgumentAnalyzer
                     ) {
                         $arg_value_type = $unpacked_atomic_array->properties[$unpacked_argument_offset];
                     } elseif ($unpacked_atomic_array->fallback_params) {
-                        $arg_value_type = $unpacked_atomic_array->getGenericValueType();
+                        $arg_value_type = $unpacked_atomic_array->fallback_params[1];
                     } elseif ($function_param->is_optional && $function_param->default_type) {
                         if ($function_param->default_type instanceof Union) {
                             $arg_value_type = $function_param->default_type;
