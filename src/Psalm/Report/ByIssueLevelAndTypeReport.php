@@ -44,8 +44,6 @@ final class ByIssueLevelAndTypeReport extends Report
 
 HEADING;
 
-        ;
-
         foreach ($this->issues_data as $issue_data) {
             $output .= $this->format($issue_data) . "\n" . "\n";
         }
@@ -54,7 +52,7 @@ HEADING;
     }
 
     /**
-     * Copied from ConsoleReport with only very minor changes. Todo consider reducing code duplication
+     * Copied from ConsoleReport with only very minor changes.
      */
     private function format(IssueData $issue_data): string
     {
@@ -106,7 +104,7 @@ HEADING;
     }
 
     /**
-     * Copied from ConsoleReport unchanged. Todo consider reducing code duplication
+     * Copied from ConsoleReport unchanged. We could consider moving to another class to reduce duplication.
      * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      */
     private function getTaintSnippets(array $taint_trace): string
@@ -141,6 +139,7 @@ HEADING;
     }
 
     /**
+     * Copied from ConsoleReport unchanged. We could consider moving to another class to reduce duplication.
      * @param IssueData|DataFlowNodeData $data
      */
     private function getFileReference($data): string
@@ -180,7 +179,7 @@ HEADING;
     private function sortIssuesByLevelAndType(): void
     {
         usort($this->issues_data, function (IssueData $left, IssueData $right): int {
-
+            // negative error levels go to the top, followed by large positive levels, with level 1 at the bottom.
             return [$left->error_level > 0, -$left->error_level, $left->type] <=>
                 [$right->error_level > 0, -$right->error_level, $right->type];
         });
