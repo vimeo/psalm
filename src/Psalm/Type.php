@@ -349,7 +349,6 @@ abstract class Type
     public static function getNever(bool $from_docblock = false): Union
     {
         $type = new TNever($from_docblock);
-
         return new Union([$type]);
     }
 
@@ -607,6 +606,10 @@ abstract class Type
 
             if ($type_1->ignore_falsable_issues || $type_2->ignore_falsable_issues) {
                 $combined_type->ignore_falsable_issues = true;
+            }
+
+            if ($type_1->explicit_never && $type_2->explicit_never) {
+                $combined_type->explicit_never = true;
             }
 
             if ($type_1->had_template && $type_2->had_template) {

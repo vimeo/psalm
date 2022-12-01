@@ -411,4 +411,24 @@ class ScopeAnalyzer
 
         return false;
     }
+
+    /**
+     * @param   array<PhpParser\Node> $stmts
+     *
+     */
+    public static function onlyThrows(array $stmts): bool
+    {
+        $stmts_count = count($stmts);
+        if ($stmts_count !== 1) {
+            return false;
+        }
+
+        foreach ($stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
