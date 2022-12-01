@@ -94,6 +94,7 @@ final class Psalter
     /** @param array<int,string> $argv */
     public static function run(array $argv): void
     {
+        CliUtils::checkRuntimeRequirements();
         gc_collect_cycles();
         gc_disable();
 
@@ -232,6 +233,11 @@ final class Psalter
             Report::TYPE_CONSOLE,
             $first_autoloader
         );
+
+        if (isset($options['no-cache'])) {
+            $config->cache_directory = null;
+        }
+
         $config->setIncludeCollector($include_collector);
 
         if ($config->resolve_from_config_file) {

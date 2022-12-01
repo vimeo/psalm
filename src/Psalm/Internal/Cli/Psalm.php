@@ -165,6 +165,7 @@ final class Psalm
      */
     public static function run(array $argv): void
     {
+        CliUtils::checkRuntimeRequirements();
         gc_collect_cycles();
         gc_disable();
 
@@ -239,6 +240,10 @@ final class Psalm
             $run_taint_analysis,
             $options
         );
+
+        if (isset($options['no-cache'])) {
+            $config->cache_directory = null;
+        }
 
         $config->setIncludeCollector($include_collector);
 
