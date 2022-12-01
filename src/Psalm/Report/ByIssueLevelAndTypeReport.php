@@ -24,7 +24,25 @@ final class ByIssueLevelAndTypeReport extends Report
     {
         $this->sortIssuesByLevelAndType();
 
-        $output = '';
+        $output = <<<HEADING
+        |----------------------------------------------------------------------------------------|
+        |    Issues have been sorted by level and type. Feature-specific issues and the          |
+        |    most serious issues that will always be reported are listed first, with             |
+        |    remaining issues in level order. Issues near the top are usually the most serious.  |
+        |    Reducing the errorLevel in psalm.xml will suppress output of issues further down    |
+        |    this report.                                                                        |
+        |                                                                                        |
+        |    The level at which issue is reported as an error is given in brackets - e.g.        |
+        |    `ERROR (2): MissingReturnType` indicates that MissingReturnType is only reported    |
+        |    as an error when Psalm's level is set to 4 or below.                                |
+        |                                                                                        |
+        |    Issues are shown or hidden in this report according to current settings. For        |
+        |    the most complete report set Psalm's error level to 0 or use --show-info=true       |
+        |    See https://psalm.dev/docs/running_psalm/error_levels/                              |
+        |----------------------------------------------------------------------------------------|
+HEADING;
+
+        ;
 
         foreach ($this->issues_data as $issue_data) {
             $output .= $this->format($issue_data) . "\n" . "\n";
@@ -50,7 +68,8 @@ final class ByIssueLevelAndTypeReport extends Report
 
         $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
 
-        $issue_string .= " ($issue_data->error_level): "
+        $level = $issue_data->error_level;
+        $issue_string .= ($level > 0 ? " ($level): " : ": ")
             . $issue_data->type
             . ' - ' . $this->getFileReference($issue_data)
             . ' - ' . $issue_data->message . $issue_reference . "\n";
@@ -159,22 +178,9 @@ final class ByIssueLevelAndTypeReport extends Report
     private function sortIssuesByLevelAndType(): void
     {
         usort($this->issues_data, function (IssueData $left, IssueData $right): int {
-            $leftLevel = $left->error_level;
-            $rightLevel = $right->error_level;
 
-            if ($leftLevel != $rightLevel) {
-                if ($rightLevel > 0 && $leftLevel > 0) {
-                    return $rightLevel <=> $leftLevel;
-                }
-
-                if ($rightLevel > 0) {
-                    return -1;
-                }
-
-                return $leftLevel <=> $rightLevel;
-            }
-
-            return $left->type <=> $right->type;
+            return [$left->error_level > 0, -$left->error_level, $left->type] <=>
+                [$right->error_level > 0, -$right->error_level, $right->type];
         });
     }
 }

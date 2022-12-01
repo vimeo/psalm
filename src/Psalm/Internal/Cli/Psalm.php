@@ -1262,7 +1262,7 @@ final class Psalm
             --output-format=console
                 Changes the output format.
                 Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube,
-                                   github, phpstorm, codeclimate
+                                   github, phpstorm, codeclimate, by-issue-level
 
             --no-progress
                 Disable the progress indicator
