@@ -1516,6 +1516,7 @@ class TypeCombiner
             || ($combination->array_sometimes_filled && $overwrite_empty_array)
             || ($combination->objectlike_entries
                 && $combination->objectlike_sealed
+                && ($combination->array_min_counts[0] ?? false) !== true
                 && $overwrite_empty_array)
         ) {
             if ($combination->all_arrays_lists) {
