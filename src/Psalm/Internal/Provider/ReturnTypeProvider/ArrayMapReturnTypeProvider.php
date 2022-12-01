@@ -102,7 +102,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 }
             }
 
-            if (count($array_arg_types) === 1) {
+            if (count($orig_types) === 1) {
                 return $orig_types[0];
             }
 
