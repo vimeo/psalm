@@ -943,9 +943,7 @@ class ArrayAssignmentAnalyzer
                 );
             } else {
                 if (!$current_dim) {
-                    $array_assignment_type = new Union([
-                        Type::getListAtomic($current_type),
-                    ]);
+                    $array_assignment_type = Type::getList($current_type);
                 } else {
                     $key_type = $statements_analyzer->node_data->getType($current_dim);
 
