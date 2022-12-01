@@ -2063,6 +2063,22 @@ class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'arrayMapMoreZip' => [
+                'code' => '<?php
+                    $a = array_map(null, []);
+                    $b = array_map(null, [1]);
+                    $c = array_map(null, ["test" => 1]);
+                    $d = array_map(null, [], []);
+                ',
+                'assertions' => [
+                    '$a===' => 'array<never, never>',
+                    '$b===' => 'list{1}',
+                    '$c===' => 'array{test: 1}',
+                    '$d===' => 'array<never, never>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'arrayMapExplicitZip' => [
                 'code' => '<?php
                     $as = ["key"];
