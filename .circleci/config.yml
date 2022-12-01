@@ -22,7 +22,7 @@ jobs:
           keys:
             - composer-v4
 
-      - run: composer update
+      - run: COMPOSER_ROOT_VERSION=dev-master composer update
 
       - save_cache:
           key: composer-v4
