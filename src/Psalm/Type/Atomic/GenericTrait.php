@@ -229,8 +229,6 @@ trait GenericTrait
             );
         }
 
-        assert(count($type_params) === 2);
-
         return $type_params === $this->type_params ? null : $type_params;
     }
 
@@ -255,7 +253,6 @@ trait GenericTrait
 
             $type_params[$offset] = $type_param;
         }
-        assert(count($type_params) === 2);
 
         return $type_params === $this->type_params ? null : $type_params;
     }
