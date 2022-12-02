@@ -1532,7 +1532,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...$x, ...$y];
                 ',
-                'assertions' => ['$x===' => 'list{0?: int, 1?: int, ...<int<0, max>, int>}'],
+                'assertions' => ['$x===' => 'list<int>'],
             ],
             'unpackNonEmptyListIsNotEmpty' => [
                 'code' => '<?php
@@ -1648,7 +1648,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...test(), "a" => "b"];
                 ',
-                'assertions' => ['$x===' => "array{0?: mixed, a: 'b', ...<int<0, max>, mixed>}"],
+                'assertions' => ['$x===' => "array{a: 'b', ...<int<0, max>, mixed>}"],
             ],
             'checkTraversableUnpackTemplatesCorrectly' => [
                 'code' => '<?php
