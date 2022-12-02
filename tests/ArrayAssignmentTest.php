@@ -1543,7 +1543,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...$x, ...$y];
                 ',
-                'assertions' => ['$x===' => 'non-empty-list<int>'],
+                'assertions' => ['$x===' => 'list{int, int, ...<int<0, max>, int>}'],
             ],
             'unpackEmptyKeepsCorrectKeys' => [
                 'code' => '<?php
