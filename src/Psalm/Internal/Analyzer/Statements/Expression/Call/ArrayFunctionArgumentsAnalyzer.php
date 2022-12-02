@@ -506,7 +506,9 @@ class ArrayFunctionArgumentsAnalyzer
                             array_shift($array_properties);
 
                             if (!$array_properties) {
-                                $array_atomic_types []= Type::getListAtomic(Type::getNever());
+                                $array_atomic_types []= $array_atomic_type->fallback_params
+                                    ? Type::getListAtomic($array_atomic_type->fallback_params[1])
+                                    : Type::getListAtomic(Type::getNever());
                             } else {
                                 $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }

@@ -2030,8 +2030,7 @@ class ArrayFunctionCallTest extends TestCase
                         glob(__DIR__ . \'/stubs/DBAL/*.php\'),
                     );',
                 'assertions' => [
-                    // todo: Technically not wrong but stil uglyish
-                    '$a' => 'list{0?: string, 1?: string, ...<int<0, max>, string>}'
+                    '$a' => 'list<string>'
                 ],
             ],
             'arrayReplaceTwoExplicitLists' => [
