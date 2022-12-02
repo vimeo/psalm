@@ -667,6 +667,12 @@ class TypeCombiner
                         $codebase,
                         $overwrite_empty_array
                     );
+                    if ((!$value_type->possibly_undefined || !$candidate_property_type->possibly_undefined)
+                        && $overwrite_empty_array
+                    ) {
+                        $combination->objectlike_entries[$candidate_property_name] =
+                            $combination->objectlike_entries[$candidate_property_name]->setPossiblyUndefined(false);
+                    }
                 }
 
                 if (!$candidate_property_type->possibly_undefined) {
