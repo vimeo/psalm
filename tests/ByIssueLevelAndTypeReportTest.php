@@ -28,48 +28,48 @@ class ByIssueLevelAndTypeReportTest extends TestCase
         $report = new ByIssueLevelAndTypeReport($issuesData, [], $reportOptions);
 
         $this->assertSame(<<<EXPECTED
-|----------------------------------------------------------------------------------------|
-|    Issues have been sorted by level and type. Feature-specific issues and the          |
-|    most serious issues that will always be reported are listed first, with             |
-|    remaining issues in level order. Issues near the top are usually the most serious.  |
-|    Reducing the errorLevel in psalm.xml will suppress output of issues further down    |
-|    this report.                                                                        |
-|                                                                                        |
-|    The level at which issue is reported as an error is given in brackets - e.g.        |
-|    `ERROR (2): MissingReturnType` indicates that MissingReturnType is only reported    |
-|    as an error when Psalm's level is set to 4 or below.                                |
-|                                                                                        |
-|    Issues are shown or hidden in this report according to current settings. For        |
-|    the most complete report set Psalm's error level to 0 or use --show-info=true       |
-|    See https://psalm.dev/docs/running_psalm/error_levels/                              |
-|----------------------------------------------------------------------------------------|
+        |----------------------------------------------------------------------------------------|
+        |    Issues have been sorted by level and type. Feature-specific issues and the          |
+        |    most serious issues that will always be reported are listed first, with             |
+        |    remaining issues in level order. Issues near the top are usually the most serious.  |
+        |    Reducing the errorLevel in psalm.xml will suppress output of issues further down    |
+        |    this report.                                                                        |
+        |                                                                                        |
+        |    The level at which issue is reported as an error is given in brackets - e.g.        |
+        |    `ERROR (2): MissingReturnType` indicates that MissingReturnType is only reported    |
+        |    as an error when Psalm's level is set to 4 or below.                                |
+        |                                                                                        |
+        |    Issues are shown or hidden in this report according to current settings. For        |
+        |    the most complete report set Psalm's error level to 0 or use --show-info=true       |
+        |    See https://psalm.dev/docs/running_psalm/error_levels/                              |
+        |----------------------------------------------------------------------------------------|
 
-ERROR: SomeAlwaysReportedIssueType - file.php:1:1 - message
-
-
-ERROR: SomeFeatureSpecificIssueType - file.php:1:1 - message
+        ERROR: SomeAlwaysReportedIssueType - file.php:1:1 - message
 
 
-ERROR (7): SomeLevel7IssueType - file.php:1:1 - message
+        ERROR: SomeFeatureSpecificIssueType - file.php:1:1 - message
 
 
-ERROR (4): AnotherLevel4IssueType - file.php:1:1 - message
+        ERROR (7): SomeLevel7IssueType - file.php:1:1 - message
 
 
-ERROR (4): SomeLevel4IssueType - file.php:1:1 - message
+        ERROR (4): AnotherLevel4IssueType - file.php:1:1 - message
 
 
-ERROR (4): SomeLevel4IssueType - file.php:1:1 - message
+        ERROR (4): SomeLevel4IssueType - file.php:1:1 - message
 
 
-ERROR (2): SomeLevel2IssueType - file.php:1:1 - message
+        ERROR (4): SomeLevel4IssueType - file.php:1:1 - message
 
 
-ERROR (1): SomeIssueType - file.php:1:1 - message
+        ERROR (2): SomeLevel2IssueType - file.php:1:1 - message
+
+
+        ERROR (1): SomeIssueType - file.php:1:1 - message
 
 
 
-EXPECTED, $report->create());
+        EXPECTED,$report->create());
     }
 
     public function issueData(int $errorLevel, string $type): IssueData
