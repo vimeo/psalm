@@ -29,12 +29,12 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
         $template_provider = $event->getTemplateProvider();
         $arg_type_inferer = $event->getArgTypeInferer();
         $call_args = $event->getArgs();
-        $args_count = count($call_args);
-        $expected_callable_args_count = $args_count - 1;
 
-        if ($expected_callable_args_count < 1) {
+        if (count($call_args) < 2) {
             return null;
         }
+        $args_count = count($call_args);
+        $expected_callable_args_count = $args_count - 1;
 
         $last_arg = $call_args[$args_count - 1];
 
@@ -144,7 +144,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
     /**
      * Extracts return type for custom_array_map from last callable arg.
      *
-     * @param list<TCallable> $all_expected_callables
+     * @param non-empty-list<TCallable> $all_expected_callables
      */
     private static function createReturnType(array $all_expected_callables): Union
     {
