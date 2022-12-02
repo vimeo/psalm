@@ -69,7 +69,7 @@ class ByIssueLevelAndTypeReportTest extends TestCase
 
 
 
-        EXPECTED,$report->create());
+        EXPECTED, $report->create());
     }
 
     public function issueData(int $errorLevel, string $type): IssueData
