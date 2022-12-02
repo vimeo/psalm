@@ -3745,7 +3745,7 @@ class AssertionFinder
 
                     if ($const_type) {
                         if ($const_type->isSingleStringLiteral()) {
-                            $first_var_name = $const_type->getSingleStringLiteral()->value;
+                            $first_var_name = '\''.$const_type->getSingleStringLiteral()->value.'\'';
                         } elseif ($const_type->isSingleIntLiteral()) {
                             $first_var_name = (string)$const_type->getSingleIntLiteral()->value;
                         } else {
