@@ -2352,7 +2352,8 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'assignToListWithAlteredForeachKeyVar' => [
+            // Skipped because the ref-type of array_pop was fixed (list->list)
+            'SKIPPED-assignToListWithAlteredForeachKeyVar' => [
                 'code' => '<?php
                     /**
                      * @param list<string> $list
