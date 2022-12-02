@@ -478,6 +478,9 @@ abstract class Atomic implements TypeNode
         if ($this->hasTraversableInterface($codebase)) {
             if (strtolower($this->value) === "traversable") {
                 if ($this instanceof TGenericObject) {
+                    if (count($this->type_params) > 2) {
+                        throw new InvalidArgumentException('Too many templates!');
+                    }
                     return new TIterable($this->type_params);
                 }
                 return new TIterable([Type::getMixed(), Type::getMixed()]);
@@ -488,6 +491,9 @@ abstract class Atomic implements TypeNode
                 $this,
                 new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
             );
+            if (count($implemented_traversable_templates) > 2) {
+                throw new InvalidArgumentException('Too many templates!');
+            }
             return new TIterable($implemented_traversable_templates);
         }
         throw new InvalidArgumentException("{$this->getId()} is not an iterable");

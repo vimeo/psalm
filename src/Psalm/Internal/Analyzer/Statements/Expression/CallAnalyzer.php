@@ -494,8 +494,6 @@ class CallAnalyzer
      * @param PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat $callable_arg
      *
      * @return list<non-empty-string>
-     *
-     * @psalm-suppress MoreSpecificReturnType
      */
     public static function getFunctionIdsFromCallableArg(
         FileSource $file_source,

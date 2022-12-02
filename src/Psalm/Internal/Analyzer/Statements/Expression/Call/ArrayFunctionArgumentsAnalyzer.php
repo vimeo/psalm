@@ -554,6 +554,7 @@ class ArrayFunctionArgumentsAnalyzer
                             } else {
                                 $properties = $array_atomic_type->properties;
                                 unset($properties[$prop_count-1]);
+                                assert($properties !== []);
                                 $array_atomic_type = $array_atomic_type->setProperties($properties);
                             }
                         } else {
