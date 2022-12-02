@@ -75,6 +75,10 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         if ($function_call_type && $function_call_type->isNull()) {
             array_shift($call_args);
 
+            if (!$call_args) {
+                return Type::getNever();
+            }
+
             $array_arg_types = [];
             $orig_types = [];
 

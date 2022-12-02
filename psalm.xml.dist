@@ -40,7 +40,6 @@
             <directory name="vendor/netresearch/jsonmapper" />
             <directory name="vendor/phpunit" />
             <directory name="vendor/mockery/mockery"/>
-            <directory name="vendor/nikic/php-parser"/>
             <file name="vendor/nikic/php-parser/lib/PhpParser/Node/UnionType.php" />
         </ignoreFiles>
     </projectFiles>
