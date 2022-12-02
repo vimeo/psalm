@@ -6,9 +6,9 @@ Level 1 is the most strict, level 8 is the most lenient.
 
 When no level is explicitly defined, psalm defaults to level 2.
 
-Some issues are [always treated as errors](#always-treated-as-errors). These are issues with a very low probability of false-positives.
+Some issues are always treated as errors. These are issues with a very low probability of false-positives.
 
-At [level 1](#errors-that-only-appear-at-level-1) all issues (except those emitted for opt-in features) that Psalm can find are treated as errors. Those issues include any situation where Psalm cannot infer the type of a given expression.
+At level 1 all issues (except those emitted for opt-in features) that Psalm can find are treated as errors. Those issues include any situation where Psalm cannot infer the type of a given expression.
 
 At level 2 Psalm ignores those `Mixed*` issues, but treats most other issues as errors.
 
@@ -89,6 +89,161 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [UnusedFunctionCall](issues/UnusedFunctionCall.md)
  - [UnusedMethodCall](issues/UnusedMethodCall.md)
 
+## Errors that appear at level 7 and below
+
+- [AbstractInstantiation](issues/AbstractInstantiation.md)
+- [AssignmentToVoid](issues/AssignmentToVoid.md)
+- [CircularReference](issues/CircularReference.md)
+- [ConflictingReferenceConstraint](issues/ConflictingReferenceConstraint.md)
+- [ContinueOutsideLoop](issues/ContinueOutsideLoop.md)
+- [InvalidTypeImport](issues/InvalidTypeImport.md)
+- [MethodSignatureMismatch](issues/MethodSignatureMismatch.md)
+- [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
+- [ParamNameMismatch](issues/ParamNameMismatch.md)
+- [ReservedWord](issues/ReservedWord.md)
+- [UnhandledMatchCondition](issues/UnhandledMatchCondition.md)
+- [UninitializedProperty](issues/UninitializedProperty.md)
+
+## Errors that appear at level 6 and below
+
+- [InvalidArgument](issues/InvalidArgument.md)
+- [InvalidArrayAccess](issues/InvalidArrayAccess.md)
+- [InvalidArrayAssignment](issues/InvalidArrayAssignment.md)
+- [InvalidArrayOffset](issues/InvalidArrayOffset.md)
+- [InvalidCast](issues/InvalidCast.md)
+- [InvalidCatch](issues/InvalidCatch.md)
+- [InvalidClass](issues/InvalidClass.md)
+- [InvalidClone](issues/InvalidClone.md)
+- [InvalidFunctionCall](issues/InvalidFunctionCall.md)
+- [InvalidIterator](issues/InvalidIterator.md)
+- [InvalidMethodCall](issues/InvalidMethodCall.md)
+- [InvalidNamedArgument](issues/InvalidNamedArgument.md)
+- [InvalidPropertyAssignment](issues/InvalidPropertyAssignment.md)
+- [InvalidPropertyAssignmentValue](issues/InvalidPropertyAssignmentValue.md)
+- [InvalidPropertyFetch](issues/InvalidPropertyFetch.md)
+- [InvalidReturnStatement](issues/InvalidReturnStatement.md)
+- [InvalidReturnType](issues/InvalidReturnType.md)
+- [InvalidTemplateParam](issues/InvalidTemplateParam.md)
+- [NullArgument](issues/NullArgument.md)
+- [NullArrayOffset](issues/NullArrayOffset.md)
+- [TooManyTemplateParams](issues/TooManyTemplateParams.md)
+- [TraitMethodSignatureMismatch](issues/TraitMethodSignatureMismatch.md)
+- [UndefinedMethod](issues/UndefinedMethod.md)
+- [UndefinedPropertyAssignment](issues/UndefinedPropertyAssignment.md)
+- [UndefinedPropertyFetch](issues/UndefinedPropertyFetch.md)
+- [UndefinedThisPropertyFetch](issues/UndefinedThisPropertyFetch.md)
+
+## Errors that appear at level 5 and below
+
+- [ConstructorSignatureMismatch](issues/ConstructorSignatureMismatch.md)
+- [FalsableReturnStatement](issues/FalsableReturnStatement.md)
+- [InvalidNullableReturnType](issues/InvalidNullableReturnType.md)
+- [LessSpecificImplementedReturnType](issues/LessSpecificImplementedReturnType.md)
+- [MoreSpecificImplementedParamType](issues/MoreSpecificImplementedParamType.md)
+- [NullableReturnStatement](issues/NullableReturnStatement.md)
+- [UndefinedInterfaceMethod](issues/UndefinedInterfaceMethod.md)
+- [UndefinedThisPropertyAssignment](issues/UndefinedThisPropertyAssignment.md)
+
+## Errors that appear at level 4 and below
+
+- [FalseOperand](issues/FalseOperand.md)
+- [ForbiddenCode](issues/ForbiddenCode.md)
+- [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
+- [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)
+- [ImplicitToStringCast](issues/ImplicitToStringCast.md)
+- [InternalClass](issues/InternalClass.md)
+- [InternalMethod](issues/InternalMethod.md)
+- [InternalProperty](issues/InternalProperty.md)
+- [InvalidDocblock](issues/InvalidDocblock.md)
+- [InvalidLiteralArgument](issues/InvalidLiteralArgument.md)
+- [InvalidOperand](issues/InvalidOperand.md)
+- [InvalidScalarArgument](issues/InvalidScalarArgument.md)
+- [InvalidToString](issues/InvalidToString.md)
+- [MismatchingDocblockParamType](issues/MismatchingDocblockParamType.md)
+- [MismatchingDocblockReturnType](issues/MismatchingDocblockReturnType.md)
+- [MissingDocblockType](issues/MissingDocblockType.md)
+- [NoInterfaceProperties](issues/NoInterfaceProperties.md)
+- [PossibleRawObjectIteration](issues/PossibleRawObjectIteration.md)
+- [RedundantCondition](issues/RedundantCondition.md)
+- [RedundantFunctionCall](issues/RedundantFunctionCall.md)
+- [RedundantPropertyInitializationCheck](issues/RedundantPropertyInitializationCheck.md)
+- [StringIncrement](issues/StringIncrement.md)
+- [TooManyArguments](issues/TooManyArguments.md)
+- [TypeDoesNotContainNull](issues/TypeDoesNotContainNull.md)
+- [TypeDoesNotContainType](issues/TypeDoesNotContainType.md)
+- [UndefinedMagicMethod](issues/UndefinedMagicMethod.md)
+- [UndefinedMagicPropertyAssignment](issues/UndefinedMagicPropertyAssignment.md)
+- [UndefinedMagicPropertyFetch](issues/UndefinedMagicPropertyFetch.md)
+
+## Errors that appear at level 3 and below
+
+- [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
+- [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
+- [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
+- [PossiblyFalseArgument](issues/PossiblyFalseArgument.md)
+- [PossiblyFalseIterator](issues/PossiblyFalseIterator.md)
+- [PossiblyFalseOperand](issues/PossiblyFalseOperand.md)
+- [PossiblyFalsePropertyAssignmentValue](issues/PossiblyFalsePropertyAssignmentValue.md)
+- [PossiblyFalseReference](issues/PossiblyFalseReference.md)
+- [PossiblyInvalidArgument](issues/PossiblyInvalidArgument.md)
+- [PossiblyInvalidArrayAccess](issues/PossiblyInvalidArrayAccess.md)
+- [PossiblyInvalidArrayAssignment](issues/PossiblyInvalidArrayAssignment.md)
+- [PossiblyInvalidArrayOffset](issues/PossiblyInvalidArrayOffset.md)
+- [PossiblyInvalidCast](issues/PossiblyInvalidCast.md)
+- [PossiblyInvalidClone](issues/PossiblyInvalidClone.md)
+- [PossiblyInvalidFunctionCall](issues/PossiblyInvalidFunctionCall.md)
+- [PossiblyInvalidIterator](issues/PossiblyInvalidIterator.md)
+- [PossiblyInvalidMethodCall](issues/PossiblyInvalidMethodCall.md)
+- [PossiblyInvalidOperand](issues/PossiblyInvalidOperand.md)
+- [PossiblyInvalidPropertyAssignment](issues/PossiblyInvalidPropertyAssignment.md)
+- [PossiblyInvalidPropertyAssignmentValue](issues/PossiblyInvalidPropertyAssignmentValue.md)
+- [PossiblyInvalidPropertyFetch](issues/PossiblyInvalidPropertyFetch.md)
+- [PossiblyNullArgument](issues/PossiblyNullArgument.md)
+- [PossiblyNullArrayAccess](issues/PossiblyNullArrayAccess.md)
+- [PossiblyNullArrayAssignment](issues/PossiblyNullArrayAssignment.md)
+- [PossiblyNullArrayOffset](issues/PossiblyNullArrayOffset.md)
+- [PossiblyNullFunctionCall](issues/PossiblyNullFunctionCall.md)
+- [PossiblyNullIterator](issues/PossiblyNullIterator.md)
+- [PossiblyNullPropertyAssignment](issues/PossiblyNullPropertyAssignment.md)
+- [PossiblyNullPropertyAssignmentValue](issues/PossiblyNullPropertyAssignmentValue.md)
+- [PossiblyNullPropertyFetch](issues/PossiblyNullPropertyFetch.md)
+- [PossiblyNullReference](issues/PossiblyNullReference.md)
+- [PossiblyUndefinedArrayOffset](issues/PossiblyUndefinedArrayOffset.md)
+- [PossiblyUndefinedGlobalVariable](issues/PossiblyUndefinedGlobalVariable.md)
+- [PossiblyUndefinedMethod](issues/PossiblyUndefinedMethod.md)
+- [PossiblyUndefinedVariable](issues/PossiblyUndefinedVariable.md)
+- [PropertyTypeCoercion](issues/PropertyTypeCoercion.md)
+- [RiskyCast](issues/RiskyCast.md)
+
+## Errors that appear at level 2 and below
+
+- [DeprecatedClass](issues/DeprecatedClass.md)
+- [DeprecatedConstant](issues/DeprecatedConstant.md)
+- [DeprecatedFunction](issues/DeprecatedFunction.md)
+- [DeprecatedInterface](issues/DeprecatedInterface.md)
+- [DeprecatedMethod](issues/DeprecatedMethod.md)
+- [DeprecatedProperty](issues/DeprecatedProperty.md)
+- [DeprecatedTrait](issues/DeprecatedTrait.md)
+- [DocblockTypeContradiction](issues/DocblockTypeContradiction.md)
+- [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
+- [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
+- [InvalidStringClass](issues/InvalidStringClass.md)
+- [MissingClosureParamType](issues/MissingClosureParamType.md)
+- [MissingClosureReturnType](issues/MissingClosureReturnType.md)
+- [MissingConstructor](issues/MissingConstructor.md)
+- [MissingParamType](issues/MissingParamType.md)
+- [MissingPropertyType](issues/MissingPropertyType.md)
+- [MissingReturnType](issues/MissingReturnType.md)
+- [NullOperand](issues/NullOperand.md)
+- [PropertyNotSetInConstructor](issues/PropertyNotSetInConstructor.md)
+- [RawObjectIteration](issues/RawObjectIteration.md)
+- [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
+- [RedundantFunctionCallGivenDocblockType](issues/RedundantFunctionCallGivenDocblockType.md)
+- [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
+- [UndefinedTrace](issues/UndefinedTrace.md)
+- [UnresolvableInclude](issues/UnresolvableInclude.md)
+- [UnsafeInstantiation](issues/UnsafeInstantiation.md)
+
 ## Errors that only appear at level 1
 
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)
@@ -114,174 +269,6 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [PossiblyNullOperand](issues/PossiblyNullOperand.md)
  - [RedundantIdentityWithTrue](issues/RedundantIdentityWithTrue.md)
  - [Trace](issues/Trace.md)
-
-## Errors ignored at level 3 and higher
-
-These issues are treated as errors at level 2 and below.
-
- - [DeprecatedClass](issues/DeprecatedClass.md)
- - [DeprecatedConstant](issues/DeprecatedConstant.md)
- - [DeprecatedFunction](issues/DeprecatedFunction.md)
- - [DeprecatedInterface](issues/DeprecatedInterface.md)
- - [DeprecatedMethod](issues/DeprecatedMethod.md)
- - [DeprecatedProperty](issues/DeprecatedProperty.md)
- - [DeprecatedTrait](issues/DeprecatedTrait.md)
- - [DocblockTypeContradiction](issues/DocblockTypeContradiction.md)
- - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
- - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
- - [InvalidStringClass](issues/InvalidStringClass.md)
- - [MissingClosureParamType](issues/MissingClosureParamType.md)
- - [MissingClosureReturnType](issues/MissingClosureReturnType.md)
- - [MissingConstructor](issues/MissingConstructor.md)
- - [MissingParamType](issues/MissingParamType.md)
- - [MissingPropertyType](issues/MissingPropertyType.md)
- - [MissingReturnType](issues/MissingReturnType.md)
- - [NullOperand](issues/NullOperand.md)
- - [PropertyNotSetInConstructor](issues/PropertyNotSetInConstructor.md)
- - [RawObjectIteration](issues/RawObjectIteration.md)
- - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
- - [RedundantFunctionCallGivenDocblockType](issues/RedundantFunctionCallGivenDocblockType.md)
- - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
- - [UndefinedTrace](issues/UndefinedTrace.md)
- - [UnresolvableInclude](issues/UnresolvableInclude.md)
- - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
-
-## Errors ignored at level 4 and higher
-
-These issues are treated as errors at level 3 and below.
-
- - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
- - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
- - [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
- - [PossiblyFalseArgument](issues/PossiblyFalseArgument.md)
- - [PossiblyFalseIterator](issues/PossiblyFalseIterator.md)
- - [PossiblyFalseOperand](issues/PossiblyFalseOperand.md)
- - [PossiblyFalsePropertyAssignmentValue](issues/PossiblyFalsePropertyAssignmentValue.md)
- - [PossiblyFalseReference](issues/PossiblyFalseReference.md)
- - [PossiblyInvalidArgument](issues/PossiblyInvalidArgument.md)
- - [PossiblyInvalidArrayAccess](issues/PossiblyInvalidArrayAccess.md)
- - [PossiblyInvalidArrayAssignment](issues/PossiblyInvalidArrayAssignment.md)
- - [PossiblyInvalidArrayOffset](issues/PossiblyInvalidArrayOffset.md)
- - [PossiblyInvalidCast](issues/PossiblyInvalidCast.md)
- - [PossiblyInvalidClone](issues/PossiblyInvalidClone.md)
- - [PossiblyInvalidFunctionCall](issues/PossiblyInvalidFunctionCall.md)
- - [PossiblyInvalidIterator](issues/PossiblyInvalidIterator.md)
- - [PossiblyInvalidMethodCall](issues/PossiblyInvalidMethodCall.md)
- - [PossiblyInvalidOperand](issues/PossiblyInvalidOperand.md)
- - [PossiblyInvalidPropertyAssignment](issues/PossiblyInvalidPropertyAssignment.md)
- - [PossiblyInvalidPropertyAssignmentValue](issues/PossiblyInvalidPropertyAssignmentValue.md)
- - [PossiblyInvalidPropertyFetch](issues/PossiblyInvalidPropertyFetch.md)
- - [PossiblyNullArgument](issues/PossiblyNullArgument.md)
- - [PossiblyNullArrayAccess](issues/PossiblyNullArrayAccess.md)
- - [PossiblyNullArrayAssignment](issues/PossiblyNullArrayAssignment.md)
- - [PossiblyNullArrayOffset](issues/PossiblyNullArrayOffset.md)
- - [PossiblyNullFunctionCall](issues/PossiblyNullFunctionCall.md)
- - [PossiblyNullIterator](issues/PossiblyNullIterator.md)
- - [PossiblyNullPropertyAssignment](issues/PossiblyNullPropertyAssignment.md)
- - [PossiblyNullPropertyAssignmentValue](issues/PossiblyNullPropertyAssignmentValue.md)
- - [PossiblyNullPropertyFetch](issues/PossiblyNullPropertyFetch.md)
- - [PossiblyNullReference](issues/PossiblyNullReference.md)
- - [PossiblyUndefinedArrayOffset](issues/PossiblyUndefinedArrayOffset.md)
- - [PossiblyUndefinedGlobalVariable](issues/PossiblyUndefinedGlobalVariable.md)
- - [PossiblyUndefinedMethod](issues/PossiblyUndefinedMethod.md)
- - [PossiblyUndefinedVariable](issues/PossiblyUndefinedVariable.md)
- - [PropertyTypeCoercion](issues/PropertyTypeCoercion.md)
- - [RiskyCast](issues/RiskyCast.md)
-
-## Errors ignored at level 5 and higher
-
-These issues are treated as errors at level 4 and below.
-
- - [FalseOperand](issues/FalseOperand.md)
- - [ForbiddenCode](issues/ForbiddenCode.md)
- - [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
- - [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)
- - [ImplicitToStringCast](issues/ImplicitToStringCast.md)
- - [InternalClass](issues/InternalClass.md)
- - [InternalMethod](issues/InternalMethod.md)
- - [InternalProperty](issues/InternalProperty.md)
- - [InvalidDocblock](issues/InvalidDocblock.md)
- - [InvalidLiteralArgument](issues/InvalidLiteralArgument.md)
- - [InvalidOperand](issues/InvalidOperand.md)
- - [InvalidScalarArgument](issues/InvalidScalarArgument.md)
- - [InvalidToString](issues/InvalidToString.md)
- - [MismatchingDocblockParamType](issues/MismatchingDocblockParamType.md)
- - [MismatchingDocblockReturnType](issues/MismatchingDocblockReturnType.md)
- - [MissingDocblockType](issues/MissingDocblockType.md)
- - [NoInterfaceProperties](issues/NoInterfaceProperties.md)
- - [PossibleRawObjectIteration](issues/PossibleRawObjectIteration.md)
- - [RedundantCondition](issues/RedundantCondition.md)
- - [RedundantFunctionCall](issues/RedundantFunctionCall.md)
- - [RedundantPropertyInitializationCheck](issues/RedundantPropertyInitializationCheck.md)
- - [StringIncrement](issues/StringIncrement.md)
- - [TooManyArguments](issues/TooManyArguments.md)
- - [TypeDoesNotContainNull](issues/TypeDoesNotContainNull.md)
- - [TypeDoesNotContainType](issues/TypeDoesNotContainType.md)
- - [UndefinedMagicMethod](issues/UndefinedMagicMethod.md)
- - [UndefinedMagicPropertyAssignment](issues/UndefinedMagicPropertyAssignment.md)
- - [UndefinedMagicPropertyFetch](issues/UndefinedMagicPropertyFetch.md)
-
-## Errors ignored at level 6 and higher
-
-These issues are treated as errors at level 5 and below.
-
- - [ConstructorSignatureMismatch](issues/ConstructorSignatureMismatch.md)
- - [FalsableReturnStatement](issues/FalsableReturnStatement.md)
- - [InvalidNullableReturnType](issues/InvalidNullableReturnType.md)
- - [LessSpecificImplementedReturnType](issues/LessSpecificImplementedReturnType.md)
- - [MoreSpecificImplementedParamType](issues/MoreSpecificImplementedParamType.md)
- - [NullableReturnStatement](issues/NullableReturnStatement.md)
- - [UndefinedInterfaceMethod](issues/UndefinedInterfaceMethod.md)
- - [UndefinedThisPropertyAssignment](issues/UndefinedThisPropertyAssignment.md)
-
-## Errors ignored at level 7 and higher
-
-These issues are treated as errors at level 6 and below.
-
- - [InvalidArgument](issues/InvalidArgument.md)
- - [InvalidArrayAccess](issues/InvalidArrayAccess.md)
- - [InvalidArrayAssignment](issues/InvalidArrayAssignment.md)
- - [InvalidArrayOffset](issues/InvalidArrayOffset.md)
- - [InvalidCast](issues/InvalidCast.md)
- - [InvalidCatch](issues/InvalidCatch.md)
- - [InvalidClass](issues/InvalidClass.md)
- - [InvalidClone](issues/InvalidClone.md)
- - [InvalidFunctionCall](issues/InvalidFunctionCall.md)
- - [InvalidIterator](issues/InvalidIterator.md)
- - [InvalidMethodCall](issues/InvalidMethodCall.md)
- - [InvalidNamedArgument](issues/InvalidNamedArgument.md)
- - [InvalidPropertyAssignment](issues/InvalidPropertyAssignment.md)
- - [InvalidPropertyAssignmentValue](issues/InvalidPropertyAssignmentValue.md)
- - [InvalidPropertyFetch](issues/InvalidPropertyFetch.md)
- - [InvalidReturnStatement](issues/InvalidReturnStatement.md)
- - [InvalidReturnType](issues/InvalidReturnType.md)
- - [InvalidTemplateParam](issues/InvalidTemplateParam.md)
- - [NullArgument](issues/NullArgument.md)
- - [NullArrayOffset](issues/NullArrayOffset.md)
- - [TooManyTemplateParams](issues/TooManyTemplateParams.md)
- - [TraitMethodSignatureMismatch](issues/TraitMethodSignatureMismatch.md)
- - [UndefinedMethod](issues/UndefinedMethod.md)
- - [UndefinedPropertyAssignment](issues/UndefinedPropertyAssignment.md)
- - [UndefinedPropertyFetch](issues/UndefinedPropertyFetch.md)
- - [UndefinedThisPropertyFetch](issues/UndefinedThisPropertyFetch.md)
-
-## Errors ignored at level 8
-
-These issues are treated as errors at level 7 and below.
-
- - [AbstractInstantiation](issues/AbstractInstantiation.md)
- - [AssignmentToVoid](issues/AssignmentToVoid.md)
- - [CircularReference](issues/CircularReference.md)
- - [ConflictingReferenceConstraint](issues/ConflictingReferenceConstraint.md)
- - [ContinueOutsideLoop](issues/ContinueOutsideLoop.md)
- - [InvalidTypeImport](issues/InvalidTypeImport.md)
- - [MethodSignatureMismatch](issues/MethodSignatureMismatch.md)
- - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
- - [ParamNameMismatch](issues/ParamNameMismatch.md)
- - [ReservedWord](issues/ReservedWord.md)
- - [UnhandledMatchCondition](issues/UnhandledMatchCondition.md)
- - [UninitializedProperty](issues/UninitializedProperty.md)
-
 
 ## Feature-specific errors
 
