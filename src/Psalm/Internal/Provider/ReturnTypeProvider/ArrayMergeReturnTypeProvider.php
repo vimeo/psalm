@@ -96,6 +96,9 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                         continue;
                     }
 
+                    if ($unpacked_type_part instanceof TKeyedArray && !$all_keyed_arrays) {
+                        $unpacked_type_part = $unpacked_type_part->getGenericArrayType();
+                    }
                     if ($unpacked_type_part instanceof TKeyedArray) {
                         $max_keyed_array_size = max(
                             $max_keyed_array_size,
@@ -107,7 +110,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             if (is_string($key)) {
                                 $all_int_offsets = false;
                             } elseif (!$is_replace) {
-                                if ($unpacking_indefinite_number_of_args) {
+                                if ($unpacking_indefinite_number_of_args || $type->possibly_undefined) {
                                     $added_inner_values = true;
                                     $inner_value_types = array_merge(
                                         $inner_value_types,
