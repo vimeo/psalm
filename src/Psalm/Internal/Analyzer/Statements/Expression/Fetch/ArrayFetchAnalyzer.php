@@ -91,6 +91,7 @@ use function count;
 use function implode;
 use function in_array;
 use function is_int;
+use function is_numeric;
 use function preg_match;
 use function strlen;
 use function strtolower;
