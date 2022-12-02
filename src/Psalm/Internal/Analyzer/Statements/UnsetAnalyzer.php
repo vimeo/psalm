@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Union;
 
 use function count;
+use function is_int;
 
 /**
  * @internal

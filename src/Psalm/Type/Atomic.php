@@ -68,6 +68,7 @@ use Psalm\Type\Atomic\TVoid;
 
 use function array_filter;
 use function array_keys;
+use function count;
 use function get_class;
 use function is_array;
 use function is_numeric;

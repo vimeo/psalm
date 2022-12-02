@@ -23,7 +23,6 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
-use Psalm\Storage\Assertion\HasArrayKey;
 use Psalm\Storage\Assertion\HasIntOrStringArrayAccess;
 use Psalm\Storage\Assertion\HasStringArrayAccess;
 use Psalm\Storage\Assertion\IsEqualIsset;

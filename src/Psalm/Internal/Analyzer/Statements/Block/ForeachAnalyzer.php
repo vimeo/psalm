@@ -61,6 +61,7 @@ use function array_map;
 use function array_merge;
 use function array_search;
 use function array_values;
+use function assert;
 use function in_array;
 use function is_string;
 use function reset;

@@ -40,6 +40,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_pop;
 use function array_shift;
 use function array_unshift;
 use function assert;
