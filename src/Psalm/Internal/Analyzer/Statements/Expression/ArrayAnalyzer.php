@@ -517,9 +517,14 @@ class ArrayAnalyzer
     ): void {
         $all_non_empty = true;
 
+        $has_possibly_undefined = false;
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
+                    if ($property_value->possibly_undefined) {
+                        $has_possibly_undefined = true;
+                        continue;
+                    }
                     if (is_string($key)) {
                         if ($codebase->analysis_php_version_id <= 8_00_00) {
                             IssueBuffer::maybeAdd(
@@ -548,7 +553,9 @@ class ArrayAnalyzer
                     $all_non_empty = false;
                 }
 
-                if (!$unpacked_atomic_type->fallback_params) {
+                if ($has_possibly_undefined) {
+                    $unpacked_atomic_type = $unpacked_atomic_type->getGenericArrayType();
+                } elseif (!$unpacked_atomic_type->fallback_params) {
                     continue;
                 }
             } elseif (!$unpacked_atomic_type instanceof TNonEmptyArray) {

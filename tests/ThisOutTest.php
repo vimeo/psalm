@@ -55,7 +55,6 @@ class ThisOutTest extends TestCase
                          * @psalm-this-out self<NewT>
                          */
                         public function setData($data): void {
-                            /** @psalm-suppress InvalidPropertyAssignmentValue */
                             $this->data = [$data];
                         }
                         /**
@@ -65,7 +64,6 @@ class ThisOutTest extends TestCase
                          * @psalm-this-out self<T|NewT>
                          */
                         public function addData($data): void {
-                            /** @psalm-suppress PropertyTypeCoercion,InvalidPropertyAssignmentValue */
                             $this->data []= $data;
                         }
                         /**
@@ -85,6 +83,10 @@ class ThisOutTest extends TestCase
                     '$data1===' => 'list<1>',
                     '$data2===' => 'list<2>',
                     '$data3===' => 'list<2|3>',
+                ],
+                'ignored_issues' => [
+                    'PropertyTypeCoercion',
+                    'InvalidPropertyAssignmentValue'
                 ]
             ]
         ];
