@@ -904,7 +904,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>|null',
+                    '$a===' => 'list{4}|null',
                 ],
             ],
             'assignArrayOrSetNullInElseIf' => [

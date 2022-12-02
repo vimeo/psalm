@@ -1232,6 +1232,8 @@ class AssignmentAnalyzer
                             );
 
                             $value_type = $value_type->setPossiblyUndefined(false);
+                        } else {
+                            $can_be_empty = false;
                         }
 
                         if ($statements_analyzer->data_flow_graph

@@ -226,7 +226,6 @@ class ArrayFunctionArgumentsAnalyzer
                 if ($array_type->is_list) {
                     $objectlike_list = $array_type;
                 }
-                $array_type = $array_type->getGenericArrayType();
             }
 
             $by_ref_type = new Union([$array_type]);
