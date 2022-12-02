@@ -69,6 +69,7 @@ use function preg_match;
 use function preg_quote;
 use function str_replace;
 use function str_split;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;

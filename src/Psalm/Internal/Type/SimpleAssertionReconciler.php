@@ -80,6 +80,7 @@ use function count;
 use function explode;
 use function get_class;
 use function min;
+use function strlen;
 use function strpos;
 use function strtolower;
 
