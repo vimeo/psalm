@@ -516,9 +516,7 @@ class ArrayAssignmentAnalyzer
                 && $parent_var_id
                 && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)
             ) {
-                if ($parent_type->hasList()) {
-                    $array_atomic_type_list = $value_type;
-                } elseif ($parent_type->hasClassStringMap()
+                if ($parent_type->hasClassStringMap()
                     && $key_type
                     && $key_type->isTemplatedClassString()
                 ) {
