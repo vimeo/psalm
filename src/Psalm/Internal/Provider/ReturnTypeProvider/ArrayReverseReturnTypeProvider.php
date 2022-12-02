@@ -34,6 +34,7 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
         }
 
         $first_arg = $call_args[0]->value ?? null;
+        $first_arg_type = null;
 
         $first_arg_array = $first_arg
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))

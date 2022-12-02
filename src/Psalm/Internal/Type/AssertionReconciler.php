@@ -719,7 +719,7 @@ class AssertionReconciler extends Reconciler
                 }
             }
 
-            /** @psalm-suppress ArgumentTypeCoercion */
+            /** @psalm-suppress InvalidArgument */
             $type_1_atomic = $type_1_atomic->setTypeParams(
                 $type_1_params
             );

@@ -99,19 +99,10 @@ class ArrayTypeComparator
 
         if ($container_type_part instanceof TKeyedArray
             && $container_type_part->is_list
-            && $input_type_part instanceof TArray
-            && $input_type_part->isEmptyArray()
-        ) {
-            return !$container_type_part->isNonEmpty();
-        }
-
-        if ($container_type_part instanceof TKeyedArray
-            && $container_type_part->is_list
             && $container_type_part->isNonEmpty()
             && $input_type_part instanceof TNonEmptyArray
             && $input_type_part->type_params[0]->isSingleIntLiteral()
             && $input_type_part->type_params[0]->getSingleIntLiteral()->value === 0
-            && isset($input_type_part->type_params[1])
         ) {
             //this is a special case where the only offset value of an non empty array is 0, so it's a non empty list
             return UnionTypeComparator::isContainedBy(

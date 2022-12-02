@@ -1022,9 +1022,11 @@ class AssertionFinder
                     $property = $exploded_id[1] ?? null;
 
                     if (is_numeric($var_id) && null !== $property && !$is_function) {
+                        $var_id_int = (int) $var_id;
+                        assert($var_id_int >= 0);
                         $args = $expr->getArgs();
 
-                        if (!array_key_exists($var_id, $args)) {
+                        if (!array_key_exists($var_id_int, $args)) {
                             IssueBuffer::maybeAdd(
                                 new InvalidDocblock(
                                     'Variable '.$var_id.' is not an argument so cannot be asserted',
@@ -1034,7 +1036,7 @@ class AssertionFinder
                             continue;
                         }
 
-                        $arg_value = $args[$var_id]->value;
+                        $arg_value = $args[$var_id_int]->value;
                         assert($arg_value instanceof PhpParser\Node\Expr\Variable);
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);

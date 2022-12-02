@@ -495,7 +495,6 @@ class CallAnalyzer
      *
      * @return list<non-empty-string>
      *
-     * @psalm-suppress LessSpecificReturnStatement
      * @psalm-suppress MoreSpecificReturnType
      */
     public static function getFunctionIdsFromCallableArg(
@@ -511,9 +510,9 @@ class CallAnalyzer
                 && $callable_arg->right instanceof PhpParser\Node\Scalar\String_
                 && preg_match('/^::[A-Za-z0-9]+$/', $callable_arg->right->value)
             ) {
-                return [
-                    (string) $callable_arg->left->class->getAttribute('resolvedName') . $callable_arg->right->value
-                ];
+                $r = (string) $callable_arg->left->class->getAttribute('resolvedName') . $callable_arg->right->value;
+                assert($r !== '');
+                return [$r];
             }
 
             return [];
@@ -523,6 +522,7 @@ class CallAnalyzer
             $potential_id = preg_replace('/^\\\/', '', $callable_arg->value, 1);
 
             if (preg_match('/^[A-Za-z0-9_]+(\\\[A-Za-z0-9_]+)*(::[A-Za-z0-9_]+)?$/', $potential_id)) {
+                assert($potential_id !== '');
                 return [$potential_id];
             }
 

@@ -83,7 +83,7 @@ class UnsetAnalyzer
                                 }
                                 unset($properties[$key_value]);
 
-                                if ($atomic_root_type->is_list && !$is_list) {
+                                if ($atomic_root_type->is_list && !$is_list && is_int($key_value)) {
                                     if ($key_value === 0) {
                                         $list_key = new Union([new TIntRange(1, null)]);
                                     } elseif ($key_value === 1) {
@@ -99,7 +99,6 @@ class UnsetAnalyzer
                                     }
                                 }
 
-                                /** @psalm-suppress DocblockTypeContradiction https://github.com/vimeo/psalm/issues/8518 */
                                 if (!$properties) {
                                     if ($atomic_root_type->fallback_params) {
                                         $root_types [] =
