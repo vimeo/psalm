@@ -1104,7 +1104,7 @@ class Analyzer
     }
 
     /**
-     * @return array{0:int, 1:int}
+     * @return list{int, int}
      */
     public function getMixedCountsForFile(string $file_path): array
     {

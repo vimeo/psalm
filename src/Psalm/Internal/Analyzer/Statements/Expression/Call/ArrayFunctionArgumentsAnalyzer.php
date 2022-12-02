@@ -512,14 +512,27 @@ class ArrayFunctionArgumentsAnalyzer
                             if (!$array_properties) {
                                 $array_atomic_types []= $array_atomic_type->fallback_params
                                     ? Type::getListAtomic($array_atomic_type->fallback_params[1])
-                                    : Type::getListAtomic(Type::getNever());
+                                    : Type::getEmptyArrayAtomic();
+                            } else {
+                                $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
+                            }
+                            continue;
+                        } elseif ($array_atomic_type->is_list && !$array_atomic_type->fallback_params) {
+                            $array_properties = $array_atomic_type->properties;
+
+                            array_pop($array_properties);
+
+                            if (!$array_properties) {
+                                $array_atomic_types []= Type::getEmptyArrayAtomic();
                             } else {
                                 $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }
                             continue;
                         }
 
-                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                        $array_atomic_type = $array_atomic_type->is_list
+                            ? Type::getListAtomic($array_atomic_type->getGenericValueType())
+                            : $array_atomic_type->getGenericArrayType();
                     }
 
                     if ($array_atomic_type instanceof TNonEmptyArray) {

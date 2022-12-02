@@ -426,16 +426,20 @@ abstract class Type
      */
     public static function getEmptyArray(): Union
     {
-        $array_type = new TArray(
+        return new Union([self::getEmptyArrayAtomic()]);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getEmptyArrayAtomic(): TArray
+    {
+        return new TArray(
             [
                 new Union([new TNever()]),
                 new Union([new TNever()]),
             ]
         );
-
-        return new Union([
-            $array_type,
-        ]);
     }
 
     /**

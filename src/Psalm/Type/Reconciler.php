@@ -497,7 +497,7 @@ class Reconciler
                     }
                 }
 
-                if ($type[0][0] instanceof ArrayKeyExists) {
+                /*if ($type[0][0] instanceof ArrayKeyExists) {
                     $key_parts = self::breakUpPathIntoParts($nk);
 
                     if (count($key_parts) === 4
@@ -513,7 +513,7 @@ class Reconciler
                             }
                         }
                     }
-                }
+                }*/
             }
         }
 
