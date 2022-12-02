@@ -91,8 +91,6 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 
 ## Errors that appear at level 7 and below
 
-These issues are treated as errors at level 7 and below.
-
 - [AbstractInstantiation](issues/AbstractInstantiation.md)
 - [AssignmentToVoid](issues/AssignmentToVoid.md)
 - [CircularReference](issues/CircularReference.md)
@@ -107,8 +105,6 @@ These issues are treated as errors at level 7 and below.
 - [UninitializedProperty](issues/UninitializedProperty.md)
 
 ## Errors that appear at level 6 and below
-
-These issues are treated as errors at level 6 and below.
 
 - [InvalidArgument](issues/InvalidArgument.md)
 - [InvalidArrayAccess](issues/InvalidArrayAccess.md)
@@ -139,8 +135,6 @@ These issues are treated as errors at level 6 and below.
 
 ## Errors that appear at level 5 and below
 
-These issues are treated as errors at level 5 and below.
-
 - [ConstructorSignatureMismatch](issues/ConstructorSignatureMismatch.md)
 - [FalsableReturnStatement](issues/FalsableReturnStatement.md)
 - [InvalidNullableReturnType](issues/InvalidNullableReturnType.md)
@@ -151,8 +145,6 @@ These issues are treated as errors at level 5 and below.
 - [UndefinedThisPropertyAssignment](issues/UndefinedThisPropertyAssignment.md)
 
 ## Errors that appear at level 4 and below
-
-These issues are treated as errors at level 4 and below.
 
 - [FalseOperand](issues/FalseOperand.md)
 - [ForbiddenCode](issues/ForbiddenCode.md)
@@ -184,8 +176,6 @@ These issues are treated as errors at level 4 and below.
 - [UndefinedMagicPropertyFetch](issues/UndefinedMagicPropertyFetch.md)
 
 ## Errors that appear at level 3 and below
-
-These issues are treated as errors at level 3 and below.
 
 - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
 - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
@@ -226,8 +216,6 @@ These issues are treated as errors at level 3 and below.
 - [RiskyCast](issues/RiskyCast.md)
 
 ## Errors that appear at level 2 and below
-
-These issues are treated as errors at level 2 and below.
 
 - [DeprecatedClass](issues/DeprecatedClass.md)
 - [DeprecatedConstant](issues/DeprecatedConstant.md)
