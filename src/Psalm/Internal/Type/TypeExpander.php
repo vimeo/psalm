@@ -541,7 +541,7 @@ class TypeExpander
             }
             unset($property_type);
             $fallback_params = $return_type->fallback_params;
-            if ($return_type->fallback_params) {
+            if ($fallback_params) {
                 foreach ($fallback_params as $k => $property_type) {
                     $property_type = self::expandUnion(
                         $codebase,

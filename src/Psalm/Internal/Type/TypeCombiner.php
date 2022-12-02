@@ -459,7 +459,7 @@ class TypeCombiner
             } else {
                 foreach ($combination->array_type_params as $i => $array_type_param) {
                     $iterable_type_param = $combination->builtin_type_params['iterable'][$i];
-                    /** @psalm-suppress PropertyTypeCoercion */
+                    /** @psalm-suppress InvalidPropertyAssignmentValue */
                     $combination->builtin_type_params['iterable'][$i] = Type::combineUnionTypes(
                         $iterable_type_param,
                         $array_type_param
@@ -480,7 +480,7 @@ class TypeCombiner
             } elseif (isset($combination->builtin_type_params['Traversable'])) {
                 foreach ($combination->builtin_type_params['Traversable'] as $i => $array_type_param) {
                     $iterable_type_param = $combination->builtin_type_params['iterable'][$i];
-                    /** @psalm-suppress PropertyTypeCoercion */
+                    /** @psalm-suppress InvalidPropertyAssignmentValue */
                     $combination->builtin_type_params['iterable'][$i] = Type::combineUnionTypes(
                         $iterable_type_param,
                         $array_type_param
@@ -526,7 +526,7 @@ class TypeCombiner
             }
 
             foreach ($type->type_params as $i => $type_param) {
-                /** @psalm-suppress PropertyTypeCoercion */
+                /** @psalm-suppress InvalidPropertyAssignmentValue */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
@@ -575,7 +575,7 @@ class TypeCombiner
 
         if ($type instanceof TClassStringMap) {
             foreach ([$type->getStandinKeyParam(), $type->value_param] as $i => $type_param) {
-                /** @psalm-suppress PropertyTypeCoercion */
+                /** @psalm-suppress InvalidPropertyAssignmentValue */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
@@ -600,7 +600,7 @@ class TypeCombiner
             || ($type instanceof TArray && $type_key === 'iterable')
         ) {
             foreach ($type->type_params as $i => $type_param) {
-                /** @psalm-suppress PropertyTypeCoercion */
+                /** @psalm-suppress InvalidPropertyAssignmentValue */
                 $combination->builtin_type_params[$type_key][$i] = Type::combineUnionTypes(
                     $combination->builtin_type_params[$type_key][$i] ?? null,
                     $type_param,
@@ -614,7 +614,7 @@ class TypeCombiner
 
         if ($type instanceof TGenericObject) {
             foreach ($type->type_params as $i => $type_param) {
-                /** @psalm-suppress PropertyTypeCoercion */
+                /** @psalm-suppress InvalidPropertyAssignmentValue */
                 $combination->object_type_params[$type_key][$i] = Type::combineUnionTypes(
                     $combination->object_type_params[$type_key][$i] ?? null,
                     $type_param,
@@ -1487,6 +1487,7 @@ class TypeCombiner
                     for ($x = 0; $x < $cnt; $x++) {
                         $properties []= $generic_type_params[1];
                     }
+                    assert($properties !== []);
                     $array_type = new TKeyedArray(
                         $properties,
                         null,
