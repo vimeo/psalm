@@ -34,7 +34,7 @@ final class ByIssueLevelAndTypeReport extends Report
 |                                                                                        |
 |    The level at which issue is reported as an error is given in brackets - e.g.        |
 |    `ERROR (2): MissingReturnType` indicates that MissingReturnType is only reported    |
-|    as an error when Psalm's level is set to 4 or below.                                |
+|    as an error when Psalm's level is set to 2 or below.                                |
 |                                                                                        |
 |    Issues are shown or hidden in this report according to current settings. For        |
 |    the most complete report set Psalm's error level to 0 or use --show-info=true       |
