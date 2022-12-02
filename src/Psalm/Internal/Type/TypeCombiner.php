@@ -184,6 +184,8 @@ class TypeCombiner
                 $combined_param_types[] = Type::combineUnionTypes($array_param_type, $traversable_param_types[$i]);
             }
 
+            assert(count($combined_param_types) <= 2);
+
             $combination->value_types['iterable'] = new TIterable($combined_param_types);
 
             $combination->array_type_params = [];
@@ -236,6 +238,7 @@ class TypeCombiner
 
         foreach ($combination->builtin_type_params as $generic_type => $generic_type_params) {
             if ($generic_type === 'iterable') {
+                assert(count($generic_type_params) <= 2);
                 $new_types[] = new TIterable($generic_type_params);
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
