@@ -1413,6 +1413,8 @@ class AssignmentAnalyzer
                                 );
 
                                 $new_assign_type = $new_assign_type->setPossiblyUndefined(false);
+                            } else {
+                                $can_be_empty = false;
                             }
                         } elseif (!$assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                             && $assign_value_atomic_type->is_list

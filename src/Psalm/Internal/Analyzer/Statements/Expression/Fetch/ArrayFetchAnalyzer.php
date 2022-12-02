@@ -1358,8 +1358,20 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if (!$stmt->dim && $type instanceof TNonEmptyArray && $type->count !== null) {
-            $type = $type->setCount($type->count+1);
+        if (!$stmt->dim) {
+            if ($type instanceof TNonEmptyArray) {
+                if ($type->count !== null) {
+                    $type = $type->setCount($type->count+1);
+                }
+            } else {
+                $type = new TNonEmptyArray(
+                    $type->type_params,
+                    null,
+                    null,
+                    'non-empty-array',
+                    $type->from_docblock
+                );
+            }
         }
 
         $array_access_type = Type::combineUnionTypes(

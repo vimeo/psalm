@@ -65,7 +65,7 @@ class ThisOutTest extends TestCase
                          * @psalm-this-out self<T|NewT>
                          */
                         public function addData($data): void {
-                            /** @psalm-suppress InvalidPropertyAssignmentValue */
+                            /** @psalm-suppress InvalidPropertyAssignmentValue,PropertyTypeCoercion */
                             $this->data []= $data;
                         }
                         /**
