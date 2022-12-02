@@ -23,6 +23,7 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\HasArrayKey;
 use Psalm\Storage\Assertion\HasIntOrStringArrayAccess;
 use Psalm\Storage\Assertion\HasStringArrayAccess;
 use Psalm\Storage\Assertion\IsEqualIsset;
@@ -496,13 +497,14 @@ class Reconciler
                     }
                 }
 
-                /*if ($type[0][0] instanceof ArrayKeyExists) {
+                if ($type[0][0] instanceof ArrayKeyExists) {
                     $key_parts = self::breakUpPathIntoParts($nk);
 
                     if (count($key_parts) === 4
                         && $key_parts[1] === '['
                         && $key_parts[2][0] !== '\''
                         && !is_numeric($key_parts[2])
+                        && strpos($key_parts[2], '::class') === (strlen($key_parts[2])-7)
                     ) {
                         if ($key_parts[0][0] === '$') {
                             if (isset($new_types[$key_parts[0]])) {
@@ -512,7 +514,7 @@ class Reconciler
                             }
                         }
                     }
-                }*/
+                }
             }
         }
 

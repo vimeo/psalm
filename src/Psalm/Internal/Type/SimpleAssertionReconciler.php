@@ -75,6 +75,7 @@ use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
+use function assert;
 use function count;
 use function explode;
 use function get_class;
@@ -1903,34 +1904,21 @@ class SimpleAssertionReconciler extends Reconciler
         $types = $existing_var_type->getAtomicTypes();
         foreach ($types as &$atomic_type) {
             if ($atomic_type instanceof TKeyedArray) {
-                $is_class_string = false;
+                assert(strpos($assertion, '::class') === (strlen($assertion)-7));
+                [$assertion] = explode('::', $assertion);
 
-                if (strpos($assertion, '::class')) {
-                    [$assertion] = explode('::', $assertion);
-                    $is_class_string = true;
-                }
-
-                if (isset($atomic_type->properties[$assertion])) {
-                    $atomic_type = $atomic_type->setProperties(array_merge(
+                $atomic_type = new TKeyedArray(
+                    array_merge(
                         $atomic_type->properties,
-                        [
-                            $assertion => $atomic_type->properties[$assertion]->setPossiblyUndefined(false)
-                        ]
-                    ));
-                } else {
-                    $atomic_type = new TKeyedArray(
-                        array_merge(
-                            $atomic_type->properties,
-                            [$assertion => Type::getMixed()]
-                        ),
-                        $is_class_string ? array_merge(
-                            $atomic_type->class_strings ?? [],
-                            [$assertion => true]
-                        ) : $atomic_type->class_strings,
-                        $atomic_type->fallback_params,
-                        $atomic_type->is_list
-                    );
-                }
+                        [$assertion => Type::getMixed()]
+                    ),
+                    array_merge(
+                        $atomic_type->class_strings ?? [],
+                        [$assertion => true]
+                    ),
+                    $atomic_type->fallback_params,
+                    $atomic_type->is_list
+                );
             }
         }
         unset($atomic_type);
