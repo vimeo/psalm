@@ -1316,6 +1316,8 @@ class TypeCombiner
 
             if ($combination->objectlike_value_type
                 && $combination->objectlike_value_type->isMixed()
+                && $combination->array_type_params
+                && !$combination->array_type_params[1]->isNever()
             ) {
                 $combination->objectlike_entries = array_filter(
                     $combination->objectlike_entries,
