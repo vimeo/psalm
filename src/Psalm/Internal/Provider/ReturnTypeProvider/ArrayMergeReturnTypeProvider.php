@@ -107,6 +107,9 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
 
                         $added_inner_values = false;
                         foreach ($unpacked_type_part->properties as $key => $type) {
+                            if (!$type->possibly_undefined && !$unpacking_possibly_empty) {
+                                $any_nonempty = true;
+                            }
                             if (is_string($key)) {
                                 $all_int_offsets = false;
                             } elseif (!$is_replace) {
@@ -152,11 +155,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             $inner_key_types []= new TInt;
                         }
 
-                        if ($unpacked_type_part->fallback_params === null) {
-                            if (!$unpacking_possibly_empty) {
-                                $any_nonempty = true;
-                            }
-                        } else {
+                        if ($unpacked_type_part->fallback_params !== null) {
                             $all_keyed_arrays = false;
                             $inner_value_types = array_merge(
                                 $inner_value_types,

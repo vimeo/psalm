@@ -87,9 +87,15 @@ class UnsetAnalyzer
                                     if ($key_value === 0) {
                                         $list_key = new Union([new TIntRange(1, null)]);
                                     } elseif ($key_value === 1) {
-                                        $list_key = new Union([new TLiteralInt(0), new TIntRange(2, null)]);
+                                        $list_key = new Union([
+                                            new TLiteralInt(0),
+                                            new TIntRange(2, null)
+                                        ]);
                                     } else {
-                                        $list_key = new Union([new TIntRange(0, $key_value-1), new TIntRange($key_value+1, null)]);
+                                        $list_key = new Union([
+                                            new TIntRange(0, $key_value-1),
+                                            new TIntRange($key_value+1, null)
+                                        ]);
                                     }
                                 }
 

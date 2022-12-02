@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TValueOf;
 
 use function array_merge;
 use function array_values;
+use function assert;
 use function count;
 use function get_class;
 use function strtolower;
@@ -540,10 +541,6 @@ class AtomicTypeComparator
                 foreach ($input_type_part->type_params as $i => $input_param) {
                     $container_param_offset = $i - (2 - count($container_type_part->type_params));
 
-                    if ($container_param_offset === -1) {
-                        continue;
-                    }
-
                     $container_param = $container_type_part->type_params[$container_param_offset];
 
                     if ($i === 0
@@ -729,6 +726,9 @@ class AtomicTypeComparator
         return $input_type_part->getKey() === $container_type_part->getKey();
     }
 
+    /**
+     * @psalm-assert-if-true TKeyedArray $array
+     */
     public static function isLegacyTListLike(Atomic $array): bool
     {
         return $array instanceof TKeyedArray
@@ -739,6 +739,9 @@ class AtomicTypeComparator
             && $array->properties[0]->equals($array->fallback_params[1], true, true, false)
         ;
     }
+    /**
+     * @psalm-assert-if-true TKeyedArray $array
+     */
     public static function isLegacyTNonEmptyListLike(Atomic $array): bool
     {
         return $array instanceof TKeyedArray
@@ -763,6 +766,8 @@ class AtomicTypeComparator
             || (self::isLegacyTListLike($type2_part)
                 && self::isLegacyTNonEmptyListLike($type1_part))
         ) {
+            assert($type1_part->fallback_params !== null);
+            assert($type2_part->fallback_params !== null);
             return UnionTypeComparator::canExpressionTypesBeIdentical(
                 $codebase,
                 $type1_part->fallback_params[1],
