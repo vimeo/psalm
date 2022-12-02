@@ -564,15 +564,18 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                                 $properties []= $array_atomic_type->properties[$x]
                                     ?? $array_atomic_type->fallback_params[1]->setPossiblyUndefined(true);
                             }
-                            assert($properties !== []);
                             $existing_var_type->removeType('array');
-                            $existing_var_type->addType(new TKeyedArray(
-                                $properties,
-                                null,
-                                null,
-                                true,
-                                $array_atomic_type->from_docblock
-                            ));
+                            if (!$properties) {
+                                $existing_var_type->addType(Type::getEmptyArrayAtomic());
+                            } else {
+                                $existing_var_type->addType(new TKeyedArray(
+                                    $properties,
+                                    null,
+                                    null,
+                                    true,
+                                    $array_atomic_type->from_docblock
+                                ));
+                            }
                         }
                         $redundant = false;
                     }
