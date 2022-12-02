@@ -681,6 +681,9 @@ class TypeParser
         }
 
         if ($generic_type_value === 'iterable') {
+            if (count($generic_params) > 2) {
+                throw new TypeParseTreeException('Too many template parameters for iterable');
+            }
             return new TIterable($generic_params, [], $from_docblock);
         }
 

@@ -53,7 +53,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
     /** @var PhpParser\ErrorHandler\Collecting */
     private $error_handler;
 
-    /** @param array<int, array{int, int, int, int, int, string}> $offset_map */
+    /** @param array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map */
     public function __construct(
         PhpParser\Parser $parser,
         PhpParser\ErrorHandler\Collecting $error_handler,

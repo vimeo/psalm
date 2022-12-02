@@ -398,6 +398,7 @@ class TKeyedArray extends Atomic
         if ($this->is_list) {
             foreach ($this->properties as $k => $property) {
                 if ($property->possibly_undefined) {
+                    /** @var int<0, max> */
                     return $k;
                 }
             }

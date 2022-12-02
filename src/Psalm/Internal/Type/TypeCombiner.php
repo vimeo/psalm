@@ -526,7 +526,6 @@ class TypeCombiner
             }
 
             foreach ($type->type_params as $i => $type_param) {
-                /** @psalm-suppress InvalidPropertyAssignmentValue */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
