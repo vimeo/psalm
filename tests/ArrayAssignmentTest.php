@@ -114,7 +114,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'list<int>',
+                    '$out' => 'list{0?: int}',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitch' => [
@@ -1532,7 +1532,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...$x, ...$y];
                 ',
-                'assertions' => ['$x===' => 'list<int>'],
+                'assertions' => ['$x===' => 'list{0?: int, 1?: int, ...<int<0, max>, int>}'],
             ],
             'unpackNonEmptyListIsNotEmpty' => [
                 'code' => '<?php
@@ -1648,7 +1648,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...test(), "a" => "b"];
                 ',
-                'assertions' => ['$x===' => "array{a: 'b', ...<int<0, max>, mixed>}"],
+                'assertions' => ['$x===' => "array{0?: mixed, a: 'b', ...<int<0, max>, mixed>}"],
             ],
             'checkTraversableUnpackTemplatesCorrectly' => [
                 'code' => '<?php
@@ -2350,7 +2350,7 @@ class ArrayAssignmentTest extends TestCase
 
                         return $list;
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'assignToListWithAlteredForeachKeyVar' => [
                 'code' => '<?php
@@ -2369,7 +2369,7 @@ class ArrayAssignmentTest extends TestCase
 
                         return $list;
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'createArrayWithMixedOffset' => [
                 'code' => '<?php
