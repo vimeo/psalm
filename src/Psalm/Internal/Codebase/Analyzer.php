@@ -1116,7 +1116,7 @@ class Analyzer
     }
 
     /**
-     * @param  array{0:int, 1:int} $mixed_counts
+     * @param  list{int, int} $mixed_counts
      *
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void

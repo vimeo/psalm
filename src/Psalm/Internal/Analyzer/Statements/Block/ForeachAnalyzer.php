@@ -957,7 +957,8 @@ class ForeachAnalyzer
     ): void {
         if ($iterator_atomic_type instanceof TIterable
             || ($iterator_atomic_type instanceof TGenericObject
-                && strtolower($iterator_atomic_type->value) === 'traversable')
+                && strtolower($iterator_atomic_type->value) === 'traversable'
+                && isset($iterator_atomic_type->type_params[1]))
         ) {
             $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
             $key_type = Type::combineUnionTypes($key_type, $iterator_atomic_type->type_params[0]);

@@ -1246,7 +1246,6 @@ class ArgumentAnalyzer
                             $function_id_parts = explode('&', $function_id);
 
                             $non_existent_method_ids = [];
-                            $has_valid_method = false;
 
                             foreach ($function_id_parts as $function_id_part) {
                                 [$callable_fq_class_name, $method_name] = explode('::', $function_id_part);
@@ -1299,12 +1298,10 @@ class ArgumentAnalyzer
                                     && !$codebase->methods->methodExists($call_method_id)
                                 ) {
                                     $non_existent_method_ids[] = $function_id_part;
-                                } else {
-                                    $has_valid_method = true;
                                 }
                             }
 
-                            if (!$has_valid_method && !$param_type->hasString() && !$param_type->hasArray()) {
+                            if ($non_existent_method_ids && !$param_type->hasString() && !$param_type->hasArray()) {
                                 if (MethodAnalyzer::checkMethodExists(
                                     $codebase,
                                     $non_existent_method_ids[0],
