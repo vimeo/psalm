@@ -504,7 +504,9 @@ class ArrayFunctionArgumentsAnalyzer
 
                 foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
                     if ($array_atomic_type instanceof TKeyedArray) {
-                        if ($is_array_shift && $array_atomic_type->is_list) {
+                        if ($is_array_shift && $array_atomic_type->is_list
+                            && !$context->inside_loop
+                        ) {
                             $array_properties = $array_atomic_type->properties;
 
                             array_shift($array_properties);
@@ -517,7 +519,10 @@ class ArrayFunctionArgumentsAnalyzer
                                 $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }
                             continue;
-                        } elseif ($array_atomic_type->is_list && !$array_atomic_type->fallback_params) {
+                        } elseif (!$is_array_shift && $array_atomic_type->is_list
+                            && !$array_atomic_type->fallback_params
+                            && !$context->inside_loop
+                        ) {
                             $array_properties = $array_atomic_type->properties;
 
                             array_pop($array_properties);
