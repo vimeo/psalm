@@ -1444,8 +1444,6 @@ class AssignmentAnalyzer
                                 $temp
                             );
                         }
-
-                        $can_be_empty = !$assign_value_atomic_type->isNonEmpty();
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
                         ForeachAnalyzer::getKeyValueParamsForTraversableObject(
                             $assign_value_atomic_type,
