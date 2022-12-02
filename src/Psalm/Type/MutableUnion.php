@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
@@ -132,6 +133,16 @@ final class MutableUnion implements TypeNode, Stringable
     public $possibly_undefined_from_try = false;
 
     /**
+     * whether this type had never set explicitly
+     * since it's the bottom type, it's combined into everything else and lost
+     *
+     * @psalm-suppress PossiblyUnusedProperty used in setTypes and addType
+     *
+     * @var bool
+     */
+    public $explicit_never = false;
+
+    /**
      * Whether or not this union had a template, since replaced
      *
      * @var bool
@@ -244,6 +255,8 @@ final class MutableUnion implements TypeNode, Stringable
                 && ($type->as_type || $type instanceof TTemplateParamClass)
             ) {
                 $this->typed_class_strings[$key] = $type;
+            } elseif ($type instanceof TNever) {
+                $this->explicit_never = true;
             }
 
             $from_docblock = $from_docblock || $type->from_docblock;
@@ -291,6 +304,8 @@ final class MutableUnion implements TypeNode, Stringable
             foreach ($this->literal_float_types as $key => $_) {
                 unset($this->literal_float_types[$key], $this->types[$key]);
             }
+        } elseif ($type instanceof TNever) {
+            $this->explicit_never = true;
         }
 
         $this->bustCache();

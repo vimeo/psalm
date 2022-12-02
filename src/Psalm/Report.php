@@ -29,6 +29,7 @@ abstract class Report
     public const TYPE_SARIF = 'sarif';
     public const TYPE_CODECLIMATE = 'codeclimate';
     public const TYPE_COUNT = 'count';
+    public const TYPE_BY_ISSUE_LEVEL = 'by-issue-level';
 
     /**
      * @var array<int, IssueData>

@@ -40,6 +40,7 @@ use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -417,6 +418,32 @@ class SimpleAssertionReconciler extends Reconciler
 
         if ($assertion_type && get_class($assertion_type) === TBool::class) {
             return self::reconcileBool(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality
+            );
+        }
+
+        if ($assertion_type && $assertion_type instanceof TTrue) {
+            return self::reconcileTrue(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality
+            );
+        }
+
+        if ($assertion_type && $assertion_type instanceof TFalse) {
+            return self::reconcileFalse(
                 $assertion,
                 $existing_var_type,
                 $key,
@@ -1187,6 +1214,176 @@ class SimpleAssertionReconciler extends Reconciler
 
         if ($bool_types) {
             return new Union($bool_types);
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
+    }
+
+    /**
+     * @param string[] $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileFalse(
+        Assertion $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ): Union {
+        if ($existing_var_type->hasMixed()) {
+            return Type::getFalse();
+        }
+        if ($existing_var_type->hasScalar()) {
+            return Type::getFalse();
+        }
+
+        $old_var_type_string = $existing_var_type->getId();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
+
+        $false_types = [];
+        $did_remove_type = false;
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type instanceof TFalse) {
+                $false_types[] = $type;
+            } elseif ($type instanceof TBool) {
+                $false_types[] = new TFalse();
+                $did_remove_type = true;
+            } elseif ($type instanceof TTemplateParam && $type->as->isMixed()) {
+                $type = $type->replaceAs(Type::getFalse());
+                $false_types[] = $type;
+                $did_remove_type = true;
+            } elseif ($type instanceof TTemplateParam) {
+                if ($type->as->hasScalar() || $type->as->hasMixed() || $type->as->hasBool()) {
+                    $type = $type->replaceAs(self::reconcileFalse(
+                        $assertion,
+                        $type->as,
+                        null,
+                        false,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality
+                    ));
+
+                    $false_types[] = $type;
+                }
+
+                $did_remove_type = true;
+            } else {
+                $did_remove_type = true;
+            }
+        }
+
+        if ((!$false_types || !$did_remove_type) && !$is_equality) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    !$did_remove_type,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+        }
+
+        if ($false_types) {
+            return new Union($false_types);
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+        return $existing_var_type->from_docblock
+            ? Type::getMixed()
+            : Type::getNever();
+    }
+
+    /**
+     * @param string[] $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileTrue(
+        Assertion $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ): Union {
+        if ($existing_var_type->hasMixed()) {
+            return Type::getTrue();
+        }
+        if ($existing_var_type->hasScalar()) {
+            return Type::getTrue();
+        }
+
+        $old_var_type_string = $existing_var_type->getId();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
+
+        $true_types = [];
+        $did_remove_type = false;
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type instanceof TTrue) {
+                $true_types[] = $type;
+            } elseif ($type instanceof TBool) {
+                $true_types[] = new TTrue();
+                $did_remove_type = true;
+            } elseif ($type instanceof TTemplateParam && $type->as->isMixed()) {
+                $type = $type->replaceAs(Type::getTrue());
+                $true_types[] = $type;
+                $did_remove_type = true;
+            } elseif ($type instanceof TTemplateParam) {
+                if ($type->as->hasScalar() || $type->as->hasMixed() || $type->as->hasBool()) {
+                    $type = $type->replaceAs(self::reconcileTrue(
+                        $assertion,
+                        $type->as,
+                        null,
+                        false,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality
+                    ));
+
+                    $true_types[] = $type;
+                }
+
+                $did_remove_type = true;
+            } else {
+                $did_remove_type = true;
+            }
+        }
+
+        if ((!$true_types || !$did_remove_type) && !$is_equality) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    !$did_remove_type,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+        }
+
+        if ($true_types) {
+            return new Union($true_types);
         }
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;

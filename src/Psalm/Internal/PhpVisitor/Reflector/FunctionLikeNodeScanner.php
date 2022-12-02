@@ -45,7 +45,6 @@ use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use ReflectionFunction;
@@ -742,7 +741,7 @@ class FunctionLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\NoReturn') {
-                    $storage->return_type = new Union([new TNever()]);
+                    $storage->return_type = Type::getNever();
                 }
 
                 $storage->attributes[] = $attribute;

@@ -17,6 +17,7 @@ use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
+use Psalm\Report\ByIssueLevelAndTypeReport;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CodeClimateReport;
 use Psalm\Report\CompactReport;
@@ -852,6 +853,10 @@ final class IssueBuffer
 
             case Report::TYPE_JSON:
                 $output = new JsonReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                break;
+
+            case Report::TYPE_BY_ISSUE_LEVEL:
+                $output = new ByIssueLevelAndTypeReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
 
             case Report::TYPE_JSON_SUMMARY:

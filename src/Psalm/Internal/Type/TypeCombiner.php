@@ -357,13 +357,22 @@ class TypeCombiner
         if (!$new_types && !$has_never) {
             throw new UnexpectedValueException('There should be types here');
         } elseif (!$new_types && $has_never) {
-            $union_type = Type::getNever();
+            $union_type = Type::getNever($from_docblock);
         } else {
             $union_type = new Union($new_types);
         }
 
+        $union_properties = [];
         if ($from_docblock) {
-            return $union_type->setProperties(['from_docblock' => true]);
+            $union_properties['from_docblock'] = true;
+        }
+
+        if ($has_never) {
+            $union_properties['explicit_never'] = true;
+        }
+
+        if ($union_properties !== []) {
+            return $union_type->setProperties($union_properties);
         }
 
         return $union_type;
@@ -1471,6 +1480,7 @@ class TypeCombiner
             || ($combination->array_sometimes_filled && $overwrite_empty_array)
             || ($combination->objectlike_entries
                 && $combination->objectlike_sealed
+                && ($combination->array_min_counts[0] ?? false) !== true
                 && $overwrite_empty_array)
         ) {
             if ($combination->all_arrays_lists) {

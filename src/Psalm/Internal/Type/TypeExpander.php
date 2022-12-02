@@ -118,6 +118,7 @@ class TypeExpander
         $fleshed_out_type->initialized = $return_type->initialized;
         $fleshed_out_type->from_property = $return_type->from_property;
         $fleshed_out_type->from_static_property = $return_type->from_static_property;
+        $fleshed_out_type->explicit_never = $return_type->explicit_never;
         $fleshed_out_type->had_template = $return_type->had_template;
         $fleshed_out_type->parent_nodes = $return_type->parent_nodes;
 
