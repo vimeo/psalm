@@ -996,6 +996,14 @@ class TraitTest extends TestCase
                     #[Attribute]
                     trait Foo {}',
             ],
+            'noCrashOnConditionalTrait' => [
+                'code' => '<?php
+                    namespace NS;
+                    if (rand(0, 1)) {
+                        trait T {}
+                    }
+                '
+            ],
         ];
     }
 
