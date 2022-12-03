@@ -872,6 +872,21 @@ class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:Method:Asserted' => [
+                'code' => '<?php
+                    $r = false;
+                    /** @var object $o */;
+                    /** @var string $m */;
+                    if (method_exists($o, $m)) {
+                        $r = $o->$m(...);
+                    }
+                ',
+                'assertions' => [
+                    '$r===' => 'Closure|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrowFunctionReturnsNeverImplictly' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];
