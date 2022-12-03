@@ -524,17 +524,19 @@ class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
-                    [$var_node->id => $var_node]
-                );
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
+                        [$var_node->id => $var_node]
+                    );
 
-                if ($context->vars_in_scope[$var_id]->parent_nodes) {
-                    foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                        $data_flow_graph->addPath($parent_node, $var_node, '=', $added_taints, $removed_taints);
+                    if ($context->vars_in_scope[$var_id]->parent_nodes) {
+                        foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
+                            $data_flow_graph->addPath($parent_node, $var_node, '=', $added_taints, $removed_taints);
+                        }
                     }
-                }
 
-                $context->vars_in_scope[$var_id] = $stmt_var_type;
+                    $context->vars_in_scope[$var_id] = $stmt_var_type;
+                }
             }
         } else {
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
