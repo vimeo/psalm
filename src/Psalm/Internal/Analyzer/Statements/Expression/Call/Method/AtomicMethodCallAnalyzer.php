@@ -685,18 +685,22 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     }
                 }
 
-                if (ArgumentsAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt->getArgs(),
-                    null,
-                    null,
-                    true,
-                    $context
-                ) === false) {
-                    return;
-                }
+                if ($stmt->isFirstClassCallable()) {
+                    $result->return_type = Type::getClosure();
+                } else {
+                    if (ArgumentsAnalyzer::analyze(
+                        $statements_analyzer,
+                        $stmt->getArgs(),
+                        null,
+                        null,
+                        true,
+                        $context
+                    ) === false) {
+                        return;
+                    }
 
-                $result->return_type = Type::getMixed();
+                    $result->return_type = Type::getMixed();
+                }
                 return;
 
             default:
