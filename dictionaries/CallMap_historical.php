@@ -9935,7 +9935,7 @@ return [
     'cairo_version' => ['int'],
     'cairo_version_string' => ['string'],
     'cal_days_in_month' => ['int', 'calendar'=>'int', 'month'=>'int', 'year'=>'int'],
-    'cal_from_jd' => ['false|array{date:string,month:int,day:int,year:int,dow:int,abbrevdayname:string,dayname:string,abbrevmonth:string,monthname:string}', 'julian_day'=>'int', 'calendar'=>'int'],
+    'cal_from_jd' => ['array{date:string,month:int,day:int,year:int,dow:int,abbrevdayname:string,dayname:string,abbrevmonth:string,monthname:string}', 'julian_day'=>'int', 'calendar'=>'int'],
     'cal_info' => ['array', 'calendar='=>'int'],
     'cal_to_jd' => ['int', 'calendar'=>'int', 'month'=>'int', 'day'=>'int', 'year'=>'int'],
     'calcul_hmac' => ['string', 'clent'=>'string', 'siretcode'=>'string', 'price'=>'string', 'reference'=>'string', 'validity'=>'string', 'taxation'=>'string', 'devise'=>'string', 'language'=>'string'],
