@@ -43,6 +43,9 @@ class KeyedArrayComparator
             && $input_type_part instanceof TKeyedArray
             && !$input_type_part->is_list
         ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
             return false;
         }
 
