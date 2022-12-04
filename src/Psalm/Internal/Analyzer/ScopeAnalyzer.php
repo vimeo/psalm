@@ -110,6 +110,7 @@ class ScopeAnalyzer
                         return [...$control_actions, ...[self::ACTION_LEAVE_SWITCH]];
                     }
 
+                    /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
                     if ($break_types[count($break_types) - $count] === 'loop') {
                         return [...$control_actions, ...[self::ACTION_LEAVE_LOOP]];
                     }
