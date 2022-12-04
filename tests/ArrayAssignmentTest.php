@@ -2350,7 +2350,7 @@ class ArrayAssignmentTest extends TestCase
 
                         return $list;
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             // Skipped because the ref-type of array_pop was fixed (list->list)
             'SKIPPED-assignToListWithAlteredForeachKeyVar' => [

@@ -191,7 +191,7 @@ class ListTest extends TestCase
 
                     $a = [getKey() => 1];
                     takesList($a);',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
         ];
     }
