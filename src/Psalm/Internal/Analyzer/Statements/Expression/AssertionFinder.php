@@ -1023,9 +1023,11 @@ class AssertionFinder
                     $property = $exploded_id[1] ?? null;
 
                     if (is_numeric($var_id) && null !== $property && !$is_function) {
+                        $var_id_int = (int) $var_id;
+                        assert($var_id_int >= 0);
                         $args = $expr->getArgs();
 
-                        if (!array_key_exists($var_id, $args)) {
+                        if (!array_key_exists($var_id_int, $args)) {
                             IssueBuffer::maybeAdd(
                                 new InvalidDocblock(
                                     'Variable '.$var_id.' is not an argument so cannot be asserted',
@@ -1035,7 +1037,7 @@ class AssertionFinder
                             continue;
                         }
 
-                        $arg_value = $args[$var_id]->value;
+                        $arg_value = $args[$var_id_int]->value;
                         assert($arg_value instanceof PhpParser\Node\Expr\Variable);
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
@@ -1152,8 +1154,9 @@ class AssertionFinder
 
                     if (is_numeric($var_id) && null !== $property && !$is_function) {
                         $args = $expr->getArgs();
+                        $var_id_int = (int) $var_id;
 
-                        if (!array_key_exists($var_id, $args)) {
+                        if (!array_key_exists($var_id_int, $args)) {
                             IssueBuffer::maybeAdd(
                                 new InvalidDocblock(
                                     'Variable '.$var_id.' is not an argument so cannot be asserted',
@@ -1163,7 +1166,7 @@ class AssertionFinder
                             continue;
                         }
                         /** @var PhpParser\Node\Expr\Variable $arg_value */
-                        $arg_value = $args[$var_id]->value;
+                        $arg_value = $args[$var_id_int]->value;
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
 
@@ -1886,7 +1889,7 @@ class AssertionFinder
             case 'is_object':
                 return new IsType(new Atomic\TObject());
             case 'array_is_list':
-                return new IsType(new Atomic\TList(Type::getMixed()));
+                return new IsType(Type::getListAtomic(Type::getMixed()));
             case 'is_array':
                 return new IsType(new Atomic\TArray([Type::getArrayKey(), Type::getMixed()]));
             case 'is_numeric':
@@ -3597,14 +3600,14 @@ class AssertionFinder
             && !$expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
             foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TList) {
+                    $atomic_type = $atomic_type->getKeyedArray();
+                }
                 if ($atomic_type instanceof TArray
                     || $atomic_type instanceof TKeyedArray
-                    || $atomic_type instanceof TList
                 ) {
                     $is_sealed = false;
-                    if ($atomic_type instanceof TList) {
-                        $value_type = $atomic_type->type_param;
-                    } elseif ($atomic_type instanceof TKeyedArray) {
+                    if ($atomic_type instanceof TKeyedArray) {
                         $value_type = $atomic_type->getGenericValueType();
                         $is_sealed = $atomic_type->fallback_params === null;
                     } else {
@@ -3686,20 +3689,17 @@ class AssertionFinder
             && ($second_var_type = $source->node_data->getType($expr->getArgs()[1]->value))
         ) {
             foreach ($second_var_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TList) {
+                    $atomic_type = $atomic_type->getKeyedArray();
+                }
+
                 if ($atomic_type instanceof TArray
                     || $atomic_type instanceof TKeyedArray
                 ) {
                     if ($atomic_type instanceof TKeyedArray) {
-                        $key_possibly_undefined = false;
-
-                        foreach ($atomic_type->properties as $property_type) {
-                            if ($property_type->possibly_undefined) {
-                                $key_possibly_undefined = true;
-                                break;
-                            }
-                        }
-
-                        $key_type = $atomic_type->getGenericKeyType($key_possibly_undefined);
+                        $key_type = $atomic_type->getGenericKeyType(
+                            !$atomic_type->allShapeKeysAlwaysDefined()
+                        );
                     } else {
                         $key_type = $atomic_type->type_params[0];
                     }
@@ -3753,7 +3753,7 @@ class AssertionFinder
 
                     if ($const_type) {
                         if ($const_type->isSingleStringLiteral()) {
-                            $first_var_name = $const_type->getSingleStringLiteral()->value;
+                            $first_var_name = '\''.$const_type->getSingleStringLiteral()->value.'\'';
                         } elseif ($const_type->isSingleIntLiteral()) {
                             $first_var_name = (string)$const_type->getSingleIntLiteral()->value;
                         } else {

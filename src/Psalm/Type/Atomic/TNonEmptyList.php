@@ -2,9 +2,18 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type;
 use Psalm\Type\Union;
 
+use function array_fill;
+
 /**
+ * @deprecated Will be removed in Psalm v6, please use TKeyedArrays with is_list=true instead.
+ *
+ * You may also use the \Psalm\Type::getNonEmptyListAtomic shortcut, which creates unsealed list-like shaped arrays
+ * with one non-optional element, semantically equivalent to a TNonEmptyList.
+ *
+ *
  * Represents a non-empty list
  * @psalm-immutable
  */
@@ -40,6 +49,30 @@ class TNonEmptyList extends TList
         $this->min_count = $min_count;
         $this->from_docblock = $from_docblock;
     }
+
+    public function getKeyedArray(): TKeyedArray
+    {
+        if (!$this->count && !$this->min_count) {
+            return Type::getNonEmptyListAtomic($this->type_param);
+        }
+        if ($this->count) {
+            return new TKeyedArray(
+                array_fill(0, $this->count, $this->type_param),
+                null,
+                null,
+                true,
+                $this->from_docblock
+            );
+        }
+        return new TKeyedArray(
+            array_fill(0, $this->min_count, $this->type_param),
+            null,
+            [Type::getListKey(), $this->type_param],
+            true,
+            $this->from_docblock
+        );
+    }
+
 
     /**
      * @param positive-int|null $count

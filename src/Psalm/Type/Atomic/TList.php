@@ -14,6 +14,12 @@ use Psalm\Type\Union;
 use function get_class;
 
 /**
+ * @deprecated Will be removed in Psalm v6, please use TKeyedArrays with is_list=true instead.
+ *
+ * You may also use the \Psalm\Type::getListAtomic shortcut, which creates unsealed list-like shaped arrays
+ * with all elements optional, semantically equivalent to a TList.
+ *
+ *
  * Represents an array that has some particularities:
  * - its keys are integers
  * - they start at 0
@@ -51,6 +57,11 @@ class TList extends Atomic
         $cloned = clone $this;
         $cloned->type_param = $type_param;
         return $cloned;
+    }
+
+    public function getKeyedArray(): TKeyedArray
+    {
+        return Type::getListAtomic($this->type_param);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string

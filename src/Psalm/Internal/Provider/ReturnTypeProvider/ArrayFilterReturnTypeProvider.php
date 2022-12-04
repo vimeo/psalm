@@ -20,7 +20,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -64,10 +63,9 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         $first_arg_array = $array_arg
             && ($first_arg_type = $statements_source->node_data->getType($array_arg))
             && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
+            && ($array_atomic_type = $first_arg_type->getArray())
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
             ? $array_atomic_type
             : null;
 
@@ -78,9 +76,6 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         if ($first_arg_array instanceof TArray) {
             $inner_type = $first_arg_array->type_params[1];
             $key_type = $first_arg_array->type_params[0];
-        } elseif ($first_arg_array instanceof TList) {
-            $inner_type = $first_arg_array->type_param;
-            $key_type = Type::getInt();
         } else {
             $inner_type = $first_arg_array->getGenericValueType();
             $key_type = $first_arg_array->getGenericKeyType();
@@ -142,7 +137,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 && $key_type->getSingleIntLiteral()->value === 0
             ) {
                 return new Union([
-                    new TList(
+                    Type::getListAtomic(
                         $inner_type
                     ),
                 ]);

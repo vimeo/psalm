@@ -12,7 +12,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -75,12 +74,13 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
                 continue;
             }
 
+            if ($atomic_type instanceof TList) {
+                $atomic_type = $atomic_type->getKeyedArray();
+            }
+
             if ($atomic_type instanceof TArray) {
                 $value_type = $atomic_type->type_params[1];
                 $definitely_has_items = $atomic_type instanceof TNonEmptyArray;
-            } elseif ($atomic_type instanceof TList) {
-                $value_type = $atomic_type->type_param;
-                $definitely_has_items = $atomic_type instanceof TNonEmptyList;
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $value_type = $atomic_type->getGenericValueType();
                 $definitely_has_items = $atomic_type->getGenericArrayType() instanceof TNonEmptyArray;

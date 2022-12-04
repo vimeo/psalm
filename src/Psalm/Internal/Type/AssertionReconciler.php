@@ -41,7 +41,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -625,8 +624,8 @@ class AssertionReconciler extends Reconciler
             return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
-        if ($type_2_atomic instanceof TKeyedArray
-            && $type_1_atomic instanceof TList
+        /*if ($type_2_atomic instanceof TKeyedArray
+            && $type_1_atomic instanceof \Psalm\Type\Atomic\TList
         ) {
             $type_2_key = $type_2_atomic->getGenericKeyType();
             $type_2_value = $type_2_atomic->getGenericValueType();
@@ -653,7 +652,7 @@ class AssertionReconciler extends Reconciler
                 );
             }
         } elseif ($type_1_atomic instanceof TKeyedArray
-            && $type_2_atomic instanceof TList
+            && $type_2_atomic instanceof \Psalm\Type\Atomic\TList
         ) {
             $type_1_key = $type_1_atomic->getGenericKeyType();
             $type_1_value = $type_1_atomic->getGenericValueType();
@@ -678,7 +677,7 @@ class AssertionReconciler extends Reconciler
                     true
                 );
             }
-        }
+        }*/
 
         if ($type_2_atomic instanceof TTemplateParam
             && $type_1_atomic instanceof TTemplateParam
@@ -720,7 +719,7 @@ class AssertionReconciler extends Reconciler
                 }
             }
 
-            /** @psalm-suppress ArgumentTypeCoercion */
+            /** @psalm-suppress InvalidArgument */
             $type_1_atomic = $type_1_atomic->setTypeParams(
                 $type_1_params
             );
@@ -730,9 +729,9 @@ class AssertionReconciler extends Reconciler
         }
 
         //we filter the second part of a list with the second part of standard iterables
-        if (($type_2_atomic instanceof TArray
+        /*if (($type_2_atomic instanceof TArray
                 || $type_2_atomic instanceof TIterable)
-            && $type_1_atomic instanceof TList
+            && $type_1_atomic instanceof \Psalm\Type\Atomic\TList
         ) {
             $type_2_param = $type_2_atomic->type_params[1];
             $type_1_param = $type_1_atomic->type_param;
@@ -756,7 +755,7 @@ class AssertionReconciler extends Reconciler
 
             $matching_atomic_type = $type_1_atomic;
             $atomic_comparison_results->type_coerced = true;
-        }
+        }*/
 
         //we filter each property of a Keyed Array with the second part of standard iterables
         if (($type_2_atomic instanceof TArray

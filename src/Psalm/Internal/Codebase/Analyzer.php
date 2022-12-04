@@ -108,7 +108,7 @@ class Analyzer
     /**
      * Used to store counts of mixed vs non-mixed variables
      *
-     * @var array<string, array{0: int, 1: int}>
+     * @var array<string, list{int, int}>
      */
     private $mixed_counts = [];
 
@@ -342,6 +342,7 @@ class Analyzer
             $file_paths = array_values($this->files_to_analyze);
 
             $count = count($file_paths);
+            /** @var int<0, max> */
             $middle = intdiv($count, $shuffle_count);
             $remainder = $count % $shuffle_count;
 
@@ -1088,7 +1089,7 @@ class Analyzer
     }
 
     /**
-     * @return array{0:int, 1:int}
+     * @return list{int, int}
      */
     public function getMixedCountsForFile(string $file_path): array
     {
@@ -1100,7 +1101,7 @@ class Analyzer
     }
 
     /**
-     * @param  array{0:int, 1:int} $mixed_counts
+     * @param  list{int, int} $mixed_counts
      *
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void

@@ -38,6 +38,14 @@ class KeyedArrayComparator
             return false;
         }
 
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_list
+            && $input_type_part instanceof TKeyedArray
+            && !$input_type_part->is_list
+        ) {
+            return false;
+        }
+
         $all_types_contain = true;
 
         $input_properties = $input_type_part->properties;
@@ -46,6 +54,14 @@ class KeyedArrayComparator
                 if (!$container_property_type->possibly_undefined) {
                     $all_types_contain = false;
                 }
+
+                continue;
+            }
+
+            if ($input_properties[$key]->possibly_undefined
+                && !$container_property_type->possibly_undefined
+            ) {
+                $all_types_contain = false;
 
                 continue;
             }

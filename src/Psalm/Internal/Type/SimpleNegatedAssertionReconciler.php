@@ -46,8 +46,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
-use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
@@ -63,7 +61,6 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function assert;
-use function count;
 use function get_class;
 use function max;
 use function strpos;
@@ -534,27 +531,13 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if (isset($existing_var_atomic_types['array'])) {
-            $array_atomic_type = $existing_var_atomic_types['array'];
+            $array_atomic_type = $existing_var_type->getArray();
             $redundant = true;
 
-            if (($array_atomic_type instanceof TNonEmptyArray
-                    || $array_atomic_type instanceof TNonEmptyList)
-                && ($count === null
-                    || $array_atomic_type->count >= $count
-                    || $array_atomic_type->min_count >= $count)
-            ) {
-                $redundant = false;
-
-                $existing_var_type->removeType('array');
-            } elseif ($array_atomic_type instanceof TKeyedArray) {
-                if ($array_atomic_type->fallback_params === null && $count !== null) {
-                    $prop_max_count = count($array_atomic_type->properties);
-                    $prop_min_count = 0;
-                    foreach ($array_atomic_type->properties as $property_type) {
-                        if (!$property_type->possibly_undefined) {
-                            $prop_min_count++;
-                        }
-                    }
+            if ($array_atomic_type instanceof TKeyedArray) {
+                if ($count !== null) {
+                    $prop_max_count = $array_atomic_type->getMaxCount();
+                    $prop_min_count = $array_atomic_type->getMinCount();
 
                     // !(count($a) >= 3)
                     // count($a) < 3
@@ -571,21 +554,47 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                         $existing_var_type->removeType('array');
 
                         // Redundant because count($a) < $count always
-                    } elseif ($prop_max_count < $count) {
+                    } elseif ($prop_max_count && $prop_max_count < $count) {
                         $redundant = true;
 
                         // Possible
                     } else {
+                        if ($array_atomic_type->is_list && $array_atomic_type->fallback_params) {
+                            $properties = [];
+                            for ($x = 0; $x < ($count-1); $x++) {
+                                $properties []= $array_atomic_type->properties[$x]
+                                    ?? $array_atomic_type->fallback_params[1]->setPossiblyUndefined(true);
+                            }
+                            $existing_var_type->removeType('array');
+                            if (!$properties) {
+                                $existing_var_type->addType(Type::getEmptyArrayAtomic());
+                            } else {
+                                $existing_var_type->addType(new TKeyedArray(
+                                    $properties,
+                                    null,
+                                    null,
+                                    true,
+                                    $array_atomic_type->from_docblock
+                                ));
+                            }
+                        }
                         $redundant = false;
                     }
                 } else {
-                    $redundant = false;
-
-                    foreach ($array_atomic_type->properties as $property_type) {
-                        if (!$property_type->possibly_undefined) {
-                            $redundant = true;
-                            break;
-                        }
+                    if ($array_atomic_type->isNonEmpty()) {
+                        // Impossible, never empty
+                        $redundant = false;
+                        $existing_var_type->removeType('array');
+                    } else {
+                        // Possible, can be empty
+                        $redundant = false;
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType(new TArray(
+                            [
+                                new Union([new TNever()]),
+                                new Union([new TNever()]),
+                            ]
+                        ));
                     }
                 }
             } elseif (!$array_atomic_type instanceof TArray || !$array_atomic_type->isEmptyArray()) {
@@ -1647,6 +1656,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         $did_remove_type = $existing_var_type->hasScalar();
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TList) {
+                $type = $type->getKeyedArray();
+            }
             if ($type instanceof TTemplateParam) {
                 if (!$is_equality && !$type->as->isMixed()) {
                     $template_did_fail = 0;
@@ -1685,7 +1697,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $did_remove_type = true;
             } elseif (!$type instanceof TArray
                 && !$type instanceof TKeyedArray
-                && !$type instanceof TList
             ) {
                 $non_array_types[] = $type;
             } else {

@@ -60,17 +60,16 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 continue;
             }
 
+            if ($atomic_type instanceof TList) {
+                $atomic_type = $atomic_type->getKeyedArray();
+            }
+
             if ($atomic_type instanceof TKeyedArray) {
                 $atomic_type = $atomic_type->getGenericArrayType();
             }
 
             if ($atomic_type instanceof TArray) {
                 $return_atomic_type = new TArray($atomic_type->type_params);
-                continue;
-            }
-
-            if ($atomic_type instanceof TList) {
-                $return_atomic_type = new TArray([Type::getInt(), $atomic_type->type_param]);
                 continue;
             }
 
@@ -86,7 +85,7 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 && ((string) $third_arg_type === 'false'));
 
         if ($dont_preserve_int_keys && $return_atomic_type->type_params[0]->isInt()) {
-            $return_atomic_type = new TList($return_atomic_type->type_params[1]);
+            $return_atomic_type = Type::getListAtomic($return_atomic_type->type_params[1]);
         }
 
         return new Union([$return_atomic_type]);

@@ -12,7 +12,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
-use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -280,12 +279,6 @@ class ScalarTypeComparator
             return true;
         }
 
-        if (get_class($container_type_part) === TDependentListKey::class
-            && $input_type_part instanceof TLiteralInt
-        ) {
-            return true;
-        }
-
         if (get_class($container_type_part) === TFloat::class && $input_type_part instanceof TLiteralFloat) {
             return true;
         }
@@ -332,12 +325,6 @@ class ScalarTypeComparator
                 || get_class($container_type_part) === TNonFalsyString::class
                 || get_class($container_type_part) === TSingleLetter::class)
             && $input_type_part instanceof TLiteralString
-        ) {
-            return true;
-        }
-
-        if (get_class($container_type_part) === TDependentListKey::class
-            && $input_type_part instanceof TInt
         ) {
             return true;
         }

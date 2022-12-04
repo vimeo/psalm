@@ -36,7 +36,6 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -146,9 +145,9 @@ class ArrayAnalyzer
 
         if ($array_creation_info->all_list) {
             if ($array_creation_info->can_be_empty) {
-                $array_type = new TList($item_value_type ?? Type::getMixed());
+                $array_type = Type::getListAtomic($item_value_type ?? Type::getMixed());
             } else {
-                $array_type = new TNonEmptyList($item_value_type ?? Type::getMixed());
+                $array_type = Type::getNonEmptyListAtomic($item_value_type ?? Type::getMixed());
             }
 
             $stmt_type = new Union([
@@ -519,9 +518,17 @@ class ArrayAnalyzer
     ): void {
         $all_non_empty = true;
 
+        $has_possibly_undefined = false;
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
+            if ($unpacked_atomic_type instanceof TList) {
+                $unpacked_atomic_type = $unpacked_atomic_type->getKeyedArray();
+            }
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
+                    if ($property_value->possibly_undefined) {
+                        $has_possibly_undefined = true;
+                        continue;
+                    }
                     if (is_string($key)) {
                         if ($codebase->analysis_php_version_id <= 8_00_00) {
                             IssueBuffer::maybeAdd(
@@ -549,88 +556,90 @@ class ArrayAnalyzer
                 if (!$unpacked_atomic_type->isNonEmpty()) {
                     $all_non_empty = false;
                 }
-            } else {
-                $codebase = $statements_analyzer->getCodebase();
 
-                if (!$unpacked_atomic_type instanceof TNonEmptyList
-                    && !$unpacked_atomic_type instanceof TNonEmptyArray
-                ) {
-                    $all_non_empty = false;
-                }
-
-                if (!$unpacked_atomic_type->isIterable($codebase)) {
-                    $array_creation_info->can_create_objectlike = false;
-                    $array_creation_info->item_key_atomic_types[] = new TArrayKey();
-                    $array_creation_info->item_value_atomic_types[] = new TMixed();
-                    IssueBuffer::maybeAdd(
-                        new InvalidOperand(
-                            "Cannot use spread operator on non-iterable type {$unpacked_array_type->getId()}",
-                            new CodeLocation($statements_analyzer->getSource(), $item->value),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                if ($has_possibly_undefined) {
+                    $unpacked_atomic_type = $unpacked_atomic_type->getGenericArrayType();
+                } elseif (!$unpacked_atomic_type->fallback_params) {
                     continue;
                 }
-
-                $iterable_type = $unpacked_atomic_type->getIterable($codebase);
-
-                if ($iterable_type->type_params[0]->isNever()) {
-                    continue;
-                }
-
-                $array_creation_info->can_create_objectlike = false;
-
-                if (!UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $iterable_type->type_params[0],
-                    Type::getArrayKey(),
-                )) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidOperand(
-                            "Cannot use spread operator on iterable with key type "
-                                . $iterable_type->type_params[0]->getId(),
-                            new CodeLocation($statements_analyzer->getSource(), $item->value),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                    continue;
-                }
-
-                if ($iterable_type->type_params[0]->hasString()) {
-                    if ($codebase->analysis_php_version_id <= 8_00_00) {
-                        IssueBuffer::maybeAdd(
-                            new DuplicateArrayKey(
-                                'String keys are not supported in unpacked arrays',
-                                new CodeLocation($statements_analyzer->getSource(), $item->value)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        );
-
-                        continue;
-                    }
-                    $array_creation_info->all_list = false;
-                }
-
-                // Unpacked array might overwrite known properties, so values are merged when the keys intersect.
-                foreach ($array_creation_info->property_types as $prop_key_val => $prop_val) {
-                    $prop_key = new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($prop_key_val)]);
-                    // Since $prop_key is a single literal type, the types intersect iff $prop_key is contained by the
-                    // template type (ie $prop_key cannot overlap with the template type without being contained by it).
-                    if (UnionTypeComparator::isContainedBy($codebase, $prop_key, $iterable_type->type_params[0])) {
-                        $new_prop_val = Type::combineUnionTypes($prop_val, $iterable_type->type_params[1]);
-                        $array_creation_info->property_types[$prop_key_val] = $new_prop_val;
-                    }
-                }
-
-                $array_creation_info->item_key_atomic_types = array_merge(
-                    $array_creation_info->item_key_atomic_types,
-                    array_values($iterable_type->type_params[0]->getAtomicTypes())
-                );
-                $array_creation_info->item_value_atomic_types = array_merge(
-                    $array_creation_info->item_value_atomic_types,
-                    array_values($iterable_type->type_params[1]->getAtomicTypes())
-                );
+            } elseif (!$unpacked_atomic_type instanceof TNonEmptyArray) {
+                $all_non_empty = false;
             }
+
+            $codebase = $statements_analyzer->getCodebase();
+
+            if (!$unpacked_atomic_type->isIterable($codebase)) {
+                $array_creation_info->can_create_objectlike = false;
+                $array_creation_info->item_key_atomic_types[] = new TArrayKey();
+                $array_creation_info->item_value_atomic_types[] = new TMixed();
+                IssueBuffer::maybeAdd(
+                    new InvalidOperand(
+                        "Cannot use spread operator on non-iterable type {$unpacked_array_type->getId()}",
+                        new CodeLocation($statements_analyzer->getSource(), $item->value),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+                continue;
+            }
+
+            $iterable_type = $unpacked_atomic_type->getIterable($codebase);
+
+            if ($iterable_type->type_params[0]->isNever()) {
+                continue;
+            }
+
+            $array_creation_info->can_create_objectlike = false;
+
+            if (!UnionTypeComparator::isContainedBy(
+                $codebase,
+                $iterable_type->type_params[0],
+                Type::getArrayKey(),
+            )) {
+                IssueBuffer::maybeAdd(
+                    new InvalidOperand(
+                        "Cannot use spread operator on iterable with key type "
+                            . $iterable_type->type_params[0]->getId(),
+                        new CodeLocation($statements_analyzer->getSource(), $item->value),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+                continue;
+            }
+
+            if ($iterable_type->type_params[0]->hasString()) {
+                if ($codebase->analysis_php_version_id <= 8_00_00) {
+                    IssueBuffer::maybeAdd(
+                        new DuplicateArrayKey(
+                            'String keys are not supported in unpacked arrays',
+                            new CodeLocation($statements_analyzer->getSource(), $item->value)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+
+                    continue;
+                }
+                $array_creation_info->all_list = false;
+            }
+
+            // Unpacked array might overwrite known properties, so values are merged when the keys intersect.
+            foreach ($array_creation_info->property_types as $prop_key_val => $prop_val) {
+                $prop_key = new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($prop_key_val)]);
+                // Since $prop_key is a single literal type, the types intersect iff $prop_key is contained by the
+                // template type (ie $prop_key cannot overlap with the template type without being contained by it).
+                if (UnionTypeComparator::isContainedBy($codebase, $prop_key, $iterable_type->type_params[0])) {
+                    $new_prop_val = Type::combineUnionTypes($prop_val, $iterable_type->type_params[1]);
+                    $array_creation_info->property_types[$prop_key_val] = $new_prop_val;
+                }
+            }
+
+            $array_creation_info->item_key_atomic_types = array_merge(
+                $array_creation_info->item_key_atomic_types,
+                array_values($iterable_type->type_params[0]->getAtomicTypes())
+            );
+            $array_creation_info->item_value_atomic_types = array_merge(
+                $array_creation_info->item_value_atomic_types,
+                array_values($iterable_type->type_params[1]->getAtomicTypes())
+            );
         }
 
         if ($all_non_empty) {

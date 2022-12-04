@@ -36,7 +36,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
@@ -201,6 +200,9 @@ class CastAnalyzer
                 $all_permissible = true;
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
+                    if ($type instanceof TList) {
+                        $type = $type->getKeyedArray();
+                    }
                     if ($type instanceof Scalar) {
                         $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])]);
                         $permissible_atomic_types[] = $objWithProps;
@@ -245,13 +247,15 @@ class CastAnalyzer
                 $all_permissible = true;
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
+                    if ($type instanceof TList) {
+                        $type = $type->getKeyedArray();
+                    }
                     if ($type instanceof Scalar) {
                         $keyed_array = new TKeyedArray([new Union([$type])], null, null, true);
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
                         $permissible_atomic_types[] = new TArray([Type::getNever(), Type::getNever()]);
                     } elseif ($type instanceof TArray
-                        || $type instanceof TList
                         || $type instanceof TKeyedArray
                     ) {
                         $permissible_atomic_types[] = $type;
@@ -323,6 +327,10 @@ class CastAnalyzer
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TList) {
+                $atomic_type = $atomic_type->getKeyedArray();
+            }
 
             if ($atomic_type instanceof TInt) {
                 $valid_ints[] = $atomic_type;
@@ -414,7 +422,7 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNonEmptyArray
-                || $atomic_type instanceof TNonEmptyList
+                || ($atomic_type instanceof TKeyedArray && $atomic_type->isNonEmpty())
             ) {
                 $risky_cast[] = $atomic_type->getId();
 
@@ -424,7 +432,6 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TArray
-                || $atomic_type instanceof TList
                 || $atomic_type instanceof TKeyedArray
             ) {
                 // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not
@@ -510,6 +517,10 @@ class CastAnalyzer
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TList) {
+                $atomic_type = $atomic_type->getKeyedArray();
+            }
 
             if ($atomic_type instanceof TFloat) {
                 $valid_floats[] = $atomic_type;
@@ -600,7 +611,7 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNonEmptyArray
-                || $atomic_type instanceof TNonEmptyList
+                || ($atomic_type instanceof TKeyedArray && $atomic_type->isNonEmpty())
             ) {
                 $risky_cast[] = $atomic_type->getId();
 
@@ -610,7 +621,6 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TArray
-                || $atomic_type instanceof TList
                 || $atomic_type instanceof TKeyedArray
             ) {
                 // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not

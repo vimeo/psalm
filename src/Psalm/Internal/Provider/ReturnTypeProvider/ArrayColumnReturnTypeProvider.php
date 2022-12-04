@@ -8,9 +8,7 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
 use function count;
@@ -47,18 +45,16 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             && $first_arg_type->isSingle()
             && $first_arg_type->hasArray()
         ) {
-            $input_array = $first_arg_type->getAtomicTypes()['array'];
+            $input_array = $first_arg_type->getArray();
             if ($input_array instanceof TKeyedArray) {
-                $row_type = $input_array->getGenericArrayType()->type_params[1];
+                $row_type = $input_array->getGenericValueType();
             } elseif ($input_array instanceof TArray) {
                 $row_type = $input_array->type_params[1];
-            } elseif ($input_array instanceof TList) {
-                $row_type = $input_array->type_param;
             }
 
             if ($row_type && $row_type->isSingle()) {
                 if ($row_type->hasArray()) {
-                    $row_shape = $row_type->getAtomicTypes()['array'];
+                    $row_shape = $row_type->getArray();
                 } elseif ($row_type->hasObjectType()) {
                     $row_shape_union = GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
                         $row_type,
@@ -73,9 +69,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 }
             }
 
-            $input_array_not_empty = $input_array instanceof TNonEmptyList ||
-                $input_array instanceof TNonEmptyArray ||
-                $input_array instanceof TKeyedArray;
+            $input_array_not_empty = $input_array instanceof TNonEmptyArray ||
+                ($input_array instanceof TKeyedArray && $input_array->isNonEmpty());
         }
 
         $value_column_name = null;
@@ -133,8 +128,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 : new TArray([$result_key_type, $result_element_type ?? Type::getMixed()]);
         } else {
             $type = $have_at_least_one_res ?
-                new TNonEmptyList($result_element_type ?? Type::getMixed())
-                : new TList($result_element_type ?? Type::getMixed());
+                Type::getNonEmptyListAtomic($result_element_type ?? Type::getMixed())
+                : Type::getListAtomic($result_element_type ?? Type::getMixed());
         }
 
         return new Union([$type]);

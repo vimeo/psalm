@@ -1355,7 +1355,7 @@ class ArrayAccessTest extends TestCase
 
                         return $arr;
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'simpleXmlArrayFetchResultCannotEqualString' => [
                 'code' => '<?php

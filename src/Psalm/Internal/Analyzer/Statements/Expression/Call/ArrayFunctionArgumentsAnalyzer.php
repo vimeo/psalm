@@ -37,11 +37,11 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_pop;
 use function array_shift;
 use function array_unshift;
 use function assert;
@@ -80,21 +80,15 @@ class ArrayFunctionArgumentsAnalyzer
             }
 
             /**
-             * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TKeyedArray|TArray|TList|null
+             * @var TKeyedArray|TArray|null
              */
             $array_arg_type = ($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    && ($types = $arg_value_type->getAtomicTypes())
-                    && isset($types['array'])
-                ? $types['array']
+                    && $arg_value_type->hasArray()
+                ? $arg_value_type->getArray()
                 : null;
 
             if ($array_arg_type instanceof TKeyedArray) {
                 $array_arg_type = $array_arg_type->getGenericArrayType();
-            }
-
-            if ($array_arg_type instanceof TList) {
-                $array_arg_type = new TArray([Type::getInt(), $array_arg_type->type_param]);
             }
 
             $array_arg_types[] = $array_arg_type;
@@ -220,27 +214,13 @@ class ArrayFunctionArgumentsAnalyzer
         if (($array_arg_type = $statements_analyzer->node_data->getType($array_arg))
             && $array_arg_type->hasArray()
         ) {
-            /**
-             * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|TKeyedArray|TList
-             */
-            $array_type = $array_arg_type->getAtomicTypes()['array'];
+            $array_type = $array_arg_type->getArray();
 
             $objectlike_list = null;
 
             if ($array_type instanceof TKeyedArray) {
                 if ($array_type->is_list) {
                     $objectlike_list = $array_type;
-                }
-
-                $array_type = $array_type->getGenericArrayType();
-
-                if ($objectlike_list) {
-                    if ($array_type instanceof TNonEmptyArray) {
-                        $array_type = new TNonEmptyList($array_type->type_params[1]);
-                    } else {
-                        $array_type = new TList($array_type->type_params[1]);
-                    }
                 }
             }
 
@@ -283,9 +263,13 @@ class ArrayFunctionArgumentsAnalyzer
 
                             if ($was_list) {
                                 if ($arg_value_atomic_type instanceof TNonEmptyArray) {
-                                    $arg_value_atomic_type = new TNonEmptyList($arg_value_atomic_type->type_params[1]);
+                                    $arg_value_atomic_type = Type::getNonEmptyListAtomic(
+                                        $arg_value_atomic_type->type_params[1]
+                                    );
                                 } else {
-                                    $arg_value_atomic_type = new TList($arg_value_atomic_type->type_params[1]);
+                                    $arg_value_atomic_type = Type::getListAtomic(
+                                        $arg_value_atomic_type->type_params[1]
+                                    );
                                 }
                             }
 
@@ -304,15 +288,10 @@ class ArrayFunctionArgumentsAnalyzer
                         array_unshift($properties, $arg_value_type);
 
                         $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
-                    } elseif ($array_type instanceof TList) {
-                        $by_ref_type = Type::combineUnionTypes(
-                            $by_ref_type,
-                            new Union(
-                                [
-                                    new TNonEmptyList($arg_value_type),
-                                ]
-                            )
-                        );
+                    } elseif ($array_type instanceof TArray && $array_type->isEmptyArray()) {
+                        $by_ref_type = new Union([new TKeyedArray([
+                            $arg_value_type
+                        ], null, null, true)]);
                     } else {
                         $by_ref_type = Type::combineUnionTypes(
                             $by_ref_type,
@@ -429,14 +408,13 @@ class ArrayFunctionArgumentsAnalyzer
             && $replacement_arg_type->hasArray()
         ) {
             /**
-             * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|TKeyedArray|TList
+             * @var TArray|TKeyedArray
              */
-            $array_type = $array_arg_type->getAtomicTypes()['array'];
+            $array_type = $array_arg_type->getArray();
 
             if ($array_type instanceof TKeyedArray) {
                 if ($array_type->is_list) {
-                    $array_type = new TNonEmptyList($array_type->getGenericValueType());
+                    $array_type = Type::getNonEmptyListAtomic($array_type->getGenericValueType());
                 } else {
                     $array_type = $array_type->getGenericArrayType();
                 }
@@ -447,17 +425,16 @@ class ArrayFunctionArgumentsAnalyzer
                 && !$array_type->type_params[0]->hasString()
             ) {
                 if ($array_type instanceof TNonEmptyArray) {
-                    $array_type = new TNonEmptyList($array_type->type_params[1]);
+                    $array_type = Type::getNonEmptyListAtomic($array_type->type_params[1]);
                 } else {
-                    $array_type = new TList($array_type->type_params[1]);
+                    $array_type = Type::getListAtomic($array_type->type_params[1]);
                 }
             }
 
             /**
-             * @psalm-suppress PossiblyUndefinedStringArrayOffset
-             * @var TArray|TKeyedArray|TList
+             * @var TArray|TKeyedArray
              */
-            $replacement_array_type = $replacement_arg_type->getAtomicTypes()['array'];
+            $replacement_array_type = $replacement_arg_type->getArray();
 
             if ($replacement_array_type instanceof TKeyedArray) {
                 $was_list = $replacement_array_type->is_list;
@@ -466,9 +443,9 @@ class ArrayFunctionArgumentsAnalyzer
 
                 if ($was_list) {
                     if ($replacement_array_type instanceof TNonEmptyArray) {
-                        $replacement_array_type = new TNonEmptyList($replacement_array_type->type_params[1]);
+                        $replacement_array_type = Type::getNonEmptyListAtomic($replacement_array_type->type_params[1]);
                     } else {
-                        $replacement_array_type = new TList($replacement_array_type->type_params[1]);
+                        $replacement_array_type = Type::getListAtomic($replacement_array_type->type_params[1]);
                     }
                 }
             }
@@ -520,21 +497,45 @@ class ArrayFunctionArgumentsAnalyzer
                 $array_atomic_types = [];
 
                 foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
+                    if ($array_atomic_type instanceof TList) {
+                        $array_atomic_type = $array_atomic_type->getKeyedArray();
+                    }
+
                     if ($array_atomic_type instanceof TKeyedArray) {
-                        if ($is_array_shift && $array_atomic_type->is_list) {
+                        if ($is_array_shift && $array_atomic_type->is_list
+                            && !$context->inside_loop
+                        ) {
                             $array_properties = $array_atomic_type->properties;
 
                             array_shift($array_properties);
 
                             if (!$array_properties) {
-                                $array_atomic_types []= new TList(Type::getNever());
+                                $array_atomic_types []= $array_atomic_type->fallback_params
+                                    ? Type::getListAtomic($array_atomic_type->fallback_params[1])
+                                    : Type::getEmptyArrayAtomic();
+                            } else {
+                                $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
+                            }
+                            continue;
+                        } elseif (!$is_array_shift && $array_atomic_type->is_list
+                            && !$array_atomic_type->fallback_params
+                            && !$context->inside_loop
+                        ) {
+                            $array_properties = $array_atomic_type->properties;
+
+                            array_pop($array_properties);
+
+                            if (!$array_properties) {
+                                $array_atomic_types []= Type::getEmptyArrayAtomic();
                             } else {
                                 $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }
                             continue;
                         }
 
-                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                        $array_atomic_type = $array_atomic_type->is_list
+                            ? Type::getListAtomic($array_atomic_type->getGenericValueType())
+                            : $array_atomic_type->getGenericArrayType();
                     }
 
                     if ($array_atomic_type instanceof TNonEmptyArray) {
@@ -554,15 +555,26 @@ class ArrayFunctionArgumentsAnalyzer
                         }
 
                         $array_atomic_types[] = $array_atomic_type;
-                    } elseif ($array_atomic_type instanceof TNonEmptyList) {
-                        if (!$context->inside_loop && $array_atomic_type->count !== null) {
-                            if ($array_atomic_type->count === 1) {
-                                $array_atomic_type = new TList(Type::getNever());
+                    } elseif ($array_atomic_type instanceof TKeyedArray && $array_atomic_type->is_list) {
+                        if (!$context->inside_loop
+                            && ($prop_count = $array_atomic_type->getMaxCount())
+                            && $prop_count === $array_atomic_type->getMinCount()
+                        ) {
+                            if ($prop_count === 1) {
+                                $array_atomic_type = new TArray(
+                                    [
+                                        Type::getNever(),
+                                        Type::getNever(),
+                                    ]
+                                );
                             } else {
-                                $array_atomic_type = $array_atomic_type->setCount($array_atomic_type->count-1);
+                                $properties = $array_atomic_type->properties;
+                                unset($properties[$prop_count-1]);
+                                assert($properties !== []);
+                                $array_atomic_type = $array_atomic_type->setProperties($properties);
                             }
                         } else {
-                            $array_atomic_type = new TList($array_atomic_type->type_param);
+                            $array_atomic_type = Type::getListAtomic($array_atomic_type->getGenericValueType());
                         }
 
                         $array_atomic_types[] = $array_atomic_type;

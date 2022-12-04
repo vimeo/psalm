@@ -81,6 +81,8 @@ class FileDiffer
     {
         $result = [];
         for ($d = count($trace) - 1; $d >= 0; --$d) {
+            // Todo: fix integer ranges in fors
+            /** @var int<0, max> $d */
             $v = $trace[$d];
             $k = $x - $y;
 

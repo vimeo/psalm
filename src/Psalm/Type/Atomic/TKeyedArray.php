@@ -15,11 +15,11 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function addslashes;
+use function assert;
 use function count;
 use function get_class;
 use function implode;
@@ -76,6 +76,9 @@ class TKeyedArray extends Atomic
         bool $is_list = false,
         bool $from_docblock = false
     ) {
+        if ($is_list && $fallback_params) {
+            $fallback_params[0] = Type::getListKey();
+        }
         $this->properties = $properties;
         $this->class_strings = $class_strings;
         $this->fallback_params = $fallback_params;
@@ -116,6 +119,13 @@ class TKeyedArray extends Atomic
         $property_strings = [];
 
         if ($this->is_list) {
+            if (count($this->properties) === 1
+                && $this->fallback_params
+                && $this->properties[0]->equals($this->fallback_params[1], true, true, false)
+            ) {
+                $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
+                return "$t<".$this->fallback_params[1]->getId($exact).'>';
+            }
             $use_list_syntax = true;
             foreach ($this->properties as $property) {
                 if ($property->possibly_undefined) {
@@ -181,6 +191,13 @@ class TKeyedArray extends Atomic
         $suffixed_properties = [];
 
         if ($this->is_list) {
+            if (count($this->properties) === 1
+                && $this->fallback_params
+                && $this->properties[0]->equals($this->fallback_params[1], true, true, false)
+            ) {
+                $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
+                return "$t<".$this->fallback_params[1]->getId().'>';
+            }
             $use_list_syntax = true;
             foreach ($this->properties as $property) {
                 if ($property->possibly_undefined) {
@@ -244,6 +261,16 @@ class TKeyedArray extends Atomic
 
     public function getGenericKeyType(bool $possibly_undefined = false): Union
     {
+        if ($this->is_list) {
+            if ($this->fallback_params) {
+                return Type::getListKey();
+            }
+            if (count($this->properties) === 1) {
+                return new Union([new TLiteralInt(0)]);
+            }
+            return new Union([new TIntRange(0, count($this->properties)-1)]);
+        }
+
         $key_types = [];
 
         foreach ($this->properties as $key => $_) {
@@ -290,7 +317,7 @@ class TKeyedArray extends Atomic
     /**
      * @return TArray|TNonEmptyArray
      */
-    public function getGenericArrayType(bool $allow_non_empty = true): TArray
+    public function getGenericArrayType(?string $list_var_id = null): TArray
     {
         $key_types = [];
         $value_type = null;
@@ -298,7 +325,9 @@ class TKeyedArray extends Atomic
         $has_defined_keys = false;
 
         foreach ($this->properties as $key => $property) {
-            if (is_int($key)) {
+            if ($this->is_list) {
+                // Do nothing
+            } elseif (is_int($key)) {
                 $key_types[] = new TLiteralInt($key);
             } elseif (isset($this->class_strings[$key])) {
                 $key_types[] = new TLiteralClassString($key);
@@ -313,6 +342,26 @@ class TKeyedArray extends Atomic
             }
         }
 
+        if ($this->is_list) {
+            if ($this->fallback_params !== null) {
+                $value_type = Type::combineUnionTypes($this->fallback_params[1], $value_type);
+            }
+
+            $value_type = $value_type->setPossiblyUndefined(false);
+
+            if ($this->fallback_params === null) {
+                $key_type = new Union([new TIntRange(0, count($this->properties)-1, false, $list_var_id)]);
+            } else {
+                $key_type = new Union([new TIntRange(0, null, false, $list_var_id)]);
+            }
+
+            if ($has_defined_keys) {
+                return new TNonEmptyArray([$key_type, $value_type]);
+            }
+            return new TArray([$key_type, $value_type]);
+        }
+
+        assert($key_types !== []);
         $key_type = TypeCombiner::combine($key_types);
 
         if ($this->fallback_params !== null) {
@@ -322,17 +371,17 @@ class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($allow_non_empty && ($this->fallback_params !== null || $has_defined_keys)) {
-            $array_type = new TNonEmptyArray([$key_type, $value_type]);
-        } else {
-            $array_type = new TArray([$key_type, $value_type]);
+        if ($has_defined_keys || $this->fallback_params !== null) {
+            return new TNonEmptyArray([$key_type, $value_type]);
         }
-
-        return $array_type;
+        return new TArray([$key_type, $value_type]);
     }
 
     public function isNonEmpty(): bool
     {
+        if ($this->is_list) {
+            return !$this->properties[0]->possibly_undefined;
+        }
         foreach ($this->properties as $property) {
             if (!$property->possibly_undefined) {
                 return true;
@@ -340,6 +389,54 @@ class TKeyedArray extends Atomic
         }
 
         return false;
+    }
+
+    /**
+     * @return int<0, max>
+     */
+    public function getMinCount(): int
+    {
+        if ($this->is_list) {
+            foreach ($this->properties as $k => $property) {
+                if ($property->possibly_undefined || $property->isNever()) {
+                    /** @var int<0, max> */
+                    return $k;
+                }
+            }
+            return count($this->properties);
+        }
+        $prop_min_count = 0;
+        foreach ($this->properties as $property) {
+            if (!($property->possibly_undefined || $property->isNever())) {
+                $prop_min_count++;
+            }
+        }
+        return $prop_min_count;
+    }
+
+    /**
+     * Returns null if there is no upper limit.
+     * @return int<1, max>|null
+     */
+    public function getMaxCount(): ?int
+    {
+        if ($this->fallback_params) {
+            return null;
+        }
+        return count($this->properties);
+    }
+    /**
+     * Whether all keys are always defined (ignores unsealedness).
+     */
+    public function allShapeKeysAlwaysDefined(): bool
+    {
+        foreach ($this->properties as $property) {
+            if ($property->possibly_undefined) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -389,11 +486,40 @@ class TKeyedArray extends Atomic
             );
         }
 
-        if ($properties === $this->properties) {
+        $fallback_params = $this->fallback_params;
+
+        foreach ($fallback_params ?? [] as $offset => $property) {
+            $input_type_param = null;
+
+            if ($input_type instanceof TKeyedArray
+                && isset($input_type->fallback_params[$offset])
+            ) {
+                $input_type_param = $input_type->fallback_params[$offset];
+            }
+
+            $fallback_params[$offset] = TemplateStandinTypeReplacer::replace(
+                $property,
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                $input_type_param,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+                $add_lower_bound,
+                null,
+                $depth
+            );
+        }
+
+
+        if ($properties === $this->properties && $fallback_params === $this->fallback_params) {
             return $this;
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
+        $cloned->fallback_params = $fallback_params;
         return $cloned;
     }
 
@@ -412,9 +538,18 @@ class TKeyedArray extends Atomic
                 $codebase
             );
         }
-        if ($properties !== $this->properties) {
+        $fallback_params = $this->fallback_params;
+        foreach ($fallback_params ?? [] as $offset => $property) {
+            $fallback_params[$offset] = TemplateInferredTypeReplacer::replace(
+                $property,
+                $template_result,
+                $codebase
+            );
+        }
+        if ($properties !== $this->properties || $fallback_params !== $this->fallback_params) {
             $cloned = clone $this;
             $cloned->properties = $properties;
+            $cloned->fallback_params = $fallback_params;
             return $cloned;
         }
         return $this;
@@ -422,7 +557,7 @@ class TKeyedArray extends Atomic
 
     protected function getChildNodeKeys(): array
     {
-        return ['properties'];
+        return ['properties', 'fallback_params'];
     }
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
@@ -467,6 +602,9 @@ class TKeyedArray extends Atomic
         return $this->is_list ? 'list' : 'array';
     }
 
+    /**
+     * @deprecated Will be removed in Psalm v6 along with the TList type.
+     */
     public function getList(): TList
     {
         if (!$this->is_list) {
