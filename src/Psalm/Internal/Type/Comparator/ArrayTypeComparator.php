@@ -87,6 +87,9 @@ class ArrayTypeComparator
                 || $input_type_part instanceof TArray
             )
         ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
             return false;
         }
 
