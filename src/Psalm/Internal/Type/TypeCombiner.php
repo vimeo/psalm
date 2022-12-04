@@ -476,7 +476,7 @@ class TypeCombiner
             } else {
                 foreach ($combination->array_type_params as $i => $array_type_param) {
                     $iterable_type_param = $combination->builtin_type_params['iterable'][$i];
-                    /** @psalm-suppress InvalidPropertyAssignmentValue */
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->builtin_type_params['iterable'][$i] = Type::combineUnionTypes(
                         $iterable_type_param,
                         $array_type_param
@@ -497,7 +497,7 @@ class TypeCombiner
             } elseif (isset($combination->builtin_type_params['Traversable'])) {
                 foreach ($combination->builtin_type_params['Traversable'] as $i => $array_type_param) {
                     $iterable_type_param = $combination->builtin_type_params['iterable'][$i];
-                    /** @psalm-suppress InvalidPropertyAssignmentValue */
+                    /** @psalm-suppress PropertyTypeCoercion */
                     $combination->builtin_type_params['iterable'][$i] = Type::combineUnionTypes(
                         $iterable_type_param,
                         $array_type_param
@@ -615,7 +615,7 @@ class TypeCombiner
             || ($type instanceof TArray && $type_key === 'iterable')
         ) {
             foreach ($type->type_params as $i => $type_param) {
-                /** @psalm-suppress InvalidPropertyAssignmentValue */
+                /** @psalm-suppress PropertyTypeCoercion */
                 $combination->builtin_type_params[$type_key][$i] = Type::combineUnionTypes(
                     $combination->builtin_type_params[$type_key][$i] ?? null,
                     $type_param,
@@ -629,7 +629,7 @@ class TypeCombiner
 
         if ($type instanceof TGenericObject) {
             foreach ($type->type_params as $i => $type_param) {
-                /** @psalm-suppress InvalidPropertyAssignmentValue */
+                /** @psalm-suppress PropertyTypeCoercion */
                 $combination->object_type_params[$type_key][$i] = Type::combineUnionTypes(
                     $combination->object_type_params[$type_key][$i] ?? null,
                     $type_param,

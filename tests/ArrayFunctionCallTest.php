@@ -2528,7 +2528,7 @@ class ArrayFunctionCallTest extends TestCase
                     function ints(array $ints) : void {}
                     $brr = array_filter([2,3,0,4,5]);
                     ints($brr);',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'usortOneParamInvalid' => [
                 'code' => '<?php

@@ -519,6 +519,7 @@ class TKeyedArray extends Atomic
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
+        /** @psalm-suppress PropertyTypeCoercion */
         $cloned->fallback_params = $fallback_params;
         return $cloned;
     }
@@ -549,6 +550,7 @@ class TKeyedArray extends Atomic
         if ($properties !== $this->properties || $fallback_params !== $this->fallback_params) {
             $cloned = clone $this;
             $cloned->properties = $properties;
+            /** @psalm-suppress PropertyTypeCoercion */
             $cloned->fallback_params = $fallback_params;
             return $cloned;
         }

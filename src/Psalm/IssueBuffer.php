@@ -647,7 +647,7 @@ final class IssueBuffer
                 // do nothing
             }
 
-            /** @psalm-suppress InvalidArgument due to Psalm bug */
+            /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
             $event = new AfterAnalysisEvent(
                 $codebase,
                 $issues_data,
