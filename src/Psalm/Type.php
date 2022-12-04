@@ -21,7 +21,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -30,7 +30,6 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
@@ -426,36 +425,74 @@ abstract class Type
      */
     public static function getEmptyArray(): Union
     {
-        $array_type = new TArray(
+        return new Union([self::getEmptyArrayAtomic()]);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getEmptyArrayAtomic(): TArray
+    {
+        return new TArray(
             [
                 new Union([new TNever()]),
                 new Union([new TNever()]),
             ]
         );
-
-        return new Union([
-            $array_type,
-        ]);
     }
 
     /**
      * @psalm-pure
      */
-    public static function getList(): Union
+    public static function getList(?Union $of = null, bool $from_docblock = false): Union
     {
-        $type = new TList(new Union([new TMixed]));
-
-        return new Union([$type]);
+        return new Union([self::getListAtomic($of ?? self::getMixed($from_docblock), $from_docblock)]);
     }
 
     /**
      * @psalm-pure
      */
-    public static function getNonEmptyList(): Union
+    public static function getNonEmptyList(?Union $of = null, bool $from_docblock = false): Union
     {
-        $type = new TNonEmptyList(new Union([new TMixed]));
+        return new Union([self::getNonEmptyListAtomic($of ?? self::getMixed($from_docblock), $from_docblock)]);
+    }
 
-        return new Union([$type]);
+    /**
+     * @psalm-pure
+     */
+    public static function getListAtomic(Union $of, bool $from_docblock = false): TKeyedArray
+    {
+        return new TKeyedArray(
+            [$of->setPossiblyUndefined(true)],
+            null,
+            [self::getListKey(), $of],
+            true,
+            $from_docblock
+        );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getNonEmptyListAtomic(Union $of, bool $from_docblock = false): TKeyedArray
+    {
+        return new TKeyedArray(
+            [$of->setPossiblyUndefined(false)],
+            null,
+            [self::getListKey(), $of],
+            true,
+            $from_docblock
+        );
+    }
+
+    private static ?Union $listKey = null;
+    /**
+     * @psalm-pure
+     * @param int<1, max>|null $max_count
+     */
+    public static function getListKey(): Union
+    {
+        return self::$listKey ??= new Union([new TIntRange(0, null)]);
     }
 
     /**

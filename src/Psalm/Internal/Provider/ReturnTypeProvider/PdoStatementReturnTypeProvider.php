@@ -8,7 +8,6 @@ use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -87,7 +86,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                             Type::getString(),
                             new Union([
                                 new TScalar(),
-                                new TList(Type::getScalar())
+                                Type::getListAtomic(Type::getScalar())
                             ])
                         ]),
                         new TFalse(),
@@ -95,7 +94,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
 
                 case 3: // PDO::FETCH_NUM - list<scalar|null>|false
                     return new Union([
-                        new TList(
+                        Type::getListAtomic(
                             new Union([
                                 new TScalar(),
                                 new TNull()

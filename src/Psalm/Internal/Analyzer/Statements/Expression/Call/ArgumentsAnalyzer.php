@@ -42,13 +42,11 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
-use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -892,10 +890,9 @@ class ArgumentsAnalyzer
                 if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     && $arg_value_type->hasArray()) {
                     /**
-                     * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                     * @var TArray|TList|TKeyedArray
+                     * @var TArray|TKeyedArray
                      */
-                    $array_type = $arg_value_type->getAtomicTypes()['array'];
+                    $array_type = $arg_value_type->getArray();
 
                     if ($array_type instanceof TKeyedArray) {
                         $array_type = $array_type->getGenericArrayType();
@@ -1482,17 +1479,12 @@ class ArgumentsAnalyzer
                 && $arg_value_type->hasArray()
             ) {
                 /**
-                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TList|TKeyedArray
+                 * @var TArray|TKeyedArray
                  */
-                $array_type = $arg_value_type->getAtomicTypes()['array'];
+                $array_type = $arg_value_type->getArray();
 
                 if ($array_type instanceof TKeyedArray) {
                     $array_type = $array_type->getGenericArrayType();
-                }
-
-                if ($array_type instanceof TList) {
-                    $array_type = new TArray([Type::getInt(), $array_type->type_param]);
                 }
 
                 $by_ref_type = new Union([$array_type]);
@@ -1706,9 +1698,12 @@ class ArgumentsAnalyzer
                         }
 
                         foreach ($arg_value_type->getAtomicTypes() as $atomic_arg_type) {
+                            if ($atomic_arg_type instanceof TList) {
+                                $atomic_arg_type = $atomic_arg_type->getKeyedArray();
+                            }
+
                             $packed_var_definite_args_tmp = [];
                             if ($atomic_arg_type instanceof TCallableArray ||
-                                $atomic_arg_type instanceof TCallableList ||
                                 $atomic_arg_type instanceof TCallableKeyedArray
                             ) {
                                 $packed_var_definite_args_tmp[] = 2;
@@ -1717,16 +1712,13 @@ class ArgumentsAnalyzer
                                     return;
                                 }
 
-                                foreach ($atomic_arg_type->properties as $property_type) {
-                                    if ($property_type->possibly_undefined) {
-                                        return;
-                                    }
+                                if (!$atomic_arg_type->allShapeKeysAlwaysDefined()) {
+                                    return;
                                 }
+
                                 //we did not return. The number of packed params is the number of properties
                                 $packed_var_definite_args_tmp[] = count($atomic_arg_type->properties);
-                            } elseif ($atomic_arg_type instanceof TNonEmptyArray ||
-                                $atomic_arg_type instanceof TNonEmptyList
-                            ) {
+                            } elseif ($atomic_arg_type instanceof TNonEmptyArray) {
                                 if ($atomic_arg_type->count === null) {
                                     return;
                                 }

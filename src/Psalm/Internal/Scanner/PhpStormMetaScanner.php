@@ -10,7 +10,6 @@ use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -224,17 +223,12 @@ class PhpStormMetaScanner
                             && $call_arg_type->hasArray()
                         ) {
                             /**
-                             * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var TArray|TKeyedArray|TList
+                             * @var TArray|TKeyedArray
                              */
-                            $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
+                            $array_atomic_type = $call_arg_type->getArray();
 
                             if ($array_atomic_type instanceof TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
-                            }
-
-                            if ($array_atomic_type instanceof TList) {
-                                return $array_atomic_type->type_param;
                             }
 
                             return $array_atomic_type->type_params[1];
@@ -368,17 +362,12 @@ class PhpStormMetaScanner
                             && $call_arg_type->hasArray()
                         ) {
                             /**
-                             * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var TArray|TKeyedArray|TList
+                             * @var TArray|TKeyedArray
                              */
-                            $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
+                            $array_atomic_type = $call_arg_type->getArray();
 
                             if ($array_atomic_type instanceof TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
-                            }
-
-                            if ($array_atomic_type instanceof TList) {
-                                return $array_atomic_type->type_param;
                             }
 
                             return $array_atomic_type->type_params[1];

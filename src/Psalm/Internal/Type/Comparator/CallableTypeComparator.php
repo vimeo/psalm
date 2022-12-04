@@ -19,7 +19,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
-use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -144,31 +143,8 @@ class CallableTypeComparator
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
         if ($input_type_part instanceof TList) {
-            if ($input_type_part->type_param->isMixed()
-                || $input_type_part->type_param->hasScalar()
-            ) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced_from_mixed = true;
-                    $atomic_comparison_result->type_coerced = true;
-                }
-
-                return false;
-            }
-
-            if (!$input_type_part->type_param->hasString()) {
-                return false;
-            }
-
-            if (!$input_type_part instanceof TCallableList) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced_from_mixed = true;
-                    $atomic_comparison_result->type_coerced = true;
-                }
-
-                return false;
-            }
+            $input_type_part = $input_type_part->getKeyedArray();
         }
-
         if ($input_type_part instanceof TArray) {
             if ($input_type_part->type_params[1]->isMixed()
                 || $input_type_part->type_params[1]->hasScalar()
@@ -246,6 +222,9 @@ class CallableTypeComparator
         ?StatementsAnalyzer $statements_analyzer = null,
         bool $expand_callable = false
     ): ?Atomic {
+        if ($input_type_part instanceof TList) {
+            $input_type_part = $input_type_part->getKeyedArray();
+        }
         if ($input_type_part instanceof TCallable || $input_type_part instanceof TClosure) {
             return $input_type_part;
         }

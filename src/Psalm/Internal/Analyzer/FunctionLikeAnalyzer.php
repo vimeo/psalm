@@ -54,7 +54,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -1161,7 +1160,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     ]);
                 } else {
                     $var_type = new Union([
-                        new TList($param_type),
+                        Type::getListAtomic($param_type),
                     ], [
                         'by_ref' => $function_param->by_ref,
                         'parent_nodes' => $parent_nodes

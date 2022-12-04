@@ -27,9 +27,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
@@ -596,7 +594,7 @@ class VariableFetchAnalyzer
         if ($var_id === '$argv') {
             // only in CLI, null otherwise
             return new Union([
-                new TNonEmptyList(Type::getString()),
+                Type::getNonEmptyListAtomic(Type::getString()),
                 new TNull()
             ], [
                 'ignore_nullable_issues' => true
@@ -619,7 +617,7 @@ class VariableFetchAnalyzer
 
         if ($var_id === '$http_response_header') {
             return new Union([
-                new TList(Type::getNonEmptyString())
+                Type::getListAtomic(Type::getNonEmptyString())
             ]);
         }
 
@@ -673,7 +671,7 @@ class VariableFetchAnalyzer
             $non_empty_string_helper = new Union([new TNonEmptyString()], ['possibly_undefined' => true]);
 
             $argv_helper = new Union([
-                new TNonEmptyList(Type::getString())
+                Type::getNonEmptyListAtomic(Type::getString())
             ], ['possibly_undefined' => true]);
 
             $argc_helper = new Union([
@@ -787,7 +785,7 @@ class VariableFetchAnalyzer
                 'name' => $str,
                 'type' => $str,
                 'tmp_name' => $str,
-                'size' => new Union([new TIntRange(0, null)]),
+                'size' => Type::getListKey(),
                 'error' => new Union([new TIntRange(0, 8)]),
             ];
 

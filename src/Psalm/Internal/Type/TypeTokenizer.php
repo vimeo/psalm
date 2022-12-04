@@ -103,7 +103,7 @@ class TypeTokenizer
      * Tokenises a type string into an array of tuples where the first element
      * contains the string token and the second element contains its offset,
      *
-     * @return list<array{string, int}>
+     * @return list<array{0: string, 1: int}>
      *
      * @psalm-suppress PossiblyUndefinedIntArrayOffset
      */

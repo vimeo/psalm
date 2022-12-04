@@ -264,12 +264,12 @@ class ReturnTypeCollector
         $yield_type = Type::combineUnionTypeArray($yield_types, null);
 
         foreach ($yield_type->getAtomicTypes() as $type) {
-            if ($type instanceof TKeyedArray) {
-                $type = $type->getGenericArrayType();
+            if ($type instanceof TList) {
+                $type = $type->getKeyedArray();
             }
 
-            if ($type instanceof TList) {
-                $type = new TArray([Type::getInt(), $type->type_param]);
+            if ($type instanceof TKeyedArray) {
+                $type = $type->getGenericArrayType();
             }
 
             if ($type instanceof TArray) {

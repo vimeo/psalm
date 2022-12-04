@@ -177,7 +177,7 @@ class GenericTypeComparator
             && $atomic_comparison_result->replacement_atomic_type instanceof TGenericObject
             && $atomic_comparison_result_type_params
         ) {
-            /** @psalm-suppress ArgumentTypeCoercion Psalm bug */
+            /** @psalm-suppress InvalidArgument Psalm bug */
             $atomic_comparison_result->replacement_atomic_type =
                 $atomic_comparison_result->replacement_atomic_type
                     ->setTypeParams($atomic_comparison_result_type_params);

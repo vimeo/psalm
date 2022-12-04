@@ -46,7 +46,6 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
@@ -71,6 +70,7 @@ use Psalm\Type\Atomic\TVoid;
 
 use function array_filter;
 use function array_keys;
+use function count;
 use function get_class;
 use function is_array;
 use function is_numeric;
@@ -262,10 +262,10 @@ abstract class Atomic implements TypeNode
                 ]);
 
             case 'list':
-                return new TList(Type::getMixed(false, $from_docblock));
+                return Type::getListAtomic(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-list':
-                return new TNonEmptyList(Type::getMixed(false, $from_docblock));
+                return Type::getNonEmptyListAtomic(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-string':
                 return new TNonEmptyString();
@@ -462,8 +462,8 @@ abstract class Atomic implements TypeNode
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof TKeyedArray
-            || $this instanceof TList;
+            || $this instanceof TList
+            || $this instanceof TKeyedArray;
     }
 
     /**
@@ -477,15 +477,15 @@ abstract class Atomic implements TypeNode
         if ($this instanceof TArray) {
             return new TIterable($this->type_params);
         }
-        if ($this instanceof TList) {
-            return new TIterable([new Union([new TIntRange(0, null)]), $this->type_param]);
-        }
         if ($this instanceof TKeyedArray) {
             return new TIterable([$this->getGenericKeyType(), $this->getGenericValueType()]);
         }
         if ($this->hasTraversableInterface($codebase)) {
             if (strtolower($this->value) === "traversable") {
                 if ($this instanceof TGenericObject) {
+                    if (count($this->type_params) > 2) {
+                        throw new InvalidArgumentException('Too many templates!');
+                    }
                     return new TIterable($this->type_params);
                 }
                 return new TIterable([Type::getMixed(), Type::getMixed()]);
@@ -496,6 +496,9 @@ abstract class Atomic implements TypeNode
                 $this,
                 new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
             );
+            if (count($implemented_traversable_templates) > 2) {
+                throw new InvalidArgumentException('Too many templates!');
+            }
             return new TIterable($implemented_traversable_templates);
         }
         throw new InvalidArgumentException("{$this->getId()} is not an iterable");
@@ -562,7 +565,6 @@ abstract class Atomic implements TypeNode
     {
         return $this instanceof TArray
             || $this instanceof TKeyedArray
-            || $this instanceof TList
             || $this instanceof TClassStringMap
             || $this->hasArrayAccessInterface($codebase)
             || ($this instanceof TNamedObject && $this->value === 'SimpleXMLElement');
@@ -795,10 +797,6 @@ abstract class Atomic implements TypeNode
             return true;
         }
 
-        if ($this instanceof TNonEmptyList) {
-            return true;
-        }
-
         if ($this instanceof TNonEmptyMixed) {
             return true;
         }
@@ -838,11 +836,7 @@ abstract class Atomic implements TypeNode
         }
 
         if ($this instanceof TKeyedArray) {
-            foreach ($this->properties as $property) {
-                if ($property->possibly_undefined === false) {
-                    return true;
-                }
-            }
+            return $this->isNonEmpty();
         }
 
         if ($this instanceof TTemplateParam && $this->as->isAlwaysTruthy()) {

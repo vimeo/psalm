@@ -6,10 +6,11 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -17,6 +18,7 @@ use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Union;
 
 use function count;
+use function is_int;
 
 /**
  * @internal
@@ -61,6 +63,9 @@ class UnsetAnalyzer
                     $root_types = [];
 
                     foreach ($context->vars_in_scope[$root_var_id]->getAtomicTypes() as $atomic_root_type) {
+                        if ($atomic_root_type instanceof TList) {
+                            $atomic_root_type = $atomic_root_type->getKeyedArray();
+                        }
                         if ($atomic_root_type instanceof TKeyedArray) {
                             $key_value = null;
                             if ($key_type->isSingleIntLiteral()) {
@@ -71,21 +76,39 @@ class UnsetAnalyzer
                             if ($key_value !== null) {
                                 $properties = $atomic_root_type->properties;
                                 $is_list = $atomic_root_type->is_list;
-                                if (isset($properties[$key_value])) {
+                                $list_key = null;
+                                if ($atomic_root_type->fallback_params) {
+                                    $is_list = false;
+                                } elseif (isset($properties[$key_value])) {
                                     if ($is_list
                                         && $key_value !== count($properties)-1
                                     ) {
                                         $is_list = false;
                                     }
-                                    unset($properties[$key_value]);
+                                }
+                                unset($properties[$key_value]);
+
+                                if ($atomic_root_type->is_list && !$is_list && is_int($key_value)) {
+                                    if ($key_value === 0) {
+                                        $list_key = new Union([new TIntRange(1, null)]);
+                                    } elseif ($key_value === 1) {
+                                        $list_key = new Union([
+                                            new TLiteralInt(0),
+                                            new TIntRange(2, null)
+                                        ]);
+                                    } else {
+                                        $list_key = new Union([
+                                            new TIntRange(0, $key_value-1),
+                                            new TIntRange($key_value+1, null)
+                                        ]);
+                                    }
                                 }
 
-                                /** @psalm-suppress DocblockTypeContradiction https://github.com/vimeo/psalm/issues/8518 */
                                 if (!$properties) {
                                     if ($atomic_root_type->fallback_params) {
                                         $root_types [] =
                                             new TArray([
-                                                $atomic_root_type->fallback_params[0],
+                                                $list_key ?? $atomic_root_type->fallback_params[0],
                                                 $atomic_root_type->fallback_params[1],
                                             ])
                                         ;
@@ -101,7 +124,10 @@ class UnsetAnalyzer
                                     $root_types []= new TKeyedArray(
                                         $properties,
                                         null,
-                                        $atomic_root_type->fallback_params,
+                                        $atomic_root_type->fallback_params ? [
+                                            $list_key ?? $atomic_root_type->fallback_params[0],
+                                            $atomic_root_type->fallback_params[1],
+                                        ] : null,
                                         $is_list
                                     );
                                 }
@@ -121,13 +147,6 @@ class UnsetAnalyzer
                             $root_types []= new TArray($atomic_root_type->type_params);
                         } elseif ($atomic_root_type instanceof TNonEmptyMixed) {
                             $root_types []= new TMixed();
-                        } elseif ($atomic_root_type instanceof TList) {
-                            $root_types []=
-                                new TArray([
-                                    Type::getInt(),
-                                    $atomic_root_type->type_param
-                                ])
-                            ;
                         } else {
                             $root_types []= $atomic_root_type;
                         }

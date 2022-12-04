@@ -1092,6 +1092,7 @@ class ForeachTest extends TestCase
                                 $currentIndexes
                             );
 
+                            /** @psalm-suppress PossiblyUndefinedArrayOffset */
                             $currentIndexes[0]++;
                         }
                     }'
