@@ -121,7 +121,7 @@ return [
         'substituteEntities' => 'bool',
         'validateOnParse' => 'bool',
         'version' => 'string|null',
-        'xmlencoding' => 'string|null',
+        'xmlEncoding' => 'string|null',
         'xmlStandalone' => 'bool',
         'xmlVersion' => 'string|null',
     ],
@@ -139,7 +139,7 @@ return [
         'systemid' => 'string',
     ],
     'domelement' => [
-        'childelementcount' => 'int',
+        'childElementCount' => 'int',
         'firstElementChild' => 'DOMElement|null',
         'lastElementChild' => 'DOMElement|null',
         'nextElementSibling' => 'DOMElement|null',
@@ -163,7 +163,7 @@ return [
     ],
     'domnode' => [
         'attributes' => 'DOMNamedNodeMap|null',
-        'baseuri' => 'string|null',
+        'baseURI' => 'string|null',
         'childNodes' => 'DOMNodeList<DOMNode>',
         'firstChild' => 'DOMNode|null',
         'lastChild' => 'DOMNode|null',
