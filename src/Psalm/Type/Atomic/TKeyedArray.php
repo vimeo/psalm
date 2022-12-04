@@ -317,7 +317,7 @@ class TKeyedArray extends Atomic
     /**
      * @return TArray|TNonEmptyArray
      */
-    public function getGenericArrayType(?string $list_var_id = null): TArray
+    public function getGenericArrayType(bool $allow_non_empty = true, ?string $list_var_id = null): TArray
     {
         $key_types = [];
         $value_type = null;
@@ -355,7 +355,7 @@ class TKeyedArray extends Atomic
                 $key_type = new Union([new TIntRange(0, null, false, $list_var_id)]);
             }
 
-            if ($has_defined_keys) {
+            if ($has_defined_keys && $allow_non_empty) {
                 return new TNonEmptyArray([$key_type, $value_type]);
             }
             return new TArray([$key_type, $value_type]);
@@ -371,7 +371,7 @@ class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($has_defined_keys || $this->fallback_params !== null) {
+        if ($allow_non_empty && ($has_defined_keys || $this->fallback_params !== null)) {
             return new TNonEmptyArray([$key_type, $value_type]);
         }
         return new TArray([$key_type, $value_type]);
