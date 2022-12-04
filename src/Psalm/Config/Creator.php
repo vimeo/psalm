@@ -132,7 +132,7 @@ final class Creator
                 $issues_at_level[$issue_level][$issue_type] = 0;
             }
 
-            $issues_at_level[$issue_level][$issue_type] += 100/$counted_types;
+            $issues_at_level[$issue_level][$issue_type] += 100 / $counted_types;
         }
 
         foreach ($issues_at_level as $level => $issues) {
@@ -186,7 +186,10 @@ final class Creator
 
             if (!file_exists($composer_json_location)) {
                 throw new ConfigCreationException(
-                    'Problem during config autodiscovery - could not find composer.json during initialization.'
+                    'Problem during source autodiscovery - could not find composer.json during initialization. '
+                    . 'If your project doesn\'t use Composer autoloader you will need to run '
+                    . '`psalm --init source_folder`, e.g. `psalm --init library` if your source files '
+                    . 'reside in `library` folder'
                 );
             }
             try {
