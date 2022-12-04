@@ -16,8 +16,8 @@
  */
 return [
   'added' => [
-    'mysqli_execute_query' => ['mysqli_result|bool', 'mysqli'=>'mysqli', 'query'=>'non-empty-string', 'params='=>'list<string>|null'],
-    'mysqli::execute_query' => ['mysqli_result|bool', 'query'=>'non-empty-string', 'params='=>'list<string>|null'],
+    'mysqli_execute_query' => ['mysqli_result|bool', 'mysqli'=>'mysqli', 'query'=>'non-empty-string', 'params='=>'list<mixed>|null'],
+    'mysqli::execute_query' => ['mysqli_result|bool', 'query'=>'non-empty-string', 'params='=>'list<mixed>|null'],
     'openssl_cipher_key_length' => ['positive-int|false', 'cipher_algo'=>'non-empty-string'],
     'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
     'ini_parse_quantity' => ['int', 'shorthand'=>'non-empty-string'],
