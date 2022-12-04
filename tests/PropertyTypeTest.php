@@ -2676,6 +2676,20 @@ class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0'
             ],
+            'impossibleIntersection' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    /** @psalm-suppress MissingConstructor */
+                    class Baz
+                    {
+                        private Foo&Bar $foobar;
+                    }
+                    ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1'
+            ],
         ];
     }
 

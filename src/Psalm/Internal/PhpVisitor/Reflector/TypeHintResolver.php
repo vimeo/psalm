@@ -114,7 +114,7 @@ class TypeHintResolver
             }
 
             if ($type === null) {
-                throw new UnexpectedValueException('Intersection type could not be resolved');
+                $type = Type::getNever();
             }
 
             return $type;
