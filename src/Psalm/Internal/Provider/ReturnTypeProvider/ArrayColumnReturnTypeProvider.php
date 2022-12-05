@@ -2,10 +2,14 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StatementsSource;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -36,42 +40,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         ) {
             return Type::getMixed();
         }
-
-        $row_type = $row_shape = null;
-        $input_array_not_empty = false;
-
-        // calculate row shape
-        if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
-            && $first_arg_type->isSingle()
-            && $first_arg_type->hasArray()
-        ) {
-            $input_array = $first_arg_type->getArray();
-            if ($input_array instanceof TKeyedArray) {
-                $row_type = $input_array->getGenericValueType();
-            } elseif ($input_array instanceof TArray) {
-                $row_type = $input_array->type_params[1];
-            }
-
-            if ($row_type && $row_type->isSingle()) {
-                if ($row_type->hasArray()) {
-                    $row_shape = $row_type->getArray();
-                } elseif ($row_type->hasObjectType()) {
-                    $row_shape_union = GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
-                        $row_type,
-                        $statements_source,
-                        $event->getContext(),
-                        $event->getCodeLocation()
-                    );
-                    if ($row_shape_union->isSingle()) {
-                        $row_shape_union_parts = $row_shape_union->getAtomicTypes();
-                        $row_shape = reset($row_shape_union_parts);
-                    }
-                }
-            }
-
-            $input_array_not_empty = $input_array instanceof TNonEmptyArray ||
-                ($input_array instanceof TKeyedArray && $input_array->isNonEmpty());
-        }
+        $context = $event->getContext();
+        $code_location = $event->getCodeLocation();
 
         $value_column_name = null;
         $value_column_name_is_null = false;
@@ -99,6 +69,82 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 }
             }
         }
+
+
+        $row_type = $row_shape = null;
+        $input_array_not_empty = false;
+
+        // calculate row shape
+        if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
+            && $first_arg_type->isSingle()
+            && $first_arg_type->hasArray()
+        ) {
+            $input_array = $first_arg_type->getArray();
+            if ($input_array instanceof TKeyedArray && !$input_array->fallback_params
+                && $value_column_name
+            ) {
+                $properties = [];
+                $ok = true;
+                foreach ($input_array->properties as $key => $property) {
+                    $row_shape = self::getRowShape(
+                        $property,
+                        $statements_source,
+                        $context,
+                        $code_location
+                    );
+                    if (!$row_shape) {
+                        continue;
+                    }
+                    if (!$row_shape instanceof TKeyedArray) {
+                        $ok = false;
+                        break;
+                    }
+
+                    if (isset($row_shape->properties[$value_column_name])) {
+                        $result_element_type = $row_shape->properties[$value_column_name];
+                    } elseif ($row_shape->fallback_params) {
+                        $ok = false;
+                        break;
+                    } else {
+                        continue;
+                    }
+
+                    if ($key_column_name && isset($row_shape->properties[$key_column_name])) {
+                        $result_key_type = $row_shape->properties[$key_column_name];
+                        if ($result_key_type->isSingleIntLiteral()) {
+                            $key = $result_key_type->getSingleIntLiteral()->value;
+                        } elseif ($result_key_type->isSingleStringLiteral()) {
+                            $key = $result_key_type->getSingleStringLiteral()->value;
+                        } else {
+                            $ok = false;
+                            break;
+                        }
+                    }
+
+                    $properties[$key] = $result_element_type;
+                }
+                if ($ok) {
+                    return new Union([$input_array->setProperties($properties)]);
+                }
+            }
+
+            if ($input_array instanceof TKeyedArray) {
+                $row_type = $input_array->getGenericValueType();
+            } elseif ($input_array instanceof TArray) {
+                $row_type = $input_array->type_params[1];
+            }
+
+            $row_shape = self::getRowShape(
+                $row_type,
+                $statements_source,
+                $context,
+                $code_location
+            );
+
+            $input_array_not_empty = $input_array instanceof TNonEmptyArray ||
+                ($input_array instanceof TKeyedArray && $input_array->isNonEmpty());
+        }
+
 
         $result_key_type = Type::getArrayKey();
         $result_element_type = null !== $row_type && $value_column_name_is_null ? $row_type : null;
@@ -133,5 +179,27 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         }
 
         return new Union([$type]);
+    }
+
+    /**
+     * @return TArray|TKeyedArray|TClassStringMap|null
+     */
+    private static function getRowShape(?Union $row_type, StatementsSource $statements_source, Context $context, CodeLocation $code_location): ?Atomic {
+        if ($row_type && $row_type->isSingle()) {
+            if ($row_type->hasArray()) {
+                return $row_type->getArray();
+            } elseif ($row_type->hasObjectType()) {
+                $row_shape_union = GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
+                    $row_type,
+                    $statements_source,
+                    $context,
+                    $code_location
+                );
+                if ($row_shape_union->isSingle()) {
+                    return $row_shape_union->getSingleAtomic();
+                }
+            }
+        }
+        return null;
     }
 }
