@@ -484,10 +484,16 @@ class TypeParseTest extends TestCase
         Type::parseString('list{a: 0, b?: 1, c?: 2}');
     }
 
-    public function testTKeyedListNonListOptionalWrongOrder(): void
+    public function testTKeyedListNonListOptionalWrongOrder1(): void
     {
         $this->expectExceptionMessage('A list shape cannot describe a non-list!');
         Type::parseString('list{0?: 0, 1: 1, 2: 2}');
+    }
+
+    public function testTKeyedListNonListOptionalWrongOrder2(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        Type::parseString('list{0: 0, 1?: 1, 2: 2}');
     }
 
 
