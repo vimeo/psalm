@@ -427,6 +427,70 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testTKeyedList(): void
+    {
+        $this->assertSame(
+            'list{int, int, string}',
+            (string)Type::parseString('list{int, int, string}')
+        );
+    }
+
+    public function testTKeyedListOptional(): void
+    {
+        $this->assertSame(
+            'list{0: int, 1?: int, 2?: string}',
+            (string)Type::parseString('list{0: int, 1?: int, 2?: string}')
+        );
+    }
+
+
+    public function testTKeyedArrayList(): void
+    {
+        $this->assertSame(
+            'list{int, int, string}',
+            (string)Type::parseString('array{int, int, string}')
+        );
+    }
+
+
+    public function testTKeyedArrayNonList(): void
+    {
+        $this->assertSame(
+            'array{0: int, 1: int, 2: string}',
+            (string)Type::parseString('array{0: int, 1: int, 2: string}')
+        );
+    }
+
+
+    public function testTKeyedCallableArrayNonList(): void
+    {
+        $this->assertSame(
+            'callable-array{0: class-string, 1: string}',
+            (string)Type::parseString('callable-array{0: class-string, 1: string}')
+        );
+    }
+
+
+    public function testTKeyedListNonList(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        Type::parseString('list{a: 0, b: 1, c: 2}');
+    }
+
+
+    public function testTKeyedListNonListOptional(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        Type::parseString('list{a: 0, b?: 1, c?: 2}');
+    }
+
+    public function testTKeyedListNonListOptionalWrongOrder(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        Type::parseString('list{0?: 0, 1: 1, 2: 2}');
+    }
+
+
     public function testSimpleCallable(): void
     {
         $this->assertSame(
