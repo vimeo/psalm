@@ -192,15 +192,7 @@ class ReflectionClass implements Reflector {
      */
     public function getModifiers(): bool {}
 
-    /**
-     * @template TCheckedObject of object
-     *
-     * @param TCheckedObject $object
-     *
-     * @return (TCheckedObject is T ? true : bool)
-     *
-     * @psalm-pure
-     */
+    /** @psalm-pure */
     public function isInstance(object $object): bool {}
 
     /**
