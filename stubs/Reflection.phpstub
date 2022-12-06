@@ -446,7 +446,7 @@ class ReflectionFunction extends ReflectionFunctionAbstract
 class ReflectionProperty implements Reflector
 {
     /**
-     * @var non-empty-string
+     * @var string
      * @readonly
      */
     public $name;
