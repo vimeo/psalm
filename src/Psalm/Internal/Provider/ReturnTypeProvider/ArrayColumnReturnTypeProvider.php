@@ -88,6 +88,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 $ok = true;
                 $last_custom_key = -1;
                 $is_list = $input_array->is_list || $key_column_name !== null;
+                $had_possibly_undefined = false;
                 foreach ($input_array->properties as $key => $property) {
                     $row_shape = self::getRowShape(
                         $property,
@@ -141,7 +142,17 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         }
                     }
 
-                    $properties[$key] = $result_element_type;
+                    $properties[$key] = $result_element_type->setPossiblyUndefined(
+                        $property->possibly_undefined
+                    );
+
+                    if (!$property->possibly_undefined
+                        && $had_possibly_undefined
+                    ) {
+                        $is_list = false;
+                    }
+
+                    $had_possibly_undefined = $had_possibly_undefined || $property->possibly_undefined;
                 }
                 if ($ok) {
                     return new Union([new TKeyedArray(
