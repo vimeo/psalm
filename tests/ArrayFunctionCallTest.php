@@ -1450,12 +1450,12 @@ class ArrayFunctionCallTest extends TestCase
                     $p = array_column($p_prepare, "y");
                 ',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>',
-                    '$b' => 'non-empty-list<int>',
-                    '$c' => 'array<int, array{a: int}>',
+                    '$a===' => 'list{1, 2, 3}',
+                    '$b===' => 'list{1, 2, 3}',
+                    '$c' => 'array{1: array{a: int}, 2: array{a: int}, 3: array{a: int}}',
                     '$d' => 'array<array-key, array{a: int}>',
                     '$e' => 'array<array-key, mixed>',
-                    '$f' => 'non-empty-array<string, int>',
+                    '$f' => 'array{a: int, b: int}',
                     '$g' => 'list<mixed>',
                     '$h' => 'list<mixed>',
                     '$i' => 'array<array-key, mixed>',
@@ -1463,14 +1463,13 @@ class ArrayFunctionCallTest extends TestCase
                     '$k' => 'list<mixed>',
                     '$l' => 'list<string>',
                     '$m' => 'list<mixed>',
-                    '$n' => 'non-empty-list<string>',
+                    '$n' => 'list{string}',
                     '$o' => 'list<int>',
                     '$p' => 'list<int>',
                 ],
             ],
             'arrayColumnExactInference' => [
                 'code' => '<?php
-                <?php
                     $a = array_column([
                         ["v" => "a"],
                         ["v" => "b"],
@@ -1512,6 +1511,19 @@ class ArrayFunctionCallTest extends TestCase
                         ["v" => "c", "k" => 1],
                         ["v" => "d", "k" => 0],
                     ], "v", "k");
+
+                    $g = array_column([
+                        ["v" => "a", "k" => 0],
+                        ["v" => "b", "k" => 1],
+                        ["v" => "c", "k" => 2],
+                        ["v" => "d", "k" => 3],
+                    ], null, "k");
+
+                    $h = array_column([
+                        "a" => ["k" => 0],
+                        "b" => ["k" => 1],
+                        "c" => ["k" => 2],
+                    ], null, "k");
                 ',
                 'assertions' => [
                     '$a===' => "list{'a', 'b', 'c', 'd'}",
@@ -1519,7 +1531,9 @@ class ArrayFunctionCallTest extends TestCase
                     '$c===' => "list{'a', 'c', 'd'}",
                     '$d===' => "array{A: 'a', B: 'b', C: 'c', D: 'd'}",
                     '$e===' => "list{'a', 'b', 'c', 'd'}",
-                    '$d===' => "array{0: 'd', 1: 'c', 2: 'b', 3: 'a'}",
+                    '$f===' => "array{0: 'd', 1: 'c', 2: 'b', 3: 'a'}",
+                    '$g===' => "list{array{k: 0, v: 'a'}, array{k: 1, v: 'b'}, array{k: 2, v: 'c'}, array{k: 3, v: 'd'}}",
+                    '$h===' => "list{array{k: 0}, array{k: 1}, array{k: 2}}",
                 ]
             ],
             'splatArrayIntersect' => [
