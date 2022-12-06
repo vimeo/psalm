@@ -1468,6 +1468,60 @@ class ArrayFunctionCallTest extends TestCase
                     '$p' => 'list<int>',
                 ],
             ],
+            'arrayColumnExactInference' => [
+                'code' => '<?php
+                <?php
+                    $a = array_column([
+                        ["v" => "a"],
+                        ["v" => "b"],
+                        ["v" => "c"],
+                        ["v" => "d"],
+                    ], "v");
+
+                    $b = array_column([
+                        ["v" => "a"],
+                        [],
+                        ["v" => "c"],
+                        ["v" => "d"],
+                    ], "v");
+
+                    $c = array_column([
+                        ["v" => "a"],
+                        123,
+                        ["v" => "c"],
+                        ["v" => "d"],
+                    ], "v");
+
+                    $d = array_column([
+                        ["v" => "a", "k" => "A"],
+                        ["v" => "b", "k" => "B"],
+                        ["v" => "c", "k" => "C"],
+                        ["v" => "d", "k" => "D"],
+                    ], "v", "k");
+
+                    $e = array_column([
+                        ["v" => "a", "k" => 0],
+                        ["v" => "b", "k" => 1],
+                        ["v" => "c", "k" => 2],
+                        ["v" => "d", "k" => 3],
+                    ], "v", "k");
+
+                    $f = array_column([
+                        ["v" => "a", "k" => 3],
+                        ["v" => "b", "k" => 2],
+                        ["v" => "c", "k" => 1],
+                        ["v" => "d", "k" => 0],
+                    ], "v", "k");
+                ',
+                'assertions' => [
+                    '$a===' => "list{'a', 'b', 'c', 'd'}",
+                    '$b===' => "list{'a', 'c', 'd'}",
+                    '$c===' => "list{'a', 'c', 'd'}",
+                    '$d===' => "array{A: 'a', B: 'b', C: 'c', D: 'd'}",
+                    '$e===' => "list{'a', 'b', 'c', 'd'}",
+                    '$d===' => "array{0: 'd', 1: 'c', 2: 'b', 3: 'a'}",
+                ]
+            ],
             'splatArrayIntersect' => [
                 'code' => '<?php
                     $foo = [

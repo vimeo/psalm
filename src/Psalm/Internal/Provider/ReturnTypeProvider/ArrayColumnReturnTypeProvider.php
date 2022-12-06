@@ -16,7 +16,6 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
 
 use function count;
-use function reset;
 
 /**
  * @internal
@@ -85,6 +84,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             ) {
                 $properties = [];
                 $ok = true;
+                $last_custom_key = -1;
+                $is_list = $input_array->is_list;
                 foreach ($input_array->properties as $key => $property) {
                     $row_shape = self::getRowShape(
                         $property,
@@ -96,6 +97,9 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         continue;
                     }
                     if (!$row_shape instanceof TKeyedArray) {
+                        if ($row_shape instanceof TArray && $row_shape->isEmptyArray()) {
+                            continue;
+                        }
                         $ok = false;
                         break;
                     }
@@ -109,12 +113,22 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         continue;
                     }
 
-                    if ($key_column_name && isset($row_shape->properties[$key_column_name])) {
-                        $result_key_type = $row_shape->properties[$key_column_name];
-                        if ($result_key_type->isSingleIntLiteral()) {
-                            $key = $result_key_type->getSingleIntLiteral()->value;
-                        } elseif ($result_key_type->isSingleStringLiteral()) {
-                            $key = $result_key_type->getSingleStringLiteral()->value;
+                    if ($key_column_name) {
+                        if (isset($row_shape->properties[$key_column_name])) {
+                            $result_key_type = $row_shape->properties[$key_column_name];
+                            if ($result_key_type->isSingleIntLiteral()) {
+                                $key = $result_key_type->getSingleIntLiteral()->value;
+                                if ($is_list && $last_custom_key != $key-1) {
+                                    $is_list = false;
+                                }
+                                $last_custom_key = $key;
+                            } elseif ($result_key_type->isSingleStringLiteral()) {
+                                $key = $result_key_type->getSingleStringLiteral()->value;
+                                $is_list = false;
+                            } else {
+                                $ok = false;
+                                break;
+                            }
                         } else {
                             $ok = false;
                             break;
@@ -124,7 +138,12 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     $properties[$key] = $result_element_type;
                 }
                 if ($ok) {
-                    return new Union([$input_array->setProperties($properties)]);
+                    return new Union([new TKeyedArray(
+                        $properties,
+                        null,
+                        $input_array->fallback_params,
+                        $is_list
+                    )]);
                 }
             }
 
@@ -184,7 +203,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
     /**
      * @return TArray|TKeyedArray|TClassStringMap|null
      */
-    private static function getRowShape(?Union $row_type, StatementsSource $statements_source, Context $context, CodeLocation $code_location): ?Atomic {
+    private static function getRowShape(?Union $row_type, StatementsSource $statements_source, Context $context, CodeLocation $code_location): ?Atomic
+    {
         if ($row_type && $row_type->isSingle()) {
             if ($row_type->hasArray()) {
                 return $row_type->getArray();
