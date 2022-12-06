@@ -2,21 +2,18 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
-use Psalm\StatementsSource;
 use Psalm\Type;
-use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
 
+use function array_combine;
+use function assert;
 use function count;
 
 /**
@@ -42,30 +39,38 @@ class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProviderInterf
             return Type::getNever();
         }
 
-        if ($keys_type = $statements_source->node_data->getType($call_args[0]->value)) {
-            if (!$keys_type->isArray()) {
-                return null;
-            }
-            $keys = $keys_type->getArray();
-            if ($keys instanceof TArray && $keys->isEmptyArray()) {
-                $keys = [];
-            } elseif (!$keys instanceof TKeyedArray || $keys->fallback_params) {
-                return null;
-            }
+        if (!$keys_type = $statements_source->node_data->getType($call_args[0]->value)) {
+            return null;
+        }
+        if (!$keys_type->isArray()) {
+            return null;
+        }
+
+        $keys = $keys_type->getArray();
+        if ($keys instanceof TArray && $keys->isEmptyArray()) {
+            $keys = [];
+        } elseif (!$keys instanceof TKeyedArray || $keys->fallback_params) {
+            return null;
+        } else {
             $keys = $keys->properties;
         }
-        if ($values_type = $statements_source->node_data->getType($call_args[1]->value)) {
-            if (!$values_type->isArray()) {
-                return null;
-            }
-            $values = $values_type->getArray();
-            if ($values instanceof TArray && $values->isEmptyArray()) {
-                $values = [];
-            } elseif (!$values instanceof TKeyedArray || $values->fallback_params) {
-                return null;
-            }
+
+        if (!$values_type = $statements_source->node_data->getType($call_args[1]->value)) {
+            return null;
+        }
+        if (!$values_type->isArray()) {
+            return null;
+        }
+
+        $values = $values_type->getArray();
+        if ($values instanceof TArray && $values->isEmptyArray()) {
+            $values = [];
+        } elseif (!$values instanceof TKeyedArray || $values->fallback_params) {
+            return null;
+        } else {
             $values = $values->properties;
         }
+
 
         $keys_array = [];
         $is_list = true;
@@ -115,6 +120,12 @@ class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProviderInterf
             $keys_array,
             $values
         );
+
+        assert($result !== false);
+
+        if (!$result) {
+            return Type::getEmptyArray();
+        }
 
         return new Union([new TKeyedArray($result, null, null, $is_list)]);
     }

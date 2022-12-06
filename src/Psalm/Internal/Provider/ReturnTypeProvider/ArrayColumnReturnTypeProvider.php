@@ -4,13 +4,14 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
@@ -56,6 +57,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         $key_column_name = null;
         $key_column_name_is_null = false;
+        $third_arg_type = null;
         // calculate key column name
         if (isset($call_args[2])) {
             $third_arg_type = $statements_source->node_data->getType($call_args[2]->value);
@@ -66,8 +68,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 } elseif ($third_arg_type->isSingleStringLiteral()) {
                     $key_column_name = $third_arg_type->getSingleStringLiteral()->value;
                 }
+                $key_column_name_is_null = $third_arg_type->isNull();
             }
-            $key_column_name_is_null = $third_arg_type->isNull();
         }
 
 
@@ -82,7 +84,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             $input_array = $first_arg_type->getArray();
             if ($input_array instanceof TKeyedArray && !$input_array->fallback_params
                 && ($value_column_name !== null || $value_column_name_is_null)
-                && !(isset($call_args[2]) && !$key_column_name)
+                && !($third_arg_type && !$key_column_name)
             ) {
                 $properties = [];
                 $ok = true;
@@ -155,6 +157,9 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     $had_possibly_undefined = $had_possibly_undefined || $property->possibly_undefined;
                 }
                 if ($ok) {
+                    if (!$properties) {
+                        return Type::getEmptyArray();
+                    }
                     return new Union([new TKeyedArray(
                         $properties,
                         null,
@@ -204,7 +209,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             }
         }
 
-        if (isset($call_args[2]) && !$key_column_name_is_null) {
+        if ($third_arg_type && !$key_column_name_is_null) {
             $type = $have_at_least_one_res ?
                 new TNonEmptyArray([$result_key_type, $result_element_type ?? Type::getMixed()])
                 : new TArray([$result_key_type, $result_element_type ?? Type::getMixed()]);
@@ -220,21 +225,18 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
     /**
      * @return TArray|TKeyedArray|TClassStringMap|null
      */
-    private static function getRowShape(?Union $row_type, StatementsSource $statements_source, Context $context, CodeLocation $code_location): ?Atomic
+    private static function getRowShape(?Union $row_type, SourceAnalyzer $statements_source, Context $context, CodeLocation $code_location): ?Atomic
     {
         if ($row_type && $row_type->isSingle()) {
             if ($row_type->hasArray()) {
                 return $row_type->getArray();
             } elseif ($row_type->hasObjectType()) {
-                $row_shape_union = GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
+                return GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
                     $row_type,
                     $statements_source,
                     $context,
                     $code_location
                 );
-                if ($row_shape_union->isSingle()) {
-                    return $row_shape_union->getSingleAtomic();
-                }
             }
         }
         return null;
