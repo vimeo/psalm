@@ -31,6 +31,26 @@ namespace {
         public function isEnum(): bool {}
     }
 
+    class ReflectionProperty implements Reflector
+    {
+        /**
+         * Starting from PHP 8.1, this method is pure, and has no effect.
+         *
+         * @psalm-pure
+         */
+        public function setAccessible(bool $accessible): void {}
+    }
+
+    class ReflectionMethod extends ReflectionFunctionAbstract
+    {
+        /**
+         * Starting from PHP 8.1, this method is pure, and has no effect.
+         *
+         * @psalm-pure
+         */
+        public function setAccessible(bool $accessible): void {}
+    }
+
     /** @psalm-immutable */
     class ReflectionEnum extends ReflectionClass implements Reflector
     {
