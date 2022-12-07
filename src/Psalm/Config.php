@@ -2065,7 +2065,7 @@ class Config
 
         $core_generic_files = [];
 
-        if (PHP_VERSION_ID < 8_00_00 && $codebase->analysis_php_version_id >= 8_00_00) {
+        if ($codebase->analysis_php_version_id >= 8_00_00) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
 
             if (!file_exists($stringable_path)) {
@@ -2075,7 +2075,7 @@ class Config
             $core_generic_files[] = $stringable_path;
         }
 
-        if (PHP_VERSION_ID < 8_01_00 && $codebase->analysis_php_version_id >= 8_01_00) {
+        if ($codebase->analysis_php_version_id >= 8_01_00) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
 
             if (!file_exists($stringable_path)) {
@@ -2085,7 +2085,7 @@ class Config
             $core_generic_files[] = $stringable_path;
         }
 
-        if (PHP_VERSION_ID < 8_02_00 && $codebase->analysis_php_version_id >= 8_02_00) {
+        if ($codebase->analysis_php_version_id >= 8_02_00) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php82.phpstub';
 
             if (!file_exists($stringable_path)) {
