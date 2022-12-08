@@ -1471,7 +1471,6 @@ class ProjectAnalyzer
      * returns number of cpu cores
      * Copyleft 2018, license: WTFPL
      * @throws NumberOfCpuCoreNotFound
-     * @psalm-suppress ForbiddenCode
      */
     public static function getCpuCount(): int
     {
