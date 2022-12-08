@@ -1,6 +1,6 @@
 # Utility types
 
-Psalm supports some _magical_ utility types that brings superpower to the PHP type system.Re
+Psalm supports some _magical_ utility types that brings superpower to the PHP type system.
 
 ## `key-of<T>`
 
