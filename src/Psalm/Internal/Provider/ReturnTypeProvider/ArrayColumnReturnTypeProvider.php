@@ -225,8 +225,12 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
     /**
      * @return TArray|TKeyedArray|TClassStringMap|null
      */
-    private static function getRowShape(?Union $row_type, SourceAnalyzer $statements_source, Context $context, CodeLocation $code_location): ?Atomic
-    {
+    private static function getRowShape(
+        ?Union $row_type,
+        SourceAnalyzer $statements_source,
+        Context $context,
+        CodeLocation $code_location
+    ): ?Atomic {
         if ($row_type && $row_type->isSingle()) {
             if ($row_type->hasArray()) {
                 return $row_type->getArray();
