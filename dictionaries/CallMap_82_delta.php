@@ -21,6 +21,7 @@ return [
     'openssl_cipher_key_length' => ['positive-int|false', 'cipher_algo'=>'non-empty-string'],
     'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
     'ini_parse_quantity' => ['int', 'shorthand'=>'non-empty-string'],
+    'sodium_crypto_stream_xchacha20_xor_ic' => ['string', 'message'=>'string', 'nonce'=>'non-empty-string', 'counter'=>'int', 'key'=>'non-empty-string'],
     'memory_reset_peak_usage' => ['void'],
   ],
 
