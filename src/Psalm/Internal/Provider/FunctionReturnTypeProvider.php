@@ -9,6 +9,7 @@ use Psalm\Context;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayChunkReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayColumnReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayCombineReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFillKeysReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFillReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFilterReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
@@ -83,6 +84,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ArrayReverseReturnTypeProvider::class);
         $this->registerClass(ArrayUniqueReturnTypeProvider::class);
         $this->registerClass(ArrayFillReturnTypeProvider::class);
+        $this->registerClass(ArrayFillKeysReturnTypeProvider::class);
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ParseUrlReturnTypeProvider::class);

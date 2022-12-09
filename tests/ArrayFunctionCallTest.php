@@ -1063,6 +1063,35 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     count(array_fill(0, 0, 0)) === 0;',
             ],
+            'arrayFillLiteral' => [
+                'code' => '<?php
+                    $a = array_fill(0, 3, 0);
+                    $b = array_fill(-1, 3, 0);
+                    $c = array_fill(-2, 3, 0);
+                ',
+                'assertions' => [
+                    '$a===' => 'list{0, 0, 0}',
+                    // Techinically this doesn't cover the case of running on 8.0 but nvm
+                    '$b===' => 'array{-1: 0, 0: 0, 1: 0}',
+                    '$c===' => 'array{-2: 0, 0: 0, 1: 0}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4'
+            ],
+            'arrayFillLiteral80' => [
+                'code' => '<?php
+                    $a = array_fill(0, 3, 0);
+                    $b = array_fill(-1, 3, 0);
+                    $c = array_fill(-2, 3, 0);
+                ',
+                'assertions' => [
+                    '$a===' => 'list{0, 0, 0}',
+                    '$b===' => 'array{-1: 0, 0: 0, 1: 0}',
+                    '$c===' => 'array{-1: 0, -2: 0, 0: 0}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
+            ],
             'implodeMultiDimensionalArray' => [
                 'code' => '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
@@ -1977,10 +2006,28 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayFillKeys' => [
                 'code' => '<?php
+                    /** @var list<int> */
                     $keys = [1, 2, 3];
-                    $result = array_fill_keys($keys, true);',
+                    $a = array_fill_keys($keys, true);
+
+                    $keys = [1, 2, 3];
+                    $b = array_fill_keys($keys, true);
+
+                    $keys = [0, 1, 2];
+                    $c = array_fill_keys($keys, true);
+
+                    $keys = random_int(0, 1) ? [0] : [0, 1];
+                    $d = array_fill_keys($keys, true);
+
+                    $keys = random_int(0, 1) ? ["a"] : ["a", "b"];
+                    $e = array_fill_keys($keys, true);
+                ',
                 'assertions' => [
-                    '$result' => 'array<int, true>',
+                    '$a===' => 'array<int, true>',
+                    '$b===' => 'array{1: true, 2: true, 3: true}',
+                    '$c===' => 'list{true, true, true}',
+                    '$d===' => 'list{0: true, 1?: true}',
+                    '$e===' => 'array{a: true, b?: true}',
                 ],
             ],
             'shuffle' => [
