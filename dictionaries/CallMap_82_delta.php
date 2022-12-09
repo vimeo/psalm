@@ -22,6 +22,9 @@ return [
     'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
     'ini_parse_quantity' => ['int', 'shorthand'=>'non-empty-string'],
     'memory_reset_peak_usage' => ['void'],
+    'ZipArchive::clearError' => ['void'],
+    'ZipArchive::getStreamIndex' => ['resource|false', 'index'=>'int', 'flags='=>'int'],
+    'ZipArchive::getStreamName' => ['resource|false', 'name'=>'string', 'flags='=>'int'],
   ],
 
   'changed' => [
