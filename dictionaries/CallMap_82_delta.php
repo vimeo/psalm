@@ -21,6 +21,7 @@ return [
     'openssl_cipher_key_length' => ['positive-int|false', 'cipher_algo'=>'non-empty-string'],
     'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
     'ini_parse_quantity' => ['int', 'shorthand'=>'non-empty-string'],
+    'libxml_get_external_entity_loader' => ['(callable(string,string,array):(resource|string|null))|null'],
     'memory_reset_peak_usage' => ['void'],
   ],
 
