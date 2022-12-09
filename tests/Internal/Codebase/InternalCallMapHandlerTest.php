@@ -337,22 +337,8 @@ class InternalCallMapHandlerTest extends TestCase
      */
     private static $ignoredReturnTypeOnlyFunctions = [
         'bcsqrt',
-        'cal_from_jd',
-        'collator_get_strength',
         'curl_multi_init',
         'curl_multi_getcontent', // issue #8351
-        'date_add',
-        'date_date_set',
-        'date_diff',
-        'date_offset_get',
-        'date_parse',
-        'date_sub',
-        'date_sun_info',
-        'date_sunrise',
-        'date_sunset',
-        'date_time_set',
-        'date_timestamp_set',
-        'date_timezone_set',
         'datefmt_set_lenient',
         'deflate_init',
         'enchant_broker_init',
@@ -718,7 +704,7 @@ class InternalCallMapHandlerTest extends TestCase
         }
 
         if ($expectedType !== null) {
-            $this->assertTypeValidity($expectedType, $entryReturnType, true, 'CallMap entry has incorrect return type');
+            $this->assertTypeValidity($expectedType, $entryReturnType, true, 'CallMap entry has incorrect return type, reflection returned: ' . $expectedType);
         } else {
             $this->assertNotEmpty($entryReturnType);
         }
