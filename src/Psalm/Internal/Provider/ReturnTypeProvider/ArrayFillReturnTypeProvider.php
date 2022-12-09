@@ -40,9 +40,9 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         $value_type_from_third_arg = $third_arg_type ? $third_arg_type : Type::getMixed();
 
-        if ($first_arg_type->isSingleIntLiteral()
+        if ($first_arg_type && $second_arg_type && $third_arg_type
+            && $first_arg_type->isSingleIntLiteral()
             && $second_arg_type->isSingleIntLiteral()
-            && $third_arg_type
         ) {
             $first_arg_type = $first_arg_type->getSingleIntLiteral()->value;
             $second_arg_type = $second_arg_type->getSingleIntLiteral()->value;
