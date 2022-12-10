@@ -1154,6 +1154,31 @@ class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'newReturnTypesInPhp82' => [
+                'code' => '<?php
+                    function alwaysTrue(): true {
+                        return true;
+                    }
+
+                    function alwaysFalse(): false {
+                        return false;
+                    }
+
+                    function alwaysNull(): null {
+                        return null;
+                    }
+                    $true = alwaysTrue();
+                    $false = alwaysFalse();
+                    $null = alwaysNull();
+                ',
+                'assertions' => [
+                    '$true===' => 'true',
+                    '$false===' => 'false',
+                    '$null===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
