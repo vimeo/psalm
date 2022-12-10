@@ -15,6 +15,7 @@ use Amp\Promise;
 use Amp\Success;
 use Generator;
 use InvalidArgumentException;
+use JsonMapper;
 use LanguageServerProtocol\ClientCapabilities;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
@@ -107,6 +108,12 @@ class LanguageServer extends Dispatcher
      * @var array<string, list<IssueData>>
      */
     protected $current_issues = [];
+
+    /**
+     * This should actually be a private property on `parent`
+     * @var JsonMapper
+     */
+    protected $mapper;
 
     public function __construct(
         ProtocolReader $reader,
