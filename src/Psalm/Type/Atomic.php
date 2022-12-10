@@ -303,7 +303,10 @@ abstract class Atomic implements TypeNode
                 return $analysis_php_version_id !== null ? new TNamedObject($value) : new TNumeric();
 
             case 'true':
-                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TTrue();
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_02_00) {
+                    return new TTrue();
+                }
+                return new TNamedObject($value);
 
             case 'false':
                 if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_00_00) {
