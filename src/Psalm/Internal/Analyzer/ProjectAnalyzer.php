@@ -3,8 +3,9 @@
 namespace Psalm\Internal\Analyzer;
 
 use Amp\Loop;
+use Fidry\CpuCoreCounter\CpuCoreCounter;
+use Fidry\CpuCoreCounter\NumberOfCpuCoreNotFound;
 use InvalidArgumentException;
-use LogicException;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
@@ -53,7 +54,6 @@ use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use Psalm\Type;
 use ReflectionProperty;
-use RuntimeException;
 use UnexpectedValueException;
 
 use function array_combine;
@@ -73,25 +73,18 @@ use function end;
 use function explode;
 use function extension_loaded;
 use function file_exists;
-use function file_get_contents;
-use function filter_var;
-use function function_exists;
 use function fwrite;
 use function implode;
 use function in_array;
 use function ini_get;
 use function is_dir;
 use function is_file;
-use function is_int;
-use function is_readable;
-use function is_string;
 use function microtime;
 use function mkdir;
 use function number_format;
 use function pcntl_fork;
 use function preg_match;
 use function rename;
-use function shell_exec;
 use function stream_set_blocking;
 use function stream_socket_accept;
 use function stream_socket_client;
@@ -100,12 +93,9 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
-use function substr_count;
-use function trim;
 use function usort;
 use function version_compare;
 
-use const FILTER_VALIDATE_INT;
 use const PHP_EOL;
 use const PHP_OS;
 use const PHP_VERSION;
@@ -1468,23 +1458,16 @@ class ProjectAnalyzer
      * Adapted from https://gist.github.com/divinity76/01ef9ca99c111565a72d3a8a6e42f7fb
      * returns number of cpu cores
      * Copyleft 2018, license: WTFPL
-     * @throws RuntimeException
-     * @throws LogicException
-     * @psalm-suppress ForbiddenCode
+     * @throws NumberOfCpuCoreNotFound
      */
     public static function getCpuCount(): int
     {
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
-            /*
-            $str = trim((string) shell_exec('wmic cpu get NumberOfCores 2>&1'));
-            if (!preg_match('/(\d+)/', $str, $matches)) {
-                throw new RuntimeException('wmic failed to get number of cpu cores on windows!');
-            }
-            return ((int) $matches [1]);
-            */
+            // No support desired for Windows at the moment
             return 1;
         }
 
+        // PHP 7.3 with JIT on OSX is screwed for multi-threads
         if (ini_get('pcre.jit') === '1'
             && PHP_OS === 'Darwin'
             && version_compare(PHP_VERSION, '7.3.0') >= 0
@@ -1493,40 +1476,12 @@ class ProjectAnalyzer
             return 1;
         }
 
-        if (!extension_loaded('pcntl') || !function_exists('shell_exec')) {
+        if (!extension_loaded('pcntl')) {
+            // Psalm requires pcntl for multi-threads support
             return 1;
         }
 
-        $has_nproc = trim((string) @shell_exec('command -v nproc'));
-        if ($has_nproc) {
-            $ret = @shell_exec('nproc');
-            if (is_string($ret)) {
-                $ret = trim($ret);
-                $tmp = filter_var($ret, FILTER_VALIDATE_INT);
-                if (is_int($tmp)) {
-                    return $tmp;
-                }
-            }
-        }
-
-        $ret = @shell_exec('sysctl -n hw.ncpu');
-        if (is_string($ret)) {
-            $ret = trim($ret);
-            $tmp = filter_var($ret, FILTER_VALIDATE_INT);
-            if (is_int($tmp)) {
-                return $tmp;
-            }
-        }
-
-        if (is_readable('/proc/cpuinfo')) {
-            $cpuinfo = file_get_contents('/proc/cpuinfo');
-            $count = substr_count($cpuinfo, 'processor');
-            if ($count > 0) {
-                return $count;
-            }
-        }
-
-        throw new LogicException('failed to detect number of CPUs!');
+        return (new CpuCoreCounter())->getCount();
     }
 
     /**
