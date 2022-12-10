@@ -62,7 +62,6 @@ use function clearstatcache;
 use function count;
 use function dirname;
 use function explode;
-use function extension_loaded;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
@@ -590,11 +589,16 @@ class Config
     public $threads;
 
     /**
+     * A list of php extensions supported by Psalm.
+     * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
+     *
      * @psalm-readonly-allow-private-mutation
      * @var array{
+     *     apcu: bool,
      *     decimal: bool,
      *     dom: bool,
      *     ds: bool,
+     *     ffi: bool,
      *     geos: bool,
      *     gmp: bool,
      *     mongodb: bool,
@@ -603,13 +607,14 @@ class Config
      *     simplexml: bool,
      *     soap: bool,
      *     xdebug: bool,
-     *     ffi: bool,
      * }
      */
     public $php_extensions = [
+        "apcu" => false,
         "decimal" => false,
         "dom" => false,
         "ds" => false,
+        "ffi" => false,
         "geos" => false,
         "gmp" => false,
         "mongodb" => false,
@@ -618,7 +623,6 @@ class Config
         "simplexml" => false,
         "soap" => false,
         "xdebug" => false,
-        "ffi" => false,
     ];
 
     /**
@@ -2140,23 +2144,6 @@ class Config
                 $this->internal_stubs[] = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs"
                     . DIRECTORY_SEPARATOR . "extensions" . DIRECTORY_SEPARATOR . "$ext.phpstub";
             }
-        }
-
-        // phpredis
-        if (extension_loaded('redis')) {
-            $ext_phpredis_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'phpredis.phpstub';
-            $this->internal_stubs[] = $ext_phpredis_path;
-        }
-
-        if (extension_loaded('apcu')) {
-            $ext_apcu_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-apcu.phpstub';
-            $this->internal_stubs[] = $ext_apcu_path;
-        }
-
-        if (extension_loaded('random')) {
-            $ext_random_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR
-                . 'extensions' . DIRECTORY_SEPARATOR . 'ext-random.phpstub';
-            $this->internal_stubs[] = $ext_random_path;
         }
 
         foreach ($this->internal_stubs as $stub_path) {
