@@ -12,7 +12,6 @@ use UnexpectedValueException;
 
 use function clearstatcache;
 use function error_log;
-use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function gettype;
@@ -170,7 +169,7 @@ class ParserCacheProvider
                 throw new UnexpectedValueException('No cache directory defined');
             }
             if (is_readable($file_hashes_path)) {
-                $hashes_encoded = (string) file_get_contents($file_hashes_path);
+                $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
 
                 if (!$hashes_encoded) {
                     error_log('Unexpected value when loading from file content hashes');
