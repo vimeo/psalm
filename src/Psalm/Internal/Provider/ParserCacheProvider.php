@@ -6,7 +6,6 @@ use JsonException;
 use PhpParser;
 use PhpParser\Node\Stmt;
 use Psalm\Config;
-use Psalm\Internal\Provider\Providers;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -46,10 +45,7 @@ class ParserCacheProvider
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
     /**
      * A map of filename hashes to contents hashes
@@ -65,10 +61,7 @@ class ParserCacheProvider
      */
     protected $new_file_content_hashes = [];
 
-    /**
-     * @var bool
-     */
-    private $use_file_cache;
+    private bool $use_file_cache;
 
     public function __construct(Config $config, bool $use_file_cache = true)
     {

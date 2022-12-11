@@ -68,50 +68,29 @@ use function strtolower;
  */
 class FunctionLikeNodeScanner
 {
-    /**
-     * @var FileScanner
-     */
-    private $file_scanner;
+    private FileScanner $file_scanner;
 
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
-    /**
-     * @var string
-     */
-    private $file_path;
+    private string $file_path;
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
-    /**
-     * @var FileStorage
-     */
-    private $file_storage;
+    private FileStorage $file_storage;
 
-    /**
-     * @var ?ClassLikeStorage
-     */
-    private $classlike_storage;
+    private ?ClassLikeStorage $classlike_storage;
 
     /**
      * @var array<string, non-empty-array<string, Union>>
      */
-    private $existing_function_template_types;
+    private array $existing_function_template_types;
 
-    /**
-     * @var Aliases
-     */
-    private $aliases;
+    private Aliases $aliases;
 
     /**
      * @var array<string, TypeAlias>
      */
-    private $type_aliases;
+    private array $type_aliases;
 
     /**
      * @var ?FunctionLikeStorage

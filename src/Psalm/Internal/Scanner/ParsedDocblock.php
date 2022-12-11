@@ -22,10 +22,7 @@ class ParsedDocblock
     /** @var array<string, array<int, string>> */
     public $combined_tags = [];
 
-    /**
-     * @var bool
-     */
-    private static $shouldAddNewLineBetweenAnnotations = true;
+    private static bool $shouldAddNewLineBetweenAnnotations = true;
 
     /** @param array<string, array<int, string>> $tags */
     public function __construct(string $description, array $tags, string $first_line_padding = '')

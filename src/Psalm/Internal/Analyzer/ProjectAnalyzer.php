@@ -111,10 +111,8 @@ class ProjectAnalyzer
 {
     /**
      * Cached config
-     *
-     * @var Config
      */
-    private $config;
+    private Config $config;
 
     /**
      * @var self
@@ -123,25 +121,19 @@ class ProjectAnalyzer
 
     /**
      * An object representing everything we know about the code
-     *
-     * @var Codebase
      */
-    private $codebase;
+    private Codebase $codebase;
 
-    /** @var FileProvider */
-    private $file_provider;
+    private FileProvider $file_provider;
 
-    /** @var ClassLikeStorageProvider */
-    private $classlike_storage_provider;
+    private ClassLikeStorageProvider $classlike_storage_provider;
 
-    /** @var ?ParserCacheProvider */
-    private $parser_cache_provider;
+    private ?ParserCacheProvider $parser_cache_provider;
 
     /** @var ?ProjectCacheProvider */
     public $project_cache_provider;
 
-    /** @var FileReferenceProvider */
-    private $file_reference_provider;
+    private FileReferenceProvider $file_reference_provider;
 
     /**
      * @var Progress
@@ -169,7 +161,7 @@ class ProjectAnalyzer
     /**
      * @var array<string, bool>
      */
-    private $issues_to_fix = [];
+    private array $issues_to_fix = [];
 
     /**
      * @var bool
@@ -204,12 +196,12 @@ class ProjectAnalyzer
     /**
      * @var array<string,string>
      */
-    private $project_files = [];
+    private array $project_files = [];
 
     /**
      * @var array<string,string>
      */
-    private $extra_files = [];
+    private array $extra_files = [];
 
     /**
      * @var array<string, string>

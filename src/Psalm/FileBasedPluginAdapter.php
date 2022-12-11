@@ -19,14 +19,11 @@ use const DIRECTORY_SEPARATOR;
 /** @internal */
 final class FileBasedPluginAdapter implements PluginEntryPointInterface
 {
-    /** @var string */
-    private $path;
+    private string $path;
 
-    /** @var Codebase */
-    private $codebase;
+    private Codebase $codebase;
 
-    /** @var Config */
-    private $config;
+    private Config $config;
 
     public function __construct(string $path, Config $config, Codebase $codebase)
     {

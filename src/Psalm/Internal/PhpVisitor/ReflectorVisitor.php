@@ -4,6 +4,8 @@ namespace Psalm\Internal\PhpVisitor;
 
 use LogicException;
 use PhpParser;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Name;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -52,74 +54,44 @@ use const PHP_VERSION_ID;
  */
 class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
 {
-    /**
-     * @var Aliases
-     */
-    private $aliases;
+    private Aliases $aliases;
 
-    /**
-     * @var FileScanner
-     */
-    private $file_scanner;
+    private FileScanner $file_scanner;
 
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
-    /**
-     * @var string
-     */
-    private $file_path;
+    private string $file_path;
 
-    /**
-     * @var bool
-     */
-    private $scan_deep;
+    private bool $scan_deep;
 
-    /**
-     * @var FileStorage
-     */
-    private $file_storage;
+    private FileStorage $file_storage;
 
     /**
      * @var array<FunctionLikeNodeScanner>
      */
-    private $functionlike_node_scanners = [];
+    private array $functionlike_node_scanners = [];
 
     /**
      * @var array<ClassLikeNodeScanner>
      */
-    private $classlike_node_scanners = [];
+    private array $classlike_node_scanners = [];
 
-    /**
-     * @var PhpParser\Node\Name|null
-     */
-    private $namespace_name;
+    private ?Name $namespace_name = null;
 
-    /**
-     * @var PhpParser\Node\Expr|null
-     */
-    private $exists_cond_expr;
+    private ?Expr $exists_cond_expr = null;
 
-    /**
-     * @var ?int
-     */
-    private $skip_if_descendants;
+    private ?int $skip_if_descendants = null;
 
     /**
      * @var array<string, TypeAlias>
      */
-    private $type_aliases = [];
+    private array $type_aliases = [];
 
     /**
      * @var array<int, bool>
      */
-    private $bad_classes = [];
-    /**
-     * @var EventDispatcher
-     */
-    private $eventDispatcher;
+    private array $bad_classes = [];
+    private EventDispatcher $eventDispatcher;
 
     public function __construct(
         Codebase $codebase,
@@ -329,7 +301,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     $this->skip_if_descendants = $node->getLine();
                 }
             }
-        } elseif ($node instanceof PhpParser\Node\Expr) {
+        } elseif ($node instanceof Expr) {
             $functionlike_storage = null;
 
             if ($this->functionlike_node_scanners) {
@@ -517,7 +489,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 foreach ($node->stmts as $meta_stmt) {
                     if ($meta_stmt instanceof PhpParser\Node\Stmt\Expression
                         && $meta_stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                        && $meta_stmt->expr->name instanceof PhpParser\Node\Name
+                        && $meta_stmt->expr->name instanceof Name
                         && $meta_stmt->expr->name->parts === ['override']
                     ) {
                         PhpStormMetaScanner::handleOverride($meta_stmt->expr->getArgs(), $this->codebase);

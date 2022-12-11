@@ -26,10 +26,7 @@ use function file_exists;
  */
 class FileReferenceProvider
 {
-    /**
-     * @var bool
-     */
-    private $loaded_from_cache = false;
+    private bool $loaded_from_cache = false;
 
     /**
      * A lookup table used for getting all the references to a class not inside a method
@@ -77,14 +74,14 @@ class FileReferenceProvider
     /**
      * @var array<string, array<string, true>>
      */
-    private static $files_inheriting_classes = [];
+    private static array $files_inheriting_classes = [];
 
     /**
      * A list of all files deleted since the last successful run
      *
      * @var array<int, string>|null
      */
-    private static $deleted_files;
+    private static ?array $deleted_files = null;
 
     /**
      * A lookup table used for getting all the files referenced by a file

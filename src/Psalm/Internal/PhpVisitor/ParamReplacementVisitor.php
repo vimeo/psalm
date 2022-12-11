@@ -16,20 +16,16 @@ use function strlen;
  */
 class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
 {
-    /** @var string */
-    private $old_name;
+    private string $old_name;
 
-    /** @var string */
-    private $new_name;
+    private string $new_name;
 
     /** @var list<FileManipulation> */
     private $replacements = [];
 
-    /** @var bool */
-    private $new_name_replaced = false;
+    private bool $new_name_replaced = false;
 
-    /** @var bool */
-    private $new_new_name_used = false;
+    private bool $new_new_name_used = false;
 
     public function __construct(string $old_name, string $new_name)
     {

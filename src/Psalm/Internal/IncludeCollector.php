@@ -22,7 +22,7 @@ use const PREG_GREP_INVERT;
 final class IncludeCollector
 {
     /** @var list<string> */
-    private $included_files = [];
+    private array $included_files = [];
 
     /**
      * @template T

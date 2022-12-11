@@ -16,15 +16,12 @@ use function preg_replace;
  */
 class PsalmRestarter extends XdebugHandler
 {
-    /**
-     * @var bool
-     */
-    private $required = false;
+    private bool $required = false;
 
     /**
      * @var string[]
      */
-    private $disabledExtensions = [];
+    private array $disabledExtensions = [];
 
     public function disableExtension(string $disabledExtension): void
     {

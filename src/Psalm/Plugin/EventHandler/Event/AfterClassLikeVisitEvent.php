@@ -10,26 +10,14 @@ use Psalm\Storage\ClassLikeStorage;
 
 final class AfterClassLikeVisitEvent
 {
-    /**
-     * @var ClassLike
-     */
-    private $stmt;
-    /**
-     * @var ClassLikeStorage
-     */
-    private $storage;
-    /**
-     * @var FileSource
-     */
-    private $statements_source;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private ClassLike $stmt;
+    private ClassLikeStorage $storage;
+    private FileSource $statements_source;
+    private Codebase $codebase;
     /**
      * @var FileManipulation[]
      */
-    private $file_replacements;
+    private array $file_replacements;
 
     /**
      * @param  FileManipulation[] $file_replacements

@@ -21,11 +21,9 @@ use function is_subclass_of;
 
 final class PluginRegistrationSocket implements RegistrationInterface
 {
-    /** @var Config */
-    private $config;
+    private Config $config;
 
-    /** @var Codebase */
-    private $codebase;
+    private Codebase $codebase;
 
     /**
      * @internal

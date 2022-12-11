@@ -53,7 +53,7 @@ class EventDispatcher
      *
      * @var list<class-string<AfterMethodCallAnalysisInterface>>
      */
-    private $after_method_checks = [];
+    private array $after_method_checks = [];
 
     /**
      * Static methods to be called after project function checks have completed
@@ -124,7 +124,7 @@ class EventDispatcher
      *
      * @var list<class-string<AfterClassLikeVisitInterface>>
      */
-    private $after_visit_classlikes = [];
+    private array $after_visit_classlikes = [];
 
     /**
      * Static methods to be called after codebase has been populated

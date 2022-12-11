@@ -19,10 +19,7 @@ use function str_replace;
  */
 final class ClassConstantByWildcardResolver
 {
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
     public function __construct(Codebase $codebase)
     {

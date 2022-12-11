@@ -18,7 +18,7 @@ class TemplateTypeCollector extends TypeVisitor
     /**
      * @var list<TTemplateParam>
      */
-    private $template_types = [];
+    private array $template_types = [];
 
     protected function enterNode(TypeNode $type): ?int
     {

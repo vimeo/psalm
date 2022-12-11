@@ -16,10 +16,7 @@ use Psalm\Type\TypeVisitor;
  */
 class ContainsLiteralVisitor extends TypeVisitor
 {
-    /**
-     * @var bool
-     */
-    private $contains_literal = false;
+    private bool $contains_literal = false;
 
     protected function enterNode(TypeNode $type): ?int
     {
