@@ -622,6 +622,7 @@ class Config
         "mongodb" => false,
         "mysqli" => false,
         "pdo" => false,
+        "random" => false,
         "redis" => false,
         "simplexml" => false,
         "soap" => false,
