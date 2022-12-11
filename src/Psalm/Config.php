@@ -62,6 +62,7 @@ use function clearstatcache;
 use function count;
 use function dirname;
 use function explode;
+use function extension_loaded;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
@@ -2139,10 +2140,23 @@ class Config
             $this->internal_stubs[] = $stringable_path;
         }
 
+        $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
         foreach ($this->php_extensions as $ext => $enabled) {
             if ($enabled) {
-                $this->internal_stubs[] = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs"
-                    . DIRECTORY_SEPARATOR . "extensions" . DIRECTORY_SEPARATOR . "$ext.phpstub";
+                $this->internal_stubs[] = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
+            }
+        }
+
+        /** @deprecated Will be removed in Psalm 6 */
+        $extensions_to_load_stubs_using_deprecated_way = ['apcu', 'random', 'redis'];
+        foreach ($extensions_to_load_stubs_using_deprecated_way as $ext_name) {
+            $ext_stub_path = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext_name.phpstub";
+            $is_stub_already_loaded = array_key_exists($ext_stub_path, $this->internal_stubs);
+            if (! $is_stub_already_loaded && extension_loaded($ext_name)) {
+                $this->internal_stubs[] = $ext_stub_path;
+                $progress->write("Deprecation: Psalm stubs for ext-$ext_name loaded using legacy way."
+                    . " Instead, please declare ext-$ext_name as dependency in composer.json"
+                    . " or use <enableExtensions> directive in Psalm config.\n");
             }
         }
 
