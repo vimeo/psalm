@@ -2151,7 +2151,7 @@ class Config
         $extensions_to_load_stubs_using_deprecated_way = ['apcu', 'random', 'redis'];
         foreach ($extensions_to_load_stubs_using_deprecated_way as $ext_name) {
             $ext_stub_path = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext_name.phpstub";
-            $is_stub_already_loaded = array_key_exists($ext_stub_path, $this->internal_stubs);
+            $is_stub_already_loaded = in_array($ext_stub_path, $this->internal_stubs, true);
             if (! $is_stub_already_loaded && extension_loaded($ext_name)) {
                 $this->internal_stubs[] = $ext_stub_path;
                 $progress->write("Deprecation: Psalm stubs for ext-$ext_name loaded using legacy way."
