@@ -594,22 +594,7 @@ class Config
      * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
      *
      * @psalm-readonly-allow-private-mutation
-     * @var array{
-     *     apcu: bool,
-     *     decimal: bool,
-     *     dom: bool,
-     *     ds: bool,
-     *     ffi: bool,
-     *     geos: bool,
-     *     gmp: bool,
-     *     mongodb: bool,
-     *     mysqli: bool,
-     *     pdo: bool,
-     *     redis: bool,
-     *     simplexml: bool,
-     *     soap: bool,
-     *     xdebug: bool,
-     * }
+     * @var array<non-empty-string, bool>
      */
     public $php_extensions = [
         "apcu" => false,
