@@ -2144,7 +2144,8 @@ class ClassLikes
                             'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
                                 . ' references to property ' . $property_id
                                 . ($has_variable_calls ? ' (but did find some potential references)' : ''),
-                            $property_storage->location
+                            $property_storage->location,
+                            $property_id
                         );
 
                         if ($codebase->alter_code) {
@@ -2173,7 +2174,8 @@ class ClassLikes
                         'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
                             . ' references to private property ' . $property_id
                             . ($has_variable_calls ? ' (but did find some potential references)' : ''),
-                        $property_storage->location
+                        $property_storage->location,
+                        $property_id
                     );
 
                     if ($codebase->alter_code) {
