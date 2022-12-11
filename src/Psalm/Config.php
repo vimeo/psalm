@@ -1040,7 +1040,6 @@ class Config
         }
         foreach ($required_extensions as $required_ext => $_) {
             if (isset($config->php_extensions[$required_ext])) {
-                /** @psalm-suppress PropertyTypeCoercion isset doesn't narrow $required_ext like it should */
                 $config->php_extensions[$required_ext] = true;
             } else {
                 $config->php_extensions_not_supported[$required_ext] = true;
