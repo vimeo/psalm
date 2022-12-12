@@ -33,6 +33,7 @@ psl)
 	git clone git@github.com:psalm/endtoend-test-psl.git
 	cd endtoend-test-psl
 	git checkout 2.3.x
+	composer install
 	"$PSALM" --monochrome -c config/psalm.xml
 	"$PSALM" --monochrome -c config/psalm.xml tests/static-analysis
 	;;
