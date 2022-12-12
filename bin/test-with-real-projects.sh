@@ -47,6 +47,7 @@ laravel)
 	composer install
 	"$PSALM" --monochrome
 	;;
+
 *)
 	echo "Usage: test-with-real-projects.sh {phpunit|collections|laravel|psl}"
 	exit 1
