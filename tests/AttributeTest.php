@@ -125,7 +125,7 @@ class AttributeTest extends TestCase
                     $b = $a->getAttributes();
                     ',
                 'assertions' => [
-                    '$b' => 'array<array-key, ReflectionAttribute<object>>',
+                    '$b' => 'list<ReflectionAttribute<object>>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0'
