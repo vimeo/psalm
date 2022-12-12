@@ -32,11 +32,7 @@ collections)
 psl)
 	git clone git@github.com:psalm/endtoend-test-psl.git
 	cd endtoend-test-psl
-	git checkout 1.9.x-array
-	composer require --dev php-standard-library/psalm-plugin:^1.1.4 --ignore-platform-reqs
-	cd vendor/php-standard-library/psalm-plugin
-	patch -p1 < $SCRIPT_DIR/psl-psalm-plugin.diff
-	cd ../../../
+	git checkout 2.3.x
 	cd tools/phpbench && composer install --ignore-platform-reqs && cd ../..
 	"$PSALM" --monochrome --config=tools/psalm/psalm.xml
 	;;
