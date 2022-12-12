@@ -178,6 +178,7 @@ final class IssueHandler
                 && $issue_name !== 'PluginIssue'
                 && $issue_name !== 'MixedIssue'
                 && $issue_name !== 'MixedIssueTrait'
+                && $issue_name !== 'MixedAssignment'
         );
     }
 }

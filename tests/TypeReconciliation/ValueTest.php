@@ -250,7 +250,7 @@ class ValueTest extends TestCase
                     $a();
                     if ($i === 0) {}',
                 'assertions' => [],
-                'ignored_issues' => ['MixedOperand', 'MixedAssignment'],
+                'ignored_issues' => ['MixedOperand'],
             ],
             'incrementMixedCall' => [
                 'code' => '<?php
@@ -262,7 +262,7 @@ class ValueTest extends TestCase
                         if ($i === 0) {}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingParamType', 'MixedMethodCall', 'MixedOperand', 'MixedAssignment'],
+                'ignored_issues' => ['MissingParamType', 'MixedMethodCall', 'MixedOperand'],
             ],
             'regularValueReconciliation' => [
                 'code' => '<?php
@@ -496,7 +496,7 @@ class ValueTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingParamType', 'MixedAssignment'],
+                'ignored_issues' => ['MissingParamType'],
             ],
             'numericToStringComparison' => [
                 'code' => '<?php
@@ -856,7 +856,6 @@ class ValueTest extends TestCase
             ],
             'checkIdenticalArray' => [
                 'code' => '<?php
-                    /** @psalm-suppress MixedAssignment */
                     $array = json_decode(file_get_contents(\'php://stdin\'));
 
                     if (is_array($array)) {

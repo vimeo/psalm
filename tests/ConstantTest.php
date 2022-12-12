@@ -183,7 +183,7 @@ class ConstantTest extends TestCase
                     /** @psalm-suppress UndefinedConstant */
                     $a = C::POTATO;',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'hardToDefineClassConstant' => [
                 'code' => '<?php
@@ -283,7 +283,7 @@ class ConstantTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedArgument', 'MixedArrayOffset', 'MixedAssignment'],
+                'ignored_issues' => ['MixedArgument', 'MixedArrayOffset'],
             ],
             'lateConstantResolution' => [
                 'code' => '<?php

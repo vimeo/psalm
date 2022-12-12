@@ -338,7 +338,6 @@ class ErrorFixTest extends TestCase
                             class C {
                                 public function foo(array $a) : void {
                                     /**
-                                     * @psalm-suppress MixedAssignment
                                      */
                                     foreach ($a as $b) {
                                         $b->bar();
@@ -351,7 +350,6 @@ class ErrorFixTest extends TestCase
                             class C {
                                 public function foo(array $a) : void {
                                     /**
-                                     * @psalm-suppress MixedAssignment
                                      */
                                     foreach ($a as $b) {
                                         /**
@@ -363,7 +361,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                 ],
-                'error_counts' => [2, 1, 0],
+                'error_counts' => [1, 1, 0],
             ],
             'fixDefault' => [
                 'files' => [

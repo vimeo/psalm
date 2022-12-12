@@ -928,12 +928,6 @@ class CallAnalyzer
                         ) {
                             $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
                         }
-
-                        IssueBuffer::remove(
-                            $statements_analyzer->getFilePath(),
-                            'MixedAssignment',
-                            $first_appearance->raw_file_start
-                        );
                     }
 
                     $op_vars_in_scope[$var_id] = $op_vars_in_scope[$var_id]->setFromDocblock(true);

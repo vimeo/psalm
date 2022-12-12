@@ -651,7 +651,7 @@ class ArrayAssignmentTest extends TestCase
 
                     echo $arr[0];',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedPropertyFetch', 'MixedArrayOffset', 'MixedArgument'],
+                'ignored_issues' => ['MixedPropertyFetch', 'MixedArrayOffset', 'MixedArgument'],
             ],
             'changeTKeyedArrayType' => [
                 'code' => '<?php
@@ -726,7 +726,6 @@ class ArrayAssignmentTest extends TestCase
             ],
             'mixedSwallowsArrayAssignment' => [
                 'code' => '<?php
-                    /** @psalm-suppress MixedAssignment */
                     $a = $GLOBALS["foo"];
 
                     /** @psalm-suppress MixedArrayAssignment */
@@ -800,7 +799,7 @@ class ArrayAssignmentTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedReturnStatement'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'assignToNullDontDie' => [
                 'code' => '<?php
@@ -832,7 +831,6 @@ class ArrayAssignmentTest extends TestCase
                          * @psalm-suppress InvalidArrayOffset
                          * @psalm-suppress MixedOperand
                          * @psalm-suppress PossiblyUndefinedArrayOffset
-                         * @psalm-suppress MixedAssignment
                          */
                         $a["b"]["d"] += $a["b"][$i];
                     }',
@@ -962,7 +960,7 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset', 'MixedArrayAssignment', 'MixedArgument',
+                    'MixedArrayAccess', 'MixedArrayOffset', 'MixedArrayAssignment', 'MixedArgument',
                 ],
             ],
             'possiblyUndefinedArrayAccessWithIsset' => [
@@ -1038,7 +1036,7 @@ class ArrayAssignmentTest extends TestCase
                         foreach ($arr["b"] as $b) {}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'implementsArrayAccessAllowNullOffset' => [
                 'code' => '<?php
@@ -1299,7 +1297,6 @@ class ArrayAssignmentTest extends TestCase
                         $arr = [];
 
                         /**
-                         * @psalm-suppress MixedAssignment
                          * @psalm-suppress MixedArrayOffset
                          */
                         foreach ($a as $k => $v) {
@@ -1316,7 +1313,6 @@ class ArrayAssignmentTest extends TestCase
                         $arr = ["a" => "foo"];
 
                         /**
-                         * @psalm-suppress MixedAssignment
                          * @psalm-suppress MixedArrayOffset
                          */
                         foreach ($a as $k => $v) {
@@ -1329,7 +1325,6 @@ class ArrayAssignmentTest extends TestCase
             'assignNestedKey' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedArrayOffset
                      *
                      * @psalm-return array<true>
@@ -2050,7 +2045,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = 5;
                     "hello"[0] = $a;',
                 'error_message' => 'MixedStringOffsetAssignment',
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'mixedArrayArgument' => [
                 'code' => '<?php
@@ -2063,7 +2058,7 @@ class ArrayAssignmentTest extends TestCase
 
                     barBar([1, "2"]);',
                 'error_message' => 'MixedArgumentTypeCoercion',
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'arrayPropertyAssignment' => [
                 'code' => '<?php

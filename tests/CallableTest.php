@@ -1432,8 +1432,8 @@ class CallableTest extends TestCase
             'stringFunctionCall' => [
                 'code' => '<?php
                     $bad_one = "hello";
-                    $a = $bad_one(1);',
-                'error_message' => 'MixedAssignment',
+                    echo $bad_one(1);',
+                'error_message' => 'MixedArgument',
             ],
             'wrongCallableReturnType' => [
                 'code' => '<?php

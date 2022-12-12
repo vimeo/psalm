@@ -191,7 +191,7 @@ class FunctionTemplateTest extends TestCase
                     '$a' => 'mixed',
                     '$b' => 'array<array-key, mixed>',
                 ],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'genericArrayPop' => [
                 'code' => '<?php
@@ -419,7 +419,7 @@ class FunctionTemplateTest extends TestCase
                         return $a;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType'],
+                'ignored_issues' => ['MissingParamType'],
             ],
             'bindFirstTemplatedClosureParameterValid' => [
                 'code' => '<?php
@@ -1343,7 +1343,6 @@ class FunctionTemplateTest extends TestCase
                         if (rand(0, 1)) {
                             $c = $e;
                         } elseif (rand(0, 1)) {
-                            /** @psalm-suppress MixedAssignment */
                             $c = $d;
                         } else {
                             $c = null;

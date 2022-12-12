@@ -67,7 +67,6 @@ class ListTest extends TestCase
 
                     /**
                      * @psalm-suppress MixedArrayAccess
-                     * @psalm-suppress MixedAssignment
                      */
                     list($a, list($b, $c)) = getMixed();',
                 'assertions' => [

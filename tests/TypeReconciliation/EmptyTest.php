@@ -23,7 +23,7 @@ class EmptyTest extends TestCase
                 'assertions' => [
                     '$a' => 'mixed|null',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'emptyArrayVar' => [
                 'code' => '<?php
@@ -63,7 +63,7 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedArrayAccess'],
             ],
             'removeEmptyArray' => [
                 'code' => '<?php
@@ -149,7 +149,7 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedArrayAccess'],
             ],
             'dontBleedEmptyAfterExtract' => [
                 'code' => '<?php
@@ -161,7 +161,7 @@ class EmptyTest extends TestCase
                       }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'emptyTKeyedArray' => [
                 'code' => '<?php
@@ -208,7 +208,7 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType'],
+                'ignored_issues' => ['MissingParamType'],
             ],
             'canBeNonEmptyArray' => [
                 'code' => '<?php
@@ -222,7 +222,7 @@ class EmptyTest extends TestCase
                         if (empty($scopes)){}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument'],
+                'ignored_issues' => ['MissingParamType', 'MixedArgument'],
             ],
             'multipleEmptiesInCondition' => [
                 'code' => '<?php
@@ -281,7 +281,7 @@ class EmptyTest extends TestCase
                         return true;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'MixedArrayOffset', 'MixedArrayAccess'],
+                'ignored_issues' => ['MissingParamType', 'MixedArgument', 'MixedArrayOffset', 'MixedArrayAccess'],
             ],
             'possiblyEmptyIterable' => [
                 'code' => '<?php
@@ -474,7 +474,7 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType'],
+                'ignored_issues' => ['MissingParamType'],
             ],
             'preventEmptyOnBool' => [
                 'code' => '<?php

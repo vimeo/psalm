@@ -51,7 +51,7 @@ class FunctionCallTest extends TestCase
                     '$b' => 'float',
                     '$c' => 'float|int<0, max>|null',
                 ],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'validDocblockParamDefault' => [
                 'code' => '<?php
@@ -132,7 +132,7 @@ class FunctionCallTest extends TestCase
                         if (!count($a)) {}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'objectLikeArrayAssignmentInConditional' => [
                 'code' => '<?php
@@ -210,7 +210,6 @@ class FunctionCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedAssignment',
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
                 ],
@@ -243,7 +242,6 @@ class FunctionCallTest extends TestCase
                     takesString($foo);',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedAssignment',
                     'MixedArrayAccess',
                     'MixedArgument',
                 ],
@@ -2035,7 +2033,7 @@ class FunctionCallTest extends TestCase
                     $a = "hello";
                     fooFoo($a);',
                 'error_message' => 'MixedArgument',
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'nullArgument' => [
                 'code' => '<?php
@@ -2133,7 +2131,6 @@ class FunctionCallTest extends TestCase
                     function takes_int(int $i) {}',
                 'error_message' => 'InvalidScalarArgument',
                 'ignored_issues' => [
-                    'MixedAssignment',
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
                 ],
@@ -2276,7 +2273,6 @@ class FunctionCallTest extends TestCase
                 'code' => '<?php
                     /**
                      * @var mixed $s
-                     * @psalm-suppress MixedAssignment
                      */
                     $s = 1;
                     $s();',
@@ -2498,8 +2494,8 @@ class FunctionCallTest extends TestCase
                 'code' => '<?php
                     /** @var mixed $b */;
                     /** @var mixed $c */;
-                    $a = max($b, $c);',
-                'error_message' => 'MixedAssignment'
+                    echo(max($b, $c));',
+                'error_message' => 'MixedArgument'
             ],
             'literalFalseArgument' => [
                 'code' => '<?php

@@ -360,6 +360,9 @@ final class IssueBuffer
 
     /**
      * This will try to remove an issue that has been added for emission
+     *
+     * @deprecated in Psalm 5
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public static function remove(string $file_path, string $issue_type, int $file_offset): void
     {

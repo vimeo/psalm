@@ -1199,7 +1199,7 @@ class ConditionalTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'nonEmptyThing' => [
                 'code' => '<?php
@@ -1216,7 +1216,7 @@ class ConditionalTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedArgument', 'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset'],
+                'ignored_issues' => ['MixedArgument', 'MixedArrayAccess', 'MixedArrayOffset'],
             ],
             'allowNonEmptyArrayComparison' => [
                 'code' => '<?php
@@ -1483,7 +1483,6 @@ class ConditionalTest extends TestCase
             'notEmptyCheck' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedAssignment
                      */
                     function load(string $objectName, array $config = []) : void {
                         if (isset($config["className"])) {
@@ -1641,7 +1640,6 @@ class ConditionalTest extends TestCase
                         if (!empty($c["d"])) {}
 
                         foreach (["a", "b", "c"] as $k) {
-                            /** @psalm-suppress MixedAssignment */
                             foreach ($c[$k] as $d) {}
                         }
                     }',
@@ -2804,7 +2802,6 @@ class ConditionalTest extends TestCase
                     $lilstring = "";
 
                     $n = new SimpleXMLElement($lilstring);
-                    /** @psalm-suppress MixedAssignment */
                     $n = $n->b;
 
                     if (!$n instanceof SimpleXMLElement) {

@@ -639,14 +639,10 @@ class ConditionalReturnTypeTest extends TestCase
 
                     /** @var class-string $class_string */
                     $class_string = "b";
-
-                    /** @psalm-suppress MixedAssignment */
                     $expect_mixed = get($lowercase_a);
                     $expect_object = get($class_string);
 
                     $expect_a_object = get(A::class);
-
-                    /** @psalm-suppress MixedAssignment */
                     $expect_mixed_from_literal = get("LiteralDirect");',
                 'assertions' => [
                     '$expect_mixed' => 'mixed',
@@ -774,8 +770,6 @@ class ConditionalReturnTypeTest extends TestCase
                             if ($source === "POST") {
                                 throw new \UnexpectedValueException("bad");
                             }
-
-                            /** @psalm-suppress MixedAssignment */
                             $decoded = json_decode($this->getBody(), false);
 
                             if (!is_object($decoded) && !is_array($decoded)) {

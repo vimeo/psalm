@@ -423,7 +423,6 @@ class FunctionTemplateAssertTest extends TestCase
                      * @param class-string<T> $type
                      */
                     function assertAllInstanceOf(iterable $i, string $type): void {
-                        /** @psalm-suppress MixedAssignment */
                         foreach ($i as $elt) {
                             if (!$elt instanceof $type) {
                                 throw new \UnexpectedValueException("");
@@ -454,7 +453,6 @@ class FunctionTemplateAssertTest extends TestCase
                      * @param class-string<T> $type
                      */
                     function assertAllInstanceOf(iterable $i, string $type): void {
-                        /** @psalm-suppress MixedAssignment */
                         foreach ($i as $elt) {
                             if (!$elt instanceof $type) {
                                 throw new \UnexpectedValueException("");
@@ -485,7 +483,6 @@ class FunctionTemplateAssertTest extends TestCase
                      * @param class-string<T>|interface-string<T> $type
                      */
                     function allInstanceOf(iterable $i, string $type): bool {
-                        /** @psalm-suppress MixedAssignment */
                         foreach ($i as $elt) {
                             if (!$elt instanceof $type) {
                                 return false;

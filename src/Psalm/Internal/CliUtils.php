@@ -167,9 +167,6 @@ final class CliUtils
         return $first_autoloader;
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public static function getVendorDir(string $current_dir): string
     {
         $composer_json_path = Composer::getJsonFilePath($current_dir);

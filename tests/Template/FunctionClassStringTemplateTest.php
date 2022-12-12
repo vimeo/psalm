@@ -71,7 +71,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         foreach ($a as $b) {}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'upcastGenericIterableToGenericTraversable' => [
                 'code' => '<?php

@@ -687,19 +687,11 @@ class ClassTemplateExtendsTest extends TestCase
                     class Collection3 extends Collection2{}
 
                     foreach ((new Collection1(["a" => "b"])) as $a) {}
-
-                    /** @psalm-suppress MixedAssignment */
                     foreach ((new Collection2(["a" => "b"])) as $a) {}
-
-                    /** @psalm-suppress MixedAssignment */
                     foreach ((new Collection3(["a" => "b"])) as $a) {}
 
                     foreach ((new Collection1([])) as $i) {}
-
-                    /** @psalm-suppress MixedAssignment */
                     foreach ((new Collection2([])) as $i) {}
-
-                    /** @psalm-suppress MixedAssignment */
                     foreach ((new Collection3([])) as $i) {}',
             ],
             'iterateOverExtendedArrayObjectWithoutParam' => [
@@ -993,7 +985,6 @@ class ClassTemplateExtendsTest extends TestCase
 
                     $c = new \stdClass();
                     $storage[$c] = "hello";
-                    /** @psalm-suppress MixedAssignment */
                     $b = $storage->offsetGet($c);',
                 'assertions' => [
                     '$b' => 'mixed',
@@ -4754,8 +4745,8 @@ class ClassTemplateExtendsTest extends TestCase
                     class GrandChildContainer extends ChildContainer {}
 
                     $fc = new GrandChildContainer(5);
-                    $a = $fc->getValue();',
-                'error_message' => 'MixedAssignment',
+                    echo $fc->getValue();',
+                'error_message' => 'MixedArgument',
             ],
             'extendsTwiceSameNameBrokenChain' => [
                 'code' => '<?php
@@ -4796,8 +4787,8 @@ class ClassTemplateExtendsTest extends TestCase
                     class GrandChildContainer extends ChildContainer {}
 
                     $fc = new GrandChildContainer(5);
-                    $a = $fc->getValue();',
-                'error_message' => 'MixedAssignment',
+                    echo $fc->getValue();',
+                'error_message' => 'MixedArgument',
             ],
             'extendsTwiceSameNameLastDoesNotExtend' => [
                 'code' => '<?php
@@ -4837,8 +4828,8 @@ class ClassTemplateExtendsTest extends TestCase
                     class GrandChildContainer extends ChildContainer {}
 
                     $fc = new GrandChildContainer(5);
-                    $a = $fc->getValue();',
-                'error_message' => 'MixedAssignment',
+                    echo $fc->getValue();',
+                'error_message' => 'MixedArgument',
             ],
             'mismatchingTypesAfterExtends' => [
                 'code' => '<?php

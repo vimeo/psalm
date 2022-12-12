@@ -50,7 +50,7 @@ class IssetTest extends TestCase
                 'assertions' => [
                     '$a' => 'mixed|null',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'nullCoalesce' => [
                 'code' => '<?php
@@ -58,7 +58,7 @@ class IssetTest extends TestCase
                 'assertions' => [
                     '$a' => 'mixed|null',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'nullCoalesceWithGoodVariable' => [
                 'code' => '<?php
@@ -109,7 +109,7 @@ class IssetTest extends TestCase
                 'assertions' => [
                     '$foo[\'a\']' => 'mixed|string',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'noRedundantConditionOnMixed' => [
                 'code' => '<?php
@@ -121,7 +121,7 @@ class IssetTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedArrayAccess'],
             ],
             'testUnset' => [
                 'code' => '<?php
@@ -368,7 +368,7 @@ class IssetTest extends TestCase
                     $a = isset($_GET["a"]) ? $_GET["a"] : "";
                     if ($a) {}',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedArrayAccess'],
             ],
             'mixedArrayIssetGetStringVar' => [
                 'code' => '<?php
@@ -418,7 +418,7 @@ class IssetTest extends TestCase
                     }
                     function takesInt(int $i) : void {}',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'noParadoxOnMultipleNotIssets' => [
                 'code' => '<?php
@@ -509,7 +509,7 @@ class IssetTest extends TestCase
                         return $radio;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'assertAfterIsset' => [
                 'code' => '<?php
@@ -524,7 +524,7 @@ class IssetTest extends TestCase
                         if (isset($arr["a"]) && isset($arr["b"])) {}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
             ],
             'noCrashAfterIsset' => [
                 'code' => '<?php
@@ -542,7 +542,7 @@ class IssetTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayOffset', 'InvalidArrayOffset'],
+                'ignored_issues' => ['MixedArrayOffset', 'InvalidArrayOffset'],
             ],
             'sessionNullCoalesce' => [
                 'code' => '<?php
@@ -901,7 +901,6 @@ class IssetTest extends TestCase
             'noMixedMethodCallAfterIsset' => [
                 'code' => '<?php
                     $data = file_get_contents("php://input");
-                    /** @psalm-suppress MixedAssignment */
                     $payload = json_decode($data, true);
 
                     if (!isset($payload["a"]) || rand(0, 1)) {

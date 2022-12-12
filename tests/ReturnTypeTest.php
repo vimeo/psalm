@@ -494,7 +494,7 @@ class ReturnTypeTest extends TestCase
                     foreach (foo3() as $i) echo $i;
                     foreach (foo4() as $i) echo $i;',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'objectLikeArrayOptionalKeyReturn' => [
                 'code' => '<?php
@@ -1521,7 +1521,7 @@ class ReturnTypeTest extends TestCase
 
                 $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:43 - Unable to determine the type that $key is being assigned to',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:54 - Argument 1 cannot be mixed, expecting T',
             ],
             'cannotInferReturnClosureWithMoreSpecificTypes' => [
                 'code' => '<?php

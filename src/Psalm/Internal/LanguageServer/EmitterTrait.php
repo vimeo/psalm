@@ -80,7 +80,6 @@ trait EmitterTrait
     ): void {
         if ($continueCallBack === null) {
             foreach ($this->listeners($eventName) as $listener) {
-                /** @psalm-suppress MixedAssignment */
                 $result = call_user_func_array($listener, $arguments);
                 if ($result === false) {
                     return;
@@ -92,7 +91,6 @@ trait EmitterTrait
 
             foreach ($listeners as $listener) {
                 --$counter;
-                /** @psalm-suppress MixedAssignment */
                 $result = call_user_func_array($listener, $arguments);
                 if ($result === false) {
                     return;

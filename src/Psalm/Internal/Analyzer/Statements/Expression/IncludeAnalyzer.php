@@ -265,9 +265,6 @@ class IncludeAnalyzer
         return true;
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public static function getPathTo(
         PhpParser\Node\Expr $stmt,
         ?NodeDataProvider $type_provider,

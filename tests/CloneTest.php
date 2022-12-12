@@ -143,13 +143,14 @@ class CloneTest extends TestCase
                     /**
                      * @param A|string $a
                      */
-                    function foo($a): void {
+                    function foo($a): A {
                         /**
                          * @psalm-suppress PossiblyInvalidClone
                          */
                         $cloned = clone $a;
+                        return $cloned;
                     }',
-                'error_message' => 'MixedAssignment',
+                'error_message' => 'MixedReturnStatement',
             ],
             'missingClass' => [
                 'code' => '<?php

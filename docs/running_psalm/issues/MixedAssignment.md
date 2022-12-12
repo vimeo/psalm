@@ -1,5 +1,7 @@
 # MixedAssignment
 
+**This issue is deprecated in Psalm 5**
+
 Emitted when assigning an unannotated variable to a value for which Psalm
 cannot infer a type more specific than `mixed`.
 

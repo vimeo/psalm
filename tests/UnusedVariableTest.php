@@ -142,7 +142,7 @@ class UnusedVariableTest extends TestCase
                     'PossiblyUndefinedVariable',
                     'MixedArrayAccess',
                     'MixedOperand',
-                    'MixedAssignment',
+                    'MixedArgument',
                     'InvalidStringClass',
                 ],
             ],
@@ -541,7 +541,6 @@ class UnusedVariableTest extends TestCase
                         return $ret;
                     }',
                 'ignored_issues' => [
-                    'MixedAssignment',
                     'MixedMethodCall',
                     'MixedArrayOffset',
                 ],
@@ -1761,7 +1760,6 @@ class UnusedVariableTest extends TestCase
             ],
             'loopOverUnknown' => [
                 'code' => '<?php
-                    /** @psalm-suppress MixedAssignment */
                     function foo(Traversable $t) : void {
                         foreach ($t as $u) {
                             if ($u instanceof stdClass) {}
@@ -1909,7 +1907,6 @@ class UnusedVariableTest extends TestCase
             ],
             'assignToGlobalVar' => [
                 'code' => '<?php
-                    /** @psalm-suppress MixedAssignment */
                     function foo(array $args) : void {
                         foreach ($args as $key => $value) {
                             $_GET[$key] = $value;
@@ -1994,7 +1991,6 @@ class UnusedVariableTest extends TestCase
                 'code' => '<?php
                     function foo(array $arr): array {
                         /**
-                         * @psalm-suppress MixedAssignment
                          * @psalm-suppress MixedArrayAssignment
                          */
                         foreach ($arr as &$element) {
@@ -2062,7 +2058,6 @@ class UnusedVariableTest extends TestCase
             'sourcemaps' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedArgument
                      * @param iterable<mixed, int> $keys
                      */
@@ -2160,8 +2155,6 @@ class UnusedVariableTest extends TestCase
                         if (rand(0, 1)) {
                             $maybe_undefined = $arr;
                         }
-
-                        /** @psalm-suppress MixedAssignment */
                         $maybe_undefined = $maybe_undefined ?? [0];
 
                         print_r($maybe_undefined);
@@ -2197,7 +2190,6 @@ class UnusedVariableTest extends TestCase
             'clips' => [
                 'code' => '<?php declare(strict_types=1);
                     function foo(array $clips) : void {
-                        /** @psalm-suppress MixedAssignment */
                         foreach ($clips as &$clip) {
                             /** @psalm-suppress MixedArgument */
                             if (!empty($clip)) {
@@ -2219,7 +2211,6 @@ class UnusedVariableTest extends TestCase
                     function validate($b, string $source) : void {
                         /**
                          * @psalm-suppress DocblockTypeContradiction
-                         * @psalm-suppress MixedAssignment
                          */
                         if (!is_bool($b)) {
                             $source = $b;
@@ -2343,7 +2334,6 @@ class UnusedVariableTest extends TestCase
                 'code' => '<?php
                     function takesResults(array $arr) : void {
                         /**
-                         * @psalm-suppress MixedAssignment
                          */
                         foreach ($arr as $item) {
                             /**
@@ -3452,9 +3442,11 @@ class UnusedVariableTest extends TestCase
             'warnAboutOriginalBadArray' => [
                 'code' => '<?php
                     function takesArray(array $arr) : void {
-                        foreach ($arr as $a) {}
+                        foreach ($arr as $a) {
+                            echo $a;
+                        }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
             ],
             'warnAboutOriginalBadFunctionCall' => [
                 'code' => '<?php
@@ -3467,7 +3459,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutOriginalBadStaticCall' => [
                 'code' => '<?php
@@ -3482,7 +3474,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
             ],
             'warnAboutOriginalBadInstanceCall' => [
                 'code' => '<?php
@@ -3497,7 +3489,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
             ],
             'warnAboutDocblockReturnType' => [
                 'code' => '<?php
@@ -3513,7 +3505,7 @@ class UnusedVariableTest extends TestCase
                             echo $a;
                         }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:47 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:34 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
             ],
             'warnAboutMixedArgument' => [
                 'code' => '<?php
@@ -3522,12 +3514,10 @@ class UnusedVariableTest extends TestCase
                     }
 
                     $arr = makeArray();
-
-                    /** @psalm-suppress MixedAssignment */
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutMixedMethodCall' => [
                 'code' => '<?php
@@ -3536,12 +3526,10 @@ class UnusedVariableTest extends TestCase
                     }
 
                     $arr = makeArray();
-
-                    /** @psalm-suppress MixedAssignment */
                     foreach ($arr as $a) {
                         $a->foo();
                     }',
-                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - Cannot determine the type of $a when calling method foo. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Cannot determine the type of $a when calling method foo. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutMixedReturnStatement' => [
                 'code' => '<?php
@@ -3551,30 +3539,32 @@ class UnusedVariableTest extends TestCase
 
                     function foo() : string {
                         $arr = makeArray();
-
-                        /** @psalm-suppress MixedAssignment */
                         foreach ($arr as $a) {
                             return $a;
                         }
 
                         return "";
                     }',
-                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Could not infer a return type. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36 - Could not infer a return type. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
             ],
             'warnAboutIterableKeySource' => [
                 'code' => '<?php
                     function foo(iterable $arr) : void {
-                        foreach ($arr as $key => $_) {}
+                        foreach ($arr as $key => $_) {
+                            echo $key;
+                        }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43'
             ],
             'warnAboutMixedKeySource' => [
                 'code' => '<?php
                     /** @param mixed $arr */
                     function foo($arr) : void {
-                        foreach ($arr as $key => $_) {}
+                        foreach ($arr as $key => $_) {
+                            echo $key;
+                        }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:34 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
             ],
             'warnAboutMixedArgumentTypeCoercionSource' => [
                 'code' => '<?php
