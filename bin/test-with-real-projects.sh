@@ -30,10 +30,14 @@ collections)
 	;;
 
 psl)
+	# For circleCI
+	export PHP_EXTENSION_INTL=1
+	export PHP_EXTENSION_BCMATH=1
+
 	git clone git@github.com:psalm/endtoend-test-psl.git
 	cd endtoend-test-psl
 	git checkout 2.3.x
-	composer install --ignore-platform-reqs
+	composer install
 	"$PSALM" --monochrome -c config/psalm.xml
 	"$PSALM" --monochrome -c config/psalm.xml tests/static-analysis
 	;;
