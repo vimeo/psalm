@@ -429,6 +429,7 @@ class TKeyedArray extends Atomic
                 $prop_max_count++;
             }
         }
+        assert($prop_max_count !== 0);
         return $prop_max_count;
     }
     /**
