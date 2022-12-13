@@ -36,35 +36,20 @@ use function strtolower;
  */
 class Populator
 {
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $classlike_storage_provider;
+    private ClassLikeStorageProvider $classlike_storage_provider;
 
-    /**
-     * @var FileStorageProvider
-     */
-    private $file_storage_provider;
+    private FileStorageProvider $file_storage_provider;
 
     /**
      * @var array<lowercase-string, list<ClassLikeStorage>>
      */
     private $invalid_class_storages = [];
 
-    /**
-     * @var Progress
-     */
-    private $progress;
+    private Progress $progress;
 
-    /**
-     * @var ClassLikes
-     */
-    private $classlikes;
+    private ClassLikes $classlikes;
 
-    /**
-     * @var FileReferenceProvider
-     */
-    private $file_reference_provider;
+    private FileReferenceProvider $file_reference_provider;
 
     public function __construct(
         ClassLikeStorageProvider $classlike_storage_provider,

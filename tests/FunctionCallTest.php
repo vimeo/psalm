@@ -1264,6 +1264,13 @@ class FunctionCallTest extends TestCase
                         return count($x);
                     }',
             ],
+            'countOnObjectShouldBePositive' => [
+                'code' => '<?php
+                    /** @return positive-int|0 */
+                    function example(\Countable $x) : int {
+                        return count($x);
+                    }',
+            ],
             'countOnPureObjectIsPure' => [
                 'code' => '<?php
                     class PureCountable implements \Countable {
@@ -2422,14 +2429,6 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-            ],
-            'countOnObjectCannotBePositive' => [
-                'code' => '<?php
-                    /** @return positive-int|0 */
-                    function example(\Countable $x) : int {
-                        return count($x);
-                    }',
-                'error_message' => 'LessSpecificReturnStatement',
             ],
             'countOnUnknownObjectCannotBePure' => [
                 'code' => '<?php

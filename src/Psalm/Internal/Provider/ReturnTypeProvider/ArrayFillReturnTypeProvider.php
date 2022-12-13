@@ -80,18 +80,14 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($second_arg_type
                 && self::isPositiveNumericType($second_arg_type)
             ) {
-                return new Union([
-                    Type::getNonEmptyListAtomic(
-                        $value_type_from_third_arg
-                    )
-                ]);
+                return Type::getNonEmptyList(
+                    $value_type_from_third_arg
+                );
             }
 
-            return new Union([
-                Type::getListAtomic(
-                    $value_type_from_third_arg
-                )
-            ]);
+            return Type::getList(
+                $value_type_from_third_arg
+            );
         }
 
         if ($second_arg_type

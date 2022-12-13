@@ -9,26 +9,11 @@ use Psalm\StatementsSource;
 
 final class AfterEveryFunctionCallAnalysisEvent
 {
-    /**
-     * @var FuncCall
-     */
-    private $expr;
-    /**
-     * @var string
-     */
-    private $function_id;
-    /**
-     * @var Context
-     */
-    private $context;
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private FuncCall $expr;
+    private string $function_id;
+    private Context $context;
+    private StatementsSource $statements_source;
+    private Codebase $codebase;
 
     /** @internal */
     public function __construct(

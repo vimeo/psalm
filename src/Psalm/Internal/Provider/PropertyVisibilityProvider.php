@@ -22,7 +22,7 @@ class PropertyVisibilityProvider
      *   array<Closure(PropertyVisibilityProviderEvent): ?bool>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {

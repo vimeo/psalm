@@ -40,15 +40,13 @@ class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 && ($preserve_keys_arg_type = $statements_source->getNodeTypeProvider()->getType($call_args[2]->value))
                 && (string) $preserve_keys_arg_type !== 'false';
 
-            return new Union([
-                Type::getListAtomic(
-                    new Union([
-                        $preserve_keys
-                            ? new TNonEmptyArray([$array_type->key, $array_type->value])
-                            : Type::getNonEmptyListAtomic($array_type->value)
-                    ])
-                )
-            ]);
+            return Type::getList(
+                new Union([
+                    $preserve_keys
+                        ? new TNonEmptyArray([$array_type->key, $array_type->value])
+                        : Type::getNonEmptyListAtomic($array_type->value)
+                ])
+            );
         }
 
         return new Union([Type::getListAtomic(Type::getArray())]);

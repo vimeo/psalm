@@ -423,7 +423,14 @@ class TKeyedArray extends Atomic
         if ($this->fallback_params) {
             return null;
         }
-        return count($this->properties);
+        $prop_max_count = 0;
+        foreach ($this->properties as $property) {
+            if (!$property->isNever()) {
+                $prop_max_count++;
+            }
+        }
+        assert($prop_max_count !== 0);
+        return $prop_max_count;
     }
     /**
      * Whether all keys are always defined (ignores unsealedness).

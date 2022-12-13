@@ -19,14 +19,11 @@ use PhpParser\NodeVisitorAbstract;
  */
 class SimpleNameResolver extends NodeVisitorAbstract
 {
-    /** @var NameContext Naming context */
-    private $nameContext;
+    private NameContext $nameContext;
 
-    /** @var int|null */
-    private $start_change;
+    private ?int $start_change = null;
 
-    /** @var int|null */
-    private $end_change;
+    private ?int $end_change = null;
 
     /**
      * @param ErrorHandler $errorHandler Error handler

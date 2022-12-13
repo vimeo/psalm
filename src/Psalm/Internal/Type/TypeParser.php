@@ -712,17 +712,16 @@ class TypeParser
                 );
             }
 
-            $param_union_types = array_values($generic_params[0]->getAtomicTypes());
+            $types = [];
+            foreach ($generic_params[0]->getAtomicTypes() as $type) {
+                if (!$type instanceof TNamedObject) {
+                    throw new TypeParseTreeException('Class string param should be a named object');
+                }
 
-            if (count($param_union_types) > 1) {
-                throw new TypeParseTreeException('Union types are not allowed in class string param');
+                $types []= new TClassString($type->value, $type, false, false, false, $from_docblock);
             }
 
-            if (!$param_union_types[0] instanceof TNamedObject) {
-                throw new TypeParseTreeException('Class string param should be a named object');
-            }
-
-            return new TClassString($class_name, $param_union_types[0], false, false, false, $from_docblock);
+            return new Union($types);
         }
 
         if ($generic_type_value === 'class-string-map') {

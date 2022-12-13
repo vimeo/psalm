@@ -23,8 +23,7 @@ use const DIRECTORY_SEPARATOR;
  */
 class EnableCommand extends Command
 {
-    /** @var PluginListFactory */
-    private $plugin_list_factory;
+    private PluginListFactory $plugin_list_factory;
 
     public function __construct(PluginListFactory $plugin_list_factory)
     {

@@ -10,26 +10,14 @@ use Psalm\StatementsSource;
 
 final class AfterExpressionAnalysisEvent
 {
-    /**
-     * @var Expr
-     */
-    private $expr;
-    /**
-     * @var Context
-     */
-    private $context;
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Expr $expr;
+    private Context $context;
+    private StatementsSource $statements_source;
+    private Codebase $codebase;
     /**
      * @var FileManipulation[]
      */
-    private $file_replacements;
+    private array $file_replacements;
 
     /**
      * Called after an expression has been checked

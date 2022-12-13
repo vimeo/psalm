@@ -21,7 +21,7 @@ class FunctionExistenceProvider
      *   array<Closure(FunctionExistenceProviderEvent): ?bool>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {

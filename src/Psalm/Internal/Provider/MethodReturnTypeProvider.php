@@ -31,7 +31,7 @@ class MethodReturnTypeProvider
      *   array<Closure(MethodReturnTypeProviderEvent): ?Union>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {

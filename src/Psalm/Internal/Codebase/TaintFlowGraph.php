@@ -49,19 +49,19 @@ use const JSON_THROW_ON_ERROR;
 class TaintFlowGraph extends DataFlowGraph
 {
     /** @var array<string, TaintSource> */
-    private $sources = [];
+    private array $sources = [];
 
     /** @var array<string, DataFlowNode> */
     private $nodes = [];
 
     /** @var array<string, TaintSink> */
-    private $sinks = [];
+    private array $sinks = [];
 
     /** @var array<string, array<string, true>> */
-    private $specialized_calls = [];
+    private array $specialized_calls = [];
 
     /** @var array<string, array<string, true>> */
-    private $specializations = [];
+    private array $specializations = [];
 
     public function addNode(DataFlowNode $node): void
     {

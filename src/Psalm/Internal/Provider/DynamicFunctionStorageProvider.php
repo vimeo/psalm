@@ -30,7 +30,7 @@ final class DynamicFunctionStorageProvider
     private static $handlers = [];
 
     /** @var array<lowercase-string, ?FunctionStorage> */
-    private static $dynamic_storages = [];
+    private static array $dynamic_storages = [];
 
     /**
      * @param class-string<DynamicFunctionStorageProviderInterface> $class

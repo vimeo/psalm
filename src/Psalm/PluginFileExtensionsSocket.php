@@ -14,25 +14,22 @@ use function sprintf;
 
 final class PluginFileExtensionsSocket implements FileExtensionsInterface
 {
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
     /**
      * @var array<string, class-string<FileScanner>>
      */
-    private $additionalFileTypeScanners = [];
+    private array $additionalFileTypeScanners = [];
 
     /**
      * @var array<string, class-string<FileAnalyzer>>
      */
-    private $additionalFileTypeAnalyzers = [];
+    private array $additionalFileTypeAnalyzers = [];
 
     /**
      * @var list<string>
      */
-    private $additionalFileExtensions = [];
+    private array $additionalFileExtensions = [];
 
     /**
      * @internal

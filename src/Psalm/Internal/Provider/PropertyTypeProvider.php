@@ -24,7 +24,7 @@ class PropertyTypeProvider
      *   array<Closure(PropertyTypeProviderEvent): ?Union>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {

@@ -82,7 +82,7 @@ class Reconciler
     public const RECONCILIATION_EMPTY = 2;
 
     /** @var array<string, non-empty-list<string>> */
-    private static $broken_paths = [];
+    private static array $broken_paths = [];
 
     /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable.

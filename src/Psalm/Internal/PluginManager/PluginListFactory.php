@@ -18,11 +18,9 @@ use const JSON_THROW_ON_ERROR;
  */
 class PluginListFactory
 {
-    /** @var string */
-    private $project_root;
+    private string $project_root;
 
-    /** @var string */
-    private $psalm_root;
+    private string $psalm_root;
 
     public function __construct(string $project_root, string $psalm_root)
     {

@@ -13,10 +13,7 @@ use function assert;
  */
 class TraitAnalyzer extends ClassLikeAnalyzer
 {
-    /**
-     * @var Aliases
-     */
-    private $aliases;
+    private Aliases $aliases;
 
     public function __construct(
         Trait_ $class,

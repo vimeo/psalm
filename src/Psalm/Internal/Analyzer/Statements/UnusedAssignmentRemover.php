@@ -27,7 +27,7 @@ class UnusedAssignmentRemover
     /**
      * @var array<string, CodeLocation>
      */
-    private $removed_unref_vars = [];
+    private array $removed_unref_vars = [];
 
     /**
      * @param array<PhpParser\Node\Stmt>   $stmts

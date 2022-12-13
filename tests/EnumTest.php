@@ -686,6 +686,17 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'forbiddenMethod' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public function __get() {}
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 }

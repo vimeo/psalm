@@ -37,10 +37,7 @@ use function substr;
  */
 class Functions
 {
-    /**
-     * @var FileStorageProvider
-     */
-    private $file_storage_provider;
+    private FileStorageProvider $file_storage_provider;
 
     /**
      * @var array<lowercase-string, FunctionStorage>
@@ -59,10 +56,7 @@ class Functions
     /** @var DynamicFunctionStorageProvider */
     public $dynamic_storage_provider;
 
-    /**
-     * @var Reflection
-     */
-    private $reflection;
+    private Reflection $reflection;
 
     public function __construct(FileStorageProvider $storage_provider, Reflection $reflection)
     {
@@ -429,7 +423,8 @@ class Functions
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
             'socket_set_option', 'stream_set_write_buffer', 'stream_socket_enable_crypto', 'stream_copy_to_stream',
-            'stream_wrapper_register',
+            'stream_wrapper_register', 'socket_connect', 'socket_bind', 'socket_set_block', 'socket_set_nonblock',
+            'socket_listen',
 
             // meta calls
             'call_user_func', 'call_user_func_array', 'define', 'create_function',

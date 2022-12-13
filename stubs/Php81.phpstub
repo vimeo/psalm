@@ -26,6 +26,32 @@ namespace {
         public static function tryFrom(string|int $value): ?static;
     }
 
+    class ReflectionClass implements Reflector {
+        /** @psalm-pure */
+        public function isEnum(): bool {}
+    }
+
+    class ReflectionProperty implements Reflector
+    {
+        /**
+         * Starting from PHP 8.1, this method is pure, and has no effect.
+         *
+         * @psalm-pure
+         */
+        public function setAccessible(bool $accessible): void {}
+    }
+
+    class ReflectionMethod extends ReflectionFunctionAbstract
+    {
+        /**
+         * Starting from PHP 8.1, this method is pure, and has no effect.
+         *
+         * @psalm-pure
+         */
+        public function setAccessible(bool $accessible): void {}
+    }
+
+    /** @psalm-immutable */
     class ReflectionEnum extends ReflectionClass implements Reflector
     {
         public function getBackingType(): ?ReflectionType;
@@ -36,32 +62,26 @@ namespace {
         public function isBacked(): bool;
     }
 
+    /** @psalm-immutable */
     class ReflectionEnumUnitCase extends ReflectionClassConstant implements Reflector
     {
-        /**
-         * @psalm-pure
-         */
         public function getEnum(): ReflectionEnum;
-
-        /**
-         * @psalm-pure
-         */
         public function getValue(): UnitEnum;
     }
 
+    /** @psalm-immutable */
     class ReflectionEnumBackedCase extends ReflectionEnumUnitCase implements Reflector
     {
-        /**
-         * @psalm-pure
-         */
         public function getBackingValue(): int|string;
     }
 
+    /** @psalm-immutable */
     class ReflectionIntersectionType extends ReflectionType {
-        /**
-         * @return non-empty-list<ReflectionType>
-         */
-        public function getTypes() {}
+        /** @return non-empty-list<ReflectionNamedType> */
+        public function getTypes(): array {}
+
+        /** @return false */
+        public function allowsNull(): bool {}
     }
 }
 

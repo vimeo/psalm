@@ -6,13 +6,11 @@ use JsonException;
 use PhpParser;
 use PhpParser\Node\Stmt;
 use Psalm\Config;
-use Psalm\Internal\Provider\Providers;
 use RuntimeException;
 use UnexpectedValueException;
 
 use function clearstatcache;
 use function error_log;
-use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function gettype;
@@ -47,10 +45,7 @@ class ParserCacheProvider
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
     /**
      * A map of filename hashes to contents hashes
@@ -66,10 +61,7 @@ class ParserCacheProvider
      */
     protected $new_file_content_hashes = [];
 
-    /**
-     * @var bool
-     */
-    private $use_file_cache;
+    private bool $use_file_cache;
 
     public function __construct(Config $config, bool $use_file_cache = true)
     {
@@ -170,7 +162,7 @@ class ParserCacheProvider
                 throw new UnexpectedValueException('No cache directory defined');
             }
             if (is_readable($file_hashes_path)) {
-                $hashes_encoded = (string) file_get_contents($file_hashes_path);
+                $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
 
                 if (!$hashes_encoded) {
                     error_log('Unexpected value when loading from file content hashes');
