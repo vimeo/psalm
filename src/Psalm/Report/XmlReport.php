@@ -2,10 +2,10 @@
 
 namespace Psalm\Report;
 
-use LSS\Array2XML;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
+use Spatie\ArrayToXml\ArrayToXml;
 
 use function array_map;
 use function get_object_vars;
@@ -14,8 +14,7 @@ final class XmlReport extends Report
 {
     public function create(): string
     {
-        $xml = Array2XML::createXML(
-            'report',
+        $xml = (string) ArrayToXml::convert(
             [
                 'item' => array_map(
                     static function (IssueData $issue_data): array {
@@ -46,9 +45,14 @@ final class XmlReport extends Report
                     },
                     $this->issues_data
                 )
-            ]
+            ],
+            'report',
+            true,
+            'UTF-8',
+            '1.0',
+            ['preserveWhiteSpace' => false, 'formatOutput' => true]
         );
 
-        return $xml->saveXML();
+        return $xml;
     }
 }
