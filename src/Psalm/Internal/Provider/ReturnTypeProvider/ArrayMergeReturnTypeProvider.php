@@ -252,7 +252,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         if ($inner_value_type) {
             if ($all_int_offsets) {
                 if ($any_nonempty) {
-                    return Type::getNonEmptyListAtomic(
+                    return Type::getNonEmptyList(
                         $inner_value_type
                     );
                 }
