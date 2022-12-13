@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -37,15 +38,18 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
         ];
     }
 
-    private static ?Union $fallback = null;
+    private static ?TArray $fallback = null;
 
+    /**
+     * @return TArray|TKeyedArray
+     */
     public static function getGetObjectVarsReturnType(
         Union $first_arg_type,
         SourceAnalyzer $statements_source,
         Context $context,
         CodeLocation $location
-    ): Union {
-        self::$fallback ??= new Union([new TArray([Type::getString(), Type::getMixed()])]);
+    ): Atomic {
+        self::$fallback ??= new TArray([Type::getString(), Type::getMixed()]);
 
         if ($first_arg_type->isSingle()) {
             $atomics = $first_arg_type->getAtomicTypes();
@@ -55,9 +59,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 if ([] === $object_type->properties) {
                     return self::$fallback;
                 }
-                return new Union([
-                    new TKeyedArray($object_type->properties)
-                ]);
+                return new TKeyedArray($object_type->properties);
             }
 
             if ($object_type instanceof TNamedObject) {
@@ -73,7 +75,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
 
                 if ([] === $class_storage->appearing_property_ids) {
                     if ($class_storage->final) {
-                        return Type::getEmptyArray();
+                        return Type::getEmptyArrayAtomic();
                     }
 
                     return self::$fallback;
@@ -115,19 +117,17 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
 
                 if ([] === $properties) {
                     if ($class_storage->final) {
-                        return Type::getEmptyArray();
+                        return Type::getEmptyArrayAtomic();
                     }
 
                     return self::$fallback;
                 }
 
-                return new Union([
-                    new TKeyedArray(
-                        $properties,
-                        null,
-                        $class_storage->final ? null : [Type::getString(), Type::getMixed()],
-                    )
-                ]);
+                return new TKeyedArray(
+                    $properties,
+                    null,
+                    $class_storage->final ? null : [Type::getString(), Type::getMixed()],
+                );
             }
         }
         return self::$fallback;
@@ -146,12 +146,12 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
         if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
              && $first_arg_type->isObjectType()
         ) {
-            return self::getGetObjectVarsReturnType(
+            return new Union([self::getGetObjectVarsReturnType(
                 $first_arg_type,
                 $statements_source,
                 $event->getContext(),
                 $event->getCodeLocation()
-            );
+            )]);
         }
 
         return null;

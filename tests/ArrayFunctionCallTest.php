@@ -174,25 +174,7 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     $c = array_combine(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    '$c' => 'false|non-empty-array<string, int>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '7.4',
-            ],
-            'arrayCombinePHP8' => [
-                'code' => '<?php
-                    $c = array_combine(["a", "b"], [1, 2, 3]);',
-                'assertions' => [
-                    '$c' => 'non-empty-array<string, int>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'arrayCombineNotMatching' => [
-                'code' => '<?php
-                    $c = array_combine(["a", "b"], [1, 2, 3]);',
-                'assertions' => [
-                    '$c' => 'false|non-empty-array<string, int>',
+                    '$c===' => 'array{a: 1, b: 2, c: 3}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '7.4',
@@ -207,6 +189,30 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$c' => 'array<string, int>|false',
                 ],
+            ],
+            'arrayCombineDynamicParamsNonEmpty' => [
+                'code' => '<?php
+                    /** @return non-empty-array<string> */
+                    function getStrings(): array { return ["test"]; }
+                    /** @return non-empty-array<int> */
+                    function getInts(): array { return [123, 321]; }
+                    $c = array_combine(getStrings(), getInts());',
+                'assertions' => [
+                    '$c' => 'false|non-empty-array<string, int>',
+                ],
+            ],
+            'arrayCombineDynamicParamsPHP8' => [
+                'code' => '<?php
+                    /** @return non-empty-array<string> */
+                    function getStrings(): array { return ["test"]; }
+                    /** @return non-empty-array<int> */
+                    function getInts(): array { return [123]; }
+                    $c = array_combine(getStrings(), getInts());',
+                'assertions' => [
+                    '$c' => 'non-empty-array<string, int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayMergeIntArrays' => [
                 'code' => '<?php
@@ -1057,6 +1063,35 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     count(array_fill(0, 0, 0)) === 0;',
             ],
+            'arrayFillLiteral' => [
+                'code' => '<?php
+                    $a = array_fill(0, 3, 0);
+                    $b = array_fill(-1, 3, 0);
+                    $c = array_fill(-2, 3, 0);
+                ',
+                'assertions' => [
+                    '$a===' => 'list{0, 0, 0}',
+                    // Techinically this doesn't cover the case of running on 8.0 but nvm
+                    '$b===' => 'array{-1: 0, 0: 0, 1: 0}',
+                    '$c===' => 'array{-2: 0, 0: 0, 1: 0}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4'
+            ],
+            'arrayFillLiteral80' => [
+                'code' => '<?php
+                    $a = array_fill(0, 3, 0);
+                    $b = array_fill(-1, 3, 0);
+                    $c = array_fill(-2, 3, 0);
+                ',
+                'assertions' => [
+                    '$a===' => 'list{0, 0, 0}',
+                    '$b===' => 'array{-1: 0, 0: 0, 1: 0}',
+                    '$c===' => 'array{-1: 0, -2: 0, 0: 0}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0'
+            ],
             'implodeMultiDimensionalArray' => [
                 'code' => '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
@@ -1450,12 +1485,12 @@ class ArrayFunctionCallTest extends TestCase
                     $p = array_column($p_prepare, "y");
                 ',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>',
-                    '$b' => 'non-empty-list<int>',
-                    '$c' => 'array<int, array{a: int}>',
+                    '$a===' => 'list{1, 2, 3}',
+                    '$b===' => 'list{1, 2, 3}',
+                    '$c' => 'array{1: array{a: int}, 2: array{a: int}, 3: array{a: int}}',
                     '$d' => 'array<array-key, array{a: int}>',
                     '$e' => 'array<array-key, mixed>',
-                    '$f' => 'non-empty-array<string, int>',
+                    '$f' => 'array{a: int, b: int}',
                     '$g' => 'list<mixed>',
                     '$h' => 'list<mixed>',
                     '$i' => 'array<array-key, mixed>',
@@ -1463,10 +1498,93 @@ class ArrayFunctionCallTest extends TestCase
                     '$k' => 'list<mixed>',
                     '$l' => 'list<string>',
                     '$m' => 'list<mixed>',
-                    '$n' => 'non-empty-list<string>',
+                    '$n' => 'list{string}',
                     '$o' => 'list<int>',
                     '$p' => 'list<int>',
                 ],
+            ],
+            'arrayColumnExactInference' => [
+                'code' => '<?php
+                    $a = array_column([
+                        ["v" => "a"],
+                        ["v" => "b"],
+                        ["v" => "c"],
+                        ["v" => "d"],
+                    ], "v");
+
+                    $b = array_column([
+                        ["v" => "a"],
+                        [],
+                        ["v" => "c"],
+                        ["v" => "d"],
+                    ], "v");
+
+                    $c = array_column([
+                        ["v" => "a"],
+                        123,
+                        ["v" => "c"],
+                        ["v" => "d"],
+                    ], "v");
+
+                    $d = array_column([
+                        ["v" => "a", "k" => "A"],
+                        ["v" => "b", "k" => "B"],
+                        ["v" => "c", "k" => "C"],
+                        ["v" => "d", "k" => "D"],
+                    ], "v", "k");
+
+                    $e = array_column([
+                        ["v" => "a", "k" => 0],
+                        ["v" => "b", "k" => 1],
+                        ["v" => "c", "k" => 2],
+                        ["v" => "d", "k" => 3],
+                    ], "v", "k");
+
+                    $f = array_column([
+                        ["v" => "a", "k" => 3],
+                        ["v" => "b", "k" => 2],
+                        ["v" => "c", "k" => 1],
+                        ["v" => "d", "k" => 0],
+                    ], "v", "k");
+
+                    $g = array_column([
+                        ["v" => "a", "k" => 0],
+                        ["v" => "b", "k" => 1],
+                        ["v" => "c", "k" => 2],
+                        ["v" => "d", "k" => 3],
+                    ], null, "k");
+
+                    $h = array_column([
+                        "a" => ["k" => 0],
+                        "b" => ["k" => 1],
+                        "c" => ["k" => 2],
+                    ], null, "k");
+
+                    /** @var array{a: array{v: 0}, b?: array{v: 1}} */
+                    $aa = [];
+                    $i = array_column($aa, "v");
+
+                    /** @var array{a: array{v: "a", k: 0}, b?: array{v: "b", k: 1}, c: array{v: "c", k: 2}} */
+                    $aa = [];
+                    $j = array_column($aa, null, "k");
+
+                    /** @var array{a: array{v: "a", k: 0}, b: array{v: "b", k: 1}, c?: array{v: "c", k: 2}} */
+                    $aa = [];
+                    $k = array_column($aa, null, "k");
+                ',
+                'assertions' => [
+                    '$a===' => "list{'a', 'b', 'c', 'd'}",
+                    '$b===' => "list{'a', 'c', 'd'}",
+                    '$c===' => "list{'a', 'c', 'd'}",
+                    '$d===' => "array{A: 'a', B: 'b', C: 'c', D: 'd'}",
+                    '$e===' => "list{'a', 'b', 'c', 'd'}",
+                    '$f===' => "array{0: 'd', 1: 'c', 2: 'b', 3: 'a'}",
+                    '$g===' => "list{array{k: 0, v: 'a'}, array{k: 1, v: 'b'}, array{k: 2, v: 'c'}, array{k: 3, v: 'd'}}",
+                    '$h===' => "list{array{k: 0}, array{k: 1}, array{k: 2}}",
+                    '$i===' => "array{a: 0, b?: 1}",
+                    '$j===' => "array{0: array{k: 0, v: 'a'}, 1?: array{k: 1, v: 'b'}, 2: array{k: 2, v: 'c'}}",
+                    '$k===' => "list{0: array{k: 0, v: 'a'}, 1: array{k: 1, v: 'b'}, 2?: array{k: 2, v: 'c'}}",
+                ]
             ],
             'splatArrayIntersect' => [
                 'code' => '<?php
@@ -1888,10 +2006,28 @@ class ArrayFunctionCallTest extends TestCase
             ],
             'arrayFillKeys' => [
                 'code' => '<?php
+                    /** @var list<int> */
                     $keys = [1, 2, 3];
-                    $result = array_fill_keys($keys, true);',
+                    $a = array_fill_keys($keys, true);
+
+                    $keys = [1, 2, 3];
+                    $b = array_fill_keys($keys, true);
+
+                    $keys = [0, 1, 2];
+                    $c = array_fill_keys($keys, true);
+
+                    $keys = random_int(0, 1) ? [0] : [0, 1];
+                    $d = array_fill_keys($keys, true);
+
+                    $keys = random_int(0, 1) ? ["a"] : ["a", "b"];
+                    $e = array_fill_keys($keys, true);
+                ',
                 'assertions' => [
-                    '$result' => 'array<int, true>',
+                    '$a===' => 'array<int, true>',
+                    '$b===' => 'array{1: true, 2: true, 3: true}',
+                    '$c===' => 'list{true, true, true}',
+                    '$d===' => 'list{0: true, 1?: true}',
+                    '$e===' => 'array{a: true, b?: true}',
                 ],
             ],
             'shuffle' => [
@@ -2594,6 +2730,16 @@ class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     implode(",", [new stdClass]);
                 ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayCombineNotMatching' => [
+                'code' => '<?php
+                    array_combine(["a", "b"], [1, 2, 3]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayCombineNotMatchingPHP8' => [
+                'code' => '<?php
+                    array_combine(["a", "b"], [1, 2, 3]);',
                 'error_message' => 'InvalidArgument',
             ],
         ];
