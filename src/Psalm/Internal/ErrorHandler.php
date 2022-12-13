@@ -22,11 +22,9 @@ use const STDERR;
  */
 final class ErrorHandler
 {
-    /** @var bool */
-    private static $exceptions_enabled = true;
+    private static bool $exceptions_enabled = true;
 
-    /** @var string */
-    private static $args = '';
+    private static string $args = '';
 
     /**
      * @param array<int,string> $argv

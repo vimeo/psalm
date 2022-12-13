@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
-use Psalm\Internal\Provider\Providers;
 use Psalm\Storage\FileStorage;
 use RuntimeException;
 use UnexpectedValueException;
@@ -38,10 +37,7 @@ class FileStorageCacheProvider
      */
     private $modified_timestamps = '';
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
     private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 

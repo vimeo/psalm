@@ -6,14 +6,8 @@ use Psalm\StatementsSource;
 
 final class FunctionExistenceProviderEvent
 {
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var string
-     */
-    private $function_id;
+    private StatementsSource $statements_source;
+    private string $function_id;
 
     /**
      * Use this hook for informing whether or not a global function exists. If you know the function does

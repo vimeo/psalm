@@ -245,55 +245,53 @@ class Config
 
     /**
      * The PHP version to assume as declared in the config file
-     *
-     * @var string|null
      */
-    private $configured_php_version;
+    private ?string $configured_php_version = null;
 
     /**
      * @var array<int, string>
      */
-    private $file_extensions = ['php'];
+    private array $file_extensions = ['php'];
 
     /**
      * @var array<string, class-string<FileScanner>>
      */
-    private $filetype_scanners = [];
+    private array $filetype_scanners = [];
 
     /**
      * @var array<string, class-string<FileAnalyzer>>
      */
-    private $filetype_analyzers = [];
+    private array $filetype_analyzers = [];
 
     /**
      * @var array<string, string>
      */
-    private $filetype_scanner_paths = [];
+    private array $filetype_scanner_paths = [];
 
     /**
      * @var array<string, string>
      */
-    private $filetype_analyzer_paths = [];
+    private array $filetype_analyzer_paths = [];
 
     /**
      * @var array<string, IssueHandler>
      */
-    private $issue_handlers = [];
+    private array $issue_handlers = [];
 
     /**
      * @var array<int, string>
      */
-    private $mock_classes = [];
+    private array $mock_classes = [];
 
     /**
      * @var array<string, string>
      */
-    private $preloaded_stub_files = [];
+    private array $preloaded_stub_files = [];
 
     /**
      * @var array<string, string>
      */
-    private $stub_files = [];
+    private array $stub_files = [];
 
     /**
      * @var bool
@@ -503,7 +501,7 @@ class Config
     /**
      * @var array<array{class:string,config:?SimpleXMLElement}>
      */
-    private $plugin_classes = [];
+    private array $plugin_classes = [];
 
     /**
      * @var bool
@@ -516,13 +514,12 @@ class Config
     public $allow_named_arg_calls = true;
 
     /** @var array<string, mixed> */
-    private $predefined_constants = [];
+    private array $predefined_constants = [];
 
     /** @var array<callable-string, bool> */
-    private $predefined_functions = [];
+    private array $predefined_functions = [];
 
-    /** @var ClassLoader|null */
-    private $composer_class_loader;
+    private ?ClassLoader $composer_class_loader = null;
 
     /**
      * @var string
@@ -550,8 +547,7 @@ class Config
      */
     public $max_string_length = 1_000;
 
-    /** @var ?IncludeCollector */
-    private $include_collector;
+    private ?IncludeCollector $include_collector = null;
 
     /**
      * @var TaintAnalysisFileFilter|null
@@ -631,7 +627,7 @@ class Config
     /**
      * @var array<class-string, PluginInterface>
      */
-    private $plugins = [];
+    private array $plugins = [];
 
     /** @internal */
     protected function __construct()

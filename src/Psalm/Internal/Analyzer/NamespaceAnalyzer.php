@@ -33,15 +33,9 @@ class NamespaceAnalyzer extends SourceAnalyzer
      */
     protected $source;
 
-    /**
-     * @var Namespace_
-     */
-    private $namespace;
+    private Namespace_ $namespace;
 
-    /**
-     * @var string
-     */
-    private $namespace_name;
+    private string $namespace_name;
 
     /**
      * A lookup table for public namespace constants

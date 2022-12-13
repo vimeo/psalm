@@ -39,15 +39,9 @@ use function strtolower;
  */
 class Reflection
 {
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $storage_provider;
+    private ClassLikeStorageProvider $storage_provider;
 
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
     /**
      * @var array<string, FunctionStorage>

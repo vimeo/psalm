@@ -12,34 +12,16 @@ use Psalm\Storage\FunctionLikeStorage;
 
 final class AfterFunctionLikeAnalysisEvent
 {
-    /**
-     * @var Node\FunctionLike
-     */
-    private $stmt;
-    /**
-     * @var FunctionLikeStorage
-     */
-    private $functionlike_storage;
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Node\FunctionLike $stmt;
+    private FunctionLikeStorage $functionlike_storage;
+    private StatementsSource $statements_source;
+    private Codebase $codebase;
     /**
      * @var FileManipulation[]
      */
-    private $file_replacements;
-    /**
-     * @var NodeTypeProvider
-     */
-    private $node_type_provider;
-    /**
-     * @var Context
-     */
-    private $context;
+    private array $file_replacements;
+    private NodeTypeProvider $node_type_provider;
+    private Context $context;
 
     /**
      * Called after a statement has been checked

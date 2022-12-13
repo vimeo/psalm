@@ -24,7 +24,7 @@ class FunctionParamsProvider
      *   array<Closure(FunctionParamsProviderEvent): ?array<int, FunctionLikeParameter>>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {

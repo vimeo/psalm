@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
-use Psalm\Internal\Provider\Providers;
 
 use function file_exists;
 use function file_put_contents;
@@ -31,12 +30,9 @@ class ProjectCacheProvider
      */
     private $last_run;
 
-    /**
-     * @var string|null
-     */
-    private $composer_lock_hash;
+    private ?string $composer_lock_hash = null;
 
-    private $composer_lock_location;
+    private string $composer_lock_location;
 
     public function __construct(string $composer_lock_location)
     {

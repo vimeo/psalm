@@ -123,7 +123,7 @@ final class IssueBuffer
     protected static $used_suppressions = [];
 
     /** @var array<array-key,mixed> */
-    private static $server = [];
+    private static array $server = [];
 
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added

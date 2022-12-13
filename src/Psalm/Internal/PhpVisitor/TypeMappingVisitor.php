@@ -13,8 +13,8 @@ use Psalm\Internal\Provider\NodeDataProvider;
  */
 class TypeMappingVisitor extends NodeVisitorAbstract
 {
-    private $fake_type_provider;
-    private $real_type_provider;
+    private NodeDataProvider $fake_type_provider;
+    private NodeDataProvider $real_type_provider;
 
     public function __construct(
         NodeDataProvider $fake_type_provider,

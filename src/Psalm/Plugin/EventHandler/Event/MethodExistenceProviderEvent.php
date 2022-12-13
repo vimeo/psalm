@@ -7,22 +7,10 @@ use Psalm\StatementsSource;
 
 final class MethodExistenceProviderEvent
 {
-    /**
-     * @var string
-     */
-    private $fq_classlike_name;
-    /**
-     * @var string
-     */
-    private $method_name_lowercase;
-    /**
-     * @var StatementsSource|null
-     */
-    private $source;
-    /**
-     * @var CodeLocation|null
-     */
-    private $code_location;
+    private string $fq_classlike_name;
+    private string $method_name_lowercase;
+    private ?StatementsSource $source;
+    private ?CodeLocation $code_location;
 
     /**
      * Use this hook for informing whether or not a method exists on a given object. If you know the method does

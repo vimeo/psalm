@@ -60,7 +60,7 @@ class FunctionReturnTypeProvider
      *   array<Closure(FunctionReturnTypeProviderEvent): ?Union>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {

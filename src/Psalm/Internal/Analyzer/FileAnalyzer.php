@@ -67,32 +67,32 @@ class FileAnalyzer extends SourceAnalyzer
     /**
      * @var array<string, bool>
      */
-    private $required_file_paths = [];
+    private array $required_file_paths = [];
 
     /**
      * @var array<string, bool>
      */
-    private $parent_file_paths = [];
+    private array $parent_file_paths = [];
 
     /**
      * @var array<string>
      */
-    private $suppressed_issues = [];
+    private array $suppressed_issues = [];
 
     /**
      * @var array<string, array<string, string>>
      */
-    private $namespace_aliased_classes = [];
+    private array $namespace_aliased_classes = [];
 
     /**
      * @var array<string, array<lowercase-string, string>>
      */
-    private $namespace_aliased_classes_flipped = [];
+    private array $namespace_aliased_classes_flipped = [];
 
     /**
      * @var array<string, array<string, string>>
      */
-    private $namespace_aliased_classes_flipped_replaceable = [];
+    private array $namespace_aliased_classes_flipped_replaceable = [];
 
     /**
      * @var array<lowercase-string, InterfaceAnalyzer>
@@ -119,16 +119,11 @@ class FileAnalyzer extends SourceAnalyzer
      */
     public $codebase;
 
-    /**
-     * @var int
-     */
-    private $first_statement_offset = -1;
+    private int $first_statement_offset = -1;
 
-    /** @var ?NodeDataProvider */
-    private $node_data;
+    private ?NodeDataProvider $node_data = null;
 
-    /** @var ?Union */
-    private $return_type;
+    private ?Union $return_type = null;
 
     public function __construct(ProjectAnalyzer $project_analyzer, string $file_path, string $file_name)
     {

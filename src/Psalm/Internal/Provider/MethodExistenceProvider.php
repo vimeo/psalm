@@ -21,7 +21,7 @@ class MethodExistenceProvider
      *   array<Closure(MethodExistenceProviderEvent): ?bool>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {

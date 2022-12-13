@@ -19,15 +19,12 @@ use const SCANDIR_SORT_NONE;
 /** @internal */
 final class IssueHandler
 {
-    /**
-     * @var string
-     */
-    private $error_level = Config::REPORT_ERROR;
+    private string $error_level = Config::REPORT_ERROR;
 
     /**
      * @var array<ErrorLevelFileFilter>
      */
-    private $custom_levels = [];
+    private array $custom_levels = [];
 
     public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir): IssueHandler
     {

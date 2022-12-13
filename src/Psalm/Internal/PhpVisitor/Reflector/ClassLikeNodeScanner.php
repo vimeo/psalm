@@ -89,50 +89,29 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 class ClassLikeNodeScanner
 {
-    /**
-     * @var FileScanner
-     */
-    private $file_scanner;
+    private FileScanner $file_scanner;
 
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
-    /**
-     * @var string
-     */
-    private $file_path;
+    private string $file_path;
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
-    /**
-     * @var FileStorage
-     */
-    private $file_storage;
+    private FileStorage $file_storage;
 
     /**
      * @var array<string, InlineTypeAlias>
      */
-    private $classlike_type_aliases = [];
+    private array $classlike_type_aliases = [];
 
     /**
      * @var array<string, array<string, Union>>
      */
     public $class_template_types = [];
 
-    /**
-     * @var PhpParser\Node\Name|null
-     */
-    private $namespace_name;
+    private ?Name $namespace_name;
 
-    /**
-     * @var Aliases
-     */
-    private $aliases;
+    private Aliases $aliases;
 
     /**
      * @var ?ClassLikeStorage
@@ -149,7 +128,7 @@ class ClassLikeNodeScanner
         FileStorage $file_storage,
         FileScanner $file_scanner,
         Aliases $aliases,
-        ?PhpParser\Node\Name $namespace_name
+        ?Name $namespace_name
     ) {
         $this->codebase = $codebase;
         $this->file_storage = $file_storage;

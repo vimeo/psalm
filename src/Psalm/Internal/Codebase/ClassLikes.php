@@ -72,10 +72,7 @@ use const PHP_EOL;
  */
 class ClassLikes
 {
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $classlike_storage_provider;
+    private ClassLikeStorageProvider $classlike_storage_provider;
 
     /**
      * @var FileReferenceProvider
@@ -130,17 +127,17 @@ class ClassLikes
     /**
      * @var array<lowercase-string, string>
      */
-    private $classlike_aliases_map = [];
+    private array $classlike_aliases_map = [];
 
     /**
      * @var array<string, bool>
      */
-    private $existing_classlike_aliases = [];
+    private array $existing_classlike_aliases = [];
 
     /**
      * @var array<string, PhpParser\Node\Stmt\Trait_>
      */
-    private $trait_nodes = [];
+    private array $trait_nodes = [];
 
     /**
      * @var bool
@@ -152,20 +149,11 @@ class ClassLikes
      */
     public $collect_locations = false;
 
-    /**
-     * @var StatementsProvider
-     */
-    private $statements_provider;
+    private StatementsProvider $statements_provider;
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
-    /**
-     * @var Scanner
-     */
-    private $scanner;
+    private Scanner $scanner;
 
     public function __construct(
         Config $config,

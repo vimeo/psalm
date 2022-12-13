@@ -19,10 +19,10 @@ class VariableUseGraph extends DataFlowGraph
     protected $backward_edges = [];
 
     /** @var array<string, DataFlowNode> */
-    private $nodes = [];
+    private array $nodes = [];
 
     /** @var array<string, list<CodeLocation>> */
-    private $origin_locations_by_id = [];
+    private array $origin_locations_by_id = [];
 
     public function addNode(DataFlowNode $node): void
     {

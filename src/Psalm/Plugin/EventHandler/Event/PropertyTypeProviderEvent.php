@@ -7,26 +7,11 @@ use Psalm\StatementsSource;
 
 final class PropertyTypeProviderEvent
 {
-    /**
-     * @var string
-     */
-    private $fq_classlike_name;
-    /**
-     * @var string
-     */
-    private $property_name;
-    /**
-     * @var bool
-     */
-    private $read_mode;
-    /**
-     * @var StatementsSource|null
-     */
-    private $source;
-    /**
-     * @var Context|null
-     */
-    private $context;
+    private string $fq_classlike_name;
+    private string $property_name;
+    private bool $read_mode;
+    private ?StatementsSource $source;
+    private ?Context $context;
 
     /** @internal */
     public function __construct(

@@ -21,15 +21,9 @@ use function Amp\call;
  */
 class TextDocument
 {
-    /**
-     * @var ClientHandler
-     */
-    private $handler;
+    private ClientHandler $handler;
 
-    /**
-     * @var JsonMapper
-     */
-    private $mapper;
+    private JsonMapper $mapper;
 
     public function __construct(ClientHandler $handler, JsonMapper $mapper)
     {

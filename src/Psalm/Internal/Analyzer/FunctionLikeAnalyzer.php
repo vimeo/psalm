@@ -116,10 +116,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     protected $return_vars_possibly_in_scope = [];
 
-    /**
-     * @var Union|null
-     */
-    private $local_return_type;
+    private ?Union $local_return_type = null;
 
     /**
      * @var array<string, bool>

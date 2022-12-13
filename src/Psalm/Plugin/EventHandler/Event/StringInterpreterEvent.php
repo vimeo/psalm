@@ -4,10 +4,7 @@ namespace Psalm\Plugin\EventHandler\Event;
 
 final class StringInterpreterEvent
 {
-    /**
-     * @var string
-     */
-    private $value;
+    private string $value;
 
     /**
      * Called after a statement has been checked

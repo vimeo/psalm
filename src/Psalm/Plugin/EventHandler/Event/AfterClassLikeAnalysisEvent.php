@@ -10,26 +10,14 @@ use Psalm\Storage\ClassLikeStorage;
 
 final class AfterClassLikeAnalysisEvent
 {
-    /**
-     * @var Node\Stmt\ClassLike
-     */
-    private $stmt;
-    /**
-     * @var ClassLikeStorage
-     */
-    private $classlike_storage;
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Node\Stmt\ClassLike $stmt;
+    private ClassLikeStorage $classlike_storage;
+    private StatementsSource $statements_source;
+    private Codebase $codebase;
     /**
      * @var FileManipulation[]
      */
-    private $file_replacements;
+    private array $file_replacements;
 
     /**
      * Called after a statement has been checked

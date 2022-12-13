@@ -85,10 +85,7 @@ use const PHP_EOL;
  */
 class Scanner
 {
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
     /**
      * @var array<string, string>
@@ -135,40 +132,19 @@ class Scanner
      */
     private $reflected_classlikes_lc = [];
 
-    /**
-     * @var Reflection
-     */
-    private $reflection;
+    private Reflection $reflection;
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
-    /**
-     * @var Progress
-     */
-    private $progress;
+    private Progress $progress;
 
-    /**
-     * @var FileStorageProvider
-     */
-    private $file_storage_provider;
+    private FileStorageProvider $file_storage_provider;
 
-    /**
-     * @var FileProvider
-     */
-    private $file_provider;
+    private FileProvider $file_provider;
 
-    /**
-     * @var FileReferenceProvider
-     */
-    private $file_reference_provider;
+    private FileReferenceProvider $file_reference_provider;
 
-    /**
-     * @var bool
-     */
-    private $is_forked = false;
+    private bool $is_forked = false;
 
     public function __construct(
         Codebase $codebase,
