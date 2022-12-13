@@ -24,6 +24,7 @@ use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -400,6 +401,17 @@ trait UnionTrait
     }
 
     /**
+     * @return TArray|TKeyedArray|TClassStringMap
+     */
+    public function getArray(): Atomic
+    {
+        if ($this->types['array'] instanceof TList) {
+            return $this->types['array']->getKeyedArray();
+        }
+        return $this->types['array'];
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function hasIterable(): bool
@@ -412,7 +424,9 @@ trait UnionTrait
      */
     public function hasList(): bool
     {
-        return isset($this->types['array']) && $this->types['array'] instanceof TList;
+        return isset($this->types['array'])
+            && $this->types['array'] instanceof TKeyedArray
+            && $this->types['array']->is_list;
     }
 
     /**
@@ -1336,7 +1350,8 @@ trait UnionTrait
     public function equals(
         self $other_type,
         bool $ensure_source_equality = true,
-        bool $ensure_parent_node_equality = true
+        bool $ensure_parent_node_equality = true,
+        bool $ensure_possibly_undefined_equality = true
     ): bool {
         if ($other_type === $this) {
             return true;
@@ -1350,7 +1365,7 @@ trait UnionTrait
             return false;
         }
 
-        if ($this->possibly_undefined !== $other_type->possibly_undefined) {
+        if ($this->possibly_undefined !== $other_type->possibly_undefined && $ensure_possibly_undefined_equality) {
             return false;
         }
 

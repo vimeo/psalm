@@ -152,6 +152,7 @@ class ForTest extends TestCase
                                         continue;
                                     }
 
+                                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
                                     $data[0]["a"] = array_merge($data[0]["a"], $data[0]["a"]);
                                 }
                             }

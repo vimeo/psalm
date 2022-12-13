@@ -3,21 +3,15 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
-
-use function array_map;
-use function range;
 
 /**
  * @internal
@@ -25,8 +19,8 @@ use function range;
 class ArrayTypeComparator
 {
     /**
-     * @param TArray|TKeyedArray|TList|TClassStringMap $input_type_part
-     * @param TArray|TKeyedArray|TList|TClassStringMap $container_type_part
+     * @param TArray|TKeyedArray|TClassStringMap $input_type_part
+     * @param TArray|TKeyedArray|TClassStringMap $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
@@ -62,9 +56,11 @@ class ArrayTypeComparator
 
             $properties = [];
 
+            $value = $input_type_part->type_params[1]->setPossiblyUndefined(true);
+
             foreach ($input_type_part->type_params[0]->getAtomicTypes() as $atomic_key_type) {
                 if ($atomic_key_type instanceof TLiteralString || $atomic_key_type instanceof TLiteralInt) {
-                    $properties[$atomic_key_type->value] = $input_type_part->type_params[1]->setPossiblyUndefined(true);
+                    $properties[$atomic_key_type->value] = $value;
                 } else {
                     $all_string_int_literals = false;
                 }
@@ -83,79 +79,28 @@ class ArrayTypeComparator
             }
         }
 
-        if ($container_type_part instanceof TList
-            && $input_type_part instanceof TKeyedArray
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_list
+            && (
+                ($input_type_part instanceof TKeyedArray
+                && !$input_type_part->is_list)
+                || $input_type_part instanceof TArray
+            )
         ) {
-            if ($input_type_part->is_list) {
-                $input_type_part = $input_type_part->getList();
-            } else {
-                return false;
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
             }
+            return false;
         }
 
-        if ($container_type_part instanceof TList
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_list
             && $input_type_part instanceof TClassStringMap
         ) {
             return false;
         }
 
-        if ($container_type_part instanceof TList
-            && $input_type_part instanceof TArray
-            && $input_type_part->isEmptyArray()
-        ) {
-            return !$container_type_part instanceof TNonEmptyList;
-        }
-
-        if ($container_type_part instanceof TNonEmptyList
-            && $input_type_part instanceof TNonEmptyArray
-            && $input_type_part->type_params[0]->isSingleIntLiteral()
-            && $input_type_part->type_params[0]->getSingleIntLiteral()->value === 0
-            && isset($input_type_part->type_params[1])
-        ) {
-            //this is a special case where the only offset value of an non empty array is 0, so it's a non empty list
-            return UnionTypeComparator::isContainedBy(
-                $codebase,
-                $input_type_part->type_params[1],
-                $container_type_part->type_param,
-                $input_type_part->type_params[1]->ignore_nullable_issues,
-                $input_type_part->type_params[1]->ignore_falsable_issues,
-                $atomic_comparison_result,
-                $allow_interface_equality
-            );
-        }
-
-        if ($input_type_part instanceof TList
-            && $container_type_part instanceof TList
-        ) {
-            if (!UnionTypeComparator::isContainedBy(
-                $codebase,
-                $input_type_part->type_param,
-                $container_type_part->type_param,
-                $input_type_part->type_param->ignore_nullable_issues,
-                $input_type_part->type_param->ignore_falsable_issues,
-                $atomic_comparison_result,
-                $allow_interface_equality
-            )) {
-                return false;
-            }
-
-            return $input_type_part instanceof TNonEmptyList
-                || !$container_type_part instanceof TNonEmptyList;
-        }
-
         if ($container_type_part instanceof TKeyedArray) {
-            if ($container_type_part->is_list) {
-                $container_type_part = $container_type_part->getList();
-
-                return self::isContainedBy(
-                    $codebase,
-                    $input_type_part,
-                    $container_type_part,
-                    $allow_interface_equality,
-                    $atomic_comparison_result
-                );
-            }
-
             $container_type_part = $container_type_part->getGenericArrayType();
         }
 
@@ -175,37 +120,6 @@ class ArrayTypeComparator
                 $container_type_part->getStandinKeyParam(),
                 $container_type_part->value_param
             ]);
-        }
-
-        if ($container_type_part instanceof TList) {
-            $all_types_contain = false;
-
-            if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = true;
-            }
-
-            $container_type_part = new TArray([Type::getInt(), $container_type_part->type_param]);
-        }
-
-        if ($input_type_part instanceof TList) {
-            if ($input_type_part instanceof TNonEmptyList) {
-                // if the array has a known size < 10, make sure the array keys are literal ints
-                if ($input_type_part->count !== null && $input_type_part->count < 10) {
-                    $literal_ints = array_map(
-                        static fn($i): TLiteralInt => new TLiteralInt($i),
-                        range(0, $input_type_part->count - 1)
-                    );
-
-                    $input_type_part = new TNonEmptyArray([
-                        new Union($literal_ints),
-                        $input_type_part->type_param
-                    ]);
-                } else {
-                    $input_type_part = new TNonEmptyArray([Type::getInt(), $input_type_part->type_param]);
-                }
-            } else {
-                $input_type_part = new TArray([Type::getInt(), $input_type_part->type_param]);
-            }
         }
 
         foreach ($input_type_part->type_params as $i => $input_param) {

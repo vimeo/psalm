@@ -31,7 +31,7 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int|null',
+                    '$key' => 'int<0, max>|null',
                     '$value' => 'null|string',
                     '$next' => 'bool',
                 ],
@@ -47,7 +47,7 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int|null',
+                    '$key' => 'int<0, max>|null',
                     '$value' => 'null|string',
                 ],
             ],
@@ -62,7 +62,7 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int|null',
+                    '$key' => 'int<0, max>|null',
                     '$value' => 'null|string',
                 ],
             ],
@@ -80,7 +80,7 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int|null',
+                    '$key' => 'int<0, max>|null',
                     '$value' => 'null|string',
                 ],
             ],
@@ -95,7 +95,7 @@ class ClassTemplateTest extends TestCase
                     $value = $decoratorIterator->current();
                 ',
                 'assertions' => [
-                    '$key' => 'int|null',
+                    '$key' => 'int<0, max>|null',
                     '$value' => 'null|string',
                 ],
             ],
@@ -4564,7 +4564,7 @@ class ClassTemplateTest extends TestCase
 
                     $m = new Map(fn(int $num) => (string) $num);
                     $m(["a"]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0'
             ],

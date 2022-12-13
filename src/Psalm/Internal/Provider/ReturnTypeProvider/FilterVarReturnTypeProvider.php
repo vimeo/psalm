@@ -95,7 +95,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                         if (isset($atomic_type->properties['options'])
                             && $atomic_type->properties['options']->hasArray()
-                            && ($options_array = $atomic_type->properties['options']->getAtomicTypes()['array'] ?? null)
+                            && ($options_array = $atomic_type->properties['options']->getArray())
                             && $options_array instanceof TKeyedArray
                             && isset($options_array->properties['default'])
                         ) {

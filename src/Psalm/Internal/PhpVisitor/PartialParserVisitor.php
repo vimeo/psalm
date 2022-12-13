@@ -30,7 +30,7 @@ use const PREG_SET_ORDER;
  */
 class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {
-    /** @var array<int, array{int, int, int, int, int, string}> */
+    /** @var array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> */
     private array $offset_map;
 
     private bool $must_rescan = false;
@@ -47,7 +47,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
     private Collecting $error_handler;
 
-    /** @param array<int, array{int, int, int, int, int, string}> $offset_map */
+    /** @param array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map */
     public function __construct(
         Parser $parser,
         Collecting $error_handler,

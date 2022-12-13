@@ -52,6 +52,7 @@ use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
+use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReferenceReusedFromConfusingScope;
 use Psalm\Issue\UnnecessaryVarAnnotation;
@@ -80,7 +81,6 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -1214,6 +1214,9 @@ class AssignmentAnalyzer
             $has_null = false;
 
             foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
+                if ($assign_value_atomic_type instanceof TList) {
+                    $assign_value_atomic_type = $assign_value_atomic_type->getKeyedArray();
+                }
                 if ($assign_value_atomic_type instanceof TKeyedArray
                     && !$assign_var_item->key
                 ) {
@@ -1233,6 +1236,8 @@ class AssignmentAnalyzer
                             );
 
                             $value_type = $value_type->setPossiblyUndefined(false);
+                        } else {
+                            $can_be_empty = false;
                         }
 
                         if ($statements_analyzer->data_flow_graph
@@ -1297,7 +1302,6 @@ class AssignmentAnalyzer
                     $has_null = true;
                 } elseif (!$assign_value_atomic_type instanceof TArray
                     && !$assign_value_atomic_type instanceof TKeyedArray
-                    && !$assign_value_atomic_type instanceof TList
                     && !$assign_value_type->hasArrayAccessInterface($codebase)
                 ) {
                     if ($assign_value_type->hasArray()) {
@@ -1334,13 +1338,6 @@ class AssignmentAnalyzer
                 ) {
                     if ($assign_value_atomic_type instanceof TKeyedArray) {
                         $assign_value_atomic_type = $assign_value_atomic_type->getGenericArrayType();
-                    }
-
-                    if ($assign_value_atomic_type instanceof TList) {
-                        $assign_value_atomic_type = new TArray([
-                            Type::getInt(),
-                            $assign_value_atomic_type->type_param
-                        ]);
                     }
 
                     $array_value_type = $assign_value_atomic_type instanceof TArray
@@ -1404,21 +1401,6 @@ class AssignmentAnalyzer
                         }
 
                         $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyArray;
-                    } elseif ($assign_value_atomic_type instanceof TList) {
-                        $new_assign_type = $assign_value_atomic_type->type_param;
-
-                        if ($statements_analyzer->data_flow_graph && $assign_value) {
-                            $temp = Type::getArrayKey();
-                            ArrayFetchAnalyzer::taintArrayFetch(
-                                $statements_analyzer,
-                                $assign_value,
-                                null,
-                                $new_assign_type,
-                                $temp
-                            );
-                        }
-
-                        $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyList;
                     } elseif ($assign_value_atomic_type instanceof TKeyedArray) {
                         if (($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                             || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
@@ -1437,7 +1419,25 @@ class AssignmentAnalyzer
                                 );
 
                                 $new_assign_type = $new_assign_type->setPossiblyUndefined(false);
+                            } else {
+                                $can_be_empty = false;
                             }
+                        } elseif (!$assign_var_item->key instanceof PhpParser\Node\Scalar\String_
+                            && $assign_value_atomic_type->is_list
+                            && $assign_value_atomic_type->fallback_params
+                        ) {
+                            if ($codebase->config->ensure_array_int_offsets_exist) {
+                                IssueBuffer::maybeAdd(
+                                    new PossiblyUndefinedIntArrayOffset(
+                                        'Possibly undefined array key',
+                                        new CodeLocation($statements_analyzer->getSource(), $var)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                );
+                            }
+
+                            $new_assign_type =
+                                $assign_value_atomic_type->fallback_params[1];
                         }
 
                         if ($statements_analyzer->data_flow_graph && $assign_value && $new_assign_type) {
@@ -1450,8 +1450,6 @@ class AssignmentAnalyzer
                                 $temp
                             );
                         }
-
-                        $can_be_empty = $assign_value_atomic_type->fallback_params !== null;
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
                         ForeachAnalyzer::getKeyValueParamsForTraversableObject(
                             $assign_value_atomic_type,

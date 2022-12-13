@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function array_map;

@@ -3,6 +3,8 @@
 namespace Psalm\Type\Atomic;
 
 /**
+ * @deprecated Will be removed in Psalm v6, use TIntRange instead
+ *
  * Represents a list key created from foreach ($list as $key => $value)
  * @psalm-immutable
  */

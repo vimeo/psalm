@@ -40,10 +40,8 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
@@ -51,7 +49,6 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -65,6 +62,7 @@ use function array_map;
 use function array_merge;
 use function array_search;
 use function array_values;
+use function assert;
 use function in_array;
 use function is_string;
 use function reset;
@@ -390,8 +388,6 @@ class ForeachAnalyzer
     /**
      * @param PhpParser\Node\Stmt\Foreach_|PhpParser\Node\Expr\YieldFrom $stmt
      *
-     * @psalm-suppress ComplexMethod
-     *
      * @return false|null
      */
     public static function checkIteratorType(
@@ -469,41 +465,22 @@ class ForeachAnalyzer
                 || $iterator_atomic_type instanceof TKeyedArray
                 || $iterator_atomic_type instanceof TList
             ) {
+                if ($iterator_atomic_type instanceof TList) {
+                    $iterator_atomic_type = $iterator_atomic_type->getKeyedArray();
+                }
                 if ($iterator_atomic_type instanceof TKeyedArray) {
-                    if ($iterator_atomic_type->fallback_params === null) {
-                        $all_possibly_undefined = true;
-                        foreach ($iterator_atomic_type->properties as $prop) {
-                            if (!$prop->possibly_undefined) {
-                                $all_possibly_undefined = false;
-                                break;
-                            }
-                        }
-                        if ($all_possibly_undefined) {
-                            $always_non_empty_array = false;
-                        }
-                    } else {
+                    if (!$iterator_atomic_type->isNonEmpty()) {
                         $always_non_empty_array = false;
                     }
-                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType();
-                } elseif ($iterator_atomic_type instanceof TList) {
-                    $list_var_id = ExpressionIdentifier::getExtendedVarId(
-                        $expr,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer
+
+                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType(
+                        true,
+                        ExpressionIdentifier::getExtendedVarId(
+                            $expr,
+                            $statements_analyzer->getFQCLN(),
+                            $statements_analyzer
+                        )
                     );
-
-                    if (!$iterator_atomic_type instanceof TNonEmptyList) {
-                        $always_non_empty_array = false;
-                    }
-
-                    $iterator_atomic_type = new TArray([
-                        $list_var_id
-                            ? new Union([
-                                new TDependentListKey($list_var_id)
-                            ])
-                            : new Union([new TIntRange(0, null)]),
-                        $iterator_atomic_type->type_param
-                    ]);
                 } elseif (!$iterator_atomic_type instanceof TNonEmptyArray) {
                     $always_non_empty_array = false;
                 }
@@ -989,6 +966,7 @@ class ForeachAnalyzer
             || ($iterator_atomic_type instanceof TGenericObject
                 && strtolower($iterator_atomic_type->value) === 'traversable')
         ) {
+            assert(isset($iterator_atomic_type->type_params[1]));
             $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
             $key_type = Type::combineUnionTypes($key_type, $iterator_atomic_type->type_params[0]);
 

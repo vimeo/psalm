@@ -495,6 +495,9 @@ class TypeExpander
                 $throw_on_unresolvable_constant,
             );
         }
+        if ($return_type instanceof TList) {
+            $return_type = $return_type->getKeyedArray();
+        }
 
         if ($return_type instanceof TArray
             || $return_type instanceof TGenericObject
@@ -521,7 +524,8 @@ class TypeExpander
             $return_type = $return_type->setTypeParams($type_params);
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;
-            foreach ($properties as &$property_type) {
+            $changed = false;
+            foreach ($properties as $k => $property_type) {
                 $property_type = self::expandUnion(
                     $codebase,
                     $property_type,
@@ -535,23 +539,44 @@ class TypeExpander
                     $expand_templates,
                     $throw_on_unresolvable_constant,
                 );
+                if ($property_type !== $properties[$k]) {
+                    $changed = true;
+                    $properties[$k] = $property_type;
+                }
             }
             unset($property_type);
-            $return_type = $return_type->setProperties($properties);
-        } elseif ($return_type instanceof TList) {
-            $return_type = $return_type->setTypeParam(self::expandUnion(
-                $codebase,
-                $return_type->type_param,
-                $self_class,
-                $static_class_type,
-                $parent_class,
-                $evaluate_class_constants,
-                $evaluate_conditional_types,
-                $final,
-                $expand_generic,
-                $expand_templates,
-                $throw_on_unresolvable_constant,
-            ));
+            $fallback_params = $return_type->fallback_params;
+            if ($fallback_params) {
+                foreach ($fallback_params as $k => $property_type) {
+                    $property_type = self::expandUnion(
+                        $codebase,
+                        $property_type,
+                        $self_class,
+                        $static_class_type,
+                        $parent_class,
+                        $evaluate_class_constants,
+                        $evaluate_conditional_types,
+                        $final,
+                        $expand_generic,
+                        $expand_templates,
+                        $throw_on_unresolvable_constant,
+                    );
+                    if ($property_type !== $fallback_params[$k]) {
+                        $changed = true;
+                        $fallback_params[$k] = $property_type;
+                    }
+                }
+                unset($property_type);
+            }
+            if ($changed) {
+                $return_type = new TKeyedArray(
+                    $properties,
+                    $return_type->class_strings,
+                    $fallback_params,
+                    $return_type->is_list,
+                    $return_type->from_docblock
+                );
+            }
         }
 
         if ($return_type instanceof TObjectWithProperties) {

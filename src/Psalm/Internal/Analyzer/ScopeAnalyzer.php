@@ -88,6 +88,7 @@ class ScopeAnalyzer
                     : ($stmt->num instanceof PhpParser\Node\Scalar\LNumber ? $stmt->num->value : null);
 
                 if ($break_types && $count !== null && count($break_types) >= $count) {
+                    /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
                     if ($break_types[count($break_types) - $count] === 'switch') {
                         return [...$control_actions, ...[self::ACTION_LEAVE_SWITCH]];
                     }
@@ -104,10 +105,12 @@ class ScopeAnalyzer
                     : ($stmt->num instanceof PhpParser\Node\Scalar\LNumber ? $stmt->num->value : null);
 
                 if ($break_types && $count !== null && count($break_types) >= $count) {
+                    /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
                     if ($break_types[count($break_types) - $count] === 'switch') {
                         return [...$control_actions, ...[self::ACTION_LEAVE_SWITCH]];
                     }
 
+                    /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
                     if ($break_types[count($break_types) - $count] === 'loop') {
                         return [...$control_actions, ...[self::ACTION_LEAVE_LOOP]];
                     }

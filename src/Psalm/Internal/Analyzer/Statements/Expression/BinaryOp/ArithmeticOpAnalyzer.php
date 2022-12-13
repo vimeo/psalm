@@ -514,16 +514,19 @@ class ArithmeticOpAnalyzer
             || $left_type_part instanceof TList
             || $right_type_part instanceof TList
         ) {
+            if ($left_type_part instanceof TList) {
+                $left_type_part = $left_type_part->getKeyedArray();
+            }
+            if ($right_type_part instanceof TList) {
+                $right_type_part = $right_type_part->getKeyedArray();
+            }
             if ((!$right_type_part instanceof TArray
-                    && !$right_type_part instanceof TKeyedArray
-                    && !$right_type_part instanceof TList)
+                    && !$right_type_part instanceof TKeyedArray)
                 || (!$left_type_part instanceof TArray
-                    && !$left_type_part instanceof TKeyedArray
-                    && !$left_type_part instanceof TList)
+                    && !$left_type_part instanceof TKeyedArray)
             ) {
                 if (!$left_type_part instanceof TArray
                     && !$left_type_part instanceof TKeyedArray
-                    && !$left_type_part instanceof TList
                 ) {
                     $invalid_left_messages[] = 'Cannot add an array to a non-array ' . $left_type_part;
                 } else {
@@ -532,12 +535,10 @@ class ArithmeticOpAnalyzer
 
                 if ($left_type_part instanceof TArray
                     || $left_type_part instanceof TKeyedArray
-                    || $left_type_part instanceof TList
                 ) {
                     $has_valid_left_operand = true;
                 } elseif ($right_type_part instanceof TArray
                     || $right_type_part instanceof TKeyedArray
-                    || $right_type_part instanceof TList
                 ) {
                     $has_valid_right_operand = true;
                 }
@@ -823,7 +824,7 @@ class ArithmeticOpAnalyzer
                             }
                         } else {
                             if ($always_positive) {
-                                $result_type = new Union([new TIntRange(0, null)]);
+                                $result_type = Type::getListKey();
                             } else {
                                 $result_type = Type::getInt();
                             }
@@ -1392,7 +1393,7 @@ class ArithmeticOpAnalyzer
                         [new TIntRange(0, $right_type_part->max_bound - 1)]
                     );
                 } else {
-                    $new_result_type = new Union([new TIntRange(0, null)]);
+                    $new_result_type = Type::getListKey();
                 }
             } elseif ($left_type_part->isNegativeOrZero()) {
                 $new_result_type = new Union([new TIntRange(null, 0)]);

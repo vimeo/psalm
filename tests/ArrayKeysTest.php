@@ -39,7 +39,7 @@ class ArrayKeysTest extends TestCase
                     $keys = array_keys(["foo", "bar"]);
                 ',
                 'assertions' => [
-                    '$keys' => 'non-empty-list<int>',
+                    '$keys' => 'non-empty-list<int<0, 1>>',
                 ],
             ],
             'arrayKeysOfKeyedStringIntArrayReturnsNonEmptyListOfIntsOrStrings' => [

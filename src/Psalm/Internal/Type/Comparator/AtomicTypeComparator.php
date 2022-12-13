@@ -4,7 +4,6 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -27,7 +26,6 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -40,6 +38,7 @@ use Psalm\Type\Atomic\TValueOf;
 
 use function array_merge;
 use function array_values;
+use function assert;
 use function count;
 use function get_class;
 use function strtolower;
@@ -60,6 +59,12 @@ class AtomicTypeComparator
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
     ): bool {
+        if ($input_type_part instanceof TList) {
+            $input_type_part = $input_type_part->getKeyedArray();
+        }
+        if ($container_type_part instanceof TList) {
+            $container_type_part = $container_type_part->getKeyedArray();
+        }
         if (($container_type_part instanceof TTemplateParam
                 || ($container_type_part instanceof TNamedObject
                     && $container_type_part->extra_types))
@@ -263,11 +268,9 @@ class AtomicTypeComparator
         }
 
         if (($input_type_part instanceof TArray
-                || $input_type_part instanceof TList
                 || $input_type_part instanceof TKeyedArray
                 || $input_type_part instanceof TClassStringMap)
             && ($container_type_part instanceof TArray
-                || $container_type_part instanceof TList
                 || $container_type_part instanceof TKeyedArray
                 || $container_type_part instanceof TClassStringMap)
         ) {
@@ -535,22 +538,15 @@ class AtomicTypeComparator
         if ($container_type_part instanceof TIterable) {
             if ($input_type_part instanceof TArray
                 || $input_type_part instanceof TKeyedArray
-                || $input_type_part instanceof TList
             ) {
                 if ($input_type_part instanceof TKeyedArray) {
                     $input_type_part = $input_type_part->getGenericArrayType();
-                } elseif ($input_type_part instanceof TList) {
-                    $input_type_part = new TArray([Type::getInt(), $input_type_part->type_param]);
                 }
 
                 $all_types_contain = true;
 
                 foreach ($input_type_part->type_params as $i => $input_param) {
                     $container_param_offset = $i - (2 - count($container_type_part->type_params));
-
-                    if ($container_param_offset === -1) {
-                        continue;
-                    }
 
                     $container_param = $container_type_part->type_params[$container_param_offset];
 
@@ -653,7 +649,6 @@ class AtomicTypeComparator
                 || $input_type_part instanceof TCallableString
                 || $input_type_part instanceof TArray
                 || $input_type_part instanceof TKeyedArray
-                || $input_type_part instanceof TList
                 || (
                     $input_type_part instanceof TNamedObject &&
                     $codebase->classOrInterfaceExists($input_type_part->value) &&
@@ -739,6 +734,32 @@ class AtomicTypeComparator
     }
 
     /**
+     * @psalm-assert-if-true TKeyedArray $array
+     */
+    public static function isLegacyTListLike(Atomic $array): bool
+    {
+        return $array instanceof TKeyedArray
+            && $array->is_list
+            && $array->fallback_params
+            && count($array->properties) === 1
+            && $array->properties[0]->possibly_undefined
+            && $array->properties[0]->equals($array->fallback_params[1], true, true, false)
+        ;
+    }
+    /**
+     * @psalm-assert-if-true TKeyedArray $array
+     */
+    public static function isLegacyTNonEmptyListLike(Atomic $array): bool
+    {
+        return $array instanceof TKeyedArray
+            && $array->is_list
+            && $array->fallback_params
+            && count($array->properties) === 1
+            && !$array->properties[0]->possibly_undefined
+            && $array->properties[0]->equals($array->fallback_params[1])
+        ;
+    }
+    /**
      * Does the input param atomic type match the given param atomic type
      */
     public static function canBeIdentical(
@@ -747,15 +768,23 @@ class AtomicTypeComparator
         Atomic $type2_part,
         bool $allow_interface_equality = true
     ): bool {
-        if ((get_class($type1_part) === TList::class
-                && $type2_part instanceof TNonEmptyList)
-            || (get_class($type2_part) === TList::class
-                && $type1_part instanceof TNonEmptyList)
+        if ($type1_part instanceof TList) {
+            $type1_part = $type1_part->getKeyedArray();
+        }
+        if ($type2_part instanceof TList) {
+            $type2_part = $type2_part->getKeyedArray();
+        }
+        if ((self::isLegacyTListLike($type1_part)
+                && self::isLegacyTNonEmptyListLike($type2_part))
+            || (self::isLegacyTListLike($type2_part)
+                && self::isLegacyTNonEmptyListLike($type1_part))
         ) {
+            assert($type1_part->fallback_params !== null);
+            assert($type2_part->fallback_params !== null);
             return UnionTypeComparator::canExpressionTypesBeIdentical(
                 $codebase,
-                $type1_part->type_param,
-                $type2_part->type_param
+                $type1_part->fallback_params[1],
+                $type2_part->fallback_params[1]
             );
         }
 

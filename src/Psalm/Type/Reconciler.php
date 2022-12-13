@@ -70,6 +70,7 @@ use function preg_match;
 use function preg_quote;
 use function str_replace;
 use function str_split;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -505,6 +506,7 @@ class Reconciler
                         && $key_parts[1] === '['
                         && $key_parts[2][0] !== '\''
                         && !is_numeric($key_parts[2])
+                        && strpos($key_parts[2], '::class') === (strlen($key_parts[2])-7)
                     ) {
                         if ($key_parts[0][0] === '$') {
                             if (isset($new_types[$key_parts[0]])) {
@@ -699,6 +701,10 @@ class Reconciler
                     while ($atomic_types) {
                         $existing_key_type_part = array_shift($atomic_types);
 
+                        if ($existing_key_type_part instanceof TList) {
+                            $existing_key_type_part = $existing_key_type_part->getKeyedArray();
+                        }
+
                         if ($existing_key_type_part instanceof TTemplateParam) {
                             $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
                             continue;
@@ -714,23 +720,6 @@ class Reconciler
                             if ($new_base_type_candidate->isMixed() && !$has_isset && !$has_inverted_isset) {
                                 return $new_base_type_candidate;
                             }
-
-                            if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
-                                if ($has_inverted_isset && $new_base_key === $key) {
-                                    $new_base_type_candidate = $new_base_type_candidate->getBuilder();
-                                    $new_base_type_candidate->addType(new TNull);
-                                    $new_base_type_candidate->possibly_undefined = true;
-                                    $new_base_type_candidate = $new_base_type_candidate->freeze();
-                                } else {
-                                    $new_base_type_candidate = $new_base_type_candidate->setPossiblyUndefined(true);
-                                }
-                            }
-                        } elseif ($existing_key_type_part instanceof TList) {
-                            if ($has_empty) {
-                                return null;
-                            }
-
-                            $new_base_type_candidate = $existing_key_type_part->type_param;
 
                             if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
                                 if ($has_inverted_isset && $new_base_key === $key) {
@@ -1125,10 +1114,12 @@ class Reconciler
 
         if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
             foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
+                if ($base_atomic_type instanceof TList) {
+                    $base_atomic_type = $base_atomic_type->getKeyedArray();
+                }
                 if ($base_atomic_type instanceof TKeyedArray
                     || ($base_atomic_type instanceof TArray
                         && !$base_atomic_type->isEmptyArray())
-                    || $base_atomic_type instanceof TList
                     || $base_atomic_type instanceof TClassStringMap
                 ) {
                     $new_base_type = $existing_types[$base_key];
@@ -1144,24 +1135,40 @@ class Reconciler
                             null,
                             $fallback_key_type->isNever() ? null : [$fallback_key_type, $fallback_value_type]
                         );
-                    } elseif ($base_atomic_type instanceof TList) {
-                        $fallback_key_type = Type::getInt();
-                        $fallback_value_type = $base_atomic_type->type_param;
-
-                        $base_atomic_type = new TKeyedArray(
-                            [
-                                $array_key_offset => $result_type,
-                            ],
-                            null,
-                            [$fallback_key_type, $fallback_value_type],
-                            true
-                        );
                     } elseif ($base_atomic_type instanceof TClassStringMap) {
                         // do nothing
                     } else {
                         $properties = $base_atomic_type->properties;
                         $properties[$array_key_offset] = $result_type;
-                        $base_atomic_type = $base_atomic_type->setProperties($properties);
+                        if ($base_atomic_type->is_list
+                            && (!is_numeric($array_key_offset)
+                                || ($array_key_offset
+                                    && !isset($properties[$array_key_offset-1])
+                                )
+                            )
+                        ) {
+                            if ($base_atomic_type->fallback_params && is_numeric($array_key_offset)) {
+                                $fallback = $base_atomic_type->fallback_params[1]->setPossiblyUndefined(
+                                    $result_type->isNever()
+                                );
+                                for ($x = 0; $x < $array_key_offset; $x++) {
+                                    $properties[$x] ??= $fallback;
+                                }
+                                ksort($properties);
+                                $base_atomic_type = $base_atomic_type->setProperties($properties);
+                            } else {
+                                // This should actually be a paradox
+                                $base_atomic_type = new TKeyedArray(
+                                    $properties,
+                                    null,
+                                    $base_atomic_type->fallback_params,
+                                    false,
+                                    $base_atomic_type->from_docblock
+                                );
+                            }
+                        } else {
+                            $base_atomic_type = $base_atomic_type->setProperties($properties);
+                        }
                     }
 
                     $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();

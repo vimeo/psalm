@@ -1,3 +1,12 @@
+# Upgrading from Psalm 5 to Psalm 6
+## Changed
+
+- [BC] Switched the internal representation of `list<T>` and `non-empty-list<T>` from the TList and TNonEmptyList classes to an unsealed list shape: the TList, TNonEmptyList and TCallableList classes were removed.
+  Nothing will change for users: the `list<T>` and `non-empty-list<T>` syntax will remain supported and its semantics unchanged.
+  Psalm 5 already deprecates the `TList`, `TNonEmptyList` and `TCallableList` classes: use `\Psalm\Type::getListAtomic`, `\Psalm\Type::getNonEmptyListAtomic` and `\Psalm\Type::getCallableListAtomic` to instantiate list atomics, or directly instantiate TKeyedArray objects with `is_list=true` where appropriate.
+
+- [BC] The only optional boolean parameter of `TKeyedArray::getGenericArrayType` was removed, and was replaced with a string parameter with a different meaning.
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 

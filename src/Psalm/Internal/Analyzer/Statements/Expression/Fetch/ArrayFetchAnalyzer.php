@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -69,7 +70,6 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -92,6 +92,7 @@ use function count;
 use function implode;
 use function in_array;
 use function is_int;
+use function is_numeric;
 use function preg_match;
 use function strlen;
 use function strtolower;
@@ -228,18 +229,12 @@ class ArrayFetchAnalyzer
             );
 
             if ($stmt->dim && $stmt_var_type->hasArray()) {
-                /**
-                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TKeyedArray|TList|TClassStringMap
-                 */
-                $array_type = $stmt_var_type->getAtomicTypes()['array'];
+                $array_type = $stmt_var_type->getArray();
 
                 if ($array_type instanceof TClassStringMap) {
                     $array_value_type = Type::getMixed();
                 } elseif ($array_type instanceof TArray) {
                     $array_value_type = $array_type->type_params[1];
-                } elseif ($array_type instanceof TList) {
-                    $array_value_type = $array_type->type_param;
                 } else {
                     $array_value_type = $array_type->getGenericValueType();
                 }
@@ -259,15 +254,12 @@ class ArrayFetchAnalyzer
                     || $stmt->var instanceof PhpParser\Node\Expr\ConstFetch)
             ) {
                 /**
-                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TKeyedArray|TList
+                 * @var TArray|TKeyedArray
                  */
-                $array_type = $stmt_var_type->getAtomicTypes()['array'];
+                $array_type = $stmt_var_type->getArray();
 
                 if ($array_type instanceof TArray) {
                     $const_array_key_type = $array_type->type_params[0];
-                } elseif ($array_type instanceof TList) {
-                    $const_array_key_type = Type::getInt();
                 } else {
                     $const_array_key_type = $array_type->getGenericKeyType();
                 }
@@ -566,6 +558,10 @@ class ArrayFetchAnalyzer
         $types = $array_type->getAtomicTypes();
         $changed = false;
         foreach ($types as $type_string => $type) {
+            if ($type instanceof TList) {
+                $type = $type->getKeyedArray();
+            }
+
             $original_type_real = $type;
             $original_type = $type;
 
@@ -634,7 +630,6 @@ class ArrayFetchAnalyzer
 
             if ($type instanceof TArray
                 || $type instanceof TKeyedArray
-                || $type instanceof TList
                 || $type instanceof TClassStringMap
             ) {
                 self::handleArrayAccessOnArray(
@@ -1092,8 +1087,8 @@ class ArrayFetchAnalyzer
 
     /**
      * @param list<string> $expected_offset_types
-     * @param TArray|TKeyedArray|TList|TClassStringMap $type
-     * @param-out TArray|TKeyedArray|TList|TClassStringMap $type
+     * @param TArray|TKeyedArray|TClassStringMap $type
+     * @param-out TArray|TKeyedArray|TClassStringMap $type
      * @param list<TLiteralInt|TLiteralString> $key_values
      *
      * @psalm-suppress ConflictingReferenceConstraint Ignore
@@ -1126,8 +1121,6 @@ class ArrayFetchAnalyzer
                     $single_atomic = $key_values[0];
                     $from_mixed_array = $type->type_params[1]->isMixed();
 
-                    [$fallback_key_type, $fallback_value_type] = $type->type_params;
-
                     // ok, type becomes an TKeyedArray
                     $type = new TKeyedArray(
                         [
@@ -1136,10 +1129,15 @@ class ArrayFetchAnalyzer
                         $single_atomic instanceof TLiteralClassString ? [
                             $single_atomic->value => true
                         ] : null,
-                        $from_empty_array ? null : [$fallback_key_type, $fallback_value_type],
+                        $from_empty_array ? null : $type->type_params,
                     );
                 } elseif (!$stmt->dim && $from_empty_array && $replacement_type) {
-                    $type = new TNonEmptyList($replacement_type);
+                    $type = new TKeyedArray(
+                        [$replacement_type],
+                        null,
+                        null,
+                        true
+                    );
                     return;
                 }
             } elseif ($type instanceof TKeyedArray
@@ -1155,12 +1153,13 @@ class ArrayFetchAnalyzer
 
         $offset_type = self::replaceOffsetTypeWithInts($offset_type->freeze())->getBuilder();
 
-        if ($type instanceof TList
+        if ($type instanceof TKeyedArray
+            && $type->is_list
             && (($in_assignment && $stmt->dim)
                 || $original_type instanceof TTemplateParam
                 || !$offset_type->isInt())
         ) {
-            $temp = new TArray([Type::getInt(), $type->type_param]);
+            $temp = $type->getGenericArrayType();
             self::handleArrayAccessOnTArray(
                 $statements_analyzer,
                 $codebase,
@@ -1190,22 +1189,6 @@ class ArrayFetchAnalyzer
                 $expected_offset_types,
                 $array_access_type,
                 $original_type,
-                $has_valid_offset
-            );
-        } elseif ($type instanceof TList) {
-            self::handleArrayAccessOnList(
-                $statements_analyzer,
-                $codebase,
-                $stmt,
-                $type,
-                $offset_type,
-                $extended_var_id,
-                $key_values,
-                $context,
-                $in_assignment,
-                $expected_offset_types,
-                $replacement_type,
-                $array_access_type,
                 $has_valid_offset
             );
         } elseif ($type instanceof TClassStringMap) {
@@ -1376,8 +1359,20 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if (!$stmt->dim && $type instanceof TNonEmptyArray && $type->count !== null) {
-            $type = $type->setCount($type->count+1);
+        if (!$stmt->dim) {
+            if ($type instanceof TNonEmptyArray) {
+                if ($type->count !== null) {
+                    $type = $type->setCount($type->count+1);
+                }
+            } else {
+                $type = new TNonEmptyArray(
+                    $type->type_params,
+                    null,
+                    null,
+                    'non-empty-array',
+                    $type->from_docblock
+                );
+            }
         }
 
         $array_access_type = Type::combineUnionTypes(
@@ -1503,7 +1498,7 @@ class ArrayFetchAnalyzer
     /**
      * @param list<string> $expected_offset_types
      * @param list<TLiteralString|TLiteralInt> $key_values
-     * @param-out TArray|TKeyedArray|TList $type
+     * @param-out TArray|TKeyedArray $type
      */
     private static function handleArrayAccessOnKeyedArray(
         StatementsAnalyzer $statements_analyzer,
@@ -1530,7 +1525,14 @@ class ArrayFetchAnalyzer
         if ($key_values) {
             $properties = $type->properties;
             foreach ($key_values as $key_value) {
-                if (isset($properties[$key_value->value]) || $replacement_type) {
+                if ($type->is_list && (!is_numeric($key_value->value) || $key_value->value < 0)) {
+                    $expected_offset_types[] = $type->getGenericKeyType();
+                    $has_valid_offset = false;
+                } elseif ((isset($properties[$key_value->value]) && !(
+                    $key_value->value === 0 && AtomicTypeComparator::isLegacyTListLike($type)
+                ))
+                    || $replacement_type
+                ) {
                     $has_valid_offset = true;
 
                     if ($replacement_type) {
@@ -1653,19 +1655,27 @@ class ArrayFetchAnalyzer
                         $offset_type->isMixed() ? Type::getArrayKey() : $offset_type->freeze()
                     );
 
-                    $property_count = $type->fallback_params === null
-                        ? count($type->properties)
-                        : null;
-
-                    if (!$stmt->dim && $property_count) {
-                        ++$property_count;
-                        $type = new TNonEmptyArray([
-                            $new_key_type,
-                            $generic_params,
-                        ], $property_count);
+                    if (!$stmt->dim) {
+                        if ($type->is_list) {
+                            $type = new TKeyedArray(
+                                $type->properties,
+                                null,
+                                [$new_key_type, $generic_params],
+                                true
+                            );
+                        } else {
+                            $type = new TNonEmptyArray([
+                                $new_key_type,
+                                $generic_params,
+                            ], null, $type->getMinCount()+1);
+                        }
                     } else {
-                        if (!$stmt->dim && $type->is_list) {
-                            $type = new TList($generic_params);
+                        $min_count = $type->getMinCount();
+                        if ($min_count) {
+                            $type = new TNonEmptyArray([
+                                $new_key_type,
+                                $generic_params,
+                            ], null, $min_count);
                         } else {
                             $type = new TArray([
                                 $new_key_type,
@@ -1696,77 +1706,6 @@ class ArrayFetchAnalyzer
                 $array_access_type = Type::getMixed();
             }
         }
-    }
-
-    /**
-     * @param list<string> $expected_offset_types
-     * @param list<TLiteralString|TLiteralInt> $key_values
-     * @param-out TList $type
-     */
-    private static function handleArrayAccessOnList(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        TList &$type,
-        MutableUnion $offset_type,
-        ?string $extended_var_id,
-        array $key_values,
-        Context $context,
-        bool $in_assignment,
-        array &$expected_offset_types,
-        ?Union $replacement_type,
-        ?Union &$array_access_type,
-        bool &$has_valid_offset
-    ): void {
-        // if we're assigning to an empty array with a key offset, refashion that array
-        if (!$in_assignment) {
-            if (!$type instanceof TNonEmptyList
-                || (count($key_values) === 1
-                    && $key_values[0] instanceof TLiteralInt
-                    && $key_values[0]->value > 0
-                    && $key_values[0]->value > ($type->count - 1)
-                    && $key_values[0]->value > ($type->min_count - 1))
-            ) {
-                $expected_offset_type = Type::getInt();
-
-                if ($codebase->config->ensure_array_int_offsets_exist) {
-                    self::checkLiteralIntArrayOffset(
-                        $offset_type,
-                        $expected_offset_type,
-                        $extended_var_id,
-                        $stmt,
-                        $context,
-                        $statements_analyzer
-                    );
-                }
-                $has_valid_offset = true;
-            } elseif (count($key_values) === 1
-                && $key_values[0] instanceof TLiteralInt
-                && $key_values[0]->value < 0
-            ) {
-                $expected_offset_types[] = 'positive-int';
-                $has_valid_offset = false;
-            } else {
-                $has_valid_offset = true;
-            }
-        }
-
-        if ($in_assignment && $type instanceof TNonEmptyList && $type->count !== null) {
-            $type = $type->setCount($type->count+1);
-        }
-
-        if ($in_assignment && $replacement_type) {
-            $type = $type->setTypeParam(Type::combineUnionTypes(
-                $type->type_param,
-                $replacement_type,
-                $codebase
-            ));
-        }
-
-        $array_access_type = Type::combineUnionTypes(
-            $array_access_type,
-            $type->type_param
-        );
     }
 
     private static function handleArrayAccessOnNamedObject(

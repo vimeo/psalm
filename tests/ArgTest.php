@@ -630,7 +630,7 @@ class ArgTest extends TestCase
                         return $values;
                     }
                 ',
-                'error_message' => 'MixedReturnTypeCoercion',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'preventUnpackingPossiblyIterable' => [
                 'code' => '<?php
