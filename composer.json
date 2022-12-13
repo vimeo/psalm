@@ -33,8 +33,8 @@
         "fidry/cpu-core-counter": "^0.4.0",
         "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
         "nikic/php-parser": "^4.13",
-        "openlss/lib-array2xml": "^1.0",
         "sebastian/diff": "^4.0",
+	"spatie/array-to-xml": "^2.17.0",
         "symfony/console": "^4.1.6 || ^5.0 || ^6.0",
         "symfony/filesystem": "^5.4 || ^6.0",
         "symfony/polyfill-php80": "^1.25"
