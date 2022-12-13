@@ -3,7 +3,7 @@
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
-use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
@@ -63,18 +63,18 @@ class IfScope
     public $negatable_if_types;
 
     /**
-     * @var list<Clause>
+     * @var ClauseConjunction
      */
-    public $negated_clauses = [];
+    public $negated_clauses;
 
     /**
      * These are the set of clauses that could be applied after the `if`
      * statement, if the `if` statement contains branches with leaving statements,
      * and the else leaves too
      *
-     * @var list<Clause>
+     * @var ClauseConjunction
      */
-    public $reasonable_clauses = [];
+    public $reasonable_clauses;
 
     /**
      * @var string[]
@@ -90,4 +90,10 @@ class IfScope
      * @var ?Context
      */
     public $post_leaving_if_context;
+
+    public function __construct()
+    {
+        $this->reasonable_clauses = ClauseConjunction::empty();
+        $this->negated_clauses = ClauseConjunction::empty();
+    }
 }

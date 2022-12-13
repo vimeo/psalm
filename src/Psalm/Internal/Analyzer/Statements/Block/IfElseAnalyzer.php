@@ -7,7 +7,6 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -18,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
@@ -25,12 +25,10 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff;
-use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_unique;
-use function array_values;
 use function count;
 use function in_array;
 use function preg_match;
@@ -134,12 +132,13 @@ class IfElseAnalyzer
             $codebase
         );
 
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
+        if (count($if_clauses->clauses) > 200) {
+            $if_clauses = ClauseConjunction::empty();
         }
 
         $if_clauses_handled = [];
-        foreach ($if_clauses as $clause) {
+        $has_extra = false;
+        foreach ($if_clauses->clauses as $clause) {
             $keys = array_keys($clause->possibilities);
 
             $mixed_var_ids = array_diff($mixed_var_ids, $keys);
@@ -148,6 +147,7 @@ class IfElseAnalyzer
                 foreach ($mixed_var_ids as $mixed_var_id) {
                     if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
                         $clause = new Clause([], $cond_object_id, $cond_object_id, true);
+                        $has_extra = true;
                         break 2;
                     }
                 }
@@ -156,7 +156,10 @@ class IfElseAnalyzer
             $if_clauses_handled[] = $clause;
         }
 
-        $if_clauses = $if_clauses_handled;
+        $if_clauses = !$has_extra
+            && count($if_clauses->clauses) === count($if_clauses_handled)
+            ? $if_clauses
+            : new ClauseConjunction($if_clauses_handled);
 
         $entry_clauses = $context->clauses;
 
@@ -169,29 +172,22 @@ class IfElseAnalyzer
             $assigned_in_conditional_var_ids
         );
 
-        $if_clauses = Algebra::simplifyCNF($if_clauses);
+        $if_clauses = $if_clauses->simplify();
 
-        $if_context_clauses = [...$entry_clauses, ...$if_clauses];
-
-        $if_context->clauses = $entry_clauses
-            ? Algebra::simplifyCNF($if_context_clauses)
-            : $if_context_clauses;
+        $if_context->clauses = $entry_clauses->andSimplified($if_clauses);
 
         if ($if_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
 
-            $if_context->clauses = array_values(
-                array_filter(
-                    $if_context->clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
-                )
+            $if_context->clauses = $if_context->clauses->filter(
+                static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
             );
 
-            if (count($if_context->clauses) === 1
-                && $if_context->clauses[0]->wedge
-                && !$if_context->clauses[0]->possibilities
+            if (count($if_context->clauses->clauses) === 1
+                && $if_context->clauses->clauses[0]->wedge
+                && !$if_context->clauses->clauses[0]->possibilities
             ) {
-                $if_context->clauses = [];
+                $if_context->clauses = ClauseConjunction::empty();
                 $if_context->reconciled_expression_clauses = [];
             }
         }
@@ -200,7 +196,7 @@ class IfElseAnalyzer
         $if_scope->reasonable_clauses = $if_context->clauses;
 
         try {
-            $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+            $if_scope->negated_clauses = $if_clauses->getNegation();
         } catch (ComplicatedExpressionException $e) {
             try {
                 $if_scope->negated_clauses = FormulaGenerator::getFormula(
@@ -213,15 +209,13 @@ class IfElseAnalyzer
                     false
                 );
             } catch (ComplicatedExpressionException $e) {
-                $if_scope->negated_clauses = [];
+                $if_scope->negated_clauses = ClauseConjunction::empty();
             }
         }
 
-        $if_scope->negated_types = Algebra::getTruthsFromFormula(
-            Algebra::simplifyCNF(
-                [...$context->clauses, ...$if_scope->negated_clauses]
-            )
-        );
+        $if_scope->negated_types = $context->clauses
+            ->andSimplified($if_scope->negated_clauses)
+            ->getTruthsFromFormula();
 
         $temp_else_context = clone $post_if_context;
 
@@ -395,7 +389,7 @@ class IfElseAnalyzer
                 $context->vars_in_scope[$var_id] = $type;
                 $if_scope->updated_vars[$var_id] = true;
 
-                if ($if_scope->reasonable_clauses) {
+                if ($if_scope->reasonable_clauses->clauses) {
                     $if_scope->reasonable_clauses = Context::filterClauses(
                         $var_id,
                         $if_scope->reasonable_clauses,
@@ -406,12 +400,10 @@ class IfElseAnalyzer
             }
         }
 
-        if ($if_scope->reasonable_clauses
-            && (count($if_scope->reasonable_clauses) > 1 || !$if_scope->reasonable_clauses[0]->wedge)
+        if ($if_scope->reasonable_clauses->clauses
+            && (count($if_scope->reasonable_clauses->clauses) > 1 || !$if_scope->reasonable_clauses->clauses[0]->wedge)
         ) {
-            $context->clauses = Algebra::simplifyCNF(
-                [...$if_scope->reasonable_clauses, ...$context->clauses]
-            );
+            $context->clauses = $if_scope->reasonable_clauses->and($context->clauses);
         }
 
         if ($if_scope->possibly_redefined_vars) {

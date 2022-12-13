@@ -4,7 +4,7 @@ namespace Psalm;
 
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
@@ -221,9 +221,9 @@ final class Context
     /**
      * A list of clauses in Conjunctive Normal Form
      *
-     * @var list<Clause>
+     * @var ClauseConjunction
      */
-    public $clauses = [];
+    public $clauses;
 
     /**
      * A list of hashed clauses that have already been factored in
@@ -425,6 +425,7 @@ final class Context
     public function __construct(?string $self = null)
     {
         $this->self = $self;
+        $this->clauses = ClauseConjunction::empty();
     }
 
     public function __destruct()
@@ -634,19 +635,19 @@ final class Context
     }
 
     /**
-     * @param Clause[]             $clauses
+     * @param ClauseConjunction    $clauses
      * @param array<string, bool>  $changed_var_ids
      *
-     * @return array{list<Clause>, list<Clause>}
+     * @return array{ClauseConjunction, ClauseConjunction}
      *
      * @psalm-pure
      */
-    public static function removeReconciledClauses(array $clauses, array $changed_var_ids): array
+    public static function removeReconciledClauses(ClauseConjunction $clauses, array $changed_var_ids): array
     {
         $included_clauses = [];
         $rejected_clauses = [];
 
-        foreach ($clauses as $c) {
+        foreach ($clauses->clauses as $c) {
             if ($c->wedge) {
                 $included_clauses[] = $c;
                 continue;
@@ -662,26 +663,26 @@ final class Context
             $included_clauses[] = $c;
         }
 
+        $included_clauses = count($included_clauses) === count($clauses->clauses)
+            ? $clauses
+            : new ClauseConjunction($included_clauses);
+        $rejected_clauses = count($rejected_clauses) === count($clauses->clauses)
+            ? $clauses
+            : new ClauseConjunction($rejected_clauses);
+
         return [$included_clauses, $rejected_clauses];
     }
 
-    /**
-     * @param  Clause[]               $clauses
-     *
-     * @return list<Clause>
-     */
     public static function filterClauses(
         string $remove_var_id,
-        array $clauses,
+        ClauseConjunction $clauses,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null
-    ): array {
+    ): ClauseConjunction {
         $new_type_string = $new_type ? $new_type->getId() : '';
         $clauses_to_keep = [];
 
-        foreach ($clauses as $clause) {
-            $clause = $clause->calculateNegation();
-
+        foreach ($clauses->clauses as $clause) {
             $quoted_remove_var_id = preg_quote($remove_var_id, '/');
 
             foreach ($clause->possibilities as $var_id => $_) {
@@ -734,7 +735,9 @@ final class Context
             }
         }
 
-        return $clauses_to_keep;
+        return count($clauses_to_keep) === count($clauses->clauses)
+            ? $clauses
+            : new ClauseConjunction($clauses_to_keep);
     }
 
     public function removeVarFromConflictingClauses(
@@ -808,7 +811,7 @@ final class Context
 
         $clauses_to_keep = [];
 
-        foreach ($this->clauses as $clause) {
+        foreach ($this->clauses->clauses as $clause) {
             $abandon_clause = false;
 
             foreach (array_keys($clause->possibilities) as $key) {
@@ -825,7 +828,9 @@ final class Context
             }
         }
 
-        $this->clauses = $clauses_to_keep;
+        if (count($clauses_to_keep) !== count($this->clauses->clauses)) {
+            $this->clauses = new ClauseConjunction($clauses_to_keep);
+        }
     }
 
     public function updateChecks(Context $op_context): void

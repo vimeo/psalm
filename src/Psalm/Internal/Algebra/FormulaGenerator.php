@@ -5,10 +5,10 @@ namespace Psalm\Internal\Algebra;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\FileSource;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
@@ -23,9 +23,6 @@ use function substr;
  */
 class FormulaGenerator
 {
-     /**
-     * @return list<Clause>
-     */
     public static function getFormula(
         int $conditional_object_id,
         int $creating_object_id,
@@ -35,7 +32,7 @@ class FormulaGenerator
         ?Codebase $codebase = null,
         bool $inside_negation = false,
         bool $cache = true
-    ): array {
+    ): ClauseConjunction {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
@@ -61,7 +58,7 @@ class FormulaGenerator
                 $cache
             );
 
-            return [...$left_assertions, ...$right_assertions];
+            return $left_assertions->and($right_assertions);
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
@@ -89,7 +86,7 @@ class FormulaGenerator
                 $cache
             );
 
-            return Algebra::combineOredClauses($left_clauses, $right_clauses, $conditional_object_id);
+            return $left_clauses->combineOrredClauses($right_clauses, $conditional_object_id);
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
@@ -172,7 +169,7 @@ class FormulaGenerator
                     }
                 }
 
-                return Algebra::negateFormula($clauses);
+                return (new ClauseConjunction($clauses))->getNegation();
             }
 
             if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
@@ -200,17 +197,15 @@ class FormulaGenerator
                 );
             }
 
-            return Algebra::negateFormula(
-                self::getFormula(
-                    $conditional_object_id,
-                    spl_object_id($conditional->expr),
-                    $conditional->expr,
-                    $this_class_name,
-                    $source,
-                    $codebase,
-                    !$inside_negation
-                )
-            );
+            return self::getFormula(
+                $conditional_object_id,
+                spl_object_id($conditional->expr),
+                $conditional->expr,
+                $this_class_name,
+                $source,
+                $codebase,
+                !$inside_negation
+            )->getNegation();
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
@@ -225,18 +220,16 @@ class FormulaGenerator
                     || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                     || $conditional->left instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                return Algebra::negateFormula(
-                    self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->left),
-                        $conditional->left,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache
-                    )
-                );
+                return self::getFormula(
+                    $conditional_object_id,
+                    spl_object_id($conditional->left),
+                    $conditional->left,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    !$inside_negation,
+                    $cache
+                )->getNegation();
             }
 
             if ($false_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
@@ -245,18 +238,16 @@ class FormulaGenerator
                     || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                     || $conditional->right instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                return Algebra::negateFormula(
-                    self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->right),
-                        $conditional->right,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache
-                    )
-                );
+                return self::getFormula(
+                    $conditional_object_id,
+                    spl_object_id($conditional->right),
+                    $conditional->right,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    !$inside_negation,
+                    $cache
+                )->getNegation();
             }
 
             if ($true_pos === AssertionFinder::ASSIGNMENT_TO_RIGHT
@@ -308,18 +299,16 @@ class FormulaGenerator
                     || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                     || $conditional->left instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                return Algebra::negateFormula(
-                    self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->left),
-                        $conditional->left,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache
-                    )
-                );
+                return self::getFormula(
+                    $conditional_object_id,
+                    spl_object_id($conditional->left),
+                    $conditional->left,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    !$inside_negation,
+                    $cache
+                )->getNegation();
             }
 
             if ($true_pos === AssertionFinder::ASSIGNMENT_TO_LEFT
@@ -328,18 +317,16 @@ class FormulaGenerator
                     || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                     || $conditional->right instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                return Algebra::negateFormula(
-                    self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->right),
-                        $conditional->right,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache
-                    )
-                );
+                return self::getFormula(
+                    $conditional_object_id,
+                    spl_object_id($conditional->right),
+                    $conditional->right,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    !$inside_negation,
+                    $cache
+                )->getNegation();
             }
 
             if ($false_pos === AssertionFinder::ASSIGNMENT_TO_RIGHT
@@ -444,19 +431,19 @@ class FormulaGenerator
         }
 
         if ($clauses) {
-            return $clauses;
+            return new ClauseConjunction($clauses);
         }
 
         /** @psalm-suppress MixedOperand */
         $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
             . ':' . $conditional->getAttribute('endFilePos');
 
-        return [
+        return new ClauseConjunction([
             new Clause(
                 [$conditional_ref => ['truthy' => new Truthy()]],
                 $conditional_object_id,
                 $creating_object_id
             )
-        ];
+        ]);
     }
 }

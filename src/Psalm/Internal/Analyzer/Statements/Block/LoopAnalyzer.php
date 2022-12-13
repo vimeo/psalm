@@ -6,12 +6,11 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
 use Psalm\Internal\Scope\LoopScope;
@@ -21,6 +20,7 @@ use Psalm\Type\Reconciler;
 
 use function array_keys;
 use function array_merge;
+use function array_pop;
 use function array_unique;
 use function in_array;
 use function spl_object_id;
@@ -460,12 +460,16 @@ class LoopAnalyzer
             // and apply it to the current context
 
             try {
-                $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
+                $acc = array_pop($pre_condition_clauses);
+                foreach ($pre_condition_clauses as $pre) {
+                    $acc = $pre->and($acc);
+                }
+                $negated_pre_condition_clauses = $acc->getNegation();
             } catch (ComplicatedExpressionException $e) {
-                $negated_pre_condition_clauses = [];
+                $negated_pre_condition_clauses = ClauseConjunction::empty();
             }
 
-            $negated_pre_condition_types = Algebra::getTruthsFromFormula($negated_pre_condition_clauses);
+            $negated_pre_condition_types = $negated_pre_condition_clauses->getTruthsFromFormula();
 
             if ($negated_pre_condition_types) {
                 $changed_var_ids = [];
@@ -567,14 +571,12 @@ class LoopAnalyzer
     }
 
     /**
-     * @param  list<Clause>  $pre_condition_clauses
-     *
      * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $pre_condition,
-        array $pre_condition_clauses,
+        ClauseConjunction $pre_condition_clauses,
         Context $loop_context,
         Context $outer_context,
         bool $is_do
@@ -599,14 +601,11 @@ class LoopAnalyzer
 
         $always_assigned_before_loop_body_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
 
-        $loop_context->clauses = Algebra::simplifyCNF(
-            [...$outer_context->clauses, ...$pre_condition_clauses]
-        );
+        $loop_context->clauses = $outer_context->clauses->andSimplified($pre_condition_clauses);
 
         $active_while_types = [];
 
-        $reconcilable_while_types = Algebra::getTruthsFromFormula(
-            $loop_context->clauses,
+        $reconcilable_while_types = $loop_context->clauses->getTruthsFromFormula(
             spl_object_id($pre_condition),
             $new_referenced_var_ids,
             $active_while_types

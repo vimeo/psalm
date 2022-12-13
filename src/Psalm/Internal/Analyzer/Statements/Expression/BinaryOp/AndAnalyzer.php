@@ -5,22 +5,20 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
-use function array_filter;
 use function array_map;
 use function array_merge;
-use function array_values;
 use function count;
 use function in_array;
 use function spl_object_id;
@@ -97,32 +95,28 @@ class AndAnalyzer
 
         $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
 
-        $context_clauses = array_merge($left_context->clauses, $left_clauses);
+        $context_clauses = $left_context->clauses->and($left_clauses);
 
         if ($left_context->reconciled_expression_clauses) {
             $reconciled_expression_clauses = $left_context->reconciled_expression_clauses;
 
-            $context_clauses = array_values(
-                array_filter(
-                    $context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
-                )
+            $context_clauses = $context_clauses->filter(
+                static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
             );
 
-            if (count($context_clauses) === 1
-                && $context_clauses[0]->wedge
-                && !$context_clauses[0]->possibilities
+            if (count($context_clauses->clauses) === 1
+                && $context_clauses->clauses[0]->wedge
+                && !$context_clauses->clauses[0]->possibilities
             ) {
-                $context_clauses = [];
+                $context_clauses = ClauseConjunction::empty();
             }
         }
 
-        $simplified_clauses = Algebra::simplifyCNF($context_clauses);
+        $simplified_clauses = $context_clauses->simplify();
 
         $active_left_assertions = [];
 
-        $left_type_assertions = Algebra::getTruthsFromFormula(
-            $simplified_clauses,
+        $left_type_assertions = $simplified_clauses->getTruthsFromFormula(
             $left_cond_id,
             $left_referenced_var_ids,
             $active_left_assertions
@@ -203,7 +197,7 @@ class AndAnalyzer
                 ...array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,
-                    $partitioned_clauses[1]
+                    $partitioned_clauses[1]->clauses
                 )
             ];
 

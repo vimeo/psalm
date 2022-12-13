@@ -8,6 +8,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -140,7 +141,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
                 $method_analyzer->analyze($context, new NodeDataProvider(), null, true);
 
-                $context->clauses = [];
+                $context->clauses = ClauseConjunction::empty();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(

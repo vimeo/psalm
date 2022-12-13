@@ -10,6 +10,7 @@ use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -20,10 +21,8 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
-use function array_filter;
 use function array_keys;
 use function array_merge;
-use function array_values;
 use function count;
 
 /**
@@ -39,11 +38,11 @@ class IfConditionalAnalyzer
         IfScope $if_scope,
         int $branch_point
     ): IfConditionalScope {
-        $entry_clauses = [];
+        $entry_clauses = ClauseConjunction::empty();
 
         // used when evaluating elseifs
-        if ($if_scope->negated_clauses) {
-            $entry_clauses = [...$outer_context->clauses, ...$if_scope->negated_clauses];
+        if ($if_scope->negated_clauses->clauses) {
+            $entry_clauses = $outer_context->clauses->and($if_scope->negated_clauses);
 
             $changed_var_ids = [];
 
@@ -73,13 +72,10 @@ class IfConditionalAnalyzer
                     $outer_context->vars_in_scope = $vars_reconciled;
                     $outer_context->references_in_scope = $references_reconciled;
 
-                    $entry_clauses = array_values(
-                        array_filter(
-                            $entry_clauses,
-                            static fn(Clause $c): bool => count($c->possibilities) > 1
-                                || $c->wedge
-                                || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
-                        )
+                    $entry_clauses = $entry_clauses->filter(
+                        static fn(Clause $c): bool => count($c->possibilities) > 1
+                            || $c->wedge
+                            || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
                     );
                 }
             }

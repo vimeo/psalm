@@ -5,8 +5,7 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Exception\ComplicatedExpressionException;
-use Psalm\Internal\Algebra;
-use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
@@ -30,32 +29,30 @@ class AlgebraAnalyzer
      * if ($a) { }
      * elseif ($a) { }
      *
-     * @param  list<Clause>   $formula_1
-     * @param  list<Clause>   $formula_2
      * @param  array<string, int>  $new_assigned_var_ids
      */
     public static function checkForParadox(
-        array $formula_1,
-        array $formula_2,
+        ClauseConjunction $formula_1,
+        ClauseConjunction $formula_2,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
         array $new_assigned_var_ids
     ): void {
         try {
-            $negated_formula2 = Algebra::negateFormula($formula_2);
+            $negated_formula2 = $formula_2->getNegation();
         } catch (ComplicatedExpressionException $e) {
             return;
         }
 
         $formula_1_hashes = [];
 
-        foreach ($formula_1 as $formula_1_clause) {
+        foreach ($formula_1->clauses as $formula_1_clause) {
             $formula_1_hashes[$formula_1_clause->hash] = true;
         }
 
         $formula_2_hashes = [];
 
-        foreach ($formula_2 as $formula_2_clause) {
+        foreach ($formula_2->clauses as $formula_2_clause) {
             $hash = $formula_2_clause->hash;
 
             if (!$formula_2_clause->generated
@@ -78,12 +75,12 @@ class AlgebraAnalyzer
         }
 
         // remove impossible types
-        foreach ($negated_formula2 as $negated_clause_2) {
+        foreach ($negated_formula2->clauses as $negated_clause_2) {
             if (!$negated_clause_2->reconcilable || $negated_clause_2->wedge) {
                 continue;
             }
 
-            foreach ($formula_1 as $clause_1) {
+            foreach ($formula_1->clauses as $clause_1) {
                 if ($negated_clause_2 === $clause_1 || !$clause_1->reconcilable || $clause_1->wedge) {
                     continue;
                 }
@@ -109,14 +106,14 @@ class AlgebraAnalyzer
                 }
 
                 if ($negated_clause_2_contains_1_possibilities) {
-                    $mini_formula_2 = Algebra::negateFormula([$negated_clause_2]);
+                    $mini_formula_2 = (new ClauseConjunction([$negated_clause_2]))->getNegation();
 
-                    if (!$mini_formula_2[0]->wedge) {
-                        if (count($mini_formula_2) > 1) {
-                            $paradox_message = 'Condition ((' . implode(') && (', $mini_formula_2) . '))'
+                    if (!$mini_formula_2->clauses[0]->wedge) {
+                        if (count($mini_formula_2->clauses) > 1) {
+                            $paradox_message = 'Condition ((' . implode(') && (', $mini_formula_2->clauses) . '))'
                                 . ' contradicts a previously-established condition (' . $clause_1 . ')';
                         } else {
-                            $paradox_message = 'Condition (' . $mini_formula_2[0] . ')'
+                            $paradox_message = 'Condition (' . $mini_formula_2->clauses[0] . ')'
                                 . ' contradicts a previously-established condition (' . $clause_1 . ')';
                         }
                     } else {

@@ -5,21 +5,19 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
 use function array_diff;
-use function array_filter;
 use function array_keys;
 use function array_merge;
-use function array_values;
 use function in_array;
 use function preg_match;
 use function preg_quote;
@@ -69,29 +67,26 @@ class DoAnalyzer
             $codebase
         );
 
-        $while_clauses = array_values(
-            array_filter(
-                $while_clauses,
-                static function (Clause $c) use ($mixed_var_ids): bool {
-                    $keys = array_keys($c->possibilities);
+        $while_clauses = $while_clauses->filter(
+            static function (Clause $c) use ($mixed_var_ids): bool {
+                $keys = array_keys($c->possibilities);
 
-                    $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
-                    foreach ($keys as $key) {
-                        foreach ($mixed_var_ids as $mixed_var_id) {
-                            if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return false;
-                            }
+                foreach ($keys as $key) {
+                    foreach ($mixed_var_ids as $mixed_var_id) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                            return false;
                         }
                     }
-
-                    return true;
                 }
-            )
+
+                return true;
+            }
         );
 
-        if (!$while_clauses) {
-            $while_clauses = [new Clause([], $cond_id, $cond_id, true)];
+        if (!$while_clauses->clauses) {
+            $while_clauses = new ClauseConjunction([new Clause([], $cond_id, $cond_id, true)]);
         }
 
         if (LoopAnalyzer::analyze(
@@ -112,13 +107,11 @@ class DoAnalyzer
             throw new UnexpectedValueException('There should be an inner loop context');
         }
 
-        $negated_while_clauses = Algebra::negateFormula($while_clauses);
+        $negated_while_clauses = $while_clauses->getNegation();
 
-        $negated_while_types = Algebra::getTruthsFromFormula(
-            Algebra::simplifyCNF(
-                [...$context->clauses, ...$negated_while_clauses]
-            )
-        );
+        $negated_while_types = $context->clauses
+            ->andSimplified($negated_while_clauses)
+            ->getTruthsFromFormula();
 
         if ($negated_while_types) {
             $changed_var_ids = [];

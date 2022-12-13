@@ -7,12 +7,12 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
-use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\ClauseConjunction;
 use Psalm\Internal\PhpVisitor\ConditionCloningVisitor;
 use Psalm\Internal\PhpVisitor\TypeMappingVisitor;
 use Psalm\Internal\Scope\CaseScope;
@@ -354,10 +354,8 @@ class SwitchCaseAnalyzer
             );
         }
 
-        if ($switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
-            $entry_clauses = Algebra::simplifyCNF(
-                [...$original_context->clauses, ...$switch_scope->negated_clauses]
-            );
+        if ($switch_scope->negated_clauses->clauses && count($switch_scope->negated_clauses->clauses) < 50) {
+            $entry_clauses = $original_context->clauses->andSimplified($switch_scope->negated_clauses);
         } else {
             $entry_clauses = $original_context->clauses;
         }
@@ -372,16 +370,16 @@ class SwitchCaseAnalyzer
                 []
             );
 
-            if (count($entry_clauses) + count($case_clauses) < 50) {
-                $case_context->clauses = Algebra::simplifyCNF([...$entry_clauses, ...$case_clauses]);
+            if (count($entry_clauses->clauses) + count($case_clauses->clauses) < 50) {
+                $case_context->clauses = $entry_clauses->andSimplified($case_clauses);
             } else {
-                $case_context->clauses = [...$entry_clauses, ...$case_clauses];
+                $case_context->clauses = $entry_clauses->and($case_clauses);
             }
         } else {
             $case_context->clauses = $entry_clauses;
         }
 
-        $reconcilable_if_types = Algebra::getTruthsFromFormula($case_context->clauses);
+        $reconcilable_if_types = $case_context->clauses->getTruthsFromFormula();
 
         // if the if has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_if_types) {
@@ -436,7 +434,7 @@ class SwitchCaseAnalyzer
 
         if ($case_clauses && $case_equality_expr) {
             try {
-                $negated_case_clauses = Algebra::negateFormula($case_clauses);
+                $negated_case_clauses = $case_clauses->getNegation();
             } catch (ComplicatedExpressionException $e) {
                 $case_equality_expr_id = spl_object_id($case_equality_expr);
 
@@ -452,11 +450,11 @@ class SwitchCaseAnalyzer
                         false
                     );
                 } catch (ComplicatedExpressionException $e) {
-                    $negated_case_clauses = [];
+                    $negated_case_clauses = ClauseConjunction::empty();
                 }
             }
 
-            $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
+            $switch_scope->negated_clauses = $switch_scope->negated_clauses->and($negated_case_clauses);
         }
 
         $statements_analyzer->analyze($case_stmts, $case_context);

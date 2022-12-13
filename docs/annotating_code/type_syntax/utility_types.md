@@ -141,7 +141,7 @@ $b = asArray(new B);
 
 ## `class-string-map<T as Foo, T>`
 
-Used to indicate an array where each value is equal an instance of the class string contained in the key:
+Used to indicate an array where each value is equal to an instance of the class string contained in the key:
 
 ```php
 <?php
