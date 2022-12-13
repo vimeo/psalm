@@ -587,9 +587,7 @@ class SimpleTypeInferer
         }
 
         if ($array_creation_info->all_list) {
-            return new Union([
-                Type::getNonEmptyListAtomic($item_value_type),
-            ]);
+            return Type::getNonEmptyList($item_value_type);
         }
 
         return new Union([

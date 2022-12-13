@@ -89,9 +89,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                 if ($second_arg_type
                     && ((string) $second_arg_type === 'false')
                 ) {
-                    return new Union([
-                        Type::getListAtomic($value_type),
-                    ]);
+                    return Type::getList($value_type);
                 }
 
                 $key_type = $key_type

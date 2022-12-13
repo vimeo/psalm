@@ -616,9 +616,7 @@ class VariableFetchAnalyzer
         }
 
         if ($var_id === '$http_response_header') {
-            return new Union([
-                Type::getListAtomic(Type::getNonEmptyString())
-            ]);
+            return Type::getList(Type::getNonEmptyString());
         }
 
         if ($var_id === '$GLOBALS') {

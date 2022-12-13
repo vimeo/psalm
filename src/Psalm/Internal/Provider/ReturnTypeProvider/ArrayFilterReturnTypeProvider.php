@@ -136,11 +136,9 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 && $key_type->isSingleIntLiteral()
                 && $key_type->getSingleIntLiteral()->value === 0
             ) {
-                return new Union([
-                    Type::getListAtomic(
-                        $inner_type
-                    ),
-                ]);
+                return Type::getList(
+                    $inner_type
+                );
             }
 
             if ($key_type->getLiteralStrings()) {
