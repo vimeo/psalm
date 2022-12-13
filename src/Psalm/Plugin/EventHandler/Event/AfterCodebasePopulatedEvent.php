@@ -6,10 +6,7 @@ use Psalm\Codebase;
 
 final class AfterCodebasePopulatedEvent
 {
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
     /**
      * Called after codebase has been populated

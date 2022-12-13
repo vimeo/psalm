@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 /**
@@ -35,9 +33,7 @@ class ArrayType
     /**
      * @return (
      *     $type is TArrayKey ? self : (
-     *         $type is TArray ? self : (
-     *             $type is TList ? self : null
-     *         )
+     *         $type is TArray ? self : null
      *     )
      * )
      */
@@ -48,14 +44,6 @@ class ArrayType
                 $type->getGenericKeyType(),
                 $type->getGenericValueType(),
                 $type->is_list
-            );
-        }
-
-        if ($type instanceof TList) {
-            return new self(
-                Type::getInt(),
-                $type->type_param,
-                true
             );
         }
 

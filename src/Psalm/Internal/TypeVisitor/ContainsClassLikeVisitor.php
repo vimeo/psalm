@@ -18,12 +18,9 @@ class ContainsClassLikeVisitor extends TypeVisitor
     /**
      * @var lowercase-string
      */
-    private $fq_classlike_name;
+    private string $fq_classlike_name;
 
-    /**
-     * @var bool
-     */
-    private $contains_classlike = false;
+    private bool $contains_classlike = false;
 
     /**
      * @psalm-external-mutation-free

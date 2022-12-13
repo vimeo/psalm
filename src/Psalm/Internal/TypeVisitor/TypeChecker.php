@@ -44,45 +44,29 @@ use function strtolower;
  */
 class TypeChecker extends TypeVisitor
 {
-    /**
-     * @var StatementsSource
-     */
-    private $source;
+    private StatementsSource $source;
 
-    /**
-     * @var CodeLocation
-     */
-    private $code_location;
+    private CodeLocation $code_location;
 
     /**
      * @var array<string>
      */
-    private $suppressed_issues;
+    private array $suppressed_issues;
 
     /**
      * @var array<string, bool>
      */
-    private $phantom_classes;
+    private array $phantom_classes;
 
-    /**
-     * @var bool
-     */
-    private $inferred;
+    private bool $inferred;
 
-    /**
-     * @var bool
-     */
-    private $inherited;
+    private bool $inherited;
 
-    /**
-     * @var bool
-     */
-    private $prevent_template_covariance;
+    private bool $prevent_template_covariance;
 
-    /** @var bool */
-    private $has_errors = false;
+    private bool $has_errors = false;
 
-    private $calling_method_id;
+    private ?string $calling_method_id;
 
     /**
      * @param  array<string>    $suppressed_issues

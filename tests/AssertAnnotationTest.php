@@ -995,7 +995,7 @@ class AssertAnnotationTest extends TestCase
             'assertDifferentTypeOfArray' => [
                 'code' => '<?php
                     /**
-                     * @psalm-assert array{0: string, 1: string} $value
+                     * @psalm-assert list{string, string} $value
                      * @param mixed $value
                      */
                     function isStringTuple($value): void {

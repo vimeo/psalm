@@ -9,26 +9,14 @@ use Psalm\StatementsSource;
 
 final class AfterClassLikeExistenceCheckEvent
 {
-    /**
-     * @var string
-     */
-    private $fq_class_name;
-    /**
-     * @var CodeLocation
-     */
-    private $code_location;
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private string $fq_class_name;
+    private CodeLocation $code_location;
+    private StatementsSource $statements_source;
+    private Codebase $codebase;
     /**
      * @var FileManipulation[]
      */
-    private $file_replacements;
+    private array $file_replacements;
 
     /**
      * @param FileManipulation[] $file_replacements

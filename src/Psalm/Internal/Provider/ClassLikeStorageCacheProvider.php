@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
-use Psalm\Internal\Provider\Providers;
 use Psalm\Storage\ClassLikeStorage;
 use RuntimeException;
 use UnexpectedValueException;
@@ -34,10 +33,7 @@ use const PHP_VERSION_ID;
  */
 class ClassLikeStorageCacheProvider
 {
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
     /**
      * @var string

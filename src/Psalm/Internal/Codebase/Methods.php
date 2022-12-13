@@ -52,10 +52,7 @@ use function strtolower;
  */
 class Methods
 {
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $classlike_storage_provider;
+    private ClassLikeStorageProvider $classlike_storage_provider;
 
     /**
      * @var bool
@@ -67,10 +64,7 @@ class Methods
      */
     public $file_reference_provider;
 
-    /**
-     * @var ClassLikes
-     */
-    private $classlikes;
+    private ClassLikes $classlikes;
 
     /** @var MethodReturnTypeProvider */
     public $return_type_provider;

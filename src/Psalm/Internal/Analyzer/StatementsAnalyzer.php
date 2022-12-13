@@ -112,44 +112,38 @@ class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @var array<string, CodeLocation>
      */
-    private $all_vars = [];
+    private array $all_vars = [];
 
     /**
      * @var array<string, int>
      */
-    private $var_branch_points = [];
+    private array $var_branch_points = [];
 
     /**
      * Possibly undefined variables should be initialised if we're altering code
      *
      * @var array<string, int>|null
      */
-    private $vars_to_initialize;
+    private ?array $vars_to_initialize = null;
 
     /**
      * @var array<string, FunctionAnalyzer>
      */
-    private $function_analyzers = [];
+    private array $function_analyzers = [];
 
     /**
      * @var array<string, array{0: string, 1: CodeLocation}>
      */
-    private $unused_var_locations = [];
+    private array $unused_var_locations = [];
 
     /**
      * @var array<string, true>
      */
     public $byref_uses = [];
 
-    /**
-     * @var ParsedDocblock|null
-     */
-    private $parsed_docblock;
+    private ?ParsedDocblock $parsed_docblock = null;
 
-    /**
-     * @var ?string
-     */
-    private $fake_this_class;
+    private ?string $fake_this_class = null;
 
     /** @var NodeDataProvider */
     public $node_data;
@@ -676,10 +670,9 @@ class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($checked_types as [$check_type_line, $is_exact]) {
-            /** @var string|null $check_type_string (incorrectly inferred) */
             [$checked_var, $check_type_string] = array_map('trim', explode('=', $check_type_line));
 
-            if ($check_type_string === null) {
+            if ($check_type_string === '') {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         "Invalid format for @psalm-check-type" . ($is_exact ? "-exact" : ""),

@@ -11,14 +11,12 @@ use PhpParser;
  */
 class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
 {
-    /** @var int */
-    private $file_offset;
+    private int $file_offset;
 
-    /** @var int */
-    private $line_offset;
+    private int $line_offset;
 
     /** @var array<int, int> */
-    private $extra_offsets;
+    private array $extra_offsets;
 
     /**
      * @param array<int, int> $extra_offsets

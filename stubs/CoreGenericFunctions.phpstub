@@ -840,6 +840,15 @@ function htmlspecialchars_decode(string $string, ?int $flags = null) : string {}
 /**
  * @psalm-pure
  *
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-flow ($string) -> return
+ */
+function urlencode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
  * @psalm-return (
  *     $string is ''
  *     ? 0

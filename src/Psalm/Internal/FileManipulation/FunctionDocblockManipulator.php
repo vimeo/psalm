@@ -44,62 +44,49 @@ class FunctionDocblockManipulator
     /** @var Closure|Function_|ClassMethod|ArrowFunction */
     private $stmt;
 
-    /** @var int */
-    private $docblock_start;
+    private int $docblock_start;
 
-    /** @var int */
-    private $docblock_end;
+    private int $docblock_end;
 
-    /** @var int */
-    private $return_typehint_area_start;
+    private int $return_typehint_area_start;
 
-    /** @var null|int */
-    private $return_typehint_colon_start;
+    private ?int $return_typehint_colon_start = null;
 
-    /** @var null|int */
-    private $return_typehint_start;
+    private ?int $return_typehint_start = null;
 
-    /** @var null|int */
-    private $return_typehint_end;
+    private ?int $return_typehint_end = null;
 
-    /** @var null|string */
-    private $new_php_return_type;
+    private ?string $new_php_return_type = null;
 
-    /** @var bool */
-    private $return_type_is_php_compatible = false;
+    private bool $return_type_is_php_compatible = false;
 
-    /** @var null|string */
-    private $new_phpdoc_return_type;
+    private ?string $new_phpdoc_return_type = null;
 
-    /** @var null|string */
-    private $new_psalm_return_type;
+    private ?string $new_psalm_return_type = null;
 
     /** @var array<string, string> */
-    private $new_php_param_types = [];
+    private array $new_php_param_types = [];
 
     /** @var array<string, string> */
-    private $new_phpdoc_param_types = [];
+    private array $new_phpdoc_param_types = [];
 
     /** @var array<string, string> */
-    private $new_psalm_param_types = [];
+    private array $new_psalm_param_types = [];
 
-    /** @var string */
-    private $indentation;
+    private string $indentation;
 
-    /** @var string|null */
-    private $return_type_description;
+    private ?string $return_type_description = null;
 
     /** @var array<string, int> */
-    private $param_offsets = [];
+    private array $param_offsets = [];
 
     /** @var array<string, array{int, int}> */
-    private $param_typehint_offsets = [];
+    private array $param_typehint_offsets = [];
 
-    /** @var bool */
-    private $is_pure = false;
+    private bool $is_pure = false;
 
     /** @var list<string> */
-    private $throwsExceptions = [];
+    private array $throwsExceptions = [];
 
     /**
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt

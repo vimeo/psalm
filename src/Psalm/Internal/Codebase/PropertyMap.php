@@ -13,7 +13,7 @@ class PropertyMap
     /**
      * @var array<lowercase-string, array<string, string>>|null
      */
-    private static $property_map;
+    private static ?array $property_map = null;
 
     /**
      * Gets the method/function call map

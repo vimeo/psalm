@@ -21,7 +21,12 @@ return [
     'openssl_cipher_key_length' => ['positive-int|false', 'cipher_algo'=>'non-empty-string'],
     'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
     'ini_parse_quantity' => ['int', 'shorthand'=>'non-empty-string'],
+    'libxml_get_external_entity_loader' => ['(callable(string,string,array{directory:?string,intSubName:?string,extSubURI:?string,extSubSystem:?string}):(resource|string|null))|null'],
     'memory_reset_peak_usage' => ['void'],
+    'sodium_crypto_stream_xchacha20_xor_ic' => ['string', 'message'=>'string', 'nonce'=>'non-empty-string', 'counter'=>'int', 'key'=>'non-empty-string'],
+    'ZipArchive::clearError' => ['void'],
+    'ZipArchive::getStreamIndex' => ['resource|false', 'index'=>'int', 'flags='=>'int'],
+    'ZipArchive::getStreamName' => ['resource|false', 'name'=>'string', 'flags='=>'int'],
   ],
 
   'changed' => [

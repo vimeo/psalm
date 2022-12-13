@@ -28,7 +28,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
@@ -76,6 +75,10 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         if ($function_call_type && $function_call_type->isNull()) {
             array_shift($call_args);
+
+            if (!$call_args) {
+                return Type::getNever();
+            }
 
             $array_arg_types = [];
             $orig_types = [];
@@ -141,6 +144,9 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             if (isset($arg_types['array'])) {
                 $array_arg_atomic_type = $arg_types['array'];
+                if ($array_arg_atomic_type instanceof TList) {
+                    $array_arg_atomic_type = $array_arg_atomic_type->getKeyedArray();
+                }
                 $array_arg_type = ArrayType::infer($array_arg_atomic_type);
             }
         }
@@ -226,7 +232,9 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($array_arg_atomic_type instanceof TKeyedArray && count($call_args) === 2) {
                 $atomic_type = new TKeyedArray(
                     array_map(
-                        static fn(Union $_): Union => $mapping_return_type,
+                        static fn(Union $in): Union => $mapping_return_type->setPossiblyUndefined(
+                            $in->possibly_undefined
+                        ),
                         $array_arg_atomic_type->properties
                     ),
                     null,
@@ -239,22 +247,18 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 return new Union([$atomic_type]);
             }
 
-            if ($array_arg_atomic_type instanceof TList
+            if (($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->is_list)
                 || count($call_args) !== 2
             ) {
-                if ($array_arg_atomic_type instanceof TNonEmptyList) {
-                    return new Union([
-                        new TNonEmptyList(
-                            $mapping_return_type
-                        ),
-                    ]);
+                if ($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->isNonEmpty()) {
+                    return Type::getNonEmptyList(
+                        $mapping_return_type
+                    );
                 }
 
-                return new Union([
-                    new TList(
-                        $mapping_return_type
-                    ),
-                ]);
+                return Type::getList(
+                    $mapping_return_type
+                );
             }
 
             if ($array_arg_atomic_type instanceof TNonEmptyArray) {

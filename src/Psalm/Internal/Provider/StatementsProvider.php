@@ -4,7 +4,9 @@ namespace Psalm\Internal\Provider;
 
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
+use PhpParser\Lexer\Emulative;
 use PhpParser\Node\Stmt;
+use PhpParser\Parser;
 use Psalm\CodeLocation\ParseErrorLocation;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -39,10 +41,7 @@ use const PHP_VERSION_ID;
  */
 class StatementsProvider
 {
-    /**
-     * @var FileProvider
-     */
-    private $file_provider;
+    private FileProvider $file_provider;
 
     /**
      * @var ?ParserCacheProvider
@@ -50,19 +49,13 @@ class StatementsProvider
     public $parser_cache_provider;
 
     /**
-     * @var int
+     * @var int|bool
      */
     private $this_modified_time;
 
-    /**
-     * @var ?FileStorageCacheProvider
-     */
-    private $file_storage_cache_provider;
+    private ?FileStorageCacheProvider $file_storage_cache_provider;
 
-    /**
-     * @var StatementsVolatileCache
-     */
-    private $statements_volatile_cache;
+    private StatementsVolatileCache $statements_volatile_cache;
 
     /**
      * @var array<string, array<string, bool>>
@@ -82,7 +75,7 @@ class StatementsProvider
     /**
      * @var array<string, bool>
      */
-    private $errors = [];
+    private array $errors = [];
 
     /**
      * @var array<string, array<int, array{int, int, int, int}>>
@@ -94,15 +87,9 @@ class StatementsProvider
      */
     private $deletion_ranges = [];
 
-    /**
-     * @var PhpParser\Lexer|null
-     */
-    private static $lexer;
+    private static ?Emulative $lexer = null;
 
-    /**
-     * @var PhpParser\Parser|null
-     */
-    private static $parser;
+    private static ?Parser $parser = null;
 
     public function __construct(
         FileProvider $file_provider,
@@ -411,7 +398,7 @@ class StatementsProvider
 
     /**
      * @param  list<Stmt> $existing_statements
-     * @param  array<int, list{int, int, int, int, int, string}> $file_changes
+     * @param  array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $file_changes
      *
      * @return list<Stmt>
      */
@@ -431,7 +418,7 @@ class StatementsProvider
         if (!self::$lexer) {
             $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10_000);
             $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10_000, 100);
-            self::$lexer = new PhpParser\Lexer\Emulative([
+            self::$lexer = new Emulative([
                 'usedAttributes' => $attributes,
                 'phpVersion' => $major_version . '.' . $minor_version,
             ]);

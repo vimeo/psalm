@@ -37,10 +37,7 @@ use function substr;
  */
 class Functions
 {
-    /**
-     * @var FileStorageProvider
-     */
-    private $file_storage_provider;
+    private FileStorageProvider $file_storage_provider;
 
     /**
      * @var array<lowercase-string, FunctionStorage>
@@ -59,10 +56,7 @@ class Functions
     /** @var DynamicFunctionStorageProvider */
     public $dynamic_storage_provider;
 
-    /**
-     * @var Reflection
-     */
-    private $reflection;
+    private Reflection $reflection;
 
     public function __construct(FileStorageProvider $storage_provider, Reflection $reflection)
     {

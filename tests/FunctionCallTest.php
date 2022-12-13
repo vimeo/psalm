@@ -20,6 +20,50 @@ class FunctionCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'countShapedArrays' => [
+                'code' => '<?php
+                    /** @var array{a?: int} */
+                    $a = [];
+                    $aCount = count($a);
+
+                    /** @var array{a: int} */
+                    $b = [];
+                    $bCount = count($b);
+
+                    /** @var array{a: int, b?: int} */
+                    $c = [];
+                    $cCount = count($c);
+
+                    /** @var array{a: int}&array */
+                    $d = [];
+                    $dCount = count($d);
+
+                    /** @var list{0?: int} */
+                    $e = [];
+                    $eCount = count($e);
+
+                    /** @var list{int} */
+                    $f = [];
+                    $fCount = count($f);
+
+                    /** @var list{0: int, 1?: int} */
+                    $g = [];
+                    $gCount = count($g);
+
+                    /** @var list{0: int, 1?: int}&array */
+                    $h = [];
+                    $hCount = count($h);',
+                'assertions' => [
+                    '$aCount===' => 'int<0, 1>',
+                    '$bCount===' => '1',
+                    '$cCount===' => 'int<1, 2>',
+                    '$dCount===' => 'int<1, max>',
+                    '$eCount===' => 'int<0, 1>',
+                    '$fCount===' => '1',
+                    '$gCount===' => 'int<1, 2>',
+                    '$hCount===' => 'int<1, max>',
+                ]
+            ],
             'preg_grep' => [
                 'code' => '<?php
                   /**
@@ -1220,6 +1264,13 @@ class FunctionCallTest extends TestCase
                         return count($x);
                     }',
             ],
+            'countOnObjectShouldBePositive' => [
+                'code' => '<?php
+                    /** @return positive-int|0 */
+                    function example(\Countable $x) : int {
+                        return count($x);
+                    }',
+            ],
             'countOnPureObjectIsPure' => [
                 'code' => '<?php
                     class PureCountable implements \Countable {
@@ -2378,14 +2429,6 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-            ],
-            'countOnObjectCannotBePositive' => [
-                'code' => '<?php
-                    /** @return positive-int|0 */
-                    function example(\Countable $x) : int {
-                        return count($x);
-                    }',
-                'error_message' => 'LessSpecificReturnStatement',
             ],
             'countOnUnknownObjectCannotBePure' => [
                 'code' => '<?php

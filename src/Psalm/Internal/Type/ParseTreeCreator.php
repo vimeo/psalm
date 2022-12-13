@@ -43,13 +43,11 @@ class ParseTreeCreator
     private $current_leaf;
 
     /** @var array<int, array{0: string, 1: int, 2?: string}> */
-    private $type_tokens;
+    private array $type_tokens;
 
-    /** @var int */
-    private $type_token_count;
+    private int $type_token_count;
 
-    /** @var int */
-    private $t = 0;
+    private int $t = 0;
 
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $type_tokens

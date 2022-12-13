@@ -1,0 +1,13 @@
+<?php
+namespace {
+    class ReflectionClass implements Reflector {
+        /** @psalm-pure */
+        public function isReadOnly(): bool {}
+    }
+
+    /** @psalm-immutable */
+    class ReflectionUnionType extends ReflectionType {
+        /** @return non-empty-list<ReflectionNamedType|ReflectionIntersectionType> */
+        public function getTypes(): array {}
+    }
+}

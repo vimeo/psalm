@@ -648,7 +648,7 @@ class IntRangeTest extends TestCase
 
                         /** @var int<0, max> $count */
                         $count = 1;
-                        /** @var int $middle */
+                        /** @var int<0, max> $middle */
                         $middle = 1;
                         /** @var int<0, max> $remainder */
                         $remainder = 1;

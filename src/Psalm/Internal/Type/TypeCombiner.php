@@ -36,7 +36,6 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
@@ -62,6 +61,7 @@ use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_values;
+use function assert;
 use function count;
 use function get_class;
 use function is_int;
@@ -186,6 +186,8 @@ class TypeCombiner
                 $combined_param_types[] = Type::combineUnionTypes($array_param_type, $traversable_param_types[$i]);
             }
 
+            assert(count($combined_param_types) <= 2);
+
             $combination->value_types['iterable'] = new TIterable($combined_param_types);
 
             $combination->array_type_params = [];
@@ -238,6 +240,7 @@ class TypeCombiner
 
         foreach ($combination->builtin_type_params as $generic_type => $generic_type_params) {
             if ($generic_type === 'iterable') {
+                assert(count($generic_type_params) <= 2);
                 $new_types[] = new TIterable($generic_type_params);
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
@@ -388,6 +391,9 @@ class TypeCombiner
         bool $allow_mixed_union,
         int $literal_limit
     ): ?Union {
+        if ($type instanceof TList) {
+            $type = $type->getKeyedArray();
+        }
         if ($type instanceof TMixed) {
             if ($type->from_loop_isset) {
                 if ($combination->mixed_from_loop_isset === null) {
@@ -537,7 +543,6 @@ class TypeCombiner
             }
 
             foreach ($type->type_params as $i => $type_param) {
-                /** @psalm-suppress PropertyTypeCoercion */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
@@ -584,52 +589,8 @@ class TypeCombiner
             return null;
         }
 
-        if ($type instanceof TList) {
-            foreach ([Type::getInt(), $type->type_param] as $i => $type_param) {
-                /** @psalm-suppress PropertyTypeCoercion */
-                $combination->array_type_params[$i] = Type::combineUnionTypes(
-                    $combination->array_type_params[$i] ?? null,
-                    $type_param,
-                    $codebase,
-                    $overwrite_empty_array
-                );
-            }
-
-            if ($type instanceof TNonEmptyList) {
-                if ($combination->array_counts !== null) {
-                    if ($type->count === null) {
-                        $combination->array_counts = null;
-                    } else {
-                        $combination->array_counts[$type->count] = true;
-                    }
-                }
-
-                if ($combination->array_min_counts !== null) {
-                    if ($type->min_count === null) {
-                        $combination->array_min_counts = null;
-                    } else {
-                        $combination->array_min_counts[$type->min_count] = true;
-                    }
-                }
-
-                $combination->array_sometimes_filled = true;
-            } else {
-                $combination->array_always_filled = false;
-            }
-
-            if ($combination->all_arrays_lists !== false) {
-                $combination->all_arrays_lists = true;
-            }
-
-            $combination->all_arrays_callable = false;
-            $combination->all_arrays_class_string_maps = false;
-
-            return null;
-        }
-
         if ($type instanceof TClassStringMap) {
             foreach ([$type->getStandinKeyParam(), $type->value_param] as $i => $type_param) {
-                /** @psalm-suppress PropertyTypeCoercion */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
@@ -721,6 +682,12 @@ class TypeCombiner
                         $codebase,
                         $overwrite_empty_array
                     );
+                    if ((!$value_type->possibly_undefined || !$candidate_property_type->possibly_undefined)
+                        && $overwrite_empty_array
+                    ) {
+                        $combination->objectlike_entries[$candidate_property_name] =
+                            $combination->objectlike_entries[$candidate_property_name]->setPossiblyUndefined(false);
+                    }
                 }
 
                 if (!$candidate_property_type->possibly_undefined) {
@@ -1363,6 +1330,8 @@ class TypeCombiner
 
             if ($combination->objectlike_value_type
                 && $combination->objectlike_value_type->isMixed()
+                && $combination->array_type_params
+                && !$combination->array_type_params[1]->isNever()
             ) {
                 $combination->objectlike_entries = array_filter(
                     $combination->objectlike_entries,
@@ -1530,25 +1499,41 @@ class TypeCombiner
                         [Type::getInt(), $combination->array_type_params[1]],
                         true
                     );
+                } elseif ($combination->array_counts && count($combination->array_counts) === 1) {
+                    $cnt = array_keys($combination->array_counts)[0];
+                    $properties = [];
+                    for ($x = 0; $x < $cnt; $x++) {
+                        $properties []= $generic_type_params[1];
+                    }
+                    assert($properties !== []);
+                    $array_type = new TKeyedArray(
+                        $properties,
+                        null,
+                        null,
+                        true
+                    );
                 } else {
-                    /** @psalm-suppress ArgumentTypeCoercion */
-                    $array_type = new TNonEmptyList(
-                        $generic_type_params[1],
-                        $combination->array_counts && count($combination->array_counts) === 1
-                            ? array_keys($combination->array_counts)[0]
-                            : null,
-                        $combination->array_min_counts
-                            ? min(array_keys($combination->array_min_counts))
-                            : null
+                    $cnt = $combination->array_min_counts
+                        ? min(array_keys($combination->array_min_counts))
+                        : 0;
+                    $properties = [];
+                    for ($x = 0; $x < $cnt; $x++) {
+                        $properties []= $generic_type_params[1];
+                    }
+                    if (!$properties) {
+                        $properties []= $generic_type_params[1]->setPossiblyUndefined(true);
+                    }
+                    $array_type = new TKeyedArray(
+                        $properties,
+                        null,
+                        [Type::getListKey(), $generic_type_params[1]],
+                        true
                     );
                 }
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion */
                 $array_type = new TNonEmptyArray(
                     $generic_type_params,
-                    $combination->array_counts && count($combination->array_counts) === 1
-                        ? array_keys($combination->array_counts)[0]
-                        : null,
                     $combination->array_min_counts
                         ? min(array_keys($combination->array_min_counts))
                         : null
@@ -1565,7 +1550,7 @@ class TypeCombiner
                     $generic_type_params[1]
                 );
             } elseif ($combination->all_arrays_lists) {
-                $array_type = new TList($generic_type_params[1]);
+                $array_type = Type::getListAtomic($generic_type_params[1]);
             } else {
                 $array_type = new TArray($generic_type_params);
             }

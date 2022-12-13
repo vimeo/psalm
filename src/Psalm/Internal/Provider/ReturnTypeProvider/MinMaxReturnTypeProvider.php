@@ -9,11 +9,9 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -67,11 +65,9 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     if (!$arg_type->isSingle() || !$arg_type->isArray()) {
                         return Type::getMixed();
                     } else {
-                        $array_arg_type = $arg_type->getSingleAtomic();
+                        $array_arg_type = $arg_type->getArray();
                         if ($array_arg_type instanceof TKeyedArray) {
                             $possibly_unpacked_arg_types = $array_arg_type->properties;
-                        } elseif ($array_arg_type instanceof TList) {
-                            $possibly_unpacked_arg_types = [$array_arg_type->type_param];
                         } else {
                             assert($array_arg_type instanceof TArray);
                             $possibly_unpacked_arg_types = [$array_arg_type->type_params[1]];
@@ -95,9 +91,6 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $max_bounds[] = $atomic_type->max_bound;
                         } elseif (get_class($atomic_type) === TInt::class) {
                             $min_bounds[] = null;
-                            $max_bounds[] = null;
-                        } elseif ($atomic_type instanceof TDependentListKey) {
-                            $min_bounds[] = 0;
                             $max_bounds[] = null;
                         } else {
                             throw new UnexpectedValueException('Unexpected type');

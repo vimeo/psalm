@@ -9,22 +9,10 @@ use Psalm\Storage\FileStorage;
 
 final class BeforeFileAnalysisEvent
 {
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var Context
-     */
-    private $file_context;
-    /**
-     * @var FileStorage
-     */
-    private $file_storage;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private StatementsSource $statements_source;
+    private Context $file_context;
+    private FileStorage $file_storage;
+    private Codebase $codebase;
 
     /**
      * Called before a file has been checked

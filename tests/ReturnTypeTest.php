@@ -1154,6 +1154,31 @@ class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'newReturnTypesInPhp82' => [
+                'code' => '<?php
+                    function alwaysTrue(): true {
+                        return true;
+                    }
+
+                    function alwaysFalse(): false {
+                        return false;
+                    }
+
+                    function alwaysNull(): null {
+                        return null;
+                    }
+                    $true = alwaysTrue();
+                    $false = alwaysFalse();
+                    $null = alwaysNull();
+                ',
+                'assertions' => [
+                    '$true===' => 'true',
+                    '$false===' => 'false',
+                    '$null===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
@@ -1298,7 +1323,7 @@ class ReturnTypeTest extends TestCase
                       }
                       return $arr;
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'invalidVoidStatementWhenMixedInferred' => [
                 'code' => '<?php
@@ -1389,7 +1414,7 @@ class ReturnTypeTest extends TestCase
                     function foo() : array {
                         return rand(0, 1) ? ["a" => 1, "b" => 2] : ["a" => 2];
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'mixedReturnTypeCoercion' => [
                 'code' => '<?php
@@ -1559,7 +1584,7 @@ class ReturnTypeTest extends TestCase
                     function foo(array $a) : array {
                         return $a;
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'docblockishTypeMustReturn' => [
                 'code' => '<?php

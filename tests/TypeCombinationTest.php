@@ -624,7 +624,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineNonEmptyListWithTKeyedArrayList' => [
-                'list{null|string, ...<int, string>}',
+                'list{null|string, ...<int<0, max>, string>}',
                 [
                     'non-empty-list<string>',
                     'array{null}'

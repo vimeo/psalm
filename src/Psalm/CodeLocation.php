@@ -42,8 +42,7 @@ class CodeLocation
     /** @var int */
     public $raw_line_number;
 
-    /** @var int */
-    private $end_line_number = -1;
+    private int $end_line_number = -1;
 
     /** @var int */
     public $raw_file_start;
@@ -63,23 +62,17 @@ class CodeLocation
     /** @var int */
     protected $preview_start;
 
-    /** @var int */
-    private $preview_end = -1;
+    private int $preview_end = -1;
 
-    /** @var int */
-    private $selection_start = -1;
+    private int $selection_start = -1;
 
-    /** @var int */
-    private $selection_end = -1;
+    private int $selection_end = -1;
 
-    /** @var int */
-    private $column_from = -1;
+    private int $column_from = -1;
 
-    /** @var int */
-    private $column_to = -1;
+    private int $column_to = -1;
 
-    /** @var string */
-    private $snippet = '';
+    private string $snippet = '';
 
     /** @var null|string */
     private $text;
@@ -96,8 +89,7 @@ class CodeLocation
     /** @var null|int */
     private $regex_type;
 
-    /** @var bool */
-    private $have_recalculated = false;
+    private bool $have_recalculated = false;
 
     /** @var null|CodeLocation */
     public $previous_location;

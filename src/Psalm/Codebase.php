@@ -146,10 +146,7 @@ final class Codebase
      */
     public $statements_provider;
 
-    /**
-     * @var Progress
-     */
-    private $progress;
+    private Progress $progress;
 
     /**
      * @var array<string, Union>

@@ -8,30 +8,12 @@ use Psalm\StatementsSource;
 
 final class PropertyExistenceProviderEvent
 {
-    /**
-     * @var string
-     */
-    private $fq_classlike_name;
-    /**
-     * @var string
-     */
-    private $property_name;
-    /**
-     * @var bool
-     */
-    private $read_mode;
-    /**
-     * @var StatementsSource|null
-     */
-    private $source;
-    /**
-     * @var Context|null
-     */
-    private $context;
-    /**
-     * @var CodeLocation|null
-     */
-    private $code_location;
+    private string $fq_classlike_name;
+    private string $property_name;
+    private bool $read_mode;
+    private ?StatementsSource $source;
+    private ?Context $context;
+    private ?CodeLocation $code_location;
 
     /**
      * Use this hook for informing whether or not a property exists on a given object. If you know the property does

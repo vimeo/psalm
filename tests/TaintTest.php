@@ -722,6 +722,11 @@ class TaintTest extends TestCase
                         }
                     }'
             ],
+            'urlencode' => [
+                'code' => '<?php
+                    echo urlencode($_GET["bad"]);
+                '
+            ],
         ];
     }
 
@@ -2373,6 +2378,17 @@ class TaintTest extends TestCase
                     new $a($b);',
                 'error_message' => 'TaintedCallable',
             ],
+            'urlencode' => [
+                /**
+                 * urlencode() should only prevent html & has_quotes taints
+                 * All other taint types should be unaffected.
+                 * We arbitrarily chose system() to test this.
+                 */
+                'code' => '<?php
+                    system(urlencode($_GET["bad"]));
+                ',
+                'error_message' => 'TaintedShell'
+            ]
         ];
     }
 

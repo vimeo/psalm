@@ -25,13 +25,9 @@ use function strtolower;
  */
 class Properties
 {
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $classlike_storage_provider;
+    private ClassLikeStorageProvider $classlike_storage_provider;
 
-    /** @var ClassLikes */
-    private $classlikes;
+    private ClassLikes $classlikes;
 
     /**
      * @var bool

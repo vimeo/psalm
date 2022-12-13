@@ -59,7 +59,6 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
 use function count;
@@ -123,15 +122,11 @@ class ArgumentAnalyzer
                     && $param_type
                     && $param_type->hasArray()
                 ) {
-                    /**
-                     * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                     * @var TList|TArray
-                     */
-                    $array_type = $param_type->getAtomicTypes()['array'];
+                    $array_type = $param_type->getArray();
 
-                    if ($array_type instanceof TList) {
-                        $param_type = $array_type->type_param;
-                    } else {
+                    if ($array_type instanceof TKeyedArray && $array_type->is_list) {
+                        $param_type = $array_type->getGenericValueType();
+                    } elseif ($array_type instanceof TArray) {
                         $param_type = $array_type->type_params[1];
                     }
                 }
@@ -332,14 +327,15 @@ class ArgumentAnalyzer
                 $arg_type_param = null;
 
                 foreach ($arg_value_type->getAtomicTypes() as $arg_atomic_type) {
+                    if ($arg_atomic_type instanceof TList) {
+                        $arg_atomic_type = $arg_atomic_type->getKeyedArray();
+                    }
+
                     if ($arg_atomic_type instanceof TArray
-                        || $arg_atomic_type instanceof TList
                         || $arg_atomic_type instanceof TKeyedArray
                     ) {
                         if ($arg_atomic_type instanceof TKeyedArray) {
                             $arg_type_param = $arg_atomic_type->getGenericValueType();
-                        } elseif ($arg_atomic_type instanceof TList) {
-                            $arg_type_param = $arg_atomic_type->type_param;
                         } else {
                             $arg_type_param = $arg_atomic_type->type_params[1];
                         }
@@ -473,11 +469,7 @@ class ArgumentAnalyzer
             }
 
             if ($arg_value_type->hasArray()) {
-                /**
-                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TList|TKeyedArray|TClassStringMap
-                 */
-                $unpacked_atomic_array = $arg_value_type->getAtomicTypes()['array'];
+                $unpacked_atomic_array = $arg_value_type->getArray();
                 $arg_key_allowed = true;
 
                 if ($unpacked_atomic_array instanceof TKeyedArray) {
@@ -496,6 +488,8 @@ class ArgumentAnalyzer
                         && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])
                     ) {
                         $arg_value_type = $unpacked_atomic_array->properties[$unpacked_argument_offset];
+                    } elseif ($unpacked_atomic_array->fallback_params) {
+                        $arg_value_type = $unpacked_atomic_array->fallback_params[1];
                     } elseif ($function_param->is_optional && $function_param->default_type) {
                         if ($function_param->default_type instanceof Union) {
                             $arg_value_type = $function_param->default_type;
@@ -511,8 +505,6 @@ class ArgumentAnalyzer
                     } else {
                         $arg_value_type = Type::getMixed();
                     }
-                } elseif ($unpacked_atomic_array instanceof TList) {
-                    $arg_value_type = $unpacked_atomic_array->type_param;
                 } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
                     $arg_value_type = Type::getMixed();
                 } else {
@@ -661,7 +653,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param TKeyedArray|TArray|TList|TClassStringMap|null $unpacked_atomic_array
+     * @param TKeyedArray|TArray|TClassStringMap|null $unpacked_atomic_array
      * @return  null|false
      */
     public static function verifyType(
@@ -907,6 +899,10 @@ class ArgumentAnalyzer
             $potential_method_ids = [];
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
+                if ($input_type_part instanceof TList) {
+                    $input_type_part = $input_type_part->getKeyedArray();
+                }
+
                 if ($input_type_part instanceof TKeyedArray) {
                     $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,
@@ -1217,18 +1213,13 @@ class ArgumentAnalyzer
             } elseif ($param_type_part instanceof TCallable) {
                 $can_be_callable_like_array = false;
                 if ($param_type->hasArray()) {
-                    /**
-                     * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                     */
-                    $param_array_type = $param_type->getAtomicTypes()['array'];
+                    $param_array_type = $param_type->getArray();
 
                     $row_type = null;
-                    if ($param_array_type instanceof TList) {
-                        $row_type = $param_array_type->type_param;
-                    } elseif ($param_array_type instanceof TArray) {
+                    if ($param_array_type instanceof TArray) {
                         $row_type = $param_array_type->type_params[1];
                     } elseif ($param_array_type instanceof TKeyedArray) {
-                        $row_type = $param_array_type->getGenericArrayType()->type_params[1];
+                        $row_type = $param_array_type->getGenericValueType();
                     }
 
                     if ($row_type &&
@@ -1253,7 +1244,6 @@ class ArgumentAnalyzer
                             $function_id_parts = explode('&', $function_id);
 
                             $non_existent_method_ids = [];
-                            $has_valid_method = false;
 
                             foreach ($function_id_parts as $function_id_part) {
                                 [$callable_fq_class_name, $method_name] = explode('::', $function_id_part);
@@ -1306,12 +1296,10 @@ class ArgumentAnalyzer
                                     && !$codebase->methods->methodExists($call_method_id)
                                 ) {
                                     $non_existent_method_ids[] = $function_id_part;
-                                } else {
-                                    $has_valid_method = true;
                                 }
                             }
 
-                            if (!$has_valid_method && !$param_type->hasString() && !$param_type->hasArray()) {
+                            if ($non_existent_method_ids && !$param_type->hasString() && !$param_type->hasArray()) {
                                 if (MethodAnalyzer::checkMethodExists(
                                     $codebase,
                                     $non_existent_method_ids[0],
@@ -1342,7 +1330,7 @@ class ArgumentAnalyzer
     }
 
     /**
-     * @param TKeyedArray|TArray|TList|TClassStringMap $unpacked_atomic_array
+     * @param TKeyedArray|TArray|TClassStringMap $unpacked_atomic_array
      */
     private static function coerceValueAfterGatekeeperArgument(
         StatementsAnalyzer $statements_analyzer,
@@ -1437,11 +1425,7 @@ class ArgumentAnalyzer
             }
 
             if ($unpack) {
-                if ($unpacked_atomic_array instanceof TList) {
-                    $unpacked_atomic_array = $unpacked_atomic_array->setTypeParam($input_type);
-
-                    $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
-                } elseif ($unpacked_atomic_array instanceof TArray) {
+                if ($unpacked_atomic_array instanceof TArray) {
                     $unpacked_atomic_array = $unpacked_atomic_array->setTypeParams([
                         $unpacked_atomic_array->type_params[0],
                         $input_type
@@ -1452,9 +1436,9 @@ class ArgumentAnalyzer
                     && $unpacked_atomic_array->is_list
                 ) {
                     if ($unpacked_atomic_array->isNonEmpty()) {
-                        $unpacked_atomic_array = new TNonEmptyList($input_type);
+                        $unpacked_atomic_array = Type::getNonEmptyListAtomic($input_type);
                     } else {
-                        $unpacked_atomic_array = new TList($input_type);
+                        $unpacked_atomic_array = Type::getListAtomic($input_type);
                     }
 
                     $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);

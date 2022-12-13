@@ -97,30 +97,18 @@ use const PHP_INT_MAX;
  */
 class Analyzer
 {
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
-    /**
-     * @var FileProvider
-     */
-    private $file_provider;
+    private FileProvider $file_provider;
 
-    /**
-     * @var FileStorageProvider
-     */
-    private $file_storage_provider;
+    private FileStorageProvider $file_storage_provider;
 
-    /**
-     * @var Progress
-     */
-    private $progress;
+    private Progress $progress;
 
     /**
      * Used to store counts of mixed vs non-mixed variables
      *
-     * @var array<string, array{0: int, 1: int}>
+     * @var array<string, list{int, int}>
      */
     private $mixed_counts = [];
 
@@ -129,26 +117,23 @@ class Analyzer
      *
      * @var array<string, array<string, bool>>
      */
-    private $mixed_member_names = [];
+    private array $mixed_member_names = [];
 
-    /**
-     * @var bool
-     */
-    private $count_mixed = true;
+    private bool $count_mixed = true;
 
     /**
      * Used to store debug performance data
      *
      * @var array<string, float>
      */
-    private $function_timings = [];
+    private array $function_timings = [];
 
     /**
      * We analyze more files than we necessarily report errors in
      *
      * @var array<string, string>
      */
-    private $files_to_analyze = [];
+    private array $files_to_analyze = [];
 
     /**
      * We can show analysis results on more files than we analyze
@@ -163,32 +148,32 @@ class Analyzer
      *
      * @var array<string>|null
      */
-    private $files_to_update;
+    private ?array $files_to_update = null;
 
     /**
      * @var array<string, array<string, int>>
      */
-    private $analyzed_methods = [];
+    private array $analyzed_methods = [];
 
     /**
      * @var array<string, array<int, IssueData>>
      */
-    private $existing_issues = [];
+    private array $existing_issues = [];
 
     /**
      * @var array<string, array<int, array{0: int, 1: non-empty-string}>>
      */
-    private $reference_map = [];
+    private array $reference_map = [];
 
     /**
      * @var array<string, array<int, array{0: int, 1: non-empty-string}>>
      */
-    private $type_map = [];
+    private array $type_map = [];
 
     /**
      * @var array<string, array<int, array{0: int, 1: non-empty-string, 2: int}>>
      */
-    private $argument_map = [];
+    private array $argument_map = [];
 
     /**
      * @var array<string, array<int, Union>>
@@ -357,6 +342,7 @@ class Analyzer
             $file_paths = array_values($this->files_to_analyze);
 
             $count = count($file_paths);
+            /** @var int<0, max> */
             $middle = intdiv($count, $shuffle_count);
             $remainder = $count % $shuffle_count;
 
@@ -1103,7 +1089,7 @@ class Analyzer
     }
 
     /**
-     * @return array{0:int, 1:int}
+     * @return list{int, int}
      */
     public function getMixedCountsForFile(string $file_path): array
     {
@@ -1115,7 +1101,7 @@ class Analyzer
     }
 
     /**
-     * @param  array{0:int, 1:int} $mixed_counts
+     * @param  list{int, int} $mixed_counts
      *
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void

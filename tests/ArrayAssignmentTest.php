@@ -43,7 +43,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $out[] = 4;',
                 'assertions' => [
-                    '$out' => 'non-empty-list<int>',
+                    '$out' => 'list{int}',
                 ],
             ],
             'genericArrayCreationWithInt' => [
@@ -98,7 +98,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = new B();
                     }',
                 'assertions' => [
-                    '$out' => 'list<B>',
+                    '$out' => 'list{0?: B}',
                 ],
             ],
             'genericArrayCreationWithElementAddedInSwitch' => [
@@ -114,7 +114,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'list<int>',
+                    '$out' => 'list{0?: int}',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitch' => [
@@ -131,7 +131,7 @@ class ArrayAssignmentTest extends TestCase
                             break;
                     }',
                 'assertions' => [
-                    '$out' => 'list<int|string>',
+                    '$out' => 'list{0?: int|string}',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitchWithNothing' => [
@@ -151,7 +151,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'list<int|string>',
+                    '$out' => 'list{0?: int|string}',
                 ],
             ],
             'implicit2dIntArrayCreation' => [
@@ -847,7 +847,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$a' => 'list{string, int}',
                     '$a_values' => 'non-empty-list<int|string>',
-                    '$a_keys' => 'non-empty-list<int>',
+                    '$a_keys' => 'non-empty-list<int<0, 1>>',
                 ],
             ],
             'changeIntOffsetKeyValuesWithDirectAssignment' => [
@@ -904,7 +904,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>|null',
+                    '$a===' => 'list{4}|null',
                 ],
             ],
             'assignArrayOrSetNullInElseIf' => [
@@ -920,7 +920,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'list<int>|null',
+                    '$a' => 'list{0?: int}|null',
                 ],
             ],
             'assignArrayOrSetNullInElse' => [
@@ -936,7 +936,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>|null',
+                    '$a' => 'list{int}|null',
                 ],
             ],
             'mixedMethodCallArrayAccess' => [
@@ -1118,7 +1118,7 @@ class ArrayAssignmentTest extends TestCase
 
                     takesArray($a);',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>'
+                    '$a' => 'list{int, int}'
                 ],
             ],
             'listTakesEmptyArray' => [
@@ -1543,7 +1543,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...$x, ...$y];
                 ',
-                'assertions' => ['$x===' => 'non-empty-list<int>'],
+                'assertions' => ['$x===' => 'list{int, int, ...<int<0, max>, int>}'],
             ],
             'unpackEmptyKeepsCorrectKeys' => [
                 'code' => '<?php
@@ -2011,6 +2011,21 @@ class ArrayAssignmentTest extends TestCase
                 if (\array_key_exists($currentAction, $items)) {
                     $items[$currentAction]["active"] = true;
                 }'
+            ],
+            'listAppendShape' => [
+                'code' => '<?php
+                    $a = [];
+                    $a[]= 0;
+                    $a[]= 1;
+                    $a[]= 2;
+
+                    $b = [0];
+                    $b[]= 1;
+                    $b[]= 2;',
+                'assertions' => [
+                    '$a===' => 'list{0, 1, 2}',
+                    '$b===' => 'list{0, 1, 2}'
+                ]
             ]
         ];
     }
@@ -2337,7 +2352,8 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
-            'assignToListWithAlteredForeachKeyVar' => [
+            // Skipped because the ref-type of array_pop was fixed (list->list)
+            'SKIPPED-assignToListWithAlteredForeachKeyVar' => [
                 'code' => '<?php
                     /**
                      * @param list<string> $list
@@ -2354,7 +2370,7 @@ class ArrayAssignmentTest extends TestCase
 
                         return $list;
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'createArrayWithMixedOffset' => [
                 'code' => '<?php

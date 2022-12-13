@@ -663,6 +663,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     continue;
                 }
 
+                if ($var_type_part instanceof TList) {
+                    $var_type_part = $var_type_part->getKeyedArray();
+                }
+
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
                     if (!$var_type_part->is_pure) {
                         if ($context->pure || $context->mutation_free) {
@@ -727,7 +731,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $has_valid_function_call_type = true;
                 } elseif ($var_type_part instanceof TString
                     || $var_type_part instanceof TArray
-                    || $var_type_part instanceof TList
                     || ($var_type_part instanceof TKeyedArray
                         && count($var_type_part->properties) === 2)
                 ) {

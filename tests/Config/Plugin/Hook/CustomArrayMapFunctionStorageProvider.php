@@ -29,12 +29,12 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
         $template_provider = $event->getTemplateProvider();
         $arg_type_inferer = $event->getArgTypeInferer();
         $call_args = $event->getArgs();
-        $args_count = count($call_args);
-        $expected_callable_args_count = $args_count - 1;
 
-        if ($expected_callable_args_count < 1) {
+        if (count($call_args) < 2) {
             return null;
         }
+        $args_count = count($call_args);
+        $expected_callable_args_count = $args_count - 1;
 
         $last_arg = $call_args[$args_count - 1];
 
@@ -93,9 +93,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
         $value_types = [];
 
         foreach ($array_like_type->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof Type\Atomic\TList) {
-                $value_types[] = $atomic->type_param;
-            } elseif ($atomic instanceof Type\Atomic\TArray) {
+            if ($atomic instanceof Type\Atomic\TArray) {
                 $value_types[] = $atomic->type_params[1];
             } elseif ($atomic instanceof Type\Atomic\TKeyedArray) {
                 $value_types[] = $atomic->getGenericValueType();
@@ -146,15 +144,13 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
     /**
      * Extracts return type for custom_array_map from last callable arg.
      *
-     * @param list<TCallable> $all_expected_callables
+     * @param non-empty-list<TCallable> $all_expected_callables
      */
     private static function createReturnType(array $all_expected_callables): Union
     {
         $last_callable_arg = $all_expected_callables[count($all_expected_callables) - 1];
 
-        return new Union([
-            new Type\Atomic\TList($last_callable_arg->return_type ?? Type::getMixed())
-        ]);
+        return Type::getList($last_callable_arg->return_type ?? Type::getMixed());
     }
 
     /**

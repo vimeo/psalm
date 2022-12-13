@@ -75,17 +75,15 @@ class Pool
     private const EXIT_SUCCESS = 0;
     private const EXIT_FAILURE = 1;
 
-    /** @var Config */
-    private $config;
+    private Config $config;
 
     /** @var int[] */
-    private $child_pid_list = [];
+    private array $child_pid_list = [];
 
     /** @var resource[] */
-    private $read_streams = [];
+    private array $read_streams = [];
 
-    /** @var bool */
-    private $did_have_error = false;
+    private bool $did_have_error = false;
 
     /** @var ?Closure(mixed): void */
     private $task_done_closure;

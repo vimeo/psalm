@@ -8,7 +8,6 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 /**
@@ -55,7 +54,7 @@ class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         /**
-         * @var TKeyedArray|TArray|TList|null
+         * @var TKeyedArray|TArray|null
          */
         $array_arg_type = ($types = $haystack_type->getAtomicTypes()) && isset($types['array'])
             ? $types['array']
@@ -63,10 +62,6 @@ class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         if ($array_arg_type instanceof TKeyedArray) {
             $array_arg_type = $array_arg_type->getGenericArrayType();
-        }
-
-        if ($array_arg_type instanceof TList) {
-            $array_arg_type = new TArray([Type::getInt(), $array_arg_type->type_param]);
         }
 
         if (!$array_arg_type instanceof TArray) {

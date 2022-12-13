@@ -310,6 +310,7 @@ class DocumentationTest extends TestCase
                 case 'DuplicateEnumCaseValue':
                 case 'InvalidEnumBackingType':
                 case 'InvalidEnumCaseValue':
+                case 'InvalidEnumMethod':
                 case 'NoEnumProperties':
                 case 'OverriddenFinalConstant':
                     $php_version = '8.1';
@@ -436,7 +437,7 @@ class DocumentationTest extends TestCase
             throw new UnexpectedValueException("Issues index not found");
         }
 
-        $issues_index_contents = file($issues_index, FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES);
+        $issues_index_contents = file($issues_index, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         if ($issues_index_contents === false) {
             throw new UnexpectedValueException("Issues index returned false");
         }
