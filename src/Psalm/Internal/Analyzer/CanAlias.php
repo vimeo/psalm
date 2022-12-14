@@ -11,6 +11,9 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use function implode;
 use function strtolower;
 
+/**
+ * @internal
+ */
 trait CanAlias
 {
     /**

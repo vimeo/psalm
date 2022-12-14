@@ -22,6 +22,7 @@ use const SORT_NUMERIC;
  * @copyright Copyright (C) fruux GmbH (https://fruux.com/)
  * @author Evert Pot (http://evertpot.com/)
  * @license http://sabre.io/license/ Modified BSD License
+ * @internal
  */
 trait EmitterTrait
 {
