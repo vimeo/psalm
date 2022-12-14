@@ -65,49 +65,49 @@ class LanguageServer extends Dispatcher
      *
      * @var ?ServerTextDocument
      */
-    public $textDocument;
+    public ?ServerTextDocument $textDocument = null;
 
     /**
      * Handles workspace/* method calls
      *
      * @var ?ServerWorkspace
      */
-    public $workspace;
+    public ?ServerWorkspace $workspace = null;
 
     /**
      * @var ProtocolReader
      */
-    protected $protocolReader;
+    protected ProtocolReader $protocolReader;
 
     /**
      * @var ProtocolWriter
      */
-    protected $protocolWriter;
+    protected ProtocolWriter $protocolWriter;
 
     /**
      * @var LanguageClient
      */
-    public $client;
+    public LanguageClient $client;
 
     /**
      * @var ProjectAnalyzer
      */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     /**
      * @var array<string, string>
      */
-    protected $onsave_paths_to_analyze = [];
+    protected array $onsave_paths_to_analyze = [];
 
     /**
      * @var array<string, string>
      */
-    protected $onchange_paths_to_analyze = [];
+    protected array $onchange_paths_to_analyze = [];
 
     /**
      * @var array<string, list<IssueData>>
      */
-    protected $current_issues = [];
+    protected array $current_issues = [];
 
     /**
      * This should actually be a private property on `parent`

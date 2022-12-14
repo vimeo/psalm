@@ -110,7 +110,7 @@ class Analyzer
      *
      * @var array<string, list{int, int}>
      */
-    private $mixed_counts = [];
+    private array $mixed_counts = [];
 
     /**
      * Used to store member names of mixed property/method access
@@ -141,7 +141,7 @@ class Analyzer
      *
      * @var array<string, string>
      */
-    private $files_with_analysis_results = [];
+    private array $files_with_analysis_results = [];
 
     /**
      * We may update fewer files than we analyse (i.e. for dead code detection)
@@ -178,12 +178,12 @@ class Analyzer
     /**
      * @var array<string, array<int, Union>>
      */
-    public $possible_method_param_types = [];
+    public array $possible_method_param_types = [];
 
     /**
      * @var array<string, bool>
      */
-    public $mutable_classes = [];
+    public array $mutable_classes = [];
 
     public function __construct(
         Config $config,

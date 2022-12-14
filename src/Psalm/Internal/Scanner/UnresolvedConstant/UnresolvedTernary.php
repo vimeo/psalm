@@ -15,11 +15,11 @@ class UnresolvedTernary extends UnresolvedConstantComponent
     use ImmutableNonCloneableTrait;
 
     /** @var UnresolvedConstantComponent */
-    public $cond;
+    public UnresolvedConstantComponent $cond;
     /** @var UnresolvedConstantComponent|null */
-    public $if;
+    public ?UnresolvedConstantComponent $if = null;
     /** @var UnresolvedConstantComponent */
-    public $else;
+    public UnresolvedConstantComponent $else;
 
     public function __construct(
         UnresolvedConstantComponent $cond,

@@ -31,10 +31,10 @@ class Clause
 {
     use ImmutableNonCloneableTrait;
     /** @var int */
-    public $creating_conditional_id;
+    public int $creating_conditional_id;
 
     /** @var int */
-    public $creating_object_id;
+    public int $creating_object_id;
 
     /**
      * An array of strings of the form
@@ -51,7 +51,7 @@ class Clause
      *
      * @var array<string, non-empty-array<string, Assertion>>
      */
-    public $possibilities;
+    public array $possibilities;
 
     /**
      * An array of things that are not true
@@ -67,22 +67,22 @@ class Clause
      *
      * @var array<string, non-empty-list<Assertion>>|null
      */
-    public $impossibilities;
+    public ?array $impossibilities = null;
 
     /** @var bool */
-    public $wedge;
+    public bool $wedge;
 
     /** @var bool */
-    public $reconcilable;
+    public bool $reconcilable;
 
     /** @var bool */
-    public $generated = false;
+    public bool $generated = false;
 
     /** @var array<string, bool> */
-    public $redefined_vars = [];
+    public array $redefined_vars = [];
 
     /** @var string */
-    public $hash;
+    public string $hash;
 
     /**
      * @param array<string, non-empty-array<string, Assertion>>  $possibilities

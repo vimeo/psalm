@@ -12,7 +12,7 @@ class TemplateBound
     /**
      * @var Union
      */
-    public $type;
+    public Union $type;
 
     /**
      * This is the depth at which the template appears in a given type.
@@ -23,7 +23,7 @@ class TemplateBound
      *
      * @var int
      */
-    public $appearance_depth;
+    public int $appearance_depth;
 
     /**
      * The argument offset where this template was set
@@ -32,14 +32,14 @@ class TemplateBound
      *
      * @var ?int
      */
-    public $arg_offset;
+    public ?int $arg_offset = null;
 
     /**
      * When non-null, indicates an equality template bound (vs a lower or upper bound)
      *
      * @var ?string
      */
-    public $equality_bound_classlike;
+    public ?string $equality_bound_classlike = null;
 
     public function __construct(
         Union $type,

@@ -16,7 +16,7 @@ abstract class SourceAnalyzer implements StatementsSource
     /**
      * @var SourceAnalyzer
      */
-    protected $source;
+    protected SourceAnalyzer $source;
 
     public function __destruct()
     {

@@ -12,10 +12,10 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 class ArrayOffsetFetch extends UnresolvedConstantComponent
 {
     /** @var UnresolvedConstantComponent */
-    public $array;
+    public UnresolvedConstantComponent $array;
 
     /** @var UnresolvedConstantComponent */
-    public $offset;
+    public UnresolvedConstantComponent $offset;
 
     public function __construct(UnresolvedConstantComponent $left, UnresolvedConstantComponent $right)
     {

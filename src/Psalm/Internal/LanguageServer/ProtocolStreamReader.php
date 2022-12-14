@@ -34,11 +34,11 @@ class ProtocolStreamReader implements ProtocolReader
      *
      * @var bool
      */
-    private $is_accepting_new_requests = true;
+    private bool $is_accepting_new_requests = true;
     private int $parsing_mode = self::PARSE_HEADERS;
     private string $buffer = '';
     /** @var string[] */
-    private $headers = [];
+    private array $headers = [];
     private ?int $content_length = null;
     private bool $did_emit_close = false;
 

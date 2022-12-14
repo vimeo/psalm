@@ -22,10 +22,10 @@ use function substr_replace;
 class FileManipulationBuffer
 {
     /** @var array<string, FileManipulation[]> */
-    private static $file_manipulations = [];
+    private static array $file_manipulations = [];
 
     /** @var CodeMigration[] */
-    private static $code_migrations = [];
+    private static array $code_migrations = [];
 
     /**
      * @param FileManipulation[] $file_manipulations

@@ -22,22 +22,22 @@ final class StatementsVolatileCache
     /**
      * @var array<string, list<Stmt>>
      */
-    protected $cache = [];
+    protected array $cache = [];
 
     /**
      * @var array<int, string>
      */
-    protected $access = [];
+    protected array $access = [];
 
     /**
      * @var int
      */
-    protected $max_size;
+    protected int $max_size;
 
     /**
      * @var ?StatementsVolatileCache
      */
-    protected static $instance;
+    protected static ?StatementsVolatileCache $instance = null;
 
     public function __construct(int $max_size = 4096)
     {

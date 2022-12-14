@@ -34,42 +34,42 @@ class FileReferenceProvider
      *
      * @var array<string, array<string,bool>>
      */
-    private static $nonmethod_references_to_classes = [];
+    private static array $nonmethod_references_to_classes = [];
 
     /**
      * A lookup table used for getting all the methods that reference a class
      *
      * @var array<string, array<string,bool>>
      */
-    private static $method_references_to_classes = [];
+    private static array $method_references_to_classes = [];
 
     /**
      * A lookup table used for getting all the files that reference a class member
      *
      * @var array<string, array<string,bool>>
      */
-    private static $file_references_to_class_members = [];
+    private static array $file_references_to_class_members = [];
 
     /**
      * A lookup table used for getting all the files that reference a class property
      *
      * @var array<string, array<string,bool>>
      */
-    private static $file_references_to_class_properties = [];
+    private static array $file_references_to_class_properties = [];
 
     /**
      * A lookup table used for getting all the files that reference a method's return value
      *
      * @var array<string, array<string,bool>>
      */
-    private static $file_references_to_method_returns = [];
+    private static array $file_references_to_method_returns = [];
 
     /**
      * A lookup table used for getting all the files that reference a missing class member
      *
      * @var array<string, array<string,bool>>
      */
-    private static $file_references_to_missing_class_members = [];
+    private static array $file_references_to_missing_class_members = [];
 
     /**
      * @var array<string, array<string, true>>
@@ -88,87 +88,87 @@ class FileReferenceProvider
      *
      * @var array<string, array{a:array<int, string>, i:array<int, string>}>
      */
-    private static $file_references = [];
+    private static array $file_references = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_references_to_class_members = [];
+    private static array $method_references_to_class_members = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_dependencies = [];
+    private static array $method_dependencies = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_references_to_class_properties = [];
+    private static array $method_references_to_class_properties = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_references_to_method_returns = [];
+    private static array $method_references_to_method_returns = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_references_to_missing_class_members = [];
+    private static array $method_references_to_missing_class_members = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $references_to_mixed_member_names = [];
+    private static array $references_to_mixed_member_names = [];
 
     /**
      * @var array<string, array<int, CodeLocation>>
      */
-    private static $class_method_locations = [];
+    private static array $class_method_locations = [];
 
     /**
      * @var array<string, array<int, CodeLocation>>
      */
-    private static $class_property_locations = [];
+    private static array $class_property_locations = [];
 
     /**
      * @var array<string, array<int, CodeLocation>>
      */
-    private static $class_locations = [];
+    private static array $class_locations = [];
 
     /**
      * @var array<string, string>
      */
-    private static $classlike_files = [];
+    private static array $classlike_files = [];
 
     /**
      * @var array<string, array<string, int>>
      */
-    private static $analyzed_methods = [];
+    private static array $analyzed_methods = [];
 
     /**
      * @var array<string, array<int, IssueData>>
      */
-    private static $issues = [];
+    private static array $issues = [];
 
     /**
      * @var array<string, FileMapType>
      */
-    private static $file_maps = [];
+    private static array $file_maps = [];
 
     /**
      * @var array<string, array{int, int}>
      */
-    private static $mixed_counts = [];
+    private static array $mixed_counts = [];
 
     /**
      * @var array<string, array<int, array<string, bool>>>
      */
-    private static $method_param_uses = [];
+    private static array $method_param_uses = [];
 
     /**
      * @var ?FileReferenceCacheProvider
      */
-    public $cache;
+    public ?FileReferenceCacheProvider $cache = null;
 
     public function __construct(?FileReferenceCacheProvider $cache = null)
     {

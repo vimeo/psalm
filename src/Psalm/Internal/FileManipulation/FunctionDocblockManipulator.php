@@ -39,7 +39,7 @@ class FunctionDocblockManipulator
      *
      * @var array<string, array<int, FunctionDocblockManipulator>>
      */
-    private static $manipulators = [];
+    private static array $manipulators = [];
 
     /** @var Closure|Function_|ClassMethod|ArrowFunction */
     private $stmt;

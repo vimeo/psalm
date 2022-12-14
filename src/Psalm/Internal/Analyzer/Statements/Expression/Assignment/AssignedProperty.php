@@ -12,17 +12,17 @@ class AssignedProperty
     /**
      * @var Union
      */
-    public $property_type;
+    public Union $property_type;
 
     /**
      * @var string
      */
-    public $id;
+    public string $id;
 
     /**
      * @var Union
      */
-    public $assignment_type;
+    public Union $assignment_type;
 
     public function __construct(
         Union $property_type,

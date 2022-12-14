@@ -12,22 +12,22 @@ class Value extends ParseTree
     /**
      * @var string
      */
-    public $value;
+    public string $value;
 
     /**
      * @var int
      */
-    public $offset_start;
+    public int $offset_start;
 
     /**
      * @var int
      */
-    public $offset_end;
+    public int $offset_end;
 
     /**
      * @var ?string
      */
-    public $text;
+    public ?string $text = null;
 
     /**
      * @param ParseTree|null $parent

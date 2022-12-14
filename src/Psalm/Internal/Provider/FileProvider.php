@@ -26,12 +26,12 @@ class FileProvider
     /**
      * @var array<string, string>
      */
-    protected $temp_files = [];
+    protected array $temp_files = [];
 
     /**
      * @var array<string, string>
      */
-    protected static $open_files = [];
+    protected static array $open_files = [];
 
     /** @psalm-mutation-free */
     public function getContents(string $file_path, bool $go_to_source = false): string

@@ -20,7 +20,7 @@ use function substr;
 abstract class DataFlowGraph
 {
     /** @var array<string, array<string, Path>> */
-    protected $forward_edges = [];
+    protected array $forward_edges = [];
 
     abstract public function addNode(DataFlowNode $node): void;
 

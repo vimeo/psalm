@@ -11,23 +11,23 @@ use Psalm\Internal\Clause;
 class IfConditionalScope
 {
     /** @var Context */
-    public $if_context;
+    public Context $if_context;
 
     /** @var Context */
-    public $post_if_context;
+    public Context $post_if_context;
 
     /**
      * @var array<string, bool>
      */
-    public $cond_referenced_var_ids;
+    public array $cond_referenced_var_ids;
 
     /**
      * @var array<string, int>
      */
-    public $assigned_in_conditional_var_ids;
+    public array $assigned_in_conditional_var_ids;
 
     /** @var list<Clause> */
-    public $entry_clauses;
+    public array $entry_clauses;
 
     /**
      * @param array<string, bool>   $cond_referenced_var_ids

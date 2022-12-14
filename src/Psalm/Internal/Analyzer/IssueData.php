@@ -14,118 +14,118 @@ class IssueData
     /**
      * @var string
      */
-    public $severity;
+    public string $severity;
 
     /**
      * @var int
      */
-    public $line_from;
+    public int $line_from;
 
     /**
      * @var int
      */
-    public $line_to;
+    public int $line_to;
 
     /**
      * @var string
      * @readonly
      */
-    public $type;
+    public string $type;
 
     /**
      * @var string
      * @readonly
      */
-    public $message;
+    public string $message;
 
     /**
      * @var string
      * @readonly
      */
-    public $file_name;
+    public string $file_name;
 
     /**
      * @var string
      * @readonly
      */
-    public $file_path;
+    public string $file_path;
 
     /**
      * @var string
      * @readonly
      */
-    public $snippet;
+    public string $snippet;
 
     /**
      * @var string
      * @readonly
      */
-    public $selected_text;
+    public string $selected_text;
 
     /**
      * @var int
      */
-    public $from;
+    public int $from;
 
     /**
      * @var int
      */
-    public $to;
+    public int $to;
 
     /**
      * @var int
      */
-    public $snippet_from;
+    public int $snippet_from;
 
     /**
      * @var int
      */
-    public $snippet_to;
-
-    /**
-     * @var int
-     * @readonly
-     */
-    public $column_from;
+    public int $snippet_to;
 
     /**
      * @var int
      * @readonly
      */
-    public $column_to;
-
-    /**
-     * @var int
-     */
-    public $error_level;
+    public int $column_from;
 
     /**
      * @var int
      * @readonly
      */
-    public $shortcode;
+    public int $column_to;
+
+    /**
+     * @var int
+     */
+    public int $error_level;
+
+    /**
+     * @var int
+     * @readonly
+     */
+    public int $shortcode;
 
     /**
      * @var string
      * @readonly
      */
-    public $link;
+    public string $link;
 
     /**
      * @var ?list<DataFlowNodeData|array{label: string, entry_path_type: string}>
      */
-    public $taint_trace;
+    public ?array $taint_trace = null;
 
     /**
      * @var ?list<DataFlowNodeData>
      */
-    public $other_references;
+    public ?array $other_references = null;
 
     /**
      * @var ?string
      * @readonly
      */
-    public $dupe_key;
+    public ?string $dupe_key = null;
 
     /**
      * @param ?list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace

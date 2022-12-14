@@ -22,7 +22,7 @@ class DiffElem
     public const TYPE_KEEP_SIGNATURE = 4;
 
     /** @var int One of the TYPE_* constants */
-    public $type;
+    public int $type;
     /** @var mixed Is null for add operations */
     public $old;
     /** @var mixed Is null for remove operations */

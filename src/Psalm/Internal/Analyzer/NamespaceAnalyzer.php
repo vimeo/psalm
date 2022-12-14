@@ -31,7 +31,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
      * @var FileAnalyzer
      * @psalm-suppress NonInvariantDocblockPropertyType
      */
-    protected $source;
+    protected SourceAnalyzer $source;
 
     private Namespace_ $namespace;
 
@@ -42,7 +42,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
      *
      * @var array<string, array<string, Union>>
      */
-    protected static $public_namespace_constants = [];
+    protected static array $public_namespace_constants = [];
 
     public function __construct(Namespace_ $namespace, FileAnalyzer $source)
     {

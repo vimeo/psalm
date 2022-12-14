@@ -20,17 +20,17 @@ class Workspace
     /**
      * @var LanguageServer
      */
-    protected $server;
+    protected LanguageServer $server;
 
     /**
      * @var Codebase
      */
-    protected $codebase;
+    protected Codebase $codebase;
 
     /**
      * @var ProjectAnalyzer
      */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function __construct(
         LanguageServer $server,

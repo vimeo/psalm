@@ -20,7 +20,7 @@ class MethodIdentifier
 {
     use ImmutableNonCloneableTrait;
 
-    public $fq_class_name;
+    public string $fq_class_name;
     public $method_name;
 
     /**

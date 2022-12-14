@@ -18,12 +18,12 @@ class Message
     /**
      * @var ?MessageBody
      */
-    public $body;
+    public ?MessageBody $body = null;
 
     /**
      * @var string[]
      */
-    public $headers;
+    public array $headers;
 
     /**
      * Parses a message

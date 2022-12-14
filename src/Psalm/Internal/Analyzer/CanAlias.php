@@ -16,32 +16,32 @@ trait CanAlias
     /**
      * @var array<lowercase-string, string>
      */
-    private $aliased_classes = [];
+    private array $aliased_classes = [];
 
     /**
      * @var array<lowercase-string, CodeLocation>
      */
-    private $aliased_class_locations = [];
+    private array $aliased_class_locations = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    private $aliased_classes_flipped = [];
+    private array $aliased_classes_flipped = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    private $aliased_classes_flipped_replaceable = [];
+    private array $aliased_classes_flipped_replaceable = [];
 
     /**
      * @var array<lowercase-string, non-empty-string>
      */
-    private $aliased_functions = [];
+    private array $aliased_functions = [];
 
     /**
      * @var array<string, string>
      */
-    private $aliased_constants = [];
+    private array $aliased_constants = [];
 
     public function visitUse(PhpParser\Node\Stmt\Use_ $stmt): void
     {

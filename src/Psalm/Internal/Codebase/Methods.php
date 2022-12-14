@@ -57,26 +57,26 @@ class Methods
     /**
      * @var bool
      */
-    public $collect_locations = false;
+    public bool $collect_locations = false;
 
     /**
      * @var FileReferenceProvider
      */
-    public $file_reference_provider;
+    public FileReferenceProvider $file_reference_provider;
 
     private ClassLikes $classlikes;
 
     /** @var MethodReturnTypeProvider */
-    public $return_type_provider;
+    public MethodReturnTypeProvider $return_type_provider;
 
     /** @var MethodParamsProvider */
-    public $params_provider;
+    public MethodParamsProvider $params_provider;
 
     /** @var MethodExistenceProvider */
-    public $existence_provider;
+    public MethodExistenceProvider $existence_provider;
 
     /** @var MethodVisibilityProvider */
-    public $visibility_provider;
+    public MethodVisibilityProvider $visibility_provider;
 
     public function __construct(
         ClassLikeStorageProvider $storage_provider,

@@ -29,7 +29,7 @@ class GitInfoCollector
      *
      * @var SystemCommandExecutor
      */
-    protected $executor;
+    protected SystemCommandExecutor $executor;
 
     /**
      * Constructor.

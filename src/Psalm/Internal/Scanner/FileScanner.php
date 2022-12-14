@@ -21,17 +21,17 @@ class FileScanner implements FileSource
     /**
      * @var string
      */
-    public $file_path;
+    public string $file_path;
 
     /**
      * @var string
      */
-    public $file_name;
+    public string $file_name;
 
     /**
      * @var bool
      */
-    public $will_analyze;
+    public bool $will_analyze;
 
     public function __construct(string $file_path, string $file_name, bool $will_analyze)
     {

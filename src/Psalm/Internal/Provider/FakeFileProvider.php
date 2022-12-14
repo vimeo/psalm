@@ -13,12 +13,12 @@ class FakeFileProvider extends FileProvider
     /**
      * @var array<string, string>
      */
-    public $fake_files = [];
+    public array $fake_files = [];
 
     /**
      * @var array<string, int>
      */
-    public $fake_file_times = [];
+    public array $fake_file_times = [];
 
     public function fileExists(string $file_path): bool
     {

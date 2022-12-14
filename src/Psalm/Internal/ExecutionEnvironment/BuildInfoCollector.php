@@ -30,14 +30,14 @@ class BuildInfoCollector
      *
      * @var array
      */
-    protected $env;
+    protected array $env;
 
     /**
      * Read environment variables.
      *
      * @var array
      */
-    protected $readEnv = [];
+    protected array $readEnv = [];
 
     public function __construct(array $env)
     {

@@ -17,7 +17,7 @@ class LanguageClient
      *
      * @var ClientTextDocument
      */
-    public $textDocument;
+    public ClientTextDocument $textDocument;
 
     /**
      * The client handler

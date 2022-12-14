@@ -35,7 +35,7 @@ class FileStorageCacheProvider
     /**
      * @var string
      */
-    private $modified_timestamps = '';
+    private string $modified_timestamps = '';
 
     private Config $config;
 

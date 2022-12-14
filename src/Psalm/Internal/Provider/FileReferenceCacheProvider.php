@@ -56,7 +56,7 @@ class FileReferenceCacheProvider
     /**
      * @var Config
      */
-    protected $config;
+    protected Config $config;
 
     public function __construct(Config $config)
     {

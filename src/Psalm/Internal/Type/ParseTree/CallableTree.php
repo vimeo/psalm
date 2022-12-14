@@ -12,12 +12,12 @@ class CallableTree extends ParseTree
     /**
      * @var string
      */
-    public $value;
+    public string $value;
 
     /**
      * @var bool
      */
-    public $terminated = false;
+    public bool $terminated = false;
 
     public function __construct(string $value, ?ParseTree $parent = null)
     {

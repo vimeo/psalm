@@ -30,7 +30,7 @@ trait EmitterTrait
      *
      * @var array<string, array{0: bool, 1: int[], 2: callable[]}>
      */
-    protected $listeners = [];
+    protected array $listeners = [];
 
     /**
      * Subscribe to an event.

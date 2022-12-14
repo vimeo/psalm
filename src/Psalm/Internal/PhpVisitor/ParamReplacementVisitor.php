@@ -21,7 +21,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
     private string $new_name;
 
     /** @var list<FileManipulation> */
-    private $replacements = [];
+    private array $replacements = [];
 
     private bool $new_name_replaced = false;
 

@@ -46,7 +46,7 @@ class Reflection
     /**
      * @var array<string, FunctionStorage>
      */
-    private static $builtin_functions = [];
+    private static array $builtin_functions = [];
 
     public function __construct(ClassLikeStorageProvider $storage_provider, Codebase $codebase)
     {

@@ -97,7 +97,7 @@ class TypeTokenizer
     /**
      * @var array<string, list<array{0: string, 1: int}>>
      */
-    private static $memoized_tokens = [];
+    private static array $memoized_tokens = [];
 
     /**
      * Tokenises a type string into an array of tuples where the first element

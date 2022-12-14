@@ -28,7 +28,7 @@ class ProjectCacheProvider
     /**
      * @var int|null
      */
-    private $last_run;
+    private ?int $last_run = null;
 
     private ?string $composer_lock_hash = null;
 

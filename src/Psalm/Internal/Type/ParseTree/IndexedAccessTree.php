@@ -12,7 +12,7 @@ class IndexedAccessTree extends ParseTree
     /**
      * @var string
      */
-    public $value;
+    public string $value;
 
     public function __construct(string $value, ?ParseTree $parent = null)
     {

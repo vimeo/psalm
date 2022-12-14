@@ -14,7 +14,7 @@ class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract
     /**
      * @var array<string, bool>
      */
-    protected $used_variables = [];
+    protected array $used_variables = [];
 
     public function enterNode(PhpParser\Node $node): ?int
     {

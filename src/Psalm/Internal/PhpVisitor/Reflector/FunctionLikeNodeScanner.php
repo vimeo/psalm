@@ -78,7 +78,7 @@ class FunctionLikeNodeScanner
 
     private FileStorage $file_storage;
 
-    private ?ClassLikeStorage $classlike_storage;
+    private ?ClassLikeStorage $classlike_storage = null;
 
     /**
      * @var array<string, non-empty-array<string, Union>>
@@ -95,7 +95,7 @@ class FunctionLikeNodeScanner
     /**
      * @var ?FunctionLikeStorage
      */
-    public $storage;
+    public ?FunctionLikeStorage $storage = null;
 
     /**
      * @param array<string, non-empty-array<string, Union>> $existing_function_template_types

@@ -12,10 +12,10 @@ class CallableParamTree extends ParseTree
     /**
      * @var bool
      */
-    public $variadic = false;
+    public bool $variadic = false;
 
     /**
      * @var bool
      */
-    public $has_default = false;
+    public bool $has_default = false;
 }

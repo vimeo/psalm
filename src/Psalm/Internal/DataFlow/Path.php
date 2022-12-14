@@ -13,13 +13,13 @@ class Path
 {
     use ImmutableNonCloneableTrait;
 
-    public $type;
+    public string $type;
 
-    public $unescaped_taints;
+    public ?array $unescaped_taints = null;
 
-    public $escaped_taints;
+    public ?array $escaped_taints = null;
 
-    public $length;
+    public int $length;
 
     /**
      * @param ?array<string> $unescaped_taints

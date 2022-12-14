@@ -42,19 +42,19 @@ class Functions
     /**
      * @var array<lowercase-string, FunctionStorage>
      */
-    private static $stubbed_functions;
+    private static array $stubbed_functions;
 
     /** @var FunctionReturnTypeProvider */
-    public $return_type_provider;
+    public FunctionReturnTypeProvider $return_type_provider;
 
     /** @var FunctionExistenceProvider */
-    public $existence_provider;
+    public FunctionExistenceProvider $existence_provider;
 
     /** @var FunctionParamsProvider */
-    public $params_provider;
+    public FunctionParamsProvider $params_provider;
 
     /** @var DynamicFunctionStorageProvider */
-    public $dynamic_storage_provider;
+    public DynamicFunctionStorageProvider $dynamic_storage_provider;
 
     private Reflection $reflection;
 

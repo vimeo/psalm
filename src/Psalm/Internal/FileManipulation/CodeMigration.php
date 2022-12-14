@@ -13,19 +13,19 @@ class CodeMigration
 {
     use ImmutableNonCloneableTrait;
     /** @var string */
-    public $source_file_path;
+    public string $source_file_path;
 
     /** @var int */
-    public $source_start;
+    public int $source_start;
 
     /** @var int */
-    public $source_end;
+    public int $source_end;
 
     /** @var string */
-    public $destination_file_path;
+    public string $destination_file_path;
 
     /** @var int */
-    public $destination_start;
+    public int $destination_start;
 
     public function __construct(
         string $source_file_path,

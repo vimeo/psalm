@@ -46,31 +46,31 @@ class StatementsProvider
     /**
      * @var ?ParserCacheProvider
      */
-    public $parser_cache_provider;
+    public ?ParserCacheProvider $parser_cache_provider = null;
 
     /**
      * @var int|bool
      */
     private $this_modified_time;
 
-    private ?FileStorageCacheProvider $file_storage_cache_provider;
+    private ?FileStorageCacheProvider $file_storage_cache_provider = null;
 
     private StatementsVolatileCache $statements_volatile_cache;
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private $unchanged_members = [];
+    private array $unchanged_members = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private $unchanged_signature_members = [];
+    private array $unchanged_signature_members = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private $changed_members = [];
+    private array $changed_members = [];
 
     /**
      * @var array<string, bool>
@@ -80,12 +80,12 @@ class StatementsProvider
     /**
      * @var array<string, array<int, array{int, int, int, int}>>
      */
-    private $diff_map = [];
+    private array $diff_map = [];
 
     /**
      * @var array<string, array<int, array{int, int}>>
      */
-    private $deletion_ranges = [];
+    private array $deletion_ranges = [];
 
     private static ?Emulative $lexer = null;
 

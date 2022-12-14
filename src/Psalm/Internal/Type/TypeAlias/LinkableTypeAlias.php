@@ -14,15 +14,15 @@ class LinkableTypeAlias implements TypeAlias
 {
     use ImmutableNonCloneableTrait;
 
-    public $declaring_fq_classlike_name;
+    public string $declaring_fq_classlike_name;
 
-    public $alias_name;
+    public string $alias_name;
 
-    public $line_number;
+    public int $line_number;
 
-    public $start_offset;
+    public int $start_offset;
 
-    public $end_offset;
+    public int $end_offset;
 
     public function __construct(
         string $declaring_fq_classlike_name,

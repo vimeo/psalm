@@ -66,7 +66,7 @@ class TypeChecker extends TypeVisitor
 
     private bool $has_errors = false;
 
-    private ?string $calling_method_id;
+    private ?string $calling_method_id = null;
 
     /**
      * @param  array<string>    $suppressed_issues
