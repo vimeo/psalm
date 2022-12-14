@@ -100,9 +100,8 @@ class LanguageServer extends Dispatcher
     /**
      * This should actually be a private property on `parent`
      * @psalm-suppress UnusedProperty
-     * @var JsonMapper
      */
-    protected $mapper;
+    protected JsonMapper $mapper;
 
     public function __construct(
         ProtocolReader $reader,

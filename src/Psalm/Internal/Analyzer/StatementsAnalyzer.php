@@ -138,8 +138,7 @@ class StatementsAnalyzer extends SourceAnalyzer
 
     public NodeDataProvider $node_data;
 
-    /** @var ?DataFlowGraph */
-    public $data_flow_graph;
+    public ?DataFlowGraph $data_flow_graph = null;
 
     /**
      * Locations of foreach values

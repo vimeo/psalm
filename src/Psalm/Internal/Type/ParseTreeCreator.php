@@ -36,11 +36,9 @@ use function strtolower;
  */
 class ParseTreeCreator
 {
-    /** @var ParseTree */
-    private $parse_tree;
+    private ParseTree $parse_tree;
 
-    /** @var ParseTree */
-    private $current_leaf;
+    private ParseTree $current_leaf;
 
     /** @var array<int, array{0: string, 1: int, 2?: string}> */
     private array $type_tokens;

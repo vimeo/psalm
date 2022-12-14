@@ -132,10 +132,7 @@ class ProjectAnalyzer
 
     private FileReferenceProvider $file_reference_provider;
 
-    /**
-     * @var Progress
-     */
-    public $progress;
+    public Progress $progress;
 
     public bool $debug_lines = false;
 

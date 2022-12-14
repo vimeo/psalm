@@ -100,7 +100,6 @@ class PhpStormMetaScanner
 
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
-                    
                     static function (
                         MethodReturnTypeProviderEvent $event
                     ) use (
@@ -154,7 +153,6 @@ class PhpStormMetaScanner
             } elseif ($type_offset !== null) {
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
-                    
                     static function (
                         MethodReturnTypeProviderEvent $event
                     ) use (
@@ -189,7 +187,6 @@ class PhpStormMetaScanner
             } elseif ($element_type_offset !== null) {
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
-                    
                     static function (
                         MethodReturnTypeProviderEvent $event
                     ) use (
@@ -246,7 +243,6 @@ class PhpStormMetaScanner
 
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
-                    
                     static function (
                         FunctionReturnTypeProviderEvent $event
                     ) use (
@@ -297,7 +293,6 @@ class PhpStormMetaScanner
             } elseif ($type_offset !== null) {
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
-                    
                     static function (
                         FunctionReturnTypeProviderEvent $event
                     ) use (
@@ -328,7 +323,6 @@ class PhpStormMetaScanner
             } elseif ($element_type_offset !== null) {
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
-                    
                     static function (
                         FunctionReturnTypeProviderEvent $event
                     ) use (

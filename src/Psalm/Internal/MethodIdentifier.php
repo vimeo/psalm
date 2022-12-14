@@ -21,10 +21,11 @@ class MethodIdentifier
     use ImmutableNonCloneableTrait;
 
     public string $fq_class_name;
-    public $method_name;
+    /** @var lowercase-string  */
+    public string $method_name;
 
     /**
-     * @param  lowercase-string $method_name
+     * @param lowercase-string $method_name
      */
     public function __construct(string $fq_class_name, string $method_name)
     {
