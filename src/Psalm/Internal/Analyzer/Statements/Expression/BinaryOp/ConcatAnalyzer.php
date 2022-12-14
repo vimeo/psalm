@@ -53,9 +53,6 @@ class ConcatAnalyzer
 {
     private const MAX_LITERALS = 64;
 
-    /**
-     * @param Union|null $result_type
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $left,

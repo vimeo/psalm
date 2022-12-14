@@ -12,19 +12,15 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 class CodeMigration
 {
     use ImmutableNonCloneableTrait;
-    /** @var string */
+
     public string $source_file_path;
 
-    /** @var int */
     public int $source_start;
 
-    /** @var int */
     public int $source_end;
 
-    /** @var string */
     public string $destination_file_path;
 
-    /** @var int */
     public int $destination_start;
 
     public function __construct(

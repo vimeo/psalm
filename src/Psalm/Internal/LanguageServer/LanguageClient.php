@@ -14,8 +14,6 @@ class LanguageClient
 {
     /**
      * Handles textDocument/* methods
-     *
-     * @var ClientTextDocument
      */
     public ClientTextDocument $textDocument;
 

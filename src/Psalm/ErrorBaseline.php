@@ -58,7 +58,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      */
     public static function create(
         FileProvider $fileProvider,
@@ -237,7 +236,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
-     *
      */
     private static function writeToFile(
         FileProvider $fileProvider,

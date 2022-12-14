@@ -86,7 +86,6 @@ class InternalCallMapHandler
     /**
      * @param  array<int, TCallable>  $callables
      * @param  list<PhpParser\Node\Arg>                 $args
-     *
      */
     public static function getMatchingCallableFromCallMapOptions(
         Codebase $codebase,

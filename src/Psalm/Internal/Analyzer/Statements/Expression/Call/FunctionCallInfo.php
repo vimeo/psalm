@@ -22,14 +22,8 @@ class FunctionCallInfo
      */
     public ?bool $function_exists = null;
 
-    /**
-     * @var bool
-     */
     public bool $is_stubbed = false;
 
-    /**
-     * @var bool
-     */
     public bool $in_call_map = false;
 
     /**
@@ -57,14 +51,8 @@ class FunctionCallInfo
      */
     public ?PhpParser\Node\Name $new_function_name = null;
 
-    /**
-     * @var bool
-     */
     public bool $allow_named_args = true;
 
-    /**
-     * @var array
-     */
     public array $byref_uses = [];
 
     /**

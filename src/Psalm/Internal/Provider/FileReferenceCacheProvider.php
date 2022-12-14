@@ -53,9 +53,6 @@ class FileReferenceCacheProvider
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
 
-    /**
-     * @var Config
-     */
     protected Config $config;
 
     public function __construct(Config $config)

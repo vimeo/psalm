@@ -90,9 +90,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     protected $function;
 
-    /**
-     * @var Codebase
-     */
     protected Codebase $codebase;
 
     /**
@@ -100,9 +97,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     protected array $suppressed_issues;
 
-    /**
-     * @var bool
-     */
     protected bool $is_static = false;
 
     /**
@@ -122,19 +116,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     protected static array $no_effects_hashes = [];
 
-    /**
-     * @var bool
-     */
     public bool $track_mutations = false;
 
-    /**
-     * @var bool
-     */
     public bool $inferred_impure = false;
 
-    /**
-     * @var bool
-     */
     public bool $inferred_has_mutation = false;
 
     /**
@@ -144,9 +129,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     public array $param_nodes = [];
 
-    /**
-     * @var FunctionLikeStorage
-     */
     protected FunctionLikeStorage $storage;
 
     /**
@@ -1781,7 +1763,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Adds a suppressed issue, useful when creating a method checker from scratch
-     *
      */
     public function addSuppressedIssue(string $issue_name): void
     {

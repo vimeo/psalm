@@ -301,7 +301,6 @@ class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_changed_members
-     *
      */
     public function addChangedMembers(array $more_changed_members): void
     {
@@ -318,7 +317,6 @@ class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_unchanged_members
-     *
      */
     public function addUnchangedSignatureMembers(array $more_unchanged_members): void
     {
@@ -335,7 +333,6 @@ class StatementsProvider
 
     /**
      * @param array<string, bool> $errors
-     *
      */
     public function addErrors(array $errors): void
     {
@@ -371,7 +368,6 @@ class StatementsProvider
 
     /**
      * @param array<string, array<int, array{int, int, int, int}>> $diff_map
-     *
      */
     public function addDiffMap(array $diff_map): void
     {
@@ -380,7 +376,6 @@ class StatementsProvider
 
     /**
      * @param array<string, array<int, array{int, int}>> $deletion_ranges
-     *
      */
     public function addDeletionRanges(array $deletion_ranges): void
     {

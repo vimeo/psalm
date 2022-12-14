@@ -54,28 +54,18 @@ class Methods
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 
-    /**
-     * @var bool
-     */
     public bool $collect_locations = false;
 
-    /**
-     * @var FileReferenceProvider
-     */
     public FileReferenceProvider $file_reference_provider;
 
     private ClassLikes $classlikes;
 
-    /** @var MethodReturnTypeProvider */
     public MethodReturnTypeProvider $return_type_provider;
 
-    /** @var MethodParamsProvider */
     public MethodParamsProvider $params_provider;
 
-    /** @var MethodExistenceProvider */
     public MethodExistenceProvider $existence_provider;
 
-    /** @var MethodVisibilityProvider */
     public MethodVisibilityProvider $visibility_provider;
 
     public function __construct(
@@ -560,7 +550,6 @@ class Methods
 
     /**
      * @param  list<PhpParser\Node\Arg>|null $args
-     *
      */
     public function getMethodReturnType(
         MethodIdentifier $method_id,
@@ -918,10 +907,6 @@ class Methods
         return $this->getStorage($method_id)->returns_by_ref;
     }
 
-    /**
-     * @param  CodeLocation|null    $defined_location
-     *
-     */
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
         CodeLocation &$defined_location = null
@@ -953,7 +938,6 @@ class Methods
     /**
      * @param lowercase-string $method_name_lc
      * @param lowercase-string $declaring_method_name_lc
-     *
      */
     public function setDeclaringMethodId(
         string $fq_class_name,
@@ -972,7 +956,6 @@ class Methods
     /**
      * @param lowercase-string $method_name_lc
      * @param lowercase-string $appearing_method_name_lc
-     *
      */
     public function setAppearingMethodId(
         string $fq_class_name,

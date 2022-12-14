@@ -17,19 +17,10 @@ use Psalm\Internal\LanguageServer\LanguageServer;
  */
 class Workspace
 {
-    /**
-     * @var LanguageServer
-     */
     protected LanguageServer $server;
 
-    /**
-     * @var Codebase
-     */
     protected Codebase $codebase;
 
-    /**
-     * @var ProjectAnalyzer
-     */
     protected ProjectAnalyzer $project_analyzer;
 
     public function __construct(

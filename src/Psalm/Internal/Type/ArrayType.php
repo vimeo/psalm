@@ -14,13 +14,10 @@ use Psalm\Type\Union;
  */
 class ArrayType
 {
-    /** @var Union */
     public Union $key;
 
-    /** @var Union */
     public Union $value;
 
-    /** @var bool */
     public bool $is_list;
 
     public function __construct(Union $key, Union $value, bool $is_list)

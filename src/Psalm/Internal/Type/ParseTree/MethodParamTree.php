@@ -9,24 +9,12 @@ use Psalm\Internal\Type\ParseTree;
  */
 class MethodParamTree extends ParseTree
 {
-    /**
-     * @var bool
-     */
     public bool $variadic;
 
-    /**
-     * @var string
-     */
     public string $default = '';
 
-    /**
-     * @var bool
-     */
     public bool $byref;
 
-    /**
-     * @var string
-     */
     public string $name;
 
     public function __construct(

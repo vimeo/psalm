@@ -13,59 +13,26 @@ class DataFlowNodeData
 {
     use ImmutableNonCloneableTrait;
 
-    /**
-     * @var int
-     */
     public int $line_from;
 
-    /**
-     * @var int
-     */
     public int $line_to;
 
-    /**
-     * @var string
-     */
     public string $label;
 
-    /**
-     * @var string
-     */
     public string $file_name;
 
-    /**
-     * @var string
-     */
     public string $file_path;
 
-    /**
-     * @var string
-     */
     public string $snippet;
 
-    /**
-     * @var int
-     */
     public int $from;
 
-    /**
-     * @var int
-     */
     public int $to;
 
-    /**
-     * @var int
-     */
     public int $snippet_from;
 
-    /**
-     * @var int
-     */
     public int $column_from;
 
-    /**
-     * @var int
-     */
     public int $column_to;
 
     public function __construct(

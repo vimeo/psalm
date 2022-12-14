@@ -41,16 +41,13 @@ class TypeCombination
     /** @var array<int, bool>|null */
     public ?array $array_min_counts = [];
 
-    /** @var bool */
     public bool $array_sometimes_filled = false;
 
-    /** @var bool */
     public bool $array_always_filled = true;
 
     /** @var array<string|int, Union> */
     public array $objectlike_entries = [];
 
-    /** @var bool */
     public bool $objectlike_sealed = true;
 
     /** @var ?Union */
@@ -59,10 +56,8 @@ class TypeCombination
     /** @var ?Union */
     public ?Union $objectlike_value_type = null;
 
-    /** @var bool */
     public bool $empty_mixed = false;
 
-    /** @var bool */
     public bool $non_empty_mixed = false;
 
     /** @var ?bool */

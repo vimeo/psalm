@@ -114,9 +114,6 @@ class ProjectAnalyzer
      */
     private Config $config;
 
-    /**
-     * @var self
-     */
     public static ProjectAnalyzer $instance;
 
     /**
@@ -140,22 +137,12 @@ class ProjectAnalyzer
      */
     public $progress;
 
-    /**
-     * @var bool
-     */
     public bool $debug_lines = false;
 
-    /**
-     * @var bool
-     */
     public bool $debug_performance = false;
 
-    /**
-     * @var bool
-     */
     public bool $show_issues = true;
 
-    /** @var int */
     public int $threads;
 
     /**
@@ -163,19 +150,10 @@ class ProjectAnalyzer
      */
     private array $issues_to_fix = [];
 
-    /**
-     * @var bool
-     */
     public bool $dry_run = false;
 
-    /**
-     * @var bool
-     */
     public bool $full_run = false;
 
-    /**
-     * @var bool
-     */
     public bool $only_replace_php_types_with_non_docblock_types = false;
 
     /**
@@ -183,9 +161,6 @@ class ProjectAnalyzer
      */
     public ?int $onchange_line_limit = null;
 
-    /**
-     * @var bool
-     */
     public bool $provide_completion = false;
 
     /**
@@ -247,15 +222,11 @@ class ProjectAnalyzer
 
     /**
      * When this is true, the language server will send the diagnostic code with a help link.
-     *
-     * @var bool
      */
     public bool $language_server_use_extended_diagnostic_codes = false;
 
     /**
      * If this is true then the language server will send log messages to the client with additional information.
-     *
-     * @var bool
      */
     public bool $language_server_verbose = false;
 
@@ -1112,7 +1083,6 @@ class ProjectAnalyzer
 
     /**
      * @param  array<string>    $file_list
-     *
      */
     private function checkDiffFilesWithConfig(Config $config, array $file_list = []): void
     {
@@ -1280,7 +1250,6 @@ class ProjectAnalyzer
 
     /**
      * @param array<string, string> $to_refactor
-     *
      */
     public function refactorCodeAfterCompletion(array $to_refactor): void
     {
@@ -1318,7 +1287,6 @@ class ProjectAnalyzer
     /**
      * @param array<string, bool> $issues
      * @throws UnsupportedIssueToFixException
-     *
      */
     public function setIssuesToFix(array $issues): void
     {

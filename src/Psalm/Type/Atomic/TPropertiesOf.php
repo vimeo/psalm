@@ -54,7 +54,6 @@ final class TPropertiesOf extends Atomic
     }
 
     /**
-     * @param TokenName $tokenName
      * @return self::VISIBILITY_*|null
      */
     public static function filterForTokenName(string $token_name): ?int

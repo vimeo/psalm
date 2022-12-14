@@ -74,24 +74,12 @@ class LanguageServer extends Dispatcher
      */
     public ?ServerWorkspace $workspace = null;
 
-    /**
-     * @var ProtocolReader
-     */
     protected ProtocolReader $protocolReader;
 
-    /**
-     * @var ProtocolWriter
-     */
     protected ProtocolWriter $protocolWriter;
 
-    /**
-     * @var LanguageClient
-     */
     public LanguageClient $client;
 
-    /**
-     * @var ProjectAnalyzer
-     */
     protected ProjectAnalyzer $project_analyzer;
 
     /**
@@ -311,7 +299,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * @psalm-suppress PossiblyUnusedMethod
-     *
      */
     public function initialized(): void
     {
@@ -367,7 +354,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * @param array<string, string> $uris
-     *
      */
     public function emitIssues(array $uris): void
     {
@@ -458,7 +444,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * A notification to ask the server to exit its process.
-     *
      */
     public function exit(): void
     {
@@ -538,8 +523,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Transforms URI into file path
-     *
-     *
      */
     public static function uriToPath(string $uri): string
     {

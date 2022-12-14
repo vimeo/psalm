@@ -23,7 +23,6 @@ class ObjectComparator
     /**
      * @param  TNamedObject|TTemplateParam|TIterable  $input_type_part
      * @param  TNamedObject|TTemplateParam|TIterable  $container_type_part
-     *
      */
     public static function isShallowlyContainedBy(
         Codebase $codebase,
@@ -122,7 +121,6 @@ class ObjectComparator
     /**
      * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties  $intersection_input_type
      * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties  $intersection_container_type
-     *
      */
     private static function isIntersectionShallowlyContainedBy(
         Codebase $codebase,

@@ -9,19 +9,10 @@ use Psalm\Type\Union;
  */
 class AssignedProperty
 {
-    /**
-     * @var Union
-     */
     public Union $property_type;
 
-    /**
-     * @var string
-     */
     public string $id;
 
-    /**
-     * @var Union
-     */
     public Union $assignment_type;
 
     public function __construct(

@@ -10,9 +10,6 @@ use Psalm\Type\Union;
  */
 class CaseScope
 {
-    /**
-     * @var Context
-     */
     public Context $parent_context;
 
     /**

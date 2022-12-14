@@ -389,7 +389,6 @@ final class Codebase
 
     /**
      * @param array<string> $candidate_files
-     *
      */
     public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files): void
     {
@@ -465,7 +464,6 @@ final class Codebase
 
     /**
      * @param 'always'|'auto' $find_unused_code
-     *
      */
     public function reportUnusedCode(string $find_unused_code = 'auto'): void
     {
@@ -483,7 +481,6 @@ final class Codebase
 
     /**
      * @param array<string, string> $files_to_analyze
-     *
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -493,7 +490,6 @@ final class Codebase
 
     /**
      * Scans all files their related files
-     *
      */
     public function scanFiles(int $threads = 1): void
     {
@@ -848,7 +844,6 @@ final class Codebase
 
     /**
      * @param  string|MethodIdentifier $method_id
-     *
      */
     public function isVariadic($method_id): bool
     {
@@ -858,7 +853,6 @@ final class Codebase
     /**
      * @param  string|MethodIdentifier $method_id
      * @param  list<Arg> $call_args
-     *
      */
     public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Union
     {
@@ -872,7 +866,6 @@ final class Codebase
 
     /**
      * @param  string|MethodIdentifier $method_id
-     *
      */
     public function getMethodReturnsByRef($method_id): bool
     {
@@ -881,8 +874,6 @@ final class Codebase
 
     /**
      * @param  string|MethodIdentifier $method_id
-     * @param  CodeLocation|null       $defined_location
-     *
      */
     public function getMethodReturnTypeLocation(
         $method_id,
@@ -896,7 +887,6 @@ final class Codebase
 
     /**
      * @param  string|MethodIdentifier $method_id
-     *
      */
     public function getDeclaringMethodId($method_id): ?string
     {
@@ -909,7 +899,6 @@ final class Codebase
      * Get the class this method appears in (vs is declared in, which could give a trait)
      *
      * @param  string|MethodIdentifier $method_id
-     *
      */
     public function getAppearingMethodId($method_id): ?string
     {
@@ -930,7 +919,6 @@ final class Codebase
 
     /**
      * @param  string|MethodIdentifier $method_id
-     *
      */
     public function getCasedMethodId($method_id): string
     {
@@ -986,8 +974,6 @@ final class Codebase
     }
 
     /**
-     * @param string $file_path
-     * @param string $symbol
      * @return array{ type: string, description?: string|null}|null
      */
     public function getSymbolInformation(string $file_path, string $symbol): ?array

@@ -685,8 +685,6 @@ abstract class Type
 
     /**
      * Combines two union types into one via an intersection
-     *
-     *
      */
     public static function intersectUnionTypes(
         ?Union $type_1,

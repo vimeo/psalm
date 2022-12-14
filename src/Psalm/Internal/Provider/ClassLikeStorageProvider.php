@@ -97,7 +97,6 @@ class ClassLikeStorageProvider
 
     /**
      * @param array<string, ClassLikeStorage> $more
-     *
      */
     public function addMore(array $more): void
     {

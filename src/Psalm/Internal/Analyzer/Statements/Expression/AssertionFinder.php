@@ -3476,8 +3476,6 @@ class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall $expr
-     * @param StatementsAnalyzer $source
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getIsaAssertions(
@@ -3582,9 +3580,6 @@ class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall $expr
-     * @param StatementsAnalyzer $source
-     * @param string|null $first_var_name
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getInarrayAssertions(
@@ -3662,9 +3657,6 @@ class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\FuncCall $expr
-     * @param Union|null $first_var_type
-     * @param string|null $first_var_name
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getArrayKeyExistsAssertions(

@@ -199,7 +199,6 @@ class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
-     *
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -209,7 +208,6 @@ class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
-     *
      */
     public function addFilesToShowResults(array $files_to_analyze): void
     {
@@ -218,7 +216,6 @@ class Analyzer
 
     /**
      * @param array<string> $files_to_update
-     *
      */
     public function setFilesToUpdate(array $files_to_update): void
     {
@@ -1072,7 +1069,6 @@ class Analyzer
 
     /**
      * @param array<string, array<string, bool>> $names
-     *
      */
     public function addMixedMemberNames(array $names): void
     {
@@ -1102,7 +1098,6 @@ class Analyzer
 
     /**
      * @param  list{int, int} $mixed_counts
-     *
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void
     {

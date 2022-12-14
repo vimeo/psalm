@@ -11,102 +11,68 @@ use const STR_PAD_LEFT;
  */
 class IssueData
 {
-    /**
-     * @var string
-     */
     public string $severity;
 
-    /**
-     * @var int
-     */
     public int $line_from;
 
-    /**
-     * @var int
-     */
     public int $line_to;
 
     /**
-     * @var string
      * @readonly
      */
     public string $type;
 
     /**
-     * @var string
      * @readonly
      */
     public string $message;
 
     /**
-     * @var string
      * @readonly
      */
     public string $file_name;
 
     /**
-     * @var string
      * @readonly
      */
     public string $file_path;
 
     /**
-     * @var string
      * @readonly
      */
     public string $snippet;
 
     /**
-     * @var string
      * @readonly
      */
     public string $selected_text;
 
-    /**
-     * @var int
-     */
     public int $from;
 
-    /**
-     * @var int
-     */
     public int $to;
 
-    /**
-     * @var int
-     */
     public int $snippet_from;
 
-    /**
-     * @var int
-     */
     public int $snippet_to;
 
     /**
-     * @var int
      * @readonly
      */
     public int $column_from;
 
     /**
-     * @var int
      * @readonly
      */
     public int $column_to;
 
-    /**
-     * @var int
-     */
     public int $error_level;
 
     /**
-     * @var int
      * @readonly
      */
     public int $shortcode;
 
     /**
-     * @var string
      * @readonly
      */
     public string $link;

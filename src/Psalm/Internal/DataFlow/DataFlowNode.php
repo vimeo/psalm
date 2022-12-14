@@ -13,13 +13,11 @@ use function strtolower;
  */
 class DataFlowNode
 {
-    /** @var string */
     public string $id;
 
     /** @var ?string */
     public ?string $unspecialized_id = null;
 
-    /** @var string */
     public string $label;
 
     /** @var ?CodeLocation */

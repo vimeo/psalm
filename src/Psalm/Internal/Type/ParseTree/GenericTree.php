@@ -9,14 +9,8 @@ use Psalm\Internal\Type\ParseTree;
  */
 class GenericTree extends ParseTree
 {
-    /**
-     * @var string
-     */
     public string $value;
 
-    /**
-     * @var bool
-     */
     public bool $terminated = false;
 
     public function __construct(string $value, ?ParseTree $parent = null)

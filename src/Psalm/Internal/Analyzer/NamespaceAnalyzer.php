@@ -208,8 +208,6 @@ class NamespaceAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param non-empty-string $fullyQualifiedClassName, e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
-     *
      * @return non-empty-string , e.g. 'Psalm'
      *
      * @psalm-pure

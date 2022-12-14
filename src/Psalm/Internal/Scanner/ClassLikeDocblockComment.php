@@ -11,22 +11,16 @@ class ClassLikeDocblockComment
 {
     /**
      * Whether or not the class is deprecated
-     *
-     * @var bool
      */
     public bool $deprecated = false;
 
     /**
      * Whether or not the class is internal
-     *
-     * @var bool
      */
     public bool $internal = false;
 
     /**
      * Whether or not the class is final
-     *
-     * @var bool
      */
     public bool $final = false;
 
@@ -72,39 +66,18 @@ class ClassLikeDocblockComment
      */
     public array $methods = [];
 
-    /**
-     * @var bool
-     */
     public bool $sealed_properties = false;
 
-    /**
-     * @var bool
-     */
     public bool $sealed_methods = false;
 
-    /**
-     * @var bool
-     */
     public bool $override_property_visibility = false;
 
-    /**
-     * @var bool
-     */
     public bool $override_method_visibility = false;
 
-    /**
-     * @var bool
-     */
     public bool $mutation_free = false;
 
-    /**
-     * @var bool
-     */
     public bool $external_mutation_free = false;
 
-    /**
-     * @var bool
-     */
     public bool $taint_specialize = false;
 
     /**
@@ -117,22 +90,12 @@ class ClassLikeDocblockComment
      */
     public array $imported_types = [];
 
-    /**
-     * @var bool
-     */
     public bool $consistent_constructor = false;
 
-    /**
-     * @var bool
-     */
     public bool $consistent_templates = false;
 
-    /** @var bool */
     public bool $stub_override = false;
 
-    /**
-     * @var null|string
-     */
     public ?string $extension_requirement = null;
 
     /**

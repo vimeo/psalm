@@ -7,22 +7,16 @@ namespace Psalm\Internal\Analyzer;
  */
 class ClassLikeNameOptions
 {
-    /** @var bool */
     public bool $inferred;
 
-    /** @var bool */
     public bool $allow_trait;
 
-    /** @var bool */
     public bool $allow_interface;
 
-    /** @var bool */
     public bool $allow_enum;
 
-    /** @var bool */
     public bool $from_docblock;
 
-    /** @var bool */
     public bool $from_attribute;
 
     public function __construct(

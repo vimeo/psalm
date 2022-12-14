@@ -159,7 +159,6 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     /**
      * @param  string[]     $suppressed_issues
      * @param  lowercase-string|null  $calling_method_id
-     *
      */
     public static function checkMethodExists(
         Codebase $codebase,

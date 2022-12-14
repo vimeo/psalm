@@ -29,29 +29,14 @@ class Properties
 
     private ClassLikes $classlikes;
 
-    /**
-     * @var bool
-     */
     public bool $collect_locations = false;
 
-    /**
-     * @var FileReferenceProvider
-     */
     public FileReferenceProvider $file_reference_provider;
 
-    /**
-     * @var PropertyExistenceProvider
-     */
     public PropertyExistenceProvider $property_existence_provider;
 
-    /**
-     * @var PropertyTypeProvider
-     */
     public PropertyTypeProvider $property_type_provider;
 
-    /**
-     * @var PropertyVisibilityProvider
-     */
     public PropertyVisibilityProvider $property_visibility_provider;
 
 
@@ -70,7 +55,6 @@ class Properties
 
     /**
      * Whether or not a given property exists
-     *
      */
     public function propertyExists(
         string $property_id,

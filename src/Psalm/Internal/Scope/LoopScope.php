@@ -10,19 +10,10 @@ use Psalm\Type\Union;
  */
 class LoopScope
 {
-    /**
-     * @var int
-     */
     public int $iteration_count = 0;
 
-    /**
-     * @var Context
-     */
     public Context $loop_context;
 
-    /**
-     * @var Context
-     */
     public Context $loop_parent_context;
 
     /**

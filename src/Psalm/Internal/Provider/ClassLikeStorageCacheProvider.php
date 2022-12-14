@@ -35,9 +35,6 @@ class ClassLikeStorageCacheProvider
 {
     private Config $config;
 
-    /**
-     * @var string
-     */
     private string $modified_timestamps = '';
 
     private const CLASS_CACHE_DIRECTORY = 'class_cache';

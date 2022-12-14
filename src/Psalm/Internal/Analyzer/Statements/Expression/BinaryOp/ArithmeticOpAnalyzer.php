@@ -929,7 +929,6 @@ class ArithmeticOpAnalyzer
     }
 
     /**
-     * @param PhpParser\Node $operation
      * @param float|int      $operand1
      * @param float|int      $operand2
      */

@@ -18,19 +18,10 @@ use Psalm\Storage\FileStorage;
  */
 class FileScanner implements FileSource
 {
-    /**
-     * @var string
-     */
     public string $file_path;
 
-    /**
-     * @var string
-     */
     public string $file_name;
 
-    /**
-     * @var bool
-     */
     public bool $will_analyze;
 
     public function __construct(string $file_path, string $file_name, bool $will_analyze)

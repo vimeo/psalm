@@ -40,8 +40,6 @@ class TemplateResult
 
     /**
      * If set to true then we shouldn't update the template bounds
-     *
-     * @var bool
      */
     public bool $readonly = false;
 

@@ -11,10 +11,8 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 class ClassConstant extends UnresolvedConstantComponent
 {
-    /** @var string */
     public string $fqcln;
 
-    /** @var string */
     public string $name;
 
     public function __construct(string $fqcln, string $name)

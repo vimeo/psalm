@@ -471,7 +471,6 @@ class Reflection
     /**
      * @param lowercase-string $fq_class_name
      * @param lowercase-string $parent_class
-     *
      */
     private function registerInheritedProperties(
         string $fq_class_name,

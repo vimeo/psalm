@@ -29,7 +29,6 @@ class FileManipulationBuffer
 
     /**
      * @param FileManipulation[] $file_manipulations
-     *
      */
     public static function add(string $file_path, array $file_manipulations): void
     {

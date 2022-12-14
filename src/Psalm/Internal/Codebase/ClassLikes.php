@@ -74,9 +74,6 @@ class ClassLikes
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 
-    /**
-     * @var FileReferenceProvider
-     */
     public FileReferenceProvider $file_reference_provider;
 
     /**
@@ -139,14 +136,8 @@ class ClassLikes
      */
     private array $trait_nodes = [];
 
-    /**
-     * @var bool
-     */
     public bool $collect_references = false;
 
-    /**
-     * @var bool
-     */
     public bool $collect_locations = false;
 
     private StatementsProvider $statements_provider;
@@ -2281,7 +2272,6 @@ class ClassLikes
      *     7: array<string, bool>,
      *     8: array<string, bool>,
      * } $thread_data
-     *
      */
     public function addThreadData(array $thread_data): void
     {

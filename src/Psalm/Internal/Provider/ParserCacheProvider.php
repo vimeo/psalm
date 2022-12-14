@@ -255,7 +255,6 @@ class ParserCacheProvider
 
     /**
      * @param array<string, string> $file_content_hashes
-     *
      */
     public function addNewFileContentHashes(array $file_content_hashes): void
     {

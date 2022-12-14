@@ -49,7 +49,6 @@ final class RemoteInfo
 
     /**
      * Return remote name.
-     *
      */
     public function getName(): ?string
     {
@@ -72,7 +71,6 @@ final class RemoteInfo
 
     /**
      * Return remote URL.
-     *
      */
     public function getUrl(): ?string
     {

@@ -15,24 +15,12 @@ class AtomicMethodCallAnalysisResult
      */
     public ?Union $return_type = null;
 
-    /**
-     * @var bool
-     */
     public bool $returns_by_ref = false;
 
-    /**
-     * @var bool
-     */
     public bool $has_mock = false;
 
-    /**
-     * @var bool
-     */
     public bool $has_valid_method_call_type = false;
 
-    /**
-     * @var bool
-     */
     public bool $has_mixed_method_call = false;
 
     /**
@@ -60,14 +48,8 @@ class AtomicMethodCallAnalysisResult
      */
     public array $non_existent_magic_method_ids = [];
 
-    /**
-     * @var bool
-     */
     public bool $check_visibility = true;
 
-    /**
-     * @var bool
-     */
     public bool $too_many_arguments = true;
 
     /**
@@ -75,9 +57,6 @@ class AtomicMethodCallAnalysisResult
      */
     public array $too_many_arguments_method_ids = [];
 
-    /**
-     * @var bool
-     */
     public bool $too_few_arguments = false;
 
     /**
@@ -85,8 +64,5 @@ class AtomicMethodCallAnalysisResult
      */
     public array $too_few_arguments_method_ids = [];
 
-    /**
-     * @var bool
-     */
     public bool $can_memoize = false;
 }

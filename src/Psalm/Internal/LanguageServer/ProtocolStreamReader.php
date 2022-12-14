@@ -31,8 +31,6 @@ class ProtocolStreamReader implements ProtocolReader
     /**
      * This is checked by ProtocolStreamReader so that it will stop reading from streams in the forked process.
      * There could be buffered bytes in stdin/over TCP, those would be processed by TCP if it were not for this check.
-     *
-     * @var bool
      */
     private bool $is_accepting_new_requests = true;
     private int $parsing_mode = self::PARSE_HEADERS;

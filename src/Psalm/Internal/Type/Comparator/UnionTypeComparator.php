@@ -352,8 +352,6 @@ class UnionTypeComparator
 
     /**
      * Used for comparing signature typehints, uses PHP's light contravariance rules
-     *
-     *
      */
     public static function isContainedByInPhp(
         ?Union $input_type,
@@ -452,7 +450,6 @@ class UnionTypeComparator
 
     /**
      * Can any part of the $type1 be equal to any part of $type2
-     *
      */
     public static function canExpressionTypesBeIdentical(
         Codebase $codebase,

@@ -32,9 +32,6 @@ use const PHP_VERSION_ID;
  */
 class FileStorageCacheProvider
 {
-    /**
-     * @var string
-     */
     private string $modified_timestamps = '';
 
     private Config $config;

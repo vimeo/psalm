@@ -44,16 +44,12 @@ class Functions
      */
     private static array $stubbed_functions;
 
-    /** @var FunctionReturnTypeProvider */
     public FunctionReturnTypeProvider $return_type_provider;
 
-    /** @var FunctionExistenceProvider */
     public FunctionExistenceProvider $existence_provider;
 
-    /** @var FunctionParamsProvider */
     public FunctionParamsProvider $params_provider;
 
-    /** @var DynamicFunctionStorageProvider */
     public DynamicFunctionStorageProvider $dynamic_storage_provider;
 
     private Reflection $reflection;

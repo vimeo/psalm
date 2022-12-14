@@ -27,7 +27,6 @@ final class TTraitString extends TString
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

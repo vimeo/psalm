@@ -46,6 +46,7 @@
         "ext-curl": "*",
         "bamarni/composer-bin-plugin": "^1.4",
         "brianium/paratest": "^6.0",
+        "friendsofphp/php-cs-fixer": "^3.13",
         "mockery/mockery": "^1.5",
         "nunomaduro/mock-final-classes": "^1.1",
         "php-parallel-lint/php-parallel-lint": "^1.2",
@@ -108,6 +109,8 @@
     "scripts": {
         "cs": "phpcs -p",
         "cs-fix": "phpcbf -p",
+        "php-cs-fixer-dry-run": "vendor/bin/php-cs-fixer fix --diff --verbose --dry-run",
+        "php-cs-fixer": "vendor/bin/php-cs-fixer fix --diff --verbose",
         "lint": "parallel-lint ./src ./tests",
         "phpunit": "paratest --runner=WrapperRunner",
         "phpunit-std": "phpunit",
@@ -123,6 +126,8 @@
     "scripts-descriptions": {
         "cs": "Checks that the code conforms to the coding standard.",
         "cs-fix": "Automatically correct coding standard violations.",
+        "php-cs-fixer-dry-run": "Checks that the code conforms to the coding standard.",
+        "php-cs-fixer": "Automatically correct coding standard violations.",
         "lint": "Runs unit tests.",
         "phpunit": "Runs unit tests in parallel.",
         "phpunit-std": "Runs unit tests.",

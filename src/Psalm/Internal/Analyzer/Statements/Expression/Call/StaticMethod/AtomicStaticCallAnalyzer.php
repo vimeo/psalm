@@ -1079,7 +1079,6 @@ class AtomicStaticCallAnalyzer
      * Returns the pseudo method if exists, with its defining class storage.
      * If the method is not declared, null is returned.
      *
-     * @param Codebase $codebase
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
      *
@@ -1114,10 +1113,6 @@ class AtomicStaticCallAnalyzer
      * Forward static call to instance call, using `VirtualMethodCall` and `MethodCallAnalyzer::analyze()`
      * The resolved method return type will be set as type of the $stmt node.
      *
-     * @param StatementsAnalyzer $statements_analyzer
-     * @param PhpParser\Node\Expr\StaticCall $stmt
-     * @param PhpParser\Node\Identifier $stmt_name
-     * @param Context $context
      * @param string $virtual_var_name Temporary var name to use for create the fake MethodCall statement.
      * @param bool $always_set_node_type If true, when the method has no declared typed, mixed will be set on node.
      *

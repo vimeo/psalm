@@ -70,7 +70,6 @@ trait GenericTrait
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

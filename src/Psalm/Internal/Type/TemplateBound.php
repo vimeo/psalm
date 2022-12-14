@@ -9,9 +9,6 @@ use Psalm\Type\Union;
  */
 class TemplateBound
 {
-    /**
-     * @var Union
-     */
     public Union $type;
 
     /**
@@ -20,8 +17,6 @@ class TemplateBound
      * In the type Foo<T, Bar<T, array<T>>> the type T appears at three different depths.
      *
      * The shallowest-appearance of the template takes prominence when inferring the type of T.
-     *
-     * @var int
      */
     public int $appearance_depth;
 

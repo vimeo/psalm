@@ -26,8 +26,6 @@ class GitInfoCollector
 {
     /**
      * Git command.
-     *
-     * @var SystemCommandExecutor
      */
     protected SystemCommandExecutor $executor;
 

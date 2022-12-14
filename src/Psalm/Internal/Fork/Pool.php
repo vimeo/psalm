@@ -95,7 +95,6 @@ class Pool
         . 'Relevant info: https://bugs.php.net/bug.php?id=77260';
 
     /**
-     * @param Config $config
      * @param array<int, array<int, mixed>> $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
@@ -483,7 +482,6 @@ class Pool
 
     /**
      * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
-     *
      */
     public function didHaveError(): bool
     {

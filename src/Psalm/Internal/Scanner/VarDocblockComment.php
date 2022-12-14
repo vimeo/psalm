@@ -14,37 +14,21 @@ class VarDocblockComment
      */
     public ?Union $type = null;
 
-    /**
-     * @var string|null
-     */
     public ?string $var_id = null;
 
-    /**
-     * @var int|null
-     */
     public ?int $line_number = null;
 
-    /**
-     * @var int|null
-     */
     public ?int $type_start = null;
 
-    /**
-     * @var int|null
-     */
     public ?int $type_end = null;
 
     /**
      * Whether or not the property is deprecated
-     *
-     * @var bool
      */
     public bool $deprecated = false;
 
     /**
      * Whether or not the property is internal
-     *
-     * @var bool
      */
     public bool $internal = false;
 
@@ -57,15 +41,11 @@ class VarDocblockComment
 
     /**
      * Whether or not the property is readonly
-     *
-     * @var bool
      */
     public bool $readonly = false;
 
     /**
      * Whether or not to allow mutation by internal methods
-     *
-     * @var bool
      */
     public bool $allow_private_mutation = false;
 

@@ -10,10 +10,8 @@ use Psalm\Internal\Clause;
  */
 class IfConditionalScope
 {
-    /** @var Context */
     public Context $if_context;
 
-    /** @var Context */
     public Context $post_if_context;
 
     /**

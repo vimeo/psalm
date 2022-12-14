@@ -36,7 +36,6 @@ class NodeDataProvider implements NodeTypeProvider
     /** @var SplObjectStorage<Node, array<int, Possibilities>> */
     private SplObjectStorage $node_if_false_assertions;
 
-    /** @var bool */
     public bool $cache_assertions = true;
 
     public function __construct()

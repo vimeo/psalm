@@ -20,19 +20,10 @@ use function error_log;
  */
 class ClientHandler
 {
-    /**
-     * @var ProtocolReader
-     */
     public ProtocolReader $protocolReader;
 
-    /**
-     * @var ProtocolWriter
-     */
     public ProtocolWriter $protocolWriter;
 
-    /**
-     * @var IdGenerator
-     */
     public IdGenerator $idGenerator;
 
     public function __construct(ProtocolReader $protocolReader, ProtocolWriter $protocolWriter)

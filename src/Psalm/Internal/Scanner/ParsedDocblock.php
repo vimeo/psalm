@@ -10,10 +10,8 @@ use function trim;
  */
 class ParsedDocblock
 {
-    /** @var string */
     public string $description;
 
-    /** @var string */
     public string $first_line_padding;
 
     /** @var array<string, array<int, string>> */
@@ -81,7 +79,6 @@ class ParsedDocblock
 
     /**
      * Sets whether a new line should be added between the annotations or not.
-     *
      */
     public static function addNewLineBetweenAnnotations(bool $should = true): void
     {

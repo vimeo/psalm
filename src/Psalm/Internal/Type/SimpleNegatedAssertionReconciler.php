@@ -514,7 +514,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
     /**
      * @param   string[]  $suppressed_issues
-     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function reconcileNotNonEmptyCountable(
         Assertion $assertion,

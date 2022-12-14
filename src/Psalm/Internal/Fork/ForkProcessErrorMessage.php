@@ -12,7 +12,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 class ForkProcessErrorMessage implements ForkMessage
 {
     use ImmutableNonCloneableTrait;
-    /** @var string */
+    
     public string $message;
 
     public function __construct(string $message)

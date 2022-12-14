@@ -647,7 +647,6 @@ class Config
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @throws ConfigException if a config path is not found
-     *
      */
     public static function getConfigForPath(string $path, string $current_dir): Config
     {
@@ -664,7 +663,6 @@ class Config
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @throws ConfigException
-     *
      */
     public static function locateConfigFile(string $path): ?string
     {
@@ -1361,7 +1359,6 @@ class Config
 
     /**
      * @throws ConfigException if a Config file could not be found
-     *
      */
     private function loadFileExtensions(SimpleXMLElement $extensions): void
     {

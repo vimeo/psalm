@@ -39,7 +39,6 @@ final class TAnonymousClassInstance extends TNamedObject
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

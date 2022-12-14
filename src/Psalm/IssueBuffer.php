@@ -514,7 +514,6 @@ final class IssueBuffer
 
     /**
      * @param array<string, list<IssueData>> $issues_data
-     *
      */
     public static function addIssues(array $issues_data): void
     {
@@ -535,7 +534,6 @@ final class IssueBuffer
 
     /**
      * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
-     *
      */
     public static function finish(
         ProjectAnalyzer $project_analyzer,
@@ -824,7 +822,6 @@ final class IssueBuffer
     /**
      * @param array<string, array<int, IssueData>> $issues_data
      * @param array{int, int} $mixed_counts
-     *
      */
     public static function getOutput(
         array $issues_data,

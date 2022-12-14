@@ -397,7 +397,6 @@ class ScopeAnalyzer
 
     /**
      * @param   array<PhpParser\Node> $stmts
-     *
      */
     public static function onlyThrowsOrExits(NodeTypeProvider $type_provider, array $stmts): bool
     {
@@ -429,7 +428,6 @@ class ScopeAnalyzer
 
     /**
      * @param   array<PhpParser\Node> $stmts
-     *
      */
     public static function onlyThrows(array $stmts): bool
     {

@@ -27,15 +27,11 @@ class BuildInfoCollector
      * Environment variables.
      *
      * Overwritten through collection process.
-     *
-     * @var array
      */
     protected array $env;
 
     /**
      * Read environment variables.
-     *
-     * @var array
      */
     protected array $readEnv = [];
 

@@ -141,7 +141,6 @@ class TNamedObject extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

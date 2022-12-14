@@ -208,7 +208,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addNonMethodReferencesToClasses(array $references): void
     {
@@ -288,7 +287,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addFileReferencesToClassMembers(array $references): void
     {
@@ -306,7 +304,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addFileReferencesToClassProperties(array $references): void
     {
@@ -324,7 +321,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addFileReferencesToMethodReturns(array $references): void
     {
@@ -342,7 +338,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addFileReferencesToMissingClassMembers(array $references): void
     {
@@ -682,7 +677,6 @@ class FileReferenceProvider
 
     /**
      * @param  array<string, string|bool>  $visited_files
-     *
      */
     public function updateReferenceCache(Codebase $codebase, array $visited_files): void
     {
@@ -853,7 +847,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setNonMethodReferencesToClasses(array $references): void
     {
@@ -910,7 +903,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToClassMembers(array $references): void
     {
@@ -928,7 +920,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodDependencies(array $references): void
     {
@@ -946,7 +937,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToClassProperties(array $references): void
     {
@@ -964,7 +954,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToMethodReturns(array $references): void
     {
@@ -982,7 +971,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToClasses(array $references): void
     {
@@ -1000,7 +988,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToMissingClassMembers(array $references): void
     {
@@ -1018,7 +1005,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, array<string, bool>>> $references
-     *
      */
     public function addMethodParamUses(array $references): void
     {
@@ -1042,7 +1028,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToClasses(array $references): void
     {
@@ -1051,7 +1036,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToClassMembers(array $references): void
     {
@@ -1060,7 +1044,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setMethodDependencies(array $references): void
     {
@@ -1069,7 +1052,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToClassProperties(array $references): void
     {
@@ -1078,7 +1060,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToMethodReturns(array $references): void
     {
@@ -1087,7 +1068,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToMissingClassMembers(array $references): void
     {
@@ -1096,7 +1076,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setFileReferencesToClassMembers(array $references): void
     {
@@ -1105,7 +1084,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setFileReferencesToClassProperties(array $references): void
     {
@@ -1114,7 +1092,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setFileReferencesToMethodReturns(array $references): void
     {
@@ -1123,7 +1100,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setFileReferencesToMissingClassMembers(array $references): void
     {
@@ -1132,7 +1108,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setReferencesToMixedMemberNames(array $references): void
     {
@@ -1141,7 +1116,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, array<string, bool>>> $references
-     *
      */
     public function setMethodParamUses(array $references): void
     {
@@ -1150,7 +1124,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     *
      */
     public function addClassMethodLocations(array $references): void
     {
@@ -1168,7 +1141,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     *
      */
     public function addClassPropertyLocations(array $references): void
     {
@@ -1186,7 +1158,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     *
      */
     public function addClassLocations(array $references): void
     {
@@ -1236,7 +1207,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string, int>> $analyzed_methods
-     *
      */
     public function setAnalyzedMethods(array $analyzed_methods): void
     {
@@ -1261,7 +1231,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array{int, int}> $mixed_counts
-     *
      */
     public function setTypeCoverage(array $mixed_counts): void
     {

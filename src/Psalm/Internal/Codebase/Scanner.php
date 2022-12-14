@@ -166,7 +166,6 @@ class Scanner
 
     /**
      * @param array<string, string> $files_to_scan
-     *
      */
     public function addFilesToShallowScan(array $files_to_scan): void
     {
@@ -743,7 +742,6 @@ class Scanner
 
     /**
      * @param ThreadData $thread_data
-     *
      */
     public function addThreadData(array $thread_data): void
     {

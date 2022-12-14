@@ -1682,9 +1682,6 @@ class ClassLikeNodeScanner
     }
 
     /**
-     * @param ClassLikeDocblockComment $comment
-     * @param string $fq_classlike_name
-     *
      * @return array<string, LinkableTypeAlias>
      */
     private function getImportedTypeAliases(ClassLikeDocblockComment $comment, string $fq_classlike_name): array
