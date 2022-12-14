@@ -10,9 +10,6 @@ class TryCatchTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -494,9 +491,6 @@ class TryCatchTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

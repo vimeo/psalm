@@ -16,7 +16,6 @@ class TypeCombinationTest extends TestCase
      *
      * @param string $expected
      * @param non-empty-list<string> $types
-     *
      */
     public function testValidTypeCombination($expected, $types): void
     {
@@ -35,9 +34,6 @@ class TypeCombinationTest extends TestCase
         );
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -828,7 +824,6 @@ class TypeCombinationTest extends TestCase
 
     /**
      * @param  string $string
-     *
      */
     private static function getAtomic($string): Atomic
     {

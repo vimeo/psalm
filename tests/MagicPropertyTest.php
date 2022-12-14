@@ -35,9 +35,6 @@ class MagicPropertyTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -769,9 +766,6 @@ class MagicPropertyTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

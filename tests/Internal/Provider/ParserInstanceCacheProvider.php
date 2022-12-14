@@ -59,7 +59,6 @@ class ParserInstanceCacheProvider extends ParserCacheProvider
 
     /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
-     *
      */
     public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only): void
     {

@@ -36,7 +36,6 @@ class ClassLikeStorageInstanceCacheProvider extends ClassLikeStorageCacheProvide
 
     /**
      * @param  string  $fq_classlike_name_lc
-     *
      */
     private function loadFromCache($fq_classlike_name_lc): ?ClassLikeStorage
     {

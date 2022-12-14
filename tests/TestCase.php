@@ -95,7 +95,6 @@ class TestCase extends BaseTestCase
     /**
      * @param string $file_path
      * @param string $contents
-     *
      */
     public function addFile($file_path, $contents): void
     {
@@ -115,7 +114,6 @@ class TestCase extends BaseTestCase
 
     /**
      * @param  string         $file_path
-     *
      */
     public function analyzeFile($file_path, Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
     {
@@ -155,7 +153,6 @@ class TestCase extends BaseTestCase
 
     /**
      * @param  bool $withDataSet
-     *
      */
     protected function getTestName($withDataSet = true): string
     {

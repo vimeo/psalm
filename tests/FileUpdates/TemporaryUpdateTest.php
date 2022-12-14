@@ -55,7 +55,6 @@ class TemporaryUpdateTest extends TestCase
      * @param array<int, array<string, string>> $file_stages
      * @param array<int, array<int>> $error_positions
      * @param array<string, string> $ignored_issues
-     *
      */
     public function testErrorFix(
         array $file_stages,

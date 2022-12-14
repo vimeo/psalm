@@ -20,7 +20,6 @@ class FileDiffTest extends TestCase
      * @dataProvider getChanges
      *
      * @param string[] $same_methods
-     *
      */
     public function testCode(
         string $a,
@@ -81,7 +80,6 @@ class FileDiffTest extends TestCase
      * @param string[] $same_signatures
      * @param string[] $changed_methods
      * @param array<array-key,array{int,int}> $diff_map_offsets
-     *
      */
     public function testPartialAstDiff(
         string $a,
@@ -149,7 +147,6 @@ class FileDiffTest extends TestCase
     /**
      * @param  array<int, PhpParser\Node\Stmt>  $a
      * @param  array<int, PhpParser\Node\Stmt>  $b
-     *
      */
     private function assertTreesEqual(array $a, array $b): void
     {

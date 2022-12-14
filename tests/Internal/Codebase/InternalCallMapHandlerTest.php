@@ -1333,7 +1333,6 @@ class InternalCallMapHandlerTest extends TestCase
     ];
 
     /**
-     *
      * @var Codebase
      */
     private static $codebase;
@@ -1387,7 +1386,6 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
      * @return iterable<string, array{0: callable-string, 1: array<int|string, string>}>
      */
     public function callMapEntryProvider(): iterable
@@ -1423,8 +1421,6 @@ class InternalCallMapHandlerTest extends TestCase
         }
     }
 
-    /**
-     */
     private function isIgnored(string $functionName): bool
     {
         if (in_array($functionName, self::$ignoredFunctions)) {
@@ -1440,8 +1436,6 @@ class InternalCallMapHandlerTest extends TestCase
         return false;
     }
 
-    /**
-     */
     private function isReturnTypeOnlyIgnored(string $functionName): bool
     {
         if (in_array($functionName, static::$ignoredReturnTypeOnlyFunctions, true)) {
@@ -1457,8 +1451,6 @@ class InternalCallMapHandlerTest extends TestCase
         return false;
     }
 
-    /**
-     */
     private function isUnreflectableIgnored(string $functionName): bool
     {
         if (in_array($functionName, static::$ignoredUnreflectableFunctions, true)) {
@@ -1582,7 +1574,6 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
      * @param array<string, string> $entryParameters
      */
     private function assertEntryParameters(ReflectionFunctionAbstract $function, array $entryParameters): void
@@ -1644,7 +1635,6 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
      * @param array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
      */
     private function assertParameter(array $normalizedEntry, ReflectionParameter $param): void

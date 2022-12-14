@@ -7,7 +7,8 @@ use Symfony\Component\Finder\Finder;
 $finder = (new Finder())
     ->files()
     ->name('/\.php$/')
-    ->in(__DIR__ . '/src');
+    ->contains('<?php')
+    ->in(['bin', 'src', 'tests']);
 
 return (new PhpCsFixer\Config())
     ->setFinder($finder)

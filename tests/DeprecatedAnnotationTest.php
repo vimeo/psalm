@@ -10,9 +10,6 @@ class DeprecatedAnnotationTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -105,9 +102,6 @@ class DeprecatedAnnotationTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

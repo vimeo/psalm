@@ -43,7 +43,6 @@ class UnusedVariableTest extends TestCase
      *
      * @param string $code
      * @param array<string> $ignored_issues
-     *
      */
     public function testValidCode($code, array $ignored_issues = [], string $php_version = '7.4'): void
     {
@@ -74,7 +73,6 @@ class UnusedVariableTest extends TestCase
      * @param string $code
      * @param string $error_message
      * @param array<string> $ignored_issues
-     *
      */
     public function testInvalidCode($code, $error_message, $ignored_issues = []): void
     {

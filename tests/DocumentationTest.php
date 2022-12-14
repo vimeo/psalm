@@ -205,7 +205,6 @@ class DocumentationTest extends TestCase
      * @param string $error_message
      * @param array<string> $ignored_issues
      * @param bool $check_references
-     *
      */
     public function testInvalidCode($code, $error_message, $ignored_issues = [], $check_references = false, string $php_version = '8.0'): void
     {

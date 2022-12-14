@@ -10,9 +10,6 @@ class PropertyTypeInvarianceTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [

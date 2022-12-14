@@ -11,9 +11,6 @@ class IssetTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1032,9 +1029,6 @@ class IssetTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

@@ -550,9 +550,6 @@ class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -2693,9 +2690,6 @@ class PropertyTypeTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

@@ -12,9 +12,6 @@ class KeyOfArrayTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -154,9 +151,6 @@ class KeyOfArrayTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

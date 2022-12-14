@@ -52,7 +52,6 @@ class ErrorFixTest extends TestCase
      * @param array<int, array<string, string>> $files
      * @param array<int, int> $error_counts
      * @param array<string, string> $ignored_issues
-     *
      */
     public function testErrorFix(
         array $files,

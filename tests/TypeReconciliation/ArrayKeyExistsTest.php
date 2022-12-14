@@ -13,9 +13,6 @@ class ArrayKeyExistsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -491,9 +488,6 @@ class ArrayKeyExistsTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

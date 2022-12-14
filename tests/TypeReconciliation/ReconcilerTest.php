@@ -92,7 +92,6 @@ class ReconcilerTest extends TestCase
      *
      * @param string $input
      * @param string $container
-     *
      */
     public function testTypeIsContainedBy($input, $container): void
     {

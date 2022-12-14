@@ -13,9 +13,6 @@ class RedundantConditionTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -921,9 +918,6 @@ class RedundantConditionTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

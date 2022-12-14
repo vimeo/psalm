@@ -46,7 +46,6 @@ class UnusedCodeTest extends TestCase
      *
      * @param string $code
      * @param array<string> $ignored_issues
-     *
      */
     public function testValidCode($code, array $ignored_issues = []): void
     {
@@ -81,7 +80,6 @@ class UnusedCodeTest extends TestCase
      * @param string $code
      * @param string $error_message
      * @param array<string> $ignored_issues
-     *
      */
     public function testInvalidCode($code, $error_message, $ignored_issues = []): void
     {

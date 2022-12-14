@@ -50,7 +50,6 @@ class AnalyzedMethodTest extends TestCase
      * @param array<string, string> $start_files
      * @param array<string, string> $end_files
      * @param array<string, string> $ignored_issues
-     *
      */
     public function testValidInclude(
         array $start_files,

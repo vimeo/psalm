@@ -10,9 +10,6 @@ class GeneratorTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -297,9 +294,6 @@ class GeneratorTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

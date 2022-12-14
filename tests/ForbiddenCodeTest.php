@@ -19,9 +19,6 @@ class ForbiddenCodeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -53,9 +50,6 @@ class ForbiddenCodeTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [

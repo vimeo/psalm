@@ -36,7 +36,6 @@ class CodebaseTest extends TestCase
     /**
      * @test
      * @dataProvider typeContainments
-     *
      */
     public function isTypeContainedByType(string $input, string $container, bool $expected): void
     {
@@ -66,7 +65,6 @@ class CodebaseTest extends TestCase
     /**
      * @test
      * @dataProvider typeIntersections
-     *
      */
     public function canTypeBeContainedByType(string $input, string $container, bool $expected): void
     {
@@ -96,7 +94,6 @@ class CodebaseTest extends TestCase
      * @dataProvider iterableParams
      *
      * @param array{string,string} $expected
-     *
      */
     public function getKeyValueParamsForTraversableObject(string $input, array $expected): void
     {
@@ -129,7 +126,6 @@ class CodebaseTest extends TestCase
 
     /**
      * @test
-     *
      */
     public function customMetadataIsPersisted(): void
     {
@@ -201,7 +197,6 @@ class CodebaseTest extends TestCase
 
     /**
      * @test
-     *
      */
     public function classExtendsRejectsUnpopulatedClasslikes(): void
     {

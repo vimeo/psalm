@@ -8,9 +8,6 @@ class SuperGlobalsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         yield 'http_response_headerIsList' => [

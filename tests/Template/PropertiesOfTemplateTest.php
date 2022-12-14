@@ -11,9 +11,6 @@ class PropertiesOfTemplateTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -194,9 +191,6 @@ class PropertiesOfTemplateTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

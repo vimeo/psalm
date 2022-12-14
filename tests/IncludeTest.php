@@ -21,7 +21,6 @@ class IncludeTest extends TestCase
      * @param array<string, string> $files
      * @param bool $hoist_constants
      * @param list<string> $ignored_issues
-     *
      */
     public function testValidInclude(
         array $files,

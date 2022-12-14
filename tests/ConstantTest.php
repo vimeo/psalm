@@ -83,9 +83,6 @@ class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1527,9 +1524,6 @@ class ConstantTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
