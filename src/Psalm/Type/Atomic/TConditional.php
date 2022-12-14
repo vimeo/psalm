@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Internal representation of a conditional return type in phpdoc. For example ($param1 is int ? int : string)
+ *
  * @psalm-immutable
  */
 final class TConditional extends Atomic
@@ -110,7 +111,6 @@ final class TConditional extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      * @return null
      */
     public function toPhpString(

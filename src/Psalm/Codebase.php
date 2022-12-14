@@ -602,7 +602,6 @@ final class Codebase
 
     /**
      * @return CodeLocation[]
-     *
      * @psalm-return array<int, CodeLocation>
      */
     public function findReferencesToClassLike(string $fq_class_name): array
@@ -782,7 +781,6 @@ final class Codebase
      * a method, closure, or function.
      *
      * @param non-empty-string $function_id
-     *
      * @return FunctionStorage|MethodStorage
      */
     public function getFunctionLikeStorage(
@@ -834,7 +832,6 @@ final class Codebase
 
     /**
      * @param  string|MethodIdentifier $method_id
-     *
      * @return array<int, FunctionLikeParameter>
      */
     public function getMethodParams($method_id): array
@@ -909,7 +906,6 @@ final class Codebase
 
     /**
      * @param  string|MethodIdentifier $method_id
-     *
      * @return array<string, MethodIdentifier>
      */
     public function getOverriddenMethodIds($method_id): array
@@ -1927,7 +1923,6 @@ final class Codebase
 
     /**
      * @param array<string> $taints
-     *
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSource(
@@ -1955,7 +1950,6 @@ final class Codebase
 
     /**
      * @param array<string> $taints
-     *
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSink(

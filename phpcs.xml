@@ -261,8 +261,5 @@
 
     <!-- Disallows empty comments. -->
     <rule ref="SlevomatCodingStandard.Commenting.EmptyComment"/>
-<!--    <rule ref="SlevomatCodingStandard.Commenting.DocCommentSpacing">-->
-<!--        <properties>-->
-<!--        </properties>-->
-<!--    </rule>-->
+    <rule ref="SlevomatCodingStandard.Commenting.DocCommentSpacing"/>
 </ruleset>

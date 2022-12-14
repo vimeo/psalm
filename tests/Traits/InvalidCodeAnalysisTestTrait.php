@@ -26,7 +26,6 @@ trait InvalidCodeAnalysisTestTrait
     /**
      * @dataProvider providerInvalidCodeParse
      * @small
-     *
      * @param list<string> $error_levels
      */
     public function testInvalidCode(

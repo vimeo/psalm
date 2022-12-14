@@ -30,6 +30,7 @@ class PsalmRestarter extends XdebugHandler
 
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
+     *
      * @param bool $default
      */
     protected function requiresRestart($default): bool
@@ -44,6 +45,7 @@ class PsalmRestarter extends XdebugHandler
 
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
+     *
      * @param string|string[] $command
      */
     protected function restart($command): void

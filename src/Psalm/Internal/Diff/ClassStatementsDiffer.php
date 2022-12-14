@@ -21,7 +21,6 @@ class ClassStatementsDiffer extends AstDiffer
      *
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
-     *
      * @return array{
      *      0: list<string>,
      *      1: list<string>,

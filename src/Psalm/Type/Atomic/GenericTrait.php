@@ -27,7 +27,6 @@ trait GenericTrait
 {
     /**
      * @param TTypeParams $type_params
-     *
      * @return static
      */
     public function setTypeParams(array $type_params): self

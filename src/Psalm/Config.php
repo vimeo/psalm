@@ -169,6 +169,7 @@ class Config
 
     /**
      * These are special object classes that allow any and all properties to be get/set on them
+     *
      * @var array<int, lowercase-string>
      */
     protected $universal_object_crates;
@@ -205,7 +206,6 @@ class Config
      * The directory to store PHP Parser (and other) caches
      *
      * @internal
-     *
      * @var string|null
      */
     public $cache_directory;
@@ -728,9 +728,9 @@ class Config
 
     /**
      * Creates a new config object from an XML string
+     *
      * @param  string|null      $current_dir Current working directory, if different to $base_dir
      * @param  non-empty-string $file_contents
-     *
      * @throws ConfigException
      */
     public static function loadFromXML(
@@ -769,7 +769,6 @@ class Config
 
     /**
      * @param non-empty-string $file_contents
-     *
      * @throws ConfigException
      */
     private static function validateXmlConfig(string $base_dir, string $file_contents): void
@@ -939,12 +938,10 @@ class Config
 
     /**
      * @param non-empty-string $file_contents
-     *
      * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
-     *
      * @throws ConfigException
      */
     private static function fromXmlAndPaths(
@@ -1556,9 +1553,7 @@ class Config
 
     /**
      * @template T
-     *
      * @param  T::class $must_extend
-     *
      * @return class-string<T>
      */
     private function getPluginClassForPath(Codebase $codebase, string $path, string $must_extend): string

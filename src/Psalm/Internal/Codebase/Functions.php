@@ -228,7 +228,6 @@ class Functions
 
     /**
      * @param  non-empty-string         $function_name
-     *
      * @return non-empty-string
      */
     public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source): string

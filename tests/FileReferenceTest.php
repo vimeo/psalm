@@ -38,7 +38,6 @@ class FileReferenceTest extends TestCase
 
     /**
      * @dataProvider providerReferenceLocations
-     *
      * @param string $input_code
      * @param string $symbol
      * @param array<int, string> $expected_locations
@@ -79,7 +78,6 @@ class FileReferenceTest extends TestCase
 
     /**
      * @dataProvider providerReferencedMethods
-     *
      * @param array<string,array<string,bool>> $expected_method_references_to_members
      * @param array<string,array<string,bool>> $expected_file_references_to_members
      * @param array<string,array<string,bool>> $expected_method_references_to_missing_members

@@ -64,7 +64,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  TNamedObject|TTemplateParam|null $static_type
-     *
      * @psalm-suppress ComplexMethod it's really complex, but unavoidably so
      */
     public static function analyze(
@@ -512,7 +511,6 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
     /**
      * @param  TNamedObject|TTemplateParam $lhs_type_part
      * @param   array<string, Atomic> $intersection_types
-     *
      * @return  array{?Union, array<string>}
      */
     private static function getIntersectionReturnType(

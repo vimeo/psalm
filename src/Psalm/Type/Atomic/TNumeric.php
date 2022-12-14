@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `numeric` type (which can also result from an `is_numeric` check).
+ *
  * @psalm-immutable
  */
 class TNumeric extends Scalar

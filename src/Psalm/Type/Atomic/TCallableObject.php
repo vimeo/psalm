@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an object that is also `callable` (i.e. it has `__invoke` defined).
+ *
  * @psalm-immutable
  */
 final class TCallableObject extends TObject

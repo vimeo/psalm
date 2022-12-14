@@ -27,7 +27,6 @@ class CustomTraverser extends NodeTraverser
      * Recursively traverse a node.
      *
      * @param Node $node node to traverse
-     *
      * @return Node Result of traversal (may be original node or new one)
      */
     protected function traverseNode(Node $node): Node
@@ -97,7 +96,6 @@ class CustomTraverser extends NodeTraverser
      * Recursively traverse array (usually of nodes).
      *
      * @param array $nodes Array to traverse
-     *
      * @return array Result of traversal (may be original array or changed one)
      */
     protected function traverseArray(array $nodes): array

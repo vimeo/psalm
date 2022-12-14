@@ -92,7 +92,6 @@ class CodebaseTest extends TestCase
     /**
      * @test
      * @dataProvider iterableParams
-     *
      * @param array{string,string} $expected
      */
     public function getKeyValueParamsForTraversableObject(string $input, array $expected): void

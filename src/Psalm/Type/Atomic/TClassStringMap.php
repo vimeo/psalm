@@ -17,6 +17,7 @@ use function get_class;
 /**
  * Represents an array where the type of each value
  * is a function of its string key value
+ *
  * @psalm-immutable
  */
 final class TClassStringMap extends Atomic

@@ -271,7 +271,6 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
-     *
      * @return list<PhpParser\Node\Stmt>
      */
     public function populateCheckers(array $stmts): array

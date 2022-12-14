@@ -9,7 +9,6 @@ use Psalm\Type\Atomic;
  * their apropriate types as values.
  *
  * @psalm-type TokenName = 'properties-of'|'public-properties-of'|'protected-properties-of'|'private-properties-of'
- *
  * @psalm-immutable
  */
 final class TPropertiesOf extends Atomic

@@ -423,7 +423,6 @@ class FunctionLikeDocblockScanner
      * @param  array<string, array<string, Union>> $template_types
      * @param  array<string, TypeAlias>|null   $type_aliases
      * @param  array<string, array<string, Union>> $function_template_types
-     *
      * @return array{
      *     array<int, array{0: string, 1: int, 2?: string}>,
      *     array<string, array<string, Union>>

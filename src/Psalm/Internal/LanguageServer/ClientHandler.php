@@ -38,7 +38,6 @@ class ClientHandler
      *
      * @param string $method The method to call
      * @param array|object $params The method parameters
-     *
      * @return Promise<mixed> Resolved with the result of the request or rejected with an error
      */
     public function request(string $method, $params): Promise

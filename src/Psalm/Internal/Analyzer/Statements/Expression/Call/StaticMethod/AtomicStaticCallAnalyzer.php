@@ -1081,7 +1081,6 @@ class AtomicStaticCallAnalyzer
      *
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
-     *
      * @return array{MethodStorage, ClassLikeStorage}|null
      */
     private static function findPseudoMethodAndClassStorages(
@@ -1115,9 +1114,7 @@ class AtomicStaticCallAnalyzer
      *
      * @param string $virtual_var_name Temporary var name to use for create the fake MethodCall statement.
      * @param bool $always_set_node_type If true, when the method has no declared typed, mixed will be set on node.
-     *
      * @return bool Result of analysis. False if the call is invalid.
-     *
      * @see MethodCallAnalyzer::analyze()
      */
     private static function forwardCallToInstanceMethod(

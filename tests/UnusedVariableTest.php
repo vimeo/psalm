@@ -40,7 +40,6 @@ class UnusedVariableTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param string $code
      * @param array<string> $ignored_issues
      */
@@ -69,7 +68,6 @@ class UnusedVariableTest extends TestCase
 
     /**
      * @dataProvider providerInvalidCodeParse
-     *
      * @param string $code
      * @param string $error_message
      * @param array<string> $ignored_issues

@@ -21,7 +21,6 @@ use function file_exists;
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
- *
  * @internal
  */
 class FileReferenceProvider

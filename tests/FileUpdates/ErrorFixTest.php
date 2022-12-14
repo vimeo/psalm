@@ -48,7 +48,6 @@ class ErrorFixTest extends TestCase
 
     /**
      * @dataProvider providerTestErrorFix
-     *
      * @param array<int, array<string, string>> $files
      * @param array<int, int> $error_counts
      * @param array<string, string> $ignored_issues

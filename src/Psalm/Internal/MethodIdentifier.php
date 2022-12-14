@@ -13,7 +13,6 @@ use function strtolower;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class MethodIdentifier
@@ -38,7 +37,6 @@ class MethodIdentifier
      * it into a MethodIdentifier
      *
      * @param string|MethodIdentifier $method_id
-     *
      * @psalm-pure
      */
     public static function wrap($method_id): self

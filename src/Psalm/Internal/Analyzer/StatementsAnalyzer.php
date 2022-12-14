@@ -168,7 +168,6 @@ class StatementsAnalyzer extends SourceAnalyzer
      * Checks an array of statements for validity
      *
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     *
      * @return null|false
      */
     public function analyze(

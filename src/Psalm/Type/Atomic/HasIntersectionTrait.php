@@ -54,7 +54,6 @@ trait HasIntersectionTrait
 
     /**
      * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $type
-     *
      * @return static
      */
     public function addIntersectionType(Atomic $type): self
@@ -67,7 +66,6 @@ trait HasIntersectionTrait
 
     /**
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $types
-     *
      * @return static
      */
     public function setIntersectionTypes(array $types): self

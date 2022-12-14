@@ -27,7 +27,6 @@ class ClassConstantMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $constants_to_move
      */
     public function testValidCode(

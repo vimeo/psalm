@@ -145,9 +145,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param bool          $add_mutations  whether or not to add mutations to this method
-     *
      * @return false|null
-     *
      * @psalm-suppress PossiblyUnusedReturnValue unused but seems important
      */
     public function analyze(

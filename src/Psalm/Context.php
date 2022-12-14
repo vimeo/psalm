@@ -512,7 +512,6 @@ final class Context
 
     /**
      * @param  array<string, Union> $new_vars_in_scope
-     *
      * @return array<string, Union>
      */
     public function getRedefinedVars(array $new_vars_in_scope, bool $include_new_vars = false): array
@@ -635,9 +634,7 @@ final class Context
     /**
      * @param Clause[]             $clauses
      * @param array<string, bool>  $changed_var_ids
-     *
      * @return array{list<Clause>, list<Clause>}
-     *
      * @psalm-pure
      */
     public static function removeReconciledClauses(array $clauses, array $changed_var_ids): array
@@ -666,7 +663,6 @@ final class Context
 
     /**
      * @param  Clause[]               $clauses
-     *
      * @return list<Clause>
      */
     public static function filterClauses(

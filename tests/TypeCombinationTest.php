@@ -13,7 +13,6 @@ class TypeCombinationTest extends TestCase
 
     /**
      * @dataProvider providerTestValidTypeCombination
-     *
      * @param string $expected
      * @param non-empty-list<string> $types
      */

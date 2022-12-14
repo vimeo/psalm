@@ -89,7 +89,6 @@ class ReconcilerTest extends TestCase
 
     /**
      * @dataProvider providerTestTypeIsContainedBy
-     *
      * @param string $input
      * @param string $container
      */

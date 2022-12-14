@@ -1199,7 +1199,6 @@ class ProjectAnalyzer
 
     /**
      * @param  array<string>  $diff_files
-     *
      * @return array<string, string>
      */
     public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true): array
@@ -1415,6 +1414,7 @@ class ProjectAnalyzer
      * Adapted from https://gist.github.com/divinity76/01ef9ca99c111565a72d3a8a6e42f7fb
      * returns number of cpu cores
      * Copyleft 2018, license: WTFPL
+     *
      * @throws NumberOfCpuCoreNotFound
      */
     public static function getCpuCount(): int
@@ -1443,7 +1443,6 @@ class ProjectAnalyzer
 
     /**
      * @return array<int, string>
-     *
      * @psalm-pure
      */
     public static function getSupportedIssuesToFix(): array

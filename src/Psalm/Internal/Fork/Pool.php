@@ -107,7 +107,6 @@ class Pool
      * A closure to execute upon shutting down a child
      * @param Closure(mixed $data):void $task_done_closure
      * A closure to execute when a task is done
-     *
      * @psalm-suppress MixedAssignment
      */
     public function __construct(
@@ -278,7 +277,6 @@ class Pool
      * return the stream the parent will use to read results.
      *
      * @param resource[] $sockets the socket pair for IPC
-     *
      * @return resource
      */
     private static function streamForParent(array $sockets)
@@ -304,7 +302,6 @@ class Pool
      * the stream the child will use to write results.
      *
      * @param resource[] $sockets the socket pair for IPC
-     *
      * @return resource
      */
     private static function streamForChild(array $sockets)
@@ -323,9 +320,7 @@ class Pool
      * The results are returned in an array, one for each worker. The order of the results
      * is not maintained.
      *
-     *
      * @psalm-suppress MixedAssignment
-     *
      * @return list<mixed>
      */
     private function readResultsFromChildren(): array
@@ -392,6 +387,7 @@ class Pool
                             foreach ($this->child_pid_list as $child_pid) {
                                 /**
                                  * SIGTERM does not exist on windows
+                                 *
                                  * @psalm-suppress UnusedPsalmSuppress
                                  * @psalm-suppress UndefinedConstant
                                  * @psalm-suppress MixedArgument
@@ -448,6 +444,7 @@ class Pool
                 if ($process_lookup) {
                     /**
                      * SIGALRM does not exist on windows
+                     *
                      * @psalm-suppress UnusedPsalmSuppress
                      * @psalm-suppress UndefinedConstant
                      * @psalm-suppress MixedArgument
@@ -466,6 +463,7 @@ class Pool
 
                     /**
                      * SIGALRM does not exist on windows
+                     *
                      * @psalm-suppress UnusedPsalmSuppress
                      * @psalm-suppress UndefinedConstant
                      */

@@ -24,7 +24,6 @@ use const PHP_VERSION_ID;
 
 /**
  * @internal
- *
  * @psalm-immutable
  */
 class Clause

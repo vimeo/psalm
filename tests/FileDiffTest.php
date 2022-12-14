@@ -18,7 +18,6 @@ class FileDiffTest extends TestCase
 {
     /**
      * @dataProvider getChanges
-     *
      * @param string[] $same_methods
      */
     public function testCode(
@@ -61,7 +60,6 @@ class FileDiffTest extends TestCase
         $found_offsets = array_map(
             /**
              * @param array{0: int, 1: int, 2: int, 3: int} $arr
-             *
              * @return array{0: int, 1: int}
              */
             fn(array $arr): array => [$arr[2], $arr[3]],
@@ -75,7 +73,6 @@ class FileDiffTest extends TestCase
 
     /**
      * @dataProvider getChanges
-     *
      * @param string[] $same_methods
      * @param string[] $same_signatures
      * @param string[] $changed_methods
@@ -134,7 +131,6 @@ class FileDiffTest extends TestCase
         $found_offsets = array_map(
             /**
              * @param array{0: int, 1: int, 2: int, 3: int} $arr
-             *
              * @return array{0: int, 1: int}
              */
             fn(array $arr): array => [$arr[2], $arr[3]],

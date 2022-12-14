@@ -8,7 +8,6 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @internal
- *
  * @psalm-immutable
  */
 class DiffElem

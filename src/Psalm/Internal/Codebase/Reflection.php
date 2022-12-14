@@ -355,7 +355,6 @@ class Reflection
 
     /**
      * @param  callable-string $function_id
-     *
      * @return false|null
      */
     public function registerFunction(string $function_id): ?bool

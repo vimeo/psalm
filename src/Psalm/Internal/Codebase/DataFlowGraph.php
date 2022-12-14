@@ -58,7 +58,6 @@ abstract class DataFlowGraph
 
     /**
      * @param array<string> $previous_path_types
-     *
      * @psalm-pure
      */
     protected static function shouldIgnoreFetch(

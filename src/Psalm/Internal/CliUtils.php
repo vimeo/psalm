@@ -132,7 +132,6 @@ final class CliUtils
         foreach ($autoload_files as $file) {
             /**
              * @psalm-suppress UnresolvableInclude
-             *
              * @var mixed
              */
             $autoloader = require_once $file;
@@ -255,7 +254,6 @@ final class CliUtils
 
     /**
      * @param  string|array|null|false $f_paths
-     *
      * @return list<string>|null
      */
     public static function getPathsToCheck($f_paths): ?array

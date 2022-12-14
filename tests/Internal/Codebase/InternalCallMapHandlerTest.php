@@ -49,6 +49,7 @@ class InternalCallMapHandlerTest extends TestCase
     /**
      * Specify a function name as value, or a function name as key and
      * an array containing the PHP versions in which to ignore this function as values.
+     *
      * @var array<int|string, string|list<string>>
      */
     private static $ignoredFunctions = [
@@ -1524,6 +1525,7 @@ class InternalCallMapHandlerTest extends TestCase
 
     /**
      * This function will test functions that are in the callmap AND currently defined
+     *
      * @coversNothing
      * @depends testGetcallmapReturnsAValidCallmap
      * @depends testIgnoresAreSortedAndUnique
@@ -1580,6 +1582,7 @@ class InternalCallMapHandlerTest extends TestCase
     {
         /**
          * Parse the parameter names from the map.
+         *
          * @var array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
          */
         $normalizedEntries = [];

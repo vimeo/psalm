@@ -86,9 +86,7 @@ class TypeCombiner
      *  - and `array + array<string> = array<mixed>`
      *
      * @psalm-external-mutation-free
-     *
      * @psalm-suppress ImpurePropertyAssignment We're not actually mutating any external instance
-     *
      * @param  non-empty-list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar

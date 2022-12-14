@@ -31,9 +31,7 @@ class ScopeAnalyzer
      * @param array<PhpParser\Node> $stmts
      * @param list<'loop'|'switch'> $break_types
      * @param bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
-     *
      * @return list<self::ACTION_*>
-     *
      * @psalm-suppress ComplexMethod nothing much we can do
      */
     public static function getControlActions(

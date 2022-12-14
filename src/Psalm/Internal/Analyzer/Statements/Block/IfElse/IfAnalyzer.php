@@ -50,7 +50,6 @@ class IfAnalyzer
 {
     /**
      * @param  array<string, Union> $pre_assignment_else_redefined_vars
-     *
      * @return false|null
      */
     public static function analyze(
@@ -401,6 +400,7 @@ class IfAnalyzer
 
     /**
      * Returns all expressions inside an ored expression
+     *
      * @return non-empty-list<PhpParser\Node\Expr>
      */
     private static function getDefinitelyEvaluatedOredExpressions(PhpParser\Node\Expr $stmt): array

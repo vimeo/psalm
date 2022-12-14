@@ -99,6 +99,7 @@ class LanguageServer extends Dispatcher
 
     /**
      * This should actually be a private property on `parent`
+     *
      * @psalm-suppress UnusedProperty
      */
     protected JsonMapper $mapper;
@@ -425,6 +426,7 @@ class LanguageServer extends Dispatcher
      * The shutdown request is sent from the client to the server. It asks the server to shut down,
      * but to not exit (otherwise the response might not be delivered correctly to the client).
      * There is a separate exit notification that asks the server to exit.
+     *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function shutdown(): Promise

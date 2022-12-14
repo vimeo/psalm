@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `float` type, where the exact value is unknown.
+ *
  * @psalm-immutable
  */
 class TFloat extends Scalar

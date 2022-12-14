@@ -67,9 +67,7 @@ class ReturnTypeAnalyzer
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
      * @param PhpParser\Node\Stmt[] $function_stmts
      * @param string[]            $compatible_method_ids
-     *
      * @return  false|null
-     *
      * @psalm-suppress PossiblyUnusedReturnValue unused but seems important
      * @psalm-suppress ComplexMethod Unavoidably complex method
      */
@@ -781,7 +779,6 @@ class ReturnTypeAnalyzer
 
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
-     *
      * @return false|null
      */
     public static function checkReturnType(

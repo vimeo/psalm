@@ -48,9 +48,7 @@ class MethodComparator
 {
     /**
      * @param  string[]         $suppressed_issues
-     *
      * @return false|null
-     *
      * @psalm-suppress PossiblyUnusedReturnValue unused but seems important
      */
     public static function compare(

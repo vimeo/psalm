@@ -582,6 +582,7 @@ class ReturnAnalyzer
     /**
      * If a function returns a closure, we try to infer the param/return types of
      * the inner closure.
+     *
      * @see \Psalm\Tests\ReturnTypeTest:756
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $expr
      */

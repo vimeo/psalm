@@ -15,9 +15,9 @@ class NamespaceStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
+     *
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
-     *
      * @return array{
      *      0: list<string>,
      *      1: list<string>,

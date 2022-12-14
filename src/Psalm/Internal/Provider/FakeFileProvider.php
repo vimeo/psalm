@@ -61,7 +61,6 @@ class FakeFileProvider extends FileProvider
     /**
      * @param array<string> $file_extensions
      * @param null|callable(string):bool $filter
-     *
      * @return list<string>
      */
     public function getFilesInDir(string $dir_path, array $file_extensions, callable $filter = null): array

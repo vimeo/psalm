@@ -16,7 +16,6 @@ class IncludeTest extends TestCase
 {
     /**
      * @dataProvider providerTestValidIncludes
-     *
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
      * @param bool $hoist_constants
@@ -58,7 +57,6 @@ class IncludeTest extends TestCase
 
     /**
      * @dataProvider providerTestInvalidIncludes
-     *
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
      * @param string $error_message

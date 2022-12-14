@@ -127,6 +127,7 @@ final class IssueBuffer
 
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
+     *
      * @param string[]  $suppressed_issues
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
@@ -140,6 +141,7 @@ final class IssueBuffer
 
     /**
      * This will add an issue to be emitted if it's not suppressed
+     *
      * @param string[]  $suppressed_issues
      */
     public static function maybeAdd(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): void
@@ -176,6 +178,7 @@ final class IssueBuffer
      * - The issue is suppressed in config
      * - We're in a recording state
      * - The issue is included in the list of issues to be suppressed in param
+     *
      * @param string[] $suppressed_issues
      */
     public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []): bool
@@ -250,7 +253,6 @@ final class IssueBuffer
      *
      * @psalm-internal Psalm\IssueBuffer
      * @psalm-internal Psalm\Type\Reconciler::getValueForKey
-     *
      * @throws  CodeException
      */
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
@@ -973,6 +975,7 @@ final class IssueBuffer
 
     /**
      * Decrease the recording level after leaving a loop
+     *
      * @see startRecording
      */
     public static function stopRecording(): void
@@ -986,6 +989,7 @@ final class IssueBuffer
 
     /**
      * This will return the recorded issues for the current recording level
+     *
      * @return array<int, CodeIssue>
      */
     public static function clearRecordingLevel(): array

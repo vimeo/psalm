@@ -200,7 +200,6 @@ class DocumentationTest extends TestCase
     /**
      * @dataProvider providerInvalidCodeParse
      * @small
-     *
      * @param string $code
      * @param string $error_message
      * @param array<string> $ignored_issues

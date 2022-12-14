@@ -64,7 +64,6 @@ class IfElseAnalyzer
      *   (x: null)
      *   throw new Exception -- effects: remove null from the type of x
      *
-     *
      * @return null|false
      */
     public static function analyze(

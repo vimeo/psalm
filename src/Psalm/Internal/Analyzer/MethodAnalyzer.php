@@ -88,6 +88,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * Determines whether a given method is static or not
+     *
      * @param  array<string>   $suppressed_issues
      */
     public static function checkStatic(

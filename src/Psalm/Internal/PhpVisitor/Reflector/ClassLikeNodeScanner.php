@@ -1768,9 +1768,7 @@ class ClassLikeNodeScanner
 
     /**
      * @param  array<string, TypeAlias> $type_aliases
-     *
      * @return array<string, InlineTypeAlias>
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function getTypeAliasesFromComment(
@@ -1801,9 +1799,7 @@ class ClassLikeNodeScanner
     /**
      * @param  array<string>    $type_alias_comment_lines
      * @param  array<string, TypeAlias> $type_aliases
-     *
      * @return array<string, InlineTypeAlias>
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     private static function getTypeAliasesFromCommentLines(

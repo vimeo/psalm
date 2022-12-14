@@ -1568,7 +1568,6 @@ class ClassLikes
     /**
      * @param ReflectionProperty::IS_PUBLIC|ReflectionProperty::IS_PROTECTED|ReflectionProperty::IS_PRIVATE
      *  $visibility
-     *
      * @return array<string, ClassConstantStorage>
      */
     public function getConstantsForClass(string $class_name, int $visibility): array

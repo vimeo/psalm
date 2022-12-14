@@ -96,9 +96,7 @@ class Reconciler
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
      * @param  array<string, array<string, Union>> $template_type_map
-     *
      * @return array{array<string, Union>, array<string, string>}
-     *
      * @psalm-suppress ComplexMethod
      */
     public static function reconcileKeyedTypes(
@@ -420,7 +418,6 @@ class Reconciler
      *
      * @param array<string, array<array<int, Assertion>>> $new_types
      * @param array<string, Union> $existing_types
-     *
      * @return array<string, array<array<int, Assertion>>>
      */
     private static function addNestedAssertions(array $new_types, array $existing_types): array

@@ -165,7 +165,6 @@ class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias>            $type_aliases
-     *
      * @return  Atomic|Union
      */
     public static function getTypeFromTree(

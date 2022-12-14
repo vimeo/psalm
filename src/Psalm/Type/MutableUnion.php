@@ -137,7 +137,6 @@ final class MutableUnion implements TypeNode, Stringable
      * since it's the bottom type, it's combined into everything else and lost
      *
      * @psalm-suppress PossiblyUnusedProperty used in setTypes and addType
-     *
      * @var bool
      */
     public $explicit_never = false;
@@ -202,12 +201,14 @@ final class MutableUnion implements TypeNode, Stringable
 
     /**
      * This is a cache of getId on non-exact mode
+     *
      * @var null|string
      */
     private $id;
 
     /**
      * This is a cache of getId on exact mode
+     *
      * @var null|string
      */
     private $exact_id;

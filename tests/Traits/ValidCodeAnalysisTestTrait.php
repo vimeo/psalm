@@ -24,11 +24,9 @@ trait ValidCodeAnalysisTestTrait
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param string $code
      * @param array<string, string> $assertions
      * @param list<string> $ignored_issues
-     *
      * @small
      */
     public function testValidCode(

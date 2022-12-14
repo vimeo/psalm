@@ -46,7 +46,6 @@ class AnalyzedMethodTest extends TestCase
 
     /**
      * @dataProvider providerTestValidUpdates
-     *
      * @param array<string, string> $start_files
      * @param array<string, string> $end_files
      * @param array<string, string> $ignored_issues

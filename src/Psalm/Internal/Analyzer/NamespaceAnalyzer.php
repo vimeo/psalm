@@ -153,7 +153,6 @@ class NamespaceAnalyzer extends SourceAnalyzer
      * case-insensitive comparison. Identifiers can be namespaces, classlikes, functions, or methods.
      *
      * @psalm-pure
-     *
      * @throws InvalidArgumentException if $identifier is not a valid identifier
      */
     public static function isWithin(string $calling_identifier, string $identifier): bool
@@ -187,9 +186,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
      * Identifiers can be namespaces, classlikes, functions, or methods.
      *
      * @psalm-pure
-     *
      * @psalm-assert-if-false !empty $identifiers
-     *
      * @param list<string> $identifiers
      */
     public static function isWithinAny(string $calling_identifier, array $identifiers): bool
@@ -210,7 +207,6 @@ class NamespaceAnalyzer extends SourceAnalyzer
     /**
      * @param non-empty-string $fullyQualifiedClassName e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
      * @return non-empty-string , e.g. 'Psalm'
-     *
      * @psalm-pure
      */
     public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
@@ -224,7 +220,6 @@ class NamespaceAnalyzer extends SourceAnalyzer
 
     /**
      * @return ($lowercase is true ? lowercase-string : string)
-     *
      * @psalm-pure
      */
     public static function normalizeIdentifier(string $identifier, bool $lowercase = true): string
@@ -241,7 +236,6 @@ class NamespaceAnalyzer extends SourceAnalyzer
      * Splits an identifier into parts, eg `Foo\Bar::baz` becomes ["Foo", "\\", "Bar", "::", "baz"].
      *
      * @return list<non-empty-string>
-     *
      * @psalm-pure
      */
     public static function getIdentifierParts(string $identifier): array

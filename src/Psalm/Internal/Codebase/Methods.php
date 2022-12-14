@@ -337,7 +337,6 @@ class Methods
 
     /**
      * @param  list<PhpParser\Node\Arg> $args
-     *
      * @return list<FunctionLikeParameter>
      */
     public function getMethodParams(

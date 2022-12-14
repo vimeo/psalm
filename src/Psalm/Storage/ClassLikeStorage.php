@@ -341,7 +341,6 @@ final class ClassLikeStorage implements HasAttributesInterface
      * This is only used in the populator, which poulates the $template_extended_params property below.
      *
      * @internal
-     *
      * @var array<string, non-empty-array<int, Union>>|null
      */
     public $template_extended_offsets;

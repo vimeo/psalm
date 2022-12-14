@@ -925,7 +925,6 @@ class AssertionFinder
 
     /**
      * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
-     *
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     protected static function processCustomAssertion(

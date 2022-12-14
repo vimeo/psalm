@@ -7,7 +7,6 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class InlineTypeAlias implements TypeAlias

@@ -24,7 +24,6 @@ class MethodVisibilityAnalyzer
 {
     /**
      * @param  string[]         $suppressed_issues
-     *
      * @return false|null
      */
     public static function analyze(

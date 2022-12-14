@@ -119,7 +119,8 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * Get a list of suppressed issues
-     *@psalm-mutation-free
+     *
+     * @psalm-mutation-free
      * @return array<string>
      */
     public function getSuppressedIssues(): array

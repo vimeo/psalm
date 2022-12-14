@@ -6,7 +6,6 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class UnresolvedConcatOp extends UnresolvedBinaryOp
