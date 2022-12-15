@@ -488,9 +488,7 @@ class ClassLikeDocblockParser
      * @param array<string, array<int, string>> $specials
      * @param 'property'|'psalm-property'|'property-read'|
      *     'psalm-property-read'|'property-write'|'psalm-property-write' $property_tag
-     *
      * @throws DocblockParseException
-     *
      */
     protected static function addMagicPropertyToInfo(
         Doc $comment,

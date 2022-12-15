@@ -39,9 +39,6 @@ class ClassTest extends TestCase
         );
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -845,9 +842,6 @@ class ClassTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

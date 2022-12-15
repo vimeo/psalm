@@ -34,11 +34,7 @@ class ClassLikeStorageInstanceCacheProvider extends ClassLikeStorageCacheProvide
         return $cached_value;
     }
 
-    /**
-     * @param  string  $fq_classlike_name_lc
-     *
-     */
-    private function loadFromCache($fq_classlike_name_lc): ?ClassLikeStorage
+    private function loadFromCache(string $fq_classlike_name_lc): ?ClassLikeStorage
     {
         return $this->cache[$fq_classlike_name_lc] ?? null;
     }

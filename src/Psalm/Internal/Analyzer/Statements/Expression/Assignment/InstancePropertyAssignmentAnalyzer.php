@@ -92,7 +92,6 @@ class InstancePropertyAssignmentAnalyzer
     /**
      * @param   PropertyFetch|PropertyProperty  $stmt
      * @param   bool                            $direct_assignment whether the variable is assigned explicitly
-     *
      * @return  false|null
      */
     public static function analyze(
@@ -878,7 +877,6 @@ class InstancePropertyAssignmentAnalyzer
 
     /**
      * @param list<string> $invalid_assignment_types
-     *
      * @psalm-suppress ComplexMethod Unavoidably complex method
      */
     private static function analyzeAtomicAssignment(

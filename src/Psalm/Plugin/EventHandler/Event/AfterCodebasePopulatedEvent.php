@@ -10,6 +10,7 @@ final class AfterCodebasePopulatedEvent
 
     /**
      * Called after codebase has been populated
+     *
      * @internal
      */
     public function __construct(Codebase $codebase)

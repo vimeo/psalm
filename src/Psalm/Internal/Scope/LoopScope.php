@@ -10,55 +10,46 @@ use Psalm\Type\Union;
  */
 class LoopScope
 {
-    /**
-     * @var int
-     */
-    public $iteration_count = 0;
+    public int $iteration_count = 0;
 
-    /**
-     * @var Context
-     */
-    public $loop_context;
+    public Context $loop_context;
 
-    /**
-     * @var Context
-     */
-    public $loop_parent_context;
+    public Context $loop_parent_context;
 
     /**
      * @var array<string, Union>
      */
-    public $redefined_loop_vars = [];
+    public array $redefined_loop_vars = [];
 
     /**
      * @var array<string, Union>
      */
-    public $possibly_redefined_loop_vars = [];
+    public array $possibly_redefined_loop_vars = [];
 
     /**
      * @var array<string, Union>
      */
-    public $possibly_redefined_loop_parent_vars = [];
+    public array $possibly_redefined_loop_parent_vars = [];
 
     /**
      * @var array<string, Union>
      */
-    public $possibly_defined_loop_parent_vars = [];
+    public array $possibly_defined_loop_parent_vars = [];
 
     /**
      * @var array<string, bool>
      */
-    public $vars_possibly_in_scope = [];
+    public array $vars_possibly_in_scope = [];
 
     /**
      * @var array<string, bool>
      */
-    public $protected_var_ids = [];
+    public array $protected_var_ids = [];
 
     /**
      * @var string[]
      */
-    public $final_actions = [];
+    public array $final_actions = [];
 
     public function __construct(Context $loop_context, Context $parent_context)
     {

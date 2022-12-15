@@ -13,12 +13,12 @@ class FakeFileProvider extends FileProvider
     /**
      * @var array<string, string>
      */
-    public $fake_files = [];
+    public array $fake_files = [];
 
     /**
      * @var array<string, int>
      */
-    public $fake_file_times = [];
+    public array $fake_file_times = [];
 
     public function fileExists(string $file_path): bool
     {
@@ -61,7 +61,6 @@ class FakeFileProvider extends FileProvider
     /**
      * @param array<string> $file_extensions
      * @param null|callable(string):bool $filter
-     *
      * @return list<string>
      */
     public function getFilesInDir(string $dir_path, array $file_extensions, callable $filter = null): array

@@ -90,47 +90,47 @@ class Scanner
     /**
      * @var array<string, string>
      */
-    private $classlike_files = [];
+    private array $classlike_files = [];
 
     /**
      * @var array<string, bool>
      */
-    private $deep_scanned_classlike_files = [];
+    private array $deep_scanned_classlike_files = [];
 
     /**
      * @var array<string, string>
      */
-    private $files_to_scan = [];
+    private array $files_to_scan = [];
 
     /**
      * @var array<string, string>
      */
-    private $classes_to_scan = [];
+    private array $classes_to_scan = [];
 
     /**
      * @var array<string, bool>
      */
-    private $classes_to_deep_scan = [];
+    private array $classes_to_deep_scan = [];
 
     /**
      * @var array<string, string>
      */
-    private $files_to_deep_scan = [];
+    private array $files_to_deep_scan = [];
 
     /**
      * @var array<string, bool>
      */
-    private $scanned_files = [];
+    private array $scanned_files = [];
 
     /**
      * @var array<string, bool>
      */
-    private $store_scan_failure = [];
+    private array $store_scan_failure = [];
 
     /**
      * @var array<string, bool>
      */
-    private $reflected_classlikes_lc = [];
+    private array $reflected_classlikes_lc = [];
 
     private Reflection $reflection;
 
@@ -166,7 +166,6 @@ class Scanner
 
     /**
      * @param array<string, string> $files_to_scan
-     *
      */
     public function addFilesToShallowScan(array $files_to_scan): void
     {
@@ -743,7 +742,6 @@ class Scanner
 
     /**
      * @param ThreadData $thread_data
-     *
      */
     public function addThreadData(array $thread_data): void
     {

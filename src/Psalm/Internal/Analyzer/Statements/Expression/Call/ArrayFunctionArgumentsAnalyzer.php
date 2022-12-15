@@ -134,7 +134,6 @@ class ArrayFunctionArgumentsAnalyzer
 
     /**
      * @param   list<PhpParser\Node\Arg>          $args
-     *
      * @return  false|null
      */
     public static function handleAddition(
@@ -329,7 +328,6 @@ class ArrayFunctionArgumentsAnalyzer
 
     /**
      * @param   list<PhpParser\Node\Arg>          $args
-     *
      * @return  false|null
      */
     public static function handleSplice(

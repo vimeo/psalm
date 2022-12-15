@@ -17,7 +17,6 @@ use function md5;
  *
  * @see https://docs.gitlab.com/ee/user/project/merge_requests/code_quality.html
  * @see https://github.com/codeclimate/platform/blob/master/spec/analyzers/SPEC.md#data-types
- *
  * @author Olivier Doucet <webmaster@ajeux.com>
  */
 final class CodeClimateReport extends Report

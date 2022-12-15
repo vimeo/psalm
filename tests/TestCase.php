@@ -92,32 +92,19 @@ class TestCase extends BaseTestCase
         RuntimeCaches::clearAll();
     }
 
-    /**
-     * @param string $file_path
-     * @param string $contents
-     *
-     */
-    public function addFile($file_path, $contents): void
+    public function addFile(string $file_path, string $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan($file_path);
     }
 
-    /**
-     * @param string $file_path
-     * @param string $contents
-     */
-    public function addStubFile($file_path, $contents): void
+    public function addStubFile(string $file_path, string $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getConfig()->addStubFile($file_path);
     }
 
-    /**
-     * @param  string         $file_path
-     *
-     */
-    public function analyzeFile($file_path, Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
+    public function analyzeFile(string $file_path, Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
     {
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -153,11 +140,7 @@ class TestCase extends BaseTestCase
         }
     }
 
-    /**
-     * @param  bool $withDataSet
-     *
-     */
-    protected function getTestName($withDataSet = true): string
+    protected function getTestName(bool $withDataSet = true): string
     {
         return $this->getName($withDataSet);
     }

@@ -6,7 +6,6 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 abstract class UnresolvedConstantComponent

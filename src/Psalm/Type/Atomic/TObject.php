@@ -6,6 +6,7 @@ use Psalm\Type\Atomic;
 
 /**
  * Denotes the `object` type
+ *
  * @psalm-immutable
  */
 class TObject extends Atomic

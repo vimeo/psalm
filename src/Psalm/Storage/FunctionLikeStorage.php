@@ -281,7 +281,6 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
 
     /**
      * @internal
-     *
      * @param list<FunctionLikeParameter> $params
      */
     public function setParams(array $params): void

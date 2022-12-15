@@ -27,9 +27,7 @@ abstract class FileManipulationTestCase extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param string[] $issues_to_fix
-     *
      */
     public function testValidCode(
         string $input_code,

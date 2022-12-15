@@ -6,16 +6,13 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class ClassConstant extends UnresolvedConstantComponent
 {
-    /** @var string */
-    public $fqcln;
+    public string $fqcln;
 
-    /** @var string */
-    public $name;
+    public string $name;
 
     public function __construct(string $fqcln, string $name)
     {

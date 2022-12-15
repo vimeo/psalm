@@ -25,10 +25,7 @@ class ProjectCacheProvider
     private const GOOD_RUN_NAME = 'good_run';
     private const COMPOSER_LOCK_HASH = 'composer_lock_hash';
 
-    /**
-     * @var int|null
-     */
-    private $last_run;
+    private ?int $last_run = null;
 
     private ?string $composer_lock_hash = null;
 

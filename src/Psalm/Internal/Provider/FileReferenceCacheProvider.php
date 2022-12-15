@@ -27,7 +27,6 @@ use const LOCK_EX;
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
- *
  * @internal
  */
 class FileReferenceCacheProvider
@@ -53,10 +52,7 @@ class FileReferenceCacheProvider
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
 
-    /**
-     * @var Config
-     */
-    protected $config;
+    protected Config $config;
 
     public function __construct(Config $config)
     {

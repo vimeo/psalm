@@ -31,6 +31,7 @@ use function str_replace;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
+ *
  * @psalm-immutable
  */
 class TKeyedArray extends Atomic
@@ -88,7 +89,6 @@ class TKeyedArray extends Atomic
 
     /**
      * @param non-empty-array<string|int, Union> $properties
-     *
      * @return static
      */
     public function setProperties(array $properties): self
@@ -171,7 +171,6 @@ class TKeyedArray extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -416,6 +415,7 @@ class TKeyedArray extends Atomic
 
     /**
      * Returns null if there is no upper limit.
+     *
      * @return int<1, max>|null
      */
     public function getMaxCount(): ?int

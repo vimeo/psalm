@@ -1090,7 +1090,6 @@ class ArrayFetchAnalyzer
      * @param TArray|TKeyedArray|TClassStringMap $type
      * @param-out TArray|TKeyedArray|TClassStringMap $type
      * @param list<TLiteralInt|TLiteralString> $key_values
-     *
      * @psalm-suppress ConflictingReferenceConstraint Ignore
      */
     private static function handleArrayAccessOnArray(

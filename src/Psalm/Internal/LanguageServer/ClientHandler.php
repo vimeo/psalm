@@ -20,20 +20,11 @@ use function error_log;
  */
 class ClientHandler
 {
-    /**
-     * @var ProtocolReader
-     */
-    public $protocolReader;
+    public ProtocolReader $protocolReader;
 
-    /**
-     * @var ProtocolWriter
-     */
-    public $protocolWriter;
+    public ProtocolWriter $protocolWriter;
 
-    /**
-     * @var IdGenerator
-     */
-    public $idGenerator;
+    public IdGenerator $idGenerator;
 
     public function __construct(ProtocolReader $protocolReader, ProtocolWriter $protocolWriter)
     {
@@ -47,7 +38,6 @@ class ClientHandler
      *
      * @param string $method The method to call
      * @param array|object $params The method parameters
-     *
      * @return Promise<mixed> Resolved with the result of the request or rejected with an error
      */
     public function request(string $method, $params): Promise

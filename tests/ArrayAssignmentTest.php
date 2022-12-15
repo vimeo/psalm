@@ -31,9 +31,6 @@ class ArrayAssignmentTest extends TestCase
         $this->assertFalse(isset($context->vars_in_scope['$foo[\'a\']']));
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -2030,9 +2027,6 @@ class ArrayAssignmentTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

@@ -236,9 +236,6 @@ class AssertionReconciler extends Reconciler
         );
     }
 
-    /**
-     * @param array<string, array<string, Union>> $template_type_map
-     */
     private static function getMissingType(
         Assertion $assertion,
         bool $inside_loop
@@ -274,7 +271,6 @@ class AssertionReconciler extends Reconciler
      *
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      * @param   string[]    $suppressed_issues
-     * @param   array<string, array<string, Union>> $template_type_map
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function refine(
@@ -521,8 +517,6 @@ class AssertionReconciler extends Reconciler
     /**
      * This method receives two types. The goal is to use datas in the new type to reduce the existing_type to a more
      * precise version. For example: new is `array<int>` old is `list<mixed>` so the result is `list<int>`
-     *
-     * @param array<string, array<string, Union>> $template_type_map
      */
     private static function filterTypeWithAnother(
         Codebase $codebase,

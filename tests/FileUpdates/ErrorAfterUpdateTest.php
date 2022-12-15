@@ -48,10 +48,8 @@ class ErrorAfterUpdateTest extends TestCase
 
     /**
      * @dataProvider providerTestInvalidUpdates
-     *
      * @param array<int, array<string, string>> $file_stages
      * @param array<string, string> $ignored_issues
-     *
      */
     public function testErrorAfterUpdate(
         array $file_stages,

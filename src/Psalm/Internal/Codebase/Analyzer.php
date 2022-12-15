@@ -110,7 +110,7 @@ class Analyzer
      *
      * @var array<string, list{int, int}>
      */
-    private $mixed_counts = [];
+    private array $mixed_counts = [];
 
     /**
      * Used to store member names of mixed property/method access
@@ -141,7 +141,7 @@ class Analyzer
      *
      * @var array<string, string>
      */
-    private $files_with_analysis_results = [];
+    private array $files_with_analysis_results = [];
 
     /**
      * We may update fewer files than we analyse (i.e. for dead code detection)
@@ -178,12 +178,12 @@ class Analyzer
     /**
      * @var array<string, array<int, Union>>
      */
-    public $possible_method_param_types = [];
+    public array $possible_method_param_types = [];
 
     /**
      * @var array<string, bool>
      */
-    public $mutable_classes = [];
+    public array $mutable_classes = [];
 
     public function __construct(
         Config $config,
@@ -199,7 +199,6 @@ class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
-     *
      */
     public function addFilesToAnalyze(array $files_to_analyze): void
     {
@@ -209,7 +208,6 @@ class Analyzer
 
     /**
      * @param array<string, string> $files_to_analyze
-     *
      */
     public function addFilesToShowResults(array $files_to_analyze): void
     {
@@ -218,7 +216,6 @@ class Analyzer
 
     /**
      * @param array<string> $files_to_update
-     *
      */
     public function setFilesToUpdate(array $files_to_update): void
     {
@@ -1072,7 +1069,6 @@ class Analyzer
 
     /**
      * @param array<string, array<string, bool>> $names
-     *
      */
     public function addMixedMemberNames(array $names): void
     {
@@ -1102,7 +1098,6 @@ class Analyzer
 
     /**
      * @param  list{int, int} $mixed_counts
-     *
      */
     public function setMixedCountsForFile(string $file_path, array $mixed_counts): void
     {

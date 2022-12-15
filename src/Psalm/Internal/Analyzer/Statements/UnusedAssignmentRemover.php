@@ -32,7 +32,6 @@ class UnusedAssignmentRemover
     /**
      * @param array<PhpParser\Node\Stmt>   $stmts
      * @param array<string, CodeLocation> $var_loc_map
-     *
      */
     public function findUnusedAssignment(
         Codebase $codebase,

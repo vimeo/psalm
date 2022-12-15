@@ -109,7 +109,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     /**
      * @var array<string, Union>
      */
-    public $inferred_property_types = [];
+    public array $inferred_property_types = [];
 
     /**
      * @param PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class
@@ -517,7 +517,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             )
                         );
                     }
-                    
+
                     $const_id = strtolower($this->fq_class_name) . '::' . $const->name;
 
                     foreach ($codebase->class_constants_to_rename as $original_const_id => $new_const_name) {

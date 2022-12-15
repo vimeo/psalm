@@ -16,7 +16,7 @@ use function count;
 class VariableUseGraph extends DataFlowGraph
 {
     /** @var array<string, array<string, true>> */
-    protected $backward_edges = [];
+    protected array $backward_edges = [];
 
     /** @var array<string, DataFlowNode> */
     private array $nodes = [];

@@ -43,34 +43,31 @@ class StatementsProvider
 {
     private FileProvider $file_provider;
 
-    /**
-     * @var ?ParserCacheProvider
-     */
-    public $parser_cache_provider;
+    public ?ParserCacheProvider $parser_cache_provider = null;
 
     /**
      * @var int|bool
      */
     private $this_modified_time;
 
-    private ?FileStorageCacheProvider $file_storage_cache_provider;
+    private ?FileStorageCacheProvider $file_storage_cache_provider = null;
 
     private StatementsVolatileCache $statements_volatile_cache;
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private $unchanged_members = [];
+    private array $unchanged_members = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private $unchanged_signature_members = [];
+    private array $unchanged_signature_members = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private $changed_members = [];
+    private array $changed_members = [];
 
     /**
      * @var array<string, bool>
@@ -80,12 +77,12 @@ class StatementsProvider
     /**
      * @var array<string, array<int, array{int, int, int, int}>>
      */
-    private $diff_map = [];
+    private array $diff_map = [];
 
     /**
      * @var array<string, array<int, array{int, int}>>
      */
-    private $deletion_ranges = [];
+    private array $deletion_ranges = [];
 
     private static ?Emulative $lexer = null;
 
@@ -301,7 +298,6 @@ class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_changed_members
-     *
      */
     public function addChangedMembers(array $more_changed_members): void
     {
@@ -318,7 +314,6 @@ class StatementsProvider
 
     /**
      * @param array<string, array<string, bool>> $more_unchanged_members
-     *
      */
     public function addUnchangedSignatureMembers(array $more_unchanged_members): void
     {
@@ -335,7 +330,6 @@ class StatementsProvider
 
     /**
      * @param array<string, bool> $errors
-     *
      */
     public function addErrors(array $errors): void
     {
@@ -371,7 +365,6 @@ class StatementsProvider
 
     /**
      * @param array<string, array<int, array{int, int, int, int}>> $diff_map
-     *
      */
     public function addDiffMap(array $diff_map): void
     {
@@ -380,7 +373,6 @@ class StatementsProvider
 
     /**
      * @param array<string, array<int, array{int, int}>> $deletion_ranges
-     *
      */
     public function addDeletionRanges(array $deletion_ranges): void
     {
@@ -399,7 +391,6 @@ class StatementsProvider
     /**
      * @param  list<Stmt> $existing_statements
      * @param  array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $file_changes
-     *
      * @return list<Stmt>
      */
     public static function parseStatements(

@@ -46,7 +46,7 @@ class Reflection
     /**
      * @var array<string, FunctionStorage>
      */
-    private static $builtin_functions = [];
+    private static array $builtin_functions = [];
 
     public function __construct(ClassLikeStorageProvider $storage_provider, Codebase $codebase)
     {
@@ -355,7 +355,6 @@ class Reflection
 
     /**
      * @param  callable-string $function_id
-     *
      * @return false|null
      */
     public function registerFunction(string $function_id): ?bool
@@ -471,7 +470,6 @@ class Reflection
     /**
      * @param lowercase-string $fq_class_name
      * @param lowercase-string $parent_class
-     *
      */
     private function registerInheritedProperties(
         string $fq_class_name,

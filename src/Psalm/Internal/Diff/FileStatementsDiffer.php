@@ -15,9 +15,9 @@ class FileStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
+     *
      * @param list<PhpParser\Node\Stmt> $a
      * @param list<PhpParser\Node\Stmt> $b
-     *
      * @return array{
      *      0: list<string>,
      *      1: list<string>,

@@ -49,6 +49,7 @@ class InternalCallMapHandlerTest extends TestCase
     /**
      * Specify a function name as value, or a function name as key and
      * an array containing the PHP versions in which to ignore this function as values.
+     *
      * @var array<int|string, string|list<string>>
      */
     private static $ignoredFunctions = [
@@ -1304,7 +1305,6 @@ class InternalCallMapHandlerTest extends TestCase
     ];
 
     /**
-     *
      * @var Codebase
      */
     private static $codebase;
@@ -1358,7 +1358,6 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
      * @return iterable<string, array{0: callable-string, 1: array<int|string, string>}>
      */
     public function callMapEntryProvider(): iterable
@@ -1394,8 +1393,6 @@ class InternalCallMapHandlerTest extends TestCase
         }
     }
 
-    /**
-     */
     private function isIgnored(string $functionName): bool
     {
         if (in_array($functionName, self::$ignoredFunctions)) {
@@ -1411,8 +1408,6 @@ class InternalCallMapHandlerTest extends TestCase
         return false;
     }
 
-    /**
-     */
     private function isReturnTypeOnlyIgnored(string $functionName): bool
     {
         if (in_array($functionName, static::$ignoredReturnTypeOnlyFunctions, true)) {
@@ -1428,8 +1423,6 @@ class InternalCallMapHandlerTest extends TestCase
         return false;
     }
 
-    /**
-     */
     private function isUnreflectableIgnored(string $functionName): bool
     {
         if (in_array($functionName, static::$ignoredUnreflectableFunctions, true)) {
@@ -1503,6 +1496,7 @@ class InternalCallMapHandlerTest extends TestCase
 
     /**
      * This function will test functions that are in the callmap AND currently defined
+     *
      * @coversNothing
      * @depends testGetcallmapReturnsAValidCallmap
      * @depends testIgnoresAreSortedAndUnique
@@ -1553,13 +1547,13 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
      * @param array<string, string> $entryParameters
      */
     private function assertEntryParameters(ReflectionFunctionAbstract $function, array $entryParameters): void
     {
         /**
          * Parse the parameter names from the map.
+         *
          * @var array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
          */
         $normalizedEntries = [];
@@ -1615,7 +1609,6 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
      * @param array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
      */
     private function assertParameter(array $normalizedEntry, ReflectionParameter $param): void

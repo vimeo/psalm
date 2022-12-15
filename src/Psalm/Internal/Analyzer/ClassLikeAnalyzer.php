@@ -81,33 +81,23 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         'unknown type' => true,
     ];
 
-    /**
-     * @var PhpParser\Node\Stmt\ClassLike
-     */
-    protected $class;
+    protected PhpParser\Node\Stmt\ClassLike $class;
 
-    /** @var FileAnalyzer */
-    public $file_analyzer;
+    public FileAnalyzer $file_analyzer;
 
-    /**
-     * @var string
-     */
-    protected $fq_class_name;
+    protected string $fq_class_name;
 
     /**
      * The parent class
-     *
-     * @var string|null
      */
-    protected $parent_fq_class_name;
+    protected ?string $parent_fq_class_name = null;
 
     /**
      * @var PhpParser\Node\Stmt[]
      */
-    protected $leftover_stmts = [];
+    protected array $leftover_stmts = [];
 
-    /** @var ClassLikeStorage */
-    protected $storage;
+    protected ClassLikeStorage $storage;
 
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, string $fq_class_name)
     {
@@ -404,8 +394,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Gets the fully-qualified class name from a Name object
-     *
-     *
      */
     public static function getFQCLNFromNameObject(
         PhpParser\Node\Name $class_name,
@@ -495,7 +483,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      * Gets the Psalm type from a particular value
      *
      * @param  mixed $value
-     *
      */
     public static function getTypeFromValue($value): Union
     {

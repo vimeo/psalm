@@ -130,7 +130,6 @@ class TypeExpander
      * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @param-out Atomic $return_type
      * @return non-empty-list<Atomic>
-     *
      * @psalm-suppress ConflictingReferenceConstraint, ReferenceConstraintViolation The output type is always Atomic
      * @psalm-suppress ComplexMethod
      */
@@ -766,7 +765,6 @@ class TypeExpander
 
     /**
      * @param string|TNamedObject|TTemplateParam|null $static_class_type
-     *
      * @return non-empty-list<Atomic>
      */
     private static function expandConditional(

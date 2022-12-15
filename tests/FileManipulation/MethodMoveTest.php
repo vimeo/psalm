@@ -27,7 +27,6 @@ class MethodMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $methods_to_move
      */
     public function testValidCode(

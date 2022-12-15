@@ -9,10 +9,7 @@ use Psalm\Internal\Type\ParseTree;
  */
 class ConditionalTree extends ParseTree
 {
-    /**
-     * @var TemplateIsTree
-     */
-    public $condition;
+    public TemplateIsTree $condition;
 
     public function __construct(TemplateIsTree $condition, ?ParseTree $parent = null)
     {

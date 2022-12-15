@@ -37,7 +37,6 @@ final class RemoteInfo
      * Set remote name.
      *
      * @param string $name remote name
-     *
      * @return $this
      */
     public function setName(string $name): RemoteInfo
@@ -49,7 +48,6 @@ final class RemoteInfo
 
     /**
      * Return remote name.
-     *
      */
     public function getName(): ?string
     {
@@ -60,7 +58,6 @@ final class RemoteInfo
      * Set remote URL.
      *
      * @param string $url remote URL
-     *
      * @return $this
      */
     public function setUrl(string $url): RemoteInfo
@@ -72,7 +69,6 @@ final class RemoteInfo
 
     /**
      * Return remote URL.
-     *
      */
     public function getUrl(): ?string
     {

@@ -664,8 +664,6 @@ class FunctionLikeDocblockParser
 
     /**
      * @param array<int, string> $param
-     *
-     *
      * @throws DocblockParseException  if a duplicate is found
      */
     private static function checkDuplicatedParams(array $param): void
@@ -679,9 +677,7 @@ class FunctionLikeDocblockParser
 
     /**
      * @param array<int, string> $lines
-     *
      * @return list<string>
-     *
      * @psalm-pure
      */
     private static function extractAllParamNames(array $lines): array

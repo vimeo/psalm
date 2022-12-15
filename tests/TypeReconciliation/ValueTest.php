@@ -34,9 +34,6 @@ class ValueTest extends TestCase
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -920,9 +917,6 @@ class ValueTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

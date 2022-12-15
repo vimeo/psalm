@@ -27,7 +27,7 @@ use function strtolower;
 final class DynamicFunctionStorageProvider
 {
     /** @var array<lowercase-string, array<Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage>> */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     /** @var array<lowercase-string, ?FunctionStorage> */
     private static array $dynamic_storages = [];

@@ -62,59 +62,43 @@ class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls
-     *
-     * @var ?ServerTextDocument
      */
-    public $textDocument;
+    public ?ServerTextDocument $textDocument = null;
 
     /**
      * Handles workspace/* method calls
-     *
-     * @var ?ServerWorkspace
      */
-    public $workspace;
+    public ?ServerWorkspace $workspace = null;
 
-    /**
-     * @var ProtocolReader
-     */
-    protected $protocolReader;
+    protected ProtocolReader $protocolReader;
 
-    /**
-     * @var ProtocolWriter
-     */
-    protected $protocolWriter;
+    protected ProtocolWriter $protocolWriter;
 
-    /**
-     * @var LanguageClient
-     */
-    public $client;
+    public LanguageClient $client;
 
-    /**
-     * @var ProjectAnalyzer
-     */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     /**
      * @var array<string, string>
      */
-    protected $onsave_paths_to_analyze = [];
+    protected array $onsave_paths_to_analyze = [];
 
     /**
      * @var array<string, string>
      */
-    protected $onchange_paths_to_analyze = [];
+    protected array $onchange_paths_to_analyze = [];
 
     /**
      * @var array<string, list<IssueData>>
      */
-    protected $current_issues = [];
+    protected array $current_issues = [];
 
     /**
      * This should actually be a private property on `parent`
+     *
      * @psalm-suppress UnusedProperty
-     * @var JsonMapper
      */
-    protected $mapper;
+    protected JsonMapper $mapper;
 
     public function __construct(
         ProtocolReader $reader,
@@ -311,7 +295,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * @psalm-suppress PossiblyUnusedMethod
-     *
      */
     public function initialized(): void
     {
@@ -367,7 +350,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * @param array<string, string> $uris
-     *
      */
     public function emitIssues(array $uris): void
     {
@@ -440,6 +422,7 @@ class LanguageServer extends Dispatcher
      * The shutdown request is sent from the client to the server. It asks the server to shut down,
      * but to not exit (otherwise the response might not be delivered correctly to the client).
      * There is a separate exit notification that asks the server to exit.
+     *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function shutdown(): Promise
@@ -458,7 +441,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * A notification to ask the server to exit its process.
-     *
      */
     public function exit(): void
     {
@@ -538,8 +520,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Transforms URI into file path
-     *
-     *
      */
     public static function uriToPath(string $uri): string
     {

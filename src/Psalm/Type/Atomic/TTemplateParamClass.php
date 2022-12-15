@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
+ *
  * @psalm-immutable
  */
 final class TTemplateParamClass extends TClassString
@@ -50,7 +51,6 @@ final class TTemplateParamClass extends TClassString
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

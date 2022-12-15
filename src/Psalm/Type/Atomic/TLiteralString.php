@@ -8,6 +8,7 @@ use function mb_substr;
 
 /**
  * Denotes a string whose value is known.
+ *
  * @psalm-immutable
  */
 class TLiteralString extends TString
@@ -61,7 +62,6 @@ class TLiteralString extends TString
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

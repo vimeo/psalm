@@ -76,7 +76,6 @@ class TNonEmptyList extends TList
 
     /**
      * @param positive-int|null $count
-     *
      * @return static
      */
     public function setCount(?int $count): self

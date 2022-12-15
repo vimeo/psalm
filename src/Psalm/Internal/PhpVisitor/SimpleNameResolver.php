@@ -198,7 +198,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *
      * @param Name $name Function or constant name to resolve
      * @param Stmt\Use_::TYPE_*  $type One of Stmt\Use_::TYPE_*
-     *
      * @return Name Resolved name, or original name with attribute
      */
     protected function resolveName(Name $name, int $type): Name

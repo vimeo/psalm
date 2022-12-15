@@ -22,9 +22,6 @@ class IntRangeTest extends TestCase
         $this->assertEquals(10, $range->max_bound);
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -860,9 +857,6 @@ class IntRangeTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

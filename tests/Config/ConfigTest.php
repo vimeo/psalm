@@ -866,7 +866,6 @@ class ConfigTest extends TestCase
             array_map(
                 /**
                  * @param string $issue_name
-                 *
                  * @return string
                  */
                 fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",

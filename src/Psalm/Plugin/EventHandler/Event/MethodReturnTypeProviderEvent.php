@@ -41,7 +41,6 @@ final class MethodReturnTypeProviderEvent
      * @param  ?array<Union> $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
-     *
      * @internal
      */
     public function __construct(

@@ -58,7 +58,6 @@ class FunctionParamsProvider
 
     /**
      * @param list<Arg> $call_args
-     *
      * @return  ?array<int, FunctionLikeParameter>
      */
     public function getFunctionParams(

@@ -9,9 +9,6 @@ class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [

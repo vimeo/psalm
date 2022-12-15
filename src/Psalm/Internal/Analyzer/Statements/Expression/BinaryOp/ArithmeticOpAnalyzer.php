@@ -292,7 +292,6 @@ class ArithmeticOpAnalyzer
     /**
      * @param string[] $invalid_left_messages
      * @param string[] $invalid_right_messages
-     *
      * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     private static function analyzeOperands(
@@ -929,7 +928,6 @@ class ArithmeticOpAnalyzer
     }
 
     /**
-     * @param PhpParser\Node $operation
      * @param float|int      $operand1
      * @param float|int      $operand2
      */

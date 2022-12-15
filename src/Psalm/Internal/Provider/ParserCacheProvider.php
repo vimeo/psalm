@@ -52,14 +52,14 @@ class ParserCacheProvider
      *
      * @var array<string, string>|null
      */
-    protected $existing_file_content_hashes;
+    protected ?array $existing_file_content_hashes = null;
 
     /**
      * A map of recently-added filename hashes to contents hashes
      *
      * @var array<string, string>
      */
-    protected $new_file_content_hashes = [];
+    protected array $new_file_content_hashes = [];
 
     private bool $use_file_cache;
 
@@ -255,7 +255,6 @@ class ParserCacheProvider
 
     /**
      * @param array<string, string> $file_content_hashes
-     *
      */
     public function addNewFileContentHashes(array $file_content_hashes): void
     {

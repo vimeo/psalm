@@ -27,7 +27,6 @@ class NamespaceMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $namespaces_to_move
      */
     public function testValidCode(

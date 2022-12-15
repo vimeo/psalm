@@ -79,7 +79,6 @@ class ClassDocblockManipulator
     /**
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
-     *
      */
     private function getDocblock(): string
     {

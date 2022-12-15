@@ -27,7 +27,6 @@ class PropertyMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $properties_to_move
      */
     public function testValidCode(

@@ -1251,9 +1251,6 @@ class AnnotationTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

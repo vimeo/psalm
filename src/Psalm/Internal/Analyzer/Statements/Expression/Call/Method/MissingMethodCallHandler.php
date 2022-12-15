@@ -410,10 +410,8 @@ class MissingMethodCallHandler
      * Returns the pseudo method if exists, with its defining class storage.
      * If the method is not declared, null is returned.
      *
-     * @param Codebase $codebase
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
-     *
      * @return array{MethodStorage, ClassLikeStorage}
      */
     private static function findPseudoMethodAndClassStorages(

@@ -114,10 +114,7 @@ class ProjectAnalyzer
      */
     private Config $config;
 
-    /**
-     * @var self
-     */
-    public static $instance;
+    public static ProjectAnalyzer $instance;
 
     /**
      * An object representing everything we know about the code
@@ -128,70 +125,41 @@ class ProjectAnalyzer
 
     private ClassLikeStorageProvider $classlike_storage_provider;
 
-    private ?ParserCacheProvider $parser_cache_provider;
+    private ?ParserCacheProvider $parser_cache_provider = null;
 
-    /** @var ?ProjectCacheProvider */
-    public $project_cache_provider;
+    public ?ProjectCacheProvider $project_cache_provider = null;
 
     private FileReferenceProvider $file_reference_provider;
 
-    /**
-     * @var Progress
-     */
-    public $progress;
+    public Progress $progress;
 
-    /**
-     * @var bool
-     */
-    public $debug_lines = false;
+    public bool $debug_lines = false;
 
-    /**
-     * @var bool
-     */
-    public $debug_performance = false;
+    public bool $debug_performance = false;
 
-    /**
-     * @var bool
-     */
-    public $show_issues = true;
+    public bool $show_issues = true;
 
-    /** @var int */
-    public $threads;
+    public int $threads;
 
     /**
      * @var array<string, bool>
      */
     private array $issues_to_fix = [];
 
-    /**
-     * @var bool
-     */
-    public $dry_run = false;
+    public bool $dry_run = false;
 
-    /**
-     * @var bool
-     */
-    public $full_run = false;
+    public bool $full_run = false;
 
-    /**
-     * @var bool
-     */
-    public $only_replace_php_types_with_non_docblock_types = false;
+    public bool $only_replace_php_types_with_non_docblock_types = false;
 
-    /**
-     * @var ?int
-     */
-    public $onchange_line_limit;
+    public ?int $onchange_line_limit = null;
 
-    /**
-     * @var bool
-     */
-    public $provide_completion = false;
+    public bool $provide_completion = false;
 
     /**
      * @var list<string>
      */
-    public $check_paths_files = [];
+    public array $check_paths_files = [];
 
     /**
      * @var array<string,string>
@@ -206,17 +174,14 @@ class ProjectAnalyzer
     /**
      * @var array<string, string>
      */
-    private $to_refactor = [];
+    private array $to_refactor = [];
 
-    /**
-     * @var ?ReportOptions
-     */
-    public $stdout_report_options;
+    public ?ReportOptions $stdout_report_options = null;
 
     /**
      * @var array<ReportOptions>
      */
-    public $generated_report_options;
+    public array $generated_report_options;
 
     /**
      * @var array<int, class-string<CodeIssue>>
@@ -247,17 +212,13 @@ class ProjectAnalyzer
 
     /**
      * When this is true, the language server will send the diagnostic code with a help link.
-     *
-     * @var bool
      */
-    public $language_server_use_extended_diagnostic_codes = false;
+    public bool $language_server_use_extended_diagnostic_codes = false;
 
     /**
      * If this is true then the language server will send log messages to the client with additional information.
-     *
-     * @var bool
      */
-    public $language_server_verbose = false;
+    public bool $language_server_verbose = false;
 
     /**
      * @param array<ReportOptions> $generated_report_options
@@ -1112,7 +1073,6 @@ class ProjectAnalyzer
 
     /**
      * @param  array<string>    $file_list
-     *
      */
     private function checkDiffFilesWithConfig(Config $config, array $file_list = []): void
     {
@@ -1232,7 +1192,6 @@ class ProjectAnalyzer
 
     /**
      * @param  array<string>  $diff_files
-     *
      * @return array<string, string>
      */
     public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true): array
@@ -1280,7 +1239,6 @@ class ProjectAnalyzer
 
     /**
      * @param array<string, string> $to_refactor
-     *
      */
     public function refactorCodeAfterCompletion(array $to_refactor): void
     {
@@ -1318,7 +1276,6 @@ class ProjectAnalyzer
     /**
      * @param array<string, bool> $issues
      * @throws UnsupportedIssueToFixException
-     *
      */
     public function setIssuesToFix(array $issues): void
     {
@@ -1450,6 +1407,7 @@ class ProjectAnalyzer
      * Adapted from https://gist.github.com/divinity76/01ef9ca99c111565a72d3a8a6e42f7fb
      * returns number of cpu cores
      * Copyleft 2018, license: WTFPL
+     *
      * @throws NumberOfCpuCoreNotFound
      */
     public static function getCpuCount(): int
@@ -1478,7 +1436,6 @@ class ProjectAnalyzer
 
     /**
      * @return array<int, string>
-     *
      * @psalm-pure
      */
     public static function getSupportedIssuesToFix(): array

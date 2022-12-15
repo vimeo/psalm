@@ -107,21 +107,18 @@ class ClassLikeNodeScanner
     /**
      * @var array<string, array<string, Union>>
      */
-    public $class_template_types = [];
+    public array $class_template_types = [];
 
-    private ?Name $namespace_name;
+    private ?Name $namespace_name = null;
 
     private Aliases $aliases;
 
-    /**
-     * @var ?ClassLikeStorage
-     */
-    public $storage;
+    public ?ClassLikeStorage $storage = null;
 
     /**
      * @var array<string, TypeAlias>
      */
-    public $type_aliases = [];
+    public array $type_aliases = [];
 
     public function __construct(
         Codebase $codebase,
@@ -1682,9 +1679,6 @@ class ClassLikeNodeScanner
     }
 
     /**
-     * @param ClassLikeDocblockComment $comment
-     * @param string $fq_classlike_name
-     *
      * @return array<string, LinkableTypeAlias>
      */
     private function getImportedTypeAliases(ClassLikeDocblockComment $comment, string $fq_classlike_name): array
@@ -1771,9 +1765,7 @@ class ClassLikeNodeScanner
 
     /**
      * @param  array<string, TypeAlias> $type_aliases
-     *
      * @return array<string, InlineTypeAlias>
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function getTypeAliasesFromComment(
@@ -1804,9 +1796,7 @@ class ClassLikeNodeScanner
     /**
      * @param  array<string>    $type_alias_comment_lines
      * @param  array<string, TypeAlias> $type_aliases
-     *
      * @return array<string, InlineTypeAlias>
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     private static function getTypeAliasesFromCommentLines(

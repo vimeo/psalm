@@ -38,13 +38,9 @@ class FileReferenceTest extends TestCase
 
     /**
      * @dataProvider providerReferenceLocations
-     *
-     * @param string $input_code
-     * @param string $symbol
      * @param array<int, string> $expected_locations
-     *
      */
-    public function testReferenceLocations($input_code, $symbol, $expected_locations): void
+    public function testReferenceLocations(string $input_code, string $symbol, array $expected_locations): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -80,12 +76,10 @@ class FileReferenceTest extends TestCase
 
     /**
      * @dataProvider providerReferencedMethods
-     *
      * @param array<string,array<string,bool>> $expected_method_references_to_members
      * @param array<string,array<string,bool>> $expected_file_references_to_members
      * @param array<string,array<string,bool>> $expected_method_references_to_missing_members
      * @param array<string,array<string,bool>> $expected_file_references_to_missing_members
-     *
      */
     public function testReferencedMethods(
         string $input_code,

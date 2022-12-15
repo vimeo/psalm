@@ -16,6 +16,7 @@ final class AddRemoveTaintsEvent
 
     /**
      * Called after an expression has been checked
+     *
      * @internal
      */
     public function __construct(

@@ -106,8 +106,8 @@
         "psalter"
     ],
     "scripts": {
-        "cs": "phpcs -p",
-        "cs-fix": "phpcbf -p",
+        "cs": "phpcs -ps",
+        "cs-fix": "phpcbf -ps",
         "lint": "parallel-lint ./src ./tests",
         "phpunit": "paratest --runner=WrapperRunner",
         "phpunit-std": "phpunit",

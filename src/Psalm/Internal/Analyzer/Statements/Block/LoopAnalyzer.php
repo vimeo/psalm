@@ -36,7 +36,6 @@ class LoopAnalyzer
      * @param  array<PhpParser\Node\Stmt>   $stmts
      * @param  PhpParser\Node\Expr[]        $pre_conditions
      * @param  PhpParser\Node\Expr[]        $post_expressions
-     *
      * @return false|null
      */
     public static function analyze(
@@ -568,7 +567,6 @@ class LoopAnalyzer
 
     /**
      * @param  list<Clause>  $pre_condition_clauses
-     *
      * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
@@ -647,7 +645,6 @@ class LoopAnalyzer
 
     /**
      * @param  array<string, array<string, bool>>   $assignment_map
-     *
      */
     private static function getAssignmentMapDepth(string $first_var_id, array $assignment_map): int
     {

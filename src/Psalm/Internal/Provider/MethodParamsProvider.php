@@ -65,7 +65,6 @@ class MethodParamsProvider
 
     /**
      * @param ?list<Arg>  $call_args
-     *
      * @return  ?list<FunctionLikeParameter>
      */
     public function getMethodParams(

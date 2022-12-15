@@ -38,7 +38,6 @@ class GetMemoryLimitInBytesTest extends TestCase
 
     /**
      * @dataProvider memoryLimitSettingProvider
-     *
      * @param int|string $setting
      * @param int|string $expectedBytes
      */

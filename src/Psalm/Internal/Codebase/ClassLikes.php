@@ -74,55 +74,52 @@ class ClassLikes
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 
-    /**
-     * @var FileReferenceProvider
-     */
-    public $file_reference_provider;
+    public FileReferenceProvider $file_reference_provider;
 
     /**
      * @var array<lowercase-string, bool>
      */
-    private $existing_classlikes_lc = [];
+    private array $existing_classlikes_lc = [];
 
     /**
      * @var array<lowercase-string, bool>
      */
-    private $existing_classes_lc = [];
+    private array $existing_classes_lc = [];
 
     /**
      * @var array<string, bool>
      */
-    private $existing_classes = [];
+    private array $existing_classes = [];
 
     /**
      * @var array<lowercase-string, bool>
      */
-    private $existing_interfaces_lc = [];
+    private array $existing_interfaces_lc = [];
 
     /**
      * @var array<string, bool>
      */
-    private $existing_interfaces = [];
+    private array $existing_interfaces = [];
 
     /**
      * @var array<lowercase-string, bool>
      */
-    private $existing_traits_lc = [];
+    private array $existing_traits_lc = [];
 
     /**
      * @var array<string, bool>
      */
-    private $existing_traits = [];
+    private array $existing_traits = [];
 
     /**
      * @var array<lowercase-string, bool>
      */
-    private $existing_enums_lc = [];
+    private array $existing_enums_lc = [];
 
     /**
      * @var array<string, bool>
      */
-    private $existing_enums = [];
+    private array $existing_enums = [];
 
     /**
      * @var array<lowercase-string, string>
@@ -139,15 +136,9 @@ class ClassLikes
      */
     private array $trait_nodes = [];
 
-    /**
-     * @var bool
-     */
-    public $collect_references = false;
+    public bool $collect_references = false;
 
-    /**
-     * @var bool
-     */
-    public $collect_locations = false;
+    public bool $collect_locations = false;
 
     private StatementsProvider $statements_provider;
 
@@ -1577,7 +1568,6 @@ class ClassLikes
     /**
      * @param ReflectionProperty::IS_PUBLIC|ReflectionProperty::IS_PROTECTED|ReflectionProperty::IS_PRIVATE
      *  $visibility
-     *
      * @return array<string, ClassConstantStorage>
      */
     public function getConstantsForClass(string $class_name, int $visibility): array
@@ -2281,7 +2271,6 @@ class ClassLikes
      *     7: array<string, bool>,
      *     8: array<string, bool>,
      * } $thread_data
-     *
      */
     public function addThreadData(array $thread_data): void
     {

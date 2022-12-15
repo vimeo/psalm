@@ -50,7 +50,7 @@ class InternalCallMapHandler
     /**
      * @var array<list<TCallable>>|null
      */
-    private static $call_map_callables = [];
+    private static ?array $call_map_callables = [];
 
     /**
      * @var array<string, list<list<TaintKind::*>>>
@@ -86,7 +86,6 @@ class InternalCallMapHandler
     /**
      * @param  array<int, TCallable>  $callables
      * @param  list<PhpParser\Node\Arg>                 $args
-     *
      */
     public static function getMatchingCallableFromCallMapOptions(
         Codebase $codebase,

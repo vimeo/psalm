@@ -52,7 +52,7 @@ class TaintFlowGraph extends DataFlowGraph
     private array $sources = [];
 
     /** @var array<string, DataFlowNode> */
-    private $nodes = [];
+    private array $nodes = [];
 
     /** @var array<string, TaintSink> */
     private array $sinks = [];

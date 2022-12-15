@@ -94,20 +94,11 @@ use const STDERR;
  */
 class StatementsAnalyzer extends SourceAnalyzer
 {
-    /**
-     * @var SourceAnalyzer
-     */
-    protected $source;
+    protected SourceAnalyzer $source;
 
-    /**
-     * @var FileAnalyzer
-     */
-    protected $file_analyzer;
+    protected FileAnalyzer $file_analyzer;
 
-    /**
-     * @var Codebase
-     */
-    protected $codebase;
+    protected Codebase $codebase;
 
     /**
      * @var array<string, CodeLocation>
@@ -139,17 +130,15 @@ class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @var array<string, true>
      */
-    public $byref_uses = [];
+    public array $byref_uses = [];
 
     private ?ParsedDocblock $parsed_docblock = null;
 
     private ?string $fake_this_class = null;
 
-    /** @var NodeDataProvider */
-    public $node_data;
+    public NodeDataProvider $node_data;
 
-    /** @var ?DataFlowGraph */
-    public $data_flow_graph;
+    public ?DataFlowGraph $data_flow_graph = null;
 
     /**
      * Locations of foreach values
@@ -159,7 +148,7 @@ class StatementsAnalyzer extends SourceAnalyzer
      * @var array<string, list<CodeLocation>>
      * @psalm-internal Psalm\Internal\Analyzer
      */
-    public $foreach_var_locations = [];
+    public array $foreach_var_locations = [];
 
     public function __construct(SourceAnalyzer $source, NodeDataProvider $node_data)
     {
@@ -179,7 +168,6 @@ class StatementsAnalyzer extends SourceAnalyzer
      * Checks an array of statements for validity
      *
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     *
      * @return null|false
      */
     public function analyze(

@@ -493,7 +493,6 @@ class CallAnalyzer
 
     /**
      * @param PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat $callable_arg
-     *
      * @return list<non-empty-string>
      */
     public static function getFunctionIdsFromCallableArg(
@@ -597,7 +596,6 @@ class CallAnalyzer
     /**
      * @param  non-empty-string     $function_id
      * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
-     *
      */
     public static function checkFunctionExists(
         StatementsAnalyzer $statements_analyzer,
@@ -640,7 +638,6 @@ class CallAnalyzer
      * @param Identifier|Name $expr
      * @param  Possibilities[] $var_assertions
      * @param  list<PhpParser\Node\Arg> $args
-     *
      */
     public static function applyAssertionsToContext(
         PhpParser\NodeAbstract $expr,

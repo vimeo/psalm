@@ -118,7 +118,6 @@ abstract class Type
 
     /**
      * @param array<lowercase-string, string> $aliased_classes
-     *
      * @psalm-pure
      */
     public static function getStringFromFQCLN(
@@ -553,9 +552,7 @@ abstract class Type
      *
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
-     *
      * @psalm-external-mutation-free
-     *
      * @psalm-suppress ImpurePropertyAssignment We're not mutating external instances
      * @psalm-suppress InaccessibleProperty We're not mutating external instances
      */
@@ -685,8 +682,6 @@ abstract class Type
 
     /**
      * Combines two union types into one via an intersection
-     *
-     *
      */
     public static function intersectUnionTypes(
         ?Union $type_1,

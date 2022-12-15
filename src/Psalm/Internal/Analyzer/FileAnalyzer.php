@@ -44,25 +44,13 @@ class FileAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 
-    /**
-     * @var string
-     */
-    protected $file_name;
+    protected string $file_name;
 
-    /**
-     * @var string
-     */
-    protected $file_path;
+    protected string $file_path;
 
-    /**
-     * @var string|null
-     */
-    protected $root_file_path;
+    protected ?string $root_file_path = null;
 
-    /**
-     * @var string|null
-     */
-    protected $root_file_name;
+    protected ?string $root_file_name = null;
 
     /**
      * @var array<string, bool>
@@ -97,27 +85,18 @@ class FileAnalyzer extends SourceAnalyzer
     /**
      * @var array<lowercase-string, InterfaceAnalyzer>
      */
-    public $interface_analyzers_to_analyze = [];
+    public array $interface_analyzers_to_analyze = [];
 
     /**
      * @var array<lowercase-string, ClassAnalyzer>
      */
-    public $class_analyzers_to_analyze = [];
+    public array $class_analyzers_to_analyze = [];
 
-    /**
-     * @var null|Context
-     */
-    public $context;
+    public ?Context $context = null;
 
-    /**
-     * @var ProjectAnalyzer
-     */
-    public $project_analyzer;
+    public ProjectAnalyzer $project_analyzer;
 
-    /**
-     * @var Codebase
-     */
-    public $codebase;
+    public Codebase $codebase;
 
     private int $first_statement_offset = -1;
 
@@ -292,7 +271,6 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
-     *
      * @return list<PhpParser\Node\Stmt>
      */
     public function populateCheckers(array $stmts): array

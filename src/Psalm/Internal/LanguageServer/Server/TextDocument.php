@@ -39,20 +39,11 @@ use function substr_count;
  */
 class TextDocument
 {
-    /**
-     * @var LanguageServer
-     */
-    protected $server;
+    protected LanguageServer $server;
 
-    /**
-     * @var Codebase
-     */
-    protected $codebase;
+    protected Codebase $codebase;
 
-    /**
-     * @var ProjectAnalyzer
-     */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function __construct(
         LanguageServer $server,
@@ -112,7 +103,6 @@ class TextDocument
     /**
      * The document change notification is sent from the client to the server to signal changes to a text document.
      *
-     * @param VersionedTextDocumentIdentifier $textDocument
      * @param TextDocumentContentChangeEvent[] $contentChanges
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges): void
@@ -148,7 +138,6 @@ class TextDocument
      * is independent of whether a text document is open or closed.
      *
      * @param TextDocumentIdentifier $textDocument The document that was closed
-     *
      */
     public function didClose(TextDocumentIdentifier $textDocument): void
     {
@@ -347,7 +336,6 @@ class TextDocument
      * The code action request is sent from the client to the server to compute commands
      * for a given text document and range. These commands are typically code fixes to
      * either fix problems or to beautify/refactor code.
-     *
      */
     public function codeAction(TextDocumentIdentifier $textDocument, Range $range): Promise
     {

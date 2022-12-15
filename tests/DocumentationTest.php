@@ -200,14 +200,9 @@ class DocumentationTest extends TestCase
     /**
      * @dataProvider providerInvalidCodeParse
      * @small
-     *
-     * @param string $code
-     * @param string $error_message
      * @param array<string> $ignored_issues
-     * @param bool $check_references
-     *
      */
-    public function testInvalidCode($code, $error_message, $ignored_issues = [], $check_references = false, string $php_version = '8.0'): void
+    public function testInvalidCode(string $code, string $error_message, array $ignored_issues = [], bool $check_references = false, string $php_version = '8.0'): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -407,11 +402,17 @@ class DocumentationTest extends TestCase
                 return $this->inner->toString();
             }
 
+            /**
+             * @param mixed $other
+             */
             protected function matches($other): bool
             {
                 return $this->inner->matches($other);
             }
 
+            /**
+             * @param mixed $other
+             */
             protected function failureDescription($other): string
             {
                 return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();

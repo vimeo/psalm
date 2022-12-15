@@ -6,13 +6,11 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class ArraySpread extends UnresolvedConstantComponent
 {
-    /** @var UnresolvedConstantComponent */
-    public $array;
+    public UnresolvedConstantComponent $array;
 
     public function __construct(UnresolvedConstantComponent $array)
     {

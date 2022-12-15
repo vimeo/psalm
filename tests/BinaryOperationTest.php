@@ -992,9 +992,6 @@ class BinaryOperationTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

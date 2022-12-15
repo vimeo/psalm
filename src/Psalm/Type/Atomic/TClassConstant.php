@@ -7,6 +7,7 @@ use Psalm\Type\Atomic;
 
 /**
  * Denotes a class constant whose value might not yet be known.
+ *
  * @psalm-immutable
  */
 final class TClassConstant extends Atomic
@@ -58,7 +59,6 @@ final class TClassConstant extends Atomic
 
     /**
      * @param array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

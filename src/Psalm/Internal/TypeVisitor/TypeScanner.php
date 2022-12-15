@@ -19,7 +19,7 @@ class TypeScanner extends TypeVisitor
 {
     private Scanner $scanner;
 
-    private ?FileStorage $file_storage;
+    private ?FileStorage $file_storage = null;
 
     /**
      * @var array<string, mixed>

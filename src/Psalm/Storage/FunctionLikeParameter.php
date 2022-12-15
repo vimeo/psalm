@@ -184,6 +184,10 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 
         return true;
     }
+
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingAnyTypeHint
+     */
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         foreach (['type', 'signature_type', 'out_type', 'default_type'] as $key) {

@@ -107,7 +107,6 @@ class TypeParser
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     *
      */
     public static function parseTokens(
         array $type_tokens,
@@ -166,7 +165,6 @@ class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias>            $type_aliases
-     *
      * @return  Atomic|Union
      */
     public static function getTypeFromTree(

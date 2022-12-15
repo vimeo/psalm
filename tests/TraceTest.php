@@ -8,9 +8,6 @@ class TraceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

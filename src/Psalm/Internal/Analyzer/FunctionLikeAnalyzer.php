@@ -90,64 +90,46 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     protected $function;
 
-    /**
-     * @var Codebase
-     */
-    protected $codebase;
+    protected Codebase $codebase;
 
     /**
      * @var array<string>
      */
-    protected $suppressed_issues;
+    protected array $suppressed_issues;
 
-    /**
-     * @var bool
-     */
-    protected $is_static = false;
+    protected bool $is_static = false;
 
     /**
      * @var ?array<string, Union>
      */
-    protected $return_vars_in_scope = [];
+    protected ?array $return_vars_in_scope = [];
 
     /**
      * @var ?array<string, bool>
      */
-    protected $return_vars_possibly_in_scope = [];
+    protected ?array $return_vars_possibly_in_scope = [];
 
     private ?Union $local_return_type = null;
 
     /**
      * @var array<string, bool>
      */
-    protected static $no_effects_hashes = [];
+    protected static array $no_effects_hashes = [];
 
-    /**
-     * @var bool
-     */
-    public $track_mutations = false;
+    public bool $track_mutations = false;
 
-    /**
-     * @var bool
-     */
-    public $inferred_impure = false;
+    public bool $inferred_impure = false;
 
-    /**
-     * @var bool
-     */
-    public $inferred_has_mutation = false;
+    public bool $inferred_has_mutation = false;
 
     /**
      * Holds param nodes for functions with func_get_args calls
      *
      * @var array<string, DataFlowNode>
      */
-    public $param_nodes = [];
+    public array $param_nodes = [];
 
-    /**
-     * @var FunctionLikeStorage
-     */
-    protected $storage;
+    protected FunctionLikeStorage $storage;
 
     /**
      * @param TFunction $function
@@ -163,9 +145,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @param bool          $add_mutations  whether or not to add mutations to this method
-     *
      * @return false|null
-     *
      * @psalm-suppress PossiblyUnusedReturnValue unused but seems important
      */
     public function analyze(
@@ -1781,7 +1761,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Adds a suppressed issue, useful when creating a method checker from scratch
-     *
      */
     public function addSuppressedIssue(string $issue_name): void
     {

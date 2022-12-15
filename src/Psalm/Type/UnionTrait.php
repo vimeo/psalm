@@ -62,7 +62,6 @@ trait UnionTrait
      * Constructs an Union instance
      *
      * @psalm-external-mutation-free
-     *
      * @param non-empty-array<Atomic>     $types
      * @param TProperties $properties
      */
@@ -1471,7 +1470,6 @@ trait UnionTrait
     /**
      * @psalm-mutation-free
      * @throws InvalidArgumentException if isSingleFloatLiteral is false
-     *
      * @return TLiteralFloat the only float literal represented by this union type
      */
     public function getSingleFloatLiteral(): TLiteralFloat

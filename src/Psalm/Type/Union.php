@@ -213,12 +213,14 @@ final class Union implements TypeNode, Stringable
 
     /**
      * This is a cache of getId on non-exact mode
+     *
      * @var null|string
      */
     private $id;
 
     /**
      * This is a cache of getId on exact mode
+     *
      * @var null|string
      */
     private $exact_id;
@@ -360,6 +362,9 @@ final class Union implements TypeNode, Stringable
         return $cloned;
     }
 
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingAnyTypeHint
+     */
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         $result = true;

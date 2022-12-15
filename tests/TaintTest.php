@@ -2393,7 +2393,6 @@ class TaintTest extends TestCase
     }
 
     /**
-     * @param string $code
      * @param list<string> $expectedIssuesTypes
      * @test
      * @dataProvider multipleTaintIssuesAreDetectedDataProvider

@@ -18,40 +18,19 @@ use const LOCK_SH;
  */
 class Providers
 {
-    /**
-     * @var FileProvider
-     */
-    public $file_provider;
+    public FileProvider $file_provider;
 
-    /**
-     * @var ?ParserCacheProvider
-     */
-    public $parser_cache_provider;
+    public ?ParserCacheProvider $parser_cache_provider = null;
 
-    /**
-     * @var FileStorageProvider
-     */
-    public $file_storage_provider;
+    public FileStorageProvider $file_storage_provider;
 
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    public $classlike_storage_provider;
+    public ClassLikeStorageProvider $classlike_storage_provider;
 
-    /**
-     * @var StatementsProvider
-     */
-    public $statements_provider;
+    public StatementsProvider $statements_provider;
 
-    /**
-     * @var FileReferenceProvider
-     */
-    public $file_reference_provider;
+    public FileReferenceProvider $file_reference_provider;
 
-    /**
-     * @var ?ProjectCacheProvider
-     */
-    public $project_cache_provider;
+    public ?ProjectCacheProvider $project_cache_provider = null;
 
     public function __construct(
         FileProvider $file_provider,

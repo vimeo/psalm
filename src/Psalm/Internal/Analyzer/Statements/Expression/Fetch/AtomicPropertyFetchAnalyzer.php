@@ -77,7 +77,6 @@ class AtomicPropertyFetchAnalyzer
 {
     /**
      * @param array<string> $invalid_fetch_types $invalid_fetch_types
-     *
      * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     public static function analyze(

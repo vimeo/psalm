@@ -43,7 +43,7 @@ class Populator
     /**
      * @var array<lowercase-string, list<ClassLikeStorage>>
      */
-    private $invalid_class_storages = [];
+    private array $invalid_class_storages = [];
 
     private Progress $progress;
 

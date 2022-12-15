@@ -39,9 +39,7 @@ class CommentAnalyzer
     /**
      * @param  array<string, array<string, Union>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
-     *
      * @return list<VarDocblockComment>
      */
     public static function getTypeFromComment(
@@ -66,9 +64,7 @@ class CommentAnalyzer
     /**
      * @param  array<string, array<string, Union>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     *
      * @return list<VarDocblockComment>
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function arrayToDocblocks(
@@ -260,9 +256,7 @@ class CommentAnalyzer
 
     /**
      * @throws DocblockParseException if an invalid string is found
-     *
      * @return non-empty-list<string>
-     *
      * @psalm-pure
      */
     public static function splitDocLine(string $return_block): array

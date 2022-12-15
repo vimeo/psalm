@@ -24,7 +24,6 @@ use function get_class;
  * - its keys are integers
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
- *
  * @psalm-immutable
  */
 class TList extends Atomic
@@ -71,7 +70,6 @@ class TList extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

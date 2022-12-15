@@ -34,8 +34,6 @@ final class ErrorBaseline
 {
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
-     *
-     *
      * @psalm-pure
      */
     public static function countTotalIssues(array $existingIssues): int
@@ -58,7 +56,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      */
     public static function create(
         FileProvider $fileProvider,
@@ -73,7 +70,6 @@ final class ErrorBaseline
 
     /**
      * @return array<string,array<string,array{o:int, s: list<string>}>>
-     *
      * @throws ConfigException
      */
     public static function read(FileProvider $fileProvider, string $baselineFile): array
@@ -133,9 +129,7 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      * @return array<string, array<string, array{o: int, s: list<string>}>>
-     *
      * @throws ConfigException
      */
     public static function update(
@@ -181,7 +175,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     private static function countIssueTypesByFile(array $issues): array
@@ -193,7 +186,6 @@ final class ErrorBaseline
             array_merge(...array_values($issues)),
             /**
              * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
-             *
              * @return array<string,array<string,array{o:int, s:array<int, string>}>>
              */
             static function (array $carry, IssueData $issue): array {
@@ -237,7 +229,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
-     *
      */
     private static function writeToFile(
         FileProvider $fileProvider,

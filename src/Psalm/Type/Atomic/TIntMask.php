@@ -7,6 +7,7 @@ use function substr;
 /**
  * Represents the type that is the result of a bitmask combination of its parameters.
  * `int-mask<1, 2, 4>` corresponds to `0|1|2|3|4|5|6|7`
+ *
  * @psalm-immutable
  */
 final class TIntMask extends TInt
@@ -45,7 +46,6 @@ final class TIntMask extends TInt
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

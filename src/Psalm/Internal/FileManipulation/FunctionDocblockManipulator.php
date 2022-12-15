@@ -39,7 +39,7 @@ class FunctionDocblockManipulator
      *
      * @var array<string, array<int, FunctionDocblockManipulator>>
      */
-    private static $manipulators = [];
+    private static array $manipulators = [];
 
     /** @var Closure|Function_|ClassMethod|ArrowFunction */
     private $stmt;
@@ -265,7 +265,6 @@ class FunctionDocblockManipulator
 
     /**
      * Sets the new return type
-     *
      */
     public function setReturnType(
         ?string $php_type,
@@ -312,7 +311,6 @@ class FunctionDocblockManipulator
     /**
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
-     *
      */
     private function getDocblock(): string
     {

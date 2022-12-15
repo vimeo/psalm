@@ -439,7 +439,6 @@ final class Context
      * @param  bool        $has_leaving_statements   whether or not the parent scope is abandoned between
      *                                               $start_context and $end_context
      * @param  array<string, bool>  $updated_vars
-     *
      */
     public function update(
         Context $start_context,
@@ -513,7 +512,6 @@ final class Context
 
     /**
      * @param  array<string, Union> $new_vars_in_scope
-     *
      * @return array<string, Union>
      */
     public function getRedefinedVars(array $new_vars_in_scope, bool $include_new_vars = false): array
@@ -636,9 +634,7 @@ final class Context
     /**
      * @param Clause[]             $clauses
      * @param array<string, bool>  $changed_var_ids
-     *
      * @return array{list<Clause>, list<Clause>}
-     *
      * @psalm-pure
      */
     public static function removeReconciledClauses(array $clauses, array $changed_var_ids): array
@@ -667,7 +663,6 @@ final class Context
 
     /**
      * @param  Clause[]               $clauses
-     *
      * @return list<Clause>
      */
     public static function filterClauses(

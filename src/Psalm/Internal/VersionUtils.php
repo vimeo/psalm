@@ -21,7 +21,7 @@ final class VersionUtils
     private const PHP_PARSER_PACKAGE = 'nikic/php-parser';
 
     /** @var null|_VersionData */
-    private static $versions = null;
+    private static ?array $versions = null;
 
     /** @psalm-suppress UnusedConstructor it's here to prevent instantiations */
     private function __construct()

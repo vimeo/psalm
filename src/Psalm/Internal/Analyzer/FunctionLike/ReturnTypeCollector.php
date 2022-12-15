@@ -31,9 +31,7 @@ class ReturnTypeCollector
      *
      * @param  array<PhpParser\Node>     $stmts
      * @param  list<Union>               $yield_types
-     *
      * @return list<Union>               a list of return types
-     *
      * @psalm-suppress ComplexMethod to be refactored
      */
     public static function getReturnTypes(

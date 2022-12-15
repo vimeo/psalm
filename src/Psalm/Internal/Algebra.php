@@ -26,9 +26,7 @@ class Algebra
 {
     /**
      * @param array<string, non-empty-list<non-empty-list<Assertion>>>  $all_types
-     *
      * @return array<string, non-empty-list<non-empty-list<Assertion>>>
-     *
      * @psalm-pure
      */
     public static function negateTypes(array $all_types): array
@@ -74,9 +72,7 @@ class Algebra
      *     (!$a) && (!$b) && ($a || $b || $c) => $c
      *
      * @param list<Clause>  $clauses
-     *
      * @return list<Clause>
-     *
      * @psalm-pure
      */
     public static function simplifyCNF(array $clauses): array
@@ -330,7 +326,6 @@ class Algebra
      * @param  list<Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids
      * @param  array<string, array<int, array<int, Assertion>>> $active_truths
-     *
      * @return array<string, list<list<Assertion>>>
      */
     public static function getTruthsFromFormula(
@@ -403,9 +398,7 @@ class Algebra
 
     /**
      * @param non-empty-list<Clause>  $clauses
-     *
      * @return list<Clause>
-     *
      * @psalm-pure
      */
     public static function groupImpossibilities(array $clauses): array
@@ -522,9 +515,7 @@ class Algebra
     /**
      * @param list<Clause>  $left_clauses
      * @param list<Clause>  $right_clauses
-     *
      * @return list<Clause>
-     *
      * @psalm-pure
      */
     public static function combineOredClauses(
@@ -645,7 +636,6 @@ class Algebra
      *   (!$a || !$c || !$f)
      *
      * @param list<Clause>  $clauses
-     *
      * @return non-empty-list<Clause>
      */
     public static function negateFormula(array $clauses): array

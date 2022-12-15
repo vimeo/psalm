@@ -213,7 +213,6 @@ class ComposerLockTest extends TestCase
 
     /**
      * @param mixed $data
-     *
      * @psalm-pure
      */
     private function jsonFile($data): string

@@ -7,19 +7,17 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class UnresolvedTernary extends UnresolvedConstantComponent
 {
     use ImmutableNonCloneableTrait;
 
-    /** @var UnresolvedConstantComponent */
-    public $cond;
-    /** @var UnresolvedConstantComponent|null */
-    public $if;
-    /** @var UnresolvedConstantComponent */
-    public $else;
+    public UnresolvedConstantComponent $cond;
+
+    public ?UnresolvedConstantComponent $if = null;
+
+    public UnresolvedConstantComponent $else;
 
     public function __construct(
         UnresolvedConstantComponent $cond,

@@ -6,16 +6,13 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class Constant extends UnresolvedConstantComponent
 {
-    /** @var string */
-    public $name;
+    public string $name;
 
-    /** @var bool */
-    public $is_fully_qualified;
+    public bool $is_fully_qualified;
 
     public function __construct(string $name, bool $is_fully_qualified)
     {

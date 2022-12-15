@@ -297,7 +297,6 @@ class AttributesAnalyzer
 
     /**
      * @param iterable<AttributeGroup> $attribute_groups
-     *
      * @return Generator<int, Attribute>
      */
     private static function iterateAttributeNodes(iterable $attribute_groups): Generator

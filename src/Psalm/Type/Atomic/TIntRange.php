@@ -7,6 +7,7 @@ use function min;
 
 /**
  * Denotes an interval of integers between two bounds
+ *
  * @psalm-immutable
  */
 final class TIntRange extends TInt

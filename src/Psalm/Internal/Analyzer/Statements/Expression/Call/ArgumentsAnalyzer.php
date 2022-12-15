@@ -72,7 +72,6 @@ class ArgumentsAnalyzer
     /**
      * @param   list<PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
-     *
      * @return  false|null
      */
     public static function analyze(
@@ -698,9 +697,7 @@ class ArgumentsAnalyzer
      * @param   list<PhpParser\Node\Arg>  $args
      * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
-     *
      * @return  false|null
-     *
      * @psalm-suppress ComplexMethod there's just not much that can be done about this
      */
     public static function checkArgumentsMatch(

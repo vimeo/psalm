@@ -9,78 +9,52 @@ use Psalm\Type\Union;
  */
 class VarDocblockComment
 {
-    /**
-     * @var ?Union
-     */
-    public $type;
+    public ?Union $type = null;
 
-    /**
-     * @var string|null
-     */
-    public $var_id;
+    public ?string $var_id = null;
 
-    /**
-     * @var int|null
-     */
-    public $line_number;
+    public ?int $line_number = null;
 
-    /**
-     * @var int|null
-     */
-    public $type_start;
+    public ?int $type_start = null;
 
-    /**
-     * @var int|null
-     */
-    public $type_end;
+    public ?int $type_end = null;
 
     /**
      * Whether or not the property is deprecated
-     *
-     * @var bool
      */
-    public $deprecated = false;
+    public bool $deprecated = false;
 
     /**
      * Whether or not the property is internal
-     *
-     * @var bool
      */
-    public $internal = false;
+    public bool $internal = false;
 
     /**
      * If set, the property is internal to the given namespace.
      *
      * @var list<non-empty-string>
      */
-    public $psalm_internal = [];
+    public array $psalm_internal = [];
 
     /**
      * Whether or not the property is readonly
-     *
-     * @var bool
      */
-    public $readonly = false;
+    public bool $readonly = false;
 
     /**
      * Whether or not to allow mutation by internal methods
-     *
-     * @var bool
      */
-    public $allow_private_mutation = false;
+    public bool $allow_private_mutation = false;
 
     /**
      * @var list<string>
      */
-    public $removed_taints = [];
+    public array $removed_taints = [];
 
     /**
      * @var array<int, string>
      */
-    public $suppressed_issues = [];
+    public array $suppressed_issues = [];
 
-    /**
-     * @var ?string
-     */
-    public $description;
+    public ?string $description = null;
 }

@@ -78,7 +78,7 @@ class FunctionLikeNodeScanner
 
     private FileStorage $file_storage;
 
-    private ?ClassLikeStorage $classlike_storage;
+    private ?ClassLikeStorage $classlike_storage = null;
 
     /**
      * @var array<string, non-empty-array<string, Union>>
@@ -92,10 +92,7 @@ class FunctionLikeNodeScanner
      */
     private array $type_aliases;
 
-    /**
-     * @var ?FunctionLikeStorage
-     */
-    public $storage;
+    public ?FunctionLikeStorage $storage = null;
 
     /**
      * @param array<string, non-empty-array<string, Union>> $existing_function_template_types
@@ -123,7 +120,6 @@ class FunctionLikeNodeScanner
 
     /**
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
-     *
      * @return FunctionStorage|MethodStorage|false
      */
     public function start(PhpParser\Node\FunctionLike $stmt, bool $fake_method = false)

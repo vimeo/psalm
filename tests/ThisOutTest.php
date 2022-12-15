@@ -8,9 +8,6 @@ class ThisOutTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
