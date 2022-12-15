@@ -14,15 +14,12 @@ class DataFlowNode
 {
     public string $id;
 
-    /** @var ?string */
     public ?string $unspecialized_id = null;
 
     public string $label;
 
-    /** @var ?CodeLocation */
     public ?CodeLocation $code_location = null;
 
-    /** @var ?string */
     public ?string $specialization_key = null;
 
     /** @var array<string> */

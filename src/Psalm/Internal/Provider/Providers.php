@@ -20,9 +20,6 @@ class Providers
 {
     public FileProvider $file_provider;
 
-    /**
-     * @var ?ParserCacheProvider
-     */
     public ?ParserCacheProvider $parser_cache_provider = null;
 
     public FileStorageProvider $file_storage_provider;
@@ -33,9 +30,6 @@ class Providers
 
     public FileReferenceProvider $file_reference_provider;
 
-    /**
-     * @var ?ProjectCacheProvider
-     */
     public ?ProjectCacheProvider $project_cache_provider = null;
 
     public function __construct(

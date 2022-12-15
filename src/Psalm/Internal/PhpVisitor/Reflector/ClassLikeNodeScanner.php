@@ -113,9 +113,6 @@ class ClassLikeNodeScanner
 
     private Aliases $aliases;
 
-    /**
-     * @var ?ClassLikeStorage
-     */
     public ?ClassLikeStorage $storage = null;
 
     /**

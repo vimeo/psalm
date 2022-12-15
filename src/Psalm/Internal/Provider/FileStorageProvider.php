@@ -29,9 +29,6 @@ class FileStorageProvider
      */
     private static array $new_storage = [];
 
-    /**
-     * @var ?FileStorageCacheProvider
-     */
     public ?FileStorageCacheProvider $cache = null;
 
     public function __construct(?FileStorageCacheProvider $cache = null)

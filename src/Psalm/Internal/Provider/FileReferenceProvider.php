@@ -164,9 +164,6 @@ class FileReferenceProvider
      */
     private static array $method_param_uses = [];
 
-    /**
-     * @var ?FileReferenceCacheProvider
-     */
     public ?FileReferenceCacheProvider $cache = null;
 
     public function __construct(?FileReferenceCacheProvider $cache = null)

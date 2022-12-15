@@ -123,8 +123,6 @@
     "scripts-descriptions": {
         "cs": "Checks that the code conforms to the coding standard.",
         "cs-fix": "Automatically correct coding standard violations.",
-        "php-cs-fixer-dry-run": "Checks that the code conforms to the coding standard.",
-        "php-cs-fixer": "Automatically correct coding standard violations.",
         "lint": "Runs unit tests.",
         "phpunit": "Runs unit tests in parallel.",
         "phpunit-std": "Runs unit tests.",

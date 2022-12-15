@@ -170,9 +170,6 @@ class FunctionDocblockComment
 
     public int $since_php_minor_version = 0;
 
-    /**
-     * @var ?string
-     */
     public ?string $description = null;
 
     /** @var array<string, array{lines:list<int>, suggested_replacement?:string}> */

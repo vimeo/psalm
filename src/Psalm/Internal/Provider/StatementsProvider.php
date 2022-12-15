@@ -43,9 +43,6 @@ class StatementsProvider
 {
     private FileProvider $file_provider;
 
-    /**
-     * @var ?ParserCacheProvider
-     */
     public ?ParserCacheProvider $parser_cache_provider = null;
 
     /**

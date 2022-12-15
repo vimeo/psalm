@@ -24,15 +24,11 @@ class TemplateBound
      * The argument offset where this template was set
      *
      * In the type Foo<T, string, T> the type appears at argument offsets 0 and 2
-     *
-     * @var ?int
      */
     public ?int $arg_offset = null;
 
     /**
      * When non-null, indicates an equality template bound (vs a lower or upper bound)
-     *
-     * @var ?string
      */
     public ?string $equality_bound_classlike = null;
 

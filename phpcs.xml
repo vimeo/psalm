@@ -252,10 +252,16 @@
         </properties>
     </rule>
 
-    <!-- Disallows empty comments. -->
     <rule ref="SlevomatCodingStandard.Commenting.EmptyComment"/>
     <rule ref="SlevomatCodingStandard.Commenting.DocCommentSpacing"/>
     <rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHint">
         <exclude name="SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingTraversableTypeHintSpecification"/>
+    </rule>
+    <rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint">
+        <exclude name="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingTraversableTypeHintSpecification"/>
+        <!-- TODO: Go though these and fix all that can be fixed without breaking BC -->
+        <exclude-pattern>src/Psalm/Storage/Assertion/HasArrayKey\.php</exclude-pattern>
+        <exclude-pattern>src/Psalm/Storage/Assertion/IsNotCountable\.php</exclude-pattern>
+        <exclude-pattern>src/Psalm/Storage/Assertion/NonEmptyCountable\.php</exclude-pattern>
     </rule>
 </ruleset>

@@ -50,17 +50,14 @@ class TypeCombination
 
     public bool $objectlike_sealed = true;
 
-    /** @var ?Union */
     public ?Union $objectlike_key_type = null;
 
-    /** @var ?Union */
     public ?Union $objectlike_value_type = null;
 
     public bool $empty_mixed = false;
 
     public bool $non_empty_mixed = false;
 
-    /** @var ?bool */
     public ?bool $mixed_from_loop_isset = null;
 
     /** @var array<string, TLiteralString>|null */
@@ -80,13 +77,10 @@ class TypeCombination
      */
     public array $extra_types = [];
 
-    /** @var ?bool */
     public ?bool $all_arrays_lists = null;
 
-    /** @var ?bool */
     public ?bool $all_arrays_callable = null;
 
-    /** @var ?bool */
     public ?bool $all_arrays_class_string_maps = null;
 
     /** @var array<string, bool> */

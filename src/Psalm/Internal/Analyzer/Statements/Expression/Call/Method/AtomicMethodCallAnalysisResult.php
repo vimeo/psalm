@@ -10,9 +10,6 @@ use Psalm\Type\Union;
  */
 class AtomicMethodCallAnalysisResult
 {
-    /**
-     * @var ?Union
-     */
     public ?Union $return_type = null;
 
     public bool $returns_by_ref = false;

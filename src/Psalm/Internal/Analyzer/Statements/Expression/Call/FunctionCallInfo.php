@@ -12,14 +12,8 @@ use Psalm\Type\Union;
  */
 class FunctionCallInfo
 {
-    /**
-     * @var ?string
-     */
     public ?string $function_id = null;
 
-    /**
-     * @var ?bool
-     */
     public ?bool $function_exists = null;
 
     public bool $is_stubbed = false;
@@ -41,14 +35,8 @@ class FunctionCallInfo
      */
     public ?array $function_params = null;
 
-    /**
-     * @var ?FunctionLikeStorage
-     */
     public ?FunctionLikeStorage $function_storage = null;
 
-    /**
-     * @var ?PhpParser\Node\Name
-     */
     public ?PhpParser\Node\Name $new_function_name = null;
 
     public bool $allow_named_args = true;

@@ -31,9 +31,6 @@ final class StatementsVolatileCache
 
     protected int $max_size;
 
-    /**
-     * @var ?StatementsVolatileCache
-     */
     protected static ?StatementsVolatileCache $instance = null;
 
     public function __construct(int $max_size = 4096)

@@ -26,9 +26,6 @@ class ClassLikeStorageProvider
      */
     private static array $new_storage = [];
 
-    /**
-     * @var ?ClassLikeStorageCacheProvider
-     */
     public ?ClassLikeStorageCacheProvider $cache = null;
 
     public function __construct(?ClassLikeStorageCacheProvider $cache = null)

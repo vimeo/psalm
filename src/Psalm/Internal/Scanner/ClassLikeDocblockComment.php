@@ -51,9 +51,6 @@ class ClassLikeDocblockComment
      */
     public array $template_implements = [];
 
-    /**
-     * @var ?string
-     */
     public ?string $yield = null;
 
     /**
@@ -103,8 +100,5 @@ class ClassLikeDocblockComment
      */
     public array $implementation_requirements = [];
 
-    /**
-     * @var ?string
-     */
     public ?string $description = null;
 }

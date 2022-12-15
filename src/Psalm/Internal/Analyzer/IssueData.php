@@ -88,7 +88,6 @@ class IssueData
     public ?array $other_references = null;
 
     /**
-     * @var ?string
      * @readonly
      */
     public ?string $dupe_key = null;

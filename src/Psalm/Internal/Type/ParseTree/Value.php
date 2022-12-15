@@ -15,9 +15,6 @@ class Value extends ParseTree
 
     public int $offset_end;
 
-    /**
-     * @var ?string
-     */
     public ?string $text = null;
 
     public function __construct(

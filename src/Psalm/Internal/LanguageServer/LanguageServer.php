@@ -62,15 +62,11 @@ class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls
-     *
-     * @var ?ServerTextDocument
      */
     public ?ServerTextDocument $textDocument = null;
 
     /**
      * Handles workspace/* method calls
-     *
-     * @var ?ServerWorkspace
      */
     public ?ServerWorkspace $workspace = null;
 

@@ -92,9 +92,6 @@ class FunctionLikeNodeScanner
      */
     private array $type_aliases;
 
-    /**
-     * @var ?FunctionLikeStorage
-     */
     public ?FunctionLikeStorage $storage = null;
 
     /**

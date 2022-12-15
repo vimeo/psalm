@@ -10,7 +10,6 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 class KeyValuePair extends UnresolvedConstantComponent
 {
-    /** @var ?UnresolvedConstantComponent */
     public ?UnresolvedConstantComponent $key = null;
 
     public UnresolvedConstantComponent $value;

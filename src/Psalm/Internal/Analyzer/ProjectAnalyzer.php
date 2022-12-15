@@ -127,7 +127,6 @@ class ProjectAnalyzer
 
     private ?ParserCacheProvider $parser_cache_provider = null;
 
-    /** @var ?ProjectCacheProvider */
     public ?ProjectCacheProvider $project_cache_provider = null;
 
     private FileReferenceProvider $file_reference_provider;
@@ -153,9 +152,6 @@ class ProjectAnalyzer
 
     public bool $only_replace_php_types_with_non_docblock_types = false;
 
-    /**
-     * @var ?int
-     */
     public ?int $onchange_line_limit = null;
 
     public bool $provide_completion = false;
@@ -180,9 +176,6 @@ class ProjectAnalyzer
      */
     private array $to_refactor = [];
 
-    /**
-     * @var ?ReportOptions
-     */
     public ?ReportOptions $stdout_report_options = null;
 
     /**

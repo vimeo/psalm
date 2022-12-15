@@ -9,9 +9,6 @@ use Psalm\Type\Union;
  */
 class VarDocblockComment
 {
-    /**
-     * @var ?Union
-     */
     public ?Union $type = null;
 
     public ?string $var_id = null;
@@ -59,8 +56,5 @@ class VarDocblockComment
      */
     public array $suppressed_issues = [];
 
-    /**
-     * @var ?string
-     */
     public ?string $description = null;
 }

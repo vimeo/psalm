@@ -15,9 +15,6 @@ use function strlen;
  */
 class Message
 {
-    /**
-     * @var ?MessageBody
-     */
     public ?MessageBody $body = null;
 
     /**
