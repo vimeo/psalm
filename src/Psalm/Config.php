@@ -586,35 +586,28 @@ class Config
     public $threads;
 
     /**
+     * A list of php extensions supported by Psalm.
+     * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
+     *
      * @psalm-readonly-allow-private-mutation
-     * @var array{
-     *     decimal: bool,
-     *     dom: bool,
-     *     ds: bool,
-     *     geos: bool,
-     *     gmp: bool,
-     *     mongodb: bool,
-     *     mysqli: bool,
-     *     pdo: bool,
-     *     simplexml: bool,
-     *     soap: bool,
-     *     xdebug: bool,
-     *     ffi: bool,
-     * }
+     * @var array<string, bool>
      */
     public $php_extensions = [
+        "apcu" => false,
         "decimal" => false,
         "dom" => false,
         "ds" => false,
+        "ffi" => false,
         "geos" => false,
         "gmp" => false,
         "mongodb" => false,
         "mysqli" => false,
         "pdo" => false,
+        "random" => false,
+        "redis" => false,
         "simplexml" => false,
         "soap" => false,
         "xdebug" => false,
-        "ffi" => false,
     ];
 
     /**
@@ -1038,7 +1031,6 @@ class Config
         }
         foreach ($required_extensions as $required_ext => $_) {
             if (isset($config->php_extensions[$required_ext])) {
-                /** @psalm-suppress PropertyTypeCoercion isset doesn't narrow $required_ext like it should */
                 $config->php_extensions[$required_ext] = true;
             } else {
                 $config->php_extensions_not_supported[$required_ext] = true;
@@ -2138,28 +2130,24 @@ class Config
             $this->internal_stubs[] = $stringable_path;
         }
 
+        $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
         foreach ($this->php_extensions as $ext => $enabled) {
             if ($enabled) {
-                $this->internal_stubs[] = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs"
-                    . DIRECTORY_SEPARATOR . "extensions" . DIRECTORY_SEPARATOR . "$ext.phpstub";
+                $this->internal_stubs[] = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
             }
         }
 
-        // phpredis
-        if (extension_loaded('redis')) {
-            $ext_phpredis_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'phpredis.phpstub';
-            $this->internal_stubs[] = $ext_phpredis_path;
-        }
-
-        if (extension_loaded('apcu')) {
-            $ext_apcu_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-apcu.phpstub';
-            $this->internal_stubs[] = $ext_apcu_path;
-        }
-
-        if (extension_loaded('random')) {
-            $ext_random_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR
-                . 'extensions' . DIRECTORY_SEPARATOR . 'ext-random.phpstub';
-            $this->internal_stubs[] = $ext_random_path;
+        /** @deprecated Will be removed in Psalm 6 */
+        $extensions_to_load_stubs_using_deprecated_way = ['apcu', 'random', 'redis'];
+        foreach ($extensions_to_load_stubs_using_deprecated_way as $ext_name) {
+            $ext_stub_path = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext_name.phpstub";
+            $is_stub_already_loaded = in_array($ext_stub_path, $this->internal_stubs, true);
+            if (! $is_stub_already_loaded && extension_loaded($ext_name)) {
+                $this->internal_stubs[] = $ext_stub_path;
+                $progress->write("Deprecation: Psalm stubs for ext-$ext_name loaded using legacy way."
+                    . " Instead, please declare ext-$ext_name as dependency in composer.json"
+                    . " or use <enableExtensions> directive in Psalm config.\n");
+            }
         }
 
         foreach ($this->internal_stubs as $stub_path) {
