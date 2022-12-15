@@ -14,8 +14,10 @@ class Path
 
     public string $type;
 
+    /** @var ?array<string> */
     public ?array $unescaped_taints = null;
 
+    /** @var ?array<string> */
     public ?array $escaped_taints = null;
 
     public int $length;
