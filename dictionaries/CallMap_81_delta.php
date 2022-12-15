@@ -37,6 +37,8 @@ return [
     'Fiber::getCurrent' => ['?self'],
     'Fiber::suspend' => ['mixed', 'value='=>'null|mixed'],
     'FiberError::__construct' => ['void'],
+    'GMP::__serialize' => ['array'],
+    'GMP::__unserialize' => ['void', 'data'=>'array'],
     'ReflectionClass::isEnum' => ['bool'],
     'ReflectionEnum::getBackingType' => ['?ReflectionType'],
     'ReflectionEnum::getCase' => ['ReflectionEnumUnitCase', 'name' => 'string'],
