@@ -38,11 +38,9 @@ class FileReferenceTest extends TestCase
 
     /**
      * @dataProvider providerReferenceLocations
-     * @param string $input_code
-     * @param string $symbol
      * @param array<int, string> $expected_locations
      */
-    public function testReferenceLocations($input_code, $symbol, $expected_locations): void
+    public function testReferenceLocations(string $input_code, string $symbol, array $expected_locations): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {

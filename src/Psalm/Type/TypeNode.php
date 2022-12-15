@@ -6,6 +6,7 @@ interface TypeNode
 {
     /** @internal Should only be used by the TypeVisitor */
     public function visit(TypeVisitor $visitor): bool;
+
     /**
      * @param static $node
      * @param-out static $node

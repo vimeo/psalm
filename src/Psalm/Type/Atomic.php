@@ -625,6 +625,9 @@ abstract class Atomic implements TypeNode
         return true;
     }
 
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingAnyTypeHint
+     */
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         foreach ($node->getChildNodeKeys() as $key) {

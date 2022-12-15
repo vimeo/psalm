@@ -262,11 +262,9 @@ class ConfigFileTest extends TestCase
     }
 
     /**
-     * @param string $expected_template
-     * @param string $contents
      * @psalm-pure
      */
-    protected static function compareContentWithTemplateAndTrailingLineEnding($expected_template, $contents): bool
+    protected static function compareContentWithTemplateAndTrailingLineEnding(string $expected_template, string $contents): bool
     {
         $passed = false;
 

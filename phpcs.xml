@@ -182,13 +182,6 @@
         https://github.com/slevomat/coding-standard#slevomatcodingstandardtypehintsreturntypehint-
      -->
     <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint">
-        <properties>
-            <property name="enableObjectTypeHint" type="bool" value="false"/>
-            <property name="enableStaticTypeHint" type="bool" value="false"/>
-            <property name="enableMixedTypeHint" type="bool" value="false"/>
-            <property name="enableUnionTypeHint" type="bool" value="false"/>
-        </properties>
-
         <exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingTraversableTypeHintSpecification"/>
     </rule>
 
@@ -262,4 +255,7 @@
     <!-- Disallows empty comments. -->
     <rule ref="SlevomatCodingStandard.Commenting.EmptyComment"/>
     <rule ref="SlevomatCodingStandard.Commenting.DocCommentSpacing"/>
+    <rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHint">
+        <exclude name="SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingTraversableTypeHintSpecification"/>
+    </rule>
 </ruleset>

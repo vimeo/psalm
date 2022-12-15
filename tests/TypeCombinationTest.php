@@ -13,10 +13,9 @@ class TypeCombinationTest extends TestCase
 
     /**
      * @dataProvider providerTestValidTypeCombination
-     * @param string $expected
      * @param non-empty-list<string> $types
      */
-    public function testValidTypeCombination($expected, $types): void
+    public function testValidTypeCombination(string $expected, array $types): void
     {
         $converted_types = [];
 
@@ -821,10 +820,7 @@ class TypeCombinationTest extends TestCase
         ];
     }
 
-    /**
-     * @param  string $string
-     */
-    private static function getAtomic($string): Atomic
+    private static function getAtomic(string $string): Atomic
     {
         return Type::parseString($string)->getSingleAtomic();
     }

@@ -493,6 +493,9 @@ final class MutableUnion implements TypeNode, Stringable
         return new Union($this->getAtomicTypes(), get_object_vars($this));
     }
 
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingAnyTypeHint
+     */
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         $result = true;

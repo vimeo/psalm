@@ -41,39 +41,6 @@ jobs:
 
       - run: |
           git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
-  php-cs-fixer:
-    name: php-cs-fixer
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '7.4'
-          tools: composer:v2
-          coverage: none
-
-      - uses: actions/checkout@v3
-
-      - name: Get Composer Cache Directories
-        id: composer-cache
-        run: |
-          echo "::set-output name=files_cache::$(composer config cache-files-dir)"
-          echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
-      - name: Cache composer cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.composer-cache.outputs.files_cache }}
-            ${{ steps.composer-cache.outputs.vcs_cache }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-composer-
-      - name: Run composer install
-        run: composer install -o
-        env:
-          COMPOSER_ROOT_VERSION: dev-master
-
-      - run: vendor/bin/php-cs-fixer fix --diff --verbose --dry-run
   chunk-matrix:
     permissions:
       contents: none

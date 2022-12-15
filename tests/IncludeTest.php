@@ -18,13 +18,12 @@ class IncludeTest extends TestCase
      * @dataProvider providerTestValidIncludes
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
-     * @param bool $hoist_constants
      * @param list<string> $ignored_issues
      */
     public function testValidInclude(
         array $files,
         array $files_to_check,
-        $hoist_constants = false,
+        bool $hoist_constants = false,
         array $ignored_issues = []
     ): void {
         $codebase = $this->project_analyzer->getCodebase();
@@ -59,12 +58,11 @@ class IncludeTest extends TestCase
      * @dataProvider providerTestInvalidIncludes
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
-     * @param string $error_message
      */
     public function testInvalidInclude(
         array $files,
         array $files_to_check,
-        $error_message
+        string $error_message
     ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();

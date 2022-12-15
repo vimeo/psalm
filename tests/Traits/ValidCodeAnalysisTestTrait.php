@@ -24,14 +24,13 @@ trait ValidCodeAnalysisTestTrait
 
     /**
      * @dataProvider providerValidCodeParse
-     * @param string $code
      * @param array<string, string> $assertions
      * @param list<string> $ignored_issues
      * @small
      */
     public function testValidCode(
-        $code,
-        $assertions = [],
+        string $code,
+        array $assertions = [],
         $ignored_issues = [],
         string $php_version = '7.3'
     ): void {
