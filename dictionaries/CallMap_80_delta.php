@@ -1813,6 +1813,18 @@ return [
       'old' => ['bool', 'writer'=>'resource', 'content'=>'string'],
       'new' => ['bool', 'writer'=>'XMLWriter', 'content'=>'string'],
     ],
+    'ZipArchive::addEmptyDir' => [
+      'old' => ['bool', 'dirname'=>'string'],
+      'new' => ['bool', 'dirname'=>'string', 'flags='=>'int'],
+    ],
+    'ZipArchive::addFile' => [
+      'old' => ['bool', 'filepath'=>'string', 'entryname='=>'string', 'start='=>'int', 'length='=>'int'],
+      'new' => ['bool', 'filepath'=>'string', 'entryname='=>'string', 'start='=>'int', 'length='=>'int', 'flags='=>'int'],
+    ],
+    'ZipArchive::addFromString' => [
+      'old' => ['bool', 'name'=>'string', 'content'=>'string'],
+      'new' => ['bool', 'name'=>'string', 'content'=>'string', 'flags='=>'int'],
+    ],
   ],
   'removed' => [
     'PDOStatement::setFetchMode\'1' => ['bool', 'fetch_column'=>'int', 'colno'=>'int'],
@@ -1850,5 +1862,6 @@ return [
     'SimpleXMLIterator::next' => ['void'],
     'SimpleXMLIterator::hasChildren' => ['bool'],
     'SimpleXMLIterator::getChildren' => ['SimpleXMLIterator'],
+    'SplTempFileObject::fgetss' => ['string', 'allowable_tags='=>'string'],
   ],
 ];
