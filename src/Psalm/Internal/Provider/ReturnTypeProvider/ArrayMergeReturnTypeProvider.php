@@ -22,7 +22,6 @@ use function array_values;
 use function count;
 use function is_string;
 use function max;
-use function substr;
 
 /**
  * @internal
@@ -113,7 +112,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             }
                             if (is_string($key)) {
                                 $all_int_offsets = false;
-                            } else if (!$is_replace) {
+                            } elseif (!$is_replace) {
                                 if ($unpacking_indefinite_number_of_args || $type->possibly_undefined) {
                                     $added_inner_values = true;
                                     $inner_value_types = array_merge(
