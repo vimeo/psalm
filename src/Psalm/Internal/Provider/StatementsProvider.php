@@ -14,6 +14,7 @@ use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
 use Psalm\Internal\PhpTraverser\CustomTraverser;
 use Psalm\Internal\PhpVisitor\CloningVisitor;
+use Psalm\Internal\PhpVisitor\ElseIfReplacementVisitor;
 use Psalm\Internal\PhpVisitor\PartialParserVisitor;
 use Psalm\Internal\PhpVisitor\SimpleNameResolver;
 use Psalm\Issue\ParseError;
@@ -488,6 +489,7 @@ class StatementsProvider
             $used_cached_statements ? $file_changes : []
         );
         $resolving_traverser->addVisitor($name_resolver);
+        $resolving_traverser->addVisitor(new ElseIfReplacementVisitor);
         $resolving_traverser->traverse($stmts);
 
         return $stmts;
