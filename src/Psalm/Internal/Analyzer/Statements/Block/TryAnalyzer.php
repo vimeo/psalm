@@ -265,19 +265,17 @@ class TryAnalyzer
 
                 $catch_context->vars_in_scope[$catch_var_id] = new Union(
                     array_map(
-                        static function (string $fq_catch_class) use ($codebase): TNamedObject {
-                            return new TNamedObject(
-                                $fq_catch_class,
-                                false,
-                                false,
-                                version_compare(PHP_VERSION, '7.0.0dev', '>=')
-                                    && strtolower($fq_catch_class) !== 'throwable'
-                                    && $codebase->interfaceExists($fq_catch_class)
-                                    && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
+                        static fn(string $fq_catch_class): TNamedObject => new TNamedObject(
+                            $fq_catch_class,
+                            false,
+                            false,
+                            version_compare(PHP_VERSION, '7.0.0dev', '>=')
+                                && strtolower($fq_catch_class) !== 'throwable'
+                                && $codebase->interfaceExists($fq_catch_class)
+                                && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
                                     ? ['Throwable' => new TNamedObject('Throwable')]
-                                    : []
-                            );
-                        },
+                                    : [],
+                        ),
                         $fq_catch_classes
                     )
                 );

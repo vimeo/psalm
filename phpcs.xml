@@ -228,6 +228,9 @@
     -->
     <rule ref="SlevomatCodingStandard.PHP.ShortList"/>
 
+    <!-- https://github.com/slevomat/coding-standard/blob/master/doc/functions.md#slevomatcodingstandardfunctionsrequirearrowfunction- -->
+    <rule ref="SlevomatCodingStandard.Functions.RequireArrowFunction"/>
+
     <!--
         Forces uniform arrow function style
         https://github.com/slevomat/coding-standard/blob/master/doc/functions.md#slevomatcodingstandardfunctionsarrowfunctiondeclaration-

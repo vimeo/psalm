@@ -391,9 +391,9 @@ class FunctionDocblockManipulator
             $modified_docblock = true;
             $inferredThrowsClause = array_reduce(
                 $this->throwsExceptions,
-                function (string $throwsClause, string $exception) {
-                    return $throwsClause === '' ? $exception : $throwsClause.'|'.$exception;
-                },
+                fn(string $throwsClause, string $exception) => $throwsClause === ''
+                    ? $exception
+                    : $throwsClause.'|'.$exception,
                 ''
             );
             if (array_key_exists('throws', $parsed_docblock->tags)) {
