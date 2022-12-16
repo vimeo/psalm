@@ -47,7 +47,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             return Type::getMixed();
         }
 
-        $is_replace = substr($event->getFunctionId(), 6, 7) === 'replace';
+        $is_replace = $event->getFunctionId() === 'array_replace';
 
         $inner_value_types = [];
         $inner_key_types = [];
@@ -113,7 +113,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             }
                             if (is_string($key)) {
                                 $all_int_offsets = false;
-                            } elseif (!$is_replace) {
+                            } else if (!$is_replace) {
                                 if ($unpacking_indefinite_number_of_args || $type->possibly_undefined) {
                                     $added_inner_values = true;
                                     $inner_value_types = array_merge(
