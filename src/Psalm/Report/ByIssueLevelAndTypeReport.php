@@ -17,8 +17,7 @@ use function usort;
 
 final class ByIssueLevelAndTypeReport extends Report
 {
-    /** @var string|null */
-    private $link_format;
+    private ?string $link_format = null;
 
     public function create(): string
     {

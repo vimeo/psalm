@@ -37,11 +37,9 @@ use Psalm\Type\Union;
 
 class ReconcilerTest extends TestCase
 {
-    /** @var FileAnalyzer */
-    protected $file_analyzer;
+    protected FileAnalyzer $file_analyzer;
 
-    /** @var StatementsAnalyzer */
-    protected $statements_analyzer;
+    protected StatementsAnalyzer $statements_analyzer;
 
     public function setUp(): void
     {

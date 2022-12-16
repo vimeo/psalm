@@ -18,12 +18,9 @@ class FileTypeSelfRegisteringPlugin implements PluginFileExtensionsInterface
     /**
      * @var array<string, string>
      */
-    public static $names = [];
+    public static array $names = [];
 
-    /**
-     * @var int
-     */
-    public static $flags = 0;
+    public static int $flags = 0;
 
     public function processFileExtensions(FileExtensionsInterface $fileExtensions, ?SimpleXMLElement $config = null): void
     {

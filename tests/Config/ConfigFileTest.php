@@ -21,8 +21,7 @@ use const PHP_EOL;
 /** @group PluginManager */
 class ConfigFileTest extends TestCase
 {
-    /** @var string */
-    private $file_path;
+    private string $file_path;
 
     public function setUp(): void
     {

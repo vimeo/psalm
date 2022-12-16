@@ -74,20 +74,17 @@ class CodeLocation
 
     private string $snippet = '';
 
-    /** @var null|string */
-    private $text;
+    private ?string $text = null;
 
     /** @var int|null */
     public $docblock_start;
 
-    /** @var int|null */
-    private $docblock_start_line_number;
+    private ?int $docblock_start_line_number = null;
 
     /** @var int|null */
     protected $docblock_line_number;
 
-    /** @var null|int */
-    private $regex_type;
+    private ?int $regex_type = null;
 
     private bool $have_recalculated = false;
 

@@ -43,11 +43,9 @@ use const DIRECTORY_SEPARATOR;
 
 class ConfigTest extends TestCase
 {
-    /** @var TestConfig */
-    protected static $config;
+    protected static TestConfig $config;
 
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     /** @var callable(int, string, string=, int=, array=):bool|null */
     protected $original_error_handler = null;

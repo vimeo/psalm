@@ -34,11 +34,9 @@ use const DIRECTORY_SEPARATOR;
 
 class ProjectCheckerTest extends TestCase
 {
-    /** @var TestConfig */
-    protected static $config;
+    protected static TestConfig $config;
 
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     private const EXPECTED_OUTPUT = "Target PHP version: 8.1 (set by tests) Extensions enabled: dom, simplexml "
         . "(unsupported extensions: ctype, json, libxml, mbstring, tokenizer)\n"
@@ -123,8 +121,7 @@ class ProjectCheckerTest extends TestCase
     public function testAfterCodebasePopulatedIsInvoked(): void
     {
         $hook = new class implements AfterCodebasePopulatedInterface {
-            /** @var bool */
-            public static $called = false;
+            public static bool $called = false;
 
             /**
              * @return void

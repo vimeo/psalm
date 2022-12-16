@@ -35,8 +35,7 @@ class PsalmEndToEndTest extends TestCase
 {
     use PsalmRunnerTrait;
 
-    /** @var string */
-    private static $tmpDir;
+    private static string $tmpDir;
 
     public static function setUpBeforeClass(): void
     {

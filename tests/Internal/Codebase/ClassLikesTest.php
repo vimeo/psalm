@@ -11,15 +11,9 @@ use Psalm\Tests\TestCase;
 
 final class ClassLikesTest extends TestCase
 {
-    /**
-     * @var ClassLikes
-     */
-    private $classlikes;
+    private ClassLikes $classlikes;
 
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $storage_provider;
+    private ClassLikeStorageProvider $storage_provider;
 
     public function setUp(): void
     {

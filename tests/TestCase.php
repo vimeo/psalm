@@ -30,17 +30,13 @@ use const DIRECTORY_SEPARATOR;
 
 class TestCase extends BaseTestCase
 {
-    /** @var string */
-    protected static $src_dir_path;
+    protected static string $src_dir_path;
 
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
-    /** @var FakeFileProvider */
-    protected $file_provider;
+    protected FakeFileProvider $file_provider;
 
-    /** @var Config */
-    protected $testConfig;
+    protected Config $testConfig;
 
     public static function setUpBeforeClass(): void
     {

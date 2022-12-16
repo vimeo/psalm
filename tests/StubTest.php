@@ -27,8 +27,7 @@ use const DIRECTORY_SEPARATOR;
 
 class StubTest extends TestCase
 {
-    /** @var TestConfig */
-    protected static $config;
+    protected static TestConfig $config;
 
     public static function setUpBeforeClass(): void
     {
