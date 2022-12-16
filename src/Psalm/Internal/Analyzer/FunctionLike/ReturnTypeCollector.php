@@ -89,7 +89,8 @@ class ReturnTypeCollector
                     break;
                 }
 
-                if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall) {
+                if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                    || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall) {
                     $stmt_type = $nodes->getType($stmt->expr);
                     if ($stmt_type && ($stmt_type->isNever() || $stmt_type->explicit_never)) {
                         $return_types[] = Type::getNever();
