@@ -211,6 +211,24 @@ class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayMergeListOfShapes' => [
+                'code' => '<?php
+
+                    /** @var list<array{a: int}> */
+                    $a = [];
+
+                    $b = array_merge(...$a);
+
+                    /** @var non-empty-list<array{a: int}> */
+                    $c = [];
+
+                    $d = array_merge(...$c);
+                ',
+                'assertions' => [
+                    '$b' => 'array{a?: int}',
+                    '$d' => 'array{a: int}',
+                ]
+            ],
             'arrayMergeIntArrays' => [
                 'code' => '<?php
                     $d = array_merge(["a", "b", "c", "d"], [1, 2, 3]);',

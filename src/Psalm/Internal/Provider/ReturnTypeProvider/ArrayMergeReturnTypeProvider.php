@@ -130,10 +130,18 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                                 $class_strings[$key] = true;
                             }
 
-                            if (!isset($generic_properties[$key]) || !$type->possibly_undefined) {
+                            if (!isset($generic_properties[$key]) || (
+                                !$type->possibly_undefined
+                                    && !$unpacking_possibly_empty
+                                    && $is_replace
+                            )) {
+                                if ($unpacking_possibly_empty) {
+                                    $type = $type->setPossiblyUndefined(true);
+                                }
                                 $generic_properties[$key] = $type;
                             } else {
-                                $was_possibly_undefined = $generic_properties[$key]->possibly_undefined;
+                                $was_possibly_undefined = $generic_properties[$key]->possibly_undefined
+                                    || $unpacking_possibly_empty;
 
                                 $generic_properties[$key] = Type::combineUnionTypes(
                                     $generic_properties[$key],
@@ -147,7 +155,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             }
                         }
 
-                        if (!$unpacked_type_part->is_list && !$unpacking_possibly_empty) {
+                        if (!$unpacked_type_part->is_list) {
                             $all_nonempty_lists = false;
                         }
 
