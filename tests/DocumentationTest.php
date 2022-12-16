@@ -83,11 +83,9 @@ class DocumentationTest extends TestCase
         '@psalm-stub-override',
     ];
 
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
-    /** @var string */
-    private static $docContents = '';
+    private static string $docContents = '';
 
     /**
      * @return array<string, array<int, string>>
@@ -389,8 +387,7 @@ class DocumentationTest extends TestCase
     {
         return new class ($inner) extends Constraint
         {
-            /** @var Constraint */
-            private $inner;
+            private Constraint $inner;
 
             public function __construct(Constraint $inner)
             {

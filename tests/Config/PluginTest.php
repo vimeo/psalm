@@ -39,8 +39,7 @@ use const DIRECTORY_SEPARATOR;
 
 class PluginTest extends TestCase
 {
-    /** @var TestConfig */
-    protected static $config;
+    protected static TestConfig $config;
 
     public static function setUpBeforeClass(): void
     {
@@ -873,8 +872,7 @@ class PluginTest extends TestCase
                 [$this->equalTo('a')]
             );
         $plugin = new class($mock) implements AfterEveryFunctionCallAnalysisInterface {
-            /** @var MockObject */
-            private static $m;
+            private static MockObject $m;
 
             public function __construct(MockObject $m)
             {

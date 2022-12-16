@@ -559,10 +559,7 @@ class Config
      */
     public $debug_emitted_issues = false;
 
-    /**
-     * @var bool
-     */
-    private $report_info = true;
+    private bool $report_info = true;
 
     /**
      * @var EventDispatcher

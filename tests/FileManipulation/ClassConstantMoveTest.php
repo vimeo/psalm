@@ -15,8 +15,7 @@ use function strpos;
 
 class ClassConstantMoveTest extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {

@@ -12,22 +12,22 @@ class ParserInstanceCacheProvider extends ParserCacheProvider
     /**
      * @var array<string, string>
      */
-    private $file_contents_cache = [];
+    private array $file_contents_cache = [];
 
     /**
      * @var array<string, string>
      */
-    private $file_content_hash = [];
+    private array $file_content_hash = [];
 
     /**
      * @var array<string, list<PhpParser\Node\Stmt>>
      */
-    private $statements_cache = [];
+    private array $statements_cache = [];
 
     /**
      * @var array<string, float>
      */
-    private $statements_cache_time = [];
+    private array $statements_cache_time = [];
 
     public function __construct()
     {

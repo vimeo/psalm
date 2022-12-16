@@ -52,7 +52,7 @@ class InternalCallMapHandlerTest extends TestCase
      *
      * @var array<int|string, string|list<string>>
      */
-    private static $ignoredFunctions = [
+    private static array $ignoredFunctions = [
         'apcu_entry',
         'argumentcounterror::__construct',
         'arithmeticerror::__construct',
@@ -903,7 +903,7 @@ class InternalCallMapHandlerTest extends TestCase
      *
      * @var array<int|string, string|list<string>>
      */
-    private static $ignoredReturnTypeOnlyFunctions = [
+    private static array $ignoredReturnTypeOnlyFunctions = [
         'appenditerator::getinneriterator' => ['8.1', '8.2'],
         'appenditerator::getiteratorindex' => ['8.1', '8.2'],
         'arrayiterator::key' => ['8.1', '8.2'],
@@ -1218,7 +1218,7 @@ class InternalCallMapHandlerTest extends TestCase
      *
      * @var array<int|string, string|list<string>>
      */
-    private static $ignoredUnreflectableFunctions = [
+    private static array $ignoredUnreflectableFunctions = [
         'closure::__invoke',
         'curlfile::__wakeup',
         'domimplementation::__construct',
@@ -1283,10 +1283,7 @@ class InternalCallMapHandlerTest extends TestCase
         'weakmap::valid',
     ];
 
-    /**
-     * @var Codebase
-     */
-    private static $codebase;
+    private static Codebase $codebase;
 
     public static function setUpBeforeClass(): void
     {
@@ -1312,11 +1309,6 @@ class InternalCallMapHandlerTest extends TestCase
 
             $previousFunction = $function;
         }
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        self::$codebase = null;
     }
 
     /**
