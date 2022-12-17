@@ -1816,8 +1816,8 @@ class ClassLikes
                                     $issue,
                                     $method_storage->suppressed_issues,
                                     $method_storage->stmt_location
-                                    && !$declaring_classlike_storage->is_trait
-                                    && !$has_variable_calls
+                                        && !$declaring_classlike_storage->is_trait
+                                        && !$has_variable_calls
                                 );
                             }
                         }

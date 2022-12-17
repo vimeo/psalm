@@ -16,6 +16,8 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
 {
     /**
      * Called after an expression has been checked
+     *
+     * @return null
      */
     public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool {
         $expr = $event->getExpr();

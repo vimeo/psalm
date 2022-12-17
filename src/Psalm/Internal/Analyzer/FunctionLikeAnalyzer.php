@@ -387,7 +387,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($overridden_storage->allow_named_arg_calls) {
                     IssueBuffer::maybeAdd(new MethodSignatureMismatch(
                         'Method ' . (string) $method_id . ' should accept named arguments '
-                        . ' as ' . (string) $overridden_method_id . ' does',
+                            . ' as ' . (string) $overridden_method_id . ' does',
                         $storage->location
                     ));
                 }
