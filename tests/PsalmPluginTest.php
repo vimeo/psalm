@@ -29,8 +29,7 @@ class PsalmPluginTest extends TestCase
     /** @var PluginListFactory&MockInterface */
     private $plugin_list_factory;
 
-    /** @var Application */
-    private $app;
+    private Application $app;
 
     public function setUp(): void
     {

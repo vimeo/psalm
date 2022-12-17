@@ -17,11 +17,9 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 class FunctionLikeDocblockParserTest extends BaseTestCase
 {
-    /** @var string */
-    public $test_cased_function_id = 'hello_world';
+    public string $test_cased_function_id = 'hello_world';
 
-    /** @var CodeLocation */
-    public $test_code_location;
+    public CodeLocation $test_code_location;
 
     public function setUp(): void
     {

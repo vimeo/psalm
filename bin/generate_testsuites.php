@@ -30,9 +30,7 @@ mt_srand(4); // chosen by fair dice roll.
              // -- xkcd:221
 
 $order = array_map(
-    function (): int {
-        return mt_rand();
-    },
+    fn(): int => mt_rand(),
     $files
 );
 array_multisort($order, $files);

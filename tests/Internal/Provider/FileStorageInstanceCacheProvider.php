@@ -10,7 +10,7 @@ use function strtolower;
 class FileStorageInstanceCacheProvider extends FileStorageCacheProvider
 {
     /** @var array<lowercase-string, FileStorage> */
-    private $cache = [];
+    private array $cache = [];
 
     public function __construct()
     {

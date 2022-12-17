@@ -6,10 +6,7 @@ use Psalm\Internal\Provider\ProjectCacheProvider as PsalmProjectCacheProvider;
 
 class ProjectCacheProvider extends PsalmProjectCacheProvider
 {
-    /**
-     * @var int
-     */
-    private $last_run = 0;
+    private int $last_run = 0;
 
     public function __construct()
     {

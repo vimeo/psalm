@@ -100,9 +100,7 @@ foreach ($files as $file) {
             $file,
             get_class($exception),
             $exception->getMessage(),
-            implode("\n", array_map(function (LibXMLError $error): string {
-                return $error->message;
-            }, libxml_get_errors()))
+            implode("\n", array_map(fn(LibXMLError $error): string => $error->message, libxml_get_errors()))
         );
         libxml_clear_errors();
         continue;
@@ -159,9 +157,7 @@ foreach ($files as $file) {
 
 function serializeArray(array $array, string $prefix): string
 {
-    uksort($array, function (string $first, string $second): int {
-        return strtolower($first) <=> strtolower($second);
-    });
+    uksort($array, fn(string $first, string $second): int => strtolower($first) <=> strtolower($second));
     $result = "[\n";
     $localPrefix = $prefix . '    ';
     foreach ($array as $key => $value) {

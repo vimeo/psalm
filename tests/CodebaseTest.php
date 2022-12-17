@@ -24,8 +24,7 @@ use function get_class;
 
 class CodebaseTest extends TestCase
 {
-    /** @var Codebase */
-    private $codebase;
+    private Codebase $codebase;
 
     public function setUp(): void
     {
