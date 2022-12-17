@@ -200,7 +200,7 @@ class TryAnalyzer
                 }
 
                 if ($original_context->check_classes) {
-                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,
                         $fq_catch_class,
                         new CodeLocation($statements_analyzer->getSource(), $catch_type, $context->include_location),
@@ -208,9 +208,7 @@ class TryAnalyzer
                         $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues(),
                         new ClassLikeNameOptions(true)
-                    ) === false) {
-                        // fall through
-                    }
+                    );
                 }
 
                 if (($codebase->classExists($fq_catch_class)

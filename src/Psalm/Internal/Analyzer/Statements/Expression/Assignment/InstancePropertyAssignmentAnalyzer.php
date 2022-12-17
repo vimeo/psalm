@@ -92,7 +92,6 @@ class InstancePropertyAssignmentAnalyzer
     /**
      * @param   PropertyFetch|PropertyProperty  $stmt
      * @param   bool                            $direct_assignment whether the variable is assigned explicitly
-     * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -102,12 +101,12 @@ class InstancePropertyAssignmentAnalyzer
         Union $assignment_value_type,
         Context $context,
         bool $direct_assignment = true
-    ): ?bool {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt instanceof PropertyProperty) {
             if (!$context->self || !$stmt->default) {
-                return null;
+                return;
             }
 
             $property_id = $context->self . '::$' . $prop_name;
@@ -160,11 +159,11 @@ class InstancePropertyAssignmentAnalyzer
         }
 
         if (!$assigned_properties) {
-            return null;
+            return;
         }
 
         if ($assignment_value_type->hasMixed()) {
-            return null;
+            return;
         }
 
         $invalid_assignment_value_types = [];
@@ -289,7 +288,7 @@ class InstancePropertyAssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        return;
                     }
                 }
 
@@ -311,7 +310,7 @@ class InstancePropertyAssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        return;
                     }
                 }
             }
@@ -332,7 +331,7 @@ class InstancePropertyAssignmentAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    return;
                 }
             } else {
                 if (IssueBuffer::accepts(
@@ -349,12 +348,10 @@ class InstancePropertyAssignmentAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    return;
                 }
             }
         }
-
-        return null;
     }
 
     public static function trackPropertyImpurity(
@@ -432,16 +429,14 @@ class InstancePropertyAssignmentAnalyzer
                 ExpressionAnalyzer::analyze($statements_analyzer, $prop->default, $context);
 
                 if ($prop_default_type = $statements_analyzer->node_data->getType($prop->default)) {
-                    if (self::analyze(
+                    self::analyze(
                         $statements_analyzer,
                         $prop,
                         $prop->name->name,
                         $prop->default,
                         $prop_default_type,
                         $context
-                    ) === false) {
-                        // fall through
-                    }
+                    );
                 }
             }
         }
@@ -698,14 +693,13 @@ class InstancePropertyAssignmentAnalyzer
             $context->assigned_var_ids[$var_id] = (int)$stmt->var->getAttribute('startFilePos');
 
             if ($direct_assignment && isset($context->protected_var_ids[$var_id])) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new LoopInvalidation(
                         'Variable ' . $var_id . ' has already been assigned in a for/foreach loop',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                }
+                );
             }
         }
 
@@ -727,14 +721,13 @@ class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MixedPropertyAssignment(
                     $lhs_var_id . ' of type mixed cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-            }
+            );
 
             return [];
         }
@@ -750,27 +743,25 @@ class InstancePropertyAssignmentAnalyzer
         }
 
         if ($lhs_type->isNull()) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new NullPropertyAssignment(
                     $lhs_var_id . ' of type null cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-            }
+            );
 
             return [];
         }
 
         if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new PossiblyNullPropertyAssignment(
                     $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-            }
+            );
         }
 
         $has_regular_setter = false;
@@ -833,25 +824,23 @@ class InstancePropertyAssignmentAnalyzer
             $invalid_assignment_type = $invalid_assignment_types[0];
 
             if (!$has_valid_assignment_type) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidPropertyAssignment(
                         $lhs_var_id . ' with non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                }
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyInvalidPropertyAssignment(
                         $lhs_var_id . ' with possible non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                }
+                );
             }
         }
 

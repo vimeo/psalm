@@ -373,16 +373,13 @@ class ReturnAnalyzer
                     }
 
                     if ($local_return_type->isVoid()) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidReturnStatement(
                                 'No return values are expected for ' . $cased_method_id,
                                 new CodeLocation($source, $stmt->expr)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            return;
-                        }
-
+                        );
                         return;
                     }
 

@@ -196,16 +196,16 @@ class ForeachAnalyzer
                         && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
                     ) {
                         FileManipulationBuffer::addVarAnnotationToRemove($type_location);
-                    } elseif (IssueBuffer::accepts(
-                        new UnnecessaryVarAnnotation(
-                            'The @var ' . $comment_type . ' annotation for '
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new UnnecessaryVarAnnotation(
+                                'The @var ' . $comment_type . ' annotation for '
                                 . $var_comment->var_id . ' is unnecessary',
-                            $type_location
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                        true
-                    )) {
-                        // fall through
+                                $type_location
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                            true
+                        );
                     }
                 }
 
@@ -401,15 +401,13 @@ class ForeachAnalyzer
         bool &$always_non_empty_array
     ): ?bool {
         if ($iterator_type->isNull()) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new NullIterator(
                     'Cannot iterate over null',
                     new CodeLocation($statements_analyzer->getSource(), $expr)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-            }
-
+            );
             return false;
         }
 

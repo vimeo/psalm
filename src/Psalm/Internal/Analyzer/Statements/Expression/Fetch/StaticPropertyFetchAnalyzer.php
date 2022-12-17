@@ -58,17 +58,13 @@ class StaticPropertyFetchAnalyzer
                 $fq_class_name = $statements_analyzer->getParentFQCLN();
 
                 if ($fq_class_name === null) {
-                    if (IssueBuffer::accepts(
+                    return !IssueBuffer::accepts(
                         new ParentNotFound(
                             'Cannot check property fetch on parent as this class does not extend another',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return true;
+                    );
                 }
             } else {
                 $fq_class_name = (string)$context->self;

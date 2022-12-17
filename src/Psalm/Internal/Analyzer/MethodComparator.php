@@ -270,15 +270,15 @@ class MethodComparator
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues
                 );
-            } elseif (IssueBuffer::accepts(
-                new TraitMethodSignatureMismatch(
-                    'Method ' . $cased_implementer_method_id . ' has different access level than '
+            } else {
+                IssueBuffer::maybeAdd(
+                    new TraitMethodSignatureMismatch(
+                        'Method ' . $cased_implementer_method_id . ' has different access level than '
                         . $cased_guide_method_id,
-                    $code_location
-                ),
-                $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-            )) {
-                // fall through
+                        $code_location
+                    ),
+                    $suppressed_issues + $implementer_classlike_storage->suppressed_issues
+                );
             }
         }
 
@@ -799,35 +799,31 @@ class MethodComparator
                     !$guide_classlike_storage->user_defined,
                     !$guide_classlike_storage->user_defined
                 )) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new MoreSpecificImplementedParamType(
                             'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
-                                . ' has the more specific type \'' .
-                                $implementer_method_storage_param_type->getId() . '\', expecting \'' .
-                                $guide_method_storage_param_type->getId() . '\' as defined by ' .
-                                $cased_guide_method_id,
+                            . ' has the more specific type \'' .
+                            $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                            $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                            $cased_guide_method_id,
                             $implementer_method_storage->params[$i]->location
                                 ?: $code_location
                         ),
                         $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                    )) {
-                         // fall through
-                    }
+                    );
                 } else {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ImplementedParamTypeMismatch(
                             'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
-                                . ' has wrong type \'' .
-                                $implementer_method_storage_param_type->getId() . '\', expecting \'' .
-                                $guide_method_storage_param_type->getId() . '\' as defined by ' .
-                                $cased_guide_method_id,
+                            . ' has wrong type \'' .
+                            $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                            $guide_method_storage_param_type->getId() . '\' as defined by ' .
+                            $cased_guide_method_id,
                             $implementer_method_storage->params[$i]->location
                                 ?: $code_location
                         ),
                         $suppressed_issues + $implementer_classlike_storage->suppressed_issues
-                    )) {
-                         // fall through
-                    }
+                    );
                 }
             }
         }

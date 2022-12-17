@@ -76,17 +76,13 @@ class VariableFetchAnalyzer
 
         if ($stmt->name === 'this') {
             if ($statements_analyzer->isStatic()) {
-                if (IssueBuffer::accepts(
+                return !IssueBuffer::accepts(
                     new InvalidScope(
                         'Invalid reference to $this in a static context',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-
-                return true;
+                );
             }
 
             if (!isset($context->vars_in_scope['$this'])) {

@@ -175,16 +175,15 @@ class ClassLikeNodeScanner
                         || $duplicate_storage->stmt_location->file_path !== $this->file_path
                         || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash()
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new DuplicateClass(
                                 'Class ' . $fq_classlike_name . ' has already been defined'
-                                    . ($duplicate_storage->location
-                                        ? ' in ' . $duplicate_storage->location->file_path
-                                        : ''),
+                                . ($duplicate_storage->location
+                                    ? ' in ' . $duplicate_storage->location->file_path
+                                    : ''),
                                 $name_location
                             )
-                        )) {
-                        }
+                        );
 
                         $this->file_storage->has_visitor_issues = true;
 
@@ -1218,13 +1217,11 @@ class ClassLikeNodeScanner
             if (isset($storage->constants[$const->name->name])
                 || isset($storage->enum_cases[$const->name->name])
             ) {
-                if (IssueBuffer::accepts(new DuplicateConstant(
+                IssueBuffer::maybeAdd(new DuplicateConstant(
                     'Constant names should be unique',
                     new CodeLocation($this->file_scanner, $const),
                     $fq_classlike_name
-                ))) {
-                    // fall through
-                }
+                ));
                 continue;
             }
 
@@ -1333,13 +1330,11 @@ class ClassLikeNodeScanner
         string $fq_classlike_name
     ): void {
         if (isset($storage->constants[$stmt->name->name])) {
-            if (IssueBuffer::accepts(new DuplicateConstant(
+            IssueBuffer::maybeAdd(new DuplicateConstant(
                 'Constant names should be unique',
                 new CodeLocation($this->file_scanner, $stmt),
                 $fq_classlike_name
-            ))) {
-                // fall through
-            }
+            ));
             return;
         }
 
@@ -1412,14 +1407,13 @@ class ClassLikeNodeScanner
             }
             $storage->enum_cases[$stmt->name->name] = $case;
         } else {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new DuplicateEnumCase(
                     'Enum case names should be unique',
                     $case_location,
                     $fq_classlike_name
                 )
-            )) {
-            }
+            );
         }
     }
 

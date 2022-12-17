@@ -72,16 +72,14 @@ class ExistingAtomicStaticCallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 
-        if (MethodCallProhibitionAnalyzer::analyze(
+        MethodCallProhibitionAnalyzer::analyze(
             $codebase,
             $context,
             $method_id,
             $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer->getSuppressedIssues()
-        ) === false) {
-            // fall through
-        }
+        );
 
         if ($class_storage->user_defined
             && $context->self

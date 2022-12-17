@@ -934,8 +934,6 @@ class CastAnalyzer
         }
 
 
-        if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
-            // fall through
-        }
+        IssueBuffer::maybeAdd($issue, $statements_analyzer->getSuppressedIssues());
     }
 }

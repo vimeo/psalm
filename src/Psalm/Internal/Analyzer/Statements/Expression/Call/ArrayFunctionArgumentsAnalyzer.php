@@ -948,16 +948,16 @@ class ArrayFunctionArgumentsAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     );
-                } elseif (IssueBuffer::accepts(
-                    new InvalidArgument(
-                        'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
                             $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
-                        new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                        $method_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                            $method_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
                 }
             }
         }

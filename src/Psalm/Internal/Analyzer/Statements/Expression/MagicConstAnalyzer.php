@@ -58,16 +58,14 @@ class MagicConstAnalyzer
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Namespace_) {
             $namespace = $statements_analyzer->getNamespace();
-            if ($namespace === null
-                && IssueBuffer::accepts(
+            if ($namespace === null) {
+                IssueBuffer::maybeAdd(
                     new UndefinedConstant(
                         'Cannot get __namespace__ outside a namespace',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )
-            ) {
-                // fall through
+                );
             }
 
             $statements_analyzer->node_data->setType($stmt, Type::getString($namespace));

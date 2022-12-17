@@ -583,27 +583,27 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 return $emit_issues ? null : true;
 
             case self::VISIBILITY_PRIVATE:
-                if ($emit_issues && IssueBuffer::accepts(
-                    new InaccessibleProperty(
-                        'Cannot access private property ' . $property_id . ' from context ' . $context->self,
-                        $code_location
-                    ),
-                    $suppressed_issues
-                )) {
-                    // fall through
+                if ($emit_issues) {
+                    IssueBuffer::maybeAdd(
+                        new InaccessibleProperty(
+                            'Cannot access private property ' . $property_id . ' from context ' . $context->self,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    );
                 }
 
                 return null;
             case self::VISIBILITY_PROTECTED:
                 if (!$context->self) {
-                    if ($emit_issues && IssueBuffer::accepts(
-                        new InaccessibleProperty(
-                            'Cannot access protected property ' . $property_id,
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
-                        // fall through
+                    if ($emit_issues) {
+                        IssueBuffer::maybeAdd(
+                            new InaccessibleProperty(
+                                'Cannot access protected property ' . $property_id,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        );
                     }
 
                     return null;
@@ -614,14 +614,14 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 }
 
                 if (!$codebase->classExtends($context->self, $appearing_property_class)) {
-                    if ($emit_issues && IssueBuffer::accepts(
-                        new InaccessibleProperty(
-                            'Cannot access protected property ' . $property_id . ' from context ' . $context->self,
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
-                        // fall through
+                    if ($emit_issues) {
+                        IssueBuffer::maybeAdd(
+                            new InaccessibleProperty(
+                                'Cannot access protected property ' . $property_id . ' from context ' . $context->self,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        );
                     }
 
                     return null;

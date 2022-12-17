@@ -127,17 +127,13 @@ class MethodCallAnalyzer extends CallAnalyzer
             && $stmt->name instanceof PhpParser\Node\Identifier
             && ($class_type->isNull() || $class_type->isVoid())
         ) {
-            if (IssueBuffer::accepts(
+            return !IssueBuffer::accepts(
                 new NullReference(
                     'Cannot call method ' . $stmt->name->name . ' on null value',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                return false;
-            }
-
-            return true;
+            );
         }
 
         if ($class_type

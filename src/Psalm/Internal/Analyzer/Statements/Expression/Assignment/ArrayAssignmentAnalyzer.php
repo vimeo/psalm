@@ -108,37 +108,31 @@ class ArrayAssignmentAnalyzer
         $child_stmts[] = $root_array_expr;
         $root_array_expr = $root_array_expr->var;
 
-        if (ExpressionAnalyzer::analyze(
+        ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $root_array_expr,
             $context,
             true
-        ) === false) {
-            // fall through
-        }
+        );
 
         $codebase = $statements_analyzer->getCodebase();
 
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
         if ($root_type->hasMixed()) {
-            if (ExpressionAnalyzer::analyze(
+            ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->var,
                 $context,
                 true
-            ) === false) {
-                // fall through
-            }
+            );
 
             if ($stmt->dim) {
-                if (ExpressionAnalyzer::analyze(
+                ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $stmt->dim,
                     $context
-                ) === false) {
-                    // fall through
-                }
+                );
             }
         }
 
@@ -272,16 +266,13 @@ class ArrayAssignmentAnalyzer
             || $root_array_expr instanceof PhpParser\Node\Expr\FuncCall
         ) {
             if ($root_type->hasArray()) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidArrayAssignment(
                         'Assigning to the output of a function has no effect',
                         new CodeLocation($statements_analyzer->getSource(), $root_array_expr)
                     ),
                     $statements_analyzer->getSuppressedIssues()
-                )
-                ) {
-                    // do nothing
-                }
+                );
             }
         }
 

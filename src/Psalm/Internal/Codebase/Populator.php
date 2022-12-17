@@ -110,13 +110,13 @@ class Populator
         $fq_classlike_name_lc = strtolower($storage->name);
 
         if (isset($dependent_classlikes[$fq_classlike_name_lc])) {
-            if ($storage->location && IssueBuffer::accepts(
-                new CircularReference(
-                    'Circular reference discovered when loading ' . $storage->name,
-                    $storage->location
-                )
-            )) {
-                // fall through
+            if ($storage->location) {
+                IssueBuffer::maybeAdd(
+                    new CircularReference(
+                        'Circular reference discovered when loading ' . $storage->name,
+                        $storage->location
+                    )
+                );
             }
 
             return;

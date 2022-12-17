@@ -276,16 +276,16 @@ class AssignmentAnalyzer
                     && isset($statements_analyzer->getProjectAnalyzer()->getIssuesToFix()['UnnecessaryVarAnnotation'])
                 ) {
                     FileManipulationBuffer::addVarAnnotationToRemove($comment_type_location);
-                } elseif (IssueBuffer::accepts(
-                    new UnnecessaryVarAnnotation(
-                        'The @var ' . $comment_type . ' annotation for '
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new UnnecessaryVarAnnotation(
+                            'The @var ' . $comment_type . ' annotation for '
                             . $extended_var_id . ' is unnecessary',
-                        $comment_type_location
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                    true
-                )) {
-                    // fall through
+                            $comment_type_location
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                        true
+                    );
                 }
             }
 
@@ -775,16 +775,16 @@ class AssignmentAnalyzer
                     && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
                 ) {
                     FileManipulationBuffer::addVarAnnotationToRemove($type_location);
-                } elseif (IssueBuffer::accepts(
-                    new UnnecessaryVarAnnotation(
-                        'The @var ' . $var_comment_type . ' annotation for '
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new UnnecessaryVarAnnotation(
+                            'The @var ' . $var_comment_type . ' annotation for '
                             . $var_comment->var_id . ' is unnecessary',
-                        $type_location
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                    true
-                )) {
-                    // fall through
+                            $type_location
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                        true
+                    );
                 }
             }
 
@@ -1306,29 +1306,25 @@ class AssignmentAnalyzer
                     if ($assign_value_type->hasArray()) {
                         if ($assign_value_atomic_type instanceof TFalse && $assign_value_type->ignore_falsable_issues) {
                             // do nothing
-                        } elseif (IssueBuffer::accepts(
-                            new PossiblyInvalidArrayAccess(
-                                'Cannot access array value on non-array variable '
-                                . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
-                                new CodeLocation($statements_analyzer->getSource(), $var)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )
-                        ) {
-                            // do nothing
+                        } else {
+                            IssueBuffer::maybeAdd(
+                                new PossiblyInvalidArrayAccess(
+                                    'Cannot access array value on non-array variable '
+                                    . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
+                                    new CodeLocation($statements_analyzer->getSource(), $var)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            );
                         }
                     } else {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new InvalidArrayAccess(
                                 'Cannot access array value on non-array variable '
                                 . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
                                 new CodeLocation($statements_analyzer->getSource(), $var)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )
-                        ) {
-                            // do nothing
-                        }
+                        );
                     }
                 }
 

@@ -507,16 +507,14 @@ class ExpressionAnalyzer
             return true;
         }
 
-        if (IssueBuffer::accepts(
+        IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
                 'Psalm does not understand ' . get_class($stmt) . ' for PHP ' .
                 $codebase->getMajorAnalysisPhpVersion() . '.' . $codebase->getMinorAnalysisPhpVersion(),
                 new CodeLocation($statements_analyzer->getSource(), $stmt)
             ),
             $statements_analyzer->getSuppressedIssues()
-        )) {
-           // fall through
-        }
+        );
 
         return false;
     }

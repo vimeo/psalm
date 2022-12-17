@@ -74,17 +74,13 @@ class ClassConstAnalyzer
 
             if ($first_part_lc === 'self' || $first_part_lc === 'static') {
                 if (!$context->self) {
-                    if (IssueBuffer::accepts(
+                    return !IssueBuffer::accepts(
                         new NonStaticSelfCall(
                             'Cannot use ' . $first_part_lc . ' outside class context',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return true;
+                    );
                 }
 
                 $fq_class_name = $context->self;
@@ -92,17 +88,13 @@ class ClassConstAnalyzer
                 $fq_class_name = $statements_analyzer->getParentFQCLN();
 
                 if ($fq_class_name === null) {
-                    if (IssueBuffer::accepts(
+                    return !IssueBuffer::accepts(
                         new ParentNotFound(
                             'Cannot check property fetch on parent as this class does not extend another',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return true;
+                    );
                 }
             } else {
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(

@@ -546,16 +546,15 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 // a `@property` annotation
                 if (($class_storage->sealed_properties || $codebase->config->seal_all_properties)
                     && !isset($class_storage->pseudo_property_set_types['$' . $prop_name])
-                    && IssueBuffer::accepts(
+                ) {
+                    IssueBuffer::maybeAdd(
                         new UndefinedThisPropertyAssignment(
                             'Instance property ' . $property_id . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $property_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )
-                ) {
-                    // fall through
+                    );
                 }
 
                 // If a `@property` annotation is set, the type of the value passed to the
@@ -645,16 +644,15 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 // a `@property` annotation
                 if (($class_storage->sealed_properties || $codebase->config->seal_all_properties)
                     && !isset($class_storage->pseudo_property_get_types['$' . $prop_name])
-                    && IssueBuffer::accepts(
+                ) {
+                    IssueBuffer::maybeAdd(
                         new UndefinedThisPropertyFetch(
                             'Instance property ' . $property_id . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $property_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )
-                ) {
-                    // fall through
+                    );
                 }
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {

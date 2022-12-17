@@ -2652,18 +2652,16 @@ class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($var_type
-            && ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+        if (!$var_type
+            || ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $source,
                 $var_type,
                 new CodeLocation($source, $whichclass_expr),
                 null,
                 null,
                 $source->getSuppressedIssues()
-            ) === false
+            ) !== false
         ) {
-            // fall through
-        } else {
             if ($var_name && $var_type) {
                 $if_types[$var_name] = [[new IsClassNotEqual($var_type)]];
             }

@@ -447,13 +447,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 foreach ($stmt->props as $prop) {
                     if ($storage->is_enum) {
-                        if (IssueBuffer::accepts(new NoEnumProperties(
+                        IssueBuffer::maybeAdd(new NoEnumProperties(
                             'Enums cannot have properties',
                             new CodeLocation($this, $prop),
                             $fq_class_name
-                        ))) {
-                            // fall through
-                        }
+                        ));
                         continue;
                     }
                     if ($prop->default) {
@@ -2421,48 +2419,44 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $seen_values = [];
         foreach ($storage->enum_cases as $case_storage) {
             if ($case_storage->value !== null && $storage->enum_type === null) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(
                         'Case of a non-backed enum should not have a value',
                         $case_storage->stmt_location,
                         $storage->name
                     )
-                )) {
-                }
+                );
             } elseif ($case_storage->value === null && $storage->enum_type !== null) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(
                         'Case of a backed enum should have a value',
                         $case_storage->stmt_location,
                         $storage->name
                     )
-                )) {
-                }
+                );
             } elseif ($case_storage->value !== null && $storage->enum_type !== null) {
                 if ((is_int($case_storage->value) && $storage->enum_type === 'string')
                     || (is_string($case_storage->value) && $storage->enum_type === 'int')
                 ) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InvalidEnumCaseValue(
                             'Enum case value type should be ' . $storage->enum_type,
                             $case_storage->stmt_location,
                             $storage->name
                         )
-                    )) {
-                    }
+                    );
                 }
             }
 
             if ($case_storage->value !== null) {
                 if (in_array($case_storage->value, $seen_values, true)) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new DuplicateEnumCaseValue(
                             'Enum case values should be unique',
                             $case_storage->stmt_location,
                             $storage->name
                         )
-                    )) {
-                    }
+                    );
                 } else {
                     $seen_values[] = $case_storage->value;
                 }
