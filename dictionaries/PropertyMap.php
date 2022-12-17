@@ -113,7 +113,7 @@ return [
         'formatOutput' => 'bool',
         'implementation' => 'DOMImplementation',
         'lastElementChild' => 'DOMElement|null',
-        'preserveWhitespace' => 'bool',
+        'preserveWhiteSpace' => 'bool',
         'recover' => 'bool',
         'resolveExternals' => 'bool',
         'standalone' => 'bool',
