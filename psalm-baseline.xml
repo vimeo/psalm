@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@6eb37b9dc2321e4eaade9d3d2dca1aff6f2c0a8f">
+<files psalm-version="dev-master@4d0ddf6310e9c0831dffc35385086370b28fbec7">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -25,13 +25,6 @@
   <file src="src/Psalm/Config/FileFilter.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>explode('::', $method_id)[1]</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/ErrorBaseline.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="3">
-      <code>$matches[1]</code>
-      <code>$matches[2]</code>
-      <code>$matches[3]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassAnalyzer.php">
@@ -231,6 +224,18 @@
       <code>$check_type_string</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/BaselineFormatter/BaselineFormatterFactory.php">
+    <MixedArgument occurrences="1">
+      <code>$options['set-baseline']</code>
+    </MixedArgument>
+  </file>
+  <file src="src/Psalm/Internal/BaselineFormatter/XmlBaselineFormatter.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="3">
+      <code>$matches[1]</code>
+      <code>$matches[2]</code>
+      <code>$matches[3]</code>
+    </PossiblyUndefinedIntArrayOffset>
+  </file>
   <file src="src/Psalm/Internal/Cli/Refactor.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$identifier_name</code>
@@ -391,6 +396,9 @@
       <code>$class_strings ?: null</code>
     </InvalidArgument>
     <RedundantCondition occurrences="2">
+      <code>!$type-&gt;possibly_undefined
+                                    &amp;&amp; !$unpacking_possibly_empty
+                                    &amp;&amp; $is_replace</code>
       <code>$is_replace</code>
     </RedundantCondition>
   </file>

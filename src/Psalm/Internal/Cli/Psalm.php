@@ -9,6 +9,8 @@ use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\BaselineFormatter\BaselineFormatterFactory;
+use Psalm\Internal\BaselineFormatter\BaselineFormatterInterface;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
@@ -89,6 +91,7 @@ require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 
 /**
+ * @psalm-import-type psalmFormattedBaseline from ErrorBaseline
  * @internal
  */
 final class Psalm
@@ -158,6 +161,7 @@ final class Psalm
         'dump-taint-graph:',
         'find-unused-psalm-suppress',
         'error-level:',
+        'baseline-formatter:'
     ];
 
     /**
@@ -643,30 +647,23 @@ final class Psalm
 
     /**
      * @param array{"set-baseline": string, ...} $options
-     * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @return psalmFormattedBaseline
      */
     private static function generateBaseline(
         array $options,
         Config $config,
         string $current_dir,
-        ?string $path_to_config
+        ?string $path_to_config,
+        BaselineFormatterInterface $baseline_formatter
     ): array {
         fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
-        try {
-            $issue_baseline = ErrorBaseline::read(
-                new FileProvider,
-                $options['set-baseline']
-            );
-        } catch (ConfigException $e) {
-            $issue_baseline = [];
-        }
-
-        ErrorBaseline::create(
+        $issue_baseline = ErrorBaseline::create(
             new FileProvider,
             $options['set-baseline'],
             IssueBuffer::getIssuesData(),
-            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
+            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
+            $baseline_formatter,
         );
 
         fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
@@ -683,10 +680,13 @@ final class Psalm
     }
 
     /**
-     * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @return psalmFormattedBaseline
      */
-    private static function updateBaseline(array $options, Config $config): array
-    {
+    private static function updateBaseline(
+        array $options,
+        Config $config,
+        BaselineFormatterInterface $baseline_formatter
+    ): array {
         $baselineFile = $config->error_baseline;
 
         if (empty($baselineFile)) {
@@ -696,7 +696,8 @@ final class Psalm
         try {
             $issue_current_baseline = ErrorBaseline::read(
                 new FileProvider,
-                $baselineFile
+                $baselineFile,
+                $baseline_formatter,
             );
             $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
 
@@ -704,7 +705,8 @@ final class Psalm
                 new FileProvider,
                 $baselineFile,
                 IssueBuffer::getIssuesData(),
-                $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
+                $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
+                $baseline_formatter,
             );
             $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
 
@@ -1019,7 +1021,7 @@ final class Psalm
     }
 
     /**
-     * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @return psalmFormattedBaseline
      */
     private static function initBaseline(
         array $options,
@@ -1027,10 +1029,18 @@ final class Psalm
         string $current_dir,
         ?string $path_to_config
     ): array {
+        $baseline_formatter = (new BaselineFormatterFactory())->fromOptionsAndConfig($options, $config);
+
         $issue_baseline = [];
 
         if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
-            $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
+            $issue_baseline = self::generateBaseline(
+                $options,
+                $config,
+                $current_dir,
+                $path_to_config,
+                $baseline_formatter,
+            );
         }
 
         if (isset($options['use-baseline'])) {
@@ -1046,14 +1056,15 @@ final class Psalm
         }
 
         if (isset($options['update-baseline'])) {
-            $issue_baseline = self::updateBaseline($options, $config);
+            $issue_baseline = self::updateBaseline($options, $config, $baseline_formatter);
         }
 
         if (!$issue_baseline && $baseline_file_path && !isset($options['ignore-baseline'])) {
             try {
                 $issue_baseline = ErrorBaseline::read(
                     new FileProvider,
-                    $baseline_file_path
+                    $baseline_file_path,
+                    $baseline_formatter,
                 );
             } catch (ConfigException $exception) {
                 fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);

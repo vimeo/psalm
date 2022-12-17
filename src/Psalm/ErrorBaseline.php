@@ -2,38 +2,32 @@
 
 namespace Psalm;
 
-use DOMDocument;
-use DOMElement;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\BaselineFormatter\BaselineFormatterInterface;
+use Psalm\Internal\BaselineFormatter\XmlBaselineFormatter;
 use Psalm\Internal\Provider\FileProvider;
-use RuntimeException;
 
 use function array_filter;
 use function array_intersect;
-use function array_map;
 use function array_merge;
 use function array_reduce;
 use function array_values;
-use function get_loaded_extensions;
-use function implode;
 use function ksort;
 use function min;
-use function phpversion;
-use function preg_replace_callback;
-use function sort;
+use function sprintf;
 use function str_replace;
-use function strpos;
-use function trim;
-use function usort;
+use function trigger_error;
 
-use const LIBXML_NOBLANKS;
-use const PHP_VERSION;
+use const E_USER_DEPRECATED;
 
+/**
+ * @psalm-type psalmFormattedBaseline = array<string, array<string, array{o: int, s: array<int, string>}>>
+ */
 final class ErrorBaseline
 {
     /**
-     * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
+     * @param psalmFormattedBaseline $existingIssues
      * @psalm-pure
      */
     public static function countTotalIssues(array $existingIssues): int
@@ -56,89 +50,91 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
+     * @return psalmFormattedBaseline
      */
     public static function create(
         FileProvider $fileProvider,
         string $baselineFile,
         array $issues,
-        bool $include_php_versions
-    ): void {
+        bool $include_php_versions,
+        ?BaselineFormatterInterface $baseline_formatter = null
+    ): array {
+        if ($baseline_formatter === null) {
+            trigger_error(
+                sprintf(
+                    'Not passing in a "%s" explicitly to "%s" is deprecated.',
+                    BaselineFormatterInterface::class,
+                    __METHOD__
+                ),
+                E_USER_DEPRECATED,
+            );
+            $baseline_formatter = new XmlBaselineFormatter();
+        }
         $groupedIssues = self::countIssueTypesByFile($issues);
-
-        self::writeToFile($fileProvider, $baselineFile, $groupedIssues, $include_php_versions);
+        self::writeToFile(
+            $fileProvider,
+            $baselineFile,
+            $groupedIssues,
+            $include_php_versions,
+            $baseline_formatter,
+        );
+        return $groupedIssues;
     }
 
     /**
-     * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @return psalmFormattedBaseline
      * @throws ConfigException
      */
-    public static function read(FileProvider $fileProvider, string $baselineFile): array
-    {
+    public static function read(
+        FileProvider $fileProvider,
+        string $baselineFile,
+        ?BaselineFormatterInterface $baseline_formatter = null
+    ): array {
+        if ($baseline_formatter === null) {
+            trigger_error(
+                sprintf(
+                    'Not passing in a "%s" explicitly to "%s" is deprecated.',
+                    BaselineFormatterInterface::class,
+                    __METHOD__
+                ),
+                E_USER_DEPRECATED,
+            );
+            $baseline_formatter = new XmlBaselineFormatter();
+        }
+
         if (!$fileProvider->fileExists($baselineFile)) {
             throw new ConfigException("{$baselineFile} does not exist or is not readable");
         }
 
-        $xmlSource = $fileProvider->getContents($baselineFile);
-
-        if ($xmlSource === '') {
-            throw new ConfigException('Baseline file is empty');
-        }
-
-        $baselineDoc = new DOMDocument();
-        $baselineDoc->loadXML($xmlSource, LIBXML_NOBLANKS);
-
-        $filesElement = $baselineDoc->getElementsByTagName('files');
-
-        if ($filesElement->length === 0) {
-            throw new ConfigException('Baseline file does not contain <files>');
-        }
-
-        $files = [];
-
-        /** @var DOMElement $filesElement */
-        $filesElement = $filesElement[0];
-
-        foreach ($filesElement->getElementsByTagName('file') as $file) {
-            $fileName = $file->getAttribute('src');
-
-            $fileName = str_replace('\\', '/', $fileName);
-
-            $files[$fileName] = [];
-
-            foreach ($file->childNodes as $issue) {
-                if (!$issue instanceof DOMElement) {
-                    continue;
-                }
-
-                $issueType = $issue->tagName;
-
-                $files[$fileName][$issueType] = [
-                    'o' => (int)$issue->getAttribute('occurrences'),
-                    's' => [],
-                ];
-                $codeSamples = $issue->getElementsByTagName('code');
-
-                foreach ($codeSamples as $codeSample) {
-                    $files[$fileName][$issueType]['s'][] = trim($codeSample->textContent);
-                }
-            }
-        }
-
-        return $files;
+        $content = $fileProvider->getContents($baselineFile);
+        return $baseline_formatter->read($content);
     }
 
     /**
      * @param array<string, list<IssueData>> $issues
-     * @return array<string, array<string, array{o: int, s: list<string>}>>
+     * @return psalmFormattedBaseline
      * @throws ConfigException
      */
     public static function update(
         FileProvider $fileProvider,
         string $baselineFile,
         array $issues,
-        bool $include_php_versions
+        bool $include_php_versions,
+        ?BaselineFormatterInterface $baseline_formatter = null
     ): array {
-        $existingIssues = self::read($fileProvider, $baselineFile);
+        if ($baseline_formatter === null) {
+            trigger_error(
+                sprintf(
+                    'Not passing in a "%s" explicitly to "%s" is deprecated.',
+                    BaselineFormatterInterface::class,
+                    __METHOD__
+                ),
+                E_USER_DEPRECATED,
+            );
+            $baseline_formatter = new XmlBaselineFormatter();
+        }
+
+        $existingIssues = self::read($fileProvider, $baselineFile, $baseline_formatter);
         $newIssues = self::countIssueTypesByFile($issues);
 
         foreach ($existingIssues as $file => &$existingIssuesCount) {
@@ -168,14 +164,20 @@ final class ErrorBaseline
 
         $groupedIssues = array_filter($existingIssues);
 
-        self::writeToFile($fileProvider, $baselineFile, $groupedIssues, $include_php_versions);
+        self::writeToFile(
+            $fileProvider,
+            $baselineFile,
+            $groupedIssues,
+            $include_php_versions,
+            $baseline_formatter,
+        );
 
         return $groupedIssues;
     }
 
     /**
      * @param array<string, list<IssueData>> $issues
-     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+     * @return psalmFormattedBaseline
      */
     private static function countIssueTypesByFile(array $issues): array
     {
@@ -185,8 +187,8 @@ final class ErrorBaseline
         $groupedIssues = array_reduce(
             array_merge(...array_values($issues)),
             /**
-             * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
-             * @return array<string,array<string,array{o:int, s:array<int, string>}>>
+             * @param psalmFormattedBaseline $carry
+             * @return psalmFormattedBaseline
              */
             static function (array $carry, IssueData $issue): array {
                 if ($issue->severity !== Config::REPORT_ERROR) {
@@ -206,10 +208,7 @@ final class ErrorBaseline
                 }
 
                 ++$carry[$fileName][$issueType]['o'];
-
-                if (!strpos($issue->selected_text, "\n")) {
-                    $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
-                }
+                $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
 
                 return $carry;
             },
@@ -228,81 +227,18 @@ final class ErrorBaseline
     }
 
     /**
-     * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
+     * @param psalmFormattedBaseline $groupedIssues
      */
     private static function writeToFile(
         FileProvider $fileProvider,
         string $baselineFile,
         array $groupedIssues,
-        bool $include_php_versions
+        bool $include_php_versions,
+        BaselineFormatterInterface $baseline_formatter
     ): void {
-        $baselineDoc = new DOMDocument('1.0', 'UTF-8');
-        $filesNode = $baselineDoc->createElement('files');
-        $filesNode->setAttribute('psalm-version', PSALM_VERSION);
-
-        if ($include_php_versions) {
-            $extensions = [...get_loaded_extensions(), ...get_loaded_extensions(true)];
-
-            usort($extensions, 'strnatcasecmp');
-
-            $filesNode->setAttribute('php-version', implode(';' . "\n\t", [...[
-                ('php:' . PHP_VERSION),
-            ], ...array_map(
-                static fn(string $extension): string => $extension . ':' . phpversion($extension),
-                $extensions
-            )]));
-        }
-
-        foreach ($groupedIssues as $file => $issueTypes) {
-            $fileNode = $baselineDoc->createElement('file');
-
-            $fileNode->setAttribute('src', $file);
-
-            foreach ($issueTypes as $issueType => $existingIssueType) {
-                $issueNode = $baselineDoc->createElement($issueType);
-
-                $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
-
-                sort($existingIssueType['s']);
-
-                foreach ($existingIssueType['s'] as $selection) {
-                    $codeNode = $baselineDoc->createElement('code');
-                    $codeNode->textContent = trim($selection);
-                    $issueNode->appendChild($codeNode);
-                }
-                $fileNode->appendChild($issueNode);
-            }
-
-            $filesNode->appendChild($fileNode);
-        }
-
-        $baselineDoc->appendChild($filesNode);
-        $baselineDoc->formatOutput = true;
-
-        $xml = preg_replace_callback(
-            '/<files (psalm-version="[^"]+") (?:php-version="(.+)"(\/?>)\n)/',
-            /**
-             * @param string[] $matches
-             */
-            static fn(array $matches): string => '<files' .
-            "\n  " .
-            $matches[1] .
-            "\n" .
-            '  php-version="' .
-            "\n    " .
-            str_replace('&#10;&#9;', "\n    ", $matches[2]).
-            "\n" .
-            '  "' .
-            "\n" .
-            $matches[3] .
-            "\n",
-            $baselineDoc->saveXML()
+        $fileProvider->setContents(
+            $baselineFile,
+            $baseline_formatter->format($groupedIssues, $include_php_versions),
         );
-
-        if ($xml === null) {
-            throw new RuntimeException('Failed to reformat opening attributes!');
-        }
-
-        $fileProvider->setContents($baselineFile, $xml);
     }
 }

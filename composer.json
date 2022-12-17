@@ -107,12 +107,13 @@
     ],
     "scripts": {
         "cs": "phpcs -ps",
-        "cs-fix": "phpcbf -ps",
+        "cs-fix": "phpcbf -p",
         "lint": "parallel-lint ./src ./tests",
         "phpunit": "paratest --runner=WrapperRunner",
         "phpunit-std": "phpunit",
         "verify-callmap": "phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm --find-dead-code",
+        "psalm-set-baseline": "@php ./psalm --find-dead-code --set-baseline=psalm-baseline.xml",
         "tests": [
             "@lint",
             "@cs",

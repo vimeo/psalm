@@ -9,6 +9,7 @@ use Mockery\MockInterface;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\BaselineFormatter\XmlBaselineFormatter;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\RuntimeCaches;
 
@@ -63,7 +64,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame(
             $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider, $baselineFilePath)
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath, new XmlBaselineFormatter())
         );
     }
 
@@ -91,7 +92,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame(
             $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider, $baselineFilePath)
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath, new XmlBaselineFormatter())
         );
     }
 
@@ -109,7 +110,7 @@ class ErrorBaselineTest extends TestCase
             '
         );
 
-        ErrorBaseline::read($this->fileProvider, $baselineFile);
+        ErrorBaseline::read($this->fileProvider, $baselineFile, new XmlBaselineFormatter());
     }
 
     public function testLoadShouldThrowExceptionWhenBaselineFileDoesNotExist(): void
@@ -120,7 +121,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->fileProvider->expects()->fileExists($baselineFile)->andReturns(false);
 
-        ErrorBaseline::read($this->fileProvider, $baselineFile);
+        ErrorBaseline::read($this->fileProvider, $baselineFile, new XmlBaselineFormatter());
     }
 
     public function testCountTotalIssuesShouldReturnCorrectNumber(): void
@@ -292,7 +293,8 @@ class ErrorBaselineTest extends TestCase
                     ),
                 ],
             ],
-            false
+            false,
+            new XmlBaselineFormatter(),
         );
 
         $this->fileProvider->shouldHaveReceived()
@@ -521,7 +523,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame(
             $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider, $baselineFilePath)
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath, new XmlBaselineFormatter())
         );
     }
 }
