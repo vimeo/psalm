@@ -450,3 +450,5 @@ Psalm has support for a number of builtin classes and interfaces that you can ex
 - `class DOMNodeList<TNode of DOMNode> implements Traversable<int, TNode>`
 - `class SplDoublyLinkedList<TValue> implements Iterator<TKey, TValue>, ArrayAccess<TKey, TValue>`
 - `class SplQueue<TValue> extends SplDoublyLinkedList<TValue>`
+
+- `abstract class FilterIterator<TKey, TValue, TIterator>`
