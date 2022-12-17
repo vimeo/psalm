@@ -99,13 +99,13 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         CodeLocation $code_location,
         array $suppressed_issues,
         ?bool &$is_dynamic_this_method = false
-    ): bool {
+    ): void {
         $codebase_methods = $codebase->methods;
 
         if ($method_id->fq_class_name === 'Closure'
             && $method_id->method_name === 'fromcallable'
         ) {
-            return true;
+            return;
         }
 
         $original_method_id = $method_id;
@@ -114,7 +114,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         if (!$method_id) {
             if (InternalCallMapHandler::inCallMap((string) $original_method_id)) {
-                return true;
+                return;
             }
 
             throw new LogicException('Declaring method for ' . $original_method_id . ' should not be null');
@@ -134,7 +134,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         ),
                         $suppressed_issues
                     )) {
-                        return false;
+                        return;
                     }
                 } else {
                     $is_dynamic_this_method = true;
@@ -149,12 +149,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     ),
                     $suppressed_issues
                 )) {
-                    return false;
+                    return;
                 }
             }
         }
-
-        return true;
     }
 
     /**

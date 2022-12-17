@@ -146,11 +146,7 @@ final class IssueBuffer
      */
     public static function maybeAdd(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): void
     {
-        if (self::isSuppressed($e, $suppressed_issues)) {
-            return;
-        }
-
-        self::add($e, $is_fixable);
+        self::accepts($e, $suppressed_issues, $is_fixable);
     }
 
     /**
@@ -551,9 +547,7 @@ final class IssueBuffer
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($codebase->config->config_issues as $issue) {
-            if (self::accepts($issue)) {
-                // fall through
-            }
+            self::maybeAdd($issue);
         }
 
         $error_count = 0;

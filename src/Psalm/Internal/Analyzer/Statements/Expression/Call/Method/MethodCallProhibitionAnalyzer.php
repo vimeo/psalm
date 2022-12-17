@@ -19,7 +19,6 @@ class MethodCallProhibitionAnalyzer
 {
     /**
      * @param  string[]     $suppressed_issues
-     * @return false|null
      */
     public static function analyze(
         Codebase $codebase,
@@ -28,13 +27,13 @@ class MethodCallProhibitionAnalyzer
         ?string $caller_identifier,
         CodeLocation $code_location,
         array $suppressed_issues
-    ): ?bool {
+    ): void {
         $codebase_methods = $codebase->methods;
 
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
         if ($method_id === null) {
-            return null;
+            return;
         }
 
         $storage = $codebase_methods->getStorage($method_id);
@@ -67,6 +66,5 @@ class MethodCallProhibitionAnalyzer
                 );
             }
         }
-        return null;
     }
 }

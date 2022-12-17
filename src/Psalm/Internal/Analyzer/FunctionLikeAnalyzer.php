@@ -361,13 +361,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($storage->unused_docblock_params) {
             foreach ($storage->unused_docblock_params as $param_name => $param_location) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidDocblockParamName(
                         'Incorrect param name $' . $param_name . ' in docblock for ' . $cased_method_id,
                         $param_location
                     )
-                )) {
-                }
+                );
             }
         }
 
@@ -388,7 +387,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($overridden_storage->allow_named_arg_calls) {
                     IssueBuffer::maybeAdd(new MethodSignatureMismatch(
                         'Method ' . (string) $method_id . ' should accept named arguments '
-                        . ' as ' . (string) $overridden_method_id . ' does',
+                            . ' as ' . (string) $overridden_method_id . ' does',
                         $storage->location
                     ));
                 }

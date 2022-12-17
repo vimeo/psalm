@@ -30,17 +30,14 @@ class StringChecker implements AfterExpressionAnalysisInterface
                 && preg_match($class_or_class_method, $expr->value)
             ) {
                 $absolute_class = preg_split('/[:]/', $expr->value)[0];
-
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidClass(
                         'Use ::class constants when representing class names',
                         new CodeLocation($statements_source, $expr),
                         $absolute_class
                     ),
                     $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         } elseif ($expr instanceof PhpParser\Node\Expr\BinaryOp\Concat
             && $expr->left instanceof PhpParser\Node\Expr\ClassConstFetch

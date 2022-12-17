@@ -714,29 +714,23 @@ class ArrayFetchAnalyzer
         if ($non_array_types) {
             if ($has_array_access) {
                 if ($in_assignment) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyInvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
                             $extended_var_id . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )
-                    ) {
-                        // do nothing
-                    }
+                    );
                 } elseif (!$context->inside_isset) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyInvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
                             $extended_var_id . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )
-                    ) {
-                        // do nothing
-                    }
+                    );
                 }
             } else {
                 if ($in_assignment) {

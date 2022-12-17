@@ -211,15 +211,13 @@ class NewAnalyzer extends CallAnalyzer
                 }
 
                 if ($codebase->interfaceExists($fq_class_name)) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InterfaceInstantiation(
                             'Interface ' . $fq_class_name . ' cannot be instantiated',
                             new CodeLocation($statements_analyzer->getSource(), $stmt->class)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                    }
-
+                    );
                     return true;
                 }
             }
@@ -261,13 +259,11 @@ class NewAnalyzer extends CallAnalyzer
                 );
 
                 if ($codebase->classlikes->enumExists($fq_class_name)) {
-                    if (IssueBuffer::accepts(new UndefinedClass(
+                    IssueBuffer::maybeAdd(new UndefinedClass(
                         'Enums cannot be instantiated',
                         new CodeLocation($statements_analyzer, $stmt),
                         $fq_class_name
-                    ))) {
-                        // fall through
-                    }
+                    ));
                 }
             }
         }
@@ -836,18 +832,16 @@ class NewAnalyzer extends CallAnalyzer
             }
 
             if ($lhs_type_part instanceof TString) {
-                if ($config->allow_string_standin_for_class
-                    && !$lhs_type_part instanceof TNumericString
+                if (!$config->allow_string_standin_for_class
+                    || $lhs_type_part instanceof TNumericString
                 ) {
-                    // do nothing
-                } elseif (IssueBuffer::accepts(
-                    new InvalidStringClass(
-                        'String cannot be used as a class',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+                    IssueBuffer::maybeAdd(
+                        new InvalidStringClass(
+                            'String cannot be used as a class',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
                 }
             } elseif ($lhs_type_part instanceof TMixed
                 || $lhs_type_part instanceof TObject
@@ -870,15 +864,15 @@ class NewAnalyzer extends CallAnalyzer
             } elseif ($lhs_type_part instanceof TNamedObject) {
                 $new_type = Type::combineUnionTypes($new_type, new Union([$lhs_type_part]));
                 continue;
-            } elseif (IssueBuffer::accepts(
-                new UndefinedClass(
-                    'Type ' . $lhs_type_part . ' cannot be called as a class',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    (string)$lhs_type_part
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+            } else {
+                IssueBuffer::maybeAdd(
+                    new UndefinedClass(
+                        'Type ' . $lhs_type_part . ' cannot be called as a class',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        (string)$lhs_type_part
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                );
             }
 
             $new_type = Type::combineUnionTypes($new_type, Type::getObject());

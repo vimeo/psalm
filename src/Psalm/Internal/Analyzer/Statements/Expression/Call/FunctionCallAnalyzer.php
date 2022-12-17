@@ -502,15 +502,15 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $code_location,
                     $is_maybe_root_function
                 ) === false) {
-                    if ($args && ArgumentsAnalyzer::analyze(
-                        $statements_analyzer,
-                        $args,
-                        null,
-                        null,
-                        true,
-                        $context
-                    ) === false) {
-                        // fall through
+                    if ($args) {
+                        ArgumentsAnalyzer::analyze(
+                            $statements_analyzer,
+                            $args,
+                            null,
+                            null,
+                            true,
+                            $context
+                        );
                     }
 
                     return $function_call_info;

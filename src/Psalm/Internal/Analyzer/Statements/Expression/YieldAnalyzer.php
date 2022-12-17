@@ -101,15 +101,15 @@ class YieldAnalyzer
                         && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
                     ) {
                         FileManipulationBuffer::addVarAnnotationToRemove($type_location);
-                    } elseif (IssueBuffer::accepts(
-                        new UnnecessaryVarAnnotation(
-                            'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
-                            $type_location
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                        true
-                    )) {
-                        // fall through
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new UnnecessaryVarAnnotation(
+                                'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
+                                $type_location
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                            true
+                        );
                     }
                 }
 

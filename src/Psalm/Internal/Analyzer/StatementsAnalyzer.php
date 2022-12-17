@@ -498,17 +498,14 @@ class StatementsAnalyzer extends SourceAnalyzer
             && !($stmt instanceof PhpParser\Node\Stmt\HaltCompiler)
         ) {
             if ($codebase->find_unused_variables) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UnevaluatedCode(
                         'Expressions after return/throw/continue',
                         new CodeLocation($statements_analyzer->source, $stmt)
                     ),
                     $statements_analyzer->source->getSuppressedIssues()
-                )) {
-                    return null;
-                }
+                );
             }
-
             return null;
         }
 

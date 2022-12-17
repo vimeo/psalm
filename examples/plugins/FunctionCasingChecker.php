@@ -1,10 +1,9 @@
 <?php
+
 namespace Psalm\Example\Plugin;
 
 use Exception;
 use PhpParser;
-use Psalm\Checker;
-use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Issue\PluginIssue;
 use Psalm\IssueBuffer;
@@ -48,15 +47,13 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
             }
 
             if ($function_storage->cased_name !== (string)$expr->name) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new IncorrectFunctionCasing(
                         'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
                         new CodeLocation($statements_source, $expr->name)
                     ),
                     $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         } catch (Exception $e) {
             // can throw if storage is missing
@@ -88,15 +85,13 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
             $function_name_parts = explode('\\', $function_storage->cased_name);
 
             if (end($function_name_parts) !== end($expr->name->parts)) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new IncorrectFunctionCasing(
                         'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
                         new CodeLocation($statements_source, $expr->name)
                     ),
                     $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                );
             }
         } catch (Exception $e) {
             // can throw if storage is missing

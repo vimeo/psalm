@@ -108,31 +108,23 @@ class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->isNull()) {
-            if (IssueBuffer::accepts(
+            return !IssueBuffer::accepts(
                 new NullPropertyFetch(
                     'Cannot get property on null variable ' . $stmt_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                return false;
-            }
-
-            return true;
+            );
         }
 
         if ($stmt_var_type->isNever()) {
-            if (IssueBuffer::accepts(
+            return !IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
                 $statements_analyzer->getSuppressedIssues()
-            )) {
-                return false;
-            }
-
-            return true;
+            );
         }
 
         if ($stmt_var_type->hasMixed()) {
@@ -425,7 +417,7 @@ class InstancePropertyFetchAnalyzer
                         $class_storage,
                         $in_assignment
                     );
-                    
+
                     $context->vars_in_scope[$var_id] = $stmt_type;
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
 

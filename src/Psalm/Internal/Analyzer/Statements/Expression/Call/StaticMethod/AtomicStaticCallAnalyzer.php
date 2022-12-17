@@ -853,19 +853,17 @@ class AtomicStaticCallAnalyzer
                 || !$codebase->classExtends($context->self, $fq_class_name)
             )
         ) {
-            if (MethodAnalyzer::checkStatic(
+            MethodAnalyzer::checkStatic(
                 $method_id,
                 ($stmt->class instanceof PhpParser\Node\Name
                     && strtolower($stmt->class->parts[0]) === 'self')
-                    || $context->self === $fq_class_name,
+                || $context->self === $fq_class_name,
                 !$statements_analyzer->isStatic(),
                 $codebase,
                 new CodeLocation($statements_analyzer, $stmt),
                 $statements_analyzer->getSuppressedIssues(),
                 $is_dynamic_this_method
-            ) === false) {
-                // fall through
-            }
+            );
 
             if ($is_dynamic_this_method) {
                 return self::forwardCallToInstanceMethod(

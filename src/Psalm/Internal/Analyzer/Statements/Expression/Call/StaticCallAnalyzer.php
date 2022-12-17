@@ -67,17 +67,13 @@ class StaticCallAnalyzer extends CallAnalyzer
                         : null;
 
                     if (!$class_storage || !$class_storage->parent_class) {
-                        if (IssueBuffer::accepts(
+                        return !IssueBuffer::accepts(
                             new ParentNotFound(
                                 'Cannot call method on parent as this class does not extend another',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-
-                        return true;
+                        );
                     }
 
                     $fq_class_name = $class_storage->parent_class;
@@ -95,17 +91,13 @@ class StaticCallAnalyzer extends CallAnalyzer
                         $fq_class_name = $context->self;
                     }
                 } else {
-                    if (IssueBuffer::accepts(
+                    return !IssueBuffer::accepts(
                         new NonStaticSelfCall(
                             'Cannot use ' . $stmt->class->parts[0] . ' outside class context',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return true;
+                    );
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {

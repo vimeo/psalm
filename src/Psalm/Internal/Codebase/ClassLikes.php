@@ -1811,14 +1811,14 @@ class ClassLikes
                                         true
                                     );
                                 }
-                            } elseif (IssueBuffer::accepts(
-                                $issue,
-                                $method_storage->suppressed_issues,
-                                $method_storage->stmt_location
-                                    && !$declaring_classlike_storage->is_trait
-                                    && !$has_variable_calls
-                            )) {
-                                // fall through
+                            } else {
+                                IssueBuffer::maybeAdd(
+                                    $issue,
+                                    $method_storage->suppressed_issues,
+                                    $method_storage->stmt_location
+                                        && !$declaring_classlike_storage->is_trait
+                                        && !$has_variable_calls
+                                );
                             }
                         }
                     } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
@@ -1857,14 +1857,14 @@ class ClassLikes
                                     true
                                 );
                             }
-                        } elseif (IssueBuffer::accepts(
-                            $issue,
-                            $method_storage->suppressed_issues,
-                            $method_storage->stmt_location
+                        } else {
+                            IssueBuffer::maybeAdd(
+                                $issue,
+                                $method_storage->suppressed_issues,
+                                $method_storage->stmt_location
                                 && !$declaring_classlike_storage->is_trait
                                 && !$has_variable_calls
-                        )) {
-                            // fall through
+                            );
                         }
                     }
                 }
@@ -2138,11 +2138,11 @@ class ClassLikes
                                     true
                                 );
                             }
-                        } elseif (IssueBuffer::accepts(
-                            $issue,
-                            $classlike_storage->suppressed_issues + $property_storage->suppressed_issues
-                        )) {
-                            // fall through
+                        } else {
+                            IssueBuffer::maybeAdd(
+                                $issue,
+                                $classlike_storage->suppressed_issues + $property_storage->suppressed_issues
+                            );
                         }
                     }
                 } elseif (!isset($classlike_storage->declaring_method_ids['__get'])) {
@@ -2169,11 +2169,11 @@ class ClassLikes
                                 true
                             );
                         }
-                    } elseif (IssueBuffer::accepts(
-                        $issue,
-                        $classlike_storage->suppressed_issues + $property_storage->suppressed_issues
-                    )) {
-                        // fall through
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            $issue,
+                            $classlike_storage->suppressed_issues + $property_storage->suppressed_issues
+                        );
                     }
                 }
             }
