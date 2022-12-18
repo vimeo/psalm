@@ -23,7 +23,7 @@ class ReflectionClass implements Reflector {
      * @psalm-pure
      */
     public function getName(): string {}
-    
+
     /** @psalm-pure */
     public function isInternal(): bool {}
 
@@ -95,7 +95,7 @@ class ReflectionClass implements Reflector {
      * @psalm-pure
      * @throws ReflectionException
      */
-    public function getProperty(): ReflectionProperty {}
+    public function getProperty(string $name): ReflectionProperty {}
 
     /**
      * @param int-mask-of<ReflectionProperty::IS_*>|null $filter
@@ -621,7 +621,7 @@ class ReflectionParameter implements Reflector {
      * @readonly
      */
     public $name;
-    
+
     /** @return non-empty-string */
     public function getName(): string {}
 
