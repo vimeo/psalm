@@ -102,7 +102,7 @@ class CoreStubsTest extends TestCase
             'php_version' => '8.0',
         ];
         yield 'sprintf yields a non-empty-string for non-empty-string value' => [
-            '<?php
+            'code' => '<?php
 
             /**
              * @param non-empty-string $foo
@@ -115,13 +115,13 @@ class CoreStubsTest extends TestCase
             ',
         ];
         yield 'sprintf yields a string for possible empty string param' => [
-            '<?php
+            'code' => '<?php
 
             $a = sprintf("%s", "");
             ',
             'assertions' => [
                 '$a===' => 'string',
-            ]
+            ],
         ];
     }
 }
