@@ -2768,6 +2768,13 @@ class ArrayFunctionCallTest extends TestCase
                     array_combine(["a", "b"], [1, 2, 3]);',
                 'error_message' => 'InvalidArgument',
             ],
+            'arrayMergeNoNamed' => [
+                'code' => '<?php
+                    $map = ["a" => []];
+                    array_merge(...$map);
+                ',
+                'error_message' => 'NamedArgumentNotAllowed'
+            ]
         ];
     }
 }

@@ -349,6 +349,22 @@ function array_merge_recursive(array ...$arrays)
 
 /**
  * @psalm-pure
+ * 
+ * @no-named-arguments
+ *
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> ...$arrays
+ *
+ * @return array<TKey, TValue>
+ */
+function array_merge(array ...$arrays)
+{
+}
+
+/**
+ * @psalm-pure
  *
  * @psalm-template TKey as array-key
  * @psalm-template TValue
