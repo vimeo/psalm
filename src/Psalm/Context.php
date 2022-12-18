@@ -531,7 +531,7 @@ final class Context
             if (!$this_type->equals(
                 $new_type,
                 true,
-                !($this_type->propagate_parent_nodes || $new_type->propagate_parent_nodes)
+                !($this_type->propagate_parent_nodes || $new_type->propagate_parent_nodes),
             )
             ) {
                 $redefined_vars[$var_id] = $this_type;
@@ -714,7 +714,7 @@ final class Context
                         [],
                         null,
                         [],
-                        $failed_reconciliation
+                        $failed_reconciliation,
                     );
 
                     if ($result_type->getId() !== $new_type_string) {
@@ -757,7 +757,7 @@ final class Context
                 || ($new_type && $existing_type->from_docblock !== $new_type->from_docblock)
                 ? null
                 : $new_type,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         foreach ($this->vars_in_scope as $var_id => &$type) {

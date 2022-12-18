@@ -101,7 +101,7 @@ class AstDiffer
                 $result[] = new DiffElem(
                     $bc[$x - 1] ? DiffElem::TYPE_KEEP_SIGNATURE : DiffElem::TYPE_KEEP,
                     $a[$x - 1],
-                    $b[$y - 1]
+                    $b[$y - 1],
                 );
                 --$x;
                 --$y;

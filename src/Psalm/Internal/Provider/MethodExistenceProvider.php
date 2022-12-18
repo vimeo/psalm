@@ -64,7 +64,7 @@ class MethodExistenceProvider
                 $fq_classlike_name,
                 $method_name_lowercase,
                 $source,
-                $code_location
+                $code_location,
             );
             $method_exists = $method_handler($event);
 

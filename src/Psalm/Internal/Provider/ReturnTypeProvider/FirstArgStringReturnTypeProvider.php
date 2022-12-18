@@ -42,7 +42,7 @@ class FirstArgStringReturnTypeProvider implements FunctionReturnTypeProviderInte
         }
 
         return new Union([new TString, new TNull], [
-            'ignore_nullable_issues' => true
+            'ignore_nullable_issues' => true,
         ]);
     }
 }

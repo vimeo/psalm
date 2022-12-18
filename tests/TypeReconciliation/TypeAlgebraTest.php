@@ -904,7 +904,7 @@ class TypeAlgebraTest extends TestCase
 
                     if ($x->c) {}
                     if ($a) {}
-                }'
+                }',
             ],
             'twoVarChangeInElseOnly' => [
                 'code' => '<?php
@@ -930,7 +930,7 @@ class TypeAlgebraTest extends TestCase
 
                         $from->foo();
                         $to->foo();
-                    }'
+                    }',
             ],
             'twoVarChangeInElseif' => [
                 'code' => '<?php
@@ -975,13 +975,13 @@ class TypeAlgebraTest extends TestCase
                             || ($e && $f)
                             || ($g && $h)
                             || ($i && $j);
-                    }'
+                    }',
             ],
             'fineCheck' => [
                 'code' => '<?php
                     function foo(bool $b, bool $c) : void {
                         if ((!$b || rand(0, 1)) && (!$c || rand(0, 1))) {}
-                    }'
+                    }',
             ],
             'noParadoxInTernary' => [
                 'code' => '<?php
@@ -997,7 +997,7 @@ class TypeAlgebraTest extends TestCase
                         }
 
                         return $b;
-                    }'
+                    }',
             ],
             'cancelOutDifferentStatement' => [
                 'code' => '<?php
@@ -1011,7 +1011,7 @@ class TypeAlgebraTest extends TestCase
                         }
 
                         return $b;
-                    }'
+                    }',
             ],
             'moreChecks' => [
                 'code' => '<?php
@@ -1053,14 +1053,14 @@ class TypeAlgebraTest extends TestCase
                         if ($is_valid_a) {
                             $a->foo();
                         }
-                    }'
+                    }',
             ],
             'assignSameName' => [
                 'code' => '<?php
                     function foo(string $value): string {
                         $value = "yes" === $value;
                         return !$value ? "foo" : "bar";
-                    }'
+                    }',
             ],
             'dependentTypeUsedAfterCall' => [
                 'code' => '<?php
@@ -1078,7 +1078,7 @@ class TypeAlgebraTest extends TestCase
                         }
 
                         return "";
-                    }'
+                    }',
             ],
             'notNullAfterSuccessfulNullsafeMethodCall' => [
                 'code' => '<?php
@@ -1103,7 +1103,7 @@ class TypeAlgebraTest extends TestCase
                         if ($a === $b) {
                             throw new InvalidArgumentException(sprintf("a can not be the same as b (b: %s).", $b));
                         }
-                    }'
+                    }',
             ],
             'ThrowableInstanceOfThrowableMayBeFalse' => [
                 'code' => '<?php
@@ -1139,7 +1139,7 @@ class TypeAlgebraTest extends TestCase
                     $h->dontReport(RuntimeException::class);
 
                     $h->shouldReport(new Exception());
-                    $h->shouldReport(new RuntimeException());'
+                    $h->shouldReport(new RuntimeException());',
             ],
             'ThrowableInstanceOfThrowableMayBeTrue' => [
                 'code' => '<?php
@@ -1155,7 +1155,7 @@ class TypeAlgebraTest extends TestCase
 
                             return $throwable;
                         }
-                    }'
+                    }',
             ],
             'combineTwoOrredClausesWithUnnecessaryTerm' => [
                 'code' => '<?php
@@ -1165,7 +1165,7 @@ class TypeAlgebraTest extends TestCase
                         } else {
                             if ($c) {}
                         }
-                    }'
+                    }',
             ],
             'combineTwoOrredClausesWithMoreComplexUnnecessaryTerm' => [
                 'code' => '<?php
@@ -1175,7 +1175,7 @@ class TypeAlgebraTest extends TestCase
                         }
 
                         if ($a) {}
-                    }'
+                    }',
             ],
             'compareToIntInsideIfDNF' => [
                 'code' => '<?php
@@ -1185,7 +1185,7 @@ class TypeAlgebraTest extends TestCase
                         }
 
                         if ($foo === null) {}
-                    }'
+                    }',
             ],
             'compareToIntInsideIfCNF' => [
                 'code' => '<?php
@@ -1197,7 +1197,7 @@ class TypeAlgebraTest extends TestCase
                         }
 
                         if ($foo === null) {}
-                    }'
+                    }',
             ],
             'ternaryAssertionOnBool' => [
                 'code' => '<?php
@@ -1210,7 +1210,7 @@ class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
-            ]
+            ],
         ];
     }
 

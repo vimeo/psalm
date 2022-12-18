@@ -69,20 +69,20 @@ final class Creator
         $template = str_replace(
             '<directory name="src" />',
             implode("\n        ", $paths),
-            self::TEMPLATE
+            self::TEMPLATE,
         );
 
         if (is_dir($current_dir . DIRECTORY_SEPARATOR . $vendor_dir)) {
             $template = str_replace(
                 '<directory name="vendor" />',
                 '<directory name="' . $vendor_dir . '" />',
-                $template
+                $template,
             );
         } else {
             $template = str_replace(
                 '<directory name="vendor" />',
                 '',
-                $template
+                $template,
             );
         }
 
@@ -90,7 +90,7 @@ final class Creator
         return str_replace(
             'errorLevel="1"',
             'errorLevel="' . $level . '"',
-            $template
+            $template,
         );
     }
 
@@ -141,7 +141,7 @@ final class Creator
             // remove any issues where < 0.1% of expressions are affected
             $filtered_issues = array_filter(
                 $issues,
-                static fn($amount): bool => $amount > 0.1
+                static fn($amount): bool => $amount > 0.1,
             );
 
             if (array_sum($filtered_issues) > 0.5) {
@@ -176,7 +176,7 @@ final class Creator
                 $bad_dir_path = $current_dir . DIRECTORY_SEPARATOR . $suggested_dir;
 
                 throw new ConfigCreationException(
-                    'The given path "' . $bad_dir_path . '" does not appear to be a directory'
+                    'The given path "' . $bad_dir_path . '" does not appear to be a directory',
                 );
             }
         } elseif (is_dir($current_dir . DIRECTORY_SEPARATOR . 'src')) {
@@ -189,7 +189,7 @@ final class Creator
                     'Problem during source autodiscovery - could not find composer.json during initialization. '
                     . 'If your project doesn\'t use Composer autoloader you will need to run '
                     . '`psalm --init source_folder`, e.g. `psalm --init library` if your source files '
-                    . 'reside in `library` folder'
+                    . 'reside in `library` folder',
                 );
             }
             try {
@@ -197,11 +197,11 @@ final class Creator
                     file_get_contents($composer_json_location),
                     true,
                     512,
-                    JSON_THROW_ON_ERROR
+                    JSON_THROW_ON_ERROR,
                 );
             } catch (JsonException $e) {
                 throw new ConfigCreationException(
-                    'Invalid composer.json at ' . $composer_json_location . ': ' . $e->getMessage()
+                    'Invalid composer.json at ' . $composer_json_location . ': ' . $e->getMessage(),
                 );
             }
             if (!$composer_json) {
@@ -216,7 +216,7 @@ final class Creator
 
             if (!$replacements) {
                 throw new ConfigCreationException(
-                    'Could not located any PSR-0 or PSR-4-compatible paths in ' . $composer_json_location
+                    'Could not located any PSR-0 or PSR-4-compatible paths in ' . $composer_json_location,
                 );
             }
         }
@@ -233,7 +233,7 @@ final class Creator
     {
         $psr_paths = array_merge(
             $composer_json['autoload']['psr-4'] ?? [],
-            $composer_json['autoload']['psr-0'] ?? []
+            $composer_json['autoload']['psr-0'] ?? [],
         );
 
         if (!$psr_paths) {
@@ -280,7 +280,7 @@ final class Creator
         $php_files = array_merge(
             glob($current_dir . DIRECTORY_SEPARATOR . '*.php', GLOB_NOSORT),
             glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php', GLOB_NOSORT),
-            glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php', GLOB_NOSORT)
+            glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php', GLOB_NOSORT),
         );
 
         foreach ($php_files as $php_file) {

@@ -69,7 +69,7 @@ class CliUtilsTest extends TestCase
             __DIR__
             . DIRECTORY_SEPARATOR . '..'
             . DIRECTORY_SEPARATOR. 'fixtures'
-            . DIRECTORY_SEPARATOR . 'DummyProject'
+            . DIRECTORY_SEPARATOR . 'DummyProject',
         );
         $currentDir = (string)realpath('.');
 
@@ -111,13 +111,13 @@ class CliUtilsTest extends TestCase
         yield 'withFpathToCurrentDir' => [
             [$currentDir],
             [$psalm, '-f', '.'],
-            ['.']
+            ['.'],
         ];
 
         yield 'withFpathToProjectDir' => [
             [$dummyProjectDir],
             [$psalm, '-f', $dummyProjectDir],
-            [$dummyProjectDir]
+            [$dummyProjectDir],
         ];
     }
 

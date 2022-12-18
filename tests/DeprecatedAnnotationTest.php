@@ -47,7 +47,7 @@ class DeprecatedAnnotationTest extends TestCase
             'annotationOnStatement' => [
                 'code' => '<?php
                     /** @deprecated */
-                    $a = "A";'
+                    $a = "A";',
             ],
             'noNoticeOnInheritance' => [
                 'code' => '<?php
@@ -78,7 +78,7 @@ class DeprecatedAnnotationTest extends TestCase
                         public function getDifferentFoos() {
                             return [];
                         }
-                    }'
+                    }',
             ],
             'suppressDeprecatedClassOnMember' => [
                     'code' => '<?php
@@ -98,7 +98,7 @@ class DeprecatedAnnotationTest extends TestCase
                              */
                             public $property;
                         }
-                ']
+                '],
         ];
     }
 

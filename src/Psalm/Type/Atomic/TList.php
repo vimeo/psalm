@@ -83,7 +83,7 @@ class TList extends Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    true
+                    true,
                 );
         }
 
@@ -93,7 +93,7 @@ class TList extends Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                false
+                false,
             )
             . '>';
     }
@@ -174,7 +174,7 @@ class TList extends Atomic
                 $replace,
                 $add_lower_bound,
                 null,
-                $depth + 1
+                $depth + 1,
             );
 
             if ($offset === 1 && ($cloned || $this->type_param !== $type_param)) {
@@ -196,7 +196,7 @@ class TList extends Atomic
         return $this->setTypeParam(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
-            $codebase
+            $codebase,
         ));
     }
 

@@ -332,12 +332,12 @@ class ClassLikes
             if ($calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClass(
                     $calling_method_id,
-                    $fq_class_name_lc
+                    $fq_class_name_lc,
                 );
             } elseif (!$calling_fq_class_name || strtolower($calling_fq_class_name) !== $fq_class_name_lc) {
                 $this->file_reference_provider->addNonMethodReferenceToClass(
                     $code_location->file_path,
-                    $fq_class_name_lc
+                    $fq_class_name_lc,
                 );
 
                 if ($calling_fq_class_name) {
@@ -348,7 +348,7 @@ class ClassLikes
                     ) {
                         $this->file_reference_provider->addNonMethodReferenceToClass(
                             $class_storage->location->file_path,
-                            $fq_class_name_lc
+                            $fq_class_name_lc,
                         );
                     }
                 }
@@ -380,7 +380,7 @@ class ClassLikes
         if ($this->collect_locations && $code_location) {
             $this->file_reference_provider->addCallingLocationForClass(
                 $code_location,
-                strtolower($fq_class_name)
+                strtolower($fq_class_name),
             );
         }
 
@@ -421,12 +421,12 @@ class ClassLikes
             if ($calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClass(
                     $calling_method_id,
-                    $fq_class_name_lc
+                    $fq_class_name_lc,
                 );
             } else {
                 $this->file_reference_provider->addNonMethodReferenceToClass(
                     $code_location->file_path,
-                    $fq_class_name_lc
+                    $fq_class_name_lc,
                 );
 
                 if ($calling_fq_class_name) {
@@ -437,7 +437,7 @@ class ClassLikes
                     ) {
                         $this->file_reference_provider->addNonMethodReferenceToClass(
                             $class_storage->location->file_path,
-                            $fq_class_name_lc
+                            $fq_class_name_lc,
                         );
                     }
                 }
@@ -447,7 +447,7 @@ class ClassLikes
         if ($this->collect_locations && $code_location) {
             $this->file_reference_provider->addCallingLocationForClass(
                 $code_location,
-                strtolower($fq_class_name)
+                strtolower($fq_class_name),
             );
         }
 
@@ -488,12 +488,12 @@ class ClassLikes
             if ($calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClass(
                     $calling_method_id,
-                    $fq_class_name_lc
+                    $fq_class_name_lc,
                 );
             } else {
                 $this->file_reference_provider->addNonMethodReferenceToClass(
                     $code_location->file_path,
-                    $fq_class_name_lc
+                    $fq_class_name_lc,
                 );
 
                 if ($calling_fq_class_name) {
@@ -504,7 +504,7 @@ class ClassLikes
                     ) {
                         $this->file_reference_provider->addNonMethodReferenceToClass(
                             $class_storage->location->file_path,
-                            $fq_class_name_lc
+                            $fq_class_name_lc,
                         );
                     }
                 }
@@ -514,7 +514,7 @@ class ClassLikes
         if ($this->collect_locations && $code_location) {
             $this->file_reference_provider->addCallingLocationForClass(
                 $code_location,
-                strtolower($fq_class_name)
+                strtolower($fq_class_name),
             );
         }
 
@@ -534,7 +534,7 @@ class ClassLikes
         if ($this->collect_references && $code_location) {
             $this->file_reference_provider->addNonMethodReferenceToClass(
                 $code_location->file_path,
-                $fq_class_name_lc
+                $fq_class_name_lc,
             );
         }
 
@@ -589,7 +589,7 @@ class ClassLikes
             $fq_class_name,
             $code_location,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
     }
 
@@ -657,7 +657,7 @@ class ClassLikes
 
         foreach ($class_storage->class_implements as $implementing_interface_lc => $_) {
             $aliased_interface_lc = strtolower(
-                $this->getUnAliasedName($implementing_interface_lc)
+                $this->getUnAliasedName($implementing_interface_lc),
             );
 
             if ($aliased_interface_lc === $interface_id) {
@@ -682,7 +682,7 @@ class ClassLikes
             $fq_interface_name,
             $code_location,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
     }
 
@@ -700,7 +700,7 @@ class ClassLikes
             $fq_enum_name,
             $code_location,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
     }
 
@@ -783,14 +783,14 @@ class ClassLikes
 
         $file_statements = $this->statements_provider->getStatementsForFile(
             $storage->location->file_path,
-            ProjectAnalyzer::getInstance()->getCodebase()->analysis_php_version_id
+            ProjectAnalyzer::getInstance()->getCodebase()->analysis_php_version_id,
         );
 
         $trait_finder = new TraitFinder($fq_trait_name);
 
         $traverser = new NodeTraverser();
         $traverser->addVisitor(
-            $trait_finder
+            $trait_finder,
         );
 
         $traverser->traverse($file_statements);
@@ -856,9 +856,9 @@ class ClassLikes
                             new UnusedClass(
                                 'Class ' . $classlike_storage->name . ' is never used',
                                 $classlike_storage->location,
-                                $classlike_storage->name
+                                $classlike_storage->name,
                             ),
-                            $classlike_storage->suppressed_issues
+                            $classlike_storage->suppressed_issues,
                         );
                     } else {
                         $this->checkMethodReferences($classlike_storage, $methods);
@@ -876,7 +876,7 @@ class ClassLikes
                     && isset($classlike_storage->methods['__construct'])
                 ) {
                     $stmts = $codebase->getStatementsForFile(
-                        $classlike_storage->location->file_path
+                        $classlike_storage->location->file_path,
                     );
 
                     foreach ($stmts as $stmt) {
@@ -889,7 +889,7 @@ class ClassLikes
                                     self::makeImmutable(
                                         $namespace_stmt,
                                         $project_analyzer,
-                                        $classlike_storage->location->file_path
+                                        $classlike_storage->location->file_path,
                                     );
                                 }
                             }
@@ -899,7 +899,7 @@ class ClassLikes
                             self::makeImmutable(
                                 $stmt,
                                 $project_analyzer,
-                                $classlike_storage->location->file_path
+                                $classlike_storage->location->file_path,
                             );
                         }
                     }
@@ -916,7 +916,7 @@ class ClassLikes
         $manipulator = ClassDocblockManipulator::getForClass(
             $project_analyzer,
             $file_path,
-            $class_stmt
+            $class_stmt,
         );
 
         $manipulator->makeImmutable();
@@ -944,7 +944,7 @@ class ClassLikes
 
             try {
                 $source_method_storage = $methods->getStorage(
-                    new MethodIdentifier(...$source_parts)
+                    new MethodIdentifier(...$source_parts),
                 );
             } catch (InvalidArgumentException $e) {
                 continue;
@@ -975,9 +975,9 @@ class ClassLikes
                         new FileManipulation(
                             $old_method_name_bounds[0],
                             $old_method_name_bounds[1],
-                            $destination_name
+                            $destination_name,
                         ),
-                    ]
+                    ],
                 );
 
                 $selection = $classlike_storage->stmt_location->getSnippet();
@@ -995,7 +995,7 @@ class ClassLikes
                     $old_method_bounds[0],
                     $old_method_bounds[1],
                     $classlike_storage->stmt_location->file_path,
-                    $new_class_bounds[0] + $insert_pos
+                    $new_class_bounds[0] + $insert_pos,
                 );
             }
         }
@@ -1050,7 +1050,7 @@ class ClassLikes
                         $source_property_storage->type,
                         $source_classlike_storage->name,
                         $source_classlike_storage->name,
-                        $source_classlike_storage->parent_class
+                        $source_classlike_storage->parent_class,
                     );
 
                     $this->airliftClassDefinedDocblockType(
@@ -1058,7 +1058,7 @@ class ClassLikes
                         $destination_fq_class_name,
                         $source_property_storage->stmt_location->file_path,
                         $bounds[0],
-                        $bounds[1]
+                        $bounds[1],
                     );
                 }
 
@@ -1073,9 +1073,9 @@ class ClassLikes
                         new FileManipulation(
                             $old_property_name_bounds[0],
                             $old_property_name_bounds[1],
-                            '$' . $destination_name
+                            '$' . $destination_name,
                         ),
-                    ]
+                    ],
                 );
 
                 $selection = $destination_classlike_storage->stmt_location->getSnippet();
@@ -1093,7 +1093,7 @@ class ClassLikes
                     $old_property_bounds[0],
                     $old_property_bounds[1],
                     $destination_classlike_storage->stmt_location->file_path,
-                    $new_class_bounds[0] + $insert_pos
+                    $new_class_bounds[0] + $insert_pos,
                 );
             }
         }
@@ -1149,9 +1149,9 @@ class ClassLikes
                         new FileManipulation(
                             $old_const_name_bounds[0],
                             $old_const_name_bounds[1],
-                            $destination_name
+                            $destination_name,
                         ),
-                    ]
+                    ],
                 );
 
                 $selection = $destination_classlike_storage->stmt_location->getSnippet();
@@ -1169,7 +1169,7 @@ class ClassLikes
                     $old_const_bounds[0],
                     $old_const_bounds[1],
                     $destination_classlike_storage->stmt_location->file_path,
-                    $new_class_bounds[0] + $insert_pos
+                    $new_class_bounds[0] + $insert_pos,
                 );
             }
         }
@@ -1214,7 +1214,7 @@ class ClassLikes
                 (int) $class_name_node->getAttribute('startFilePos'),
                 (int) $class_name_node->getAttribute('endFilePos') + 1,
                 $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_,
-                $was_self
+                $was_self,
             );
 
             return true;
@@ -1233,7 +1233,7 @@ class ClassLikes
                 $file_manipulations[] = new FileManipulation(
                     (int) $class_name_node->getAttribute('startFilePos'),
                     (int) $class_name_node->getAttribute('endFilePos') + 1,
-                    $destination_class_name
+                    $destination_class_name,
                 );
 
                 FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
@@ -1283,9 +1283,9 @@ class ClassLikes
                     $source_namespace,
                     $uses_flipped,
                     $migrated_source_fqcln,
-                    $was_self
+                    $was_self,
                 )
-                    . ($class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_ ? '::class' : '')
+                    . ($class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_ ? '::class' : ''),
             );
 
             FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
@@ -1309,7 +1309,7 @@ class ClassLikes
                 $file_manipulations[] = new FileManipulation(
                     (int) $class_name_node->getAttribute('startFilePos'),
                     (int) $class_name_node->getAttribute('endFilePos') + 1,
-                    $destination_class_name
+                    $destination_class_name,
                 );
 
                 FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
@@ -1322,7 +1322,7 @@ class ClassLikes
                     $source->getFilePath(),
                     (int) $class_name_node->getAttribute('startFilePos'),
                     (int) $class_name_node->getAttribute('endFilePos') + 1,
-                    $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_
+                    $class_name_node instanceof PhpParser\Node\Scalar\MagicConst\Class_,
                 );
             }
 
@@ -1336,7 +1336,7 @@ class ClassLikes
                     $calling_fq_class_name,
                     $source->getFilePath(),
                     (int) $class_name_node->getAttribute('startFilePos'),
-                    (int) $class_name_node->getAttribute('endFilePos') + 1
+                    (int) $class_name_node->getAttribute('endFilePos') + 1,
                 );
             } else {
                 $file_manipulations = [];
@@ -1348,8 +1348,8 @@ class ClassLikes
                         $fq_class_name,
                         $source->getNamespace(),
                         $source->getAliasedClassesFlipped(),
-                        null
-                    )
+                        null,
+                    ),
                 );
 
                 FileManipulationBuffer::add($source->getFilePath(), $file_manipulations);
@@ -1391,7 +1391,7 @@ class ClassLikes
                 $destination_class,
                 $source->getFilePath(),
                 $bounds[0],
-                $bounds[1]
+                $bounds[1],
             );
 
             $moved_type = true;
@@ -1437,7 +1437,7 @@ class ClassLikes
                 if ($type->containsClassLike($old_fq_class_name)) {
                     $type = $type->replaceClassLike(
                         $old_fq_class_name,
-                        $new_fq_class_name
+                        $new_fq_class_name,
                     );
 
                     $bounds = $type_location->getSelectionBounds();
@@ -1451,13 +1451,13 @@ class ClassLikes
                             $source_namespace,
                             $uses_flipped,
                             $migrated_source_fqcln,
-                            false
-                        )
+                            false,
+                        ),
                     );
 
                     FileManipulationBuffer::add(
                         $source->getFilePath(),
-                        $file_manipulations
+                        $file_manipulations,
                     );
 
                     $moved_type = true;
@@ -1478,7 +1478,7 @@ class ClassLikes
             if ($type->containsClassLike($fq_class_name_lc)) {
                 $type = $type->replaceClassLike(
                     $fq_class_name_lc,
-                    $destination_class
+                    $destination_class,
                 );
             }
 
@@ -1487,7 +1487,7 @@ class ClassLikes
                 $destination_class,
                 $source->getFilePath(),
                 $bounds[0],
-                $bounds[1]
+                $bounds[1],
             );
         }
     }
@@ -1520,13 +1520,13 @@ class ClassLikes
                 $destination_class_storage->aliases->namespace,
                 $destination_class_storage->aliases->uses_flipped,
                 $destination_class_storage->name,
-                $allow_self
-            ) . ($add_class_constant ? '::class' : '')
+                $allow_self,
+            ) . ($add_class_constant ? '::class' : ''),
         );
 
         FileManipulationBuffer::add(
             $source_file_path,
-            $file_manipulations
+            $file_manipulations,
         );
     }
 
@@ -1555,13 +1555,13 @@ class ClassLikes
                 $destination_class_storage->aliases->namespace,
                 $destination_class_storage->aliases->uses_flipped,
                 $destination_class_storage->name,
-                false
-            )
+                false,
+            ),
         );
 
         FileManipulationBuffer::add(
             $source_file_path,
-            $file_manipulations
+            $file_manipulations,
         );
     }
 
@@ -1580,7 +1580,7 @@ class ClassLikes
             return array_filter(
                 $storage->constants,
                 static fn(ClassConstantStorage $constant): bool => $constant->type
-                    && $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    && $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC,
             );
         }
 
@@ -1595,7 +1595,7 @@ class ClassLikes
 
         return array_filter(
             $storage->constants,
-            static fn(ClassConstantStorage $constant): bool => $constant->type !== null
+            static fn(ClassConstantStorage $constant): bool => $constant->type !== null,
         );
     }
 
@@ -1641,7 +1641,7 @@ class ClassLikes
                     $this,
                     $constant_storage->unresolved_node,
                     $statements_analyzer,
-                    $visited_constant_ids
+                    $visited_constant_ids,
                 )]);
                 if ($constant_storage->type === null || !$constant_storage->type->from_docblock) {
                     /** @psalm-suppress InaccessibleProperty Lazy resolution */
@@ -1698,7 +1698,7 @@ class ClassLikes
             }
 
             $method_referenced = $this->file_reference_provider->isClassMethodReferenced(
-                strtolower((string) $method_id)
+                strtolower((string) $method_id),
             );
 
             if (!$method_referenced
@@ -1746,7 +1746,7 @@ class ClassLikes
                                 }
 
                                 $parent_method_referenced = $this->file_reference_provider->isClassMethodReferenced(
-                                    strtolower((string) $parent_method_id)
+                                    strtolower((string) $parent_method_id),
                                 );
 
                                 if (!$parent_method_storage->abstract || $parent_method_referenced) {
@@ -1758,7 +1758,7 @@ class ClassLikes
 
                         foreach ($classlike_storage->parent_classes as $parent_method_fqcln) {
                             if ($codebase->analyzer->hasMixedMemberName(
-                                strtolower($parent_method_fqcln) . '::'
+                                strtolower($parent_method_fqcln) . '::',
                             )) {
                                 $has_variable_calls = true;
                                 break;
@@ -1773,14 +1773,14 @@ class ClassLikes
                             }
 
                             if ($codebase->analyzer->hasMixedMemberName(
-                                $fq_interface_name_lc . '::'
+                                $fq_interface_name_lc . '::',
                             )) {
                                 $has_variable_calls = true;
                             }
 
                             if (isset($interface_storage->methods[$method_name])) {
                                 $interface_method_referenced = $this->file_reference_provider->isClassMethodReferenced(
-                                    $fq_interface_name_lc . '::' . $method_name
+                                    $fq_interface_name_lc . '::' . $method_name,
                                 );
 
                                 if ($interface_method_referenced) {
@@ -1795,7 +1795,7 @@ class ClassLikes
                                     . ' calls to method ' . $method_id
                                     . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
                                 $method_storage->location,
-                                $method_id
+                                $method_id,
                             );
 
                             if ($codebase->alter_code) {
@@ -1808,7 +1808,7 @@ class ClassLikes
                                     FileManipulationBuffer::addForCodeLocation(
                                         $method_storage->stmt_location,
                                         '',
-                                        true
+                                        true,
                                     );
                                 }
                             } else {
@@ -1817,13 +1817,13 @@ class ClassLikes
                                     $method_storage->suppressed_issues,
                                     $method_storage->stmt_location
                                         && !$declaring_classlike_storage->is_trait
-                                        && !$has_variable_calls
+                                        && !$has_variable_calls,
                                 );
                             }
                         }
                     } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
                         $has_variable_calls = $codebase->analyzer->hasMixedMemberName(
-                            strtolower($classlike_storage->name . '::')
+                            strtolower($classlike_storage->name . '::'),
                         ) || $codebase->analyzer->hasMixedMemberName($method_name);
 
                         if ($method_name === '__construct') {
@@ -1832,7 +1832,7 @@ class ClassLikes
                                     . ' calls to private constructor ' . $method_id
                                     . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
                                 $method_location,
-                                $method_id
+                                $method_id,
                             );
                         } else {
                             $issue = new UnusedMethod(
@@ -1840,7 +1840,7 @@ class ClassLikes
                                     . ' calls to private method ' . $method_id
                                     . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
                                 $method_location,
-                                $method_id
+                                $method_id,
                             );
                         }
 
@@ -1854,7 +1854,7 @@ class ClassLikes
                                 FileManipulationBuffer::addForCodeLocation(
                                     $method_storage->stmt_location,
                                     '',
-                                    true
+                                    true,
                                 );
                             }
                         } else {
@@ -1863,7 +1863,7 @@ class ClassLikes
                                 $method_storage->suppressed_issues,
                                 $method_storage->stmt_location
                                 && !$declaring_classlike_storage->is_trait
-                                && !$has_variable_calls
+                                && !$has_variable_calls,
                             );
                         }
                     }
@@ -1877,7 +1877,7 @@ class ClassLikes
                     && ($method_storage->is_static || !$method_storage->probably_fluent)
                 ) {
                     $method_return_referenced = $this->file_reference_provider->isMethodReturnReferenced(
-                        strtolower((string) $method_id)
+                        strtolower((string) $method_id),
                     );
 
                     if (!$method_return_referenced) {
@@ -1885,17 +1885,17 @@ class ClassLikes
                             IssueBuffer::maybeAdd(
                                 new UnusedReturnValue(
                                     'The return value for this private method is never used',
-                                    $method_storage->return_type_location
+                                    $method_storage->return_type_location,
                                 ),
-                                $method_storage->suppressed_issues
+                                $method_storage->suppressed_issues,
                             );
                         } else {
                             IssueBuffer::maybeAdd(
                                 new PossiblyUnusedReturnValue(
                                     'The return value for this method is never used',
-                                    $method_storage->return_type_location
+                                    $method_storage->return_type_location,
                                 ),
-                                $method_storage->suppressed_issues
+                                $method_storage->suppressed_issues,
                             );
                         }
                     }
@@ -1910,24 +1910,24 @@ class ClassLikes
                             && !$param_storage->promoted_property
                             && !$this->file_reference_provider->isMethodParamUsed(
                                 strtolower((string) $method_id),
-                                $offset
+                                $offset,
                             )
                         ) {
                             if ($method_storage->final) {
                                 IssueBuffer::maybeAdd(
                                     new UnusedParam(
                                         'Param #' . ($offset + 1) . ' is never referenced in this method',
-                                        $param_storage->location
+                                        $param_storage->location,
                                     ),
-                                    $method_storage->suppressed_issues
+                                    $method_storage->suppressed_issues,
                                 );
                             } else {
                                 IssueBuffer::maybeAdd(
                                     new PossiblyUnusedParam(
                                         'Param #' . ($offset + 1) . ' is never referenced in this method',
-                                        $param_storage->location
+                                        $param_storage->location,
                                     ),
-                                    $method_storage->suppressed_issues
+                                    $method_storage->suppressed_issues,
                                 );
                             }
                         }
@@ -2008,7 +2008,7 @@ class ClassLikes
                                     $default_type_atomic = ConstantTypeResolver::resolve(
                                         $codebase->classlikes,
                                         $method_storage->params[$offset]->default_type,
-                                        null
+                                        null,
                                     );
 
                                     $default_type = new Union([$default_type_atomic]);
@@ -2016,7 +2016,7 @@ class ClassLikes
 
                                 $possible_type = Type::combineUnionTypes(
                                     $possible_type,
-                                    $default_type
+                                    $default_type,
                                 );
                             }
 
@@ -2025,14 +2025,14 @@ class ClassLikes
                             ) {
                                 $function_analyzer = $project_analyzer->getFunctionLikeAnalyzer(
                                     $method_id,
-                                    $method_storage->location->file_path
+                                    $method_storage->location->file_path,
                                 );
 
                                 $has_variable_calls = $codebase->analyzer->hasMixedMemberName(
-                                    $method_name
+                                    $method_name,
                                 )
                                     || $codebase->analyzer->hasMixedMemberName(
-                                        strtolower($classlike_storage->name . '::')
+                                        strtolower($classlike_storage->name . '::'),
                                     );
 
                                 if ($has_variable_calls) {
@@ -2045,7 +2045,7 @@ class ClassLikes
                                         $param_name,
                                         $possible_type,
                                         $possible_type->from_docblock
-                                            && $project_analyzer->only_replace_php_types_with_non_docblock_types
+                                            && $project_analyzer->only_replace_php_types_with_non_docblock_types,
                                     );
                                 }
                             } else {
@@ -2066,7 +2066,7 @@ class ClassLikes
         foreach ($classlike_storage->properties as $property_name => $property_storage) {
             $referenced_property_name = strtolower($classlike_storage->name) . '::$' . $property_name;
             $property_referenced = $this->file_reference_provider->isClassPropertyReferenced(
-                $referenced_property_name
+                $referenced_property_name,
             );
 
             $property_constructor_referenced = false;
@@ -2098,7 +2098,7 @@ class ClassLikes
 
                     foreach ($classlike_storage->parent_classes as $parent_method_fqcln) {
                         if ($codebase->analyzer->hasMixedMemberName(
-                            strtolower($parent_method_fqcln) . '::$'
+                            strtolower($parent_method_fqcln) . '::$',
                         )) {
                             $has_variable_calls = true;
                             break;
@@ -2107,7 +2107,7 @@ class ClassLikes
 
                     foreach ($classlike_storage->class_implements as $fq_interface_name) {
                         if ($codebase->analyzer->hasMixedMemberName(
-                            strtolower($fq_interface_name) . '::$'
+                            strtolower($fq_interface_name) . '::$',
                         )) {
                             $has_variable_calls = true;
                             break;
@@ -2123,7 +2123,7 @@ class ClassLikes
                                 . ' references to property ' . $property_id
                                 . ($has_variable_calls ? ' (but did find some potential references)' : ''),
                             $property_storage->location,
-                            $property_id
+                            $property_id,
                         );
 
                         if ($codebase->alter_code) {
@@ -2135,13 +2135,13 @@ class ClassLikes
                                 FileManipulationBuffer::addForCodeLocation(
                                     $property_storage->stmt_location,
                                     '',
-                                    true
+                                    true,
                                 );
                             }
                         } else {
                             IssueBuffer::maybeAdd(
                                 $issue,
-                                $classlike_storage->suppressed_issues + $property_storage->suppressed_issues
+                                $classlike_storage->suppressed_issues + $property_storage->suppressed_issues,
                             );
                         }
                     }
@@ -2153,7 +2153,7 @@ class ClassLikes
                             . ' references to private property ' . $property_id
                             . ($has_variable_calls ? ' (but did find some potential references)' : ''),
                         $property_storage->location,
-                        $property_id
+                        $property_id,
                     );
 
                     if ($codebase->alter_code) {
@@ -2166,13 +2166,13 @@ class ClassLikes
                             FileManipulationBuffer::addForCodeLocation(
                                 $property_storage->stmt_location,
                                 '',
-                                true
+                                true,
                             );
                         }
                     } else {
                         IssueBuffer::maybeAdd(
                             $issue,
-                            $classlike_storage->suppressed_issues + $property_storage->suppressed_issues
+                            $classlike_storage->suppressed_issues + $property_storage->suppressed_issues,
                         );
                     }
                 }
@@ -2225,7 +2225,7 @@ class ClassLikes
             $this->existing_interfaces[$fq_class_name],
             $this->existing_classes_lc[$fq_class_name_lc],
             $this->existing_classes[$fq_class_name],
-            $this->trait_nodes[$fq_class_name_lc]
+            $this->trait_nodes[$fq_class_name_lc],
         );
 
         $this->scanner->removeClassLike($fq_class_name_lc);
@@ -2283,7 +2283,7 @@ class ClassLikes
             $existing_enums,
             $existing_interfaces_lc,
             $existing_interfaces,
-            $existing_classes
+            $existing_classes,
         ] = $thread_data;
 
         $this->existing_classlikes_lc = array_merge($existing_classlikes_lc, $this->existing_classlikes_lc);

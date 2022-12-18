@@ -38,7 +38,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                 || ExpressionAnalyzer::analyze(
                     $statements_source,
                     $call_args[0]->value,
-                    $context
+                    $context,
                 ) === false
             ) {
                 return null;
@@ -55,7 +55,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                         Type::getInt(),
                         null,
                         null,
-                        false
+                        false,
                     ),
                 ];
 
@@ -70,7 +70,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                             Type::getInt(),
                             null,
                             null,
-                            false
+                            false,
                         );
                         break;
 
@@ -82,7 +82,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                             Type::getClassString(),
                             null,
                             null,
-                            false
+                            false,
                         );
 
                         $params[] = new FunctionLikeParameter(
@@ -92,7 +92,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                             Type::getArray(),
                             null,
                             null,
-                            true
+                            true,
                         );
                         break;
 
@@ -104,7 +104,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                             Type::getObject(),
                             null,
                             null,
-                            false
+                            false,
                         );
                         break;
                 }

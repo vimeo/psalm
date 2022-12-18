@@ -29,7 +29,7 @@ class MatchTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'defaultAboveCase' => [
                 'code' => '<?php
@@ -42,7 +42,7 @@ class MatchTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'allMatchedNoRedundantCondition' => [
                 'code' => '<?php
@@ -55,7 +55,7 @@ class MatchTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'getClassWithMethod' => [
                 'code' => '<?php
@@ -77,7 +77,7 @@ class MatchTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'MatchWithCount' => [
                 'code' => '<?php
@@ -93,7 +93,7 @@ class MatchTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
         ];
     }
@@ -114,7 +114,7 @@ class MatchTest extends TestCase
                     };',
                 'error_message' => 'UndefinedMethod',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'getClassMissingClass' => [
                 'code' => '<?php
@@ -128,7 +128,7 @@ class MatchTest extends TestCase
                     };',
                 'error_message' => 'UndefinedClass',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'allMatchedDefaultImpossible' => [
                 'code' => '<?php
@@ -142,7 +142,7 @@ class MatchTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'allMatchedAnotherImpossible' => [
                 'code' => '<?php
@@ -156,7 +156,7 @@ class MatchTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'notAllEnumsMet' => [
                 'code' => '<?php

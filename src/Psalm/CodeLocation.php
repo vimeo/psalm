@@ -179,7 +179,7 @@ class CodeLocation
             $preview_end = strpos(
                 $file_contents,
                 "\n",
-                $search_limit
+                $search_limit,
             );
         } else {
             $preview_end = false;
@@ -201,8 +201,8 @@ class CodeLocation
                 mb_strcut(
                     $file_contents,
                     $this->preview_start,
-                    $this->selection_start - $this->preview_start - 1
-                )
+                    $this->selection_start - $this->preview_start - 1,
+                ),
             );
 
             $preview_offset = 0;
@@ -268,7 +268,7 @@ class CodeLocation
             $preview_snippet = mb_strcut(
                 $file_contents,
                 $this->selection_start,
-                $this->selection_end - $this->selection_start
+                $this->selection_end - $this->selection_start,
             );
 
             if ($this->text) {
@@ -279,7 +279,7 @@ class CodeLocation
                 if (!isset($matches[1]) || $matches[1][1] === -1) {
                     throw new LogicException(
                         "Failed to match anything to 1st capturing group, "
-                        . "or regex doesn't contain 1st capturing group, regex type " . $this->regex_type
+                        . "or regex doesn't contain 1st capturing group, regex type " . $this->regex_type,
                     );
                 }
                 $this->selection_start = $this->selection_start + $matches[1][1];
@@ -291,7 +291,7 @@ class CodeLocation
         $this->preview_start = (int)strrpos(
             $file_contents,
             "\n",
-            min($this->preview_start, $this->selection_start) - strlen($file_contents)
+            min($this->preview_start, $this->selection_start) - strlen($file_contents),
         ) + 1;
 
         $this->selection_start = max($this->preview_start, $this->selection_start);
@@ -301,7 +301,7 @@ class CodeLocation
             $this->preview_end = (int)strrpos(
                 $file_contents,
                 "\n",
-                $this->selection_end + 200 - strlen($file_contents)
+                $this->selection_end + 200 - strlen($file_contents),
             );
 
             // if the line is over 200 characters long

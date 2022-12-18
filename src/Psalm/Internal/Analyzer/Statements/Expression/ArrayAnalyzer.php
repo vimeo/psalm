@@ -77,8 +77,8 @@ class ArrayAnalyzer
                 IssueBuffer::maybeAdd(
                     new ParseError(
                         'Array element cannot be empty',
-                        new CodeLocation($statements_analyzer, $stmt)
-                    )
+                        new CodeLocation($statements_analyzer, $stmt),
+                    ),
                 );
 
                 return false;
@@ -89,7 +89,7 @@ class ArrayAnalyzer
                 $context,
                 $array_creation_info,
                 $item,
-                $codebase
+                $codebase,
             );
         }
 
@@ -99,7 +99,7 @@ class ArrayAnalyzer
                 $codebase,
                 false,
                 true,
-                30
+                30,
             );
         } else {
             $item_key_type = null;
@@ -111,7 +111,7 @@ class ArrayAnalyzer
                 $codebase,
                 false,
                 true,
-                30
+                30,
             );
         } else {
             $item_value_type = null;
@@ -125,11 +125,11 @@ class ArrayAnalyzer
                 $array_creation_info->can_create_objectlike
                     ? null :
                     [$item_key_type ?? Type::getArrayKey(), $item_value_type ?? Type::getMixed()],
-                $array_creation_info->all_list
+                $array_creation_info->all_list,
             );
 
             $stmt_type = new Union([$atomic_type], [
-                'parent_nodes' => $array_creation_info->parent_taint_nodes
+                'parent_nodes' => $array_creation_info->parent_taint_nodes,
             ]);
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -153,7 +153,7 @@ class ArrayAnalyzer
             $stmt_type = new Union([
                 $array_type,
             ], [
-                'parent_nodes' => $array_creation_info->parent_taint_nodes
+                'parent_nodes' => $array_creation_info->parent_taint_nodes,
             ]);
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -170,9 +170,9 @@ class ArrayAnalyzer
                     IssueBuffer::maybeAdd(
                         new MixedArrayOffset(
                             'Cannot create mixed offset – expecting array-key',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
 
                     $bad_types[] = $atomic_key_type;
@@ -195,9 +195,9 @@ class ArrayAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidArrayOffset(
                             'Cannot create offset of type ' . $item_key_type->getKey() . ', expecting array-key',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
 
                     $bad_types[] = $atomic_key_type;
@@ -222,7 +222,7 @@ class ArrayAnalyzer
             if ($bad_types && $good_types) {
                 $item_key_type = $item_key_type->getBuilder()->substitute(
                     TypeCombiner::combine($bad_types, $codebase),
-                    TypeCombiner::combine($good_types, $codebase)
+                    TypeCombiner::combine($good_types, $codebase),
                 )->freeze();
             }
         }
@@ -236,7 +236,7 @@ class ArrayAnalyzer
         $stmt_type = new Union([
             $array_type,
         ], [
-            'parent_nodes' => $array_creation_info->parent_taint_nodes
+            'parent_nodes' => $array_creation_info->parent_taint_nodes,
         ]);
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -267,7 +267,7 @@ class ArrayAnalyzer
                 $array_creation_info,
                 $item,
                 $unpacked_array_type,
-                $codebase
+                $codebase,
             );
 
             if (($data_flow_graph = $statements_analyzer->data_flow_graph)
@@ -278,7 +278,7 @@ class ArrayAnalyzer
 
                 $new_parent_node = DataFlowNode::getForAssignment(
                     'array',
-                    $var_location
+                    $var_location,
                 );
 
                 $data_flow_graph->addNode($new_parent_node);
@@ -287,7 +287,7 @@ class ArrayAnalyzer
                     $data_flow_graph->addPath(
                         $parent_node,
                         $new_parent_node,
-                        'arrayvalue-assignment'
+                        'arrayvalue-assignment',
                     );
                 }
 
@@ -369,9 +369,9 @@ class ArrayAnalyzer
                 IssueBuffer::maybeAdd(
                     new DuplicateArrayKey(
                         'Key \'' . $item_key_value . '\' already exists on array',
-                        new CodeLocation($statements_analyzer->getSource(), $item)
+                        new CodeLocation($statements_analyzer->getSource(), $item),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -394,7 +394,7 @@ class ArrayAnalyzer
                     $new_parent_node = DataFlowNode::getForAssignment(
                         'array'
                             . ($item_key_value !== null ? '[\'' . $item_key_value . '\']' : ''),
-                        $var_location
+                        $var_location,
                     );
 
                     $data_flow_graph->addNode($new_parent_node);
@@ -411,7 +411,7 @@ class ArrayAnalyzer
                             'arrayvalue-assignment'
                                 . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : ''),
                             $added_taints,
-                            $removed_taints
+                            $removed_taints,
                         );
                     }
 
@@ -429,7 +429,7 @@ class ArrayAnalyzer
 
                     $new_parent_node = DataFlowNode::getForAssignment(
                         'array',
-                        $var_location
+                        $var_location,
                     );
 
                     $data_flow_graph->addNode($new_parent_node);
@@ -445,7 +445,7 @@ class ArrayAnalyzer
                             $new_parent_node,
                             'arraykey-assignment',
                             $added_taints,
-                            $removed_taints
+                            $removed_taints,
                         );
                     }
 
@@ -458,7 +458,7 @@ class ArrayAnalyzer
             $var_id = ExpressionIdentifier::getExtendedVarId(
                 $item->value,
                 $statements_analyzer->getFQCLN(),
-                $statements_analyzer
+                $statements_analyzer,
             );
 
             if ($var_id) {
@@ -467,7 +467,7 @@ class ArrayAnalyzer
                         $var_id,
                         $context->vars_in_scope[$var_id],
                         null,
-                        $statements_analyzer
+                        $statements_analyzer,
                     );
                 }
 
@@ -486,11 +486,11 @@ class ArrayAnalyzer
                 $array_creation_info->can_create_objectlike = false;
                 $array_creation_info->item_key_atomic_types = array_merge(
                     $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes())
+                    array_values($key_type->getAtomicTypes()),
                 );
                 $array_creation_info->item_value_atomic_types = array_merge(
                     $array_creation_info->item_value_atomic_types,
-                    array_values($item_value_type->getAtomicTypes())
+                    array_values($item_value_type->getAtomicTypes()),
                 );
             }
         } else {
@@ -502,7 +502,7 @@ class ArrayAnalyzer
                 $array_creation_info->can_create_objectlike = false;
                 $array_creation_info->item_key_atomic_types = array_merge(
                     $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes())
+                    array_values($key_type->getAtomicTypes()),
                 );
                 $array_creation_info->item_value_atomic_types[] = new TMixed();
             }
@@ -534,9 +534,9 @@ class ArrayAnalyzer
                             IssueBuffer::maybeAdd(
                                 new DuplicateArrayKey(
                                     'String keys are not supported in unpacked arrays',
-                                    new CodeLocation($statements_analyzer->getSource(), $item->value)
+                                    new CodeLocation($statements_analyzer->getSource(), $item->value),
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
 
                             continue 2;
@@ -611,9 +611,9 @@ class ArrayAnalyzer
                     IssueBuffer::maybeAdd(
                         new DuplicateArrayKey(
                             'String keys are not supported in unpacked arrays',
-                            new CodeLocation($statements_analyzer->getSource(), $item->value)
+                            new CodeLocation($statements_analyzer->getSource(), $item->value),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
 
                     continue;
@@ -634,11 +634,11 @@ class ArrayAnalyzer
 
             $array_creation_info->item_key_atomic_types = array_merge(
                 $array_creation_info->item_key_atomic_types,
-                array_values($iterable_type->type_params[0]->getAtomicTypes())
+                array_values($iterable_type->type_params[0]->getAtomicTypes()),
             );
             $array_creation_info->item_value_atomic_types = array_merge(
                 $array_creation_info->item_value_atomic_types,
-                array_values($iterable_type->type_params[1]->getAtomicTypes())
+                array_values($iterable_type->type_params[1]->getAtomicTypes()),
             );
         }
 

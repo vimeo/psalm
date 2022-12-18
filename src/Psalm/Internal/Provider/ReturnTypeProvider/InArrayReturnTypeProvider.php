@@ -73,7 +73,7 @@ class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
         if (UnionTypeComparator::canExpressionTypesBeIdentical(
             $event->getStatementsSource()->getCodebase(),
             $needle_type,
-            $haystack_item_type
+            $haystack_item_type,
         )) {
             return $bool;
         }

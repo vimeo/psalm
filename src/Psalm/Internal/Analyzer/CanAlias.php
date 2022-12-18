@@ -70,7 +70,7 @@ trait CanAlias
                         $this->getFilePath(),
                         (int) $use->getAttribute('startFilePos'),
                         (int) $use->getAttribute('endFilePos'),
-                        $use_path
+                        $use_path,
                     );
                     if ($codebase->collect_locations) {
                         // register the path
@@ -87,7 +87,7 @@ trait CanAlias
                             $file_manipulations[] = new FileManipulation(
                                 (int) $use->getAttribute('startFilePos'),
                                 (int) $use->getAttribute('endFilePos') + 1,
-                                $new_fq_class_name . ($use->alias ? ' as ' . $use_alias : '')
+                                $new_fq_class_name . ($use->alias ? ' as ' . $use_alias : ''),
                             );
 
                             FileManipulationBuffer::add($this->getFilePath(), $file_manipulations);
@@ -162,7 +162,7 @@ trait CanAlias
             $this->getNamespace(),
             $this->aliased_classes,
             $this->aliased_functions,
-            $this->aliased_constants
+            $this->aliased_constants,
         );
     }
 }

@@ -42,7 +42,7 @@ final class DocComment
     {
         $parsed_docblock = DocblockParser::parse(
             $docblock->getText(),
-            $docblock->getStartFilePos()
+            $docblock->getStartFilePos(),
         );
 
         foreach ($parsed_docblock->tags as $special_key => $_) {
@@ -52,7 +52,7 @@ final class DocComment
                 if (!in_array(
                     $special_key,
                     self::PSALM_ANNOTATIONS,
-                    true
+                    true,
                 )) {
                     throw new DocblockParseException('Unrecognised annotation @psalm-' . $special_key);
                 }
@@ -80,7 +80,7 @@ final class DocComment
                 ^ (?P<issues> (?&issue_list) ) (?P<description> .* ) $
             /xm',
             $suppress_entry,
-            $matches
+            $matches,
         );
 
         if (!isset($matches['issues'])) {

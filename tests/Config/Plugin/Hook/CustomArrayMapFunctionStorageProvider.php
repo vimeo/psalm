@@ -62,9 +62,9 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
                     return $param;
                 },
                 $all_expected_callables,
-                array_keys($all_expected_callables)
+                array_keys($all_expected_callables),
             ),
-            self::createLastArrayMapParam($input_array_type)
+            self::createLastArrayMapParam($input_array_type),
         ];
 
         return $custom_array_map_storage;
@@ -79,7 +79,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
             $input_array_type,
             null,
             null,
-            false
+            false,
         );
     }
 
@@ -114,8 +114,8 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
             'callable',
             [new FunctionLikeParameter('a', false, $input_type, $input_type)],
             new Union([
-                $template_provider->createTemplate('T' . $return_template_offset)
-            ])
+                $template_provider->createTemplate('T' . $return_template_offset),
+            ]),
         );
     }
 
@@ -131,10 +131,10 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
         for ($template_offset = 0; $template_offset < $expected_callable_args_count - 1; $template_offset++) {
             $rest_callable_params[] = self::createExpectedCallable(
                 new Union([
-                    $template_provider->createTemplate('T' . $template_offset)
+                    $template_provider->createTemplate('T' . $template_offset),
                 ]),
                 $template_provider,
-                $template_offset + 1
+                $template_offset + 1,
             );
         }
 

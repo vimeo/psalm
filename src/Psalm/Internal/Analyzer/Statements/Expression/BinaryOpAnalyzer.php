@@ -64,7 +64,7 @@ class BinaryOpAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $context,
-                $from_stmt
+                $from_stmt,
             );
 
             $context->inside_general_use = $was_inside_general_use;
@@ -84,7 +84,7 @@ class BinaryOpAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $context,
-                $from_stmt
+                $from_stmt,
             );
 
             $context->inside_general_use = $was_inside_general_use;
@@ -98,7 +98,7 @@ class BinaryOpAnalyzer
             $expr_result = CoalesceAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
-                $context
+                $context,
             );
 
             self::addDataFlow(
@@ -106,7 +106,7 @@ class BinaryOpAnalyzer
                 $stmt,
                 $stmt->left,
                 $stmt->right,
-                'coalesce'
+                'coalesce',
             );
 
             return $expr_result;
@@ -140,7 +140,7 @@ class BinaryOpAnalyzer
                 $stmt->left,
                 $stmt->right,
                 $context,
-                $result_type
+                $result_type,
             );
 
             if ($result_type) {
@@ -160,7 +160,7 @@ class BinaryOpAnalyzer
                 $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
                 $stmt_type = $stmt_type->setParentNodes([
-                    $new_parent_node->id => $new_parent_node
+                    $new_parent_node->id => $new_parent_node,
                 ]);
 
                 $codebase = $statements_analyzer->getCodebase();
@@ -176,7 +176,7 @@ class BinaryOpAnalyzer
                             $new_parent_node,
                             'concat',
                             $added_taints,
-                            $removed_taints
+                            $removed_taints,
                         );
                     }
                 }
@@ -188,7 +188,7 @@ class BinaryOpAnalyzer
                             $new_parent_node,
                             'concat',
                             $added_taints,
-                            $removed_taints
+                            $removed_taints,
                         );
                     }
                 }
@@ -206,9 +206,9 @@ class BinaryOpAnalyzer
                     [
                         new TLiteralInt(-1),
                         new TLiteralInt(0),
-                        new TLiteralInt(1)
-                    ]
-                )
+                        new TLiteralInt(1),
+                    ],
+                ),
             );
 
             self::addDataFlow(
@@ -216,7 +216,7 @@ class BinaryOpAnalyzer
                 $stmt,
                 $stmt->left,
                 $stmt->right,
-                '<=>'
+                '<=>',
             );
 
             return true;
@@ -249,9 +249,9 @@ class BinaryOpAnalyzer
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
                         'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -292,18 +292,18 @@ class BinaryOpAnalyzer
                                             new DocblockTypeContradiction(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
-                                                "strlen($atomic_right_type) !== $string_length"
+                                                "strlen($atomic_right_type) !== $string_length",
                                             ),
-                                            $statements_analyzer->getSuppressedIssues()
+                                            $statements_analyzer->getSuppressedIssues(),
                                         );
                                     } else {
                                         IssueBuffer::maybeAdd(
                                             new TypeDoesNotContainType(
                                                 $atomic_right_type . ' string length is not ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
-                                                "strlen($atomic_right_type) !== $string_length"
+                                                "strlen($atomic_right_type) !== $string_length",
                                             ),
-                                            $statements_analyzer->getSuppressedIssues()
+                                            $statements_analyzer->getSuppressedIssues(),
                                         );
                                     }
                                 } else {
@@ -312,18 +312,18 @@ class BinaryOpAnalyzer
                                             new RedundantConditionGivenDocblockType(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
-                                                "strlen($atomic_right_type) !== $string_length"
+                                                "strlen($atomic_right_type) !== $string_length",
                                             ),
-                                            $statements_analyzer->getSuppressedIssues()
+                                            $statements_analyzer->getSuppressedIssues(),
                                         );
                                     } else {
                                         IssueBuffer::maybeAdd(
                                             new RedundantCondition(
                                                 $atomic_right_type . ' string length is never ' . $string_length,
                                                 new CodeLocation($statements_analyzer, $stmt),
-                                                "strlen($atomic_right_type) !== $string_length"
+                                                "strlen($atomic_right_type) !== $string_length",
                                             ),
-                                            $statements_analyzer->getSuppressedIssues()
+                                            $statements_analyzer->getSuppressedIssues(),
                                         );
                                     }
                                 }
@@ -344,7 +344,7 @@ class BinaryOpAnalyzer
                     $statements_analyzer,
                     $stmt,
                     $stmt_left_type,
-                    $stmt_right_type
+                    $stmt_right_type,
                 );
             }
 
@@ -353,7 +353,7 @@ class BinaryOpAnalyzer
                 $stmt,
                 $stmt->left,
                 $stmt->right,
-                'comparison'
+                'comparison',
             );
 
             return true;
@@ -362,7 +362,7 @@ class BinaryOpAnalyzer
         NonComparisonOpAnalyzer::analyze(
             $statements_analyzer,
             $stmt,
-            $context
+            $context,
         );
 
         return true;
@@ -403,7 +403,7 @@ class BinaryOpAnalyzer
             $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
             $result_type = $result_type->setParentNodes([
-                $new_parent_node->id => $new_parent_node
+                $new_parent_node->id => $new_parent_node,
             ]);
             $statements_analyzer->node_data->setType($stmt, $result_type);
 
@@ -432,19 +432,19 @@ class BinaryOpAnalyzer
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
                         new DataFlowNode('variable-use', 'variable use', null),
-                        'used-by-instance-property'
+                        'used-by-instance-property',
                     );
                 } if ($left instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
                         new DataFlowNode('variable-use', 'variable use', null),
-                        'use-in-static-property'
+                        'use-in-static-property',
                     );
                 } elseif (!$left instanceof PhpParser\Node\Expr\Variable) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $new_parent_node,
                         new DataFlowNode('variable-use', 'variable use', null),
-                        'variable-use'
+                        'variable-use',
                     );
                 }
             }
@@ -466,8 +466,8 @@ class BinaryOpAnalyzer
                         $storage = $codebase->methods->getStorage(
                             new MethodIdentifier(
                                 $atomic_type->value,
-                                '__tostring'
-                            )
+                                '__tostring',
+                            ),
                         );
                     } catch (UnexpectedValueException $e) {
                         continue;
@@ -485,9 +485,9 @@ class BinaryOpAnalyzer
                                 new ImpureMethodCall(
                                     'Cannot call a possibly-mutating method '
                                         . $atomic_type->value . '::__toString from a pure context',
-                                    new CodeLocation($statements_analyzer, $stmt)
+                                    new CodeLocation($statements_analyzer, $stmt),
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         }
                     }
@@ -500,8 +500,8 @@ class BinaryOpAnalyzer
                         $storage = $codebase->methods->getStorage(
                             new MethodIdentifier(
                                 $atomic_type->value,
-                                '__tostring'
-                            )
+                                '__tostring',
+                            ),
                         );
                     } catch (UnexpectedValueException $e) {
                         continue;
@@ -518,9 +518,9 @@ class BinaryOpAnalyzer
                                 new ImpureMethodCall(
                                     'Cannot call a possibly-mutating method '
                                         . $atomic_type->value . '::__toString from a pure context',
-                                    new CodeLocation($statements_analyzer, $stmt)
+                                    new CodeLocation($statements_analyzer, $stmt),
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         }
                     }

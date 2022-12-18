@@ -89,13 +89,13 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                         $statements_source,
                         $location,
                         $statements_source->getSuppressedIssues(),
-                        false
+                        false,
                     ) === true) {
                         $property_type = $codebase->properties->getPropertyType(
                             $property_id,
                             false,
                             $statements_source,
-                            $context
+                            $context,
                         );
                         if (!$property_type) {
                             continue;
@@ -107,7 +107,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                                 $property_type,
                                 $object_type,
                                 $class_storage,
-                                $class_storage
+                                $class_storage,
                             )
                             : $property_type
                         ;
@@ -150,7 +150,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 $first_arg_type,
                 $statements_source,
                 $event->getContext(),
-                $event->getCodeLocation()
+                $event->getCodeLocation(),
             )]);
         }
 

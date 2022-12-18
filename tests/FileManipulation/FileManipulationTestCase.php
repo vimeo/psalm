@@ -47,8 +47,8 @@ abstract class FileManipulationTestCase extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         if (empty($issues_to_fix)) {
@@ -62,7 +62,7 @@ abstract class FileManipulationTestCase extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code
+            $input_code,
         );
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
@@ -76,7 +76,7 @@ abstract class FileManipulationTestCase extends TestCase
         $this->project_analyzer->setIssuesToFix($keyed_issues_to_fix);
         $this->project_analyzer->alterCodeAfterCompletion(
             false,
-            $safe_types
+            $safe_types,
         );
         $this->project_analyzer->getCodebase()->allow_backwards_incompatible_changes = $allow_backwards_incompatible_changes;
         $this->project_analyzer->getConfig()->check_for_throws_docblock = true;

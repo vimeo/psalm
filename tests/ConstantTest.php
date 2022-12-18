@@ -59,7 +59,7 @@ class ConstantTest extends TestCase
 
                 final class Bar {}
                 const bar = new Bar();
-            '
+            ',
         );
 
         $this->addFile(
@@ -76,7 +76,7 @@ class ConstantTest extends TestCase
                 {
                     return bar;
                 }
-            '
+            ',
         );
 
         $this->analyzeFile($file1, new Context());
@@ -621,7 +621,7 @@ class ConstantTest extends TestCase
                         public static function foo(): void {
                             print_r(explode(",", static::STRING));
                         }
-                    }'
+                    }',
             ],
             'allowChecksAfterDefined' => [
                 'code' => '<?php
@@ -631,7 +631,7 @@ class ConstantTest extends TestCase
                         public static function bar(string $s) : bool {
                             return !defined("FOO") && strpos($s, self::STRING) === 0;
                         }
-                    }'
+                    }',
             ],
             'resolveOutOfOrderClassConstants' => [
                 'code' => '<?php
@@ -644,7 +644,7 @@ class ConstantTest extends TestCase
 
                     echo cons1;
                     echo Clazz::cons2;
-                    echo Clazz::cons3;'
+                    echo Clazz::cons3;',
             ],
             'evenMoreOutOfOrderConstants' => [
                 'code' => '<?php
@@ -660,7 +660,7 @@ class ConstantTest extends TestCase
 
                     class B extends A {
                         const Z = self::X;
-                    }'
+                    }',
             ],
             'supportTernaries' => [
                 'code' => '<?php
@@ -693,7 +693,7 @@ class ConstantTest extends TestCase
 
                     class Foo {
                         public const BAR = "bar";
-                    }'
+                    }',
             ],
             'resolveConstArrayAsList' => [
                 'code' => '<?php
@@ -725,12 +725,12 @@ class ConstantTest extends TestCase
                     }
 
                     test(Test1::VALUES);
-                    test(Test2::VALUES);'
+                    test(Test2::VALUES);',
             ],
             'resolveConstantFetchViaFunction' => [
                 'code' => '<?php
                     const FOO = 1;
-                    echo \constant("FOO");'
+                    echo \constant("FOO");',
             ],
             'tooLongClassConstArray' => [
                 'code' => '<?php
@@ -803,7 +803,7 @@ class ConstantTest extends TestCase
                             // This seems to happen because the array has a lot of entries.
                             return (self::LOOKUP[strtoupper($code)] ?? null) === self::SUCCEED;
                         }
-                    }'
+                    }',
             ],
             'keyOf' => [
                 'code' => '<?php
@@ -955,7 +955,7 @@ class ConstantTest extends TestCase
                         public function get(): int {
                             return $this->number;
                         }
-                    }'
+                    }',
             ],
             'lowercaseStringAccessClassConstant' => [
                 'code' => '<?php
@@ -973,7 +973,7 @@ class ConstantTest extends TestCase
                     function foo(string $s, string $t) : void {
                         echo A::C[$t];
                         echo A::C[$s];
-                    }'
+                    }',
             ],
             'getClassConstantOffset' => [
                 'code' => '<?php
@@ -984,7 +984,7 @@ class ConstantTest extends TestCase
                         public function foo(): string {
                             return self::B;
                         }
-                    }'
+                    }',
             ],
             'bitwiseOrClassConstant' => [
                 'code' => '<?php
@@ -997,7 +997,7 @@ class ConstantTest extends TestCase
                     $c = X::C;',
                 'assertions' => [
                     '$c' => 'int',
-                ]
+                ],
             ],
             'bitwiseAndClassConstant' => [
                 'code' => '<?php
@@ -1010,7 +1010,7 @@ class ConstantTest extends TestCase
                     $c = X::C;',
                 'assertions' => [
                     '$c' => 'int',
-                ]
+                ],
             ],
             'bitwiseXorClassConstant' => [
                 'code' => '<?php
@@ -1023,7 +1023,7 @@ class ConstantTest extends TestCase
                     $c = X::C;',
                 'assertions' => [
                     '$c' => 'int',
-                ]
+                ],
             ],
             'bitwiseNotClassConstant' => [
                 'code' => '<?php
@@ -1037,7 +1037,7 @@ class ConstantTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'string',
-                ]
+                ],
             ],
             'booleanNotClassConstant' => [
                 'code' => '<?php
@@ -1051,7 +1051,7 @@ class ConstantTest extends TestCase
                 'assertions' => [
                     '$a' => 'false',
                     '$b' => 'true',
-                ]
+                ],
             ],
             'protectedClassConstantAccessibilitySameNameInChild' => [
                 'code' => '<?php
@@ -1068,7 +1068,7 @@ class ConstantTest extends TestCase
                         protected const A = 2;
                     }
 
-                    A::test();'
+                    A::test();',
             ],
             'referenceClassConstantWithSelf' => [
                 'code' => '<?php
@@ -1088,14 +1088,14 @@ class ConstantTest extends TestCase
                         public const THERE = \'there\';
                     }
 
-                    echo B::VALUES["there"];'
+                    echo B::VALUES["there"];',
             ],
             'internalConstWildcard' => [
                 'code' => '<?php
                     /**
                      * @psalm-param \PDO::PARAM_* $type
                      */
-                    function param(int $type): void {}'
+                    function param(int $type): void {}',
             ],
             'templatedConstantInType' => [
                 'code' => '<?php
@@ -1160,7 +1160,7 @@ class ConstantTest extends TestCase
                         {
                             return $this->level;
                         }
-                    }'
+                    }',
             ],
             'dirAndFileInConstInitializersAreNonEmptyString' => [
                 'code' => '<?php
@@ -1174,7 +1174,7 @@ class ConstantTest extends TestCase
                 'assertions' => [
                     '$dir===' => 'non-empty-string',
                     '$file===' => 'non-empty-string',
-                ]
+                ],
             ],
             'lineInConstInitializersIsInt' => [
                 'code' => '<?php
@@ -1185,7 +1185,7 @@ class ConstantTest extends TestCase
                 ',
                 'assertions' => [
                     '$line' => 'int',
-                ]
+                ],
             ],
             'classMethodTraitAndFunctionInConstInitializersAreStrings' => [
                 'code' => '<?php
@@ -1205,7 +1205,7 @@ class ConstantTest extends TestCase
                     '$mtd' => 'string',
                     '$trt' => 'string',
                     '$fcn' => 'string',
-                ]
+                ],
             ],
             'concatWithMagicInConstInitializersIsNoEmptyString' => [
                 'code' => '<?php
@@ -1219,7 +1219,7 @@ class ConstantTest extends TestCase
                 'assertions' => [
                     '$dir===' => 'non-empty-string',
                     '$file===' => 'non-empty-string',
-                ]
+                ],
             ],
             'noCrashWithStaticInDocblock' => [
                 'code' => '<?php
@@ -1231,7 +1231,7 @@ class ConstantTest extends TestCase
                             /** @var static::CONST1 */
                             $a = static::CONST1;
                         }
-                    }'
+                    }',
             ],
             'FuncAndMethInAllContexts' => [
                 'code' => '<?php
@@ -1255,7 +1255,7 @@ class ConstantTest extends TestCase
                         function getFuncInMeth(): string{
                             return __FUNCTION__;
                         }
-                    }'
+                    }',
             ],
             'arrayUnpack' => [
                 'code' => '<?php
@@ -1333,10 +1333,10 @@ class ConstantTest extends TestCase
                     $c = C::CC;
                 ',
                 'assertions' => [
-                    '$c===' => 'enum(E::Z)'
+                    '$c===' => 'enum(E::Z)',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'classConstWithParamOut' => [
                 'code' => '<?php
@@ -1497,10 +1497,10 @@ class ConstantTest extends TestCase
                     $a = Baz::BAR;
                 ',
                 'assertions' => [
-                    '$a===' => "'baz'"
+                    '$a===' => "'baz'",
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'finalConstInterface' => [
                 'code' => '<?php
@@ -1516,10 +1516,10 @@ class ConstantTest extends TestCase
                     $a = Baz::BAR;
                 ',
                 'assertions' => [
-                    '$a===' => "'baz'"
+                    '$a===' => "'baz'",
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
         ];
     }
@@ -1650,7 +1650,7 @@ class ConstantTest extends TestCase
                     class C {
                         const FOO = A::FOO;
                     }',
-                'error_message' => 'CircularReference'
+                'error_message' => 'CircularReference',
             ],
             'keyOfBadValue' => [
                 'code' => '<?php
@@ -1703,7 +1703,7 @@ class ConstantTest extends TestCase
                     }
 
                     A::foo(A::D_4);',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'wildcardEnumAnyTemplateExtendConstantBadValue' => [
                 'code' => '<?php
@@ -1737,7 +1737,7 @@ class ConstantTest extends TestCase
                     $a = new A();
                     $a->foo(5);
                     ',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'correctMessage' => [
                 'code' => '<?php
@@ -1752,7 +1752,7 @@ class ConstantTest extends TestCase
                     function foo(int $s): string {
                         return [1 => "a", 2 => "b"][$s];
                     }',
-                'error_message' => "offset value of '1|0"
+                'error_message' => "offset value of '1|0",
             ],
             'constantWithMissingClass' => [
                 'code' => '<?php

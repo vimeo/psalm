@@ -94,7 +94,7 @@ final class TValueOf extends Atomic
                     $value_atomics = static::getValueType(
                         $atomic_type->as,
                         $codebase,
-                        $keep_template_params
+                        $keep_template_params,
                     );
                     if ($value_atomics === null) {
                         continue;

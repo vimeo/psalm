@@ -39,7 +39,7 @@ class EnableCommand extends Command
             ->addArgument(
                 'pluginName',
                 InputArgument::REQUIRED,
-                'Plugin name (fully qualified class name or composer package name)'
+                'Plugin name (fully qualified class name or composer package name)',
             )
             ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file')
             ->addUsage('vendor/plugin-package-name [-c path/to/psalm.xml]');

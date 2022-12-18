@@ -154,7 +154,7 @@ final class TConditional extends Atomic
         $conditional = TemplateInferredTypeReplacer::replace(
             $this->conditional_type,
             $template_result,
-            $codebase
+            $codebase,
         );
         if ($conditional === $this->conditional_type) {
             return $this;
@@ -165,7 +165,7 @@ final class TConditional extends Atomic
             $this->as_type,
             $conditional,
             $this->if_type,
-            $this->else_type
+            $this->else_type,
         );
     }
 }

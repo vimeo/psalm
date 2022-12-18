@@ -18,7 +18,7 @@ final class CheckstyleReport extends Report
             $message = sprintf(
                 '%s: %s',
                 $issue_data->type,
-                $issue_data->message
+                $issue_data->message,
             );
 
             $output .= '<file name="' . $this->xmlEncode($issue_data->file_name) . '">' . "\n";

@@ -157,7 +157,7 @@ class ParseTreeCreator
                 || $this->parse_tree instanceof KeyedArrayTree)
         ) {
             throw new TypeParseTreeException(
-                'Unterminated bracket'
+                'Unterminated bracket',
             );
         }
 
@@ -193,7 +193,7 @@ class ParseTreeCreator
             $current_token[0],
             $byref,
             $variadic,
-            $current_parent
+            $current_parent,
         );
 
         for ($j = $this->t + 1; $j < $this->type_token_count; ++$j) {
@@ -292,7 +292,7 @@ class ParseTreeCreator
         $new_parent = !$this->current_leaf instanceof Root ? $this->current_leaf : null;
 
         $new_leaf = new EncapsulationTree(
-            $new_parent
+            $new_parent,
         );
 
         if ($this->current_leaf instanceof Root) {
@@ -573,7 +573,7 @@ class ParseTreeCreator
 
                 $new_leaf = new ConditionalTree(
                     $this->current_leaf,
-                    $this->current_leaf->parent
+                    $this->current_leaf->parent,
                 );
 
                 array_pop($current_parent->children);
@@ -587,7 +587,7 @@ class ParseTreeCreator
                 }
 
                 $new_leaf = new NullableTree(
-                    $new_parent
+                    $new_parent,
                 );
 
                 if ($this->current_leaf instanceof Root) {
@@ -659,7 +659,7 @@ class ParseTreeCreator
     {
         if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException(
-                'Unexpected &'
+                'Unexpected &',
             );
         }
 
@@ -713,7 +713,7 @@ class ParseTreeCreator
                 $this->current_leaf = new TemplateAsTree(
                     $this->current_leaf->value,
                     $next_token[0],
-                    $current_parent
+                    $current_parent,
                 );
 
                 $current_parent->children[] = $this->current_leaf;
@@ -721,7 +721,7 @@ class ParseTreeCreator
             } elseif ($this->current_leaf instanceof Value) {
                 $this->current_leaf = new TemplateIsTree(
                     $this->current_leaf->value,
-                    $current_parent
+                    $current_parent,
                 );
 
                 if ($current_parent) {
@@ -747,7 +747,7 @@ class ParseTreeCreator
             case '<':
                 $new_leaf = new GenericTree(
                     $type_token[0],
-                    $new_parent
+                    $new_parent,
                 );
                 ++$this->t;
                 break;
@@ -755,7 +755,7 @@ class ParseTreeCreator
             case '{':
                 $new_leaf = new KeyedArrayTree(
                     $type_token[0],
-                    $new_parent
+                    $new_parent,
                 );
                 ++$this->t;
 
@@ -774,11 +774,11 @@ class ParseTreeCreator
                 if (in_array(
                     $type_token[0],
                     ['callable', 'pure-callable', 'Closure', '\Closure', 'pure-Closure'],
-                    true
+                    true,
                 )) {
                     $new_leaf = new CallableTree(
                         $type_token[0],
-                        $new_parent
+                        $new_parent,
                     );
                 } elseif ($type_token[0] !== 'array'
                     && $type_token[0][0] !== '\\'
@@ -786,11 +786,12 @@ class ParseTreeCreator
                 ) {
                     $new_leaf = new MethodTree(
                         $type_token[0],
-                        $new_parent
+                        $new_parent,
                     );
                 } else {
                     throw new TypeParseTreeException(
-                        'Parenthesis must be preceded by “Closure”, “callable”, "pure-callable" or a valid @method name'
+                        'Parenthesis must be preceded by “Closure”, “callable”, "pure-callable" or a valid @method'
+                        . ' name',
                     );
                 }
 
@@ -805,7 +806,7 @@ class ParseTreeCreator
                     && strtolower($nexter_token[0]) !== 'class'
                 ) {
                     throw new TypeParseTreeException(
-                        ':: in array key is only allowed for ::class'
+                        ':: in array key is only allowed for ::class',
                     );
                 }
 
@@ -814,7 +815,7 @@ class ParseTreeCreator
                         && strtolower($nexter_token[0]) !== 'class')
                 ) {
                     throw new TypeParseTreeException(
-                        'Invalid class constant ' . ($nexter_token[0] ?? '<empty>')
+                        'Invalid class constant ' . ($nexter_token[0] ?? '<empty>'),
                     );
                 }
 
@@ -823,7 +824,7 @@ class ParseTreeCreator
                     $type_token[1],
                     $type_token[1] + 2 + strlen($nexter_token[0]),
                     $type_token[2] ?? null,
-                    $new_parent
+                    $new_parent,
                 );
 
                 $this->t += 2;
@@ -840,7 +841,7 @@ class ParseTreeCreator
                     $type_token[1],
                     $type_token[1] + strlen($type_token[0]),
                     $type_token[2] ?? null,
-                    $new_parent
+                    $new_parent,
                 );
                 break;
         }

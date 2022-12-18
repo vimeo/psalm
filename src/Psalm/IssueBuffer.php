@@ -324,7 +324,7 @@ final class IssueBuffer
                 $issue_type
                     . ' - ' . $e->getShortLocationWithPrevious()
                     . ':' . $e->code_location->getColumn()
-                    . ' - ' . $message
+                    . ' - ' . $message,
             );
         }
 
@@ -497,9 +497,9 @@ final class IssueBuffer
                             $file_path,
                             $config->shortenFileName($file_path),
                             $start,
-                            $end
-                        )
-                    )
+                            $end,
+                        ),
+                    ),
                 );
             }
         }
@@ -559,7 +559,7 @@ final class IssueBuffer
         if (self::$issues_data) {
             if (in_array(
                 $project_analyzer->stdout_report_options->format,
-                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
+                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
             )) {
                 echo "\n";
             }
@@ -593,7 +593,7 @@ final class IssueBuffer
                                 $position = array_search(
                                     trim($issue_data->selected_text),
                                     $issue_baseline[$file][$type]['s'],
-                                    true
+                                    true,
                                 );
 
                                 if ($position !== false) {
@@ -617,7 +617,7 @@ final class IssueBuffer
         echo self::getOutput(
             $issues_data,
             $project_analyzer->stdout_report_options,
-            $codebase->analyzer->getTotalTypeCoverage($codebase)
+            $codebase->analyzer->getTotalTypeCoverage($codebase),
         );
 
         foreach ($issues_data as $file_issues) {
@@ -646,7 +646,7 @@ final class IssueBuffer
                 $codebase,
                 $issues_data,
                 $build_info,
-                $source_control_info
+                $source_control_info,
             );
 
             $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);
@@ -666,14 +666,14 @@ final class IssueBuffer
                 self::getOutput(
                     $issues_data,
                     $report_options,
-                    $codebase->analyzer->getTotalTypeCoverage($codebase)
-                )
+                    $codebase->analyzer->getTotalTypeCoverage($codebase),
+                ),
             );
         }
 
         if (in_array(
             $project_analyzer->stdout_report_options->format,
-            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
+            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
         )) {
             echo str_repeat('-', 30) . "\n";
 
@@ -858,7 +858,7 @@ final class IssueBuffer
                     self::$fixable_issue_counts,
                     $report_options,
                     $mixed_expression_count,
-                    $total_expression_count
+                    $total_expression_count,
                 );
                 break;
 

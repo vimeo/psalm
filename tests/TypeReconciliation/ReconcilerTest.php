@@ -49,7 +49,7 @@ class ReconcilerTest extends TestCase
         $this->file_analyzer->context = new Context();
         $this->statements_analyzer = new StatementsAnalyzer(
             $this->file_analyzer,
-            new NodeDataProvider()
+            new NodeDataProvider(),
         );
 
         $this->addFile('newfile.php', '
@@ -74,12 +74,12 @@ class ReconcilerTest extends TestCase
             null,
             $this->statements_analyzer,
             false,
-            []
+            [],
         );
 
         $this->assertSame(
             $expected_type,
-            $reconciled->getId()
+            $reconciled->getId(),
         );
 
         $this->assertContainsOnlyInstancesOf('Psalm\Type\Atomic', $reconciled->getAtomicTypes());
@@ -94,8 +94,8 @@ class ReconcilerTest extends TestCase
             UnionTypeComparator::isContainedBy(
                 $this->project_analyzer->getCodebase(),
                 Type::parseString($input),
-                Type::parseString($container)
-            )
+                Type::parseString($container),
+            ),
         );
     }
 
@@ -228,7 +228,7 @@ class ReconcilerTest extends TestCase
                 const PREFIX_BAZ = \'baz\';
                 const PREFIX_QOO = Foo::PREFIX_BAR;
             }
-            '
+            ',
         );
         $this->project_analyzer->getCodebase()->scanFiles();
 
@@ -240,12 +240,12 @@ class ReconcilerTest extends TestCase
             null,
             $this->statements_analyzer,
             false,
-            []
+            [],
         );
 
         $this->assertSame(
             $expected_type,
-            $reconciled->getId()
+            $reconciled->getId(),
         );
     }
 

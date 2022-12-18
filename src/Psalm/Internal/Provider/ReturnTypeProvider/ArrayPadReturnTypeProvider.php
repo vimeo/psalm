@@ -60,7 +60,7 @@ class ArrayPadReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $can_return_empty
                             ? new TArray([$key_type, $value_type])
                             : new TNonEmptyArray([$key_type, $value_type])
-                    )
+                    ),
             ]);
         }
 

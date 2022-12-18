@@ -53,8 +53,8 @@ class LanguageClient
             $method,
             [
                 'type' => $type,
-                'message' => $message
-            ]
+                'message' => $message,
+            ],
         );
     }
 }

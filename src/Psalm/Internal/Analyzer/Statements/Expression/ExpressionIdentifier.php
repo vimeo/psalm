@@ -45,7 +45,7 @@ class ExpressionIdentifier
                 $fq_class_name = $source
                     ? ClassLikeAnalyzer::getFQCLNFromNameObject(
                         $stmt->class,
-                        $source->getAliases()
+                        $source->getAliases(),
                     )
                     : implode('\\', $stmt->class->parts);
             }
@@ -211,7 +211,7 @@ class ExpressionIdentifier
                 $lhs_var_name = self::getExtendedVarId(
                     $stmt->var,
                     $this_class_name,
-                    $source
+                    $source,
                 );
 
                 if (!$lhs_var_name) {

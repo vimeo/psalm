@@ -25,8 +25,8 @@ class TypeTest extends TestCase
                     assert(count($a) === 1);
                     ',
                 'assertions' => [
-                    '$a===' => 'array{a: mixed}'
-                ]
+                    '$a===' => 'array{a: mixed}',
+                ],
             ],
             'sealedArrayCount' => [
                 'code' => '<?php
@@ -38,8 +38,8 @@ class TypeTest extends TestCase
                     }',
                 'assertions' => [
                     '$a===' => 'list{0?: 0, 1?: 1}',
-                    '$b===' => 'list{0, 1}|null'
-                ]
+                    '$b===' => 'list{0, 1}|null',
+                ],
             ],
             'sealedArrayMagic' => [
                 'code' => '<?php
@@ -95,7 +95,7 @@ class TypeTest extends TestCase
                     '$buttons===' => 'list<string>',
                     '$urls===' => 'list{0?: non-falsy-string}',
                     '$mainUrlSet===' => 'bool',
-                ]
+                ],
             ],
             'validSealedArrayAssertions' => [
                 'code' => '<?php
@@ -120,7 +120,7 @@ class TypeTest extends TestCase
                 ',
                 'assertions' => [
                     '$a===' => 'array{a: string, b: string, c: string}',
-                ]
+                ],
             ],
             'instanceOfInterface' => [
                 'code' => '<?php
@@ -145,7 +145,7 @@ class TypeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'nullableMethodWithTernaryGuard' => [
                 'code' => '<?php
@@ -1139,7 +1139,7 @@ class TypeTest extends TestCase
                         $optgroup["a"] .= "v";
                     }
 
-                    if ($optgroup["a"] !== "") {}'
+                    if ($optgroup["a"] !== "") {}',
             ],
             'redefineArrayKeyInsideIsStringConditional' => [
                 'code' => '<?php
@@ -1154,7 +1154,7 @@ class TypeTest extends TestCase
 
                             if (!isset($arr[$key])) {}
                         }
-                    }'
+                    }',
             ],
             'redefineArrayKeyInsideIsStringConditionalElse' => [
                 'code' => '<?php
@@ -1171,7 +1171,7 @@ class TypeTest extends TestCase
 
                             if (!isset($arr[$key])) {}
                         }
-                    }'
+                    }',
             ],
             'redefineArrayKeyInsideIsStringConditionalElseif' => [
                 'code' => '<?php
@@ -1188,7 +1188,7 @@ class TypeTest extends TestCase
 
                             if (!isset($arr[$key])) {}
                         }
-                    }'
+                    }',
             ],
             'redefineArrayKeyInsideIsStringConditionalWhile' => [
                 'code' => '<?php
@@ -1203,7 +1203,7 @@ class TypeTest extends TestCase
 
                             if (!isset($arr[$key])) {}
                         }
-                    }'
+                    }',
             ],
             'redefineArrayKeyInsideIsIntConditional' => [
                 'code' => '<?php
@@ -1218,7 +1218,7 @@ class TypeTest extends TestCase
 
                             if (!isset($arr[$key])) {}
                         }
-                    }'
+                    }',
             ],
             'arrayKeyCanBeNumeric' => [
                 'code' => '<?php
@@ -1228,7 +1228,7 @@ class TypeTest extends TestCase
                             if (is_numeric($k)) {}
                             if (!is_numeric($k)) {}
                         }
-                    }'
+                    }',
             ],
             'narrowScalar' => [
                 'code' => '<?php
@@ -1237,7 +1237,7 @@ class TypeTest extends TestCase
 
                     if (!is_int($s) && !is_bool($s) && !is_float($s)) {
                         strlen($s);
-                    }'
+                    }',
             ],
             'narrowWithCountToAllowNonTupleKeyedArray' => [
                 'code' => '<?php
@@ -1253,7 +1253,7 @@ class TypeTest extends TestCase
                     /**
                      * @param array{0:string, 1: string} $input
                      */
-                    function consume($input): void{}'
+                    function consume($input): void{}',
             ],
             'notDateTimeWithDateTimeInterface' => [
                 'code' => '<?php
@@ -1306,7 +1306,7 @@ class TypeTest extends TestCase
                         }
                     }
                     /** @param non-empty-array $a */
-                    function expectNonEmptyArray(array $a): array { return $a; }'
+                    function expectNonEmptyArray(array $a): array { return $a; }',
             ],
         ];
     }
@@ -1680,7 +1680,7 @@ class TypeTest extends TestCase
 
                     if (count($a) > 1) {
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType'
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'invalidSealedArrayAssertion2' => [
                 'code' => '<?php
@@ -1689,7 +1689,7 @@ class TypeTest extends TestCase
 
                     if (count($a) > 3) {
                     }',
-                'error_message' => 'DocblockTypeContradiction'
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'invalidSealedArrayAssertion3' => [
                 'code' => '<?php
@@ -1698,7 +1698,7 @@ class TypeTest extends TestCase
 
                     if (count($a) > 4) {
                     }',
-                'error_message' => 'DocblockTypeContradiction'
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'invalidSealedArrayAssertion4' => [
                 'code' => '<?php
@@ -1707,7 +1707,7 @@ class TypeTest extends TestCase
 
                     if (count($a) < 1) {
                     }',
-                'error_message' => 'DocblockTypeContradiction'
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'invalidSealedArrayAssertion5' => [
                 'code' => '<?php
@@ -1716,7 +1716,7 @@ class TypeTest extends TestCase
 
                     if (count($a) < 2) {
                     }',
-                'error_message' => 'DocblockTypeContradiction'
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'invalidSealedArrayAssertion6' => [
                 'code' => '<?php
@@ -1725,7 +1725,7 @@ class TypeTest extends TestCase
 
                     if (count($a) < 4) {
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType'
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'intersectionTypeClassCheckAfterInstanceof' => [
                 'code' => '<?php

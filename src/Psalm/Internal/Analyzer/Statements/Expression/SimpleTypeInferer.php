@@ -68,7 +68,7 @@ class SimpleTypeInferer
                     $aliases,
                     $file_source,
                     $existing_class_constants,
-                    $fq_classlike_name
+                    $fq_classlike_name,
                 );
                 $right = self::infer(
                     $codebase,
@@ -77,7 +77,7 @@ class SimpleTypeInferer
                     $aliases,
                     $file_source,
                     $existing_class_constants,
-                    $fq_classlike_name
+                    $fq_classlike_name,
                 );
 
                 if ($left
@@ -128,8 +128,8 @@ class SimpleTypeInferer
                     [
                         new TLiteralInt(-1),
                         new TLiteralInt(0),
-                        new TLiteralInt(1)
-                    ]
+                        new TLiteralInt(1),
+                    ],
                 );
             }
 
@@ -140,7 +140,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             $stmt_right_type = self::infer(
@@ -150,7 +150,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if (!$stmt_left_type || !$stmt_right_type) {
@@ -159,12 +159,12 @@ class SimpleTypeInferer
 
             $nodes->setType(
                 $stmt->left,
-                $stmt_left_type
+                $stmt_left_type,
             );
 
             $nodes->setType(
                 $stmt->right,
-                $stmt_right_type
+                $stmt_right_type,
             );
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus
@@ -184,7 +184,7 @@ class SimpleTypeInferer
                     $stmt->left,
                     $stmt->right,
                     $stmt,
-                    $result_type
+                    $result_type,
                 );
 
                 if ($result_type) {
@@ -210,7 +210,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if ($stmt_expr_type === null) {
@@ -245,7 +245,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if ($stmt_expr_type === null) {
@@ -322,7 +322,7 @@ class SimpleTypeInferer
                 } else {
                     $const_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                         $stmt->class,
-                        $aliases
+                        $aliases,
                     );
                 }
 
@@ -345,7 +345,7 @@ class SimpleTypeInferer
                             $const_fq_class_name,
                             $stmt->name->name,
                             ReflectionProperty::IS_PRIVATE,
-                            $file_source
+                            $file_source,
                         );
 
                         if ($foreign_class_constant) {
@@ -386,7 +386,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
         }
 
@@ -422,7 +422,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if (!$type_to_invert) {
@@ -457,7 +457,7 @@ class SimpleTypeInferer
                     $aliases,
                     $file_source,
                     $existing_class_constants,
-                    $fq_classlike_name
+                    $fq_classlike_name,
                 );
 
                 $dim_type = self::infer(
@@ -467,7 +467,7 @@ class SimpleTypeInferer
                     $aliases,
                     $file_source,
                     $existing_class_constants,
-                    $fq_classlike_name
+                    $fq_classlike_name,
                 );
 
                 if ($array_type !== null && $dim_type !== null) {
@@ -500,7 +500,7 @@ class SimpleTypeInferer
             }
 
             return new Union([
-                new Type\Atomic\TNamedObject($resolved_class_name)
+                new Type\Atomic\TNamedObject($resolved_class_name),
             ]);
         }
 
@@ -538,7 +538,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             )) {
                 return null;
             }
@@ -551,7 +551,7 @@ class SimpleTypeInferer
                 null,
                 false,
                 true,
-                30
+                30,
             );
         }
 
@@ -562,7 +562,7 @@ class SimpleTypeInferer
                 null,
                 false,
                 true,
-                30
+                30,
             );
         }
 
@@ -577,7 +577,7 @@ class SimpleTypeInferer
                 $array_creation_info->property_types,
                 $array_creation_info->class_strings,
                 null,
-                $array_creation_info->all_list
+                $array_creation_info->all_list,
             );
             return new Union([$objectlike]);
         }
@@ -619,7 +619,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if (!$unpacked_array_type) {
@@ -641,7 +641,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if ($single_item_key_type) {
@@ -661,7 +661,7 @@ class SimpleTypeInferer
 
                 $array_creation_info->item_key_atomic_types = array_merge(
                     $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes())
+                    array_values($key_type->getAtomicTypes()),
                 );
 
                 if ($key_type->isSingleStringLiteral()) {
@@ -695,7 +695,7 @@ class SimpleTypeInferer
             $aliases,
             $file_source,
             $existing_class_constants,
-            $fq_classlike_name
+            $fq_classlike_name,
         );
 
         if (!$single_item_value_type) {
@@ -748,7 +748,7 @@ class SimpleTypeInferer
 
         $array_creation_info->item_value_atomic_types = array_merge(
             $array_creation_info->item_value_atomic_types,
-            array_values($single_item_value_type->getAtomicTypes())
+            array_values($single_item_value_type->getAtomicTypes()),
         );
 
         return true;
@@ -774,7 +774,7 @@ class SimpleTypeInferer
 
                     $array_creation_info->item_value_atomic_types = array_merge(
                         $array_creation_info->item_value_atomic_types,
-                        array_values($property_value->getAtomicTypes())
+                        array_values($property_value->getAtomicTypes()),
                     );
 
                     $array_creation_info->array_keys[$new_offset] = true;
@@ -795,8 +795,8 @@ class SimpleTypeInferer
                     $array_creation_info->item_value_atomic_types = array_merge(
                         $array_creation_info->item_value_atomic_types,
                         array_values(
-                            $unpacked_atomic_type->fallback_params[1]->getAtomicTypes()
-                        )
+                            $unpacked_atomic_type->fallback_params[1]->getAtomicTypes(),
+                        ),
                     );
                 }
             } elseif ($unpacked_atomic_type instanceof TArray) {
@@ -818,8 +818,8 @@ class SimpleTypeInferer
                     array_values(
                         isset($unpacked_atomic_type->type_params[1])
                             ? $unpacked_atomic_type->type_params[1]->getAtomicTypes()
-                            : [new TMixed()]
-                    )
+                            : [new TMixed()],
+                    ),
                 );
             }
         }

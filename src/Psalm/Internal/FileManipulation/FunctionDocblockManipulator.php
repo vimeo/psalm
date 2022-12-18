@@ -135,7 +135,7 @@ class FunctionDocblockManipulator
                 if ($param->type) {
                     $this->param_typehint_offsets[$param->var->name] = [
                         (int) $param->type->getAttribute('startFilePos'),
-                        (int) $param->type->getAttribute('endFilePos')
+                        (int) $param->type->getAttribute('endFilePos'),
                     ];
                 }
             }
@@ -394,7 +394,7 @@ class FunctionDocblockManipulator
                 fn(string $throwsClause, string $exception) => $throwsClause === ''
                     ? $exception
                     : $throwsClause.'|'.$exception,
-                ''
+                '',
             );
             if (array_key_exists('throws', $parsed_docblock->tags)) {
                 $parsed_docblock->tags['throws'][] = $inferredThrowsClause;
@@ -458,13 +458,13 @@ class FunctionDocblockManipulator
                     $file_manipulations[$manipulator->return_typehint_start] = new FileManipulation(
                         $manipulator->return_typehint_start,
                         $manipulator->return_typehint_end,
-                        $manipulator->new_php_return_type
+                        $manipulator->new_php_return_type,
                     );
                 } else {
                     $file_manipulations[$manipulator->return_typehint_area_start] = new FileManipulation(
                         $manipulator->return_typehint_area_start,
                         $manipulator->return_typehint_area_start,
-                        ': ' . $manipulator->new_php_return_type
+                        ': ' . $manipulator->new_php_return_type,
                     );
                 }
             } elseif ($manipulator->new_php_return_type === ''
@@ -476,7 +476,7 @@ class FunctionDocblockManipulator
                 $file_manipulations[$manipulator->return_typehint_start] = new FileManipulation(
                     $manipulator->return_typehint_colon_start,
                     $manipulator->return_typehint_end,
-                    ''
+                    '',
                 );
             }
 
@@ -488,7 +488,7 @@ class FunctionDocblockManipulator
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
                     $manipulator->docblock_end,
-                    $manipulator->getDocblock()
+                    $manipulator->getDocblock(),
                 );
             }
 
@@ -506,13 +506,13 @@ class FunctionDocblockManipulator
                         $file_manipulations[$typehint_offsets[0]] = new FileManipulation(
                             $typehint_offsets[0],
                             $typehint_offsets[1],
-                            $new_php_param_type
+                            $new_php_param_type,
                         );
                     } else {
                         $file_manipulations[$param_offset] = new FileManipulation(
                             $param_offset,
                             $param_offset,
-                            $new_php_param_type . ' '
+                            $new_php_param_type . ' ',
                         );
                     }
                 } elseif ($new_php_param_type === ''
@@ -521,7 +521,7 @@ class FunctionDocblockManipulator
                     $file_manipulations[$typehint_offsets[0]] = new FileManipulation(
                         $typehint_offsets[0],
                         $param_offset,
-                        ''
+                        '',
                     );
                 }
             }

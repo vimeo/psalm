@@ -77,7 +77,7 @@ class AtomicTypeComparator
                 $input_type_part,
                 $container_type_part,
                 $allow_interface_equality,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             );
         }
 
@@ -143,7 +143,7 @@ class AtomicTypeComparator
                 $container_type_part,
                 $allow_interface_equality,
                 $allow_float_int_equality,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             );
         }
 
@@ -155,7 +155,7 @@ class AtomicTypeComparator
                 $input_type_part,
                 $container_type_part,
                 $allow_interface_equality,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             );
         }
 
@@ -168,7 +168,7 @@ class AtomicTypeComparator
                 $codebase,
                 $input_type_part,
                 $container_type_part,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             );
         }
 
@@ -178,7 +178,7 @@ class AtomicTypeComparator
                     $codebase,
                     $input_type_part,
                     $container_type_part,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 ) === false
                 ) {
                     return false;
@@ -197,7 +197,7 @@ class AtomicTypeComparator
                 $codebase,
                 $input_type_part,
                 $container_type_part,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             );
         }
 
@@ -252,7 +252,7 @@ class AtomicTypeComparator
                 $input_type_part,
                 $container_type_part,
                 $allow_interface_equality,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             );
         }
 
@@ -279,7 +279,7 @@ class AtomicTypeComparator
                 $input_type_part,
                 $container_type_part,
                 $allow_interface_equality,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             );
         }
 
@@ -314,7 +314,7 @@ class AtomicTypeComparator
                 $input_type_part,
                 $container_type_part,
                 $allow_interface_equality,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             )
         ) {
             if ($container_type_part instanceof TGenericObject || $container_type_part instanceof TIterable) {
@@ -323,7 +323,7 @@ class AtomicTypeComparator
                     $input_type_part,
                     $container_type_part,
                     $allow_interface_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 );
             }
 
@@ -360,7 +360,7 @@ class AtomicTypeComparator
             return UnionTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part->as,
-                $container_type_part->as
+                $container_type_part->as,
             );
         }
 
@@ -377,7 +377,7 @@ class AtomicTypeComparator
                     $container_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 )) {
                     return false;
                 }
@@ -394,7 +394,7 @@ class AtomicTypeComparator
             return UnionTypeComparator::isContainedBy(
                 $codebase,
                 $input_type_part->as,
-                $container_type_part->as
+                $container_type_part->as,
             );
         }
 
@@ -411,7 +411,7 @@ class AtomicTypeComparator
                     $container_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 )) {
                     return false;
                 }
@@ -428,7 +428,7 @@ class AtomicTypeComparator
                 false,
                 false,
                 $atomic_comparison_result,
-                $allow_interface_equality
+                $allow_interface_equality,
             );
         }
 
@@ -440,7 +440,7 @@ class AtomicTypeComparator
                     $container_as_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 )) {
                     if ($allow_interface_equality) {
                         return true;
@@ -454,7 +454,7 @@ class AtomicTypeComparator
         if ($container_type_part instanceof TConditional) {
             $atomic_types = array_merge(
                 array_values($container_type_part->if_type->getAtomicTypes()),
-                array_values($container_type_part->else_type->getAtomicTypes())
+                array_values($container_type_part->else_type->getAtomicTypes()),
             );
 
             foreach ($atomic_types as $container_as_type_part) {
@@ -464,7 +464,7 @@ class AtomicTypeComparator
                     $container_as_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 )) {
                     return true;
                 }
@@ -482,7 +482,7 @@ class AtomicTypeComparator
                         $container_type_part,
                         $allow_interface_equality,
                         $allow_float_int_equality,
-                        $atomic_comparison_result
+                        $atomic_comparison_result,
                     )) {
                         return true;
                     }
@@ -496,7 +496,7 @@ class AtomicTypeComparator
                     $container_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 )) {
                     return true;
                 }
@@ -508,7 +508,7 @@ class AtomicTypeComparator
         if ($input_type_part instanceof TConditional) {
             $input_atomic_types = array_merge(
                 array_values($input_type_part->if_type->getAtomicTypes()),
-                array_values($input_type_part->else_type->getAtomicTypes())
+                array_values($input_type_part->else_type->getAtomicTypes()),
             );
 
             foreach ($input_atomic_types as $input_as_type_part) {
@@ -518,7 +518,7 @@ class AtomicTypeComparator
                     $container_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 )) {
                     return true;
                 }
@@ -568,7 +568,7 @@ class AtomicTypeComparator
                             $input_param->ignore_nullable_issues,
                             $input_param->ignore_falsable_issues,
                             $array_comparison_result,
-                            $allow_interface_equality
+                            $allow_interface_equality,
                         )
                             && !$array_comparison_result->type_coerced_from_scalar
                         ) {
@@ -613,8 +613,8 @@ class AtomicTypeComparator
                     if ($codebase->methods->methodExists(
                         new MethodIdentifier(
                             $input_type_part->value,
-                            '__tostring'
-                        )
+                            '__tostring',
+                        ),
                     )) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
@@ -660,7 +660,7 @@ class AtomicTypeComparator
                 $codebase,
                 $input_type_part,
                 $container_type_part,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             );
         }
 
@@ -675,7 +675,7 @@ class AtomicTypeComparator
                     $input_type_part,
                     $container_type_part,
                     $allow_interface_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 );
             }
 
@@ -710,7 +710,7 @@ class AtomicTypeComparator
                     $codebase->classExists($container_type_part->value)
                     && $codebase->classExtendsOrImplements(
                         $container_type_part->value,
-                        $input_type_part->value
+                        $input_type_part->value,
                     )
                 )
                 ||
@@ -718,7 +718,7 @@ class AtomicTypeComparator
                     $codebase->interfaceExists($container_type_part->value)
                     && $codebase->interfaceExtends(
                         $container_type_part->value,
-                        $input_type_part->value
+                        $input_type_part->value,
                     )
                 )
             )
@@ -784,7 +784,7 @@ class AtomicTypeComparator
             return UnionTypeComparator::canExpressionTypesBeIdentical(
                 $codebase,
                 $type1_part->fallback_params[1],
-                $type2_part->fallback_params[1]
+                $type2_part->fallback_params[1],
             );
         }
 
@@ -796,12 +796,12 @@ class AtomicTypeComparator
             return UnionTypeComparator::canExpressionTypesBeIdentical(
                 $codebase,
                 $type1_part->type_params[0],
-                $type2_part->type_params[0]
+                $type2_part->type_params[0],
             )
             && UnionTypeComparator::canExpressionTypesBeIdentical(
                 $codebase,
                 $type1_part->type_params[1],
-                $type2_part->type_params[1]
+                $type2_part->type_params[1],
             );
         }
 
@@ -814,7 +814,7 @@ class AtomicTypeComparator
             $type2_part,
             $allow_interface_equality,
             false,
-            $first_comparison_result
+            $first_comparison_result,
         )
             && !$first_comparison_result->to_string_cast
         ) || (self::isContainedBy(
@@ -823,7 +823,7 @@ class AtomicTypeComparator
             $type1_part,
             $allow_interface_equality,
             false,
-            $second_comparison_result
+            $second_comparison_result,
         )
             && !$second_comparison_result->to_string_cast
         ) || ($first_comparison_result->type_coerced

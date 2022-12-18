@@ -82,7 +82,7 @@ class MethodParamsProvider
                 $call_args,
                 $statements_source,
                 $context,
-                $code_location
+                $code_location,
             );
             $result = $class_handler($event);
 

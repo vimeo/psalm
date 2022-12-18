@@ -250,7 +250,7 @@ class ProjectAnalyzer
         $this->codebase = new Codebase(
             $config,
             $providers,
-            $progress
+            $progress,
         );
 
         $this->stdout_report_options = $stdout_report_options;
@@ -263,7 +263,7 @@ class ProjectAnalyzer
             $file_paths = $this->file_provider->getFilesInDir(
                 $dir_name,
                 $file_extensions,
-                [$this->config, 'isInProjectDirs']
+                [$this->config, 'isInProjectDirs'],
             );
 
             foreach ($file_paths as $file_path) {
@@ -275,7 +275,7 @@ class ProjectAnalyzer
             $file_paths = $this->file_provider->getFilesInDir(
                 $dir_name,
                 $file_extensions,
-                [$this->config, 'isInExtraDirs']
+                [$this->config, 'isInExtraDirs'],
             );
 
             foreach ($file_paths as $file_path) {
@@ -305,7 +305,7 @@ class ProjectAnalyzer
             clearstatcache(true, $cache_directory);
             if (is_dir($cache_directory)) {
                 $this->progress->debug(
-                    'Composer lockfile change detected, clearing cache directory ' . $cache_directory . "\n"
+                    'Composer lockfile change detected, clearing cache directory ' . $cache_directory . "\n",
                 );
 
                 Config::removeCacheDirectory($cache_directory);
@@ -322,7 +322,7 @@ class ProjectAnalyzer
             clearstatcache(true, $cache_directory);
             if (is_dir($cache_directory)) {
                 $this->progress->debug(
-                    'Config change detected, clearing cache directory ' . $cache_directory . "\n"
+                    'Config change detected, clearing cache directory ' . $cache_directory . "\n",
                 );
 
                 Config::removeCacheDirectory($cache_directory);
@@ -389,7 +389,7 @@ class ProjectAnalyzer
         $now_time = microtime(true);
 
         $this->progress->debug(
-            'Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n"
+            'Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n",
         );
     }
 
@@ -436,7 +436,7 @@ class ProjectAnalyzer
             new LanguageServer(
                 new ProtocolStreamReader($socket),
                 new ProtocolStreamWriter($socket),
-                $this
+                $this,
             );
             Loop::run();
         } elseif ($socket_server_mode && $address) {
@@ -459,7 +459,7 @@ class ProjectAnalyzer
                 fwrite(
                     STDERR,
                     "pcntl_fork() is disabled by php configuration (disable_functions directive)."
-                    . " Only a single connection will be accepted\n"
+                    . " Only a single connection will be accepted\n",
                 );
                 $fork_available = false;
             }
@@ -483,12 +483,12 @@ class ProjectAnalyzer
                             'close',
                             static function (): void {
                                 fwrite(STDOUT, "Connection closed\n");
-                            }
+                            },
                         );
                         new LanguageServer(
                             $reader,
                             new ProtocolStreamWriter($socket),
-                            $this
+                            $this,
                         );
                         // Just for safety
                         exit(0);
@@ -499,7 +499,7 @@ class ProjectAnalyzer
                     new LanguageServer(
                         new ProtocolStreamReader($socket),
                         new ProtocolStreamWriter($socket),
-                        $this
+                        $this,
                     );
                     Loop::run();
                 }
@@ -510,7 +510,7 @@ class ProjectAnalyzer
             new LanguageServer(
                 new ProtocolStreamReader(STDIN),
                 new ProtocolStreamWriter(STDOUT),
-                $this
+                $this,
             );
             Loop::run();
         }
@@ -648,7 +648,7 @@ class ProjectAnalyzer
             $this,
             $this->threads,
             $this->codebase->alter_code,
-            true
+            true,
         );
 
         if ($this->parser_cache_provider && !$is_diff) {
@@ -665,7 +665,7 @@ class ProjectAnalyzer
         $this->codebase->classlikes->consolidateAnalyzedData(
             $this->codebase->methods,
             $this->progress,
-            (bool)$this->codebase->find_unused_code
+            (bool)$this->codebase->find_unused_code,
         );
     }
 
@@ -709,14 +709,14 @@ class ProjectAnalyzer
 
             if (!$this->codebase->classlikes->hasFullyQualifiedClassName($source_parts[0])) {
                 throw new RefactorException(
-                    'Source class ' . $source_parts[0] . ' doesn’t exist'
+                    'Source class ' . $source_parts[0] . ' doesn’t exist',
                 );
             }
 
             if (count($source_parts) === 1 && count($destination_parts) === 1) {
                 if ($this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
                     throw new RefactorException(
-                        'Destination class ' . $destination_parts[0] . ' already exists'
+                        'Destination class ' . $destination_parts[0] . ' already exists',
                     );
                 }
 
@@ -747,24 +747,24 @@ class ProjectAnalyzer
 
             $source_method_id = new MethodIdentifier(
                 $source_parts[0],
-                strtolower($source_parts[1])
+                strtolower($source_parts[1]),
             );
 
             if ($this->codebase->methods->methodExists($source_method_id)) {
                 if ($this->codebase->methods->methodExists(
                     new MethodIdentifier(
                         $destination_parts[0],
-                        strtolower($destination_parts[1])
-                    )
+                        strtolower($destination_parts[1]),
+                    ),
                 )) {
                     throw new RefactorException(
-                        'Destination method ' . $destination . ' already exists'
+                        'Destination method ' . $destination . ' already exists',
                     );
                 }
 
                 if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
                     throw new RefactorException(
-                        'Destination class ' . $destination_parts[0] . ' doesn’t exist'
+                        'Destination class ' . $destination_parts[0] . ' doesn’t exist',
                     );
                 }
 
@@ -776,12 +776,12 @@ class ProjectAnalyzer
 
                     if (!$source_method_storage->is_static
                         && !isset(
-                            $destination_class_storage->parent_classes[strtolower($source_method_id->fq_class_name)]
+                            $destination_class_storage->parent_classes[strtolower($source_method_id->fq_class_name)],
                         )
                     ) {
                         throw new RefactorException(
                             'Cannot move non-static method ' . $source
-                                . ' into unrelated class ' . $destination_parts[0]
+                                . ' into unrelated class ' . $destination_parts[0],
                         );
                     }
 
@@ -797,25 +797,25 @@ class ProjectAnalyzer
             if ($source_parts[1][0] === '$') {
                 if ($destination_parts[1][0] !== '$') {
                     throw new RefactorException(
-                        'Destination property must be of the form Foo::$bar'
+                        'Destination property must be of the form Foo::$bar',
                     );
                 }
 
                 if (!$this->codebase->properties->propertyExists($source, true)) {
                     throw new RefactorException(
-                        'Property ' . $source . ' does not exist'
+                        'Property ' . $source . ' does not exist',
                     );
                 }
 
                 if ($this->codebase->properties->propertyExists($destination, true)) {
                     throw new RefactorException(
-                        'Destination property ' . $destination . ' already exists'
+                        'Destination property ' . $destination . ' already exists',
                     );
                 }
 
                 if (!$this->codebase->classlikes->classExists($destination_parts[0])) {
                     throw new RefactorException(
-                        'Destination class ' . $destination_parts[0] . ' doesn’t exist'
+                        'Destination class ' . $destination_parts[0] . ' doesn’t exist',
                     );
                 }
 
@@ -826,7 +826,7 @@ class ProjectAnalyzer
 
                     if (!$source_storage->is_static) {
                         throw new RefactorException(
-                            'Cannot move non-static property ' . $source
+                            'Cannot move non-static property ' . $source,
                         );
                     }
 
@@ -841,24 +841,24 @@ class ProjectAnalyzer
 
             $source_class_constants = $this->codebase->classlikes->getConstantsForClass(
                 $source_parts[0],
-                ReflectionProperty::IS_PRIVATE
+                ReflectionProperty::IS_PRIVATE,
             );
 
             if (isset($source_class_constants[$source_parts[1]])) {
                 if (!$this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
                     throw new RefactorException(
-                        'Destination class ' . $destination_parts[0] . ' doesn’t exist'
+                        'Destination class ' . $destination_parts[0] . ' doesn’t exist',
                     );
                 }
 
                 $destination_class_constants = $this->codebase->classlikes->getConstantsForClass(
                     $destination_parts[0],
-                    ReflectionProperty::IS_PRIVATE
+                    ReflectionProperty::IS_PRIVATE,
                 );
 
                 if (isset($destination_class_constants[$destination_parts[1]])) {
                     throw new RefactorException(
-                        'Destination constant ' . $destination . ' already exists'
+                        'Destination constant ' . $destination . ' already exists',
                     );
                 }
 
@@ -875,7 +875,7 @@ class ProjectAnalyzer
             }
 
             throw new RefactorException(
-                'Psalm cannot locate ' . $source
+                'Psalm cannot locate ' . $source,
             );
         }
     }
@@ -888,16 +888,16 @@ class ProjectAnalyzer
 
         $this->codebase->classlikes->moveMethods(
             $this->codebase->methods,
-            $this->progress
+            $this->progress,
         );
 
         $this->codebase->classlikes->moveProperties(
             $this->codebase->properties,
-            $this->progress
+            $this->progress,
         );
 
         $this->codebase->classlikes->moveClassConstants(
-            $this->progress
+            $this->progress,
         );
     }
 
@@ -908,7 +908,7 @@ class ProjectAnalyzer
         }
 
         $migration_manipulations = FileManipulationBuffer::getMigrationManipulations(
-            $this->codebase->file_provider
+            $this->codebase->file_provider,
         );
 
         if ($migration_manipulations) {
@@ -925,7 +925,7 @@ class ProjectAnalyzer
                         }
 
                         return $b->start > $a->start ? 1 : -1;
-                    }
+                    },
                 );
 
                 $existing_contents = $this->codebase->file_provider->getContents($file_path);
@@ -1012,7 +1012,7 @@ class ProjectAnalyzer
             $this,
             $this->threads,
             $this->codebase->alter_code,
-            $this->codebase->find_unused_code === 'always'
+            $this->codebase->find_unused_code === 'always',
         );
     }
 
@@ -1024,7 +1024,7 @@ class ProjectAnalyzer
         $file_paths = $this->file_provider->getFilesInDir(
             $dir_name,
             $file_extensions,
-            $filter
+            $filter,
         );
 
         $files_to_scan = [];
@@ -1122,7 +1122,7 @@ class ProjectAnalyzer
             $this,
             $this->threads,
             $this->codebase->alter_code,
-            $this->codebase->find_unused_code === 'always'
+            $this->codebase->find_unused_code === 'always',
         );
     }
 
@@ -1166,13 +1166,13 @@ class ProjectAnalyzer
             $this,
             $this->threads,
             $this->codebase->alter_code,
-            $this->codebase->find_unused_code === 'always'
+            $this->codebase->find_unused_code === 'always',
         );
 
         if ($this->stdout_report_options
             && in_array(
                 $this->stdout_report_options->format,
-                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
+                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
             )
             && $this->codebase->collect_references
         ) {
@@ -1180,7 +1180,7 @@ class ProjectAnalyzer
                 STDERR,
                 PHP_EOL . 'To whom it may concern: Psalm cannot detect unused classes, methods and properties'
                 . PHP_EOL . 'when analyzing individual files and folders. Run on the full project to enable'
-                . PHP_EOL . 'complete unused code detection.' . PHP_EOL
+                . PHP_EOL . 'complete unused code detection.' . PHP_EOL,
             );
         }
     }
@@ -1290,7 +1290,7 @@ class ProjectAnalyzer
         if (! empty($unsupportedIssues)) {
             throw new UnsupportedIssueToFixException(
                 'Psalm doesn\'t know how to fix issue(s): ' . implode(', ', $unsupportedIssues) . PHP_EOL
-                . 'Supported issues to fix are: ' . implode(',', $supported_issues_to_fix)
+                . 'Supported issues to fix are: ' . implode(',', $supported_issues_to_fix),
             );
         }
 
@@ -1326,7 +1326,7 @@ class ProjectAnalyzer
         return new FileAnalyzer(
             $this,
             $file_path,
-            $this->config->shortenFileName($file_path)
+            $this->config->shortenFileName($file_path),
         );
     }
 
@@ -1362,7 +1362,7 @@ class ProjectAnalyzer
         }
 
         $stmts = $this->codebase->getStatementsForFile(
-            $file_analyzer->getFilePath()
+            $file_analyzer->getFilePath(),
         );
 
         $file_analyzer->populateCheckers($stmts);
@@ -1386,11 +1386,11 @@ class ProjectAnalyzer
         $file_analyzer = new FileAnalyzer(
             $this,
             $file_path,
-            $this->config->shortenFileName($file_path)
+            $this->config->shortenFileName($file_path),
         );
 
         $stmts = $this->codebase->getStatementsForFile(
-            $file_analyzer->getFilePath()
+            $file_analyzer->getFilePath(),
         );
 
         $file_analyzer->populateCheckers($stmts);
@@ -1446,7 +1446,7 @@ class ProjectAnalyzer
                 $parts = explode('\\', $issue_class);
                 return end($parts);
             },
-            self::SUPPORTED_ISSUES_TO_FIX
+            self::SUPPORTED_ISSUES_TO_FIX,
         );
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Example\Plugin\ComposerBased;
 
 use Psalm\Plugin\PluginEntryPointInterface;

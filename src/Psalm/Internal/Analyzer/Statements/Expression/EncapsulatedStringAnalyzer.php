@@ -52,7 +52,7 @@ class EncapsulatedStringAnalyzer
                     $statements_analyzer,
                     $context,
                     $part_type,
-                    $part
+                    $part,
                 );
 
                 if (!$casted_part_type->allLiterals()) {
@@ -104,7 +104,7 @@ class EncapsulatedStringAnalyzer
                                 $new_parent_node,
                                 'concat',
                                 $added_taints,
-                                $removed_taints
+                                $removed_taints,
                             );
                         }
                     }
@@ -124,28 +124,28 @@ class EncapsulatedStringAnalyzer
             if ($literal_string !== null) {
                 $stmt_type = new Union(
                     [new TLiteralString($literal_string)],
-                    ['parent_nodes' => $parent_nodes]
+                    ['parent_nodes' => $parent_nodes],
                 );
             } elseif ($all_literals) {
                 $stmt_type = new Union(
                     [new TNonEmptyNonspecificLiteralString()],
-                    ['parent_nodes' => $parent_nodes]
+                    ['parent_nodes' => $parent_nodes],
                 );
             } else {
                 $stmt_type = new Union(
                     [new TNonEmptyString()],
-                    ['parent_nodes' => $parent_nodes]
+                    ['parent_nodes' => $parent_nodes],
                 );
             }
         } elseif ($all_literals) {
             $stmt_type = new Union(
                 [new TNonspecificLiteralString()],
-                ['parent_nodes' => $parent_nodes]
+                ['parent_nodes' => $parent_nodes],
             );
         } else {
             $stmt_type = new Union(
                 [new TString()],
-                ['parent_nodes' => $parent_nodes]
+                ['parent_nodes' => $parent_nodes],
             );
         }
 

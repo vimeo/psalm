@@ -76,7 +76,7 @@ final class TClassStringMap extends Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    true
+                    true,
                 );
         }
 
@@ -89,7 +89,7 @@ final class TClassStringMap extends Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                false
+                false,
             )
             . '>';
     }
@@ -171,7 +171,7 @@ final class TClassStringMap extends Atomic
                 $replace,
                 $add_lower_bound,
                 null,
-                $depth + 1
+                $depth + 1,
             );
 
             if ($offset === 1 && ($cloned || $this->value_param !== $value_param)) {
@@ -193,7 +193,7 @@ final class TClassStringMap extends Atomic
         $value_param = TemplateInferredTypeReplacer::replace(
             $this->value_param,
             $template_result,
-            $codebase
+            $codebase,
         );
         if ($value_param === $this->value_param) {
             return $this;
@@ -201,7 +201,7 @@ final class TClassStringMap extends Atomic
         return new static(
             $this->param_name,
             $this->as_type,
-            $value_param
+            $value_param,
         );
     }
 
@@ -235,8 +235,8 @@ final class TClassStringMap extends Atomic
                 $this->param_name,
                 $this->as_type->value ?? 'object',
                 $this->as_type,
-                'class-string-map'
-            )
+                'class-string-map',
+            ),
         ]);
     }
 }

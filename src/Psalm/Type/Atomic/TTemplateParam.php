@@ -122,7 +122,7 @@ final class TTemplateParam extends Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                true
+                true,
             );
         }
 
@@ -130,7 +130,7 @@ final class TTemplateParam extends Atomic
             $namespace,
             $aliased_classes,
             $this_class,
-            false
+            false,
         );
 
         return $this->param_name . $intersection_types;

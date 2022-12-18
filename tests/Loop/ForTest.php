@@ -22,7 +22,7 @@ class ForTest extends TestCase
                         for (;;) {
                             return 1;
                         }
-                    }'
+                    }',
             ],
             'implicitFourthLoop' => [
                 'code' => '<?php
@@ -125,7 +125,7 @@ class ForTest extends TestCase
                         for ($j = 1; $j < 2; $j++) {}
                     }
 
-                    echo $i * $j;'
+                    echo $i * $j;',
             ],
             'reconcileOuterVars' => [
                 'code' => '<?php
@@ -133,7 +133,7 @@ class ForTest extends TestCase
                         if ($i === 0) {
                             continue;
                         }
-                    }'
+                    }',
             ],
             'noException' => [
                 'code' => '<?php
@@ -142,7 +142,7 @@ class ForTest extends TestCase
                      */
                     function cartesianProduct(array $arr) : void {
                         for ($i = 20; $arr[$i] === 5 && $i > 0; $i--) {}
-                    }'
+                    }',
             ],
             'noCrashOnLongThing' => [
                 'code' => '<?php
@@ -164,7 +164,7 @@ class ForTest extends TestCase
                         }
 
                         return $data;
-                    }'
+                    }',
             ],
             'InfiniteForLoop' => [
                 'code' => '<?php
@@ -184,7 +184,7 @@ class ForTest extends TestCase
                         for (;1;) {
                             return 1;
                         }
-                    }'
+                    }',
             ],
         ];
     }

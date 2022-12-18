@@ -339,7 +339,7 @@ final class Codebase
             $providers->file_provider,
             $reflection,
             $providers->file_reference_provider,
-            $progress
+            $progress,
         );
 
         $this->loadAnalyzer();
@@ -351,19 +351,19 @@ final class Codebase
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
             $providers->statements_provider,
-            $this->scanner
+            $this->scanner,
         );
 
         $this->properties = new Properties(
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
-            $this->classlikes
+            $this->classlikes,
         );
 
         $this->methods = new Methods(
             $providers->classlike_storage_provider,
             $providers->file_reference_provider,
-            $this->classlikes
+            $this->classlikes,
         );
 
         $this->populator = new Populator(
@@ -371,7 +371,7 @@ final class Codebase
             $providers->file_storage_provider,
             $this->classlikes,
             $providers->file_reference_provider,
-            $progress
+            $progress,
         );
 
         $this->loadAnalyzer();
@@ -383,7 +383,7 @@ final class Codebase
             $this->config,
             $this->file_provider,
             $this->file_storage_provider,
-            $this->progress
+            $this->progress,
         );
     }
 
@@ -514,7 +514,7 @@ final class Codebase
         return $this->statements_provider->getStatementsForFile(
             $file_path,
             $this->analysis_php_version_id,
-            $this->progress
+            $this->progress,
         );
     }
 
@@ -538,7 +538,7 @@ final class Codebase
         $storage = $this->classlike_storage_provider->exhume(
             $fq_classlike_name,
             $file_path,
-            $file_contents
+            $file_contents,
         );
 
         if ($storage->is_trait) {
@@ -596,7 +596,7 @@ final class Codebase
         [$fq_class_name, $property_name] = explode('::', $property_id);
 
         return $this->file_reference_provider->getClassPropertyLocations(
-            strtolower($fq_class_name) . '::' . $property_name
+            strtolower($fq_class_name) . '::' . $property_name,
         );
     }
 
@@ -626,7 +626,7 @@ final class Codebase
         }
 
         throw new UnexpectedValueException(
-            'Expecting ' . $closure_id . ' to have storage in ' . $file_path
+            'Expecting ' . $closure_id . ' to have storage in ' . $file_path,
         );
     }
 
@@ -666,7 +666,7 @@ final class Codebase
             $fq_class_name,
             $code_location,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
     }
 
@@ -683,7 +683,7 @@ final class Codebase
             $fq_class_name,
             $code_location,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
     }
 
@@ -706,7 +706,7 @@ final class Codebase
             $fq_class_name,
             $code_location,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
     }
 
@@ -739,7 +739,7 @@ final class Codebase
             $fq_interface_name,
             $code_location,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
     }
 
@@ -754,7 +754,7 @@ final class Codebase
     public function getParentInterfaces(string $fq_interface_name): array
     {
         return $this->classlikes->getParentInterfaces(
-            $this->classlikes->getUnAliasedName($fq_interface_name)
+            $this->classlikes->getUnAliasedName($fq_interface_name),
         );
     }
 
@@ -826,7 +826,7 @@ final class Codebase
             null,
             $file_path,
             true,
-            $is_used
+            $is_used,
         );
     }
 
@@ -857,7 +857,7 @@ final class Codebase
             MethodIdentifier::wrap($method_id),
             $self_class,
             null,
-            $call_args
+            $call_args,
         );
     }
 
@@ -878,7 +878,7 @@ final class Codebase
     ): ?CodeLocation {
         return $this->methods->getMethodReturnTypeLocation(
             MethodIdentifier::wrap($method_id),
-            $defined_location
+            $defined_location,
         );
     }
 
@@ -1015,7 +1015,7 @@ final class Codebase
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
-                    ReflectionProperty::IS_PRIVATE
+                    ReflectionProperty::IS_PRIVATE,
                 );
 
                 if (!isset($class_constants[$const_name])) {
@@ -1075,7 +1075,7 @@ final class Codebase
 
                 $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
                     $namespace_name,
-                    ReflectionProperty::IS_PUBLIC
+                    ReflectionProperty::IS_PUBLIC,
                 );
                 if (isset($namespace_constants[$const_name])) {
                     $type = $namespace_constants[$const_name];
@@ -1113,7 +1113,7 @@ final class Codebase
                 $file_path,
                 $this->config->shortenFileName($file_path),
                 (int) $symbol_parts[0],
-                (int) $symbol_parts[1]
+                (int) $symbol_parts[1],
             );
         }
 
@@ -1146,7 +1146,7 @@ final class Codebase
 
                 $class_constants = $this->classlikes->getConstantsForClass(
                     $fq_classlike_name,
-                    ReflectionProperty::IS_PRIVATE
+                    ReflectionProperty::IS_PRIVATE,
                 );
 
                 if (!isset($class_constants[$const_name])) {
@@ -1229,7 +1229,7 @@ final class Codebase
 
         $range = new Range(
             self::getPositionFromOffset($reference_start_pos, $file_contents),
-            self::getPositionFromOffset($reference_end_pos, $file_contents)
+            self::getPositionFromOffset($reference_end_pos, $file_contents),
         );
 
         return [$reference, $range];
@@ -1283,7 +1283,7 @@ final class Codebase
 
         $range = new Range(
             self::getPositionFromOffset($start_pos, $file_contents),
-            self::getPositionFromOffset($end_pos, $file_contents)
+            self::getPositionFromOffset($end_pos, $file_contents),
         );
 
         return [$reference, $argument_number, $range];
@@ -1319,7 +1319,7 @@ final class Codebase
                         null,
                         strtolower($function_symbol),
                         dirname($file_path),
-                        $file_path
+                        $file_path,
                     );
                 } else {
                     $function_storage = $this->functions->getStorage(null, strtolower($function_symbol));
@@ -1352,7 +1352,7 @@ final class Codebase
                     strlen($signature_label),
                     strlen($signature_label) + strlen($parameter_label),
                 ],
-                $param->description ?? null
+                $param->description ?? null,
             );
 
             $signature_label .= $parameter_label;
@@ -1367,7 +1367,7 @@ final class Codebase
         return new SignatureInformation(
             $signature_label,
             $parameters,
-            $signature_documentation
+            $signature_documentation,
         );
     }
 
@@ -1514,7 +1514,7 @@ final class Codebase
                                 null,
                                 new Command('Trigger parameter hints', 'editor.action.triggerParameterHints'),
                                 null,
-                                2
+                                2,
                             );
 
                             $completion_item->insertTextFormat = InsertTextFormat::SNIPPET;
@@ -1525,7 +1525,7 @@ final class Codebase
 
                     foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
                         $property_storage = $this->properties->getStorage(
-                            $declaring_class . '::$' . $property_name
+                            $declaring_class . '::$' . $property_name,
                         );
 
                         if ($property_storage->is_static || $gap === '->') {
@@ -1536,7 +1536,7 @@ final class Codebase
                                 $property_storage->description,
                                 (string)$property_storage->visibility,
                                 $property_name,
-                                ($gap === '::' ? '$' : '') . $property_name
+                                ($gap === '::' ? '$' : '') . $property_name,
                             );
                         }
                     }
@@ -1549,7 +1549,7 @@ final class Codebase
                             $const->description,
                             null,
                             $const_name,
-                            $const_name
+                            $const_name,
                         );
                     }
                 } catch (Exception $e) {
@@ -1623,7 +1623,7 @@ final class Codebase
                 $fq_class_name,
                 $aliases && $aliases->namespace ? $aliases->namespace : null,
                 $aliases->uses_flipped ?? [],
-                null
+                null,
             );
 
             if ($aliases
@@ -1641,18 +1641,18 @@ final class Codebase
                     $extra_edits[] = new TextEdit(
                         new Range(
                             $position,
-                            $position
+                            $position,
                         ),
-                        "\n" . 'use ' . $fq_class_name . ';'
+                        "\n" . 'use ' . $fq_class_name . ';',
                     );
                 } else {
                     $position = self::getPositionFromOffset($aliases->namespace_first_stmt_start, $file_contents);
                     $extra_edits[] = new TextEdit(
                         new Range(
                             $position,
-                            $position
+                            $position,
                         ),
-                        'use ' . $fq_class_name . ';' . "\n" . "\n"
+                        'use ' . $fq_class_name . ';' . "\n" . "\n",
                     );
                 }
 
@@ -1675,7 +1675,7 @@ final class Codebase
                 $fq_class_name,
                 $insertion_text,
                 null,
-                $extra_edits
+                $extra_edits,
             );
         }
 
@@ -1724,7 +1724,7 @@ final class Codebase
                 null,
                 new Command('Trigger parameter hints', 'editor.action.triggerParameterHints'),
                 null,
-                2
+                2,
             );
         }
 
@@ -1748,7 +1748,7 @@ final class Codebase
                         null,
                         null,
                         null,
-                        $property_name
+                        $property_name,
                     );
                 }
             } elseif ($atomic_type instanceof TLiteralString) {
@@ -1759,7 +1759,7 @@ final class Codebase
                     null,
                     null,
                     null,
-                    "'$atomic_type->value'"
+                    "'$atomic_type->value'",
                 );
             } elseif ($atomic_type instanceof TLiteralInt) {
                 $completion_items[] = new CompletionItem(
@@ -1769,7 +1769,7 @@ final class Codebase
                     null,
                     null,
                     null,
-                    (string) $atomic_type->value
+                    (string) $atomic_type->value,
                 );
             } elseif ($atomic_type instanceof TClassConstant) {
                 $const = $atomic_type->fq_classlike_name . '::' . $atomic_type->const_name;
@@ -1780,7 +1780,7 @@ final class Codebase
                     null,
                     null,
                     null,
-                    $const
+                    $const,
                 );
             }
         }
@@ -1805,7 +1805,7 @@ final class Codebase
                         null,
                         null,
                         null,
-                        "'$property_name'"
+                        "'$property_name'",
                     );
                 }
             }
@@ -1828,7 +1828,7 @@ final class Codebase
 
         return new Position(
             substr_count($file_contents, "\n"),
-            $offset - (int)$before_newline_count - 1
+            $offset - (int)$before_newline_count - 1,
         );
     }
 
@@ -1940,7 +1940,7 @@ final class Codebase
             $taint_id,
             $code_location,
             null,
-            $taints
+            $taints,
         );
 
         $this->taint_flow_graph->addSource($source);
@@ -1966,7 +1966,7 @@ final class Codebase
             $taint_id,
             $code_location,
             null,
-            $taints
+            $taints,
         );
 
         $this->taint_flow_graph->addSink($sink);

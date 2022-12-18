@@ -30,12 +30,12 @@ class SymbolLookupTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
 
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
@@ -78,7 +78,7 @@ class SymbolLookupTest extends TestCase
                     return $a + $b;
                 }
 
-                $_SESSION;'
+                $_SESSION;',
         );
 
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
@@ -126,7 +126,7 @@ class SymbolLookupTest extends TestCase
             'somefile.php',
             '<?php
                 define("BANANA", "🍌");
-                const APPLE = "🍏";'
+                const APPLE = "🍏";',
         );
 
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
@@ -164,7 +164,7 @@ class SymbolLookupTest extends TestCase
 
                 function bar() : int {
                     return 5;
-                }'
+                }',
         );
 
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
@@ -231,7 +231,7 @@ class SymbolLookupTest extends TestCase
                         $a = 2;
                         echo $a;
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -259,7 +259,7 @@ class SymbolLookupTest extends TestCase
                         $a = 2;
                         echo $a;
                     }
-                }'
+                }',
         );
 
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
@@ -304,7 +304,7 @@ class SymbolLookupTest extends TestCase
                     public function bar() : void {
                         $this->foo();
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -332,7 +332,7 @@ class SymbolLookupTest extends TestCase
                 function foo() : void {
                     global $my_global;
                     echo $my_global;
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -361,7 +361,7 @@ class SymbolLookupTest extends TestCase
                 class AClass {
                 }
                 function B( ?AClass $class ) {
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -391,7 +391,7 @@ class SymbolLookupTest extends TestCase
                     protected function get_command() : AClass {
                     }
                 }
-                '
+                ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -415,7 +415,7 @@ class SymbolLookupTest extends TestCase
             '<?php
                 namespace B;
                 use StreamWrapper;
-                '
+                ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -442,7 +442,7 @@ class SymbolLookupTest extends TestCase
                 function foo() : string {
                 }
 
-                $active_symbol = foo();'
+                $active_symbol = foo();',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -472,7 +472,7 @@ class SymbolLookupTest extends TestCase
                 class A {
                     /** @var \Exception|null */
                     public $prop;
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -556,7 +556,7 @@ class SymbolLookupTest extends TestCase
                 }
 
                 function foo(string $a) {
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -600,7 +600,7 @@ class SymbolLookupTest extends TestCase
                  */
                 function foo(string $a) {
                 }
-                foo();'
+                foo();',
         );
 
         $codebase->file_provider->openFile('somefile.php');

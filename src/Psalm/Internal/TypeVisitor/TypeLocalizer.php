@@ -48,12 +48,12 @@ class TypeLocalizer extends MutableTypeVisitor
                     if (count($types) === 1 && $types[0] instanceof TNamedObject) {
                         $type = $type->setAs(
                             $type->as,
-                            $types[0]
+                            $types[0],
                         );
                     } elseif ($type->as_type !== null) {
                         $type = $type->setAs(
                             $type->as,
-                            null
+                            null,
                         );
                     }
                 }
@@ -75,7 +75,7 @@ class TypeLocalizer extends MutableTypeVisitor
             ) {
                 $types_to_add = Methods::getExtendedTemplatedTypes(
                     $atomic_type,
-                    $this->extends
+                    $this->extends,
                 );
 
                 if ($types_to_add) {

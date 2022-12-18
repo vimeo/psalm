@@ -91,7 +91,7 @@ class ByIssueLevelAndTypeReportTest extends TestCase
             1,
             1,
             0,
-            $errorLevel
+            $errorLevel,
         );
     }
 }

@@ -44,8 +44,8 @@ class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 new Union([
                     $preserve_keys
                         ? new TNonEmptyArray([$array_type->key, $array_type->value])
-                        : Type::getNonEmptyListAtomic($array_type->value)
-                ])
+                        : Type::getNonEmptyListAtomic($array_type->value),
+                ]),
             );
         }
 

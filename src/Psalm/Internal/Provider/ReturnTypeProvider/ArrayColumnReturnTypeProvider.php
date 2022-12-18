@@ -96,7 +96,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $property,
                         $statements_source,
                         $context,
-                        $code_location
+                        $code_location,
                     );
                     if (!$row_shape) {
                         continue;
@@ -145,7 +145,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     }
 
                     $properties[$key] = $result_element_type->setPossiblyUndefined(
-                        $property->possibly_undefined
+                        $property->possibly_undefined,
                     );
 
                     if (!$property->possibly_undefined
@@ -164,7 +164,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $properties,
                         null,
                         $input_array->fallback_params,
-                        $is_list
+                        $is_list,
                     )]);
                 }
             }
@@ -179,7 +179,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 $row_type,
                 $statements_source,
                 $context,
-                $code_location
+                $code_location,
             );
 
             $input_array_not_empty = $input_array instanceof TNonEmptyArray ||
@@ -239,7 +239,7 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     $row_type,
                     $statements_source,
                     $context,
-                    $code_location
+                    $code_location,
                 );
             }
         }

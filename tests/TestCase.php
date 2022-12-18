@@ -71,12 +71,12 @@ class TestCase extends BaseTestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new FakeParserCacheProvider()
+            new FakeParserCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $this->testConfig,
-            $providers
+            $providers,
         );
 
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
@@ -123,7 +123,7 @@ class TestCase extends BaseTestCase
         $file_analyzer = new FileAnalyzer(
             $this->project_analyzer,
             $file_path,
-            $codebase->config->shortenFileName($file_path)
+            $codebase->config->shortenFileName($file_path),
         );
         $file_analyzer->analyze($context);
 

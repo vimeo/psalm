@@ -131,7 +131,7 @@ class TArray extends Atomic
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         if ($type_params) {
             $cloned = clone $this;
@@ -148,7 +148,7 @@ class TArray extends Atomic
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
             $template_result,
-            $codebase
+            $codebase,
         );
         if ($type_params) {
             $cloned = clone $this;

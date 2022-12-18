@@ -51,7 +51,7 @@ class ElseAnalyzer
         }
 
         $else_context->clauses = Algebra::simplifyCNF(
-            [...$else_context->clauses, ...$if_scope->negated_clauses]
+            [...$else_context->clauses, ...$if_scope->negated_clauses],
         );
 
         $else_types = Algebra::getTruthsFromFormula($else_context->clauses);
@@ -73,7 +73,7 @@ class ElseAnalyzer
                 $else_context->inside_loop,
                 $else
                     ? new CodeLocation($statements_analyzer->getSource(), $else, $outer_context->include_location)
-                    : null
+                    : null,
             );
 
             $else_context->clauses = Context::removeReconciledClauses($else_context->clauses, $changed_var_ids)[0];
@@ -100,7 +100,7 @@ class ElseAnalyzer
         if ($else) {
             if ($statements_analyzer->analyze(
                 $else->stmts,
-                $else_context
+                $else_context,
             ) === false
             ) {
                 return false;
@@ -127,15 +127,15 @@ class ElseAnalyzer
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $byref_constraint->type,
-                        $outer_constraint_type
+                        $outer_constraint_type,
                     )
                 ) {
                     IssueBuffer::maybeAdd(
                         new ConflictingReferenceConstraint(
                             'There is more than one pass-by-reference constraint on ' . $var_id,
-                            new CodeLocation($statements_analyzer, $else, $outer_context->include_location, true)
+                            new CodeLocation($statements_analyzer, $else, $outer_context->include_location, true),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     $outer_context->byref_constraints[$var_id] = $byref_constraint;
@@ -147,7 +147,7 @@ class ElseAnalyzer
             ? ScopeAnalyzer::getControlActions(
                 $else->stmts,
                 $statements_analyzer->node_data,
-                []
+                [],
             )
             : [ScopeAnalyzer::ACTION_NONE];
         // has a return/throw at end
@@ -170,7 +170,7 @@ class ElseAnalyzer
                 $new_assigned_var_ids,
                 $new_possibly_assigned_var_ids,
                 [],
-                true
+                true,
             );
 
             $if_scope->reasonable_clauses = [];
@@ -183,14 +183,14 @@ class ElseAnalyzer
                 $else_context,
                 $has_leaving_statements,
                 array_keys($if_scope->negatable_if_types),
-                $if_scope->updated_vars
+                $if_scope->updated_vars,
             );
         }
 
         if (!$has_ending_statements) {
             $vars_possibly_in_scope = array_diff_key(
                 $else_context->vars_possibly_in_scope,
-                $outer_context->vars_possibly_in_scope
+                $outer_context->vars_possibly_in_scope,
             );
 
             $possibly_assigned_var_ids = $new_possibly_assigned_var_ids;
@@ -200,24 +200,24 @@ class ElseAnalyzer
                     if (!$has_continue_statement && !$has_break_statement) {
                         $if_scope->new_vars_possibly_in_scope = array_merge(
                             $vars_possibly_in_scope,
-                            $if_scope->new_vars_possibly_in_scope
+                            $if_scope->new_vars_possibly_in_scope,
                         );
                     }
 
                     $else_context->loop_scope->vars_possibly_in_scope = array_merge(
                         $vars_possibly_in_scope,
-                        $else_context->loop_scope->vars_possibly_in_scope
+                        $else_context->loop_scope->vars_possibly_in_scope,
                     );
                 }
             } else {
                 $if_scope->new_vars_possibly_in_scope = array_merge(
                     $vars_possibly_in_scope,
-                    $if_scope->new_vars_possibly_in_scope
+                    $if_scope->new_vars_possibly_in_scope,
                 );
 
                 $if_scope->possibly_assigned_var_ids = array_merge(
                     $possibly_assigned_var_ids,
-                    $if_scope->possibly_assigned_var_ids
+                    $if_scope->possibly_assigned_var_ids,
                 );
             }
         }
@@ -229,7 +229,7 @@ class ElseAnalyzer
         // Track references set in the else to make sure they aren't reused later
         $outer_context->updateReferencesPossiblyFromConfusingScope(
             $else_context,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         return null;

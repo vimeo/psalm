@@ -91,13 +91,13 @@ class CallAnalyzer
                 $context->self === $fq_class_name ||
                 $codebase->classExtends(
                     $context->self,
-                    $fq_class_name
+                    $fq_class_name,
                 )
             )
         ) {
             $method_id = new MethodIdentifier(
                 $fq_class_name,
-                $method_name_lc
+                $method_name_lc,
             );
 
             if ((string) $method_id !== $source->getId()) {
@@ -117,7 +117,7 @@ class CallAnalyzer
                     $method_id,
                     $context,
                     $source->getRootFilePath(),
-                    $source->getRootFileName()
+                    $source->getRootFileName(),
                 );
             }
         } elseif ($context->collect_initializations &&
@@ -126,7 +126,7 @@ class CallAnalyzer
                 $context->self === $fq_class_name
                 || $codebase->classlikes->classExtends(
                     $context->self,
-                    $fq_class_name
+                    $fq_class_name,
                 )
             ) &&
             $source->getMethodName() !== $method_name
@@ -145,7 +145,7 @@ class CallAnalyzer
 
                             $method_id = new MethodIdentifier(
                                 $fq_class_name,
-                                $method_name_lc
+                                $method_name_lc,
                             );
 
                             $alt_declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
@@ -165,7 +165,7 @@ class CallAnalyzer
                                 $fq_class_name = $intersection_type->value;
                                 $method_id = new MethodIdentifier(
                                     $fq_class_name,
-                                    $method_name_lc
+                                    $method_name_lc,
                                 );
 
                                 $alt_declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
@@ -206,7 +206,7 @@ class CallAnalyzer
 
                 if ($appearing_method_id) {
                     $appearing_class_storage = $codebase->classlike_storage_provider->get(
-                        $appearing_method_id->fq_class_name
+                        $appearing_method_id->fq_class_name,
                     );
 
                     if (isset($appearing_class_storage->trait_final_map[$method_name_lc])) {
@@ -250,7 +250,7 @@ class CallAnalyzer
                         $declaring_method_id,
                         $context,
                         $source->getRootFilePath(),
-                        $source->getRootFileName()
+                        $source->getRootFileName(),
                     );
                     $context->self = $old_self;
                 }
@@ -289,7 +289,7 @@ class CallAnalyzer
                 null,
                 true,
                 $context,
-                $template_result
+                $template_result,
             ) !== false;
         }
 
@@ -347,7 +347,7 @@ class CallAnalyzer
             (string) $method_id,
             $method_storage->allow_named_arg_calls ?? true,
             $context,
-            $template_result
+            $template_result,
         ) === false) {
             return false;
         }
@@ -361,7 +361,7 @@ class CallAnalyzer
             $class_storage,
             $template_result,
             $code_location,
-            $context
+            $context,
         ) === false) {
             return false;
         }
@@ -371,7 +371,7 @@ class CallAnalyzer
                 $statements_analyzer,
                 $template_result,
                 $code_location,
-                strtolower((string) $method_id)
+                strtolower((string) $method_id),
             );
         }
 
@@ -412,7 +412,7 @@ class CallAnalyzer
                                         $atomic_type->defining_class,
                                         $atomic_type->param_name,
                                         $calling_class_storage->template_extended_params,
-                                        $class_template_params + $template_types
+                                        $class_template_params + $template_types,
                                     );
                                 } else {
                                     $output_type_candidate = new Union([$atomic_type]);
@@ -420,7 +420,7 @@ class CallAnalyzer
 
                                 $output_type = Type::combineUnionTypes(
                                     $output_type_candidate,
-                                    $output_type
+                                    $output_type,
                                 );
                             }
 
@@ -448,7 +448,7 @@ class CallAnalyzer
                     null,
                     true,
                     false,
-                    $calling_class_storage->final ?? false
+                    $calling_class_storage->final ?? false,
                 );
             }
         }
@@ -481,7 +481,7 @@ class CallAnalyzer
                             $extended_class_name,
                             $extended_template_name,
                             $template_extended_params,
-                            $found_generic_params
+                            $found_generic_params,
                         );
                     }
                 }
@@ -558,7 +558,7 @@ class CallAnalyzer
         ) {
             $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $class_arg->class,
-                $file_source->getAliases()
+                $file_source->getAliases(),
             );
 
             return [$fq_class_name . '::' . $method_name_arg->value];
@@ -622,9 +622,9 @@ class CallAnalyzer
                     new UndefinedFunction(
                         'Function ' . $cased_function_id . ' does not exist',
                         $code_location,
-                        $function_id
+                        $function_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 return false;
@@ -687,8 +687,8 @@ class CallAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Assert notation is malformed',
-                            new CodeLocation($statements_analyzer, $expr)
-                        )
+                            new CodeLocation($statements_analyzer, $expr),
+                        ),
                     );
                     continue;
                 }
@@ -701,8 +701,8 @@ class CallAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Variable ' . $var_id . ' is not an argument so cannot be asserted',
-                            new CodeLocation($statements_analyzer, $expr)
-                        )
+                            new CodeLocation($statements_analyzer, $expr),
+                        ),
                     );
                     continue;
                 }
@@ -716,8 +716,8 @@ class CallAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found in local scope',
-                            new CodeLocation($statements_analyzer, $expr)
-                        )
+                            new CodeLocation($statements_analyzer, $expr),
+                        ),
                     );
                     continue;
                 }
@@ -727,12 +727,12 @@ class CallAnalyzer
                         $property,
                         $statements_analyzer->getNodeTypeProvider(),
                         $statements_analyzer->getCodebase()->classlike_storage_provider,
-                        $arg_value
+                        $arg_value,
                     );
 
                     if (null !== $failedMessage) {
                         IssueBuffer::maybeAdd(
-                            new InvalidDocblock($failedMessage, new CodeLocation($statements_analyzer, $expr))
+                            new InvalidDocblock($failedMessage, new CodeLocation($statements_analyzer, $expr)),
                         );
                         continue;
                     }
@@ -753,7 +753,7 @@ class CallAnalyzer
                         $assertion_type = TemplateInferredTypeReplacer::replace(
                             new Union([$assertion_type_atomic]),
                             $template_result,
-                            $codebase
+                            $codebase,
                         );
 
                         if (count($assertion_type->getAtomicTypes()) === 1) {
@@ -778,9 +778,9 @@ class CallAnalyzer
                                             $asserted_type->getId() . ' is not contained by '
                                             . $assertion_type->getId(),
                                             new CodeLocation($statements_analyzer->getSource(), $expr),
-                                            $asserted_type->getId() . ' ' . $assertion_type->getId()
+                                            $asserted_type->getId() . ' ' . $assertion_type->getId(),
                                         ),
-                                        $statements_analyzer->getSuppressedIssues()
+                                        $statements_analyzer->getSuppressedIssues(),
                                     );
                                     $intersection = Type::getNever();
                                 } elseif ($intersection->getId(true) === $asserted_type->getId(true)) {
@@ -793,16 +793,16 @@ class CallAnalyzer
                                 if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                                     $codebase,
                                     $assertion_type,
-                                    $asserted_type
+                                    $asserted_type,
                                 )) {
                                     IssueBuffer::maybeAdd(
                                         new TypeDoesNotContainType(
                                             $asserted_type->getId() . ' is not contained by '
                                             . $assertion_type->getId(),
                                             new CodeLocation($statements_analyzer->getSource(), $expr),
-                                            $asserted_type->getId() . ' ' . $assertion_type->getId()
+                                            $asserted_type->getId() . ' ' . $assertion_type->getId(),
                                         ),
-                                        $statements_analyzer->getSuppressedIssues()
+                                        $statements_analyzer->getSuppressedIssues(),
                                     );
                                 }
                             } else {
@@ -818,7 +818,7 @@ class CallAnalyzer
                     if (isset($type_assertions[$assertion_var_id])) {
                         $type_assertions[$assertion_var_id] = array_merge(
                             $type_assertions[$assertion_var_id],
-                            [$orred_rules]
+                            [$orred_rules],
                         );
                     } else {
                         $type_assertions[$assertion_var_id] = [$orred_rules];
@@ -838,7 +838,7 @@ class CallAnalyzer
                         $arg_value,
                         $context->self,
                         $statements_analyzer,
-                        $statements_analyzer->getCodebase()
+                        $statements_analyzer->getCodebase(),
                     );
                 } elseif ($single_rule instanceof Falsy) {
                     $assert_clauses = Algebra::negateFormula(
@@ -848,15 +848,15 @@ class CallAnalyzer
                             $arg_value,
                             $context->self,
                             $statements_analyzer,
-                            $codebase
-                        )
+                            $codebase,
+                        ),
                     );
                 } elseif ($single_rule instanceof IsType
                     && $single_rule->type instanceof TTrue
                 ) {
                     $conditional = new VirtualIdentical(
                         $arg_value,
-                        new VirtualConstFetch(new VirtualName('true'))
+                        new VirtualConstFetch(new VirtualName('true')),
                     );
 
                     $assert_clauses = FormulaGenerator::getFormula(
@@ -865,16 +865,16 @@ class CallAnalyzer
                         $conditional,
                         $context->self,
                         $statements_analyzer,
-                        $codebase
+                        $codebase,
                     );
                 }
 
                 $simplified_clauses = Algebra::simplifyCNF(
-                    [...$context->clauses, ...$assert_clauses]
+                    [...$context->clauses, ...$assert_clauses],
                 );
 
                 $assert_type_assertions = Algebra::getTruthsFromFormula(
-                    $simplified_clauses
+                    $simplified_clauses,
                 );
 
                 $type_assertions = array_merge($type_assertions, $assert_type_assertions);
@@ -904,7 +904,7 @@ class CallAnalyzer
                 $statements_analyzer,
                 $template_type_map,
                 $context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $expr)
+                new CodeLocation($statements_analyzer->getSource(), $expr),
             );
 
             foreach ($changed_var_ids as $var_id => $_) {
@@ -928,7 +928,7 @@ class CallAnalyzer
                         IssueBuffer::remove(
                             $statements_analyzer->getFilePath(),
                             'MixedAssignment',
-                            $first_appearance->raw_file_start
+                            $first_appearance->raw_file_start,
                         );
                     }
 
@@ -979,7 +979,7 @@ class CallAnalyzer
                     if (isset($template_result->lower_bounds[$template_name][$defining_id])) {
                         $lower_bound_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             $template_result->lower_bounds[$template_name][$defining_id],
-                            $statements_analyzer->getCodebase()
+                            $statements_analyzer->getCodebase(),
                         );
 
                         $upper_bound_type = $upper_bound->type;
@@ -997,7 +997,7 @@ class CallAnalyzer
                             $upper_bound_type,
                             false,
                             false,
-                            $union_comparison_result
+                            $union_comparison_result,
                         )) {
                             if ($union_comparison_result->type_coerced) {
                                 if ($union_comparison_result->type_coerced_from_mixed) {
@@ -1006,9 +1006,9 @@ class CallAnalyzer
                                             'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
                                                 . $upper_bound_type->getId(),
                                             $code_location,
-                                            $function_id
+                                            $function_id,
                                         ),
-                                        $statements_analyzer->getSuppressedIssues()
+                                        $statements_analyzer->getSuppressedIssues(),
                                     );
                                 } else {
                                     IssueBuffer::maybeAdd(
@@ -1016,9 +1016,9 @@ class CallAnalyzer
                                             'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
                                                 . $upper_bound_type->getId(),
                                             $code_location,
-                                            $function_id
+                                            $function_id,
                                         ),
-                                        $statements_analyzer->getSuppressedIssues()
+                                        $statements_analyzer->getSuppressedIssues(),
                                     );
                                 }
                             } elseif ($union_comparison_result->scalar_type_match_found) {
@@ -1027,9 +1027,9 @@ class CallAnalyzer
                                         'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
                                                 . $upper_bound_type->getId(),
                                         $code_location,
-                                        $function_id
+                                        $function_id,
                                     ),
-                                    $statements_analyzer->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues(),
                                 );
                             } else {
                                 IssueBuffer::maybeAdd(
@@ -1037,17 +1037,17 @@ class CallAnalyzer
                                         'Type ' . $lower_bound_type->getId() . ' should be a subtype of '
                                                 . $upper_bound_type->getId(),
                                         $code_location,
-                                        $function_id
+                                        $function_id,
                                     ),
-                                    $statements_analyzer->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues(),
                                 );
                             }
                         }
                     } else {
                         $template_result->lower_bounds[$template_name][$defining_id] = [
                             new TemplateBound(
-                                $upper_bound->type
-                            )
+                                $upper_bound->type,
+                            ),
                         ];
                     }
                 }
@@ -1060,7 +1060,7 @@ class CallAnalyzer
                 if (count($lower_bounds) > 1) {
                     $bounds_with_equality = array_filter(
                         $lower_bounds,
-                        static fn($lower_bound): bool => (bool)$lower_bound->equality_bound_classlike
+                        static fn($lower_bound): bool => (bool)$lower_bound->equality_bound_classlike,
                     );
 
                     if (!$bounds_with_equality) {
@@ -1070,8 +1070,8 @@ class CallAnalyzer
                     $equality_types = array_unique(
                         array_map(
                             static fn($bound_with_equality) => $bound_with_equality->type->getId(),
-                            $bounds_with_equality
-                        )
+                            $bounds_with_equality,
+                        ),
                     );
 
                     if (count($equality_types) > 1) {
@@ -1080,9 +1080,9 @@ class CallAnalyzer
                                 'Incompatible types found for ' . $template_name . ' (must have only one of ' .
                                 implode(', ', $equality_types) . ')',
                                 $code_location,
-                                $function_id
+                                $function_id,
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     } else {
                         foreach ($lower_bounds as $lower_bound) {
@@ -1091,7 +1091,7 @@ class CallAnalyzer
                                     if (UnionTypeComparator::isContainedBy(
                                         $statements_analyzer->getCodebase(),
                                         $lower_bound->type,
-                                        $bound_with_equality->type
+                                        $bound_with_equality->type,
                                     )) {
                                         continue 2;
                                     }
@@ -1103,9 +1103,9 @@ class CallAnalyzer
                                         $lower_bound->type->getId() . ' is not in ' .
                                         implode(', ', $equality_types) . ')',
                                         $code_location,
-                                        $function_id
+                                        $function_id,
                                     ),
-                                    $statements_analyzer->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues(),
                                 );
                             }
                         }

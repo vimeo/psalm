@@ -83,7 +83,7 @@ class DataFlowNode
             $arg_id,
             $label,
             $arg_location,
-            $specialization_key
+            $specialization_key,
         );
     }
 
@@ -122,7 +122,7 @@ class DataFlowNode
             strtolower($method_id),
             $cased_method_id,
             $code_location,
-            $specialization_key
+            $specialization_key,
         );
     }
 

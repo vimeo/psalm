@@ -36,12 +36,12 @@ class ErrorAfterUpdateTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }

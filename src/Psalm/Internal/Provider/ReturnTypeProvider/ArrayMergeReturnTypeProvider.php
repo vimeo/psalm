@@ -83,7 +83,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             foreach ($type_part->properties as $t) {
                                 $unpacked_type_parts = array_merge(
                                     $unpacked_type_parts,
-                                    $t->getAtomicTypes()
+                                    $t->getAtomicTypes(),
                                 );
                             }
                         } else {
@@ -119,7 +119,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
 
                         $max_keyed_array_size = max(
                             $max_keyed_array_size,
-                            count($unpacked_type_part->properties)
+                            count($unpacked_type_part->properties),
                         );
 
                         $added_inner_values = false;
@@ -134,7 +134,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                                     $added_inner_values = true;
                                     $inner_value_types = array_merge(
                                         $inner_value_types,
-                                        array_values($type->getAtomicTypes())
+                                        array_values($type->getAtomicTypes()),
                                     );
                                 } else {
                                     $generic_properties[] = $type;
@@ -166,7 +166,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                                     false,
                                     true,
                                     500,
-                                    $was_possibly_undefined
+                                    $was_possibly_undefined,
                                 );
                             }
                         }
@@ -184,11 +184,11 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             $all_keyed_arrays = false;
                             $inner_value_types = array_merge(
                                 $inner_value_types,
-                                array_values($unpacked_type_part->fallback_params[1]->getAtomicTypes())
+                                array_values($unpacked_type_part->fallback_params[1]->getAtomicTypes()),
                             );
                             $inner_key_types = array_merge(
                                 $inner_key_types,
-                                array_values($unpacked_type_part->fallback_params[0]->getAtomicTypes())
+                                array_values($unpacked_type_part->fallback_params[0]->getAtomicTypes()),
                             );
                         }
 
@@ -213,7 +213,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             $generic_properties[$key] = Type::combineUnionTypes(
                                 $keyed_type,
                                 $unpacked_type_part->type_params[1],
-                                $codebase
+                                $codebase,
                             );
                         }
 
@@ -235,11 +235,11 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
 
                     $inner_key_types = array_merge(
                         $inner_key_types,
-                        array_values($unpacked_type_part->type_params[0]->getAtomicTypes())
+                        array_values($unpacked_type_part->type_params[0]->getAtomicTypes()),
                     );
                     $inner_value_types = array_merge(
                         $inner_value_types,
-                        array_values($unpacked_type_part->type_params[1]->getAtomicTypes())
+                        array_values($unpacked_type_part->type_params[1]->getAtomicTypes()),
                     );
                 }
             }
@@ -269,7 +269,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 $all_keyed_arrays || $inner_key_type === null || $inner_value_type === null
                     ? null
                     : [$inner_key_type, $inner_value_type],
-                $all_nonempty_lists || $all_int_offsets
+                $all_nonempty_lists || $all_int_offsets,
             );
 
             return new Union([$objectlike]);
@@ -283,7 +283,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             if ($all_int_offsets) {
                 if ($any_nonempty) {
                     return Type::getNonEmptyList(
-                        $inner_value_type
+                        $inner_value_type,
                     );
                 }
 

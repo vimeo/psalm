@@ -61,7 +61,7 @@ class TNonEmptyList extends TList
                 null,
                 null,
                 true,
-                $this->from_docblock
+                $this->from_docblock,
             );
         }
         return new TKeyedArray(
@@ -69,7 +69,7 @@ class TNonEmptyList extends TList
             null,
             [Type::getListKey(), $this->type_param],
             true,
-            $this->from_docblock
+            $this->from_docblock,
         );
     }
 

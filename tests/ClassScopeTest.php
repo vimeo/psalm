@@ -145,7 +145,7 @@ class ClassScopeTest extends TestCase
                         protected static function foo(): void {
                             echo "here";
                         }
-                    }'
+                    }',
             ],
         ];
     }

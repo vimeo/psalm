@@ -118,7 +118,7 @@ class Functions
             }
 
             throw new UnexpectedValueException(
-                'Expecting non-empty $root_file_path and $checked_file_path'
+                'Expecting non-empty $root_file_path and $checked_file_path',
             );
         }
 
@@ -140,7 +140,7 @@ class Functions
             }
 
             throw new UnexpectedValueException(
-                'Expecting ' . $function_id . ' to have storage in ' . $checked_file_path
+                'Expecting ' . $function_id . ' to have storage in ' . $checked_file_path,
             );
         }
 
@@ -154,7 +154,7 @@ class Functions
             }
 
             throw new UnexpectedValueException(
-                'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path
+                'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path,
             );
         }
 
@@ -519,7 +519,7 @@ class Functions
             'hash_update', 'hash_update_file', 'hash_update_stream',
 
             // unserialize
-            'unserialize'
+            'unserialize',
         ];
 
         if (in_array(strtolower($function_id), $impure_functions, true)) {
@@ -563,7 +563,7 @@ class Functions
                     if ($atomic_count_type instanceof TNamedObject) {
                         $count_method_id = new MethodIdentifier(
                             $atomic_count_type->value,
-                            'count'
+                            'count',
                         );
 
                         try {
@@ -580,7 +580,7 @@ class Functions
             $codebase,
             $function_id,
             $args ?: [],
-            null
+            null,
         );
 
         if (!$function_callable->params
@@ -601,7 +601,7 @@ class Functions
                     foreach ($arg_type->getAtomicTypes() as $possible_callable) {
                         $possible_callable = CallableTypeComparator::getCallableFromAtomic(
                             $codebase,
-                            $possible_callable
+                            $possible_callable,
                         );
 
                         if ($possible_callable && !$possible_callable->is_pure) {

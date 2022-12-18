@@ -201,7 +201,7 @@ class Scanner
     {
         unset(
             $this->classlike_files[$fq_classlike_name_lc],
-            $this->deep_scanned_classlike_files[$fq_classlike_name_lc]
+            $this->deep_scanned_classlike_files[$fq_classlike_name_lc],
         );
     }
 
@@ -265,7 +265,7 @@ class Scanner
                     $property_type->queueClassLikesForScanning(
                         $this->codebase,
                         null,
-                        $phantom_classes + [$fq_classlike_name_lc => true]
+                        $phantom_classes + [$fq_classlike_name_lc => true],
                     );
                 }
             }
@@ -299,7 +299,7 @@ class Scanner
     {
         $files_to_scan = array_filter(
             $this->files_to_scan,
-            [$this, 'shouldScan']
+            [$this, 'shouldScan'],
         );
 
         $this->files_to_scan = [];
@@ -373,7 +373,7 @@ class Scanner
                             : [],
                         'taint_data' => $codebase->taint_flow_graph,
                     ];
-                }
+                },
             );
 
             // Wait for all tasks to complete and collect the results.
@@ -386,16 +386,16 @@ class Scanner
                 IssueBuffer::addIssues($pool_data['issues']);
 
                 $this->codebase->statements_provider->addChangedMembers(
-                    $pool_data['changed_members']
+                    $pool_data['changed_members'],
                 );
                 $this->codebase->statements_provider->addUnchangedSignatureMembers(
-                    $pool_data['unchanged_signature_members']
+                    $pool_data['unchanged_signature_members'],
                 );
                 $this->codebase->statements_provider->addDiffMap(
-                    $pool_data['diff_map']
+                    $pool_data['diff_map'],
                 );
                 $this->codebase->statements_provider->addDeletionRanges(
-                    $pool_data['deletion_ranges']
+                    $pool_data['deletion_ranges'],
                 );
                 $this->codebase->statements_provider->addErrors($pool_data['errors']);
 
@@ -412,7 +412,7 @@ class Scanner
 
                 if ($this->codebase->statements_provider->parser_cache_provider) {
                     $this->codebase->statements_provider->parser_cache_provider->addNewFileContentHashes(
-                        $pool_data['new_file_content_hashes']
+                        $pool_data['new_file_content_hashes'],
                     );
                 }
             }
@@ -443,7 +443,7 @@ class Scanner
                     ) {
                         $this->codebase->functions->addGlobalFunction(
                             $function_storage->cased_name,
-                            $function_storage
+                            $function_storage,
                         );
                     }
                 }
@@ -490,7 +490,7 @@ class Scanner
                     $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
                 } elseif ($this->fileExistsForClassLike($classlikes, $fq_classlike_name)) {
                     $fq_classlike_name_lc = strtolower($classlikes->getUnAliasedName(
-                        $fq_classlike_name_lc
+                        $fq_classlike_name_lc,
                     ));
 
                     // even though we've checked this above, calling the method invalidates it
@@ -554,7 +554,7 @@ class Scanner
             $this->codebase,
             $file_storage,
             $from_cache,
-            $this->progress
+            $this->progress,
         );
 
         if (!$from_cache) {
@@ -595,7 +595,7 @@ class Scanner
                     ) {
                         $this->codebase->functions->addGlobalFunction(
                             $function_storage->cased_name,
-                            $function_storage
+                            $function_storage,
                         );
                     }
                 }
@@ -663,7 +663,7 @@ class Scanner
 
             $classlikes->addFullyQualifiedClassLikeName(
                 $fq_class_name_lc,
-                realpath($composer_file_path)
+                realpath($composer_file_path),
             );
 
             return true;
@@ -686,7 +686,7 @@ class Scanner
                 } finally {
                     error_reporting($old_level);
                 }
-            }
+            },
         );
 
         if (null === $reflected_class) {
@@ -754,7 +754,7 @@ class Scanner
             $classlike_files,
             $deep_scanned_classlike_files,
             $scanned_files,
-            $reflected_classlikes_lc
+            $reflected_classlikes_lc,
         ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
@@ -765,7 +765,7 @@ class Scanner
         $this->classlike_files = array_merge($classlike_files, $this->classlike_files);
         $this->deep_scanned_classlike_files = array_merge(
             $deep_scanned_classlike_files,
-            $this->deep_scanned_classlike_files
+            $this->deep_scanned_classlike_files,
         );
         $this->scanned_files = array_merge($scanned_files, $this->scanned_files);
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
@@ -781,7 +781,7 @@ class Scanner
         $this->scanFile(
             $file_path,
             $this->config->getFiletypeScanners(),
-            isset($this->files_to_deep_scan[$file_path])
+            isset($this->files_to_deep_scan[$file_path]),
         );
     }
 }

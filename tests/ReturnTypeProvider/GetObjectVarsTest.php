@@ -121,8 +121,8 @@ class GetObjectVarsTest extends TestCase
 
                 $a = get_object_vars(new a("test"));',
             'assertions' => [
-                '$a===' => "array{t: 'test'}"
-            ]
+                '$a===' => "array{t: 'test'}",
+            ],
         ];
 
         yield 'SKIPPED-dynamicProperties' => [
@@ -135,8 +135,8 @@ class GetObjectVarsTest extends TestCase
                 $a->b = "test";
                 $test = get_object_vars($a);',
             'assertions' => [
-                '$test===' => "array{t: 'test'}"
-            ]
+                '$test===' => "array{t: 'test'}",
+            ],
         ];
 
         yield 'SKIPPED-dynamicProperties82' => [
@@ -150,9 +150,9 @@ class GetObjectVarsTest extends TestCase
                 $a->b = "test";
                 $test = get_object_vars($a);',
             'assertions' => [
-                '$test===' => "array{t: 'test'}"
+                '$test===' => "array{t: 'test'}",
             ],
-            'php_version' => '8.2'
+            'php_version' => '8.2',
         ];
 
         yield 'SKIPPED-noDynamicProperties82' => [
@@ -164,9 +164,9 @@ class GetObjectVarsTest extends TestCase
                 $a = new a("test");
                 $test = get_object_vars($a);',
             'assertions' => [
-                '$test===' => "array{t: 'test'}"
+                '$test===' => "array{t: 'test'}",
             ],
-            'php_version' => '8.2'
+            'php_version' => '8.2',
         ];
     }
 }

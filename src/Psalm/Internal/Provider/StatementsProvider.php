@@ -151,7 +151,7 @@ class StatementsProvider
         $stmts = $this->parser_cache_provider->loadStatementsFromCache(
             $file_path,
             $modified_time,
-            $file_content_hash
+            $file_content_hash,
         );
 
         if ($stmts === null) {
@@ -168,7 +168,7 @@ class StatementsProvider
                     $file_path,
                     $file_content_hash,
                     $existing_statements,
-                    true
+                    true,
                 );
 
                 return $existing_statements;
@@ -204,7 +204,7 @@ class StatementsProvider
                 $file_path,
                 $existing_file_contents,
                 $existing_statements_copy,
-                $file_changes
+                $file_changes,
             );
 
             if ($existing_file_contents && $existing_statements && (!$has_errors || $stmts)) {
@@ -213,7 +213,7 @@ class StatementsProvider
                         $existing_statements,
                         $stmts,
                         $existing_file_contents,
-                        $file_contents
+                        $file_contents,
                     );
 
                 $unchanged_members = array_fill_keys($unchanged_members, true);
@@ -230,7 +230,7 @@ class StatementsProvider
 
                         return $key;
                     },
-                    $changed_members
+                    $changed_members,
                 );
 
                 $changed_members = array_fill_keys($changed_members, true);
@@ -238,7 +238,7 @@ class StatementsProvider
                 if (isset($this->unchanged_members[$file_path])) {
                     $this->unchanged_members[$file_path] = array_intersect_key(
                         $this->unchanged_members[$file_path],
-                        $unchanged_members
+                        $unchanged_members,
                     );
                 } else {
                     $this->unchanged_members[$file_path] = $unchanged_members;
@@ -247,7 +247,7 @@ class StatementsProvider
                 if (isset($this->unchanged_signature_members[$file_path])) {
                     $this->unchanged_signature_members[$file_path] = array_intersect_key(
                         $this->unchanged_signature_members[$file_path],
-                        $unchanged_signature_members
+                        $unchanged_signature_members,
                     );
                 } else {
                     $this->unchanged_signature_members[$file_path] = $unchanged_signature_members;
@@ -256,7 +256,7 @@ class StatementsProvider
                 if (isset($this->changed_members[$file_path])) {
                     $this->changed_members[$file_path] = array_merge(
                         $this->changed_members[$file_path],
-                        $changed_members
+                        $changed_members,
                     );
                 } else {
                     $this->changed_members[$file_path] = $changed_members;
@@ -430,7 +430,7 @@ class StatementsProvider
                 $error_handler,
                 $file_changes,
                 $existing_file_contents,
-                $file_contents
+                $file_contents,
             );
             $clashing_traverser->addVisitor($offset_analyzer);
             $clashing_traverser->traverse($existing_statements);
@@ -472,9 +472,9 @@ class StatementsProvider
                                 $error,
                                 $file_contents,
                                 $file_path,
-                                $config->shortenFileName($file_path)
-                            )
-                        )
+                                $config->shortenFileName($file_path),
+                            ),
+                        ),
                     );
                 }
             }
@@ -485,7 +485,7 @@ class StatementsProvider
         $resolving_traverser = new PhpParser\NodeTraverser;
         $name_resolver = new SimpleNameResolver(
             $error_handler,
-            $used_cached_statements ? $file_changes : []
+            $used_cached_statements ? $file_changes : [],
         );
         $resolving_traverser->addVisitor($name_resolver);
         $resolving_traverser->traverse($stmts);

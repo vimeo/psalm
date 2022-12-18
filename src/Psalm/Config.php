@@ -701,7 +701,7 @@ class Config
             $config->hash = sha1($file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
-                'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage()
+                'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
             );
         }
 
@@ -781,7 +781,7 @@ class Config
 
         if (!$psalm_node) {
             throw new ConfigException(
-                'Missing psalm node'
+                'Missing psalm node',
             );
         }
 
@@ -802,7 +802,7 @@ class Config
         foreach ($errors as $error) {
             if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
                 throw new ConfigException(
-                    'Error on line ' . $error->line . ":\n" . '    ' . $error->message
+                    'Error on line ' . $error->line . ":\n" . '    ' . $error->message,
                 );
             }
         }
@@ -825,7 +825,7 @@ class Config
             $newline_offset = strpos($string, "\n", $offset);
             if (false === $newline_offset) {
                 throw new OutOfBoundsException(
-                    'Line ' . $line_number . ' is not found in a string with ' . ($i + 1) . ' lines'
+                    'Line ' . $line_number . ' is not found in a string with ' . ($i + 1) . ' lines',
                 );
             }
             $offset = $newline_offset + 1;
@@ -859,8 +859,8 @@ class Config
                 $config_path,
                 basename($config_path),
                 $attribute_start,
-                $attribute_end
-            )
+                $attribute_end,
+            ),
         );
     }
 
@@ -885,8 +885,8 @@ class Config
                 $config_path,
                 basename($config_path),
                 $element_start,
-                $element_end
-            )
+                $element_end,
+            ),
         );
     }
 
@@ -917,7 +917,7 @@ class Config
         foreach ($deprecated_elements as $deprecated_element) {
             $deprecated_elements_xml = $dom_document->getElementsByTagNameNS(
                 self::CONFIG_NAMESPACE,
-                $deprecated_element
+                $deprecated_element,
             );
             if ($deprecated_elements_xml->length) {
                 $deprecated_element_xml = $deprecated_elements_xml->item(0);
@@ -949,7 +949,7 @@ class Config
                 $config,
                 $dom_document,
                 $file_contents,
-                $config_path
+                $config_path,
             );
         }
 
@@ -999,7 +999,7 @@ class Config
                 $attribute_text = (string) $config_xml[$xmlName];
                 $config->setBooleanAttribute(
                     $internalName,
-                    $attribute_text === 'true' || $attribute_text === '1'
+                    $attribute_text === 'true' || $attribute_text === '1',
                 );
             }
         }
@@ -1102,7 +1102,7 @@ class Config
 
             if (!in_array($attribute_text, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
                 throw new ConfigException(
-                    'Invalid error level ' . $config_xml['errorLevel']
+                    'Invalid error level ' . $config_xml['errorLevel'],
                 );
             }
 
@@ -1159,7 +1159,7 @@ class Config
             $config->taint_analysis_ignored_files = TaintAnalysisFileFilter::loadFromXMLElement(
                 $config_xml->taintAnalysis->ignoreFiles,
                 $base_dir,
-                false
+                false,
             );
         }
 
@@ -1231,7 +1231,7 @@ class Config
                         'Cannot resolve stubfile path '
                             . rtrim($config->base_dir, DIRECTORY_SEPARATOR)
                             . DIRECTORY_SEPARATOR
-                            . $stub_file['name']
+                            . $stub_file['name'],
                     );
                 }
 
@@ -1287,13 +1287,13 @@ class Config
                         /** @var string $key */
                         $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
                             $issue_handler,
-                            $base_dir
+                            $base_dir,
                         );
                     } else {
                         /** @var string $key */
                         $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
                             $issue_handler,
-                            $base_dir
+                            $base_dir,
                         );
                     }
                 }
@@ -1411,7 +1411,7 @@ class Config
                 throw new ConfigException(
                     'Failed to process plugin file extensions ' . $pluginClassName,
                     1_635_800_581,
-                    $t
+                    $t,
                 );
             }
             $projectAnalyzer->progress->debug('Initialized plugin ' . $pluginClassName . ' successfully' . PHP_EOL);
@@ -1454,7 +1454,7 @@ class Config
                 throw new ConfigException(
                     'Failed to invoke plugin ' . $plugin_class_name,
                     1_635_800_582,
-                    $t
+                    $t,
                 );
             }
 
@@ -1465,7 +1465,7 @@ class Config
             $fq_class_name = $this->getPluginClassForPath(
                 $codebase,
                 $path,
-                FileScanner::class
+                FileScanner::class,
             );
 
             self::requirePath($path);
@@ -1477,7 +1477,7 @@ class Config
             $fq_class_name = $this->getPluginClassForPath(
                 $codebase,
                 $path,
-                FileAnalyzer::class
+                FileAnalyzer::class,
             );
 
             self::requirePath($path);
@@ -1514,7 +1514,7 @@ class Config
                 && ($pluginclas_class_path = $this->composer_class_loader->findFile($pluginClassName))
             ) {
                 $projectAnalyzer->progress->debug(
-                    'Loading plugin ' . $pluginClassName . ' via require' . PHP_EOL
+                    'Loading plugin ' . $pluginClassName . ' via require' . PHP_EOL,
                 );
 
                 self::requirePath($pluginclas_class_path);
@@ -1551,7 +1551,7 @@ class Config
         $file_to_scan = new FileScanner($path, $this->shortenFileName($path), true);
         $file_to_scan->scan(
             $codebase,
-            $file_storage
+            $file_storage,
         );
 
         $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
@@ -1559,7 +1559,7 @@ class Config
         if (!count($declared_classes)) {
             throw new InvalidArgumentException(
                 'Plugins must have at least one class in the file - ' . $path . ' has ' .
-                    count($declared_classes)
+                    count($declared_classes),
             );
         }
 
@@ -1567,11 +1567,11 @@ class Config
 
         if (!$codebase->classlikes->classExtends(
             $fq_class_name,
-            $must_extend
+            $must_extend,
         )
         ) {
             throw new InvalidArgumentException(
-                'This plugin must extend ' . $must_extend . ' - ' . $path . ' does not'
+                'This plugin must extend ' . $must_extend . ' - ' . $path . ' does not',
             );
         }
 
@@ -2297,7 +2297,7 @@ class Config
                      * @psalm-suppress UnresolvableInclude
                      * @var string[]
                      */
-                    require $vendor_autoload_files_path
+                    require $vendor_autoload_files_path,
             );
         }
 
@@ -2311,7 +2311,7 @@ class Config
             $codebase->classlikes->forgetMissingClassLikes();
 
             $this->include_collector->runAndCollect(
-                [$this, 'requireAutoloader']
+                [$this, 'requireAutoloader'],
             );
         }
 

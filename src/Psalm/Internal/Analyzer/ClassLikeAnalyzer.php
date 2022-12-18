@@ -135,7 +135,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
                         $trait,
-                        $this->source->getAliases()
+                        $this->source->getAliases(),
                     );
 
                     $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
@@ -151,7 +151,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         $trait_node,
                         $trait_file_analyzer,
                         $fq_trait_name,
-                        $trait_aliases
+                        $trait_aliases,
                     );
 
                     foreach ($trait_node->stmts as $trait_stmt) {
@@ -175,7 +175,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                                 $context,
                                 new NodeDataProvider(),
                                 null,
-                                true
+                                true,
                             );
                         }
                     }
@@ -221,9 +221,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 new UndefinedClass(
                     'Class or interface <empty string> does not exist',
                     $code_location,
-                    'empty string'
+                    'empty string',
                 ),
-                $suppressed_issues
+                $suppressed_issues,
             )) {
                 return false;
             }
@@ -239,7 +239,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         if (preg_match(
             '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
-            $fq_class_name
+            $fq_class_name,
         ) || strtolower($fq_class_name) === 'resource'
         ) {
             $class_name_parts = explode('\\', $fq_class_name);
@@ -249,9 +249,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 new ReservedWord(
                     $class_name . ' is a reserved word',
                     $code_location,
-                    $class_name
+                    $class_name,
                 ),
-                $suppressed_issues
+                $suppressed_issues,
             );
 
             return null;
@@ -261,21 +261,21 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             $fq_class_name,
             !$options->inferred ? $code_location : null,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
 
         $interface_exists = $codebase->classlikes->interfaceExists(
             $fq_class_name,
             !$options->inferred ? $code_location : null,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
 
         $enum_exists = $codebase->classlikes->enumExists(
             $fq_class_name,
             !$options->inferred ? $code_location : null,
             $calling_fq_class_name,
-            $calling_method_id
+            $calling_method_id,
         );
 
         if (!$class_exists
@@ -288,9 +288,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         new UndefinedDocblockClass(
                             'Docblock-defined class, interface or enum named ' . $fq_class_name . ' does not exist',
                             $code_location,
-                            $fq_class_name
+                            $fq_class_name,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     )) {
                         return false;
                     }
@@ -299,9 +299,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         new UndefinedAttributeClass(
                             'Attribute class ' . $fq_class_name . ' does not exist',
                             $code_location,
-                            $fq_class_name
+                            $fq_class_name,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     )) {
                         return false;
                     }
@@ -310,9 +310,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         new UndefinedClass(
                             'Class, interface or enum named ' . $fq_class_name . ' does not exist',
                             $code_location,
-                            $fq_class_name
+                            $fq_class_name,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     )) {
                         return false;
                     }
@@ -323,7 +323,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         $aliased_name = $codebase->classlikes->getUnAliasedName(
-            $fq_class_name
+            $fq_class_name,
         );
 
         try {
@@ -348,9 +348,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     $fq_class_name . ' depends on class or interface '
                         . $dependency_class_name . ' that does not exist',
                     $code_location,
-                    $fq_class_name
+                    $fq_class_name,
                 ),
-                $suppressed_issues
+                $suppressed_issues,
             )) {
                 return false;
             }
@@ -365,9 +365,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     new InvalidClass(
                         'Class, interface or enum ' . $fq_class_name . ' has wrong casing',
                         $code_location,
-                        $fq_class_name
+                        $fq_class_name,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -378,7 +378,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $code_location,
                 $statements_source,
                 $codebase,
-                []
+                [],
             );
 
             $codebase->config->eventDispatcher->dispatchAfterClassLikeExistenceCheck($event);
@@ -416,7 +416,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         return Type::getFQCLNFromString(
             implode('\\', $class_name->parts),
-            $aliases
+            $aliases,
         );
     }
 
@@ -536,7 +536,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $property_name,
                 true,
                 $context,
-                $code_location
+                $code_location,
             );
 
             if ($property_visible !== null) {
@@ -546,16 +546,16 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $property_id,
-            true
+            true,
         );
         $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
             $property_id,
-            true
+            true,
         );
 
         if (!$declaring_property_class || !$appearing_property_class) {
             throw new UnexpectedValueException(
-                'Appearing/Declaring classes are not defined for ' . $property_id
+                'Appearing/Declaring classes are not defined for ' . $property_id,
             );
         }
 
@@ -587,9 +587,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     IssueBuffer::maybeAdd(
                         new InaccessibleProperty(
                             'Cannot access private property ' . $property_id . ' from context ' . $context->self,
-                            $code_location
+                            $code_location,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     );
                 }
 
@@ -600,9 +600,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         IssueBuffer::maybeAdd(
                             new InaccessibleProperty(
                                 'Cannot access protected property ' . $property_id,
-                                $code_location
+                                $code_location,
                             ),
-                            $suppressed_issues
+                            $suppressed_issues,
                         );
                     }
 
@@ -618,9 +618,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         IssueBuffer::maybeAdd(
                             new InaccessibleProperty(
                                 'Cannot access protected property ' . $property_id . ' from context ' . $context->self,
-                                $code_location
+                                $code_location,
                             ),
-                            $suppressed_issues
+                            $suppressed_issues,
                         );
                     }
 
@@ -647,18 +647,18 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 new MissingTemplateParam(
                     $storage->name . ' has missing template params when extending ' . $parent_storage->name
                         . ', expecting ' . $expected_param_count,
-                    $code_location
+                    $code_location,
                 ),
-                $storage->suppressed_issues + $this->getSuppressedIssues()
+                $storage->suppressed_issues + $this->getSuppressedIssues(),
             );
         } elseif ($expected_param_count < $given_param_count) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $storage->name . ' has too many template params when extending ' . $parent_storage->name
                         . ', expecting ' . $expected_param_count,
-                    $code_location
+                    $code_location,
                 ),
-                $storage->suppressed_issues + $this->getSuppressedIssues()
+                $storage->suppressed_issues + $this->getSuppressedIssues(),
             );
         }
 
@@ -672,18 +672,18 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     new MissingTemplateParam(
                         $storage->name . ' requires the same number of template params as ' . $parent_storage->name
                             . ' but saw ' . $storage_param_count,
-                        $code_location
+                        $code_location,
                     ),
-                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             } else {
                 IssueBuffer::maybeAdd(
                     new TooManyTemplateParams(
                         $storage->name . ' requires the same number of template params as ' . $parent_storage->name
                             . ' but saw ' . $storage_param_count,
-                        $code_location
+                        $code_location,
                     ),
-                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
         }
@@ -717,9 +717,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                                     new InvalidTemplateParam(
                                         'Cannot extend an invariant template param ' . $template_name
                                             . ' into a covariant context',
-                                        $code_location
+                                        $code_location,
                                     ),
-                                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                                    $storage->suppressed_issues + $this->getSuppressedIssues(),
                                 );
                             }
                         }
@@ -735,9 +735,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                                         'Cannot extend a strictly-enforced parent template param '
                                             . $template_name
                                             . ' with a non-template type',
-                                        $code_location
+                                        $code_location,
                                     ),
-                                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                                    $storage->suppressed_issues + $this->getSuppressedIssues(),
                                 );
                             } elseif ($storage->template_types[$t->param_name][$storage->name]->getId()
                                 !== $template_type->getId()
@@ -750,9 +750,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                                             . ' with a child template param ' . $t->param_name
                                             . ' with different constraint '
                                             . $storage->template_types[$t->param_name][$storage->name]->getId(),
-                                        $code_location
+                                        $code_location,
                                     ),
-                                    $storage->suppressed_issues + $this->getSuppressedIssues()
+                                    $storage->suppressed_issues + $this->getSuppressedIssues(),
                                 );
                             }
                         }
@@ -761,7 +761,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     if (!$template_type->isMixed()) {
                         $template_result = new TemplateResult(
                             $previous_extended ?: [],
-                            []
+                            [],
                         );
 
                         $template_type_copy = TemplateStandinTypeReplacer::replace(
@@ -771,7 +771,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                             null,
                             $extended_type,
                             null,
-                            null
+                            null,
                         );
 
                         if (!UnionTypeComparator::isContainedBy($codebase, $extended_type, $template_type_copy)) {
@@ -780,18 +780,18 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                                     'Extended template param ' . $template_name
                                         . ' expects type ' . $template_type_copy->getId()
                                         . ', type ' . $extended_type->getId() . ' given',
-                                    $code_location
+                                    $code_location,
                                 ),
-                                $storage->suppressed_issues + $this->getSuppressedIssues()
+                                $storage->suppressed_issues + $this->getSuppressedIssues(),
                             );
                         } else {
                             $previous_extended[$template_name] = [
-                                $declaring_class => $extended_type
+                                $declaring_class => $extended_type,
                             ];
                         }
                     } else {
                         $previous_extended[$template_name] = [
-                            $declaring_class => $extended_type
+                            $declaring_class => $extended_type,
                         ];
                     }
                 }

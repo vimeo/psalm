@@ -369,7 +369,7 @@ class TypeTokenizer
                 [
                     '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
                 ],
-                true
+                true,
             )) {
                 continue;
             }
@@ -496,7 +496,7 @@ class TypeTokenizer
             } else {
                 $type_tokens[$i][0] = Type::getFQCLNFromString(
                     $string_type_token[0],
-                    $aliases
+                    $aliases,
                 );
             }
         }

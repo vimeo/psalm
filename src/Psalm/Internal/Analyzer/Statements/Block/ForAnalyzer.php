@@ -52,7 +52,7 @@ class ForAnalyzer
 
         $context->assigned_var_ids = array_merge(
             $pre_assigned_var_ids,
-            $assigned_var_ids
+            $assigned_var_ids,
         );
 
         $while_true = !$stmt->cond && !$stmt->init && !$stmt->loop;
@@ -78,7 +78,7 @@ class ForAnalyzer
 
         $loop_scope->protected_var_ids = array_merge(
             $assigned_var_ids,
-            $context->protected_var_ids
+            $context->protected_var_ids,
         );
 
         if (LoopAnalyzer::analyze(
@@ -87,7 +87,7 @@ class ForAnalyzer
             $stmt->cond,
             $stmt->loop,
             $loop_scope,
-            $inner_loop_context
+            $inner_loop_context,
         ) === false) {
             return false;
         }
@@ -155,7 +155,7 @@ class ForAnalyzer
                     if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id],
                         );
                     }
                 } else {
@@ -169,7 +169,7 @@ class ForAnalyzer
         if ($can_leave_loop) {
             $context->vars_possibly_in_scope = array_merge(
                 $context->vars_possibly_in_scope,
-                $for_context->vars_possibly_in_scope
+                $for_context->vars_possibly_in_scope,
             );
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;

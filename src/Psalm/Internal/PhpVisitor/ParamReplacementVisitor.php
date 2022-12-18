@@ -40,7 +40,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
                 $this->replacements[] = new FileManipulation(
                     (int) $node->getAttribute('startFilePos') + 1,
                     (int) $node->getAttribute('endFilePos') + 1,
-                    $this->new_name
+                    $this->new_name,
                 );
             } elseif ($node->name === $this->new_name) {
                 if ($this->new_new_name_used) {
@@ -51,7 +51,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
                 $this->replacements[] = new FileManipulation(
                     (int) $node->getAttribute('startFilePos') + 1,
                     (int) $node->getAttribute('endFilePos') + 1,
-                    $this->new_name . '_new'
+                    $this->new_name . '_new',
                 );
 
                 $this->new_name_replaced = true;
@@ -68,7 +68,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
         ) {
             $parsed_docblock = DocblockParser::parse(
                 $docblock->getText(),
-                $docblock->getStartFilePos()
+                $docblock->getStartFilePos(),
             );
 
             $replaced = false;
@@ -86,7 +86,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
                             $parsed_docblock->tags[$tag_name][$i] = str_replace(
                                 '$' . $this->old_name,
                                 '$' . $this->new_name,
-                                $tag
+                                $tag,
                             );
                             $replaced = true;
                         }
@@ -100,7 +100,7 @@ class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
                     $docblock->getStartFilePos() + strlen($docblock->getText()),
                     rtrim($parsed_docblock->render($parsed_docblock->first_line_padding)),
                     false,
-                    false
+                    false,
                 );
             }
         }

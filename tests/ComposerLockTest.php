@@ -24,9 +24,9 @@ class ComposerLockTest extends TestCase
             'type' => 'psalm-plugin',
             'extra' => [
                 'psalm' => [
-                    'pluginClass' => 'Some\Class'
-                ]
-            ]
+                    'pluginClass' => 'Some\Class',
+                ],
+            ],
         ]), 'Non-plugin should not be considered a plugin');
 
         $this->assertTrue($lock->isPlugin([
@@ -34,18 +34,18 @@ class ComposerLockTest extends TestCase
             'type' => 'library',
             'extra' => [
                 'psalm' => [
-                    'pluginClass' => 'Some\Class'
-                ]
-            ]
+                    'pluginClass' => 'Some\Class',
+                ],
+            ],
         ]), 'Non-plugin should not be considered a plugin');
 
         $this->assertTrue($lock->isPlugin([
             'name' => 'vendor/package',
             'extra' => [
                 'psalm' => [
-                    'pluginClass' => 'Some\Class'
-                ]
-            ]
+                    'pluginClass' => 'Some\Class',
+                ],
+            ],
         ]), 'Non-plugin should not be considered a plugin');
 
         // counterexamples
@@ -191,7 +191,7 @@ class ComposerLockTest extends TestCase
                 'vendor/packageC' => 'Vendor\PackageC\PluginClass',
                 'vendor/packageD' => 'Vendor\PackageD\PluginClass',
             ],
-            $lock->getPlugins()
+            $lock->getPlugins(),
         );
     }
 

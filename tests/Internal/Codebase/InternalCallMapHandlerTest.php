@@ -1291,8 +1291,8 @@ class InternalCallMapHandlerTest extends TestCase
             new TestConfig(),
             new Providers(
                 new FakeFileProvider(),
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
         self::$codebase = $project_analyzer->getCodebase();
     }
@@ -1340,8 +1340,8 @@ class InternalCallMapHandlerTest extends TestCase
             new TestConfig(),
             new Providers(
                 new FakeFileProvider(),
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
         $callMap = InternalCallMapHandler::getCallMap();
         foreach ($callMap as $function => $entry) {

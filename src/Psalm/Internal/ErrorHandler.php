@@ -76,7 +76,7 @@ final class ErrorHandler
                     'PHP Error: ' . $error_message
                     . ' in ' . $error_filename . ':' . $error_line
                     . ' for command with CLI args "' . ErrorHandler::$args . '"',
-                    $error_code
+                    $error_code,
                 );
             }
             // let PHP handle suppressed errors how it sees fit

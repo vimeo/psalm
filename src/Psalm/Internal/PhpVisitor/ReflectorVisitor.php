@@ -116,7 +116,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                         $comment,
                         $this->aliases,
                         $this->type_aliases,
-                        null
+                        null,
                     );
 
                     foreach ($type_aliases as $type_alias) {
@@ -128,7 +128,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 } catch (DocblockParseException | TypeParseTreeException $e) {
                     $this->file_storage->docblock_issues[] = new InvalidDocblock(
                         $e->getMessage(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
+                        new CodeLocation($this->file_scanner, $node, null, true),
                     );
                 }
             }
@@ -150,7 +150,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->file_storage,
                 $this->file_scanner,
                 $this->aliases,
-                $this->namespace_name
+                $this->namespace_name,
             );
 
             $this->classlike_node_scanners[] = $classlike_node_scanner;
@@ -202,7 +202,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->aliases,
                 $this->type_aliases,
                 $classlike_storage,
-                $functionlike_types
+                $functionlike_types,
             );
 
             $functionlike_node_scanner->start($node);
@@ -260,7 +260,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     $this->codebase,
                     new NodeDataProvider(),
                     $const->value,
-                    $this->aliases
+                    $this->aliases,
                 ) ?? Type::getMixed();
 
                 $fq_const_name = Type::getFQCLNFromString($const->name->name, $this->aliases);
@@ -279,7 +279,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 if (ExpressionResolver::enterConditional(
                     $this->codebase,
                     $this->file_path,
-                    $this->exists_cond_expr
+                    $this->exists_cond_expr,
                 ) === false
                 ) {
                     // the else node should terminate the agreement
@@ -295,7 +295,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     && ExpressionResolver::enterConditional(
                         $this->codebase,
                         $this->file_path,
-                        $this->exists_cond_expr
+                        $this->exists_cond_expr,
                     ) === true
                 ) {
                     $this->skip_if_descendants = $node->getLine();
@@ -316,7 +316,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->aliases,
                 $node,
                 $functionlike_storage,
-                $this->skip_if_descendants
+                $this->skip_if_descendants,
             );
         }
 
@@ -342,7 +342,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     $this->file_scanner,
                     $this->aliases,
                     $template_types,
-                    $this->type_aliases
+                    $this->type_aliases,
                 );
             } catch (DocblockParseException $e) {
                 // do nothing
@@ -395,7 +395,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             $this->aliases->constants,
             $this->aliases->uses_flipped,
             $this->aliases->functions_flipped,
-            $this->aliases->constants_flipped
+            $this->aliases->constants_flipped,
         );
 
         $this->file_storage->namespace_aliases[(int) $node->getAttribute('startFilePos')] = $this->aliases;
@@ -522,7 +522,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $classlike_storage,
                 $this,
                 $this->codebase,
-                []
+                [],
             );
 
             $this->eventDispatcher->dispatchAfterClassLikeVisit($event);
@@ -541,7 +541,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 }
 
                 throw new UnexpectedValueException(
-                    'There should be function storages for line ' . $this->file_path . ':' . $node->getLine()
+                    'There should be function storages for line ' . $this->file_path . ':' . $node->getLine(),
                 );
             }
 
@@ -567,7 +567,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                                 . $issue_type
                                 . ' - ' . $e->getShortLocationWithPrevious()
                                 . ':' . $e->code_location->getColumn()
-                                . ' - ' . $message
+                                . ' - ' . $message,
                         );
                     }
                 }

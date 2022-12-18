@@ -214,7 +214,7 @@ class Clause
             $this->wedge,
             $this->reconcilable,
             $this->generated,
-            $this->redefined_vars
+            $this->redefined_vars,
         );
     }
 
@@ -233,7 +233,7 @@ class Clause
             $this->wedge,
             $this->reconcilable,
             $this->generated,
-            $this->redefined_vars
+            $this->redefined_vars,
         );
     }
 

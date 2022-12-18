@@ -40,7 +40,7 @@ class MagicMethodAnnotationTest extends TestCase
                 $b = $child->setString(5);
                 $c = $child->getBool("hello");
                 $d = $child->getArray();
-                $e = $child->getCallable();'
+                $e = $child->getCallable();',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -67,7 +67,7 @@ class MagicMethodAnnotationTest extends TestCase
                 /**
                  * @method Obj|null find()
                  */
-                class C extends B {}'
+                class C extends B {}',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -89,7 +89,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                 $child = new Child();
 
-                $child->getString();'
+                $child->getString();',
         );
 
         $context = new Context();
@@ -115,7 +115,7 @@ class MagicMethodAnnotationTest extends TestCase
                  */
                 class Child extends ParentClass {}
 
-                $child = Child::getMe();'
+                $child = Child::getMe();',
         );
 
         $context = new Context();
@@ -139,7 +139,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                 function foo(MyException $e): int {
                     return $e->getCode();
-                }'
+                }',
         );
 
         $context = new Context();
@@ -568,7 +568,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $child = new Child();
 
                     $child->boolean(5);
-                    $child->integer(5);'
+                    $child->integer(5);',
             ],
             'overrideWithSelfBeforeMethodName' => [
                 'code' => '<?php
@@ -585,14 +585,14 @@ class MagicMethodAnnotationTest extends TestCase
 
                     function makeB(): B {
                         return B::make();
-                    }'
+                    }',
             ],
             'validMethodAsAnnotation' => [
                 'code' => '<?php
                     /**
                      * @method string as(string $value)
                      */
-                    class Foo {}'
+                    class Foo {}',
             ],
             'annotationWithSealedSuppressingUndefinedMagicMethod' => [
                 'code' => '<?php
@@ -607,7 +607,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     $child = new Child();
                     /** @psalm-suppress UndefinedMagicMethod */
-                    $child->foo();'
+                    $child->foo();',
             ],
             'allowFinalOverrider' => [
                 'code' => '<?php
@@ -626,7 +626,7 @@ class MagicMethodAnnotationTest extends TestCase
                     /**
                      * @method static B foo()
                      */
-                    final class B extends A {}'
+                    final class B extends A {}',
             ],
             'namespacedMethod' => [
                 'code' => '<?php
@@ -677,7 +677,7 @@ class MagicMethodAnnotationTest extends TestCase
                         {
                             $this->items = $foos;
                         }
-                    }'
+                    }',
             ],
             'parseFloatInDefault' => [
                 'code' => '<?php
@@ -703,7 +703,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                     namespace Bar {
                         (new \Foo\G)->randomInt();
-                    }'
+                    }',
             ],
             'negativeInDefault' => [
                 'code' => '<?php
@@ -716,7 +716,7 @@ class MagicMethodAnnotationTest extends TestCase
                         {
                         }
                     }
-                    (new G)->foo();'
+                    (new G)->foo();',
             ],
             'namespacedNegativeInDefault' => [
                 'code' => '<?php
@@ -731,7 +731,7 @@ class MagicMethodAnnotationTest extends TestCase
                             }
                         }
                         (new G)->foo();
-                    }'
+                    }',
             ],
             'namespacedUnion' => [
                 'code' => '<?php
@@ -746,7 +746,7 @@ class MagicMethodAnnotationTest extends TestCase
                         }
                     }
 
-                    (new Cache)->bar(new \DateTime(), new Cache());'
+                    (new Cache)->bar(new \DateTime(), new Cache());',
             ],
             'magicMethodInheritance' => [
                 'code' => '<?php
@@ -770,7 +770,7 @@ class MagicMethodAnnotationTest extends TestCase
                     function consumeInt(int $i): void {}
 
                     consumeString($b->foo());
-                    consumeInt($b->bar());'
+                    consumeInt($b->bar());',
             ],
             'magicMethodInheritanceOnInterface' => [
                 'code' => '<?php
@@ -782,7 +782,7 @@ class MagicMethodAnnotationTest extends TestCase
                     function consumeString(string $s): void {}
 
                     /** @var I2 $i */
-                    consumeString($i->foo());'
+                    consumeString($i->foo());',
             ],
             'magicStaticMethodInheritance' => [
                 'code' => '<?php
@@ -804,7 +804,7 @@ class MagicMethodAnnotationTest extends TestCase
                     function consumeInt(int $i): void {}
 
                     consumeString(B::foo());
-                    consumeInt(B::bar());'
+                    consumeInt(B::bar());',
             ],
             'magicStaticMethodInheritanceWithoutCallStatic' => [
                 'code' => '<?php
@@ -815,7 +815,7 @@ class MagicMethodAnnotationTest extends TestCase
                     class B extends A {}
                     function consumeInt(int $i): void {}
 
-                    consumeInt(B::bar());'
+                    consumeInt(B::bar());',
             ],
             'callUsingParent' => [
                 'code' => '<?php
@@ -849,7 +849,7 @@ class MagicMethodAnnotationTest extends TestCase
                     consumeFoo($b->create([]));
 
                     $d = new BlahModel();
-                    consumeBlah($d->create([]));'
+                    consumeBlah($d->create([]));',
             ],
             'returnThisShouldKeepGenerics' => [
                 'code' => '<?php
@@ -879,7 +879,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'assertions' => [
                     '$b' => 'A<B>&static',
                     '$c' => 'I<B>&static',
-                ]
+                ],
             ],
             'genericsOfInheritedMethodsShouldBeResolved' => [
                 'code' => '<?php
@@ -935,7 +935,7 @@ class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'B',
                     '$c' => 'B',
                     '$e' => 'B',
-                ]
+                ],
             ],
         ];
     }
@@ -1136,7 +1136,7 @@ class MagicMethodAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedVariable',
-            ]
+            ],
         ];
     }
 
@@ -1155,7 +1155,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $error_message = 'UndefinedMagicMethod';
@@ -1180,7 +1180,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1203,7 +1203,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1225,7 +1225,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1246,7 +1246,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1269,7 +1269,7 @@ class MagicMethodAnnotationTest extends TestCase
               /** @var A & B $b */
               $b = new B();
               $b->otherMethod();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1292,7 +1292,7 @@ class MagicMethodAnnotationTest extends TestCase
               /** @var A & B $b */
               $b = new B();
               $b->nonExistantMethod();
-              '
+              ',
         );
 
         $error_message = 'UndefinedMagicMethod';

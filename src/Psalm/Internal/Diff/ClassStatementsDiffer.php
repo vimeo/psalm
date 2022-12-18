@@ -174,7 +174,7 @@ class ClassStatementsDiffer extends AstDiffer
             $a,
             $b,
             $a_code,
-            $b_code
+            $b_code,
         );
 
         $diff = self::extractDiff($trace, $x, $y, $a, $b, $bc);
@@ -238,7 +238,7 @@ class ClassStatementsDiffer extends AstDiffer
 
                     $deletion_ranges[] = [
                         $start,
-                        (int)$affected_elem->getAttribute('endFilePos')
+                        (int)$affected_elem->getAttribute('endFilePos'),
                     ];
                 }
             }

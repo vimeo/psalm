@@ -18,7 +18,7 @@ class MethodCallTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                new SoapFault("1", "faultstring", "faultactor");'
+                new SoapFault("1", "faultstring", "faultactor");',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -51,7 +51,7 @@ class MethodCallTest extends TestCase
                     if ($a->getFoo()->getBar()) {
                         $a->getFoo()->getBar()->bat();
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -83,7 +83,7 @@ class MethodCallTest extends TestCase
                     }
 
                     return "hello";
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -118,7 +118,7 @@ class MethodCallTest extends TestCase
                     }
 
                     return "hello";
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -151,7 +151,7 @@ class MethodCallTest extends TestCase
 
                 if ($obj->getInt()) {
                     printInt($obj->getInt());
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -187,7 +187,7 @@ class MethodCallTest extends TestCase
 
                 if ($obj->getInt()) {
                     printInt($obj->getInt());
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -278,7 +278,7 @@ class MethodCallTest extends TestCase
                     $s = $a->bar();',
                 'assertions' => [
                     '$s' => 'string',
-                ]
+                ],
             ],
             'canBeCalledOnMagic' => [
                 'code' => '<?php
@@ -362,7 +362,7 @@ class MethodCallTest extends TestCase
                     takesString($formatted);',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' =>  '7.4'
+                'php_version' =>  '7.4',
             ],
             'domElement' => [
                 'code' => '<?php
@@ -409,7 +409,7 @@ class MethodCallTest extends TestCase
                     }',
                     'assertions' => [],
                     'ignored_issues' => [],
-                    'php_version' =>  '8.0'
+                    'php_version' =>  '8.0',
             ],
             'PDOMethod' => [
                 'code' => '<?php
@@ -531,7 +531,7 @@ class MethodCallTest extends TestCase
                             /** @psalm-suppress MixedArgument */
                             echo $a->bar();
                         }
-                    }'
+                    }',
             ],
             'callMethodAfterCheckingExistenceInClosure' => [
                 'code' => '<?php
@@ -545,7 +545,7 @@ class MethodCallTest extends TestCase
                             })();
 
                         }
-                    }'
+                    }',
             ],
             'callManyMethodsAfterCheckingExistence' => [
                 'code' => '<?php
@@ -558,7 +558,7 @@ class MethodCallTest extends TestCase
                         }
                         $object->foo();
                         $object->bar();
-                    }'
+                    }',
             ],
             'callManyMethodsAfterCheckingExistenceChained' => [
                 'code' => '<?php
@@ -567,7 +567,7 @@ class MethodCallTest extends TestCase
                             $object->foo();
                             $object->bar();
                         }
-                    }'
+                    }',
             ],
             'callManyMethodsOnKnownObjectAfterCheckingExistenceChained' => [
                 'code' => '<?php
@@ -577,7 +577,7 @@ class MethodCallTest extends TestCase
                             $object->foo();
                             $object->bar();
                         }
-                    }'
+                    }',
             ],
             'preserveMethodExistsType' => [
                 'code' => '<?php
@@ -590,7 +590,7 @@ class MethodCallTest extends TestCase
                         }
 
                         return $foo;
-                    }'
+                    }',
             ],
             'methodDoesNotExistOnClass' => [
                 'code' => '<?php
@@ -605,7 +605,7 @@ class MethodCallTest extends TestCase
                         }
 
                         return $foo;
-                    }'
+                    }',
             ],
             'pdoStatementFetchAssoc' => [
                 'code' => '<?php
@@ -615,7 +615,7 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_ASSOC);
-                    }'
+                    }',
             ],
             'pdoStatementFetchBoth' => [
                 'code' => '<?php
@@ -625,7 +625,7 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_BOTH);
-                    }'
+                    }',
             ],
             'pdoStatementFetchBound' => [
                 'code' => '<?php
@@ -635,7 +635,7 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_BOUND);
-                    }'
+                    }',
             ],
             'pdoStatementFetchClass' => [
                 'code' => '<?php
@@ -645,7 +645,7 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_CLASS);
-                    }'
+                    }',
             ],
             'pdoStatementFetchLazy' => [
                 'code' => '<?php
@@ -655,7 +655,7 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_LAZY);
-                    }'
+                    }',
             ],
             'pdoStatementFetchNamed' => [
                 'code' => '<?php
@@ -665,7 +665,7 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_NAMED);
-                    }'
+                    }',
             ],
             'pdoStatementFetchNum' => [
                 'code' => '<?php
@@ -675,7 +675,7 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_NUM);
-                    }'
+                    }',
             ],
             'pdoStatementFetchObj' => [
                 'code' => '<?php
@@ -685,12 +685,12 @@ class MethodCallTest extends TestCase
                         $sth = $p->prepare("SELECT 1");
                         $sth->execute();
                         return $sth->fetch(PDO::FETCH_OBJ);
-                    }'
+                    }',
             ],
             'dateTimeSecondArg' => [
                 'code' => '<?php
                     $date = new DateTime(null, new DateTimeZone("Pacific/Nauru"));
-                    echo $date->format("Y-m-d H:i:sP") . "\n";'
+                    echo $date->format("Y-m-d H:i:sP") . "\n";',
             ],
             'noCrashOnGetClassMethodCallWithNull' => [
                 'code' => '<?php
@@ -748,7 +748,7 @@ class MethodCallTest extends TestCase
                         }
                     }
 
-                    takesWithoutArguments(new C);'
+                    takesWithoutArguments(new C);',
             ],
             'getterAutomagicAssertion' => [
                 'code' => '<?php
@@ -766,7 +766,7 @@ class MethodCallTest extends TestCase
 
                     if ($a->getA()) {
                         echo strlen($a->getA());
-                    }'
+                    }',
             ],
             'ignorePossiblyNull' => [
                 'code' => '<?php
@@ -784,7 +784,7 @@ class MethodCallTest extends TestCase
                         {
                             return $this->type;
                         }
-                    }'
+                    }',
             ],
             'abstractMethodExistsOnChild' => [
                 'code' => '<?php
@@ -805,12 +805,12 @@ class MethodCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'pdoQueryTwoArgs' => [
                 'code' => '<?php
                     $pdo = new PDO("test");
-                    $pdo->query("SELECT * FROM projects", PDO::FETCH_NAMED);'
+                    $pdo->query("SELECT * FROM projects", PDO::FETCH_NAMED);',
             ],
             'unchainedInferredMutationFreeMethodCallMemoize' => [
                 'code' => '<?php
@@ -902,7 +902,7 @@ class MethodCallTest extends TestCase
 
                     $main = new MainClass();
 
-                    if ($main->getProperty() !== null && $main->getProperty()->test()) {}'
+                    if ($main->getProperty() !== null && $main->getProperty()->test()) {}',
             ],
             'getterTypeInferring' => [
                 'code' => '<?php
@@ -927,7 +927,7 @@ class MethodCallTest extends TestCase
                     $a = new SplObjectStorage();',
                 'assertions' => [
                     '$a' => 'SplObjectStorage<never, never>',
-                ]
+                ],
             ],
             'allowIteratorToBeNull' => [
                 'code' => '<?php
@@ -946,7 +946,7 @@ class MethodCallTest extends TestCase
 
                     $it = buildIterator(2);
 
-                    if ($it->current() === null) {}'
+                    if ($it->current() === null) {}',
             ],
             'resolveFinalInParentCall' => [
                 'code' => '<?php
@@ -962,7 +962,7 @@ class MethodCallTest extends TestCase
                         public static function new() : self {
                             return parent::create();
                         }
-                    }'
+                    }',
             ],
             'noCrashWhenCallingParent' => [
                 'code' => '<?php
@@ -977,7 +977,7 @@ class MethodCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'nullsafeShortCircuit' => [
                 'code' => '<?php
@@ -993,7 +993,7 @@ class MethodCallTest extends TestCase
                     fooOrNull()?->getBar()->doBaz();',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'parentMagicMethodCall' => [
                 'code' => '<?php
@@ -1021,7 +1021,7 @@ class MethodCallTest extends TestCase
                     $n = $m->create([]);',
                 'assertions' => [
                     '$n' => 'BlahModel',
-                ]
+                ],
             ],
         ];
     }
@@ -1334,12 +1334,12 @@ class MethodCallTest extends TestCase
 
                     $p = new A();
                     $p->foo()->bar();',
-                'error_message' => 'NullReference'
+                'error_message' => 'NullReference',
             ],
             'dateTimeNullFirstArg' => [
                 'code' => '<?php
                     $date = new DateTime(null);',
-                'error_message' => 'NullArgument'
+                'error_message' => 'NullArgument',
             ],
             'noCrashOnGetClassMethodCall' => [
                 'code' => '<?php
@@ -1430,7 +1430,7 @@ class MethodCallTest extends TestCase
                     }
 
                     foo(new AChild());',
-                'error_message' => 'PossiblyNullArgument'
+                'error_message' => 'PossiblyNullArgument',
             ],
             'getterAutomagicOverriddenWithAssertion' => [
                 'code' => '<?php
@@ -1462,7 +1462,7 @@ class MethodCallTest extends TestCase
                     }
 
                     foo(new AChild());',
-                'error_message' => 'PossiblyNullArgument'
+                'error_message' => 'PossiblyNullArgument',
             ],
             'checkVariableInUnknownClassConstructor' => [
                 'code' => '<?php
@@ -1550,7 +1550,7 @@ class MethodCallTest extends TestCase
                     $a->doBaz();',
                 'error_message' => 'PossiblyNullReference',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'undefinedMethodOnParentCallWithMethodExistsOnSelf' => [
                 'code' => '<?php

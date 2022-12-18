@@ -744,7 +744,7 @@ class FunctionTemplateTest extends TestCase
                         if (!is_object($foo)) {}
                         if (is_callable($foo)) {}
                         if (!is_callable($foo)) {}
-                    }'
+                    }',
             ],
             'interpretFunctionCallableReturnValue' => [
                 'code' => '<?php
@@ -783,7 +783,7 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     $staticIdGenerator = idGenerator([Id::class, "fromString"]);
-                    client($staticIdGenerator());'
+                    client($staticIdGenerator());',
             ],
             'noCrashWhenTemplatedClassIsStatic' => [
                 'code' => '<?php
@@ -804,7 +804,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function foo(Model $m) : Model {
                         return $m->newInstance();
-                    }'
+                    }',
             ],
             'unboundVariableIsEmpty' => [
                 'code' => '<?php
@@ -827,7 +827,7 @@ class FunctionTemplateTest extends TestCase
                         return $ret;
                     }
 
-                    echo collect("a");'
+                    echo collect("a");',
             ],
             'paramOutDontLeak' => [
                 'code' => '<?php
@@ -864,7 +864,7 @@ class FunctionTemplateTest extends TestCase
                         if (is_object($value)) {
                             takesObject($value);
                         }
-                    }'
+                    }',
             ],
             'falseDefault' => [
                 'code' => '<?php
@@ -875,7 +875,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function exampleWithNullDefault($v = false) {
                        return $v;
-                    }'
+                    }',
             ],
             'nullDefault' => [
                 'code' => '<?php
@@ -886,7 +886,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function exampleWithNullDefault($v = null) {
                        return $v;
-                    }'
+                    }',
             ],
             'uasortCallable' => [
                 'code' => '<?php
@@ -900,7 +900,7 @@ class FunctionTemplateTest extends TestCase
                         usort($collection, $sorter);
 
                         return $collection;
-                    }'
+                    }',
             ],
             'callableInference' => [
                 'code' => '<?php
@@ -926,7 +926,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function baz(array $a) {
                         return array_map("from_other", $a);
-                    }'
+                    }',
             ],
             'templateFlipIntersection' => [
                 'code' => '<?php
@@ -967,7 +967,7 @@ class FunctionTemplateTest extends TestCase
 
                     foreach ($values as $value) {
                         echo $value;
-                    }'
+                    }',
             ],
             'allowTemplatedCast' => [
                 'code' => '<?php
@@ -977,7 +977,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function at($key) : void {
                         echo (string) $key;
-                    }'
+                    }',
             ],
             'uksortNoNamespace' => [
                 'code' => '<?php
@@ -994,7 +994,7 @@ class FunctionTemplateTest extends TestCase
                     {
                         \uksort($result, $comparator);
                         return $result;
-                    }'
+                    }',
             ],
             'uksortNamespaced' => [
                 'code' => '<?php
@@ -1013,7 +1013,7 @@ class FunctionTemplateTest extends TestCase
                     {
                         \uksort($result, $comparator);
                         return $result;
-                    }'
+                    }',
             ],
             'mockObject' => [
                 'code' => '<?php
@@ -1038,7 +1038,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function createMock(string $originalClassName): MockObject {
                         return new MockObject;
-                    }'
+                    }',
             ],
             'testStringCallableInference' => [
                 'code' => '<?php
@@ -1081,8 +1081,8 @@ class FunctionTemplateTest extends TestCase
                     function _test(array $strings): void {}
                     $a =  map([A::class, "dup"])(["a", "b", "c"]);',
                 'assertions' => [
-                    '$a' => 'iterable<int, string>'
-                ]
+                    '$a' => 'iterable<int, string>',
+                ],
             ],
             'testClosureCallableInference' => [
                 'code' => '<?php
@@ -1124,8 +1124,8 @@ class FunctionTemplateTest extends TestCase
                         }
                     )(["a", "b", "c"]);',
                 'assertions' => [
-                    '$a' => 'iterable<int, string>'
-                ]
+                    '$a' => 'iterable<int, string>',
+                ],
             ],
             'possiblyNullMatchesTemplateType' => [
                 'code' => '<?php
@@ -1144,7 +1144,7 @@ class FunctionTemplateTest extends TestCase
                     $a = takesObject(rand(0, 1) ? new A() : null);',
                 'assertions' => [
                     '$a' => 'A',
-                ]
+                ],
             ],
             'possiblyNullMatchesAnotherTemplateType' => [
                 'code' => '<?php
@@ -1163,7 +1163,7 @@ class FunctionTemplateTest extends TestCase
 
                     class Foo {}
 
-                    createProxy(Foo::class, function (?Foo $f) : void {});'
+                    createProxy(Foo::class, function (?Foo $f) : void {});',
             ],
             'assertIntersectionsOnTemplatedTypes' => [
                 'code' => '<?php
@@ -1198,7 +1198,7 @@ class FunctionTemplateTest extends TestCase
 
                     function consume(Input $input): void {
                         useFooAndBar(decorateWithFoo(decorateWithBar($input)));
-                    }'
+                    }',
             ],
             'bottomTypeInClosureShouldNotBind' => [
                 'code' => '<?php
@@ -1222,7 +1222,7 @@ class FunctionTemplateTest extends TestCase
                         public function bar() : void {}
                     }
 
-                    createProxy(A::class, function(object $o):void {})->bar();'
+                    createProxy(A::class, function(object $o):void {})->bar();',
             ],
             'bottomTypeInNamespacedCallableShouldMatch' => [
                 'code' => '<?php
@@ -1263,7 +1263,7 @@ class FunctionTemplateTest extends TestCase
                     function ex($a) {
                         if($a === []) {}
                         return $a;
-                    }'
+                    }',
             ],
             'compareToFalse' => [
                 'code' => '<?php
@@ -1277,7 +1277,7 @@ class FunctionTemplateTest extends TestCase
                            return -1;
                         }
                         return $value;
-                    }'
+                    }',
             ],
             'refineTemplateTypeNotEmpty' => [
                 'code' => '<?php
@@ -1292,7 +1292,7 @@ class FunctionTemplateTest extends TestCase
                         }
 
                         return [];
-                    }'
+                    }',
             ],
             'manyGenericParams' => [
                 'code' => '<?php
@@ -1325,7 +1325,7 @@ class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'mixedDoesntSwallowNull' => [
                 'code' => '<?php
@@ -1348,7 +1348,7 @@ class FunctionTemplateTest extends TestCase
 
                         /** @psalm-suppress MixedReturnStatement */
                         return $c;
-                    }'
+                    }',
             ],
             'mixedDoesntSwallowNullProgressive' => [
                 'code' => '<?php
@@ -1371,7 +1371,7 @@ class FunctionTemplateTest extends TestCase
                         }
 
                         return null;
-                    }'
+                    }',
             ],
             'inferIterableArrayKeyAfterIsArrayCheck' => [
                 'code' => '<?php
@@ -1390,7 +1390,7 @@ class FunctionTemplateTest extends TestCase
                         } else {
                             return new \IteratorIterator($input);
                         }
-                    }'
+                    }',
             ],
             'doublyNestedFunctionTemplates' => [
                 'code' => '<?php
@@ -1421,7 +1421,7 @@ class FunctionTemplateTest extends TestCase
                                 }
                             }
                         })();
-                    }'
+                    }',
             ],
             'allowClosureParamLowerBoundAndUpperBound' => [
                 'code' => '<?php
@@ -1444,7 +1444,7 @@ class FunctionTemplateTest extends TestCase
                             };
                     }
 
-                    $value = takesClosure(function(Foo $foo) : void {})(new Foo());'
+                    $value = takesClosure(function(Foo $foo) : void {})(new Foo());',
             ],
             'subtractTemplatedNull' => [
                 'code' => '<?php
@@ -1463,7 +1463,7 @@ class FunctionTemplateTest extends TestCase
 
                     function takesNullableString(?string $s) : string {
                         return notNull($s);
-                    }'
+                    }',
             ],
             'subtractTemplatedInt' => [
                 'code' => '<?php
@@ -1485,7 +1485,7 @@ class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'templateChildClass' => [
                 'code' => '<?php
@@ -1508,7 +1508,7 @@ class FunctionTemplateTest extends TestCase
 
                             return $default;
                         }
-                    }'
+                    }',
             ],
             'isArrayCheckOnTemplated' => [
                 'code' => '<?php
@@ -1517,7 +1517,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function toList(iterable $iterable): void {
                         if (is_array($iterable)) {}
-                    }'
+                    }',
             ],
             'transformNestedTemplateWherePossible' => [
                 'code' => '<?php
@@ -1529,7 +1529,7 @@ class FunctionTemplateTest extends TestCase
                      */
                     function toList(array $arr): array {
                         return reset($arr);
-                    }'
+                    }',
             ],
             'callTemplatedFunctionWithTemplatedClassString' => [
                 'code' => '<?php
@@ -1549,7 +1549,7 @@ class FunctionTemplateTest extends TestCase
                      * @psalm-return Tb
                      * @psalm-suppress InvalidReturnType
                      */
-                    function deserialize_object(string $data, string $type) {}'
+                    function deserialize_object(string $data, string $type) {}',
             ],
             'arrayKeyInTemplateOfArrayKey' => [
                 'code' => '<?php
@@ -1588,7 +1588,7 @@ class FunctionTemplateTest extends TestCase
                         yield $key => "a";
                     }
 
-                    map(iter(), "mapper");'
+                    map(iter(), "mapper");',
             ],
             'dontScreamForArithmeticsOnIntTemplates' => [
                 'code' => '<?php
@@ -1601,7 +1601,7 @@ class FunctionTemplateTest extends TestCase
                         if (is_int($p)) {
                             $q = $p - 1;
                         }
-                    }'
+                    }',
             ],
             'dontScreamForArithmeticsOnFloatTemplates' => [
                 'code' => '<?php
@@ -1616,7 +1616,7 @@ class FunctionTemplateTest extends TestCase
                             return null;
                         }
                         return $p - 1;
-                    }'
+                    }',
             ],
             'literalIsAlwaysContainedInString' => [
                 'code' => '<?php
@@ -1657,8 +1657,8 @@ class FunctionTemplateTest extends TestCase
                     normalizeField("foo", new StringNorm());',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
-            ]
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2089,13 +2089,13 @@ class FunctionTemplateTest extends TestCase
                     }
 
                     apply(new Printer(), new B());',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'invalidTemplateDocblock' => [
                 'code' => '<?php
                     /** @template */
                     function f():void {}',
-                'error_message' => 'MissingDocblockType'
+                'error_message' => 'MissingDocblockType',
             ],
             'returnNamedObjectWhereTemplateIsExpected' => [
                 'code' => '<?php
@@ -2164,7 +2164,7 @@ class FunctionTemplateTest extends TestCase
                     class B {}
 
                     createProxy(A::class, function(B $o):void {})->bar();',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'bottomTypeInNamespacedCallableShouldClash' => [
                 'code' => '<?php
@@ -2195,7 +2195,7 @@ class FunctionTemplateTest extends TestCase
                     function foo(B $o):void {}
 
                     createProxy(A::class, \'Ns\foo\')->bar();',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'preventBadArraySubtyping' => [
                 'code' => '<?php
@@ -2207,7 +2207,7 @@ class FunctionTemplateTest extends TestCase
                         $b = ["a" => 123];
                         return $b;
                     }',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'modifyTemplatedShape' => [
                 'code' => '<?php
@@ -2220,7 +2220,7 @@ class FunctionTemplateTest extends TestCase
                         $s["a"] = 123;
                         return $s;
                     }',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'preventArrayOverwriting' => [
                 'code' => '<?php
@@ -2231,7 +2231,7 @@ class FunctionTemplateTest extends TestCase
                     function foo(array $b) : array {
                         return $b;
                     }',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'catchIssueInTemplatedFunctionInsideClass' => [
                 'code' => '<?php

@@ -46,7 +46,7 @@ class MethodVisibilityAnalyzer
                 $fq_classlike_name,
                 $method_name,
                 $context,
-                $code_location
+                $code_location,
             );
 
             if ($method_visible === false) {
@@ -54,9 +54,9 @@ class MethodVisibilityAnalyzer
                     new InaccessibleMethod(
                         'Cannot access method ' . $codebase_methods->getCasedMethodId($method_id) .
                             ' from context ' . $context->self,
-                        $code_location
+                        $code_location,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 )) {
                     return false;
                 }
@@ -145,9 +145,9 @@ class MethodVisibilityAnalyzer
                         new InaccessibleMethod(
                             'Cannot access private method ' . $codebase_methods->getCasedMethodId($method_id) .
                                 ' from context ' . $context->self,
-                            $code_location
+                            $code_location,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     )) {
                         return false;
                     }
@@ -160,9 +160,9 @@ class MethodVisibilityAnalyzer
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . $method_id,
-                            $code_location
+                            $code_location,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     )) {
                         return false;
                     }
@@ -184,9 +184,9 @@ class MethodVisibilityAnalyzer
                         new InaccessibleMethod(
                             'Cannot access protected method ' . $codebase_methods->getCasedMethodId($method_id) .
                                 ' from context ' . $context->self,
-                            $code_location
+                            $code_location,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     )) {
                         return false;
                     }

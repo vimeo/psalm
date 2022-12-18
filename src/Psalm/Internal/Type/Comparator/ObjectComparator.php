@@ -48,8 +48,8 @@ class ObjectComparator
 
                 $intersection_container_type_lower = strtolower(
                     $codebase->classlikes->getUnAliasedName(
-                        $intersection_container_type->value
-                    )
+                        $intersection_container_type->value,
+                    ),
                 );
             }
 
@@ -71,7 +71,7 @@ class ObjectComparator
                     $intersection_container_type_lower,
                     $container_was_static,
                     $allow_interface_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 )) {
                     $any_inputs_contained = true;
                 }
@@ -173,7 +173,7 @@ class ObjectComparator
                 }
 
                 $input_class_storage = $codebase->classlike_storage_provider->get(
-                    $intersection_input_type->defining_class
+                    $intersection_input_type->defining_class,
                 );
 
                 if (isset($input_class_storage->template_extended_params
@@ -211,7 +211,7 @@ class ObjectComparator
                 false,
                 false,
                 $atomic_comparison_result,
-                $allow_interface_equality
+                $allow_interface_equality,
             );
         }
 
@@ -226,8 +226,8 @@ class ObjectComparator
 
             $intersection_input_type_lower = strtolower(
                 $codebase->classlikes->getUnAliasedName(
-                    $intersection_input_type->value
-                )
+                    $intersection_input_type->value,
+                ),
             );
         }
 
@@ -254,12 +254,12 @@ class ObjectComparator
                 || ($codebase->classlikes->classExists($intersection_input_type_lower)
                     && $codebase->classlikes->classImplements(
                         $intersection_input_type_lower,
-                        'Traversable'
+                        'Traversable',
                     ))
                 || ($codebase->classlikes->interfaceExists($intersection_input_type_lower)
                     && $codebase->classlikes->interfaceExtends(
                         $intersection_input_type_lower,
-                        'Traversable'
+                        'Traversable',
                     ))
             ) {
                 return true;
@@ -287,7 +287,7 @@ class ObjectComparator
             && $codebase->classOrInterfaceExists($intersection_container_type_lower)
             && $codebase->classExtendsOrImplements(
                 $intersection_input_type_lower,
-                $intersection_container_type_lower
+                $intersection_container_type_lower,
             )
         ) {
             if ($container_was_static && !$input_was_static) {
@@ -304,7 +304,7 @@ class ObjectComparator
         if ($input_type_is_interface
             && $codebase->interfaceExtends(
                 $intersection_input_type_lower,
-                $intersection_container_type_lower
+                $intersection_container_type_lower,
             )
         ) {
             return true;

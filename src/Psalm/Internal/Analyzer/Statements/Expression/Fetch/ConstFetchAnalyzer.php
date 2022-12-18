@@ -61,7 +61,7 @@ class ConstFetchAnalyzer
                     $statements_analyzer,
                     $const_name,
                     $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
-                    $context
+                    $context,
                 );
 
                 $codebase = $statements_analyzer->getCodebase();
@@ -84,7 +84,7 @@ class ConstFetchAnalyzer
                             . ($stmt->name instanceof PhpParser\Node\Name\FullyQualified
                                 ? '\\'
                                 : $statements_analyzer->getNamespace() . '-')
-                            . $const_name
+                            . $const_name,
                 );
 
                 if ($const_type) {
@@ -93,9 +93,9 @@ class ConstFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
                             'Const ' . $const_name . ' is not defined',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
         }
@@ -115,7 +115,7 @@ class ConstFetchAnalyzer
 
         if ($fq_const_name) {
             $stubbed_const_type = $codebase->getStubbedConstantType(
-                $fq_const_name
+                $fq_const_name,
             );
 
             if ($stubbed_const_type) {
@@ -124,7 +124,7 @@ class ConstFetchAnalyzer
         }
 
         $stubbed_const_type = $codebase->getStubbedConstantType(
-            $const_name
+            $const_name,
         );
 
         if ($stubbed_const_type) {
@@ -215,7 +215,7 @@ class ConstFetchAnalyzer
             $namespace_name = implode('\\', $const_name_parts);
             $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
                 $namespace_name,
-                ReflectionProperty::IS_PUBLIC
+                ReflectionProperty::IS_PUBLIC,
             );
 
             if (isset($namespace_constants[$const_name])) {
@@ -303,7 +303,7 @@ class ConstFetchAnalyzer
                 $statements_analyzer,
                 $const->name->name,
                 $statements_analyzer->node_data->getType($const->value) ?? Type::getMixed(),
-                $context
+                $context,
             );
         }
     }

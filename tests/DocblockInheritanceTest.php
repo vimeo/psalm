@@ -76,7 +76,7 @@ class DocblockInheritanceTest extends TestCase
                         public function aa() {
                             return [];
                         }
-                    }'
+                    }',
             ],
             'inheritTwiceWithArrayType' => [
                 'code' => '<?php
@@ -99,7 +99,7 @@ class DocblockInheritanceTest extends TestCase
                         public function aa() : array {
                             return [];
                         }
-                    }'
+                    }',
             ],
             'inheritCorrectReturnTypeOnInterface' => [
                 'code' => '<?php
@@ -119,7 +119,7 @@ class DocblockInheritanceTest extends TestCase
 
                     function takesB(B $f) : B {
                         return $f->map();
-                    }'
+                    }',
             ],
             'inheritCorrectReturnTypeOnClass' => [
                 'code' => '<?php
@@ -145,7 +145,7 @@ class DocblockInheritanceTest extends TestCase
 
                     function takesF(F $f) : B {
                         return $f->map();
-                    }'
+                    }',
             ],
         ];
     }

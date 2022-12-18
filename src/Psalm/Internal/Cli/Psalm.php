@@ -238,7 +238,7 @@ final class Psalm
             $path_to_config,
             $output_format,
             $run_taint_analysis,
-            $options
+            $options,
         );
 
         if (isset($options['no-cache'])) {
@@ -347,10 +347,10 @@ final class Psalm
                 $report_file_paths,
                 isset($options['report-show-info'])
                     ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
-                    : true
+                    : true,
             ),
             $threads,
-            $progress
+            $progress,
         );
 
         CliUtils::initPhpVersion($options, $config, $project_analyzer);
@@ -364,7 +364,7 @@ final class Psalm
             $find_references_to,
             $find_unused_code,
             $find_unused_variables,
-            $run_taint_analysis
+            $run_taint_analysis,
         );
 
         if ($config->run_taint_analysis || $run_taint_analysis) {
@@ -402,7 +402,7 @@ final class Psalm
                 !$paths_to_check,
                 $start_time,
                 isset($options['stats']),
-                self::initBaseline($options, $config, $current_dir, $path_to_config)
+                self::initBaseline($options, $config, $current_dir, $path_to_config),
             );
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
@@ -447,7 +447,7 @@ final class Psalm
                         fwrite(
                             STDERR,
                             'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL
+                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
                         );
                         exit(1);
                     }
@@ -460,13 +460,13 @@ final class Psalm
                         fwrite(
                             STDERR,
                             'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL
+                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
                         );
                         exit(1);
                     }
                 }
             },
-            $args
+            $args,
         );
     }
 
@@ -542,7 +542,7 @@ final class Psalm
                     $current_dir,
                     $init_source_dir,
                     $init_level,
-                    $vendor_dir
+                    $vendor_dir,
                 );
             } catch (ConfigCreationException $e) {
                 die($e->getMessage() . PHP_EOL);
@@ -569,7 +569,7 @@ final class Psalm
             $current_dir,
             $output_format,
             $first_autoloader,
-            $run_taint_analysis
+            $run_taint_analysis,
         );
 
         if (isset($options['error-level'])
@@ -579,7 +579,7 @@ final class Psalm
 
             if (!in_array($config_level, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
                 throw new ConfigException(
-                    'Invalid error level ' . $config_level
+                    'Invalid error level ' . $config_level,
                 );
             }
 
@@ -615,7 +615,7 @@ final class Psalm
     {
         if (isset($options['no-cache']) || isset($options['i'])) {
             $providers = new Providers(
-                new FileProvider
+                new FileProvider,
             );
         } else {
             $no_reflection_cache = isset($options['no-reflection-cache']);
@@ -635,7 +635,7 @@ final class Psalm
                 $file_storage_cache_provider,
                 $classlike_storage_cache_provider,
                 new FileReferenceCacheProvider($config),
-                new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+                new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
             );
         }
         return $providers;
@@ -656,7 +656,7 @@ final class Psalm
         try {
             $issue_baseline = ErrorBaseline::read(
                 new FileProvider,
-                $options['set-baseline']
+                $options['set-baseline'],
             );
         } catch (ConfigException $e) {
             $issue_baseline = [];
@@ -666,7 +666,7 @@ final class Psalm
             new FileProvider,
             $options['set-baseline'],
             IssueBuffer::getIssuesData(),
-            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
+            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
         );
 
         fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
@@ -674,7 +674,7 @@ final class Psalm
         CliUtils::updateConfigFile(
             $config,
             $path_to_config ?? $current_dir,
-            $options['set-baseline']
+            $options['set-baseline'],
         );
 
         fwrite(STDERR, PHP_EOL);
@@ -696,7 +696,7 @@ final class Psalm
         try {
             $issue_current_baseline = ErrorBaseline::read(
                 new FileProvider,
-                $baselineFile
+                $baselineFile,
             );
             $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
 
@@ -704,7 +704,7 @@ final class Psalm
                 new FileProvider,
                 $baselineFile,
                 IssueBuffer::getIssuesData(),
-                $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
+                $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
             );
             $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
 
@@ -741,17 +741,17 @@ final class Psalm
 
         $reference_dictionary = ReferenceMapGenerator::getReferenceMap(
             $providers->classlike_storage_provider,
-            $expected_references
+            $expected_references,
         );
 
         $type_map_string = json_encode(
             ['files' => $name_file_map, 'references' => $reference_dictionary],
-            JSON_THROW_ON_ERROR
+            JSON_THROW_ON_ERROR,
         );
 
         $providers->file_provider->setContents(
             $type_map_location,
-            $type_map_string
+            $type_map_string,
         );
     }
 
@@ -771,7 +771,7 @@ final class Psalm
 
             $init_level = Creator::getLevel(
                 array_merge(...array_values($issues_by_file)),
-                array_sum($mixed_counts)
+                array_sum($mixed_counts),
             );
         }
 
@@ -782,7 +782,7 @@ final class Psalm
                 $current_dir,
                 $init_source_dir,
                 $init_level,
-                $vendor_dir
+                $vendor_dir,
             );
         } catch (ConfigCreationException $e) {
             die($e->getMessage() . PHP_EOL);
@@ -857,7 +857,7 @@ final class Psalm
             if (!$root_path) {
                 fwrite(
                     STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL
+                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
                 );
                 exit(1);
             }
@@ -1012,7 +1012,7 @@ final class Psalm
                 $output_format,
                 $first_autoloader,
                 $run_taint_analysis,
-                $options
+                $options,
             );
         }
         return [$config, $init_source_dir];
@@ -1053,7 +1053,7 @@ final class Psalm
             try {
                 $issue_baseline = ErrorBaseline::read(
                     new FileProvider,
-                    $baseline_file_path
+                    $baseline_file_path,
                 );
             } catch (ConfigException $exception) {
                 fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
@@ -1074,7 +1074,7 @@ final class Psalm
             file_put_contents($dump_taint_graph, "digraph Taints {\n\t".
                 implode("\n\t", array_map(
                     static fn(array $edges) => '"'.implode('" -> "', $edges).'"',
-                    $flow_graph->summarizeEdges()
+                    $flow_graph->summarizeEdges(),
                 )) .
                 "\n}\n");
         }
@@ -1170,8 +1170,8 @@ final class Psalm
                 StubsGenerator::getAll(
                     $project_analyzer->getCodebase(),
                     $providers->classlike_storage_provider,
-                    $providers->file_storage_provider
-                )
+                    $providers->file_storage_provider,
+                ),
             );
         }
     }

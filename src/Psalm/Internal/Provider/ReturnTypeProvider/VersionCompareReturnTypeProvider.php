@@ -63,7 +63,7 @@ class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInte
                     if (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $operator_type,
-                        $acceptable_operator_type
+                        $acceptable_operator_type,
                     )) {
                         return Type::getBool();
                     }

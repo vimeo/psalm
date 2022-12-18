@@ -550,7 +550,7 @@ class FunctionTemplateAssertTest extends TestCase
                         nullOrImplementsInterface($value, A::class);
 
                         return $value;
-                    }'
+                    }',
             ],
             'assertTemplatedTemplateSimple' => [
                 'code' => '<?php
@@ -579,7 +579,7 @@ class FunctionTemplateAssertTest extends TestCase
                         $x = 0;
                         $c->is($x);
                         return $x;
-                    }'
+                    }',
             ],
             'assertTemplatedTemplateIfTrue' => [
                 'code' => '<?php
@@ -611,7 +611,7 @@ class FunctionTemplateAssertTest extends TestCase
                         /** @var mixed */
                         $x = 0;
                         return $c->is($x) ? $x : false;
-                    }'
+                    }',
             ],
             'assertOnClass' => [
                 'code' => '<?php
@@ -638,7 +638,7 @@ class FunctionTemplateAssertTest extends TestCase
                             assert($this->matches($value));
                             return $value;
                         }
-                    }'
+                    }',
             ],
             'noCrashWhenAsserting' => [
                 'code' => '<?php
@@ -683,7 +683,7 @@ class FunctionTemplateAssertTest extends TestCase
                     ): string {
                         \assert(\is_a($input_string, $templated_class_string, true));
                         return $input_string;
-                    }'
+                    }',
             ],
             'classTemplateAssert' => [
                 'code' => '<?php
@@ -729,7 +729,7 @@ class FunctionTemplateAssertTest extends TestCase
                         {
                           throw new \Exception("bad");
                         }
-                    }'
+                    }',
             ],
             'assertThrowsInstanceOfFunction' => [
                 'code' => '<?php
@@ -744,7 +744,7 @@ class FunctionTemplateAssertTest extends TestCase
                         if (!($outerEx instanceof $exceptionType)) {
                             throw new \Exception("thrown instance of wrong type");
                         }
-                    }'
+                    }',
             ],
             'dontBleedTemplateTypeInArray' => [
                 'code' => '<?php
@@ -770,7 +770,7 @@ class FunctionTemplateAssertTest extends TestCase
                         allIsAOf($value, $class);
 
                         return $value;
-                    }'
+                    }',
             ],
             'noCrashOnListKeyAssertion' => [
                 'code' => '<?php
@@ -787,7 +787,7 @@ class FunctionTemplateAssertTest extends TestCase
                         foreach ($list as $i => $l) {
                             assertSame($i, $l);
                         }
-                    }'
+                    }',
             ],
             'assertSameOnMemoizedMethodCall' => [
                 'code' => '<?php
@@ -822,7 +822,7 @@ class FunctionTemplateAssertTest extends TestCase
                         if (strlen($username) < 5) {
                             throw new Exception("Username must be at least 5 characters long");
                         }
-                    }'
+                    }',
             ],
             'ifTrueListAssertionFromGeneric' => [
                 'code' => '<?php
@@ -854,7 +854,7 @@ class FunctionTemplateAssertTest extends TestCase
 
                     if ($numbersT->is($mixed)) {
                         acceptsIntList($mixed);
-                    }'
+                    }',
             ],
             'assertListFromGeneric' => [
                 'code' => '<?php
@@ -884,7 +884,7 @@ class FunctionTemplateAssertTest extends TestCase
                     $mixed = null;
 
                     $numbersT->assert($mixed);
-                    acceptsIntList($mixed);'
+                    acceptsIntList($mixed);',
             ],
             'assertArrayFromGeneric' => [
                 'code' => '<?php
@@ -914,7 +914,7 @@ class FunctionTemplateAssertTest extends TestCase
                     $mixed = null;
 
                     $numbersT->assert($mixed);
-                    acceptsArray($mixed);'
+                    acceptsArray($mixed);',
             ],
         ];
     }

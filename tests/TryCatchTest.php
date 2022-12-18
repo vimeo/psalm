@@ -272,7 +272,7 @@ class TryCatchTest extends TestCase
                         $lastException = $e;
                     }
 
-                    echo $lastException->getMessage();'
+                    echo $lastException->getMessage();',
             ],
             'varSetInOnlyCatchWithNull' => [
                 'code' => '<?php
@@ -288,7 +288,7 @@ class TryCatchTest extends TestCase
                         $lastException = $e;
                     }
 
-                    echo $lastException->getMessage();'
+                    echo $lastException->getMessage();',
             ],
             'allowDoubleNestedLoop' => [
                 'code' => '<?php
@@ -300,7 +300,7 @@ class TryCatchTest extends TestCase
                                 } while ($count === 5);
                             } catch (Exception $e) {}
                         } while (rand(0, 1));
-                    }'
+                    }',
             ],
             'aliasException' => [
                 'code' => '<?php
@@ -325,7 +325,7 @@ class TryCatchTest extends TestCase
                         throw new \Alias\UserException\UserExceptionAlias();
                     } catch (\Alias\UserException\UserExceptionAlias $e) {
                         // do nothing
-                    }'
+                    }',
             ],
             'aliasAnotherException' => [
                 'code' => '<?php
@@ -350,7 +350,7 @@ class TryCatchTest extends TestCase
                         throw new \Alias\UserException\UserExceptionAlias();
                     } catch (\Alias\UserException\UserExceptionAlias $e) {
                         // do nothing
-                    }'
+                    }',
             ],
             'notRedundantVarCheckInFinally' => [
                 'code' => '<?php
@@ -364,7 +364,7 @@ class TryCatchTest extends TestCase
                         if ($var === "a") {
                             echo $var;
                         }
-                    }'
+                    }',
             ],
             'suppressUndefinedVarInFinally' => [
                 'code' => '<?php
@@ -390,7 +390,7 @@ class TryCatchTest extends TestCase
                             } finally {
                             }
                         }
-                    }'
+                    }',
             ],
             'finallyArgMaybeUndefined' => [
                 'code' => '<?php
@@ -413,7 +413,7 @@ class TryCatchTest extends TestCase
                         }
 
                         private function workThatMayOrMayNotThrow(): void {}
-                    }'
+                    }',
             ],
             'finallyArgIsNotUndefinedIfSet' => [
                 'code' => '<?php
@@ -427,7 +427,7 @@ class TryCatchTest extends TestCase
                         }
 
                         return $foo;
-                    }'
+                    }',
             ],
             'allowReturningPossiblyUndefinedFromTry' => [
                 'code' => '<?php
@@ -440,7 +440,7 @@ class TryCatchTest extends TestCase
                         }
 
                         return $foo;
-                    }'
+                    }',
             ],
             'mixedNotUndefinedAfterTry' => [
                 'code' => '<?php
@@ -464,7 +464,7 @@ class TryCatchTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'issetInCatch' => [
                 'code' => '<?php
@@ -474,7 +474,7 @@ class TryCatchTest extends TestCase
                         } catch (Exception $e) {
                             echo isset($a) ? $a : 1;
                         }
-                    }'
+                    }',
             ],
             'issetExceptionInFinally' => [
                 'code' => '<?php
@@ -486,7 +486,7 @@ class TryCatchTest extends TestCase
                         //throw $exception;
                     } finally {
                         if (isset($exception)) {}
-                    }'
+                    }',
             ],
         ];
     }
@@ -601,7 +601,7 @@ class TryCatchTest extends TestCase
                         }
                         return "hello";
                     }',
-                'error_message' => 'NullableReturnStatement'
+                'error_message' => 'NullableReturnStatement',
             ],
             'isAlwaysDefinedInFinally' => [
                 'code' => '<?php
@@ -625,7 +625,7 @@ class TryCatchTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'RedundantCondition'
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

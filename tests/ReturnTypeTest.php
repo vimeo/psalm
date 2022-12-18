@@ -766,7 +766,7 @@ class ReturnTypeTest extends TestCase
                     '$res' => 'Closure(int):bool',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'infersClosureReturnTypesWithPartialTypehinting' => [
                 'code' => '<?php
@@ -870,7 +870,7 @@ class ReturnTypeTest extends TestCase
 
                     foreach ($gen as $k => $_) {
                         echo "$k\n";
-                    }'
+                    }',
             ],
             'allowImplicitNever' => [
                 'code' => '<?php
@@ -899,7 +899,7 @@ class ReturnTypeTest extends TestCase
                         {
                             return ["foo"];
                         }
-                    }'
+                    }',
             ],
             'compareTKeyedArrayToPotentiallyUnfilledArray' => [
                 'code' => '<?php
@@ -938,7 +938,7 @@ class ReturnTypeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'returnsNullSometimes' => [
                 'code' => '<?php
@@ -949,7 +949,7 @@ class ReturnTypeTest extends TestCase
                         }
                         throw new RuntimeException;
                     }
-                '
+                ',
             ],
             'scalarLiteralsInferredAfterUndefinedClass' => [
                 'code' => '<?php
@@ -963,7 +963,7 @@ class ReturnTypeTest extends TestCase
 
                         return "b";
                     }
-                '
+                ',
             ],
             'docblockNeverReturn' => [
                 'code' => '<?php
@@ -979,7 +979,7 @@ class ReturnTypeTest extends TestCase
                         }
 
                         returnsNever();
-                    }'
+                    }',
             ],
             'return0' => [
                 'code' => '<?php
@@ -988,7 +988,7 @@ class ReturnTypeTest extends TestCase
                      */
                     function takesAnInt() {
                         return 0;
-                    }'
+                    }',
             ],
             'neverReturnClosure' => [
                 'code' => '<?php
@@ -996,7 +996,7 @@ class ReturnTypeTest extends TestCase
                     function() {
                         print_r(func_get_args());
                         exit(1);
-                    });'
+                    });',
             ],
             'ExitInBothBranches' => [
                 'code' => '<?php
@@ -1007,7 +1007,7 @@ class ReturnTypeTest extends TestCase
                         } else {
                             exit(0);
                         }
-                    }'
+                    }',
             ],
             'NeverAndVoid' => [
                 'code' => '<?php
@@ -1018,7 +1018,7 @@ class ReturnTypeTest extends TestCase
                         }
 
                         throw new \Exception();
-                    }'
+                    }',
             ],
             'neverAndVoidOnConditional' => [
                 'code' => '<?php
@@ -1031,7 +1031,7 @@ class ReturnTypeTest extends TestCase
                         if($end){
                             die();
                         }
-                    }'
+                    }',
             ],
             'returnTypeOfAbstractAndConcreteMethodFromTemplatedTraits' => [
                 'code' => '<?php
@@ -1062,7 +1062,7 @@ class ReturnTypeTest extends TestCase
                         public function __construct() {
                             $this->value = 123;
                         }
-                    }'
+                    }',
             ],
             'returnTypeOfAbstractMethodFromTemplatedTraitAndImplementationFromNonTemplatedTrait' => [
                 'code' => '<?php
@@ -1090,7 +1090,7 @@ class ReturnTypeTest extends TestCase
                         public function __construct() {
                             $this->value = 123;
                         }
-                    }'
+                    }',
             ],
             'nestedArrayMapReturnTypeDoesntCrash' => [
                 'code' => '<?php
@@ -1669,7 +1669,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidClass',
-            ]
+            ],
         ];
     }
 }

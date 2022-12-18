@@ -60,8 +60,8 @@ class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInt
                     'r' => new Union([new TIntRange(0, 255)]),
                     'g' => new Union([new TIntRange(0, 255)]),
                     'b' => new Union([new TIntRange(0, 255)]),
-                    'a' => new Union([new TIntRange(0, 1)])
-                ])
+                    'a' => new Union([new TIntRange(0, 1)]),
+                ]),
             ]);
         }
         if (isset($formats[1])) {
@@ -70,8 +70,8 @@ class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInt
                     'r' => Type::getFloat(),
                     'g' => Type::getFloat(),
                     'b' => Type::getFloat(),
-                    'a' => Type::getFloat()
-                ])
+                    'a' => Type::getFloat(),
+                ]),
             ]);
         }
         if (isset($formats[2])) {
@@ -80,8 +80,8 @@ class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInt
                     'r' => new Union([new TIntRange(0, 255)]),
                     'g' => new Union([new TIntRange(0, 255)]),
                     'b' => new Union([new TIntRange(0, 255)]),
-                    'a' => new Union([new TIntRange(0, 255)])
-                ])
+                    'a' => new Union([new TIntRange(0, 255)]),
+                ]),
             ]);
         }
 

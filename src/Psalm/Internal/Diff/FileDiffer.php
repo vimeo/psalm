@@ -95,7 +95,7 @@ class FileDiffer
                 $result[] = new DiffElem(
                     DiffElem::TYPE_KEEP,
                     $a[$x - 1],
-                    $b[$y - 1]
+                    $b[$y - 1],
                 );
                 --$x;
                 --$y;
@@ -298,7 +298,7 @@ class FileDiffer
                     $newDiff[] = new DiffElem(
                         DiffElem::TYPE_REPLACE,
                         $diff[$i + $n]->old,
-                        $diff[$j + $n]->new
+                        $diff[$j + $n]->new,
                     );
                 }
             } else {

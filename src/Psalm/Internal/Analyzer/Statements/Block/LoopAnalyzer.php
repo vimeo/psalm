@@ -82,20 +82,20 @@ class LoopAnalyzer
                     $pre_condition,
                     $loop_context->self,
                     $statements_analyzer,
-                    $codebase
+                    $codebase,
                 );
             }
         } else {
             $always_assigned_before_loop_body_vars = Context::getNewOrUpdatedVarIds(
                 $loop_parent_context,
-                $loop_context
+                $loop_context,
             );
         }
 
         $final_actions = ScopeAnalyzer::getControlActions(
             $stmts,
             $statements_analyzer->node_data,
-            []
+            [],
         );
 
         $does_always_break = $final_actions === [ScopeAnalyzer::ACTION_BREAK];
@@ -122,7 +122,7 @@ class LoopAnalyzer
                     $pre_condition_clauses[$condition_offset],
                     $continue_context,
                     $loop_parent_context,
-                    $is_do
+                    $is_do,
                 );
             }
 
@@ -135,7 +135,7 @@ class LoopAnalyzer
                 if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $post_expression,
-                    $loop_context
+                    $loop_context,
                 ) === false
                 ) {
                     return false;
@@ -144,7 +144,7 @@ class LoopAnalyzer
 
             $loop_parent_context->vars_possibly_in_scope = array_merge(
                 $continue_context->vars_possibly_in_scope,
-                $loop_parent_context->vars_possibly_in_scope
+                $loop_parent_context->vars_possibly_in_scope,
             );
         } else {
             $original_parent_context = clone $loop_parent_context;
@@ -166,7 +166,7 @@ class LoopAnalyzer
                         $pre_condition_clauses[$condition_offset],
                         $loop_context,
                         $loop_parent_context,
-                        $is_do
+                        $is_do,
                     );
                 }
             }
@@ -193,7 +193,7 @@ class LoopAnalyzer
                         $pre_condition_clauses[$condition_offset],
                         $continue_context,
                         $loop_parent_context,
-                        $is_do
+                        $is_do,
                     ), ...$always_assigned_before_loop_body_vars];
                 }
             }
@@ -234,7 +234,7 @@ class LoopAnalyzer
                             // widen the foreach context type with the initial context type
                             $continue_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $continue_context->vars_in_scope[$var_id],
-                                $original_parent_context->vars_in_scope[$var_id]
+                                $original_parent_context->vars_in_scope[$var_id],
                             );
 
                             // if there's a change, invalidate related clauses
@@ -251,7 +251,7 @@ class LoopAnalyzer
                             // widen the foreach context type with the initial context type
                             $continue_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $continue_context->vars_in_scope[$var_id],
-                                $loop_context->vars_in_scope[$var_id]
+                                $loop_context->vars_in_scope[$var_id],
                             );
 
                             // if there's a change, invalidate related clauses
@@ -275,7 +275,7 @@ class LoopAnalyzer
 
                 $loop_parent_context->vars_possibly_in_scope = array_merge(
                     $continue_context->vars_possibly_in_scope,
-                    $loop_parent_context->vars_possibly_in_scope
+                    $loop_parent_context->vars_possibly_in_scope,
                 );
 
                 // if there are no changes to the types, no need to re-examine
@@ -302,7 +302,7 @@ class LoopAnalyzer
                             $pre_condition_clauses[$condition_offset],
                             $continue_context,
                             $loop_parent_context,
-                            false
+                            false,
                         );
                     }
                 }
@@ -331,8 +331,8 @@ class LoopAnalyzer
 
                 $traverser->addVisitor(
                     new NodeCleanerVisitor(
-                        $statements_analyzer->node_data
-                    )
+                        $statements_analyzer->node_data,
+                    ),
                 );
                 $traverser->traverse($stmts);
 
@@ -352,7 +352,7 @@ class LoopAnalyzer
                             $pre_condition_clauses[$condition_offset],
                             $continue_context,
                             $loop_parent_context,
-                            $is_do
+                            $is_do,
                         );
                     }
                 }
@@ -361,7 +361,7 @@ class LoopAnalyzer
                     if (ExpressionAnalyzer::analyze(
                         $statements_analyzer,
                         $post_expression,
-                        $continue_context
+                        $continue_context,
                     ) === false) {
                         return false;
                     }
@@ -387,7 +387,7 @@ class LoopAnalyzer
             foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var => $type) {
                 $loop_parent_context->vars_in_scope[$var] = Type::combineUnionTypes(
                     $type,
-                    $loop_parent_context->vars_in_scope[$var]
+                    $loop_parent_context->vars_in_scope[$var],
                 );
 
                 $loop_parent_context->possibly_assigned_var_ids[$var] = true;
@@ -402,14 +402,14 @@ class LoopAnalyzer
             if ($loop_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
                 $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $loop_parent_context->vars_in_scope[$var_id],
-                    $loop_context->vars_in_scope[$var_id]
+                    $loop_context->vars_in_scope[$var_id],
                 );
 
                 $loop_parent_context->removeVarFromConflictingClauses($var_id);
             } else {
                 $loop_parent_context->vars_in_scope[$var_id]
                     = $loop_parent_context->vars_in_scope[$var_id]->addParentNodes(
-                        $loop_context->vars_in_scope[$var_id]->parent_nodes
+                        $loop_context->vars_in_scope[$var_id]->parent_nodes,
                     )
                 ;
             }
@@ -425,7 +425,7 @@ class LoopAnalyzer
                 if ($continue_context->vars_in_scope[$var_id]->hasMixed()) {
                     $continue_context->vars_in_scope[$var_id]
                         = $continue_context->vars_in_scope[$var_id]->addParentNodes(
-                            $loop_parent_context->vars_in_scope[$var_id]->parent_nodes
+                            $loop_parent_context->vars_in_scope[$var_id]->parent_nodes,
                         )
                     ;
 
@@ -439,7 +439,7 @@ class LoopAnalyzer
                 if ($continue_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
                     $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $loop_parent_context->vars_in_scope[$var_id],
-                        $continue_context->vars_in_scope[$var_id]
+                        $continue_context->vars_in_scope[$var_id],
                     );
 
                     $loop_parent_context->removeVarFromConflictingClauses($var_id);
@@ -447,7 +447,7 @@ class LoopAnalyzer
                     $loop_parent_context->vars_in_scope[$var_id] =
                         $loop_parent_context->vars_in_scope[$var_id]->setParentNodes(array_merge(
                             $loop_parent_context->vars_in_scope[$var_id]->parent_nodes,
-                            $continue_context->vars_in_scope[$var_id]->parent_nodes
+                            $continue_context->vars_in_scope[$var_id]->parent_nodes,
                         ))
                     ;
                 }
@@ -479,7 +479,7 @@ class LoopAnalyzer
                     $statements_analyzer,
                     [],
                     true,
-                    new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0])
+                    new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0]),
                 );
 
                 foreach ($changed_var_ids as $var_id => $_) {
@@ -505,7 +505,7 @@ class LoopAnalyzer
                     if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
                         $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id],
                         );
                     }
                 } else {
@@ -521,7 +521,7 @@ class LoopAnalyzer
         // Track references set in the loop to make sure they aren't reused later
         $loop_parent_context->updateReferencesPossiblyFromConfusingScope(
             $continue_context,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         return null;
@@ -548,7 +548,7 @@ class LoopAnalyzer
                     if (!isset($updated_loop_vars[$var])) {
                         $continue_context->vars_in_scope[$var] = Type::combineUnionTypes(
                             $continue_context->vars_in_scope[$var],
-                            $type
+                            $type,
                         );
                     } else {
                         $continue_context->vars_in_scope[$var] =
@@ -561,7 +561,7 @@ class LoopAnalyzer
         // merge vars possibly in scope at the end of each loop
         $loop_context->vars_possibly_in_scope = array_merge(
             $loop_context->vars_possibly_in_scope,
-            $loop_scope->vars_possibly_in_scope
+            $loop_scope->vars_possibly_in_scope,
         );
     }
 
@@ -598,7 +598,7 @@ class LoopAnalyzer
         $always_assigned_before_loop_body_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
 
         $loop_context->clauses = Algebra::simplifyCNF(
-            [...$outer_context->clauses, ...$pre_condition_clauses]
+            [...$outer_context->clauses, ...$pre_condition_clauses],
         );
 
         $active_while_types = [];
@@ -607,7 +607,7 @@ class LoopAnalyzer
             $loop_context->clauses,
             spl_object_id($pre_condition),
             $new_referenced_var_ids,
-            $active_while_types
+            $active_while_types,
         );
 
         $changed_var_ids = [];
@@ -623,7 +623,7 @@ class LoopAnalyzer
                 $statements_analyzer,
                 [],
                 true,
-                new CodeLocation($statements_analyzer->getSource(), $pre_condition)
+                new CodeLocation($statements_analyzer->getSource(), $pre_condition),
             );
         }
 
@@ -636,7 +636,7 @@ class LoopAnalyzer
                 $var_id,
                 $loop_context->clauses,
                 null,
-                $statements_analyzer
+                $statements_analyzer,
             );
         }
 

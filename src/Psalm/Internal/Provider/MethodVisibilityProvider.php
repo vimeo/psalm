@@ -71,7 +71,7 @@ class MethodVisibilityProvider
                 $fq_classlike_name,
                 $method_name,
                 $context,
-                $code_location
+                $code_location,
             );
             $method_visible = $method_handler($event);
 

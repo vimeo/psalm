@@ -47,7 +47,7 @@ final class ErrorBaseline
                  * @param array{o:int, s:array<int, string>} $existingIssue
                  */
                 static fn(int $carry, array $existingIssue): int => $carry + $existingIssue['o'],
-                0
+                0,
             );
         }
 
@@ -157,11 +157,11 @@ final class ErrorBaseline
 
                 $existingIssuesCount[$issueType]['o'] = min(
                     $existingIssueType['o'],
-                    $newIssues[$file][$issueType]['o']
+                    $newIssues[$file][$issueType]['o'],
                 );
                 $existingIssuesCount[$issueType]['s'] = array_intersect(
                     $existingIssueType['s'],
-                    $newIssues[$file][$issueType]['s']
+                    $newIssues[$file][$issueType]['s'],
                 );
             }
         }
@@ -213,7 +213,7 @@ final class ErrorBaseline
 
                 return $carry;
             },
-            []
+            [],
         );
 
         // Sort files first
@@ -249,7 +249,7 @@ final class ErrorBaseline
                 ('php:' . PHP_VERSION),
             ], ...array_map(
                 static fn(string $extension): string => $extension . ':' . phpversion($extension),
-                $extensions
+                $extensions,
             )]));
         }
 
@@ -296,7 +296,7 @@ final class ErrorBaseline
             "\n" .
             $matches[3] .
             "\n",
-            $baselineDoc->saveXML()
+            $baselineDoc->saveXML(),
         );
 
         if ($xml === null) {
