@@ -301,6 +301,20 @@ class ArrayFunctionCallTest extends TestCase
                     '$d===' => "list{string, ...<int<0, max>, int|string>}",
                 ],
             ],
+            'arrayMergeEmpty' => [
+                'code' => '<?php
+
+                    $test = [[]];
+                    $a = array_merge(...$test);
+
+                    $test = [[], ["test" => 0]];
+                    $b = array_merge(...$test);
+                ',
+                'assertions' => [
+                    '$a===' => 'array<never, never>',
+                    '$b===' => 'array{test: 0}',
+                ]
+            ],
             'arrayReplaceIntArrays' => [
                 'code' => '<?php
                     $d = array_replace(["a", "b", "c", "d"], [1, 2, 3]);',
