@@ -801,7 +801,6 @@ class PluginTest extends TestCase
 
     public function testPluginFilenameCanBeAbsolute(): void
     {
-        /** @var non-empty-string $xml */
         $xml = sprintf(
             '<?xml version="1.0"?>
             <psalm
@@ -828,7 +827,6 @@ class PluginTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('does-not-exist/plugins/StringChecker.php');
 
-        /** @var non-empty-string $xml */
         $xml = sprintf(
             '<?xml version="1.0"?>
             <psalm
