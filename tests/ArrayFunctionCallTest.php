@@ -2774,6 +2774,13 @@ class ArrayFunctionCallTest extends TestCase
                     array_merge(...$map);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed'
+            ],
+            'arrayMergeRecursiveNoNamed' => [
+                'code' => '<?php
+                    $map = ["a" => []];
+                    array_merge_recursive(...$map);
+                ',
+                'error_message' => 'NamedArgumentNotAllowed'
             ]
         ];
     }

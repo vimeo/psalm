@@ -336,6 +336,8 @@ function array_key_exists($key, array $array) : bool
 /**
  * @psalm-pure
  *
+ * @no-named-arguments
+ *
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
