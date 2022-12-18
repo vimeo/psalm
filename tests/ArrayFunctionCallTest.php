@@ -2133,7 +2133,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayMapWithEmptyArrayReturn' => [
                 'code' => '<?php
                     /**
-                     * @param array<array<string>> $elements
+                     * @param array<int, array<string>> $elements
                      * @return list<string>
                      */
                     function resolvePossibleFilePaths($elements) : array
