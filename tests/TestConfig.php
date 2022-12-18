@@ -34,7 +34,7 @@ class TestConfig extends Config
             self::$cached_project_files = ProjectFileFilter::loadFromXMLElement(
                 new SimpleXMLElement($this->getContents()),
                 $this->base_dir,
-                true
+                true,
             );
         }
 

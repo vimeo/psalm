@@ -156,7 +156,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             $name,
             (string) $use->getAlias(),
             $type,
-            $use->getAttributes()
+            $use->getAttributes(),
         );
     }
 
@@ -209,7 +209,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             $namespaceName = Name\FullyQualified::concat(
                 $this->nameContext->getNamespace(),
                 $name,
-                $name->getAttributes()
+                $name->getAttributes(),
             );
             if ($namespaceName instanceof Name) {
                 $name->setAttribute('namespacedName', $namespaceName->toString());
@@ -227,7 +227,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
     {
         $node->setAttribute('namespacedName', Name::concat(
             $this->nameContext->getNamespace(),
-            (string)$node->name
+            (string)$node->name,
         ));
     }
 

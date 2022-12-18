@@ -63,7 +63,7 @@ class UnresolvableIncludeTest extends TestCase
                             require_once($s);
                         }
                     }
-                '
+                ',
             ],
             'github_issue_4788_is_file' => [
                 'code' => '<?php
@@ -72,7 +72,7 @@ class UnresolvableIncludeTest extends TestCase
                             require_once($s);
                         }
                     }
-                '
+                ',
             ],
         ];
     }

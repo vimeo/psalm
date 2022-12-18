@@ -95,7 +95,7 @@ class CallableTypeComparator
                         $input_param->type ?: Type::getMixed(),
                         false,
                         false,
-                        $atomic_comparison_result
+                        $atomic_comparison_result,
                     )
                 ) {
                     return false;
@@ -126,7 +126,7 @@ class CallableTypeComparator
                     $container_type_part->return_type,
                     false,
                     false,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 )
             ) {
                 return false;
@@ -202,7 +202,7 @@ class CallableTypeComparator
                 $codebase,
                 $input_callable,
                 $container_type_part,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             ) === false
             ) {
                 return false;
@@ -233,7 +233,7 @@ class CallableTypeComparator
             try {
                 $function_storage = $codebase->functions->getStorage(
                     $statements_analyzer,
-                    strtolower($input_type_part->value)
+                    strtolower($input_type_part->value),
                 );
 
                 if ($expand_callable) {
@@ -252,8 +252,8 @@ class CallableTypeComparator
                                     true,
                                     false,
                                     false,
-                                    true
-                                )
+                                    true,
+                                ),
                             );
                         }
 
@@ -273,7 +273,7 @@ class CallableTypeComparator
                             true,
                             false,
                             false,
-                            true
+                            true,
                         );
                     }
                 } else {
@@ -285,7 +285,7 @@ class CallableTypeComparator
                     'callable',
                     $params,
                     $return_type,
-                    $function_storage->pure
+                    $function_storage->pure,
                 );
             } catch (UnexpectedValueException $e) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
@@ -296,7 +296,7 @@ class CallableTypeComparator
                     if ($container_type_part && $container_type_part->params) {
                         foreach ($container_type_part->params as $i => $param) {
                             $arg = new Arg(
-                                new Variable('_' . $i)
+                                new Variable('_' . $i),
                             );
 
                             if ($param->type) {
@@ -311,7 +311,7 @@ class CallableTypeComparator
                         $codebase,
                         $input_type_part->value,
                         $args,
-                        $nodes
+                        $nodes,
                     );
 
                     $must_use = false;
@@ -321,7 +321,7 @@ class CallableTypeComparator
                         $statements_analyzer->node_data ?? null,
                         $input_type_part->value,
                         null,
-                        $must_use
+                        $must_use,
                     ));
 
                     return $matching_callable;
@@ -342,7 +342,7 @@ class CallableTypeComparator
                             $method_storage->return_type,
                             $method_fqcln,
                             $method_fqcln,
-                            null
+                            null,
                         );
                     }
 
@@ -350,7 +350,7 @@ class CallableTypeComparator
                         'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure
+                        $method_storage->pure,
                     );
                 } catch (UnexpectedValueException $e) {
                     // do nothing
@@ -365,7 +365,7 @@ class CallableTypeComparator
         ) {
             $invoke_id = new MethodIdentifier(
                 $input_type_part->value,
-                '__invoke'
+                '__invoke',
             );
 
             if ($codebase->methods->methodExists($invoke_id)) {
@@ -374,14 +374,14 @@ class CallableTypeComparator
 
                 if ($input_type_part instanceof Atomic\TGenericObject) {
                     $invokable_storage = $codebase->methods->getClassLikeStorageForMethod(
-                        $declaring_method_id ?? $invoke_id
+                        $declaring_method_id ?? $invoke_id,
                     );
                     $type_params = [];
 
                     foreach ($invokable_storage->template_types ?? [] as $template => $for_class) {
                         foreach ($for_class as $type) {
                             $type_params[] = new Type\Union([
-                                new TTemplateParam($template, $type, $input_type_part->value)
+                                new TTemplateParam($template, $type, $input_type_part->value),
                             ]);
                         }
                     }
@@ -395,7 +395,7 @@ class CallableTypeComparator
                             $template_result,
                             $codebase,
                             null,
-                            new Type\Union([$input_type_part])
+                            new Type\Union([$input_type_part]),
                         );
                     }
                 }
@@ -410,7 +410,7 @@ class CallableTypeComparator
                             $method_storage->return_type,
                             $method_fqcln,
                             $method_fqcln,
-                            null
+                            null,
                         );
                     }
 
@@ -418,14 +418,14 @@ class CallableTypeComparator
                         'callable',
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->pure
+                        $method_storage->pure,
                     );
 
                     if ($template_result) {
                         $callable = TemplateInferredTypeReplacer::replace(
                             new Union([$callable]),
                             $template_result,
-                            $codebase
+                            $codebase,
                         )->getSingleAtomic();
                     }
 
@@ -464,7 +464,7 @@ class CallableTypeComparator
                     if ($lhs_atomic_type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($lhs_atomic_type->value) . '::',
-                            $calling_method_id ?: $file_name
+                            $calling_method_id ?: $file_name,
                         );
                     } elseif ($lhs_atomic_type instanceof TTemplateParam) {
                         $lhs_template_type = $lhs_atomic_type->as;
@@ -481,7 +481,7 @@ class CallableTypeComparator
                                 /** @psalm-suppress PossiblyNullArgument Psalm bug */
                                 $codebase->analyzer->addMixedMemberName(
                                     strtolower($member_id) . '::',
-                                    $calling_method_id ?: $file_name
+                                    $calling_method_id ?: $file_name,
                                 );
                             }
                         }
@@ -534,7 +534,7 @@ class CallableTypeComparator
             if ($codebase && ($calling_method_id || $file_name)) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($method_name),
-                    $calling_method_id ?: $file_name
+                    $calling_method_id ?: $file_name,
                 );
             }
 
@@ -543,7 +543,7 @@ class CallableTypeComparator
 
         return new MethodIdentifier(
             $class_name,
-            strtolower($method_name)
+            strtolower($method_name),
         );
     }
 }

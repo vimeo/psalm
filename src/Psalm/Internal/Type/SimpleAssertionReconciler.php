@@ -127,7 +127,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $suppressed_issues,
                 $failed_reconciliation,
                 $assertion instanceof IsEqualIsset,
-                $inside_loop
+                $inside_loop,
             );
         }
 
@@ -144,14 +144,14 @@ class SimpleAssertionReconciler extends Reconciler
                 $negated,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation
+                $failed_reconciliation,
             );
         }
 
         if ($assertion instanceof HasArrayKey) {
             return self::reconcileHasArrayKey(
                 $existing_var_type,
-                $assertion
+                $assertion,
             );
         }
 
@@ -164,7 +164,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $key,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
@@ -177,7 +177,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $key,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
@@ -190,7 +190,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                false
+                false,
             );
         }
 
@@ -204,7 +204,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -218,7 +218,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $inside_loop
+                $inside_loop,
             );
         }
 
@@ -232,7 +232,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $inside_loop
+                $inside_loop,
             );
         }
 
@@ -281,7 +281,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $negated,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation
+                $failed_reconciliation,
             );
         }
 
@@ -296,7 +296,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -309,7 +309,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -323,7 +323,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -340,7 +340,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -356,7 +356,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -377,7 +377,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $suppressed_issues,
                 $failed_reconciliation,
                 $is_equality,
-                $assertion_type->isNonEmpty()
+                $assertion_type->isNonEmpty(),
             );
         }
 
@@ -393,7 +393,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -406,7 +406,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -419,7 +419,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -432,7 +432,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -445,7 +445,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -458,7 +458,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $is_equality
+                $is_equality,
             );
         }
 
@@ -483,7 +483,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $negated,
                 $code_location,
                 $suppressed_issues,
-                $failed_reconciliation
+                $failed_reconciliation,
             );
         }
 
@@ -504,7 +504,7 @@ class SimpleAssertionReconciler extends Reconciler
                 $codebase,
                 $assertion_type,
                 $existing_var_type,
-                $failed_reconciliation
+                $failed_reconciliation,
             );
         }
 
@@ -573,7 +573,7 @@ class SimpleAssertionReconciler extends Reconciler
                 !$did_remove_type,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
 
             if ($existing_var_type->isUnionEmpty()) {
@@ -629,7 +629,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $non_empty_array = new TNonEmptyArray(
                             $array_atomic_type->type_params,
                             null,
-                            $assertion instanceof HasAtLeastCount ? $assertion->count : null
+                            $assertion instanceof HasAtLeastCount ? $assertion->count : null,
                         );
 
                         $existing_var_type->addType($non_empty_array);
@@ -672,8 +672,8 @@ class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->addType($array_atomic_type->setProperties(
                             array_map(
                                 fn(Union $union) => $union->setPossiblyUndefined(false),
-                                $array_atomic_type->properties
-                            )
+                                $array_atomic_type->properties,
+                            ),
                         ));
                         $redundant = false;
 
@@ -725,7 +725,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $redundant,
                         $negated,
                         $code_location,
-                        $suppressed_issues
+                        $suppressed_issues,
                     );
                 }
             }
@@ -758,12 +758,12 @@ class SimpleAssertionReconciler extends Reconciler
                 ) {
                     $non_empty_array = new TNonEmptyArray(
                         $array_atomic_type->type_params,
-                        $assertion->count
+                        $assertion->count,
                     );
 
                     $existing_var_type->removeType('array');
                     $existing_var_type->addType(
-                        $non_empty_array
+                        $non_empty_array,
                     );
 
                     $redundant = false;
@@ -792,8 +792,8 @@ class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->addType($array_atomic_type->setProperties(
                             array_map(
                                 fn(Union $union) => $union->setPossiblyUndefined(false),
-                                $array_atomic_type->properties
-                            )
+                                $array_atomic_type->properties,
+                            ),
                         ));
                     } elseif ($array_atomic_type->is_list) {
                         $redundant = false;
@@ -820,7 +820,7 @@ class SimpleAssertionReconciler extends Reconciler
                             $properties,
                             null,
                             null,
-                            true
+                            true,
                         );
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type);
@@ -844,7 +844,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $redundant,
                         $negated,
                         $code_location,
-                        $suppressed_issues
+                        $suppressed_issues,
                     );
                 }
             }
@@ -894,7 +894,7 @@ class SimpleAssertionReconciler extends Reconciler
                             if (!isset($extra_type->methods[strtolower($method_name)])) {
                                 unset($extra_types[$k]);
                                 $extra_type = $extra_type->setMethods(array_merge($extra_type->methods, [
-                                    strtolower($method_name) => 'object::' . $method_name
+                                    strtolower($method_name) => 'object::' . $method_name,
                                 ]));
                                 $extra_types[$extra_type->getKey()] = $extra_type;
                                 $did_remove_type = true;
@@ -905,7 +905,7 @@ class SimpleAssertionReconciler extends Reconciler
                     if (!$match_found) {
                         $extra_type = new TObjectWithProperties(
                             [],
-                            [strtolower($method_name) => $type->value . '::' . $method_name]
+                            [strtolower($method_name) => $type->value . '::' . $method_name],
                         );
                         $extra_types[$extra_type->getKey()] = $extra_type;
                         $did_remove_type = true;
@@ -917,7 +917,7 @@ class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObjectWithProperties) {
                 if (!isset($type->methods[strtolower($method_name)])) {
                     $type = $type->setMethods(array_merge($type->methods, [
-                        strtolower($method_name) => 'object::' . $method_name
+                        strtolower($method_name) => 'object::' . $method_name,
                     ]));
                     $did_remove_type = true;
                 }
@@ -925,7 +925,7 @@ class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject || $type instanceof TMixed) {
                 $object_types[] = new TObjectWithProperties(
                     [],
-                    [strtolower($method_name) =>  'object::' . $method_name]
+                    [strtolower($method_name) =>  'object::' . $method_name],
                 );
                 $did_remove_type = true;
             } elseif ($type instanceof TString) {
@@ -950,7 +950,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1019,7 +1019,7 @@ class SimpleAssertionReconciler extends Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality
+                        $is_equality,
                     ));
 
                     $string_types[] = $type;
@@ -1041,7 +1041,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1110,7 +1110,7 @@ class SimpleAssertionReconciler extends Reconciler
                         false,
                         null,
                         $suppressed_issues,
-                        $failed_reconciliation
+                        $failed_reconciliation,
                     ));
 
                     $int_types[] = $type;
@@ -1135,7 +1135,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1192,7 +1192,7 @@ class SimpleAssertionReconciler extends Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality
+                        $is_equality,
                     ));
 
                     $bool_types[] = $type;
@@ -1214,7 +1214,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1277,7 +1277,7 @@ class SimpleAssertionReconciler extends Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality
+                        $is_equality,
                     ));
 
                     $false_types[] = $type;
@@ -1299,7 +1299,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1362,7 +1362,7 @@ class SimpleAssertionReconciler extends Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality
+                        $is_equality,
                     ));
 
                     $true_types[] = $type;
@@ -1384,7 +1384,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1437,7 +1437,7 @@ class SimpleAssertionReconciler extends Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality
+                        $is_equality,
                     ));
 
                     $scalar_types[] = $type;
@@ -1459,7 +1459,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1530,7 +1530,7 @@ class SimpleAssertionReconciler extends Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality
+                        $is_equality,
                     ));
 
                     $numeric_types[] = $type;
@@ -1552,7 +1552,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1614,7 +1614,7 @@ class SimpleAssertionReconciler extends Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality
+                        $is_equality,
                     ));
 
                     $object_types[] = $type;
@@ -1627,7 +1627,7 @@ class SimpleAssertionReconciler extends Reconciler
 
                 $object_types[] = new TGenericObject(
                     'Traversable',
-                    $params
+                    $params,
                 );
 
                 $did_remove_type = true;
@@ -1646,7 +1646,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1704,7 +1704,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1776,7 +1776,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1839,7 +1839,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1888,7 +1888,7 @@ class SimpleAssertionReconciler extends Reconciler
                     true,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
 
@@ -1919,14 +1919,14 @@ class SimpleAssertionReconciler extends Reconciler
                 $atomic_type = new TKeyedArray(
                     array_merge(
                         $atomic_type->properties,
-                        [$assertion => Type::getMixed()]
+                        [$assertion => Type::getMixed()],
                     ),
                     array_merge(
                         $atomic_type->class_strings ?? [],
-                        [$assertion => true]
+                        [$assertion => true],
                     ),
                     $atomic_type->fallback_params,
-                    $atomic_type->is_list
+                    $atomic_type->is_list,
                 );
             }
         }
@@ -1977,12 +1977,12 @@ class SimpleAssertionReconciler extends Reconciler
                     } else {
                         $min_bound = TIntRange::getNewHighestBound(
                             $assertion_value,
-                            $min_bound
+                            $min_bound,
                         );
                     }
                     $existing_var_type->addType(new TIntRange(
                         $min_bound,
-                        $atomic_type->max_bound
+                        $atomic_type->max_bound,
                     ));
                 } elseif ($atomic_type->isLesserThan($assertion_value)) {
                     // if the range is lesser than the assertion, the type must be removed
@@ -2024,7 +2024,7 @@ class SimpleAssertionReconciler extends Reconciler
                 true,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
@@ -2038,7 +2038,7 @@ class SimpleAssertionReconciler extends Reconciler
                     false,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
             $existing_var_type->addType(new TNever());
@@ -2092,7 +2092,7 @@ class SimpleAssertionReconciler extends Reconciler
                     }
                     $existing_var_type->addType(new TIntRange(
                         $atomic_type->min_bound,
-                        $max_bound
+                        $max_bound,
                     ));
                 } elseif ($atomic_type->isLesserThan($assertion_value)) {
                     // if the range is lesser than the assertion, the check is redundant
@@ -2134,7 +2134,7 @@ class SimpleAssertionReconciler extends Reconciler
                 true,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
@@ -2148,7 +2148,7 @@ class SimpleAssertionReconciler extends Reconciler
                     false,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
             $existing_var_type->addType(new TNever());
@@ -2212,7 +2212,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -2262,7 +2262,7 @@ class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableKeyedArray([
                     new Union([new TClassString, new TObject]),
-                    Type::getString()
+                    Type::getString(),
                 ]);
 
                 $did_remove_type = true;
@@ -2282,7 +2282,7 @@ class SimpleAssertionReconciler extends Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality
+                        $is_equality,
                     ));
 
                     $array_types[] = $type;
@@ -2304,7 +2304,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
 
                 if (!$did_remove_type) {
@@ -2389,7 +2389,7 @@ class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableKeyedArray([
                     new Union([new TClassString, new TObject]),
-                    Type::getString()
+                    Type::getString(),
                 ]);
 
                 $did_remove_type = true;
@@ -2412,7 +2412,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
 
                 if (!$did_remove_type) {
@@ -2489,7 +2489,7 @@ class SimpleAssertionReconciler extends Reconciler
                     true,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -2550,7 +2550,7 @@ class SimpleAssertionReconciler extends Reconciler
                     true,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -2634,7 +2634,7 @@ class SimpleAssertionReconciler extends Reconciler
                         null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $is_equality
+                        $is_equality,
                     ));
                 }
 
@@ -2656,7 +2656,7 @@ class SimpleAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -2721,7 +2721,7 @@ class SimpleAssertionReconciler extends Reconciler
                     false,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
 
@@ -2740,7 +2740,7 @@ class SimpleAssertionReconciler extends Reconciler
                     true,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
 
@@ -2846,7 +2846,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $code_location,
                         $suppressed_issues,
                         $template_did_fail,
-                        true
+                        true,
                     ));
 
                     if (!$template_did_fail) {

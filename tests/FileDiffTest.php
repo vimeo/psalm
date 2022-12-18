@@ -42,17 +42,17 @@ class FileDiffTest extends TestCase
 
         $this->assertSame(
             $same_methods,
-            $diff[0]
+            $diff[0],
         );
 
         $this->assertSame(
             $same_signatures,
-            $diff[1]
+            $diff[1],
         );
 
         $this->assertSame(
             $changed_methods,
-            $diff[2]
+            $diff[2],
         );
 
         $this->assertSame(count($diff_map_offsets), count($diff[3]));
@@ -63,7 +63,7 @@ class FileDiffTest extends TestCase
              * @return array{0: int, 1: int}
              */
             fn(array $arr): array => [$arr[2], $arr[3]],
-            $diff[3]
+            $diff[3],
         );
 
         $this->assertSame($diff_map_offsets, $found_offsets);
@@ -113,17 +113,17 @@ class FileDiffTest extends TestCase
 
         $this->assertSame(
             $same_methods,
-            $diff[0]
+            $diff[0],
         );
 
         $this->assertSame(
             $same_signatures,
-            $diff[1]
+            $diff[1],
         );
 
         $this->assertSame(
             $changed_methods,
-            $diff[2]
+            $diff[2],
         );
 
         $this->assertSame(count($diff_map_offsets), count($diff[3]));
@@ -134,7 +134,7 @@ class FileDiffTest extends TestCase
              * @return array{0: int, 1: int}
              */
             fn(array $arr): array => [$arr[2], $arr[3]],
-            $diff[3]
+            $diff[3],
         );
 
         $this->assertSame($diff_map_offsets, $found_offsets);
@@ -173,7 +173,7 @@ class FileDiffTest extends TestCase
 
             $this->assertSame(
                 $a_stmt->getAttribute('startFilePos'),
-                $b_stmt->getAttribute('startFilePos')
+                $b_stmt->getAttribute('startFilePos'),
             );
             $this->assertSame(
                 $a_stmt->getAttribute('endFilePos'),
@@ -181,7 +181,7 @@ class FileDiffTest extends TestCase
                 ($a_stmt instanceof PhpParser\Node\Stmt\Expression
                     ? get_class($a_stmt->expr)
                     : get_class($a_stmt))
-                    . ' on line ' . $a_stmt->getLine()
+                    . ' on line ' . $a_stmt->getLine(),
             );
             $this->assertSame($a_stmt->getLine(), $b_stmt->getLine());
 

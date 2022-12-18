@@ -75,9 +75,9 @@ class ProjectCheckerTest extends TestCase
                 new FileStorageInstanceCacheProvider(),
                 new ClassLikeStorageInstanceCacheProvider(),
                 new FakeFileReferenceCacheProvider(),
-                new ProjectCacheProvider()
+                new ProjectCacheProvider(),
             ),
-            new ReportOptions()
+            new ReportOptions(),
         );
     }
 
@@ -91,8 +91,8 @@ class ProjectCheckerTest extends TestCase
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
 
@@ -113,8 +113,8 @@ class ProjectCheckerTest extends TestCase
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $codebase->analyzer->getTypeInferenceSummary(
-                $codebase
-            )
+                $codebase,
+            ),
         );
     }
 
@@ -141,8 +141,8 @@ class ProjectCheckerTest extends TestCase
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $hook_class = get_class($hook);
@@ -166,8 +166,8 @@ class ProjectCheckerTest extends TestCase
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->assertNotNull($this->project_analyzer->stdout_report_options);
@@ -182,8 +182,8 @@ class ProjectCheckerTest extends TestCase
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
 
         $this->project_analyzer->getCodebase()->reloadFiles($this->project_analyzer, []);
@@ -195,8 +195,8 @@ class ProjectCheckerTest extends TestCase
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 
@@ -210,8 +210,8 @@ class ProjectCheckerTest extends TestCase
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->assertNotNull($this->project_analyzer->stdout_report_options);
@@ -226,8 +226,8 @@ class ProjectCheckerTest extends TestCase
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
 
         $bat_file_path = getcwd()
@@ -260,8 +260,8 @@ class Bat
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 
@@ -275,8 +275,8 @@ class Bat
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -294,8 +294,8 @@ class Bat
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 
@@ -309,8 +309,8 @@ class Bat
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -333,8 +333,8 @@ class Bat
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 
@@ -348,8 +348,8 @@ class Bat
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -372,8 +372,8 @@ class Bat
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 }

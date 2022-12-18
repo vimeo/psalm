@@ -99,7 +99,7 @@ class UnaryPlusMinusAnalyzer
             $statements_analyzer,
             $stmt,
             $stmt->expr,
-            $stmt instanceof UnaryMinus ? 'unary-minus' : 'unary-plus'
+            $stmt instanceof UnaryMinus ? 'unary-minus' : 'unary-plus',
         );
 
         return true;
@@ -123,7 +123,7 @@ class UnaryPlusMinusAnalyzer
                 $stmt,
                 $result_type->setParentNodes([
                     $new_parent_node->id => $new_parent_node,
-                ])
+                ]),
             );
 
             if ($stmt_value_type && $stmt_value_type->parent_nodes) {

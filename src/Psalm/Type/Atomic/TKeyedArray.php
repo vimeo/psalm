@@ -183,7 +183,7 @@ class TKeyedArray extends Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                true
+                true,
             );
         }
 
@@ -214,7 +214,7 @@ class TKeyedArray extends Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    false
+                    false,
                 );
                 continue;
             }
@@ -231,7 +231,7 @@ class TKeyedArray extends Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    false
+                    false,
                 );
         }
 
@@ -309,7 +309,7 @@ class TKeyedArray extends Atomic
             false,
             true,
             500,
-            $possibly_undefined
+            $possibly_undefined,
         );
     }
 
@@ -489,7 +489,7 @@ class TKeyedArray extends Atomic
                 $replace,
                 $add_lower_bound,
                 null,
-                $depth
+                $depth,
             );
         }
 
@@ -516,7 +516,7 @@ class TKeyedArray extends Atomic
                 $replace,
                 $add_lower_bound,
                 null,
-                $depth
+                $depth,
             );
         }
 
@@ -543,7 +543,7 @@ class TKeyedArray extends Atomic
             $properties[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
-                $codebase
+                $codebase,
             );
         }
         $fallback_params = $this->fallback_params;
@@ -551,7 +551,7 @@ class TKeyedArray extends Atomic
             $fallback_params[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
-                $codebase
+                $codebase,
             );
         }
         if ($properties !== $this->properties || $fallback_params !== $this->fallback_params) {

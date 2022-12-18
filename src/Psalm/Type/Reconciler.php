@@ -218,7 +218,7 @@ class Reconciler
                 $has_inverted_isset,
                 $has_empty,
                 $inside_loop,
-                $has_object_array_access
+                $has_object_array_access,
             );
 
             if ($result_type && $result_type->isUnionEmpty()) {
@@ -255,7 +255,7 @@ class Reconciler
                             $template_type_map,
                             $inside_loop,
                             $code_location,
-                            $nested_negated
+                            $nested_negated,
                         );
 
                         $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
@@ -275,7 +275,7 @@ class Reconciler
                             : null,
                         $suppressed_issues,
                         $failed_reconciliation,
-                        $negated
+                        $negated,
                     );
 
                     if ($result_type_candidate->isUnionEmpty()) {
@@ -285,7 +285,7 @@ class Reconciler
                     $orred_type = Type::combineUnionTypes(
                         $result_type_candidate,
                         $orred_type,
-                        $codebase
+                        $codebase,
                     );
                 }
 
@@ -310,8 +310,8 @@ class Reconciler
                 } elseif (!$did_type_exist && $code_location) {
                     $result_type = $result_type->setParentNodes(
                         $statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
-                            $key
-                        )
+                            $key,
+                        ),
                     );
                 }
             }
@@ -334,7 +334,7 @@ class Reconciler
                         $key_parts,
                         $existing_types,
                         $changed_var_ids,
-                        $result_type
+                        $result_type,
                     );
                 } elseif ($key !== '$this') {
                     foreach ($existing_types as $new_key => $_) {
@@ -486,7 +486,7 @@ class Reconciler
                             $new_types[$base_key] = [
                                 [new IsNotLooselyEqual(new TBool())],
                                 [new IsNotLooselyEqual(new TInt())],
-                                [new IsEqualIsset()]
+                                [new IsEqualIsset()],
                             ];
                         } else {
                             $new_types[$base_key][] = [new IsNotLooselyEqual(new TBool())];
@@ -668,7 +668,7 @@ class Reconciler
                     $fq_class_name,
                     $const_name,
                     ReflectionProperty::IS_PRIVATE,
-                    null
+                    null,
                 );
 
                 if ($class_constant) {
@@ -782,7 +782,7 @@ class Reconciler
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
                             $new_base_type_candidate,
-                            $codebase
+                            $codebase,
                         );
 
                         $existing_keys[$new_base_key] = $new_base_type;
@@ -822,7 +822,7 @@ class Reconciler
                                 if (substr($property_name, -2) === '()') {
                                     $method_id = new MethodIdentifier(
                                         $existing_key_type_part->value,
-                                        strtolower(substr($property_name, 0, -2))
+                                        strtolower(substr($property_name, 0, -2)),
                                     );
 
                                     if (!$codebase->methods->methodExists($method_id)) {
@@ -830,7 +830,7 @@ class Reconciler
                                     }
 
                                     $declaring_method_id = $codebase->methods->getDeclaringMethodId(
-                                        $method_id
+                                        $method_id,
                                     );
 
                                     if ($declaring_method_id === null) {
@@ -843,7 +843,7 @@ class Reconciler
                                         $method_id,
                                         $declaring_class,
                                         null,
-                                        null
+                                        null,
                                     );
 
                                     if ($method_return_type) {
@@ -852,7 +852,7 @@ class Reconciler
                                             $method_return_type,
                                             $declaring_class,
                                             $declaring_class,
-                                            null
+                                            null,
                                         );
                                     } else {
                                         $class_property_type = Type::getMixed();
@@ -861,7 +861,7 @@ class Reconciler
                                     $class_property_type = self::getPropertyType(
                                         $codebase,
                                         $existing_key_type_part->value,
-                                        $property_name
+                                        $property_name,
                                     );
 
                                     if (!$class_property_type) {
@@ -876,7 +876,7 @@ class Reconciler
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
                             $class_property_type,
-                            $codebase
+                            $codebase,
                         );
 
                         $existing_keys[$new_base_key] = $new_base_type;
@@ -894,8 +894,8 @@ class Reconciler
                 IssueBuffer::add(
                     new PsalmInternalError(
                         'Unknown key ' . $base_key,
-                        $code_location
-                    )
+                        $code_location,
+                    ),
                 );
             }
 
@@ -914,7 +914,7 @@ class Reconciler
 
         if (!$codebase->properties->propertyExists($property_id, true)) {
             $declaring_class_storage = $codebase->classlike_storage_provider->get(
-                $fq_class_name
+                $fq_class_name,
             );
 
             if (isset($declaring_class_storage->pseudo_property_get_types['$' . $property_name])) {
@@ -926,7 +926,7 @@ class Reconciler
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $property_id,
-            true
+            true,
         );
 
         if ($declaring_property_class === null) {
@@ -937,11 +937,11 @@ class Reconciler
             $property_id,
             false,
             null,
-            null
+            null,
         );
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get(
-            $declaring_property_class
+            $declaring_property_class,
         );
 
         if ($class_property_type) {
@@ -950,7 +950,7 @@ class Reconciler
                 $class_property_type,
                 $declaring_class_storage->name,
                 $declaring_class_storage->name,
-                null
+                null,
             );
         }
 
@@ -1006,18 +1006,18 @@ class Reconciler
                             'Static property ' . $key . ' with type '
                                 . $old_var_type_string
                                 . ' has unexpected isset check — should it be nullable?',
-                            $code_location
+                            $code_location,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new RedundantPropertyInitializationCheck(
                             'Property ' . $key . ' with type '
                                 . $old_var_type_string . ' should already be set in the constructor',
-                            $code_location
+                            $code_location,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     );
                 }
             } elseif ($from_docblock) {
@@ -1027,9 +1027,9 @@ class Reconciler
                         . ' for ' . $key
                         . ' is ' . ($not ? 'never ' : 'always ') . $assertion_string,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion_string
+                        $old_var_type_string . ' ' . $assertion_string,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             } else {
                 IssueBuffer::maybeAdd(
@@ -1038,9 +1038,9 @@ class Reconciler
                         . ' for ' . $key
                         . ' is ' . ($not ? 'never ' : 'always ') . $assertion_string,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion_string
+                        $old_var_type_string . ' ' . $assertion_string,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         } else {
@@ -1051,9 +1051,9 @@ class Reconciler
                             . ' for ' . $key
                             . ' is ' . ($not ? 'always ' : 'never ') . $assertion_string,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion_string
+                        $old_var_type_string . ' ' . $assertion_string,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             } else {
                 if ($assertion_string === 'null' && !$not) {
@@ -1062,7 +1062,7 @@ class Reconciler
                             . ' for ' . $key
                             . ' is never ' . $assertion_string,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion_string
+                        $old_var_type_string . ' ' . $assertion_string,
                     );
                 } else {
                     $issue = new TypeDoesNotContainType(
@@ -1070,13 +1070,13 @@ class Reconciler
                             . ' for ' . $key
                             . ' is ' . ($not ? 'always ' : 'never ') . $assertion,
                         $code_location,
-                        $old_var_type_string . ' ' . $assertion
+                        $old_var_type_string . ' ' . $assertion,
                     );
                 }
 
                 IssueBuffer::maybeAdd(
                     $issue,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1130,7 +1130,7 @@ class Reconciler
                                 $array_key_offset => $result_type,
                             ],
                             null,
-                            $fallback_key_type->isNever() ? null : [$fallback_key_type, $fallback_value_type]
+                            $fallback_key_type->isNever() ? null : [$fallback_key_type, $fallback_value_type],
                         );
                     } elseif ($base_atomic_type instanceof TClassStringMap) {
                         // do nothing
@@ -1146,7 +1146,7 @@ class Reconciler
                         ) {
                             if ($base_atomic_type->fallback_params && is_numeric($array_key_offset)) {
                                 $fallback = $base_atomic_type->fallback_params[1]->setPossiblyUndefined(
-                                    $result_type->isNever()
+                                    $result_type->isNever(),
                                 );
                                 for ($x = 0; $x < $array_key_offset; $x++) {
                                     $properties[$x] ??= $fallback;
@@ -1160,7 +1160,7 @@ class Reconciler
                                     null,
                                     $base_atomic_type->fallback_params,
                                     false,
-                                    $base_atomic_type->from_docblock
+                                    $base_atomic_type->from_docblock,
                                 );
                             }
                         } else {
@@ -1177,7 +1177,7 @@ class Reconciler
                             $key_parts,
                             $existing_types,
                             $changed_var_ids,
-                            $new_base_type
+                            $new_base_type,
                         );
                     }
 

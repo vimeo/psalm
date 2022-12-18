@@ -130,7 +130,7 @@ class FileFilter
                 if (strpos($prospective_directory_path, '*') !== false) {
                     $globs = array_map(
                         'realpath',
-                        glob($prospective_directory_path, GLOB_ONLYDIR)
+                        glob($prospective_directory_path, GLOB_ONLYDIR),
                     );
 
                     if (empty($globs)) {
@@ -140,7 +140,7 @@ class FileFilter
 
                         throw new ConfigException(
                             'Could not resolve config path to ' . $base_dir
-                            . DIRECTORY_SEPARATOR . $directory_path
+                            . DIRECTORY_SEPARATOR . $directory_path,
                         );
                     }
 
@@ -152,7 +152,7 @@ class FileFilter
 
                             throw new ConfigException(
                                 'Could not resolve config path to ' . $base_dir
-                                . DIRECTORY_SEPARATOR . $directory_path . ':' . $glob_index
+                                . DIRECTORY_SEPARATOR . $directory_path . ':' . $glob_index,
                             );
                         }
 
@@ -177,21 +177,21 @@ class FileFilter
                     }
 
                     throw new ConfigException(
-                        'Could not resolve config path to ' . $prospective_directory_path
+                        'Could not resolve config path to ' . $prospective_directory_path,
                     );
                 }
 
                 if (!is_dir($directory_path)) {
                     throw new ConfigException(
                         $base_dir . DIRECTORY_SEPARATOR . $directory_path
-                        . ' is not a directory'
+                        . ' is not a directory',
                     );
                 }
 
                 if ($resolve_symlinks) {
                     /** @var RecursiveDirectoryIterator */
                     $iterator = new RecursiveIteratorIterator(
-                        new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS)
+                        new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS),
                     );
                     $iterator->rewind();
 
@@ -248,8 +248,8 @@ class FileFilter
                         'realpath',
                         array_filter(
                             glob($prospective_file_path, GLOB_NOSORT),
-                            'file_exists'
-                        )
+                            'file_exists',
+                        ),
                     );
 
                     if (empty($globs)) {
@@ -259,7 +259,7 @@ class FileFilter
 
                         throw new ConfigException(
                             'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                            $file_path
+                            $file_path,
                         );
                     }
 
@@ -267,7 +267,7 @@ class FileFilter
                         if (!$file_path && !$allow_missing_files) {
                             throw new ConfigException(
                                 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                                $file_path . ':' . $glob_index
+                                $file_path . ':' . $glob_index,
                             );
                         }
                         $filter->addFile($file_path);
@@ -279,7 +279,7 @@ class FileFilter
 
                 if (!$file_path && !$allow_missing_files) {
                     throw new ConfigException(
-                        'Could not resolve config path to ' . $prospective_file_path
+                        'Could not resolve config path to ' . $prospective_file_path,
                     );
                 }
 
@@ -308,7 +308,7 @@ class FileFilter
 
                 if (!preg_match('/^[^:]+::[^:]+$/', $method_id) && !static::isRegularExpression($method_id)) {
                     throw new ConfigException(
-                        'Invalid referencedMethod ' . $method_id
+                        'Invalid referencedMethod ' . $method_id,
                     );
                 }
 
@@ -435,7 +435,7 @@ class FileFilter
     {
         set_error_handler(
             static fn(): bool => true,
-            E_WARNING
+            E_WARNING,
         );
         $is_regexp = preg_match($string, '') !== false;
         restore_error_handler();

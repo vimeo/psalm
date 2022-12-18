@@ -76,8 +76,8 @@ class ForbiddenCodeTest extends TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
-                <psalm></psalm>'
-            )
+                <psalm></psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -85,7 +85,7 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                echo "hello";'
+                echo "hello";',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -103,8 +103,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="echo" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -112,7 +112,7 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                echo "hello";'
+                echo "hello";',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -124,8 +124,8 @@ class ForbiddenCodeTest extends TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
-                <psalm></psalm>'
-            )
+                <psalm></psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -133,7 +133,7 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                print "hello";'
+                print "hello";',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -151,8 +151,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="print" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -160,7 +160,7 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                print "hello";'
+                print "hello";',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -172,8 +172,8 @@ class ForbiddenCodeTest extends TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
-                <psalm></psalm>'
-            )
+                <psalm></psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -182,7 +182,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 $a = [1, 2, 3];
-                var_export($a);'
+                var_export($a);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -200,8 +200,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="var_export" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -210,7 +210,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 $a = [1, 2, 3];
-                var_export($a);'
+                var_export($a);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -228,8 +228,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="empty" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -237,7 +237,7 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                empty(false);'
+                empty(false);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -255,8 +255,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="exit" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -265,7 +265,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 exit(2);
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -283,8 +283,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="die" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -293,7 +293,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 die(2);
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -311,8 +311,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="eval" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -321,7 +321,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 eval("foo bar");
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -333,8 +333,8 @@ class ForbiddenCodeTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $p->setPhpVersion('7.4', 'tests');

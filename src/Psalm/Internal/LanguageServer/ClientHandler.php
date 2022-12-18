@@ -51,8 +51,8 @@ class ClientHandler
             static function () use ($id, $method, $params): Generator {
                 yield $this->protocolWriter->write(
                     new Message(
-                        new Request($id, $method, (object) $params)
-                    )
+                        new Request($id, $method, (object) $params),
+                    ),
                 );
 
                 $deferred = new Deferred();
@@ -80,7 +80,7 @@ class ClientHandler
                 $this->protocolReader->on('message', $listener);
 
                 return $deferred->promise();
-            }
+            },
         );
     }
 
@@ -94,8 +94,8 @@ class ClientHandler
     {
         $this->protocolWriter->write(
             new Message(
-                new Notification($method, (object)$params)
-            )
+                new Notification($method, (object)$params),
+            ),
         );
     }
 }

@@ -30,7 +30,7 @@ class ParseErrorLocation extends CodeLocation
         $this->preview_start = $this->file_start;
         $this->raw_line_number = substr_count(
             substr($file_contents, 0, $this->file_start),
-            "\n"
+            "\n",
         ) + 1;
     }
 }

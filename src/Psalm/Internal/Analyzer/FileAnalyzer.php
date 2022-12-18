@@ -211,8 +211,8 @@ class FileAnalyzer extends SourceAnalyzer
                     IssueBuffer::maybeAdd(
                         new UncaughtThrowInGlobalScope(
                             $possibly_thrown_exception . ' is thrown but not caught in global scope',
-                            $codelocation
-                        )
+                            $codelocation,
+                        ),
                     );
                 }
             }
@@ -226,7 +226,7 @@ class FileAnalyzer extends SourceAnalyzer
                         $this->getSource(),
                         $alias->start_offset,
                         $alias->end_offset,
-                        $alias->line_number
+                        $alias->line_number,
                     );
                     $fq_source_classlike = $alias->declaring_fq_classlike_name;
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
@@ -241,8 +241,8 @@ class FileAnalyzer extends SourceAnalyzer
                             false,
                             true,
                             true,
-                            true
-                        )
+                            true,
+                        ),
                     ) === false) {
                         continue;
                     }
@@ -254,8 +254,8 @@ class FileAnalyzer extends SourceAnalyzer
                                 'Type alias ' . $alias->alias_name
                                 . ' imported from ' . $fq_source_classlike
                                 . ' is not defined on the source class',
-                                $location
-                            )
+                                $location,
+                            ),
                         );
                     }
                 }
@@ -378,7 +378,7 @@ class FileAnalyzer extends SourceAnalyzer
                     $method_id,
                     $this_context,
                     $this->getRootFilePath(),
-                    $this->getRootFileName()
+                    $this->getRootFileName(),
                 );
             }
 

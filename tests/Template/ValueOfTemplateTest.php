@@ -26,7 +26,7 @@ class ValueOfTemplateTest extends TestCase
                     function getValues($array) {
                         return array_values($array);
                     }
-                '
+                ',
             ],
             'SKIPPED-acceptsIfInArrayFn' => [
                 'code' => '<?php
@@ -41,7 +41,7 @@ class ValueOfTemplateTest extends TestCase
                         }
                         return null;
                     }
-                '
+                ',
             ],
             'valueOfUnreplacedTemplateParam' => [
                 'code' => '<?php
@@ -66,7 +66,7 @@ class ValueOfTemplateTest extends TestCase
                      */
                     function toList(array $array): array {
                         return array_values($array);
-                    }'
+                    }',
             ],
         ];
     }
@@ -85,7 +85,7 @@ class ValueOfTemplateTest extends TestCase
                         return "foo";
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'valueOfTemplateNotIncludesInt' => [
                 'code' => '<?php
@@ -98,7 +98,7 @@ class ValueOfTemplateTest extends TestCase
                         return 0;
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'valueOfUnresolvedTemplateParamIsStillChecked' => [
                 'code' => '<?php
@@ -112,7 +112,7 @@ class ValueOfTemplateTest extends TestCase
                         abstract public function getRandomValue(): string;
                     }
                 ',
-                'error_message' => 'MismatchingDocblockReturnType'
+                'error_message' => 'MismatchingDocblockReturnType',
             ],
         ];
     }

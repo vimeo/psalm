@@ -43,7 +43,7 @@ class UnsetAnalyzer
             $var_id = ExpressionIdentifier::getExtendedVarId(
                 $var,
                 $statements_analyzer->getFQCLN(),
-                $statements_analyzer
+                $statements_analyzer,
             );
 
             if ($var_id) {
@@ -55,7 +55,7 @@ class UnsetAnalyzer
                 $root_var_id = ExpressionIdentifier::getExtendedVarId(
                     $var->var,
                     $statements_analyzer->getFQCLN(),
-                    $statements_analyzer
+                    $statements_analyzer,
                 );
 
                 $key_type = $statements_analyzer->node_data->getType($var->dim);
@@ -94,12 +94,12 @@ class UnsetAnalyzer
                                     } elseif ($key_value === 1) {
                                         $list_key = new Union([
                                             new TLiteralInt(0),
-                                            new TIntRange(2, null)
+                                            new TIntRange(2, null),
                                         ]);
                                     } else {
                                         $list_key = new Union([
                                             new TIntRange(0, $key_value-1),
-                                            new TIntRange($key_value+1, null)
+                                            new TIntRange($key_value+1, null),
                                         ]);
                                     }
                                 }
@@ -128,7 +128,7 @@ class UnsetAnalyzer
                                             $list_key ?? $atomic_root_type->fallback_params[0],
                                             $atomic_root_type->fallback_params[1],
                                         ] : null,
-                                        $is_list
+                                        $is_list,
                                     );
                                 }
                             } else {
@@ -157,7 +157,7 @@ class UnsetAnalyzer
                     $context->removeVarFromConflictingClauses(
                         $root_var_id,
                         $context->vars_in_scope[$root_var_id],
-                        $statements_analyzer
+                        $statements_analyzer,
                     );
                 }
             }

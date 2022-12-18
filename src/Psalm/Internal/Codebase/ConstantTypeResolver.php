@@ -73,13 +73,13 @@ class ConstantTypeResolver
                 $classlikes,
                 $c->left,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
             $right = self::resolve(
                 $classlikes,
                 $c->right,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             if ($left instanceof TMixed || $right instanceof TMixed) {
@@ -141,7 +141,7 @@ class ConstantTypeResolver
                 if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
                     $type = new TKeyedArray(
                         $left->properties + $right->properties,
-                        null
+                        null,
                     );
                     return $type;
                 }
@@ -157,19 +157,19 @@ class ConstantTypeResolver
                 $classlikes,
                 $c->cond,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
             $if = $c->if ? self::resolve(
                 $classlikes,
                 $c->if,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             ) : null;
             $else = self::resolve(
                 $classlikes,
                 $c->else,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             if ($cond instanceof TLiteralFloat
@@ -202,7 +202,7 @@ class ConstantTypeResolver
                         $classlikes,
                         $entry->array,
                         $statements_analyzer,
-                        $visited_constant_ids + [$c_id => true]
+                        $visited_constant_ids + [$c_id => true],
                     );
 
                     if ($spread_array instanceof TArray && $spread_array->isEmptyArray()) {
@@ -224,7 +224,7 @@ class ConstantTypeResolver
                         $classlikes,
                         $entry->key,
                         $statements_analyzer,
-                        $visited_constant_ids + [$c_id => true]
+                        $visited_constant_ids + [$c_id => true],
                     );
 
                     if (!$key_type instanceof TLiteralInt
@@ -253,7 +253,7 @@ class ConstantTypeResolver
                     $classlikes,
                     $entry->value,
                     $statements_analyzer,
-                    $visited_constant_ids + [$c_id => true]
+                    $visited_constant_ids + [$c_id => true],
                 )]);
 
                 $properties[$key_value] = $value_type;
@@ -281,7 +281,7 @@ class ConstantTypeResolver
                 $c->name,
                 ReflectionProperty::IS_PRIVATE,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             if ($found_type) {
@@ -294,14 +294,14 @@ class ConstantTypeResolver
                 $classlikes,
                 $c->array,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             $offset_type = self::resolve(
                 $classlikes,
                 $c->offset,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             if ($var_type instanceof TKeyedArray
@@ -322,7 +322,7 @@ class ConstantTypeResolver
                     $statements_analyzer,
                     $c->name,
                     $c->is_fully_qualified,
-                    null
+                    null,
                 );
 
                 if ($found_type) {

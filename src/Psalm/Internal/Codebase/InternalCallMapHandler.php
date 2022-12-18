@@ -70,7 +70,7 @@ class InternalCallMapHandler
 
         if ($possible_callables === null) {
             throw new UnexpectedValueException(
-                'Not expecting $function_param_options to be null for ' . $method_id
+                'Not expecting $function_param_options to be null for ' . $method_id,
             );
         }
 
@@ -79,7 +79,7 @@ class InternalCallMapHandler
             $possible_callables,
             $args,
             $nodes,
-            $method_id
+            $method_id,
         );
     }
 
@@ -177,7 +177,7 @@ class InternalCallMapHandler
                     $param_type,
                     true,
                     true,
-                    $arg_result
+                    $arg_result,
                 ) || $arg_result->type_coerced) {
                     if ($arg_result->type_coerced) {
                         $type_coerced = true;
@@ -299,7 +299,7 @@ class InternalCallMapHandler
                     null,
                     $optional,
                     false,
-                    $variadic
+                    $variadic,
                 );
 
                 if ($out_type) {

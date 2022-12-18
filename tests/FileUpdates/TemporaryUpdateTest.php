@@ -39,12 +39,12 @@ class TemporaryUpdateTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
@@ -109,7 +109,7 @@ class TemporaryUpdateTest extends TestCase
             foreach ($file_stage as $file_path => $contents) {
                 $codebase->addTemporaryFileChanges(
                     $file_path,
-                    $contents
+                    $contents,
                 );
             }
 
@@ -1728,7 +1728,7 @@ class TemporaryUpdateTest extends TestCase
                 'error_positions' => [[84], [84]],
                 'ignored_issues' => [],
                 'test_save' => false,
-                'check_unused_code' => true
+                'check_unused_code' => true,
             ],
             'stillUnusedMethod' => [
                 [
@@ -1765,7 +1765,7 @@ class TemporaryUpdateTest extends TestCase
                 'error_positions' => [[201], [234]],
                 'ignored_issues' => [],
                 'test_save' => false,
-                'check_unused_code' => true
+                'check_unused_code' => true,
             ],
             'usedMethodWithNoAffectedConstantChanges' => [
                 [
@@ -1824,7 +1824,7 @@ class TemporaryUpdateTest extends TestCase
                 'error_positions' => [[], []],
                 'ignored_issues' => [],
                 'test_save' => false,
-                'check_unused_code' => true
+                'check_unused_code' => true,
             ],
             'syntaxErrorFixed' => [
                 [

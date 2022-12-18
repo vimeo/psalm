@@ -617,7 +617,7 @@ class IssetTest extends TestCase
                             throw new \LogicException();
                         }
                         return $array;
-                    }'
+                    }',
             ],
             'issetOnStringArrayShouldInformArrayness' => [
                 'code' => '<?php
@@ -631,7 +631,7 @@ class IssetTest extends TestCase
                         }
 
                         throw new \Exception("bad");
-                    }'
+                    }',
             ],
 
             'issetOnArrayTwice' => [
@@ -646,7 +646,7 @@ class IssetTest extends TestCase
                         }
 
                         if ($options["b"] === 2) {}
-                    }'
+                    }',
             ],
             'listDestructuringErrorSuppress' => [
                 'code' => '<?php
@@ -682,7 +682,7 @@ class IssetTest extends TestCase
 
                     class A extends P {}
                     class B extends P {}
-                    class C extends P {}'
+                    class C extends P {}',
             ],
             'accessAfterArrayExistsStaticClass' => [
                 'code' => '<?php
@@ -703,7 +703,7 @@ class IssetTest extends TestCase
 
                     class A extends P {}
                     class B extends P {}
-                    class C extends P {}'
+                    class C extends P {}',
             ],
             'issetCreateTKeyedArrayWithType' => [
                 'code' => '<?php
@@ -713,7 +713,7 @@ class IssetTest extends TestCase
                         }
 
                         if (\is_array($options["b"])) {}
-                    }'
+                    }',
             ],
             'issetOnThing' => [
                 'code' => '<?php
@@ -763,7 +763,7 @@ class IssetTest extends TestCase
 
                     function foo(C $c) : void {
                         strlen($c->foo() ?? "");
-                    }'
+                    }',
             ],
             'issetOnMethodCallInsideMethodCall' => [
                 'code' => '<?php
@@ -802,7 +802,7 @@ class IssetTest extends TestCase
 
                             $this->foo->bar();
                         }
-                    }'
+                    }',
             ],
             'issetOnArrayOfArraysReturningStringInElse' => [
                 'code' => '<?php
@@ -908,7 +908,7 @@ class IssetTest extends TestCase
                     /**
                      * @psalm-suppress MixedArgument
                      */
-                    echo $payload["b"];'
+                    echo $payload["b"];',
             ],
             'implicitIssetWithStringKeyOnArrayDoesntChangeArrayType' => [
                 'code' => '<?php
@@ -949,7 +949,7 @@ class IssetTest extends TestCase
 
                             return $claims[self::STUDY_ID];
                         }
-                    }'
+                    }',
             ],
             'noCrashAfterTwoIsset' => [
                 'code' => '<?php
@@ -958,7 +958,7 @@ class IssetTest extends TestCase
                         if (! isset($b["id"], $a[$b["id"]])) {
                             echo "z";
                         }
-                    }'
+                    }',
             ],
             'assertOnPossiblyDefined' => [
                 'code' => '<?php
@@ -971,7 +971,7 @@ class IssetTest extends TestCase
                          * @psalm-suppress MixedArgument
                          */
                         assert($dt);
-                    }'
+                    }',
             ],
             'issetOnNullableMixed' => [
                 'code' => '<?php
@@ -989,21 +989,21 @@ class IssetTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'assertComplex' => [
                 'code' => '<?php
                     function returnsInt(?int $a, ?int $b): int {
                         assert($a !== null || $b !== null);
                         return isset($a) ? $a : $b;
-                    }'
+                    }',
             ],
             'assertComplexWithNullCoalesce' => [
                 'code' => '<?php
                     function returnsInt(?int $a, ?int $b): int {
                         assert($a !== null || $b !== null);
                         return $a ?? $b;
-                    }'
+                    }',
             ],
             'nullCoalesceSimpleArrayOffset' => [
                 'code' => '<?php
@@ -1015,7 +1015,7 @@ class IssetTest extends TestCase
                     function b(array $arr) : void {
                         /** @psalm-suppress MixedArgument */
                         echo $arr["a"]["b"] ?? 0;
-                    }'
+                    }',
             ],
             'coalescePreserveContext' => [
                 'code' => '<?php
@@ -1024,7 +1024,7 @@ class IssetTest extends TestCase
                         echo $test[0] ?? ( $test[0] = 1 );
                         /** @psalm-suppress MixedArgument */
                         echo $test[0];
-                    }'
+                    }',
             ],
         ];
     }
@@ -1082,7 +1082,7 @@ class IssetTest extends TestCase
                             baz();
                         }
                     }',
-                'error_message' => 'UndefinedVariable'
+                'error_message' => 'UndefinedVariable',
             ],
             'issetNullVar' => [
                 'code' => '<?php
@@ -1101,7 +1101,7 @@ class IssetTest extends TestCase
                         }
                         return "bar";
                     }',
-                'error_message' => 'TypeDoesNotContainNull'
+                'error_message' => 'TypeDoesNotContainNull',
             ],
             'issetOnArrayOfArraysReturningString' => [
                 'code' => '<?php

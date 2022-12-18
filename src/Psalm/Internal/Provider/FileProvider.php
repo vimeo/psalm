@@ -134,7 +134,7 @@ class FileProvider
 
         $iterator = new RecursiveDirectoryIterator(
             $dir_path,
-            FilesystemIterator::CURRENT_AS_PATHNAME | FilesystemIterator::SKIP_DOTS
+            FilesystemIterator::CURRENT_AS_PATHNAME | FilesystemIterator::SKIP_DOTS,
         );
 
         if ($filter !== null) {
@@ -149,7 +149,7 @@ class FileProvider
                     }
 
                     return $filter($path);
-                }
+                },
             );
         }
 

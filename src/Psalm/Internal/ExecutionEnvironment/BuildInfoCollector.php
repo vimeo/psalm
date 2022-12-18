@@ -301,7 +301,7 @@ class BuildInfoCollector
                             ->setCommitterEmail($head_commit_data['committer']['email'])
                             ->setMessage($head_commit_data['message'])
                             ->setDate(strtotime($head_commit_data['timestamp'])),
-                        []
+                        [],
                     );
 
                     $this->readEnv['git'] = $gitinfo->toArray();

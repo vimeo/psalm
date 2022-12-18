@@ -55,7 +55,7 @@ class WhileAnalyzer
             self::getAndExpressions($stmt->cond),
             [],
             $loop_scope,
-            $inner_loop_context
+            $inner_loop_context,
         ) === false) {
             return false;
         }
@@ -88,7 +88,7 @@ class WhileAnalyzer
                     if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id],
                         );
                     }
                 } else {
@@ -102,7 +102,7 @@ class WhileAnalyzer
         if ($can_leave_loop) {
             $context->vars_possibly_in_scope = array_merge(
                 $context->vars_possibly_in_scope,
-                $while_context->vars_possibly_in_scope
+                $while_context->vars_possibly_in_scope,
             );
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;

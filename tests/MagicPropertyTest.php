@@ -29,7 +29,7 @@ class MagicPropertyTest extends TestCase
 
                 $child = new Child();
 
-                $a = $child->hello;'
+                $a = $child->hello;',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -622,7 +622,7 @@ class MagicPropertyTest extends TestCase
                                 echo $this->a[0];
                             }
                         }
-                    }'
+                    }',
             ],
             'magicPropertyDefinedOnTrait' => [
                 'code' => '<?php
@@ -656,7 +656,7 @@ class MagicPropertyTest extends TestCase
                     $record = new UserRecord();
                     $record->email;
                     $record->password;
-                    $record->last_login_at = new DateTimeImmutable("now");'
+                    $record->last_login_at = new DateTimeImmutable("now");',
             ],
             'reconcileMagicProperties' => [
                 'code' => '<?php
@@ -694,7 +694,7 @@ class MagicPropertyTest extends TestCase
 
                             return "hello";
                         }
-                    }'
+                    }',
             ],
             'propertyReadIsExpanded' => [
                 'code' => '<?php
@@ -761,8 +761,8 @@ class MagicPropertyTest extends TestCase
                             $errors = $this->errors;
                             return $errors;
                         }
-                    }'
-            ]
+                    }',
+            ],
         ];
     }
 
@@ -1185,7 +1185,7 @@ class MagicPropertyTest extends TestCase
                        /** @property string[] */
                       public array $arr;
                     }',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
@@ -1205,7 +1205,7 @@ class MagicPropertyTest extends TestCase
 
               $b = new B();
               $result = $b->foo;
-              '
+              ',
         );
 
         $error_message = 'UndefinedMagicPropertyFetch';

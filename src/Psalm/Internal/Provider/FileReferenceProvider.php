@@ -211,7 +211,7 @@ class FileReferenceProvider
             if (isset(self::$nonmethod_references_to_classes[$key])) {
                 self::$nonmethod_references_to_classes[$key] = array_merge(
                     $reference,
-                    self::$nonmethod_references_to_classes[$key]
+                    self::$nonmethod_references_to_classes[$key],
                 );
             } else {
                 self::$nonmethod_references_to_classes[$key] = $reference;
@@ -290,7 +290,7 @@ class FileReferenceProvider
             if (isset(self::$file_references_to_class_members[$key])) {
                 self::$file_references_to_class_members[$key] = array_merge(
                     $reference,
-                    self::$file_references_to_class_members[$key]
+                    self::$file_references_to_class_members[$key],
                 );
             } else {
                 self::$file_references_to_class_members[$key] = $reference;
@@ -307,7 +307,7 @@ class FileReferenceProvider
             if (isset(self::$file_references_to_class_properties[$key])) {
                 self::$file_references_to_class_properties[$key] = array_merge(
                     $reference,
-                    self::$file_references_to_class_properties[$key]
+                    self::$file_references_to_class_properties[$key],
                 );
             } else {
                 self::$file_references_to_class_properties[$key] = $reference;
@@ -324,7 +324,7 @@ class FileReferenceProvider
             if (isset(self::$file_references_to_method_returns[$key])) {
                 self::$file_references_to_method_returns[$key] = array_merge(
                     $reference,
-                    self::$file_references_to_method_returns[$key]
+                    self::$file_references_to_method_returns[$key],
                 );
             } else {
                 self::$file_references_to_method_returns[$key] = $reference;
@@ -341,7 +341,7 @@ class FileReferenceProvider
             if (isset(self::$file_references_to_missing_class_members[$key])) {
                 self::$file_references_to_missing_class_members[$key] = array_merge(
                     $reference,
-                    self::$file_references_to_missing_class_members[$key]
+                    self::$file_references_to_missing_class_members[$key],
                 );
             } else {
                 self::$file_references_to_missing_class_members[$key] = $reference;
@@ -408,7 +408,7 @@ class FileReferenceProvider
             if (isset(self::$files_inheriting_classes[$file_class_lc])) {
                 $referenced_files = [
                     ...$referenced_files,
-                    ...array_keys(self::$files_inheriting_classes[$file_class_lc])
+                    ...array_keys(self::$files_inheriting_classes[$file_class_lc]),
                 ];
             }
         }
@@ -680,15 +680,15 @@ class FileReferenceProvider
             $all_file_references = array_unique(
                 array_merge(
                     self::$file_references[$file]['a'] ?? [],
-                    $this->calculateFilesReferencingFile($codebase, $file)
-                )
+                    $this->calculateFilesReferencingFile($codebase, $file),
+                ),
             );
 
             $inheritance_references = array_unique(
                 array_merge(
                     self::$file_references[$file]['i'] ?? [],
-                    $this->calculateFilesInheritingFile($codebase, $file)
-                )
+                    $this->calculateFilesInheritingFile($codebase, $file),
+                ),
             );
 
             self::$file_references[$file] = [
@@ -906,7 +906,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_class_members[$key])) {
                 self::$method_references_to_class_members[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_class_members[$key]
+                    self::$method_references_to_class_members[$key],
                 );
             } else {
                 self::$method_references_to_class_members[$key] = $reference;
@@ -923,7 +923,7 @@ class FileReferenceProvider
             if (isset(self::$method_dependencies[$key])) {
                 self::$method_dependencies[$key] = array_merge(
                     $reference,
-                    self::$method_dependencies[$key]
+                    self::$method_dependencies[$key],
                 );
             } else {
                 self::$method_dependencies[$key] = $reference;
@@ -940,7 +940,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_class_properties[$key])) {
                 self::$method_references_to_class_properties[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_class_properties[$key]
+                    self::$method_references_to_class_properties[$key],
                 );
             } else {
                 self::$method_references_to_class_properties[$key] = $reference;
@@ -957,7 +957,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_method_returns[$key])) {
                 self::$method_references_to_method_returns[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_method_returns[$key]
+                    self::$method_references_to_method_returns[$key],
                 );
             } else {
                 self::$method_references_to_method_returns[$key] = $reference;
@@ -974,7 +974,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_classes[$key])) {
                 self::$method_references_to_classes[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_classes[$key]
+                    self::$method_references_to_classes[$key],
                 );
             } else {
                 self::$method_references_to_classes[$key] = $reference;
@@ -991,7 +991,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_missing_class_members[$key])) {
                 self::$method_references_to_missing_class_members[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_missing_class_members[$key]
+                    self::$method_references_to_missing_class_members[$key],
                 );
             } else {
                 self::$method_references_to_missing_class_members[$key] = $reference;
@@ -1010,7 +1010,7 @@ class FileReferenceProvider
                     if (isset(self::$method_param_uses[$method_id][$offset])) {
                         self::$method_param_uses[$method_id][$offset] = array_merge(
                             self::$method_param_uses[$method_id][$offset],
-                            $reference_map
+                            $reference_map,
                         );
                     } else {
                         self::$method_param_uses[$method_id][$offset] = $reference_map;
@@ -1127,7 +1127,7 @@ class FileReferenceProvider
             if (isset(self::$class_method_locations[$referenced_member_id])) {
                 self::$class_method_locations[$referenced_member_id] = [
                     ...self::$class_method_locations[$referenced_member_id],
-                    ...$locations
+                    ...$locations,
                 ];
             } else {
                 self::$class_method_locations[$referenced_member_id] = $locations;
@@ -1144,7 +1144,7 @@ class FileReferenceProvider
             if (isset(self::$class_property_locations[$referenced_member_id])) {
                 self::$class_property_locations[$referenced_member_id] = [
                     ...self::$class_property_locations[$referenced_member_id],
-                    ...$locations
+                    ...$locations,
                 ];
             } else {
                 self::$class_property_locations[$referenced_member_id] = $locations;
@@ -1161,7 +1161,7 @@ class FileReferenceProvider
             if (isset(self::$class_locations[$referenced_member_id])) {
                 self::$class_locations[$referenced_member_id] = [
                     ...self::$class_locations[$referenced_member_id],
-                    ...$locations
+                    ...$locations,
                 ];
             } else {
                 self::$class_locations[$referenced_member_id] = $locations;

@@ -331,7 +331,7 @@ class TraitTemplateTest extends TestCase
                         {
                             return trim($v);
                         }
-                    }'
+                    }',
             ],
             'useTraitReturnTypeForInheritedClass' => [
                 'code' => '<?php
@@ -380,7 +380,7 @@ class TraitTemplateTest extends TestCase
                         {
                             return trim($v);
                         }
-                    }'
+                    }',
             ],
             'inheritTraitPropertyTKeyedArray' => [
                 'code' => '<?php
@@ -400,7 +400,7 @@ class TraitTemplateTest extends TestCase
                     class B {
                         /** @use A<TValue> */
                         use A;
-                    }'
+                    }',
             ],
             'inheritTraitPropertyArray' => [
                 'code' => '<?php
@@ -420,7 +420,7 @@ class TraitTemplateTest extends TestCase
                     class B {
                         /** @use A<TValue> */
                         use A;
-                    }'
+                    }',
             ],
             'applyTemplatedValueInTraitProperty' => [
                 'code' => '<?php
@@ -442,7 +442,7 @@ class TraitTemplateTest extends TestCase
                         public function __construct(string $value) {
                             $this->value = $value;
                         }
-                    }'
+                    }',
             ],
             'traitSelfAsParam' => [
                 'code' => '<?php
@@ -471,7 +471,7 @@ class TraitTemplateTest extends TestCase
                                 return new Foo();
                             });
                         }
-                    }'
+                    }',
             ],
             'templateExtendedGenericTrait' => [
                 'code' => '<?php
@@ -508,7 +508,7 @@ class TraitTemplateTest extends TestCase
                         public function get() {
                             return $this->value;
                         }
-                    }'
+                    }',
             ],
         ];
     }
@@ -672,7 +672,7 @@ class TraitTemplateTest extends TestCase
                             $this->offsetGet($offset)->bar();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'possiblyNullReferenceOnTraitDefinedMethodExtended' => [
                 'code' => '<?php
@@ -731,7 +731,7 @@ class TraitTemplateTest extends TestCase
                             $this->offsetGet($offset)->bar();
                         }
                     }',
-                'error_message' => 'MixedMethodCall'
+                'error_message' => 'MixedMethodCall',
             ],
         ];
     }

@@ -76,7 +76,7 @@ class ClassTemplateParamCollector
                         if (isset($template_types[$template_name])) {
                             $template_types[$template_name] = array_merge(
                                 $template_types[$template_name],
-                                $template_map
+                                $template_map,
                             );
                         } else {
                             $template_types[$template_name] = $template_map;
@@ -116,14 +116,14 @@ class ClassTemplateParamCollector
                     $static_class_storage,
                     $static_class_storage,
                     null,
-                    $lhs_type_part
+                    $lhs_type_part,
                 );
                 if ($templates === null) {
                     throw new AssertionError("Could not collect templates!");
                 }
                 $template_result = new TemplateResult(
                     $static_class_storage->template_types,
-                    $templates
+                    $templates,
                 );
             }
             foreach ($template_types as $type_name => $_) {
@@ -141,7 +141,7 @@ class ClassTemplateParamCollector
                         $input_type_extends,
                         $static_class_storage,
                         $lhs_type_part,
-                        $template_result
+                        $template_result,
                     );
 
                     $class_template_params[$type_name][$class_storage->name]
@@ -167,8 +167,8 @@ class ClassTemplateParamCollector
                                 $e[$candidate_class_storage->name][$type_name],
                                 $e,
                                 $static_class_storage->name,
-                                $static_class_storage->template_types
-                            )
+                                $static_class_storage->template_types,
+                            ),
                         );
                     }
                 }
@@ -198,13 +198,13 @@ class ClassTemplateParamCollector
                     $static_class_storage
                             ->template_types
                                 [$type_extends_atomic->param_name]
-                                [$type_extends_atomic->defining_class]
+                                [$type_extends_atomic->defining_class],
                 )
                 ) {
                     $mapped_offset = array_search(
                         $type_extends_atomic->param_name,
                         array_keys($static_class_storage->template_types),
-                        true
+                        true,
                     );
 
                     if ($mapped_offset !== false
@@ -212,14 +212,14 @@ class ClassTemplateParamCollector
                     ) {
                         $output_type_extends = Type::combineUnionTypes(
                             $lhs_type_part->type_params[$mapped_offset],
-                            $output_type_extends
+                            $output_type_extends,
                         );
                     }
                 } elseif (isset(
                     $static_class_storage
                         ->template_extended_params
                             [$type_extends_atomic->defining_class]
-                            [$type_extends_atomic->param_name]
+                            [$type_extends_atomic->param_name],
                 )) {
                     $nested_output_type = self::resolveTemplateParam(
                         $codebase,
@@ -229,12 +229,12 @@ class ClassTemplateParamCollector
                             [$type_extends_atomic->param_name],
                         $static_class_storage,
                         $lhs_type_part,
-                        $template_result
+                        $template_result,
                     );
                     if ($nested_output_type !== null) {
                         $output_type_extends = Type::combineUnionTypes(
                             $nested_output_type,
-                            $output_type_extends
+                            $output_type_extends,
                         );
                     }
                 }
@@ -242,12 +242,12 @@ class ClassTemplateParamCollector
                 if ($template_result !== null) {
                     $type_extends_atomic = $type_extends_atomic->replaceTemplateTypesWithArgTypes(
                         $template_result,
-                        $codebase
+                        $codebase,
                     );
                 }
                 $output_type_extends = Type::combineUnionTypes(
                     new Union([$type_extends_atomic]),
-                    $output_type_extends
+                    $output_type_extends,
                 );
             }
         }
@@ -278,7 +278,7 @@ class ClassTemplateParamCollector
                     $e[$type_extends_atomic->defining_class][$type_extends_atomic->param_name],
                     $e,
                     $static_fq_class_name,
-                    $static_template_types
+                    $static_template_types,
                 )];
             } elseif ($type_extends_atomic instanceof TClassConstant) {
                 $expanded = TypeExpander::expandAtomic(
@@ -288,7 +288,7 @@ class ClassTemplateParamCollector
                     $type_extends_atomic->fq_classlike_name,
                     null,
                     true,
-                    true
+                    true,
                 );
 
                 foreach ($expanded as $type) {

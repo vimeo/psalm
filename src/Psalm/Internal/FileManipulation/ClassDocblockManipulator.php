@@ -120,7 +120,7 @@ class ClassDocblockManipulator
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
                     $manipulator->docblock_end,
-                    $manipulator->getDocblock()
+                    $manipulator->getDocblock(),
                 );
             }
         }

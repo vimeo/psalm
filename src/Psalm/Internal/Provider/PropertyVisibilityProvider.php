@@ -69,7 +69,7 @@ class PropertyVisibilityProvider
                 $property_name,
                 $read_mode,
                 $context,
-                $code_location
+                $code_location,
             );
             $property_visible = $property_handler($event);
 

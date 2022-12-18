@@ -66,14 +66,14 @@ class ProtocolStreamReader implements ProtocolReader
                 }
 
                 $this->emitClose();
-            }
+            },
         );
 
         $this->on(
             'close',
             static function () use ($input): void {
                 $input->close();
-            }
+            },
         );
     }
 

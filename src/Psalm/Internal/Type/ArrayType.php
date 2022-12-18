@@ -40,7 +40,7 @@ class ArrayType
             return new self(
                 $type->getGenericKeyType(),
                 $type->getGenericValueType(),
-                $type->is_list
+                $type->is_list,
             );
         }
 
@@ -48,7 +48,7 @@ class ArrayType
             return new self(
                 $type->type_params[0],
                 $type->type_params[1],
-                false
+                false,
             );
         }
 

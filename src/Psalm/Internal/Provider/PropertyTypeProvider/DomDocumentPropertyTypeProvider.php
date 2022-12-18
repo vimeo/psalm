@@ -22,7 +22,7 @@ class DomDocumentPropertyTypeProvider implements PropertyTypeProviderInterface
     {
         if (strtolower($event->getPropertyName()) === 'documentelement') {
             self::$cache ??= new Union([new TNamedObject('DOMElement'), new TNull()], [
-                'ignore_nullable_issues' => true
+                'ignore_nullable_issues' => true,
             ]);
 
             return self::$cache;

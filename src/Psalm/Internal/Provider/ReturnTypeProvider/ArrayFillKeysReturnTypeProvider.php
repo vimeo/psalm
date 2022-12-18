@@ -74,14 +74,14 @@ class ArrayFillKeysReturnTypeProvider implements FunctionReturnTypeProviderInter
                     return null;
                 }
                 $result[$key] = $second_arg_type->setPossiblyUndefined(
-                    $key_k->possibly_undefined
+                    $key_k->possibly_undefined,
                 );
             }
             return new Union([new TKeyedArray(
                 $result,
                 null,
                 null,
-                $is_list
+                $is_list,
             )]);
         }
 

@@ -67,7 +67,7 @@ class TemplateInferredTypeReplacer
                     $codebase,
                     $atomic_type,
                     $inferred_lower_bounds,
-                    $key
+                    $key,
                 );
 
                 if ($template_type) {
@@ -85,7 +85,7 @@ class TemplateInferredTypeReplacer
                 $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
                     ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                         $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
-                        $codebase
+                        $codebase,
                     )
                     : null;
 
@@ -100,7 +100,7 @@ class TemplateInferredTypeReplacer
                         } elseif ($template_type_part instanceof TNamedObject) {
                             $class_template_type = new TClassString(
                                 $template_type_part->value,
-                                $template_type_part
+                                $template_type_part,
                             );
                         } elseif ($template_type_part instanceof TTemplateParam) {
                             $first_atomic_type = $template_type_part->as->getSingleAtomic();
@@ -109,7 +109,7 @@ class TemplateInferredTypeReplacer
                                 $template_type_part->param_name,
                                 $template_type_part->as->getId(),
                                 $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
-                                $template_type_part->defining_class
+                                $template_type_part->defining_class,
                             );
                         }
                     }
@@ -130,13 +130,13 @@ class TemplateInferredTypeReplacer
                     $array_template_type
                         = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
-                            $codebase
+                            $codebase,
                         );
 
                     $offset_template_type
                         = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             array_values($inferred_lower_bounds[$atomic_type->offset_param_name])[0],
-                            $codebase
+                            $codebase,
                         );
 
                     if ($array_template_type->isSingle()
@@ -174,7 +174,7 @@ class TemplateInferredTypeReplacer
                 $new_type = self::replaceTemplateKeyOfValueOf(
                     $codebase,
                     $atomic_type,
-                    $inferred_lower_bounds
+                    $inferred_lower_bounds,
                 );
 
                 if ($new_type) {
@@ -185,7 +185,7 @@ class TemplateInferredTypeReplacer
                 $new_type = self::replaceTemplatePropertiesOf(
                     $codebase,
                     $atomic_type,
-                    $inferred_lower_bounds
+                    $inferred_lower_bounds,
                 );
 
                 if ($new_type) {
@@ -199,7 +199,7 @@ class TemplateInferredTypeReplacer
                     $template_result,
                     $codebase,
                     $atomic_type,
-                    $inferred_lower_bounds
+                    $inferred_lower_bounds,
                 );
 
                 $should_set = false;
@@ -221,8 +221,8 @@ class TemplateInferredTypeReplacer
             return $union->getBuilder()->setTypes(
                 TypeCombiner::combine(
                     $new_types,
-                    $codebase
-                )->getAtomicTypes()
+                    $codebase,
+                )->getAtomicTypes(),
             )->freeze();
         }
 
@@ -234,8 +234,8 @@ class TemplateInferredTypeReplacer
         return $union->getBuilder()->setTypes(
             TypeCombiner::combine(
                 $atomic_types,
-                $codebase
-            )->getAtomicTypes()
+                $codebase,
+            )->getAtomicTypes(),
         )->freeze();
     }
 
@@ -255,7 +255,7 @@ class TemplateInferredTypeReplacer
             $atomic_type->param_name,
             $atomic_type->defining_class,
             [],
-            $codebase
+            $codebase,
         );
 
         if ($traversed_type) {
@@ -275,7 +275,7 @@ class TemplateInferredTypeReplacer
                     ) {
                         $types []= $atomic_template_type->setIntersectionTypes(array_merge(
                             $atomic_type->extra_types,
-                            $atomic_template_type->extra_types
+                            $atomic_template_type->extra_types,
                         ));
                     } elseif ($atomic_template_type instanceof TObject) {
                         $first_atomic_type = array_shift($atomic_type->extra_types);
@@ -313,7 +313,7 @@ class TemplateInferredTypeReplacer
                                         $template_type
                                             = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                                                 $inferred_lower_bounds[$template_name][$template_class],
-                                                $codebase
+                                                $codebase,
                                             );
                                     }
                                 }
@@ -343,7 +343,7 @@ class TemplateInferredTypeReplacer
 
         $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
             $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
-            $codebase
+            $codebase,
         );
 
         if ($atomic_type instanceof TTemplateKeyOf
@@ -375,7 +375,7 @@ class TemplateInferredTypeReplacer
 
         $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
             $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
-            $codebase
+            $codebase,
         );
 
         $classlike_type = $template_type->getSingleAtomic();
@@ -385,7 +385,7 @@ class TemplateInferredTypeReplacer
 
         return new TPropertiesOf(
             $classlike_type,
-            $atomic_type->visibility_filter
+            $atomic_type->visibility_filter,
         );
     }
 
@@ -401,7 +401,7 @@ class TemplateInferredTypeReplacer
         $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
             ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                 $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
-                $codebase
+                $codebase,
             )
             : null;
 
@@ -417,7 +417,7 @@ class TemplateInferredTypeReplacer
             $as_type = self::replace(
                 $as_type,
                 $template_result,
-                $codebase
+                $codebase,
             );
 
             if ($as_type->isNullable() && $template_type->isVoid()) {
@@ -436,7 +436,7 @@ class TemplateInferredTypeReplacer
                     false,
                     null,
                     false,
-                    false
+                    false,
                 )
                     && (!$candidate_atomic_type instanceof TInt
                         || $conditional_type->getId() !== 'float')
@@ -450,7 +450,7 @@ class TemplateInferredTypeReplacer
                     false,
                     null,
                     false,
-                    false
+                    false,
                 )) {
                     $matching_else_types[] = $candidate_atomic_type;
                 }
@@ -468,7 +468,7 @@ class TemplateInferredTypeReplacer
                     false,
                     null,
                     false,
-                    false
+                    false,
                 )
             ) {
                 $if_template_type = $if_type;
@@ -478,14 +478,14 @@ class TemplateInferredTypeReplacer
                 $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
                     = [
                     new TemplateBound(
-                        $if_candidate_type
-                    )
+                        $if_candidate_type,
+                    ),
                 ];
 
                 $if_template_type = self::replace(
                     $if_template_type,
                     $refined_template_result,
-                    $codebase
+                    $codebase,
                 );
             }
 
@@ -498,7 +498,7 @@ class TemplateInferredTypeReplacer
                     false,
                     null,
                     false,
-                    false
+                    false,
                 )
             ) {
                 $else_template_type = $else_type;
@@ -508,14 +508,14 @@ class TemplateInferredTypeReplacer
                 $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
                     = [
                     new TemplateBound(
-                        $else_candidate_type
-                    )
+                        $else_candidate_type,
+                    ),
                 ];
 
                 $else_template_type = self::replace(
                     $else_template_type,
                     $refined_template_result,
-                    $codebase
+                    $codebase,
                 );
             }
         }
@@ -524,25 +524,25 @@ class TemplateInferredTypeReplacer
             $if_type = self::replace(
                 $if_type,
                 $template_result,
-                $codebase
+                $codebase,
             );
 
             $else_type = self::replace(
                 $else_type,
                 $template_result,
-                $codebase
+                $codebase,
             );
 
             $class_template_type = Type::combineUnionTypes(
                 $if_type,
                 $else_type,
-                $codebase
+                $codebase,
             );
         } else {
             $class_template_type = Type::combineUnionTypes(
                 $if_template_type,
                 $else_template_type,
-                $codebase
+                $codebase,
             );
         }
 
@@ -550,7 +550,7 @@ class TemplateInferredTypeReplacer
             $as_type,
             $conditional_type,
             $if_type,
-            $else_type
+            $else_type,
         );
 
         return $class_template_type;

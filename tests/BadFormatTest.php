@@ -22,7 +22,7 @@ class BadFormatTest extends TestCase
                     function foo() {
                         $this->hello = 5
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -37,7 +37,7 @@ class BadFormatTest extends TestCase
             '<?php
                 class A {
                     public function foo() : void;
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -52,7 +52,7 @@ class BadFormatTest extends TestCase
             '<?php
                 interface foo {
                     public static $foo = ["bar"];
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -71,7 +71,7 @@ class BadFormatTest extends TestCase
                     {
                         return $a;
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -88,7 +88,7 @@ class BadFormatTest extends TestCase
 
                 use A\B;
 
-                interface B {}'
+                interface B {}',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -101,7 +101,7 @@ class BadFormatTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                [1,,2];'
+                [1,,2];',
         );
 
         $this->analyzeFile('somefile.php', new Context());

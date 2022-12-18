@@ -53,7 +53,7 @@ class CustomTraverser extends NodeTraverser
                             break 2;
                         } else {
                             throw new LogicException(
-                                'enterNode() returned invalid value of type ' . gettype($return)
+                                'enterNode() returned invalid value of type ' . gettype($return),
                             );
                         }
                     }
@@ -77,11 +77,11 @@ class CustomTraverser extends NodeTraverser
                         } elseif (is_array($return)) {
                             throw new LogicException(
                                 'leaveNode() may only return an array ' .
-                                'if the parent structure is an array'
+                                'if the parent structure is an array',
                             );
                         } else {
                             throw new LogicException(
-                                'leaveNode() returned invalid value of type ' . gettype($return)
+                                'leaveNode() returned invalid value of type ' . gettype($return),
                             );
                         }
                     }
@@ -117,7 +117,7 @@ class CustomTraverser extends NodeTraverser
                             break 2;
                         } else {
                             throw new LogicException(
-                                'enterNode() returned invalid value of type ' . gettype($return)
+                                'enterNode() returned invalid value of type ' . gettype($return),
                             );
                         }
                     }
@@ -147,11 +147,11 @@ class CustomTraverser extends NodeTraverser
                         } elseif (false === $return) {
                             throw new LogicException(
                                 'bool(false) return from leaveNode() no longer supported. ' .
-                                'Return NodeTraverser::REMOVE_NODE instead'
+                                'Return NodeTraverser::REMOVE_NODE instead',
                             );
                         } else {
                             throw new LogicException(
-                                'leaveNode() returned invalid value of type ' . gettype($return)
+                                'leaveNode() returned invalid value of type ' . gettype($return),
                             );
                         }
                     }

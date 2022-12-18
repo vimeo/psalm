@@ -30,7 +30,7 @@ class ArrayAccessTest extends TestCase
                 /** @param array<string, string> $arr */
                 function takesArrayIteratorOfString(array $arr): void {
                     echo $arr["hello"];
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -50,7 +50,7 @@ class ArrayAccessTest extends TestCase
                     if (isset($arr["hello"])) {
                         echo $arr["hello"];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -68,7 +68,7 @@ class ArrayAccessTest extends TestCase
                 /** @param array<string, string> $arr */
                 function takesArrayIteratorOfString(array $arr): void {
                     echo $arr["hello"];
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -84,7 +84,7 @@ class ArrayAccessTest extends TestCase
                 /** @param array<string, mixed> $s */
                 function foo(array $s) : void {
                     if (isset($s["a"]) && \is_array($s["a"])) {}
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -102,7 +102,7 @@ class ArrayAccessTest extends TestCase
             '<?php
                     function foo(array $arr) : void {
                         if (isset($arr["a"]) && $arr["b"]) {}
-                    }'
+                    }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -123,7 +123,7 @@ class ArrayAccessTest extends TestCase
                 /** @param array<int, string> $arr */
                 function takesArrayIteratorOfString(array $arr): void {
                     echo $arr[4];
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -139,7 +139,7 @@ class ArrayAccessTest extends TestCase
                 /** @param string[][] $arr */
                 function foo(array $arr) : void {
                     if (count($arr) === 1 && count(array_values($arr)[0]) === 1) {}
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -162,7 +162,7 @@ class ArrayAccessTest extends TestCase
                     ) {
                         return $a[1][2];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -180,7 +180,7 @@ class ArrayAccessTest extends TestCase
                     if ($arr) {
                         echo $arr[0];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -203,7 +203,7 @@ class ArrayAccessTest extends TestCase
                         array_pop($arr);
                         echo $arr[0];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -218,7 +218,7 @@ class ArrayAccessTest extends TestCase
             '<?php
                 $a = [1, 2, 3];
                 array_push($a, 4);
-                echo $a[3];'
+                echo $a[3];',
         );
         $this->analyzeFile('somefile.php', new Context());
     }
@@ -240,7 +240,7 @@ class ArrayAccessTest extends TestCase
                 function test(array $value): int
                 {
                     return isset($value["a"]->foo) ? $value["a"]->foo : 0;
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -290,7 +290,7 @@ class ArrayAccessTest extends TestCase
                         echo $arr[1];
                         echo $arr[2];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -311,7 +311,7 @@ class ArrayAccessTest extends TestCase
                     if (count($list) > 1) {
                         echo $list[1];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -335,7 +335,7 @@ class ArrayAccessTest extends TestCase
                         }
                         echo $list[1];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -359,7 +359,7 @@ class ArrayAccessTest extends TestCase
                     if (count($list) > 1) {
                         echo $list[2];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -382,7 +382,7 @@ class ArrayAccessTest extends TestCase
                         echo $arr[1];
                         echo $arr[2];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -405,7 +405,7 @@ class ArrayAccessTest extends TestCase
                         echo $arr[1];
                         echo $arr[2];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -424,7 +424,7 @@ class ArrayAccessTest extends TestCase
                  */
                 function foo(array $a, int $b): void {
                     echo $a[$b];
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -574,7 +574,7 @@ class ArrayAccessTest extends TestCase
                     '$x1===' => 'array<never, never>',
                     '$x2===' => "array{b: 'value'}",
                     '$x3===' => "array{b: 'value'}",
-                ]
+                ],
             ],
             'domNodeListAccessible' => [
                 'code' => '<?php
@@ -874,7 +874,7 @@ class ArrayAccessTest extends TestCase
                     }',
                 'assertions' => [
                     '$c' => 'C|null|scalar',
-                ]
+                ],
             ],
             'singleLetterOffset' => [
                 'code' => '<?php
@@ -931,7 +931,7 @@ class ArrayAccessTest extends TestCase
                             /** @psalm-suppress MixedArrayAccess */
                             [$this->b, $this->c] = $popped;
                         }
-                    }'
+                    }',
             ],
             'simpleXmlArrayFetch' => [
                 'code' => '<?php
@@ -1013,7 +1013,7 @@ class ArrayAccessTest extends TestCase
                     $container = new C();
                     if ($container["a"] instanceof A) {
                         $container["a"]->foo();
-                    }'
+                    }',
             ],
             'assignmentListCheckForNull' => [
                 'code' => '<?php
@@ -1030,7 +1030,7 @@ class ArrayAccessTest extends TestCase
                     /** @psalm-suppress PossiblyNullArrayAccess */
                     [1 => $foo] = bar(0);
 
-                    if ($foo !== null) {}'
+                    if ($foo !== null) {}',
             ],
             'SKIPPED-accessKnownArrayWithPositiveInt' => [
                 'code' => '<?php
@@ -1042,7 +1042,7 @@ class ArrayAccessTest extends TestCase
                             if ($o[$i] === $a) {}
                             $i++;
                         }
-                    }'
+                    }',
             ],
             'arrayAccessOnArraylikeObjectOrArray' => [
                 'code' => '<?php
@@ -1054,14 +1054,14 @@ class ArrayAccessTest extends TestCase
                     }
 
                     test(["a", "b"]);
-                    test(new ArrayObject(["a", "b"]));'
+                    test(new ArrayObject(["a", "b"]));',
             ],
             'nullCoalesceArrayAccess' => [
                 'code' => '<?php
                     /** @param ArrayAccess<int, string> $a */
                     function foo(?ArrayAccess $a) : void {
                         echo $a[0] ?? "default";
-                    }'
+                    }',
             ],
             'allowUnsettingNested' => [
                 'code' => '<?php
@@ -1071,7 +1071,7 @@ class ArrayAccessTest extends TestCase
                     }
                     $test = new test(1);
                     $a = [1 => $test];
-                    unset($a[$test->value]);'
+                    unset($a[$test->value]);',
             ],
             'arrayAssertionShouldNotBeNull' => [
                 'code' => '<?php
@@ -1090,7 +1090,7 @@ class ArrayAccessTest extends TestCase
                          * @psalm-suppress PossiblyNullArrayAccess
                          */
                         echo $arr[$s]["c"];
-                    }'
+                    }',
             ],
             'TransformBadOffsetToGoodOnes' => [
                 'code' => '<?php
@@ -1105,21 +1105,21 @@ class ArrayAccessTest extends TestCase
                 'assertions' => [
                     '$_arr1===' => 'non-empty-array<1, 5>',
                     '$_arr2===' => 'array{1: 5}',
-                ]
+                ],
             ],
             'accessArrayWithSingleStringLiteralOffset' => [
                 'code' => '<?php
                     /** @param non-empty-array<"name", int> $p */
                     function f($p): int {
                         return $p["name"];
-                    }'
+                    }',
             ],
             'unsetListKeyedArrayDisableListFlag' => [
                 'code' => '<?php
                 $a = ["a", "b"];
                 unset($a[0]);
                 ',
-                'assertions' => ['$a===' => "array{1: 'b'}"]
+                'assertions' => ['$a===' => "array{1: 'b'}"],
             ],
         ];
     }
@@ -1370,7 +1370,7 @@ class ArrayAccessTest extends TestCase
                             $context["c"];
                         }
                     }',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'destructureNullable' => [
                 'code' => '<?php
@@ -1407,7 +1407,7 @@ class ArrayAccessTest extends TestCase
                             echo $x;
                         }
                     }',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'arrayOpenByDefault' => [
                 'code' => '<?php
@@ -1428,8 +1428,8 @@ class ArrayAccessTest extends TestCase
                     }
 
                     avg(["a" => 0.5, "b" => 1.5, "c" => new Exception()]);',
-                'error_message' => 'InvalidArgument'
-            ]
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }

@@ -44,7 +44,7 @@ class BooleanNotAnalyzer
             }
 
             $stmt_type = new Union([$stmt_type], [
-                'parent_nodes' => $expr_type->parent_nodes
+                'parent_nodes' => $expr_type->parent_nodes,
             ]);
         } else {
             $stmt_type = Type::getBool();

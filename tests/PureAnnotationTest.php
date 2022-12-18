@@ -44,7 +44,7 @@ class PureAnnotationTest extends TestCase
                         $output = preg_replace("#({$needles})#im", "<mark>$1</mark>", $output);
 
                         return $output;
-                    }'
+                    }',
             ],
             'implicitAnnotations' => [
                 'code' => '<?php
@@ -126,7 +126,7 @@ class PureAnnotationTest extends TestCase
                         }
 
                         return $a;
-                    }'
+                    }',
             ],
             'assertIsPureInProductionn' => [
                 'code' => '<?php
@@ -136,7 +136,7 @@ class PureAnnotationTest extends TestCase
                     function toDateTime(?DateTime $dateTime) : DateTime {
                         assert($dateTime instanceof DateTime);
                         return $dateTime;
-                    }'
+                    }',
             ],
             'allowArrayMapClosure' => [
                 'code' => '<?php
@@ -146,7 +146,7 @@ class PureAnnotationTest extends TestCase
                      */
                     function foo(array $arr) : array {
                         return \array_map(function(string $s) { return $s;}, $arr);
-                    }'
+                    }',
             ],
             'pureBuiltinCall' => [
                 'code' => '<?php
@@ -233,7 +233,7 @@ class PureAnnotationTest extends TestCase
                         return $e->getMessage();
                     }
 
-                    echo getMessage(new Exception("test"));'
+                    echo getMessage(new Exception("test"));',
             ],
             'exceptionGetCode' => [
                 'code' => '<?php
@@ -246,7 +246,7 @@ class PureAnnotationTest extends TestCase
                         return $e->getCode();
                     }
 
-                    echo getCode(new Exception("test"));'
+                    echo getCode(new Exception("test"));',
             ],
             'exceptionGetFile' => [
                 'code' => '<?php
@@ -257,7 +257,7 @@ class PureAnnotationTest extends TestCase
                         return $e->getFile();
                     }
 
-                    echo getFile(new Exception("test"));'
+                    echo getFile(new Exception("test"));',
             ],
             'exceptionGetLine' => [
                 'code' => '<?php
@@ -268,7 +268,7 @@ class PureAnnotationTest extends TestCase
                         return $e->getLine();
                     }
 
-                    echo getLine(new Exception("test"));'
+                    echo getLine(new Exception("test"));',
             ],
             'exceptionGetTrace' => [
                 'code' => '<?php
@@ -279,7 +279,7 @@ class PureAnnotationTest extends TestCase
                         return $e->getTrace();
                     }
 
-                    echo count(getTrace(new Exception("test")));'
+                    echo count(getTrace(new Exception("test")));',
             ],
             'exceptionGetPrevious' => [
                 'code' => '<?php
@@ -290,7 +290,7 @@ class PureAnnotationTest extends TestCase
                         return $e->getPrevious();
                     }
 
-                    echo gettype(getPrevious(new Exception("test")));'
+                    echo gettype(getPrevious(new Exception("test")));',
             ],
             'exceptionGetTraceAsString' => [
                 'code' => '<?php
@@ -301,7 +301,7 @@ class PureAnnotationTest extends TestCase
                         return $e->getTraceAsString();
                     }
 
-                    echo getTraceAsString(new Exception("test"));'
+                    echo getTraceAsString(new Exception("test"));',
             ],
             'callingMethodInThrowStillPure' => [
                 'code' => '<?php
@@ -324,7 +324,7 @@ class PureAnnotationTest extends TestCase
                             throw new MyException();
                         }
                         return $sum;
-                    }'
+                    }',
             ],
             'countMethodCanBePure' => [
                 'code' => '<?php
@@ -369,7 +369,7 @@ class PureAnnotationTest extends TestCase
                             $this->checkNotNullNested();
                             $this->other->foo();
                         }
-                    }'
+                    }',
             ],
             'allowPropertyAccessOnImmutableClass' => [
                 'code' => '<?php
@@ -412,7 +412,7 @@ class PureAnnotationTest extends TestCase
                        private function isValidPort(int $portNumber): bool {
                           return $portNumber >= 1 && $portNumber <= 1000;
                        }
-                    }'
+                    }',
             ],
             'pureThroughCallStatic' => [
                 'code' => '<?php
@@ -653,7 +653,7 @@ class PureAnnotationTest extends TestCase
                         $a = "B";
                         return $a;
                     }',
-                'error_message' => 'ImpureByReferenceAssignment'
+                'error_message' => 'ImpureByReferenceAssignment',
             ],
             'staticPropertyFetch' => [
                 'code' => '<?php
@@ -701,7 +701,7 @@ class PureAnnotationTest extends TestCase
                         if ($a == $s) {}
                         return $s;
                     }',
-                'error_message' => 'ImpureMethodCall'
+                'error_message' => 'ImpureMethodCall',
             ],
             'preventImpureToStringViaConcatenation' => [
                 'code' => '<?php
@@ -718,7 +718,7 @@ class PureAnnotationTest extends TestCase
                     function foo(string $s, A $a) : string {
                         return $a . $s;
                     }',
-                'error_message' => 'ImpureMethodCall'
+                'error_message' => 'ImpureMethodCall',
             ],
             'countCanBeImpure' => [
                 'code' => '<?php

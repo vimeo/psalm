@@ -73,7 +73,7 @@ class FunctionParamsProvider
                 $function_id,
                 $call_args,
                 $context,
-                $code_location
+                $code_location,
             );
             $result = $class_handler($event);
 

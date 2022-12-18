@@ -30,13 +30,13 @@ class TemplateTypeCollector extends TypeVisitor
             $this->template_types[] = new TTemplateParam(
                 $type->param_name,
                 $extends ? new Union([$extends]) : Type::getMixed(),
-                $type->defining_class
+                $type->defining_class,
             );
         } elseif ($type instanceof TConditional) {
             $this->template_types[] = new TTemplateParam(
                 $type->param_name,
                 Type::getMixed(),
-                $type->defining_class
+                $type->defining_class,
             );
         }
 

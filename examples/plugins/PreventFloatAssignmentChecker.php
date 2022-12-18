@@ -19,7 +19,8 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
      *
      * @return null
      */
-    public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool {
+    public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
+    {
         $expr = $event->getExpr();
         $statements_source = $event->getStatementsSource();
         if ($expr instanceof PhpParser\Node\Expr\Assign
@@ -29,9 +30,9 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
             IssueBuffer::maybeAdd(
                 new NoFloatAssignment(
                     'Don’t assign to floats',
-                    new CodeLocation($statements_source, $expr)
+                    new CodeLocation($statements_source, $expr),
                 ),
-                $statements_source->getSuppressedIssues()
+                $statements_source->getSuppressedIssues(),
             );
         }
 
@@ -39,5 +40,6 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
     }
 }
 
-class NoFloatAssignment extends PluginIssue {
+class NoFloatAssignment extends PluginIssue
+{
 }

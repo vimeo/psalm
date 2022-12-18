@@ -107,9 +107,9 @@ class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProviderInterf
                     . 'number of elements as the values array '
                             . $values_type->getId(),
                     $event->getCodeLocation(),
-                    'array_combine'
+                    'array_combine',
                 ),
-                $statements_source->getSuppressedIssues()
+                $statements_source->getSuppressedIssues(),
             );
             return $statements_source->getCodebase()->analysis_php_version_id >= 8_00_00
                 ? Type::getNever()
@@ -118,7 +118,7 @@ class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProviderInterf
 
         $result = array_combine(
             $keys_array,
-            $values
+            $values,
         );
 
         assert($result !== false);

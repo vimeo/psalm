@@ -53,14 +53,14 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             foreach ($this->class->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(
                     $extended_interface,
-                    $this->getAliases()
+                    $this->getAliases(),
                 );
 
                 $parent_reference_location = new CodeLocation($this, $extended_interface);
 
                 if (!$codebase->classOrInterfaceExists(
                     $extended_interface_name,
-                    $parent_reference_location
+                    $parent_reference_location,
                 )) {
                     // we should not normally get here
                     return;
@@ -74,7 +74,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 $code_location = new CodeLocation(
                     $this,
-                    $extended_interface
+                    $extended_interface,
                 );
 
                 if (!$extended_interface_storage->is_interface) {
@@ -82,9 +82,9 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         new UndefinedInterface(
                             $extended_interface_name . ' is not an interface',
                             $code_location,
-                            $extended_interface_name
+                            $extended_interface_name,
                         ),
-                        $this->getSuppressedIssues()
+                        $this->getSuppressedIssues(),
                     );
                 }
 
@@ -95,7 +95,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $this->getFilePath(),
                         $bounds[0],
                         $bounds[1],
-                        $extended_interface_name
+                        $extended_interface_name,
                     );
                 }
 
@@ -104,7 +104,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                     $class_storage,
                     $extended_interface_storage,
                     $code_location,
-                    $class_storage->template_type_extends_count[$extended_interface_name] ?? 0
+                    $class_storage->template_type_extends_count[$extended_interface_name] ?? 0,
                 );
             }
         }
@@ -124,7 +124,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             $class_storage,
             $this->class->attrGroups,
             AttributesAnalyzer::TARGET_CLASS,
-            $class_storage->suppressed_issues + $this->getSuppressedIssues()
+            $class_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
         $member_stmts = [];
@@ -151,15 +151,15 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                         $fq_interface_name,
                         $actual_method_id,
                         $actual_method_id,
-                        false
+                        false,
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 IssueBuffer::maybeAdd(
                     new ParseError(
                         'Interfaces cannot have properties',
-                        new CodeLocation($this, $stmt)
-                    )
+                        new CodeLocation($this, $stmt),
+                    ),
                 );
 
                 return;
@@ -175,13 +175,13 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                                 new FileManipulation(
                                     (int) $const->name->getAttribute('startFilePos'),
                                     (int) $const->name->getAttribute('endFilePos') + 1,
-                                    $new_const_name
-                                )
+                                    $new_const_name,
+                                ),
                             ];
 
                             FileManipulationBuffer::add(
                                 $this->getFilePath(),
-                                $file_manipulations
+                                $file_manipulations,
                             );
                         }
                     }

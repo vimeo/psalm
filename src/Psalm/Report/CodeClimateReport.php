@@ -27,7 +27,7 @@ final class CodeClimateReport extends Report
 
         $issues_data = array_map(
             [$this, 'mapToNewStructure'],
-            $this->issues_data
+            $this->issues_data,
         );
 
         return Json::encode(array_values($issues_data), $options) . "\n";

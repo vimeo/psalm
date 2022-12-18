@@ -22,7 +22,7 @@ class DoTest extends TestCase
                         do {
                             return 1;
                         } while (true);
-                    }'
+                    }',
             ],
             'doWhileVar' => [
                 'code' => '<?php
@@ -339,8 +339,8 @@ class DoTest extends TestCase
                         }
                     } while (!$b);',
                 'assertions' => [
-                    '$b' => 'true'
-                ]
+                    '$b' => 'true',
+                ],
             ],
             'doConditionInWhileAndIfWithTwoVars' => [
                 'code' => '<?php
@@ -351,21 +351,21 @@ class DoTest extends TestCase
                         if (!$b && $s) {}
                     } while (!$b && $s);
 
-                    if ($b) {}'
+                    if ($b) {}',
             ],
             'regularAssignmentInsideDo' => [
                 'code' => '<?php
                     do {
                         $code = rand(0, 1);
                         echo "here";
-                    } while ($code === 1);'
+                    } while ($code === 1);',
             ],
             'destructuringAssignmentInsideDo' => [
                 'code' => '<?php
                     do {
                         [$code] = [rand(0, 1)];
                         echo "here";
-                    } while ($code === 1);'
+                    } while ($code === 1);',
             ],
         ];
     }

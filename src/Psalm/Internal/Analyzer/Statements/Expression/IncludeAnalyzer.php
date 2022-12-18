@@ -60,7 +60,7 @@ class IncludeAnalyzer
 
         if (!$config->allow_includes) {
             throw new FileIncludeException(
-                'File includes are not allowed per your Psalm config - check the allowFileIncludes flag.'
+                'File includes are not allowed per your Psalm config - check the allowFileIncludes flag.',
             );
         }
 
@@ -108,7 +108,7 @@ class IncludeAnalyzer
                 $statements_analyzer->node_data,
                 $statements_analyzer,
                 $statements_analyzer->getFileName(),
-                $config
+                $config,
             );
         }
 
@@ -124,7 +124,7 @@ class IncludeAnalyzer
                 'include',
                 0,
                 $arg_location,
-                $arg_location
+                $arg_location,
             );
 
             $include_param_sink->taints = [TaintKind::INPUT_INCLUDE];
@@ -143,7 +143,7 @@ class IncludeAnalyzer
                     $include_param_sink,
                     'arg',
                     $added_taints,
-                    $removed_taints
+                    $removed_taints,
                 );
             }
         }
@@ -176,18 +176,18 @@ class IncludeAnalyzer
 
                 $nesting = $statements_analyzer->getRequireNesting() + 1;
                 $current_file_analyzer->project_analyzer->progress->debug(
-                    str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL
+                    str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL,
                 );
 
                 $include_file_analyzer = new FileAnalyzer(
                     $current_file_analyzer->project_analyzer,
                     $path_to_file,
-                    $file_name
+                    $file_name,
                 );
 
                 $include_file_analyzer->setRootFilePath(
                     $current_file_analyzer->getRootFilePath(),
-                    $current_file_analyzer->getRootFileName()
+                    $current_file_analyzer->getRootFileName(),
                 );
 
                 $include_file_analyzer->addParentFilePath($current_file_analyzer->getFilePath());
@@ -204,7 +204,7 @@ class IncludeAnalyzer
                 try {
                     $include_file_analyzer->analyze(
                         $context,
-                        $global_context
+                        $global_context,
                     );
                 } catch (UnpreparedAnalysisException $e) {
                     if ($config->skip_checks_on_unresolvable_includes) {
@@ -236,9 +236,9 @@ class IncludeAnalyzer
             IssueBuffer::maybeAdd(
                 new MissingFile(
                     'Cannot find file ' . $path_to_file . ' to include',
-                    new CodeLocation($source, $stmt)
+                    new CodeLocation($source, $stmt),
                 ),
-                $source->getSuppressedIssues()
+                $source->getSuppressedIssues(),
             );
         } else {
             $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
@@ -249,9 +249,9 @@ class IncludeAnalyzer
                 IssueBuffer::maybeAdd(
                     new UnresolvableInclude(
                         'Cannot resolve the given expression to a file path',
-                        new CodeLocation($source, $stmt)
+                        new CodeLocation($source, $stmt),
                     ),
-                    $source->getSuppressedIssues()
+                    $source->getSuppressedIssues(),
                 );
             }
         }
@@ -299,7 +299,7 @@ class IncludeAnalyzer
                 return str_replace(
                     '/',
                     DIRECTORY_SEPARATOR,
-                    $stmt_type->getSingleStringLiteral()->value
+                    $stmt_type->getSingleStringLiteral()->value,
                 );
             }
 
@@ -343,7 +343,7 @@ class IncludeAnalyzer
                     $type_provider,
                     $statements_analyzer,
                     $file_name,
-                    $config
+                    $config,
                 );
 
                 if (!$evaled_path) {

@@ -95,7 +95,7 @@ final class TTemplateKeyOf extends Atomic
         $as = TemplateInferredTypeReplacer::replace(
             $this->as,
             $template_result,
-            $codebase
+            $codebase,
         );
         if ($as === $this->as) {
             return $this;
@@ -103,7 +103,7 @@ final class TTemplateKeyOf extends Atomic
         return new static(
             $this->param_name,
             $this->defining_class,
-            $as
+            $as,
         );
     }
 }

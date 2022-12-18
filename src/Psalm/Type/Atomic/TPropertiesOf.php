@@ -35,7 +35,7 @@ final class TPropertiesOf extends Atomic
             'properties-of',
             'public-properties-of',
             'protected-properties-of',
-            'private-properties-of'
+            'private-properties-of',
         ];
     }
 

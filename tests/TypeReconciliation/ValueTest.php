@@ -27,8 +27,8 @@ class ValueTest extends TestCase
             new TestConfig(),
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
@@ -610,7 +610,7 @@ class ValueTest extends TestCase
                          * @psalm-var "easy"
                          */
                         private $type = "easy";
-                    }'
+                    }',
             ],
             'supportMultipleValues' => [
                 'code' => '<?php
@@ -619,7 +619,7 @@ class ValueTest extends TestCase
                          * @var 0|-1|1
                          */
                         private $type = -1;
-                    }'
+                    }',
             ],
             'typecastTrueToInt' => [
                 'code' => '<?php
@@ -662,7 +662,7 @@ class ValueTest extends TestCase
                         }
 
                         return false;
-                    }'
+                    }',
             ],
             'numericStringValue' => [
                 'code' => '<?php
@@ -676,7 +676,7 @@ class ValueTest extends TestCase
                       \error_log($string);
                     }
 
-                    consumeNumeric("12.34");'
+                    consumeNumeric("12.34");',
             ],
             'resolveScalarClassConstant' => [
                 'code' => '<?php
@@ -699,7 +699,7 @@ class ValueTest extends TestCase
                     function blah(): void {
                         $test = something();
                         if ($test === PaymentFailure::NO_CLIENT) {}
-                    }'
+                    }',
             ],
             'removeNullAfterLessThanZero' => [
                 'code' => '<?php
@@ -727,7 +727,7 @@ class ValueTest extends TestCase
                      */
                     function makeNumStringFromFloat(float $v) {
                         return (string) $v;
-                    }'
+                    }',
             ],
             'compareNegatedValue' => [
                 'code' => '<?php
@@ -740,7 +740,7 @@ class ValueTest extends TestCase
             'refinePositiveInt' => [
                 'code' => '<?php
                     $f = rand(0, 1) ? -1 : 1;
-                    if ($f > 0) {}'
+                    if ($f > 0) {}',
             ],
             'assignOpThenCheck' => [
                 'code' => '<?php
@@ -748,7 +748,7 @@ class ValueTest extends TestCase
                     if (rand(0, 1)) {
                         $data["e"]++;
                     }
-                    if ($data["e"] > 0) {}'
+                    if ($data["e"] > 0) {}',
             ],
             'compareToNullImplicitly' => [
                 'code' => '<?php
@@ -768,7 +768,7 @@ class ValueTest extends TestCase
                         $data = "default";
                     }
 
-                    echo strlen($data);'
+                    echo strlen($data);',
             ],
             'negateValueInUnion' => [
                 'code' => '<?php
@@ -778,7 +778,7 @@ class ValueTest extends TestCase
                             $ret = ($ret === 10) ? 1 : $ret + 1;
                         }
                         return $ret;
-                    }'
+                    }',
             ],
             'inArrayPreserveNull' => [
                 'code' => '<?php
@@ -794,7 +794,7 @@ class ValueTest extends TestCase
                 'code' => '<?php
                     function foo(int $a): void {
                         if (false === ($a > 1)){}
-                    }'
+                    }',
             ],
             'returnFromUnionLiteral' => [
                 'code' => '<?php
@@ -814,7 +814,7 @@ class ValueTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'returnFromUnionLiteralNegated' => [
                 'code' => '<?php
@@ -834,7 +834,7 @@ class ValueTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'inArrayInsideLoop' => [
                 'code' => '<?php
@@ -849,7 +849,7 @@ class ValueTest extends TestCase
                         $case_actions = [];
 
                         if (!in_array(A::ACTION_ONE, $case_actions, true)) {}
-                    }'
+                    }',
             ],
             'checkIdenticalArray' => [
                 'code' => '<?php
@@ -867,7 +867,7 @@ class ValueTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'zeroIsNonEmptyString' => [
                 'code' => '<?php
@@ -1119,7 +1119,7 @@ class ValueTest extends TestCase
                             foo($s);
                         }
                     }',
-                'error_message' => 'ArgumentTypeCoercion'
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'stringCoercedToNonEmptyString' => [
                 'code' => '<?php

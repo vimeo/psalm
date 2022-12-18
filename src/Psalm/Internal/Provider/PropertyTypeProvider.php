@@ -78,7 +78,7 @@ class PropertyTypeProvider
                 $property_name,
                 $read_mode,
                 $source,
-                $context
+                $context,
             );
             $property_type = $property_handler($event);
 

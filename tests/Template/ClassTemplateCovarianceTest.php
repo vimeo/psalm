@@ -51,7 +51,7 @@ class ClassTemplateCovarianceTest extends TestCase
                         public function __construct() {
                             $this->arrayOfFoo = new Foo(function(): array { return ["foo" => "bar"]; });
                         }
-                    }'
+                    }',
             ],
             'allowPassingToCovariantCollectionWithoutExtends' => [
                 'code' => '<?php
@@ -185,7 +185,7 @@ class ClassTemplateCovarianceTest extends TestCase
                         return $viewable->view();
                     }
 
-                    getView(new Cat());'
+                    getView(new Cat());',
             ],
             'allowExtendingInterfaceWithExtraParam' => [
                 'code' => '<?php
@@ -212,7 +212,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     class Element implements ElementInterface {}
 
                     /** @param CollectionInterface<int, ElementInterface> $col */
-                    function usesElementInterfaceCollection(CollectionInterface $col) :void {}'
+                    function usesElementInterfaceCollection(CollectionInterface $col) :void {}',
             ],
             'extendsCovariantCoreClassWithSameParamCount' => [
                 'code' => '<?php
@@ -243,7 +243,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     /** @param MyArray<int, AChild> $a */
                     function takesMyArrayOfException(MyArray $a) : void {
                         takesIteratorAggregate($a);
-                    }'
+                    }',
             ],
             'extendsCovariantCoreClassWithSubstitutedParam' => [
                 'code' => '<?php
@@ -273,7 +273,7 @@ class ClassTemplateCovarianceTest extends TestCase
                     /** @param MyArray<AChild> $a */
                     function takesMyArrayOfException(MyArray $a) : void {
                         takesIteratorAggregate($a);
-                    }'
+                    }',
             ],
             'allowImmutableCovariance' => [
                 'code' => '<?php
@@ -377,7 +377,7 @@ class ClassTemplateCovarianceTest extends TestCase
                         {
                             return $this->reference;
                         }
-                    }'
+                    }',
             ],
             'allowCovariantReturnOnArrays' => [
                 'code' => '<?php
@@ -526,7 +526,7 @@ class ClassTemplateCovarianceTest extends TestCase
                      */
                     function run(Container $container): void{}
 
-                    run(new Container(new TypeA()));'
+                    run(new Container(new TypeA()));',
             ],
         ];
     }
@@ -693,7 +693,7 @@ class ClassTemplateCovarianceTest extends TestCase
                             return $this->reference;
                         }
                     }',
-                'error_message' => 'InvalidTemplateParam'
+                'error_message' => 'InvalidTemplateParam',
             ],
             'preventExtendingCoreWithCovariantParam' => [
                 'code' => '<?php

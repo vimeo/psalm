@@ -67,18 +67,18 @@ class CloneAnalyzer
                     } else {
                         $clone_method_id = new MethodIdentifier(
                             $clone_type_part->value,
-                            '__clone'
+                            '__clone',
                         );
 
                         $does_method_exist = $codebase_methods->methodExists(
                             $clone_method_id,
                             $context->calling_method_id,
-                            $location
+                            $location,
                         );
                         $is_method_visible = MethodAnalyzer::isMethodVisible(
                             $clone_method_id,
                             $context,
-                            $statements_analyzer->getSource()
+                            $statements_analyzer->getSource(),
                         );
                         if ($does_method_exist && !$is_method_visible) {
                             $invalid_clones[] = $clone_type_part->getId();
@@ -89,7 +89,7 @@ class CloneAnalyzer
                                 $clone_method_id,
                                 $statements_analyzer->getNamespace(),
                                 $location,
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                             $possibly_valid = true;
                             $immutable_cloned = true;
@@ -118,9 +118,9 @@ class CloneAnalyzer
                 IssueBuffer::maybeAdd(
                     new MixedClone(
                         'Cannot clone mixed',
-                        $location
+                        $location,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -129,17 +129,17 @@ class CloneAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidClone(
                             'Cannot clone ' . $invalid_clones[0],
-                            $location
+                            $location,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidClone(
                             'Cannot clone ' . $invalid_clones[0],
-                            $location
+                            $location,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 

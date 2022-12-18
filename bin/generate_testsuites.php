@@ -17,12 +17,12 @@ $files = iterator_to_array(
         new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator(
                 'tests',
-                FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS
+                FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS,
             ),
-            RecursiveIteratorIterator::LEAVES_ONLY
+            RecursiveIteratorIterator::LEAVES_ONLY,
         ),
-        '/.*Test.php$/'
-    )
+        '/.*Test.php$/',
+    ),
 );
 
 mt_srand(4); // chosen by fair dice roll.
@@ -31,7 +31,7 @@ mt_srand(4); // chosen by fair dice roll.
 
 $order = array_map(
     fn(): int => mt_rand(),
-    $files
+    $files,
 );
 array_multisort($order, $files);
 

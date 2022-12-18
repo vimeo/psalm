@@ -48,7 +48,7 @@ final class Possibilities
                 $union = TemplateInferredTypeReplacer::replace(
                     $union,
                     $template_result,
-                    $codebase
+                    $codebase,
                 );
 
                 foreach ($union->getAtomicTypes() as $atomic_type) {
@@ -64,7 +64,7 @@ final class Possibilities
             is_string($this->var_id) && $this_var_id
                 ? str_replace('$this->', $this_var_id . '->', $this->var_id)
                 : $this->var_id,
-            $assertion_rules
+            $assertion_rules,
         );
     }
 }

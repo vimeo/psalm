@@ -58,7 +58,7 @@ class PhpStormMetaScanner
                         && strtolower($array_item->value->name->name)
                     ) {
                         $map[$array_item->key->value] = new Union([
-                            new TNamedObject(implode('\\', $array_item->value->class->parts))
+                            new TNamedObject(implode('\\', $array_item->value->class->parts)),
                         ]);
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$array_item->key->value] = $array_item->value->value;
@@ -140,7 +140,7 @@ class PhpStormMetaScanner
 
                                     if (strpos($mapped_type, '.') === false) {
                                         return new Union([
-                                            new TNamedObject($mapped_type)
+                                            new TNamedObject($mapped_type),
                                         ]);
                                     }
                                 }
@@ -148,7 +148,7 @@ class PhpStormMetaScanner
                         }
 
                         return null;
-                    }
+                    },
                 );
             } elseif ($type_offset !== null) {
                 $codebase->methods->return_type_provider->registerClosure(
@@ -182,7 +182,7 @@ class PhpStormMetaScanner
                         }
 
                         return null;
-                    }
+                    },
                 );
             } elseif ($element_type_offset !== null) {
                 $codebase->methods->return_type_provider->registerClosure(
@@ -226,7 +226,7 @@ class PhpStormMetaScanner
                         }
 
                         return null;
-                    }
+                    },
                 );
             }
         }
@@ -275,7 +275,7 @@ class PhpStormMetaScanner
 
                                     if (strpos($mapped_type, '.') === false) {
                                         return new Union([
-                                            new TNamedObject($mapped_type)
+                                            new TNamedObject($mapped_type),
                                         ]);
                                     }
                                 }
@@ -284,11 +284,11 @@ class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            strtolower($function_id)
+                            strtolower($function_id),
                         );
 
                         return $storage->return_type ?: Type::getMixed();
-                    }
+                    },
                 );
             } elseif ($type_offset !== null) {
                 $codebase->functions->return_type_provider->registerClosure(
@@ -314,11 +314,11 @@ class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            strtolower($function_id)
+                            strtolower($function_id),
                         );
 
                         return $storage->return_type ?: Type::getMixed();
-                    }
+                    },
                 );
             } elseif ($element_type_offset !== null) {
                 $codebase->functions->return_type_provider->registerClosure(
@@ -354,11 +354,11 @@ class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            strtolower($function_id)
+                            strtolower($function_id),
                         );
 
                         return $storage->return_type ?: Type::getMixed();
-                    }
+                    },
                 );
             }
         }

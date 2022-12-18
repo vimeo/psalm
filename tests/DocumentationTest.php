@@ -139,8 +139,8 @@ class DocumentationTest extends TestCase
             new TestConfig(),
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
@@ -317,7 +317,7 @@ class DocumentationTest extends TestCase
                 strpos($issue_name, 'Unused') !== false
                     || strpos($issue_name, 'Unevaluated') !== false
                     || strpos($issue_name, 'Unnecessary') !== false,
-                $php_version
+                $php_version,
             ];
         }
 
@@ -344,7 +344,7 @@ class DocumentationTest extends TestCase
         $this->assertEquals(
             [],
             $duplicate_shortcodes,
-            "Duplicate shortcodes found: \n" . var_export($duplicate_shortcodes, true)
+            "Duplicate shortcodes found: \n" . var_export($duplicate_shortcodes, true),
         );
     }
 
@@ -360,7 +360,7 @@ class DocumentationTest extends TestCase
         $this->assertThat(
             self::$docContents,
             $this->conciseExpected($this->stringContains('@psalm-' . $annotation)),
-            "'@psalm-$annotation' is not present in the docs"
+            "'@psalm-$annotation' is not present in the docs",
         );
     }
 

@@ -34,7 +34,7 @@ class ClasslikeReplacer extends MutableTypeVisitor
                 $type = new TClassConstant(
                     $this->new,
                     $type->const_name,
-                    $type->from_docblock
+                    $type->from_docblock,
                 );
             }
         } elseif ($type instanceof TClassString) {
@@ -45,7 +45,7 @@ class ClasslikeReplacer extends MutableTypeVisitor
                     $type->is_loaded,
                     $type->is_interface,
                     $type->is_enum,
-                    $type->from_docblock
+                    $type->from_docblock,
                 );
             }
         } elseif ($type instanceof TNamedObject || $type instanceof TLiteralClassString) {

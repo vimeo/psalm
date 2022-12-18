@@ -48,7 +48,7 @@ class ErrorBaselineTest extends TestCase
                   <code>bar</code>
                 </PossiblyUnusedMethod>
               </file>
-            </files>'
+            </files>',
         );
 
         $expectedParsedBaseline = [
@@ -63,7 +63,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame(
             $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider, $baselineFilePath)
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath),
         );
     }
 
@@ -80,7 +80,7 @@ class ErrorBaselineTest extends TestCase
                   <code>foo\r</code>
                 </MixedAssignment>
               </file>
-            </files>"
+            </files>",
         );
 
         $expectedParsedBaseline = [
@@ -91,7 +91,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame(
             $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider, $baselineFilePath)
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath),
         );
     }
 
@@ -106,7 +106,7 @@ class ErrorBaselineTest extends TestCase
             '<?xml version="1.0" encoding="UTF-8"?>
              <other>
              </other>
-            '
+            ',
         );
 
         ErrorBaseline::read($this->fileProvider, $baselineFile);
@@ -167,7 +167,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -184,7 +184,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -201,7 +201,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -218,7 +218,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'info',
@@ -235,7 +235,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                 ],
                 'sample/sample-file2.php' => [
@@ -254,7 +254,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -271,7 +271,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -288,11 +288,11 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                 ],
             ],
-            false
+            false,
         );
 
         $this->fileProvider->shouldHaveReceived()
@@ -319,13 +319,13 @@ class ErrorBaselineTest extends TestCase
                     $this->assertSame(
                         '3',
                         $file1Issues[0]->getAttribute('occurrences'),
-                        'MixedAssignment should have occured 3 times'
+                        'MixedAssignment should have occured 3 times',
                     );
                     $this->assertSame('MixedOperand', $file1Issues[1]->tagName);
                     $this->assertSame(
                         '1',
                         $file1Issues[1]->getAttribute('occurrences'),
-                        'MixedOperand should have occured 1 time'
+                        'MixedOperand should have occured 1 time',
                     );
 
                     $this->assertSame('MixedAssignment', $file2Issues[0]->tagName);
@@ -338,11 +338,11 @@ class ErrorBaselineTest extends TestCase
                     $this->assertSame(
                         '1',
                         $file2Issues[1]->getAttribute('occurrences'),
-                        'TypeCoercion should have occured 1 time'
+                        'TypeCoercion should have occured 1 time',
                     );
 
                     return true;
-                })
+                }),
             );
     }
 
@@ -368,7 +368,7 @@ class ErrorBaselineTest extends TestCase
               <file src="sample/sample-file3.php">
                 <MixedAssignment occurrences="1"/>
               </file>
-            </files>'
+            </files>',
         );
 
         $this->fileProvider->allows()->setContents(Mockery::andAnyOtherArgs());
@@ -390,7 +390,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
                 new IssueData(
                     'error',
@@ -407,7 +407,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
                 new IssueData(
                     'error',
@@ -424,7 +424,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
                 new IssueData(
                     'error',
@@ -441,7 +441,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
             ],
             'sample/sample-file2.php' => [
@@ -460,7 +460,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
             ],
         ];
@@ -469,7 +469,7 @@ class ErrorBaselineTest extends TestCase
             $this->fileProvider,
             $baselineFile,
             $newIssues,
-            false
+            false,
         );
 
         $this->assertSame([
@@ -506,7 +506,7 @@ class ErrorBaselineTest extends TestCase
                   <code>bar</code>
                 </PossiblyUnusedMethod>
               </file>
-            </files>'
+            </files>',
         );
 
         $expectedParsedBaseline = [
@@ -521,7 +521,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame(
             $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider, $baselineFilePath)
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath),
         );
     }
 }

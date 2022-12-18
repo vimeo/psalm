@@ -209,7 +209,7 @@ class ParserCacheProvider
 
             if (!is_array($hashes_decoded)) {
                 throw new UnexpectedValueException(
-                    'File content hashes are of invalid type ' . gettype($hashes_decoded)
+                    'File content hashes are of invalid type ' . gettype($hashes_decoded),
                 );
             }
 
@@ -288,7 +288,7 @@ class ParserCacheProvider
         file_put_contents(
             $file_hashes_path,
             json_encode($file_content_hashes, JSON_THROW_ON_ERROR),
-            LOCK_EX
+            LOCK_EX,
         );
     }
 
@@ -368,7 +368,7 @@ class ParserCacheProvider
                 if (mkdir($parser_cache_directory, 0777, true) === false) {
                     // any other error than directory already exists/permissions issue
                     throw new RuntimeException(
-                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons'
+                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons',
                     );
                 }
             } catch (RuntimeException $e) {

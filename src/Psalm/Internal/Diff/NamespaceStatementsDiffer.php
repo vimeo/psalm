@@ -72,7 +72,7 @@ class NamespaceStatementsDiffer extends AstDiffer
             $a,
             $b,
             $a_code,
-            $b_code
+            $b_code,
         );
 
         $diff = self::extractDiff($trace, $x, $y, $a, $b, $bc);
@@ -97,7 +97,7 @@ class NamespaceStatementsDiffer extends AstDiffer
                         $diff_elem->old->stmts,
                         $diff_elem->new->stmts,
                         $a_code,
-                        $b_code
+                        $b_code,
                     );
 
                     $keep = [...$keep, ...$class_keep[0]];

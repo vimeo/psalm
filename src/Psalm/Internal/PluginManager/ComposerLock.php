@@ -105,8 +105,8 @@ class ComposerLock
                 $packages,
                 array_merge(
                     $composer_lock_contents['packages'],
-                    $composer_lock_contents['packages-dev']
-                )
+                    $composer_lock_contents['packages-dev'],
+                ),
             );
         }
 

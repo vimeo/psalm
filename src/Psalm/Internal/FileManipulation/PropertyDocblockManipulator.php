@@ -120,7 +120,7 @@ class PropertyDocblockManipulator
                 $preceding_space = substr(
                     $file_contents,
                     $preceding_semicolon_pos + 1,
-                    $preceding_newline_pos - $preceding_semicolon_pos - 1
+                    $preceding_newline_pos - $preceding_semicolon_pos - 1,
                 );
 
                 if (!substr_count($preceding_space, "\n")) {
@@ -222,13 +222,13 @@ class PropertyDocblockManipulator
                     $file_manipulations[$manipulator->typehint_start] = new FileManipulation(
                         $manipulator->typehint_start,
                         $manipulator->typehint_end,
-                        $manipulator->new_php_type
+                        $manipulator->new_php_type,
                     );
                 } else {
                     $file_manipulations[$manipulator->typehint_area_start] = new FileManipulation(
                         $manipulator->typehint_area_start,
                         $manipulator->typehint_area_start,
-                        ' ' . $manipulator->new_php_type
+                        ' ' . $manipulator->new_php_type,
                     );
                 }
             } elseif ($manipulator->new_php_type === ''
@@ -239,7 +239,7 @@ class PropertyDocblockManipulator
                 $file_manipulations[$manipulator->typehint_start] = new FileManipulation(
                     $manipulator->typehint_start,
                     $manipulator->typehint_end,
-                    ''
+                    '',
                 );
             }
 
@@ -252,7 +252,7 @@ class PropertyDocblockManipulator
                         - ($manipulator->add_newline ? strlen($manipulator->indentation) : 0),
                     $manipulator->docblock_end,
                     ($manipulator->add_newline ? "\n" . $manipulator->indentation : '')
-                        . $manipulator->getDocblock()
+                        . $manipulator->getDocblock(),
                 );
             }
         }

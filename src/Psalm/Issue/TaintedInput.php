@@ -74,7 +74,7 @@ abstract class TaintedInput extends CodeIssue
             $selection_bounds[1],
             $snippet_bounds[0],
             $location->getColumn(),
-            $location->getEndColumn()
+            $location->getEndColumn(),
         );
     }
 
