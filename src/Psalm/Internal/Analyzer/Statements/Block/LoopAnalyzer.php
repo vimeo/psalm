@@ -33,8 +33,8 @@ class LoopAnalyzer
     /**
      * Checks an array of statements in a loop
      *
-     * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @param  PhpParser\Node\Expr[]        $pre_conditions
+     * @param  list<PhpParser\Node\Stmt>    $stmts
+     * @param  list<PhpParser\Node\Expr>    $pre_conditions
      * @param  PhpParser\Node\Expr[]        $post_expressions
      * @return false|null
      */

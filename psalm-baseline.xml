@@ -56,16 +56,16 @@
       <code>$source_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForAnalyzer.php">
+    <ArgumentTypeCoercion occurrences="1">
+      <code>$stmt-&gt;cond</code>
+    </ArgumentTypeCoercion>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForeachAnalyzer.php">
     <ConflictingReferenceConstraint occurrences="2">
       <code>if (AtomicTypeComparator::isContainedBy(</code>
       <code>if (AtomicTypeComparator::isContainedBy(</code>
     </ConflictingReferenceConstraint>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Block/LoopAnalyzer.php">
-    <PossiblyUndefinedIntArrayOffset occurrences="1">
-      <code>$pre_conditions[0]</code>
-    </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchAnalyzer.php">
     <InvalidPropertyAssignmentValue occurrences="1">

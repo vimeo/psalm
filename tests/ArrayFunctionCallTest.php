@@ -301,6 +301,20 @@ class ArrayFunctionCallTest extends TestCase
                     '$d===' => "list{string, ...<int<0, max>, int|string>}",
                 ],
             ],
+            'arrayMergeEmpty' => [
+                'code' => '<?php
+
+                    $test = [[]];
+                    $a = array_merge(...$test);
+
+                    $test = [[], ["test" => 0]];
+                    $b = array_merge(...$test);
+                ',
+                'assertions' => [
+                    '$a===' => 'array<never, never>',
+                    '$b===' => 'array{test: 0}',
+                ]
+            ],
             'arrayReplaceIntArrays' => [
                 'code' => '<?php
                     $d = array_replace(["a", "b", "c", "d"], [1, 2, 3]);',
@@ -2119,7 +2133,7 @@ class ArrayFunctionCallTest extends TestCase
             'arrayMapWithEmptyArrayReturn' => [
                 'code' => '<?php
                     /**
-                     * @param array<array<string>> $elements
+                     * @param array<int, array<string>> $elements
                      * @return list<string>
                      */
                     function resolvePossibleFilePaths($elements) : array
@@ -2754,6 +2768,20 @@ class ArrayFunctionCallTest extends TestCase
                     array_combine(["a", "b"], [1, 2, 3]);',
                 'error_message' => 'InvalidArgument',
             ],
+            'arrayMergeNoNamed' => [
+                'code' => '<?php
+                    $map = ["a" => []];
+                    array_merge(...$map);
+                ',
+                'error_message' => 'NamedArgumentNotAllowed'
+            ],
+            'arrayMergeRecursiveNoNamed' => [
+                'code' => '<?php
+                    $map = ["a" => []];
+                    array_merge_recursive(...$map);
+                ',
+                'error_message' => 'NamedArgumentNotAllowed'
+            ]
         ];
     }
 }
