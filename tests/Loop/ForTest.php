@@ -16,6 +16,14 @@ class ForTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'forTrue' => [
+                'code' => '<?php
+                    function ret(): int {
+                        for (;;) {
+                            return 1;
+                        }
+                    }'
+            ],
             'implicitFourthLoop' => [
                 'code' => '<?php
                     function test(): int {

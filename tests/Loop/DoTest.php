@@ -16,6 +16,14 @@ class DoTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileTrue' => [
+                'code' => '<?php
+                    function ret(): int {
+                        do {
+                            return 1;
+                        } while (true);
+                    }'
+            ],
             'doWhileVar' => [
                 'code' => '<?php
                     $worked = false;

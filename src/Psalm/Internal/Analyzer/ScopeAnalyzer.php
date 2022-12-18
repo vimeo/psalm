@@ -265,7 +265,8 @@ class ScopeAnalyzer
                     static fn(string $action): bool => $action !== self::ACTION_NONE
                 );
 
-                if ($stmt instanceof PhpParser\Node\Stmt\While_
+                if (($stmt instanceof PhpParser\Node\Stmt\While_
+                    || $stmt instanceof PhpParser\Node\Stmt\Do_)
                     && $nodes
                     && ($stmt_expr_type = $nodes->getType($stmt->cond))
                     && $stmt_expr_type->isAlwaysTruthy()

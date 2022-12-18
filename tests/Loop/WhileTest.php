@@ -14,6 +14,14 @@ class WhileTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'whileTrue' => [
+                'code' => '<?php
+                    function ret(): int {
+                        do {
+                            return 1;
+                        } while (true);
+                    }'
+            ],
             'whileVar' => [
                 'code' => '<?php
                     $worked = false;
