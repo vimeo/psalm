@@ -443,9 +443,8 @@ class IntRangeTest extends TestCase
                     '$remainder===' => 'int<min, 1>',
                 ],
             ],
-            'SKIPPED-IntRangeRestrictWhenUntouched' => [
+            'IntRangeRestrictWhenUntouched' => [
                 'code' => '<?php
-                    //skipped, int range in loops not supported yet
                     foreach ([1, 2, 3] as $i) {
                         if ($i > 1) {
                             takesInt($i);
@@ -457,33 +456,54 @@ class IntRangeTest extends TestCase
                         return;
                     }',
             ],
-            'SKIPPED-wrongLoopAssertion' => [
+            'intRangeExpandedByLoop' => [
                 'code' => '<?php
-                    //skipped, int range in loops not supported yet
+                    for ($i = 0; $i < 10; $i++) {
+                        takesInt($i);
+                    }
+                    for (; $i < 20; $i++) {
+                        takesInt($i);
+                    }
+
+                    /** @psalm-param int<0, 20> $i */
+                    function takesInt(int $i): void{
+                        return;
+                    }',
+            ],
+            'statementsInLoopPreserveNonNegativeIntRange' => [
+                'code' => '<?php
+                    $sum = 0;
+                    foreach ([-6, 0, 2] as $i) {
+                        if ($i > 0) {
+                            $sum += $i;
+                        }
+                    }
+                    takesNonNegativeInt($sum);
+
+                    /** @psalm-param int<0, max> $i */
+                    function takesNonNegativeInt(int $i): void{
+                        return;
+                    }',
+            ],
+            'wrongLoopAssertion' => [
+                'code' => '<?php
                     function a(): array {
                         $type_tokens = getArray();
 
                         for ($i = 0, $l = rand(0,100); $i < $l; ++$i) {
-
-                            /** @psalm-trace $i */;
                             if ($i > 0 && rand(0,1)) {
                                 continue;
                             }
-                            /** @psalm-trace $i  */;
-
 
                             $type_tokens[$i] = "";
 
-                            /** @psalm-trace $type_tokens */;
-
-                            if($i > 1){
+                            if ($i > 1) {
                                 $type_tokens[$i - 2];
                             }
                         }
 
                         return [];
                     }
-
 
                     /** @return array<int, string> */
                     function getArray(): array {

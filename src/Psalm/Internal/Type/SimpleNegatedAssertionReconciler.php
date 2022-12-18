@@ -1840,10 +1840,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($inside_loop) {
-                continue;
-            }
-
             if ($atomic_type instanceof TIntRange) {
                 if ($atomic_type->contains($assertion_value)) {
                     // if the range contains the assertion, the range must be adapted
@@ -1951,10 +1947,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($inside_loop) {
-                continue;
-            }
-
             if ($atomic_type instanceof TIntRange) {
                 if ($atomic_type->contains($assertion_value)) {
                     // if the range contains the assertion, the range must be adapted

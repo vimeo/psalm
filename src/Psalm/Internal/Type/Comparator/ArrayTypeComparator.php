@@ -123,10 +123,6 @@ class ArrayTypeComparator
         }
 
         foreach ($input_type_part->type_params as $i => $input_param) {
-            if ($i > 1) {
-                break;
-            }
-
             $container_param = $container_type_part->type_params[$i];
 
             if ($i === 0
