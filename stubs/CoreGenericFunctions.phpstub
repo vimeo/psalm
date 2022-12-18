@@ -1117,6 +1117,9 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
  * @psalm-pure
  *
  * @param string|int|float $values
+ * @return ($format is non-empty-string
+ *      ? ($values is non-empty-string|int|float ? non-empty-string : string)
+ *      : string)
  *
  * @psalm-flow ($format, $values) -> return
  */

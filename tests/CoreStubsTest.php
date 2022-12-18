@@ -101,5 +101,27 @@ class CoreStubsTest extends TestCase
             'ignored_issues' => ['RedundantCondition'],
             'php_version' => '8.0',
         ];
+        yield 'sprintf yields a non-empty-string for non-empty-string value' => [
+            'code' => '<?php
+
+            /**
+             * @param non-empty-string $foo
+             * @return non-empty-string
+             */
+            function foo(string $foo): string
+            {
+                return sprintf("%s", $foo);
+            }
+            ',
+        ];
+        yield 'sprintf yields a string for possible empty string param' => [
+            'code' => '<?php
+
+            $a = sprintf("%s", "");
+            ',
+            'assertions' => [
+                '$a===' => 'string',
+            ],
+        ];
     }
 }
