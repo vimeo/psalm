@@ -1623,7 +1623,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$f===' => "array{0: 'd', 1: 'c', 2: 'b', 3: 'a'}",
                     '$g===' => "list{array{k: 0, v: 'a'}, array{k: 1, v: 'b'}, array{k: 2, v: 'c'}, array{k: 3, v: 'd'}}",
                     '$h===' => "list{array{k: 0}, array{k: 1}, array{k: 2}}",
-                    '$i===' => "array{a: 0, b?: 1}",
+                    '$i===' => "list{0: 0, 1?: 1}",
                     '$j===' => "array{0: array{k: 0, v: 'a'}, 1?: array{k: 1, v: 'b'}, 2: array{k: 2, v: 'c'}}",
                     '$k===' => "list{0: array{k: 0, v: 'a'}, 1: array{k: 1, v: 'b'}, 2?: array{k: 2, v: 'c'}}",
                     '$l===' => "list{'a', 'b'}",

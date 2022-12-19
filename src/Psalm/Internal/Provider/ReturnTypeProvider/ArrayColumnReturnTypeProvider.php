@@ -94,9 +94,8 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                 // This incorrectly assumes that the array is sorted, may be problematic
                 // Will be fixed when order is enforced
-                $incr_key = -1;
+                $key = -1;
                 foreach ($input_array->properties as $property) {
-                    ++$incr_key;
                     $row_shape = self::getRowShape(
                         $property,
                         $statements_source,
@@ -127,7 +126,6 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $result_element_type = $property;
                     }
 
-                    $key = $incr_key;
                     if ($key_column_name !== null) {
                         if (isset($row_shape->properties[$key_column_name])) {
                             $result_key_type = $row_shape->properties[$key_column_name];
@@ -148,6 +146,9 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                             $ok = false;
                             break;
                         }
+                    } else {
+                        /** @psalm-suppress StringIncrement Actually always an int in this branch */
+                        ++$key;
                     }
 
                     $properties[$key] = $result_element_type->setPossiblyUndefined(
