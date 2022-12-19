@@ -106,14 +106,15 @@ class ForAnalyzer
             if (count($stmt->init) === 1
                 && count($stmt->cond) === 1
                 && $cond instanceof PhpParser\Node\Expr\BinaryOp
-                && $cond->right instanceof PhpParser\Node\Scalar\LNumber
+                && ($cond_value = $statements_analyzer->node_data->getType($cond->right))
+                && ($cond_value->isSingleIntLiteral() || $cond_value->isSingleStringLiteral())
                 && $cond->left instanceof PhpParser\Node\Expr\Variable
                 && is_string($cond->left->name)
                 && isset($init_var_types[$cond->left->name])
                 && $init_var_types[$cond->left->name]->isSingleIntLiteral()
             ) {
-                $init_value = $init_var_types[$cond->left->name]->getSingleIntLiteral()->value;
-                $cond_value = $cond->right->value;
+                $init_value = $init_var_types[$cond->left->name]->getSingleLiteral()->value;
+                $cond_value = $cond_value->getSingleLiteral()->value;
 
                 if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller && $init_value < $cond_value) {
                     $always_enters_loop = true;

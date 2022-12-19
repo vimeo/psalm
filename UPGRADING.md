@@ -7,6 +7,8 @@
 
 - [BC] The only optional boolean parameter of `TKeyedArray::getGenericArrayType` was removed, and was replaced with a string parameter with a different meaning.
 
+- [BC] The `TDependentListKey` type was removed and replaced with an optional property of the `TIntRange` type.
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 

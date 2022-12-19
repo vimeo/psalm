@@ -89,9 +89,13 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 $properties = [];
                 $ok = true;
                 $last_custom_key = -1;
-                $is_list = $input_array->is_list || $key_column_name !== null;
+                $is_list = true;
                 $had_possibly_undefined = false;
-                foreach ($input_array->properties as $key => $property) {
+
+                // This incorrectly assumes that the array is sorted, may be problematic
+                // Will be fixed when order is enforced
+                $key = -1;
+                foreach ($input_array->properties as $property) {
                     $row_shape = self::getRowShape(
                         $property,
                         $statements_source,
@@ -142,6 +146,9 @@ class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                             $ok = false;
                             break;
                         }
+                    } else {
+                        /** @psalm-suppress StringIncrement Actually always an int in this branch */
+                        ++$key;
                     }
 
                     $properties[$key] = $result_element_type->setPossiblyUndefined(

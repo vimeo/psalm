@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@6eb37b9dc2321e4eaade9d3d2dca1aff6f2c0a8f">
+<files psalm-version="dev-master@d90a9a28a53176b4eb329d4c062d37516d3227f3">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset occurrences="2">
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -182,6 +182,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/ArrayFetchAnalyzer.php">
+    <PossiblyUndefinedIntArrayOffset occurrences="1">
+      <code>$properties[0]</code>
+    </PossiblyUndefinedIntArrayOffset>
     <ReferenceConstraintViolation occurrences="3">
       <code>$stmt_type</code>
       <code>$stmt_type</code>
@@ -230,6 +233,11 @@
     <PossiblyUndefinedIntArrayOffset occurrences="1">
       <code>$check_type_string</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Cli/LanguageServer.php">
+    <PossiblyInvalidArgument occurrences="1">
+      <code>$options['tcp'] ?? null</code>
+    </PossiblyInvalidArgument>
   </file>
   <file src="src/Psalm/Internal/Cli/Refactor.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
@@ -390,9 +398,6 @@
     <InvalidArgument occurrences="1">
       <code>$class_strings ?: null</code>
     </InvalidArgument>
-    <RedundantCondition occurrences="2">
-      <code>$is_replace</code>
-    </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayReduceReturnTypeProvider.php">
     <PossiblyUndefinedIntArrayOffset occurrences="1">
@@ -461,17 +466,11 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/TypeTokenizer.php">
-    <InvalidArrayOffset occurrences="1">
-      <code>$chars[$i - 1]</code>
-    </InvalidArrayOffset>
-    <PossiblyInvalidArrayOffset occurrences="7">
+    <PossiblyInvalidArrayOffset occurrences="4">
       <code>$type_tokens[$i - 1]</code>
       <code>$type_tokens[$i - 1]</code>
       <code>$type_tokens[$i - 1]</code>
       <code>$type_tokens[$i - 1]</code>
-      <code>$type_tokens[$i - 1]</code>
-      <code>$type_tokens[$i - 1]</code>
-      <code>$type_tokens[$i - 2]</code>
     </PossiblyInvalidArrayOffset>
   </file>
   <file src="src/Psalm/Storage/ClassConstantStorage.php">

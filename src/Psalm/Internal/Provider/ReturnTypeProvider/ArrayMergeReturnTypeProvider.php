@@ -149,7 +149,6 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                             if (!isset($generic_properties[$key]) || (
                                 !$type->possibly_undefined
                                     && !$unpacking_possibly_empty
-                                    && $is_replace
                             )) {
                                 if ($unpacking_possibly_empty) {
                                     $type = $type->setPossiblyUndefined(true);

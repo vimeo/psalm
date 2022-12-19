@@ -7,6 +7,8 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
+use function array_reverse;
+
 class TypeCombinationTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -29,6 +31,11 @@ class TypeCombinationTest extends TestCase
         $this->assertSame(
             $expected,
             TypeCombiner::combine($converted_types)->getId(),
+        );
+
+        $this->assertSame(
+            $expected,
+            TypeCombiner::combine(array_reverse($converted_types))->getId(),
         );
     }
 
@@ -90,6 +97,20 @@ class TypeCombinationTest extends TestCase
     public function providerTestValidTypeCombination(): array
     {
         return [
+            'complexArrayFallback1' => [
+                'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
+                [
+                    'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: null}&array<string, mixed>',
+                    'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>}&array<string, mixed>',
+                ],
+            ],
+            'complexArrayFallback2' => [
+                'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                [
+                    'list<a>',
+                    'list{0, 0}',
+                ],
+            ],
             'intOrString' => [
                 'int|string',
                 [

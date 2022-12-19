@@ -211,6 +211,17 @@ class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayMergeOverWrite' => [
+                'code' => '<?php
+                    $a1 = ["a" => "a1"];
+                    $a2 = ["a" => "a2"];
+
+                    $result = array_merge($a1, $a2);
+                ',
+                'assertions' => [
+                    '$result===' => "array{a: 'a2'}",
+                ],
+            ],
             'arrayMergeListOfShapes' => [
                 'code' => '<?php
 
@@ -826,7 +837,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$vars' => 'array{x: string, y: string}',
                     '$c' => 'string',
                     '$e' => 'list<string>',
-                    '$f' => 'list<string>|string',
+                    '$f' => 'list<string>',
                 ],
             ],
             'arrayKeysNoEmpty' => [
@@ -1600,6 +1611,8 @@ class ArrayFunctionCallTest extends TestCase
                     /** @var array{a: array{v: "a", k: 0}, b: array{v: "b", k: 1}, c?: array{v: "c", k: 2}} */
                     $aa = [];
                     $k = array_column($aa, null, "k");
+
+                    $l = array_column(["test" => ["v" => "a"], "test2" => ["v" => "b"]], "v");
                 ',
                 'assertions' => [
                     '$a===' => "list{'a', 'b', 'c', 'd'}",
@@ -1610,9 +1623,10 @@ class ArrayFunctionCallTest extends TestCase
                     '$f===' => "array{0: 'd', 1: 'c', 2: 'b', 3: 'a'}",
                     '$g===' => "list{array{k: 0, v: 'a'}, array{k: 1, v: 'b'}, array{k: 2, v: 'c'}, array{k: 3, v: 'd'}}",
                     '$h===' => "list{array{k: 0}, array{k: 1}, array{k: 2}}",
-                    '$i===' => "array{a: 0, b?: 1}",
+                    '$i===' => "list{0: 0, 1?: 1}",
                     '$j===' => "array{0: array{k: 0, v: 'a'}, 1?: array{k: 1, v: 'b'}, 2: array{k: 2, v: 'c'}}",
                     '$k===' => "list{0: array{k: 0, v: 'a'}, 1: array{k: 1, v: 'b'}, 2?: array{k: 2, v: 'c'}}",
+                    '$l===' => "list{'a', 'b'}",
                 ],
             ],
             'splatArrayIntersect' => [

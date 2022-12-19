@@ -334,7 +334,16 @@ class IncludeAnalyzer
                     if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\LNumber) {
                         $dir_level = $stmt->getArgs()[1]->value->value;
                     } else {
-                        return null;
+                        if ($statements_analyzer) {
+                            $t = $statements_analyzer->node_data->getType($stmt->getArgs()[1]->value);
+                            if ($t && $t->isSingleIntLiteral()) {
+                                $dir_level = $t->getSingleIntLiteral()->value;
+                            } else {
+                                return null;
+                            }
+                        } else {
+                            return null;
+                        }
                     }
                 }
 

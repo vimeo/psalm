@@ -649,25 +649,11 @@ class TypeCombiner
             $combination->objectlike_sealed = $combination->objectlike_sealed
                 && $type->fallback_params === null;
 
-            if ($type->fallback_params) {
-                $combination->objectlike_key_type = Type::combineUnionTypes(
-                    $type->fallback_params[0],
-                    $combination->objectlike_key_type,
-                    $codebase,
-                    $overwrite_empty_array,
-                );
-                $combination->objectlike_value_type = Type::combineUnionTypes(
-                    $type->fallback_params[1],
-                    $combination->objectlike_value_type,
-                    $codebase,
-                    $overwrite_empty_array,
-                );
-            }
-
             $has_defined_keys = false;
 
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = $combination->objectlike_entries[$candidate_property_name] ?? null;
+
 
                 if (!$value_type) {
                     $combination->objectlike_entries[$candidate_property_name] = $candidate_property_type
@@ -692,7 +678,33 @@ class TypeCombiner
                     $has_defined_keys = true;
                 }
 
+                if (($candidate_property_type->possibly_undefined || ($value_type->possibly_undefined ?? true))
+                    && $combination->fallbackKeyContains($candidate_property_name)
+                ) {
+                    $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
+                        $combination->objectlike_entries[$candidate_property_name],
+                        $combination->objectlike_value_type,
+                        $codebase,
+                        $overwrite_empty_array,
+                    );
+                }
+
                 unset($missing_entries[$candidate_property_name]);
+            }
+
+            if ($type->fallback_params) {
+                $combination->objectlike_key_type = Type::combineUnionTypes(
+                    $type->fallback_params[0],
+                    $combination->objectlike_key_type,
+                    $codebase,
+                    $overwrite_empty_array,
+                );
+                $combination->objectlike_value_type = Type::combineUnionTypes(
+                    $type->fallback_params[1],
+                    $combination->objectlike_value_type,
+                    $codebase,
+                    $overwrite_empty_array,
+                );
             }
 
             if (!$has_defined_keys) {
@@ -716,6 +728,20 @@ class TypeCombiner
             foreach ($missing_entries as $k => $_) {
                 $combination->objectlike_entries[$k] = $combination->objectlike_entries[$k]
                     ->setPossiblyUndefined(true);
+            }
+
+            if ($combination->objectlike_value_type) {
+                foreach ($missing_entries as $k => $_) {
+                    if (!$combination->fallbackKeyContains($k)) {
+                        continue;
+                    }
+                    $combination->objectlike_entries[$k] =  Type::combineUnionTypes(
+                        $combination->objectlike_entries[$k],
+                        $combination->objectlike_value_type,
+                        $codebase,
+                        $overwrite_empty_array,
+                    );
+                }
             }
 
             if (!$type->is_list) {

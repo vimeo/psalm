@@ -15,6 +15,57 @@ class ReturnTypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'arrayCombine' => [
+                'code' => '<?php
+                    class a {}
+
+                    /**
+                     * @return list{0, 0}|list<a>
+                     */
+                    function ret() {
+                        return [new a, new a, new a];
+                    }
+
+                    $result = ret();
+                ',
+                'assertions' => [
+                    '$result===' => 'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                ],
+            ],
+            'arrayCombineInv' => [
+                'code' => '<?php
+                    class a {}
+
+                    /**
+                     * @return list<a>|list{0, 0}
+                     */
+                    function ret() {
+                        return [new a, new a, new a];
+                    }
+
+                    $result = ret();
+                ',
+                'assertions' => [
+                    '$result===' => 'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                ],
+            ],
+            'arrayCombine2' => [
+                'code' => '<?php
+                    class a {}
+
+                    /**
+                     * @return array{test1: 0, test2: 0}|list<a>
+                     */
+                    function ret() {
+                        return [new a, new a, new a];
+                    }
+
+                    $result = ret();
+                ',
+                'assertions' => [
+                    '$result===' => 'array{0?: a, test1?: 0, test2?: 0, ...<int<0, max>, a>}',
+                ],
+            ],
             'returnTypeAfterUselessNullCheck' => [
                 'code' => '<?php
                     class One {}

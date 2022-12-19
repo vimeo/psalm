@@ -47,8 +47,9 @@ class ExplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             $can_return_empty = isset($call_args[2])
                 && (
-                    !$call_args[2]->value instanceof PhpParser\Node\Scalar\LNumber
-                    || $call_args[2]->value->value < 0
+                    !($third_arg_type = $statements_source->node_data->getType($call_args[2]->value))
+                    || !$third_arg_type->isSingleIntLiteral()
+                    || $third_arg_type->getSingleIntLiteral()->value < 0
                 );
 
             if ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {

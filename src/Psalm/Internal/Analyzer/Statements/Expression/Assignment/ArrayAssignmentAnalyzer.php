@@ -649,17 +649,16 @@ class ArrayAssignmentAnalyzer
                         ]);
                     } else {
                         assert($array_atomic_type_list !== null);
+                        $array_atomic_type = array_fill(
+                            $atomic_root_type_array->getMinCount(),
+                            count($atomic_root_type_array->properties)-1,
+                            $array_atomic_type_list,
+                        );
+                        assert(count($array_atomic_type) > 0);
                         $array_atomic_type = new TKeyedArray(
-                            array_fill(
-                                0,
-                                count($atomic_root_type_array->properties),
-                                $array_atomic_type_list,
-                            ),
+                            $array_atomic_type,
                             null,
-                            [
-                                Type::getListKey(),
-                                $array_atomic_type_list,
-                            ],
+                            null,
                             true,
                         );
                     }
