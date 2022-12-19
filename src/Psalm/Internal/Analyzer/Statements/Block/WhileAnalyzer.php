@@ -27,7 +27,8 @@ class WhileAnalyzer
         Context $context
     ): ?bool {
         $while_true = ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch && $stmt->cond->name->parts === ['true'])
-            || ($stmt->cond instanceof PhpParser\Node\Scalar\LNumber && $stmt->cond->value > 0);
+            || (($t = $statements_analyzer->node_data->getType($stmt->cond))
+                && $t->isAlwaysTruthy());
 
         $pre_context = null;
 
