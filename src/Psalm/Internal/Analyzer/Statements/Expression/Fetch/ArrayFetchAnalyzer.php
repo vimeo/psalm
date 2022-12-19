@@ -1545,7 +1545,7 @@ class ArrayFetchAnalyzer
                                 );
                             }
                             $properties[0] = $properties[0]->setPossiblyUndefined(
-                                $replacement_type->possibly_undefined
+                                $replacement_type->possibly_undefined,
                             );
                             $properties[$key_value->value] = $properties[$key_value->value]->
                                 setPossiblyUndefined(true)

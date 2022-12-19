@@ -219,8 +219,8 @@ class ArrayFunctionCallTest extends TestCase
                     $result = array_merge($a1, $a2);
                 ',
                 'assertions' => [
-                    '$result===' => "array{a: 'a2'}"
-                ]
+                    '$result===' => "array{a: 'a2'}",
+                ],
             ],
             'arrayMergeListOfShapes' => [
                 'code' => '<?php

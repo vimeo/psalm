@@ -1093,10 +1093,6 @@ class Reconciler
         array &$changed_var_ids,
         Union $result_type
     ): void {
-        if ($result_type->isNever()) {
-            return;
-        }
-
         array_pop($key_parts);
         $array_key = array_pop($key_parts);
         array_pop($key_parts);

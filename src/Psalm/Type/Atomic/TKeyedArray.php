@@ -95,7 +95,9 @@ class TKeyedArray extends Atomic
                     $this->is_list = false;
                     break;
                 }
-                $had_possibly_undefined = $v->possibly_undefined || $had_possibly_undefined;
+                if ($v->possibly_undefined) {
+                    $had_possibly_undefined = true;
+                }
                 $last_k = $k;
             }
         }
@@ -121,7 +123,9 @@ class TKeyedArray extends Atomic
                     $cloned->is_list = false;
                     break;
                 }
-                $had_possibly_undefined = $v->possibly_undefined || $had_possibly_undefined;
+                if ($v->possibly_undefined) {
+                    $had_possibly_undefined = true;
+                }
                 $last_k = $k;
             }
         }
