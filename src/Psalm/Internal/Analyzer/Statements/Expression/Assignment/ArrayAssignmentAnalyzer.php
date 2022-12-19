@@ -653,15 +653,15 @@ class ArrayAssignmentAnalyzer
                             [...array_fill(
                                 $atomic_root_type_array->getMinCount(),
                                 count($atomic_root_type_array->properties)-1,
-                                $array_atomic_type_list
+                                $array_atomic_type_list,
                             ), ...array_fill(
                                 0,
                                 count($atomic_root_type_array->properties)-1,
-                                Type::getNever()
+                                Type::getNever(),
                             )],
                             null,
                             null,
-                            true
+                            true,
                         );
                     }
                     $from_countable_object_like = true;

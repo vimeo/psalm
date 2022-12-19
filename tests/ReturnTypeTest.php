@@ -57,7 +57,7 @@ class ReturnTypeTest extends TestCase
                      * @return array{test1: 0, test2: 0}|list<a>
                      */
                     function ret() {
-                        return [1, 1, 1];
+                        return [new a, new a, new a];
                     }
 
                     $result = ret();

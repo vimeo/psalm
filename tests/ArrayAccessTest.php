@@ -453,7 +453,7 @@ class ArrayAccessTest extends TestCase
                 'assertions' => [
                     '$pre===' => 'list{0?: 0|1, 1?: 1}',
                     '$a===' => 'list{0: 0|1|2, 1?: 1|2, 2?: 2}',
-                ]
+                ],
             ],
             'testBuildListOther' => [
                 'code' => '<?php
@@ -468,8 +468,8 @@ class ArrayAccessTest extends TestCase
                     $list[] = "C";
                 ',
                 'assertions' => [
-                    '$list===' => "list{0: 'A'|'B'|'C', 1?: 'C'}"
-                ]
+                    '$list===' => "list{0: 'A'|'B'|'C', 1?: 'C'}",
+                ],
             ],
             'instanceOfStringOffset' => [
                 'code' => '<?php

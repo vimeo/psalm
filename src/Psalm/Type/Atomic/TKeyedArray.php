@@ -25,6 +25,7 @@ use function get_class;
 use function implode;
 use function is_int;
 use function is_string;
+use function ksort;
 use function preg_match;
 use function sort;
 use function str_replace;
