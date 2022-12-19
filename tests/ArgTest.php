@@ -15,6 +15,31 @@ class ArgTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'arrayCombine' => [
+                'code' => '<?php
+                    /**
+                     * @return list{0, 0}|list<1>
+                     */
+                    function ret() {
+                        return [1, 1, 1];
+                    }
+                '
+            ],
+            'arrayCombine2' => [
+                'code' => '<?php
+                    /**
+                     * @return array{test1: 0, test2: 0}|list<1>
+                     */
+                    function ret() {
+                        return [1, 1, 1];
+                    }
+
+                    $result = ret();
+                ',
+                'assertions' => [
+                    '$result===' => 'array{0?: 1, test1?: 0, test2?: 0, ...<int<0, max>, 1>} '
+                ]
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {

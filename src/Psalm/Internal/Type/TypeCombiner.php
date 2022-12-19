@@ -718,6 +718,38 @@ class TypeCombiner
                     ->setPossiblyUndefined(true);
             }
 
+            if ($type->fallback_params) {
+                foreach ($missing_entries as $k => $_) {
+                    foreach ($type->fallback_params[1]->getAtomicTypes() as $t) {
+                        if ($t instanceof TArrayKey) {
+                            break;
+                        }
+                        if ($t instanceof TString && is_string($k)) {
+                            break;
+                        }
+                        if ($t instanceof TInt && is_int($k)) {
+                            if ($t instanceof TIntRange && !$t->contains($k)) {
+                                continue;
+                            }
+                            break;
+                        }
+                        if ($t instanceof TLiteralInt && $k === $t->value) {
+                            break;
+                        }
+                        if ($t instanceof TLiteralString && $k === $t->value) {
+                            break;
+                        }
+                        continue 2;
+                    }
+                    $combination->objectlike_entries[$k] =  Type::combineUnionTypes(
+                        $combination->objectlike_entries[$k],
+                        $type->fallback_params[1],
+                        $codebase,
+                        $overwrite_empty_array,
+                    );
+                }
+            }
+
             if (!$type->is_list) {
                 $combination->all_arrays_lists = false;
             } elseif ($combination->all_arrays_lists !== false) {
