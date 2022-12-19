@@ -1533,6 +1533,21 @@ class ArrayFetchAnalyzer
                             $properties[$key_value->value] ?? null,
                             $replacement_type,
                         );
+                        if (is_int($key_value->value)
+                            && !$stmt->dim
+                            && $type->is_list
+                            && $type->properties[$key_value->value-1]->possibly_undefined
+                        ) {
+                            for ($x = 0; $x < $key_value->value; $x++) {
+                                $properties[$x] = Type::combineUnionTypes(
+                                    $properties[$x],
+                                    $replacement_type,
+                                );
+                            }
+                            $properties[$key_value->value] = $properties[$key_value->value]->
+                                setPossiblyUndefined(true)
+                            ;
+                        }
                     }
 
                     $array_access_type = Type::combineUnionTypes(

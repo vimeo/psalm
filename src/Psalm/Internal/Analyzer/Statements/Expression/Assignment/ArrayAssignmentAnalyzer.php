@@ -654,10 +654,6 @@ class ArrayAssignmentAnalyzer
                                 $atomic_root_type_array->getMinCount(),
                                 count($atomic_root_type_array->properties)-1,
                                 $array_atomic_type_list,
-                            ), ...array_fill(
-                                0,
-                                count($atomic_root_type_array->properties)-1,
-                                Type::getNever(),
                             )],
                             null,
                             null,
