@@ -63,7 +63,7 @@ class ReturnTypeTest extends TestCase
                     $result = ret();
                 ',
                 'assertions' => [
-                    '$result===' => 'array{0?: a, test1?: 0, test2?: 0, ...<int<0, max>, a>} ',
+                    '$result===' => 'array{0?: a, test1?: 0, test2?: 0, ...<int<0, max>, a>}',
                 ],
             ],
             'returnTypeAfterUselessNullCheck' => [
