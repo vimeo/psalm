@@ -1538,15 +1538,20 @@ class ArrayFetchAnalyzer
                             && $type->is_list
                             && $type->properties[$key_value->value-1]->possibly_undefined
                         ) {
+                            $first = true;
                             for ($x = 0; $x < $key_value->value; $x++) {
+                                if (!$properties[$x]->possibly_undefined) {
+                                    continue;
+                                }
                                 $properties[$x] = Type::combineUnionTypes(
                                     $properties[$x],
                                     $replacement_type,
                                 );
+                                if ($first) {
+                                    $first = false;
+                                    $properties[$x] = $properties[$x]->setPossiblyUndefined(true);
+                                }
                             }
-                            $properties[0] = $properties[0]->setPossiblyUndefined(
-                                $replacement_type->possibly_undefined,
-                            );
                             $properties[$key_value->value] = $properties[$key_value->value]->
                                 setPossiblyUndefined(true)
                             ;
