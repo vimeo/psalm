@@ -10,6 +10,7 @@ use Psalm\Config\Creator;
 use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Cli\Options;
 use Psalm\Report;
 use RuntimeException;
 
@@ -253,15 +254,15 @@ final class CliUtils
     }
 
     /**
-     * @param  string|array|null|false $f_paths
+     * @param list<string> $f_paths
      * @return list<string>|null
      */
-    public static function getPathsToCheck($f_paths): ?array
+    public static function getPathsToCheck(array $f_paths): ?array
     {
         $paths_to_check = [];
 
-        if ($f_paths) {
-            $input_paths = is_array($f_paths) ? $f_paths : [$f_paths];
+        if ($f_paths !== []) {
+            $input_paths = $f_paths;
         } else {
             $input_paths = self::getRawCliArguments();
             if (!$input_paths) {
@@ -439,12 +440,12 @@ final class CliUtils
         file_put_contents($config_file, $amended_config_file_contents);
     }
 
-    public static function getPathToConfig(array $options): ?string
+    public static function getPathToConfig(?string $config): ?string
     {
-        $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
+        $path_to_config = $config ? realpath($config) : null;
 
         if ($path_to_config === false) {
-            fwrite(STDERR, 'Could not resolve path to config ' . (string) ($options['c'] ?? '') . PHP_EOL);
+            fwrite(STDERR, 'Could not resolve path to config ' . ($config ?? '') . PHP_EOL);
             exit(1);
         }
         return $path_to_config;
@@ -485,15 +486,12 @@ final class CliUtils
         return (int)$limit;
     }
 
-    public static function initPhpVersion(array $options, Config $config, ProjectAnalyzer $project_analyzer): void
+    public static function initPhpVersion(Options $options, Config $config, ProjectAnalyzer $project_analyzer): void
     {
         $source = null;
 
-        if (isset($options['php-version'])) {
-            if (!is_string($options['php-version'])) {
-                die('Expecting a version number in the format x.y' . PHP_EOL);
-            }
-            $version = $options['php-version'];
+        if ($options->php_version !== null) {
+            $version = $options->php_version;
             $source = 'cli';
         } elseif ($version = $config->getPhpVersionFromConfig()) {
             $source = 'config';

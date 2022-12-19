@@ -223,9 +223,9 @@ final class Psalter
         // If Xdebug is enabled, restart without it
         (new XdebugHandler('PSALTER'))->check();
 
-        $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
+        $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? []);
 
-        $path_to_config = CliUtils::getPathToConfig($options);
+        $path_to_config = CliUtils::getPathToConfig(isset($options['c']) && is_string($options['c']) ? $options['c'] : null);
 
         $config = CliUtils::initializeConfig(
             $path_to_config,

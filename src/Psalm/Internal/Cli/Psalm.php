@@ -32,11 +32,9 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
-use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 
 use function array_filter;
-use function array_key_exists;
 use function array_map;
 use function array_merge;
 use function array_slice;
@@ -51,15 +49,10 @@ use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
 use function getenv;
-use function getopt;
 use function implode;
 use function in_array;
 use function ini_get;
 use function ini_set;
-use function is_array;
-use function is_numeric;
-use function is_scalar;
-use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
@@ -82,6 +75,7 @@ use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
 
+require_once __DIR__ . '/Options.php';
 require_once __DIR__ . '/../ErrorHandler.php';
 require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
@@ -174,10 +168,7 @@ final class Psalm
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
-        if (false === $options) {
-            throw new RuntimeException('Failed to parse CLI options');
-        }
+        $options = Options::fromGetopt();
 
         self::forwardCliCall($options, $argv);
 
@@ -185,28 +176,14 @@ final class Psalm
 
         self::setMemoryLimit($options);
 
-        self::syncShortOptions($options);
-
-        if (isset($options['c']) && is_array($options['c'])) {
-            fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
-            exit(1);
-        }
-
-        if (array_key_exists('h', $options)) {
+        if ($options->help) {
             echo self::getHelpText();
-            /*
-            --shepherd[=host]
-                Send data to Shepherd, Psalm's GitHub integration tool.
-                `host` is the location of the Shepherd server. It defaults to shepherd.dev
-                More information is available at https://psalm.dev/shepherd
-            */
-
             exit;
         }
 
         $current_dir = self::getCurrentDir($options);
 
-        $path_to_config = CliUtils::getPathToConfig($options);
+        $path_to_config = CliUtils::getPathToConfig($options->config);
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
 
@@ -218,12 +195,10 @@ final class Psalm
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             static fn(): ?\Composer\Autoload\ClassLoader =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
+                CliUtils::requireAutoloaders($current_dir, $options->root !== null, $vendor_dir)
         );
 
-        $run_taint_analysis = self::shouldRunTaintAnalysis($options);
-
-        if (array_key_exists('v', $options)) {
+        if ($options->version) {
             echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
             exit;
         }
@@ -237,11 +212,11 @@ final class Psalm
             $first_autoloader,
             $path_to_config,
             $output_format,
-            $run_taint_analysis,
+            $options->taint_analysis,
             $options,
         );
 
-        if (isset($options['no-cache'])) {
+        if ($options->no_cache) {
             $config->cache_directory = null;
         }
 
@@ -250,7 +225,7 @@ final class Psalm
         $in_ci = CliUtils::runningInCI();        // disable progressbar on CI
 
         if ($in_ci) {
-            $options['long-progress'] = true;
+            $options->long_progress = true;
         }
 
         $threads = self::detectThreads($options, $config, $in_ci);
@@ -259,52 +234,23 @@ final class Psalm
 
         self::restart($options, $threads);
 
-        if (isset($options['debug-emitted-issues'])) {
+        if ($options->debug_emitted_issues) {
             $config->debug_emitted_issues = true;
         }
 
-
         setlocale(LC_CTYPE, 'C');
 
-        if (isset($options['set-baseline'])) {
-            if (is_array($options['set-baseline'])) {
-                die('Only one baseline file can be created at a time' . PHP_EOL);
-            }
-        }
-
-        $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
+        $paths_to_check = CliUtils::getPathsToCheck($options->files);
 
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
             chdir($current_dir);
         }
 
-        $plugins = [];
-
-        if (isset($options['plugin'])) {
-            $plugins = $options['plugin'];
-
-            if (!is_array($plugins)) {
-                $plugins = [$plugins];
-            }
-        }
-
-        $show_info = self::initShowInfo($options);
-
-        $is_diff = self::initIsDiff($options);
-
-        $find_unused_code = self::shouldFindUnusedCode($options, $config);
-
-        $find_unused_variables = isset($options['find-unused-variables']);
-
-        $find_references_to = isset($options['find-references-to']) && is_string($options['find-references-to'])
-            ? $options['find-references-to']
-            : null;
-
-        if (isset($options['shepherd']) || getenv('PSALM_SHEPHERD')) {
-            if (isset($options['shepherd'])) {
-                if (is_string($options['shepherd'])) {
-                    $config->shepherd_host = $options['shepherd'];
+        if ($options->shepherd !== null || getenv('PSALM_SHEPHERD')) {
+            if ($options->shepherd !== null) {
+                if ($options->shepherd !== '') {
+                    $config->shepherd_host = $options->shepherd;
                 }
             } elseif (getenv('PSALM_SHEPHERD')) {
                 if (false !== ($shepherd_host = getenv('PSALM_SHEPHERD_HOST'))) {
@@ -317,37 +263,29 @@ final class Psalm
                 die('Could not find Shepherd plugin location ' . $shepherd_plugin . PHP_EOL);
             }
 
-            $plugins[] = $shepherd_plugin;
+            $options->plugin[] = $shepherd_plugin;
         }
 
-        if (isset($options['clear-cache'])) {
+        if ($options->clear_cache) {
             self::clearCache($config);
         }
 
-        if (isset($options['clear-global-cache'])) {
+        if ($options->clear_global_cache) {
             self::clearGlobalCache($config);
         }
 
         $progress = self::initProgress($options, $config);
         $providers = self::initProviders($options, $config, $current_dir);
 
-        $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
-
-        /** @var list<string>|string $report_file_paths type guaranteed by argument to getopt() */
-        $report_file_paths = $options['report'] ?? [];
-        if (is_string($report_file_paths)) {
-            $report_file_paths = [$report_file_paths];
-        }
+        $stdout_report_options = self::initStdoutReportOptions($options, $options->show_info, $output_format, $in_ci);
 
         $project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             $stdout_report_options,
             ProjectAnalyzer::getFileReportOptions(
-                $report_file_paths,
-                isset($options['report-show-info'])
-                    ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
-                    : true,
+                $options->report,
+                $options->report_show_info,
             ),
             $threads,
             $progress,
@@ -361,47 +299,50 @@ final class Psalm
             $options,
             $config,
             $project_analyzer,
-            $find_references_to,
-            $find_unused_code,
-            $find_unused_variables,
-            $run_taint_analysis,
+            $options->find_references_to,
+            $config->find_unused_code ? 'auto' : ($options->find_unused_code ?? false),
+            $options->find_unused_variables,
+            $options->taint_analysis,
         );
 
-        if ($config->run_taint_analysis || $run_taint_analysis) {
-            $is_diff = false;
-        }
-
         /** @var string $plugin_path */
-        foreach ($plugins as $plugin_path) {
+        foreach ($options->plugin as $plugin_path) {
             $config->addPluginPath($plugin_path);
         }
 
         if ($paths_to_check === null) {
-            $project_analyzer->check($current_dir, $is_diff);
+            $project_analyzer->check(
+                $current_dir,
+                !$options->no_diff
+                    && $options->set_baseline !== null
+                    && !$options->update_baseline
+                    && !$config->run_taint_analysis
+                    && !$options->taint_analysis,
+            );
         } elseif ($paths_to_check) {
             $project_analyzer->checkPaths($paths_to_check);
         }
 
-        if ($find_references_to) {
-            $project_analyzer->findReferencesTo($find_references_to);
+        if ($options->find_references_to) {
+            $project_analyzer->findReferencesTo($options->find_references_to);
         }
 
         self::storeFlowGraph($options, $project_analyzer);
 
-        if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
-            self::storeTypeMap($providers, $config, $options['generate-json-map']);
+        if ($options->generate_json_map !== null) {
+            self::storeTypeMap($providers, $config, $options->generate_json_map);
         }
 
-        if (isset($options['generate-stubs'])) {
-            self::generateStubs($options, $providers, $project_analyzer);
+        if ($options->generate_stubs !== null) {
+            self::generateStubs($options->generate_stubs, $providers, $project_analyzer);
         }
 
-        if (!isset($options['i'])) {
+        if (!$options->init) {
             IssueBuffer::finish(
                 $project_analyzer,
                 !$paths_to_check,
                 $start_time,
-                isset($options['stats']),
+                $options->stats,
                 self::initBaseline($options, $config, $current_dir, $path_to_config),
             );
         } else {
@@ -409,25 +350,9 @@ final class Psalm
         }
     }
 
-    private static function initOutputFormat(array $options): string
+    private static function initOutputFormat(Options $options): string
     {
-        return isset($options['output-format']) && is_string($options['output-format'])
-            ? $options['output-format']
-            : Report::TYPE_CONSOLE;
-    }
-
-    private static function initShowInfo(array $options): bool
-    {
-        return isset($options['show-info'])
-            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
-            : false;
-    }
-
-    private static function initIsDiff(array $options): bool
-    {
-        return !isset($options['no-diff'])
-            && !isset($options['set-baseline'])
-            && !isset($options['update-baseline']);
+        return $options->output_format ?? Report::TYPE_CONSOLE;
     }
 
     /**
@@ -470,25 +395,13 @@ final class Psalm
         );
     }
 
-    /**
-     * @param array<string,string|false|list<mixed>> $options
-     */
-    private static function setMemoryLimit(array $options): void
+    private static function setMemoryLimit(Options $options): void
     {
-        if (!array_key_exists('use-ini-defaults', $options)) {
+        if (!$options->use_ini_defaults) {
             ini_set('display_errors', 'stderr');
             ini_set('display_startup_errors', '1');
 
-            $memoryLimit = (8 * 1_024 * 1_024 * 1_024);
-
-            if (array_key_exists('memory-limit', $options)) {
-                $memoryLimit = $options['memory-limit'];
-
-                if (!is_scalar($memoryLimit)) {
-                    throw new ConfigException('Invalid memory limit specified.');
-                }
-            }
-
+            $memoryLimit = $options->memory_limit ?? 8 * 1_024 * 1_024 * 1_024;
             ini_set('memory_limit', (string) $memoryLimit);
         }
     }
@@ -562,7 +475,7 @@ final class Psalm
         string $output_format,
         ?ClassLoader $first_autoloader,
         bool $run_taint_analysis,
-        array $options
+        Options $options
     ): Config {
         $config = CliUtils::initializeConfig(
             $path_to_config,
@@ -572,66 +485,48 @@ final class Psalm
             $run_taint_analysis,
         );
 
-        if (isset($options['error-level'])
-            && is_numeric($options['error-level'])
-        ) {
-            $config_level = (int) $options['error-level'];
-
-            if (!in_array($config_level, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
-                throw new ConfigException(
-                    'Invalid error level ' . $config_level,
-                );
+        if ($options->error_level !== null) {
+            if (!in_array($options->error_level, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
+                throw new ConfigException('Invalid error level ' . $options->error_level);
             }
-
-            $config->level = $config_level;
+            $config->level = $options->error_level;
         }
         return $config;
     }
 
-    private static function initProgress(array $options, Config $config): Progress
+    private static function initProgress(Options $options, Config $config): Progress
     {
-        $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
-
-        $show_info = isset($options['show-info'])
-            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
-            : false;
-
-        if ($debug) {
+        if ($options->debug || $options->debug_by_line) {
             $progress = new DebugProgress();
-        } elseif (isset($options['no-progress'])) {
+        } elseif ($options->no_progress) {
             $progress = new VoidProgress();
         } else {
-            $show_errors = !$config->error_baseline || isset($options['ignore-baseline']);
-            if (isset($options['long-progress'])) {
-                $progress = new LongProgress($show_errors, $show_info);
+            $show_errors = !$config->error_baseline || $options->ignore_baseline;
+            if ($options->long_progress) {
+                $progress = new LongProgress($show_errors, $options->show_info);
             } else {
-                $progress = new DefaultProgress($show_errors, $show_info);
+                $progress = new DefaultProgress($show_errors, $options->show_info);
             }
         }
         return $progress;
     }
 
-    private static function initProviders(array $options, Config $config, string $current_dir): Providers
+    private static function initProviders(Options $options, Config $config, string $current_dir): Providers
     {
-        if (isset($options['no-cache']) || isset($options['i'])) {
-            $providers = new Providers(
-                new FileProvider,
-            );
+        if ($options->no_cache || $options->init) {
+            $providers = new Providers(new FileProvider);
         } else {
-            $no_reflection_cache = isset($options['no-reflection-cache']);
-            $no_file_cache = isset($options['no-file-cache']);
-
-            $file_storage_cache_provider = $no_reflection_cache
+            $file_storage_cache_provider = $options->no_reflection_cache
                 ? null
                 : new FileStorageCacheProvider($config);
 
-            $classlike_storage_cache_provider = $no_reflection_cache
+            $classlike_storage_cache_provider = $options->no_reflection_cache
                 ? null
                 : new ClassLikeStorageCacheProvider($config);
 
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, !$no_file_cache),
+                new ParserCacheProvider($config, !$options->no_file_cache),
                 $file_storage_cache_provider,
                 $classlike_storage_cache_provider,
                 new FileReferenceCacheProvider($config),
@@ -642,11 +537,10 @@ final class Psalm
     }
 
     /**
-     * @param array{"set-baseline": string, ...} $options
      * @return array<string,array<string,array{o:int, s: list<string>}>>
      */
     private static function generateBaseline(
-        array $options,
+        Options $options,
         Config $config,
         string $current_dir,
         ?string $path_to_config
@@ -656,7 +550,7 @@ final class Psalm
         try {
             $issue_baseline = ErrorBaseline::read(
                 new FileProvider,
-                $options['set-baseline'],
+                $options->set_baseline,
             );
         } catch (ConfigException $e) {
             $issue_baseline = [];
@@ -664,17 +558,17 @@ final class Psalm
 
         ErrorBaseline::create(
             new FileProvider,
-            $options['set-baseline'],
+            $options->set_baseline,
             IssueBuffer::getIssuesData(),
-            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
+            $config->include_php_versions_in_error_baseline || $options->include_php_versions,
         );
 
-        fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
+        fwrite(STDERR, "Baseline saved to {$options->set_baseline}.");
 
         CliUtils::updateConfigFile(
             $config,
             $path_to_config ?? $current_dir,
-            $options['set-baseline'],
+            $options->set_baseline,
         );
 
         fwrite(STDERR, PHP_EOL);
@@ -685,7 +579,7 @@ final class Psalm
     /**
      * @return array<string,array<string,array{o:int, s: list<string>}>>
      */
-    private static function updateBaseline(array $options, Config $config): array
+    private static function updateBaseline(Options $options, Config $config): array
     {
         $baselineFile = $config->error_baseline;
 
@@ -704,7 +598,7 @@ final class Psalm
                 new FileProvider,
                 $baselineFile,
                 IssueBuffer::getIssuesData(),
-                $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
+                $config->include_php_versions_in_error_baseline || $options->include_php_versions,
             );
             $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
 
@@ -796,21 +690,21 @@ final class Psalm
     }
 
     private static function initStdoutReportOptions(
-        array $options,
+        Options $options,
         bool $show_info,
         string $output_format,
         bool $in_ci
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options);
+        $stdout_report_options->use_color = !$options->monochrome;
         $stdout_report_options->show_info = $show_info;
-        $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
+        $stdout_report_options->show_suggestions = !$options->no_suggestions;
         /**
          * @psalm-suppress PropertyTypeCoercion
          */
         $stdout_report_options->format = $output_format;
-        $stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
-        $stdout_report_options->pretty = isset($options['pretty-print']) && $options['pretty-print'] !== "false";
+        $stdout_report_options->show_snippet = $options->show_snippet;
+        $stdout_report_options->pretty = $options->pretty_print;
         $stdout_report_options->in_ci = $in_ci;
 
         return $stdout_report_options;
@@ -841,7 +735,7 @@ final class Psalm
         exit;
     }
 
-    private static function getCurrentDir(array $options): string
+    private static function getCurrentDir(Options $options): string
     {
         $cwd = getcwd();
         if (false === $cwd) {
@@ -851,13 +745,13 @@ final class Psalm
 
         $current_dir = $cwd . DIRECTORY_SEPARATOR;
 
-        if (isset($options['r']) && is_string($options['r'])) {
-            $root_path = realpath($options['r']);
+        if ($options->root !== null) {
+            $root_path = realpath($options->root);
 
             if (!$root_path) {
                 fwrite(
                     STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
+                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options->root . PHP_EOL,
                 );
                 exit(1);
             }
@@ -868,10 +762,10 @@ final class Psalm
         return $current_dir;
     }
 
-    private static function emitMacPcreWarning(array $options, int $threads): void
+    private static function emitMacPcreWarning(Options $options, int $threads): void
     {
-        if (!isset($options['threads'])
-            && !isset($options['debug'])
+        if ($options->threads === null
+            && !$options->debug
             && $threads === 1
             && ini_get('pcre.jit') === '1'
             && PHP_OS === 'Darwin'
@@ -886,21 +780,12 @@ final class Psalm
         }
     }
 
-    private static function restart(array $options, int $threads): void
+    private static function restart(Options $options, int $threads): void
     {
         $ini_handler = new PsalmRestarter('PSALM');
 
-        if (isset($options['disable-extension'])) {
-            if (is_array($options['disable-extension'])) {
-                /** @psalm-suppress MixedAssignment */
-                foreach ($options['disable-extension'] as $extension) {
-                    if (is_string($extension)) {
-                        $ini_handler->disableExtension($extension);
-                    }
-                }
-            } elseif (is_string($options['disable-extension'])) {
-                $ini_handler->disableExtension($options['disable-extension']);
-            }
+        foreach ($options->disable_extension as $extension) {
+            $ini_handler->disableExtension($extension);
         }
 
         if ($threads > 1) {
@@ -913,11 +798,11 @@ final class Psalm
         $ini_handler->check();
     }
 
-    private static function detectThreads(array $options, Config $config, bool $in_ci): int
+    private static function detectThreads(Options $options, Config $config, bool $in_ci): int
     {
-        if (isset($options['threads'])) {
-            $threads = (int)$options['threads'];
-        } elseif (isset($options['debug']) || $in_ci) {
+        if ($options->threads !== null) {
+            $threads = $options->threads;
+        } elseif ($options->debug || $in_ci) {
             $threads = 1;
         } elseif ($config->threads) {
             $threads = $config->threads;
@@ -928,55 +813,24 @@ final class Psalm
     }
 
     /** @psalm-suppress UnusedParam $argv is being reported as unused */
-    private static function forwardCliCall(array $options, array $argv): void
+    private static function forwardCliCall(Options $options, array $argv): void
     {
-        if (isset($options['alter'])) {
+        if ($options->alter) {
             require_once __DIR__ . '/Psalter.php';
             Psalter::run($argv);
             exit;
         }
 
-        if (isset($options['language-server'])) {
+        if ($options->language_server) {
             require_once __DIR__ . '/LanguageServer.php';
             LanguageServer::run($argv);
             exit;
         }
 
-        if (isset($options['refactor'])) {
+        if ($options->refactor) {
             require_once __DIR__ . '/Refactor.php';
             Refactor::run($argv);
             exit;
-        }
-    }
-
-    /**
-     * @param array<string, false|list<mixed>|string> $options
-     * @param-out array<string, false|list<mixed>|string> $options
-     */
-    private static function syncShortOptions(array &$options): void
-    {
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('version', $options)) {
-            $options['v'] = false;
-        }
-
-        if (array_key_exists('init', $options)) {
-            $options['i'] = false;
-        }
-
-        if (array_key_exists('monochrome', $options)) {
-            $options['m'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
-
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
         }
     }
 
@@ -992,10 +846,10 @@ final class Psalm
         ?string $path_to_config,
         string $output_format,
         bool $run_taint_analysis,
-        array $options
+        Options $options
     ): array {
         $init_source_dir = null;
-        if (isset($options['i'])) {
+        if ($options->init) {
             self::generateConfig($current_dir, $args);
             // if we ever got here, it means we need to run Psalm once and generate the config
             // based on the errors we find
@@ -1022,34 +876,29 @@ final class Psalm
      * @return array<string,array<string,array{o:int, s: list<string>}>>
      */
     private static function initBaseline(
-        array $options,
+        Options $options,
         Config $config,
         string $current_dir,
         ?string $path_to_config
     ): array {
         $issue_baseline = [];
 
-        if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
+        if ($options->set_baseline !== null) {
             $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
         }
 
-        if (isset($options['use-baseline'])) {
-            if (!is_string($options['use-baseline'])) {
-                fwrite(STDERR, '--use-baseline must be a string' . PHP_EOL);
-                exit(1);
-            }
-
-            $baseline_file_path = $options['use-baseline'];
+        if ($options->use_baseline !== null) {
+            $baseline_file_path = $options->use_baseline;
             $config->error_baseline = $baseline_file_path;
         } else {
             $baseline_file_path = $config->error_baseline;
         }
 
-        if (isset($options['update-baseline'])) {
+        if ($options->update_baseline) {
             $issue_baseline = self::updateBaseline($options, $config);
         }
 
-        if (!$issue_baseline && $baseline_file_path && !isset($options['ignore-baseline'])) {
+        if (!$issue_baseline && $baseline_file_path && !$options->ignore_baseline) {
             try {
                 $issue_baseline = ErrorBaseline::read(
                     new FileProvider,
@@ -1064,14 +913,11 @@ final class Psalm
         return $issue_baseline;
     }
 
-    private static function storeFlowGraph(array $options, ProjectAnalyzer $project_analyzer): void
+    private static function storeFlowGraph(Options $options, ProjectAnalyzer $project_analyzer): void
     {
-        /** @var string|null $dump_taint_graph */
-        $dump_taint_graph = $options['dump-taint-graph'] ?? null;
-
         $flow_graph = $project_analyzer->getCodebase()->taint_flow_graph;
-        if ($flow_graph !== null && $dump_taint_graph !== null) {
-            file_put_contents($dump_taint_graph, "digraph Taints {\n\t".
+        if ($flow_graph !== null && $options->dump_taint_graph !== null) {
+            file_put_contents($options->dump_taint_graph, "digraph Taints {\n\t".
                 implode("\n\t", array_map(
                     static fn(array $edges) => '"'.implode('" -> "', $edges).'"',
                     $flow_graph->summarizeEdges(),
@@ -1080,42 +926,12 @@ final class Psalm
         }
     }
 
-    /** @return false|'always'|'auto' */
-    private static function shouldFindUnusedCode(array $options, Config $config)
-    {
-        $find_unused_code = false;
-        if (isset($options['find-dead-code'])) {
-            $options['find-unused-code'] = $options['find-dead-code'] === 'always' ? 'always' : 'auto';
-        }
-
-        if (isset($options['find-unused-code'])) {
-            if ($options['find-unused-code'] === 'always') {
-                $find_unused_code = 'always';
-            } else {
-                $find_unused_code = 'auto';
-            }
-        }
-
-        if ($config->find_unused_code) {
-            $find_unused_code = 'auto';
-        }
-
-        return $find_unused_code;
-    }
-
-    private static function shouldRunTaintAnalysis(array $options): bool
-    {
-        return (isset($options['track-tainted-input'])
-            || isset($options['security-analysis'])
-            || isset($options['taint-analysis']));
-    }
-
     /**
      * @param string|bool|null $find_references_to
      * @param false|'always'|'auto' $find_unused_code
      */
     private static function configureProjectAnalyzer(
-        array $options,
+        Options $options,
         Config $config,
         ProjectAnalyzer $project_analyzer,
         $find_references_to,
@@ -1123,15 +939,15 @@ final class Psalm
         bool $find_unused_variables,
         bool $run_taint_analysis
     ): void {
-        if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
+        if ($options->generate_json_map !== null) {
             $project_analyzer->getCodebase()->store_node_types = true;
         }
 
-        if (array_key_exists('debug-by-line', $options)) {
+        if ($options->debug_by_line) {
             $project_analyzer->debug_lines = true;
         }
 
-        if (array_key_exists('debug-performance', $options)) {
+        if ($options->debug_performance) {
             $project_analyzer->debug_performance = true;
         }
 
@@ -1152,28 +968,24 @@ final class Psalm
             $project_analyzer->trackTaintedInputs();
         }
 
-        if ($config->find_unused_psalm_suppress || isset($options['find-unused-psalm-suppress'])) {
+        if ($config->find_unused_psalm_suppress || $options->find_unused_psalm_suppress) {
             $project_analyzer->trackUnusedSuppressions();
         }
     }
 
     private static function generateStubs(
-        array $options,
+        string $file_path,
         Providers $providers,
         ProjectAnalyzer $project_analyzer
     ): void {
-        if (isset($options['generate-stubs']) && is_string($options['generate-stubs'])) {
-            $stubs_location = $options['generate-stubs'];
-
-            $providers->file_provider->setContents(
-                $stubs_location,
-                StubsGenerator::getAll(
-                    $project_analyzer->getCodebase(),
-                    $providers->classlike_storage_provider,
-                    $providers->file_storage_provider,
-                ),
-            );
-        }
+        $providers->file_provider->setContents(
+            $file_path,
+            StubsGenerator::getAll(
+                $project_analyzer->getCodebase(),
+                $providers->classlike_storage_provider,
+                $providers->file_storage_provider,
+            ),
+        );
     }
 
     /**
@@ -1195,7 +1007,7 @@ final class Psalm
             --memory-limit=LIMIT
                 Use a specific memory limit. Cannot be combined with --use-ini-defaults
 
-            --disable-extension=[extension]
+            --disable-extension=EXTENSION
                 Used to disable certain extensions while Psalm is running.
 
             --threads=INT
@@ -1320,7 +1132,7 @@ final class Psalm
             --debug-emitted-issues
                 Print a php backtrace to stderr when emitting issues.
 
-            -r, --root
+            -r PATH, --root=PATH
                 If running Psalm globally you’ll need to specify a project root. Defaults to cwd
 
             --generate-json-map=PATH

@@ -193,7 +193,7 @@ final class Refactor
         // If Xdebug is enabled, restart without it
         (new XdebugHandler('PSALTER'))->check();
 
-        $path_to_config = CliUtils::getPathToConfig($options);
+        $path_to_config = CliUtils::getPathToConfig(isset($options['c']) && is_string($options['c']) ? $options['c'] : null);
 
         $args = CliUtils::getArguments();
 

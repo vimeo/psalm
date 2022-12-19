@@ -244,7 +244,7 @@ final class LanguageServer
 
         setlocale(LC_CTYPE, 'C');
 
-        $path_to_config = CliUtils::getPathToConfig($options);
+        $path_to_config = CliUtils::getPathToConfig(isset($options['c']) && is_string($options['c']) ? $options['c'] : null);
 
         if (isset($options['tcp'])) {
             if (!is_string($options['tcp'])) {
