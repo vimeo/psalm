@@ -1600,6 +1600,8 @@ class ArrayFunctionCallTest extends TestCase
                     /** @var array{a: array{v: "a", k: 0}, b: array{v: "b", k: 1}, c?: array{v: "c", k: 2}} */
                     $aa = [];
                     $k = array_column($aa, null, "k");
+
+                    $l = array_column(["test" => ["v" => "a"], "test2" => ["v" => "b"]], "v");
                 ',
                 'assertions' => [
                     '$a===' => "list{'a', 'b', 'c', 'd'}",
@@ -1613,6 +1615,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$i===' => "array{a: 0, b?: 1}",
                     '$j===' => "array{0: array{k: 0, v: 'a'}, 1?: array{k: 1, v: 'b'}, 2: array{k: 2, v: 'c'}}",
                     '$k===' => "list{0: array{k: 0, v: 'a'}, 1: array{k: 1, v: 'b'}, 2?: array{k: 2, v: 'c'}}",
+                    '$l===' => "list{'a', 'b'}",
                 ],
             ],
             'splatArrayIntersect' => [
