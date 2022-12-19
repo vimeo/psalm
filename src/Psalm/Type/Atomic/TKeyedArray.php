@@ -85,6 +85,19 @@ class TKeyedArray extends Atomic
         $this->fallback_params = $fallback_params;
         $this->is_list = $is_list;
         $this->from_docblock = $from_docblock;
+        if ($this->is_list) {
+            $last_k = -1;
+            $had_possibly_undefined = false;
+            ksort($this->properties);
+            foreach ($this->properties as $k => $v) {
+                if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
+                    $this->is_list = false;
+                    break;
+                }
+                $had_possibly_undefined = $v->possibly_undefined || $had_possibly_undefined;
+                $last_k = $k;
+            }
+        }
     }
 
     /**
@@ -98,6 +111,19 @@ class TKeyedArray extends Atomic
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
+        if ($cloned->is_list) {
+            $last_k = -1;
+            $had_possibly_undefined = false;
+            ksort($cloned->properties);
+            foreach ($cloned->properties as $k => $v) {
+                if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
+                    $cloned->is_list = false;
+                    break;
+                }
+                $had_possibly_undefined = $v->possibly_undefined || $had_possibly_undefined;
+                $last_k = $k;
+            }
+        }
         return $cloned;
     }
 

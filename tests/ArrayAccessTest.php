@@ -433,6 +433,44 @@ class ArrayAccessTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'testBuildList' => [
+                'code' => '<?php
+                    $a = [];
+
+                    if (random_int(0, 1)) {
+                        $a []= 0;
+                    }
+
+                    if (random_int(0, 1)) {
+                        $a []= 1;
+                    }
+
+                    $pre = $a;
+
+                    $a []= 2;
+
+                ',
+                'assertions' => [
+                    '$pre===' => 'list{0?: 0|1, 1?: 1}',
+                    '$a===' => 'list{0: 0|1|2, 1?: 1|2, 2?: 2}',
+                ]
+            ],
+            'testBuildListOther' => [
+                'code' => '<?php
+                    $list = [];
+                    $entropy = random_int(0, 2);
+                    if ($entropy === 0) {
+                        $list[] = "A";
+                    } elseif ($entropy === 1) {
+                        $list[] = "B";
+                    }
+
+                    $list[] = "C";
+                ',
+                'assertions' => [
+                    '$list===' => "list{0: 'A'|'B'|'C', 1?: 'C'}"
+                ]
+            ],
             'instanceOfStringOffset' => [
                 'code' => '<?php
                     class A {
