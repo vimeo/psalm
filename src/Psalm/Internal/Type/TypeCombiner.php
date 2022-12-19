@@ -676,7 +676,11 @@ class TypeCombiner
 
                 if (!$candidate_property_type->possibly_undefined) {
                     $has_defined_keys = true;
-                } elseif ($combination->fallbackKeyContains($candidate_property_name)) {
+                }
+
+                if (($candidate_property_type->possibly_undefined || ($value_type->possibly_undefined ?? true))
+                    && $combination->fallbackKeyContains($candidate_property_name)
+                ) {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $combination->objectlike_entries[$candidate_property_name],
                         $combination->objectlike_value_type,
