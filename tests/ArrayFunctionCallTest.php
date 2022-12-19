@@ -837,7 +837,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$vars' => 'array{x: string, y: string}',
                     '$c' => 'string',
                     '$e' => 'list<string>',
-                    '$f' => 'list<string>|string',
+                    '$f' => 'list<string>',
                 ],
             ],
             'arrayKeysNoEmpty' => [
