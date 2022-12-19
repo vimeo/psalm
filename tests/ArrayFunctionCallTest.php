@@ -211,6 +211,17 @@ class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayMergeOverWrite' => [
+                'code' => '<?php
+                    $a1 = ["a" => "a1"];
+                    $a2 = ["a" => "a2"];
+
+                    $result = array_merge($a1, $a2);
+                ',
+                'assertions' => [
+                    '$result===' => "array{a: 'a2'}"
+                ]
+            ],
             'arrayMergeListOfShapes' => [
                 'code' => '<?php
 
