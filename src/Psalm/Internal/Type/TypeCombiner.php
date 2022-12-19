@@ -66,6 +66,7 @@ use function count;
 use function get_class;
 use function is_int;
 use function is_numeric;
+use function is_string;
 use function min;
 use function strpos;
 use function strtolower;

@@ -23,7 +23,7 @@ class ArgTest extends TestCase
                     function ret() {
                         return [1, 1, 1];
                     }
-                '
+                ',
             ],
             'arrayCombine2' => [
                 'code' => '<?php
@@ -37,8 +37,8 @@ class ArgTest extends TestCase
                     $result = ret();
                 ',
                 'assertions' => [
-                    '$result===' => 'array{0?: 1, test1?: 0, test2?: 0, ...<int<0, max>, 1>} '
-                ]
+                    '$result===' => 'array{0?: 1, test1?: 0, test2?: 0, ...<int<0, max>, 1>} ',
+                ],
             ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
