@@ -483,7 +483,7 @@ class ArrayAccessTest extends TestCase
                     $a []= 3;
                 ',
                 'assertions' => [
-                    '$list===' => "list{0: 0, 1: 1|2|3, 2?: 2|3, 3?: 3}",
+                    '$a===' => "list{0: 0, 1: 1|2|3, 2?: 2|3, 3?: 3}",
                 ],
             ],
             'instanceOfStringOffset' => [
