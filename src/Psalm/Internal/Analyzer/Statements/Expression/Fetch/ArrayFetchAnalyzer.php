@@ -1552,9 +1552,6 @@ class ArrayFetchAnalyzer
                                     $properties[$x] = $properties[$x]->setPossiblyUndefined(false);
                                 }
                             }
-                            if ($first) {
-                                $properties[0] = $properties[0]->setPossiblyUndefined(false);
-                            }
                             $properties[$key_value->value] = $properties[$key_value->value]->
                                 setPossiblyUndefined(true)
                             ;
