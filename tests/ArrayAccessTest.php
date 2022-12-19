@@ -471,6 +471,21 @@ class ArrayAccessTest extends TestCase
                     '$list===' => "list{0: 'A'|'B'|'C', 1?: 'C'}",
                 ],
             ],
+            'testBuildList3' => [
+                'code' => '<?php
+                    $a = [0];
+                    if (random_int(0, 1)) {
+                        $a []= 1;
+                    }
+                    if (random_int(0, 1)) {
+                        $a []= 2;
+                    }
+                    $a []= 3;
+                ',
+                'assertions' => [
+                    '$list===' => "list{0: 0, 1: 1|2|3, 2?: 2|3, 3?: 3}",
+                ],
+            ],
             'instanceOfStringOffset' => [
                 'code' => '<?php
                     class A {
