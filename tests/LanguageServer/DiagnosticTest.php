@@ -3,10 +3,10 @@
 namespace Psalm\Tests\LanguageServer;
 
 use Amp\Deferred;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
-use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\LanguageServer\Message;
 use Psalm\Internal\LanguageServer\Progress;
@@ -26,20 +26,11 @@ use function rand;
 
 class DiagnosticTest extends AsyncTestCase
 {
-    /** @var Codebase */
-    protected $codebase;
-
-    /** @var int */
-    private $increment = 0;
-
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
-
-    /** @var FakeFileProvider */
-    protected $file_provider;
-
-    /** @var string */
-    protected static $src_dir_path;
+    protected Codebase $codebase;
+    private int $increment = 0;
+    protected ProjectAnalyzer $project_analyzer;
+    protected FakeFileProvider $file_provider;
+    protected static string $src_dir_path;
 
     public function setUp(): void
     {
@@ -67,7 +58,7 @@ class DiagnosticTest extends AsyncTestCase
             [],
             1,
             null,
-            $this->codebase
+            $this->codebase,
         );
 
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
@@ -96,7 +87,7 @@ class DiagnosticTest extends AsyncTestCase
             $this->project_analyzer,
             $this->codebase,
             $clientConfiguration,
-            new Progress
+            new Progress,
         );
 
         $write->on('message', function (Message $message) use ($deferred, $server): void {
@@ -120,7 +111,7 @@ class DiagnosticTest extends AsyncTestCase
 
         $this->addFile(
             'somefile.php',
-            ''
+            '',
         );
 
         $issues = $this->changeFile(
@@ -131,7 +122,7 @@ class DiagnosticTest extends AsyncTestCase
                 public function __construct()
                 {
                 }
-            }'
+            }',
         );
 
         $this->assertEmpty($issues);
@@ -145,7 +136,7 @@ class DiagnosticTest extends AsyncTestCase
                 {
                     strpos("", "");
                 }
-            }'
+            }',
         );
 
         $this->assertArrayHasKey('somefile.php', $issues);
@@ -164,7 +155,7 @@ class DiagnosticTest extends AsyncTestCase
                 }
 
                 public function foobar(): void {}
-            }'
+            }',
         );
 
         $this->assertArrayHasKey('somefile.php', $issues);
@@ -187,7 +178,7 @@ class DiagnosticTest extends AsyncTestCase
                 }
 
                 public function foobar(): void {}
-            }'
+            }',
         );
 
         $this->assertArrayHasKey('somefile.php', $issues);
@@ -208,7 +199,7 @@ class DiagnosticTest extends AsyncTestCase
                 }
 
                 public function foobar(): void {}
-            }'
+            }',
         );
 
         $this->assertArrayHasKey('somefile.php', $issues);
@@ -226,7 +217,7 @@ class DiagnosticTest extends AsyncTestCase
                 }
 
                 public function foobar(): void {}
-            }'
+            }',
         );
 
         $this->assertArrayHasKey('somefile.php', $issues);
@@ -247,7 +238,7 @@ class DiagnosticTest extends AsyncTestCase
                 }
 
                 public function foobar(): void {}
-            }'
+            }',
         );
 
         $this->assertEmpty($issues);
@@ -261,15 +252,15 @@ class DiagnosticTest extends AsyncTestCase
         $this->codebase->addTemporaryFileChanges(
             $file_path,
             $contents,
-            $this->increment
+            $this->increment,
         );
 
         $this->codebase->reloadFiles(
             $this->project_analyzer,
-            [$file_path]
+            [$file_path],
         );
         $this->codebase->analyzer->addFilesToAnalyze(
-            [$file_path => $file_path]
+            [$file_path => $file_path],
         );
         $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
@@ -669,7 +660,7 @@ class DiagnosticTest extends AsyncTestCase
                 ],
               ],
               'trace' => 'off',
-            ]
+            ],
         ];
     }
 }

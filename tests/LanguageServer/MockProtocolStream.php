@@ -22,7 +22,6 @@ class MockProtocolStream implements ProtocolReader, ProtocolWriter, EmitterInter
     /**
      * Sends a Message to the client
      *
-     * @param Message $msg
      * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function write(Message $msg): Promise

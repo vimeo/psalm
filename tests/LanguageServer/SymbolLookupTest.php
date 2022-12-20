@@ -4,10 +4,10 @@ namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
@@ -19,8 +19,7 @@ use Psalm\Tests\TestConfig;
 
 class SymbolLookupTest extends TestCase
 {
-    /** @var Codebase */
-    protected $codebase;
+    protected Codebase $codebase;
 
     public function setUp(): void
     {
@@ -48,7 +47,7 @@ class SymbolLookupTest extends TestCase
             [],
             1,
             null,
-            $this->codebase
+            $this->codebase,
         );
 
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
@@ -103,8 +102,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 'B\A::foo()',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame("public function foo(): void", $information->code);
@@ -115,8 +114,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 'B\A::$a',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame('protected int|null $a', $information->code);
@@ -127,8 +126,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 'B\bar()',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame('function B\bar(): int', $information->code);
@@ -139,8 +138,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 'B\A::BANANA',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame('public const BANANA = 🍌;', $information->code);
@@ -151,8 +150,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 'B\baz()',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame("function B\baz(\n    int \$a\n): int", $information->code);
@@ -163,8 +162,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 'B\qux()',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame("function B\qux(\n    int \$a,\n    int \$b\n): int", $information->code);
@@ -175,8 +174,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 '$_SESSION',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame("array<string, mixed>", $information->code);
@@ -187,8 +186,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 '$my_global',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame("string", $information->code);
@@ -215,8 +214,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 'APPLE',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame("const APPLE string", $information->code);
@@ -227,8 +226,8 @@ class SymbolLookupTest extends TestCase
             new Reference(
                 'somefile.php',
                 'BANANA',
-                $range
-            )
+                $range,
+            ),
         );
         $this->assertNotNull($information);
         $this->assertSame("const BANANA string", $information->code);
@@ -270,7 +269,7 @@ class SymbolLookupTest extends TestCase
         $method_symbol_location = $this->codebase->getSymbolLocation(new Reference(
             'somefile.php',
             'B\A::foo()',
-            $range
+            $range,
         ));
 
         $this->assertNotNull($method_symbol_location);
@@ -280,7 +279,7 @@ class SymbolLookupTest extends TestCase
         $property_symbol_location = $this->codebase->getSymbolLocation(new Reference(
             'somefile.php',
             'B\A::$a',
-            $range
+            $range,
         ));
 
         $this->assertNotNull($property_symbol_location);
@@ -290,7 +289,7 @@ class SymbolLookupTest extends TestCase
         $constant_symbol_location = $this->codebase->getSymbolLocation(new Reference(
             'somefile.php',
             'B\A::BANANA',
-            $range
+            $range,
         ));
 
         $this->assertNotNull($constant_symbol_location);
@@ -300,7 +299,7 @@ class SymbolLookupTest extends TestCase
         $function_symbol_location = $this->codebase->getSymbolLocation(new Reference(
             'somefile.php',
             'B\bar()',
-            $range
+            $range,
         ));
 
         $this->assertNotNull($function_symbol_location);
@@ -310,7 +309,7 @@ class SymbolLookupTest extends TestCase
         $function_symbol_location = $this->codebase->getSymbolLocation(new Reference(
             'somefile.php',
             '257-259',
-            $range
+            $range,
         ));
 
         $this->assertNotNull($function_symbol_location);
