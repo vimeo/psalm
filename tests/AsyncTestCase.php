@@ -30,28 +30,21 @@ use const DIRECTORY_SEPARATOR;
 
 class AsyncTestCase extends BaseAsyncTestCase
 {
-    /** @var string */
-    protected static $src_dir_path;
-
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
-
-    /** @var FakeFileProvider */
-    protected $file_provider;
-
-    /** @var Config */
-    protected $testConfig;
+    protected static string $src_dir_path;
+    protected ProjectAnalyzer $project_analyzer;
+    protected FakeFileProvider $file_provider;
+    protected Config $testConfig;
 
     public static function setUpBeforeClass(): void
     {
         ini_set('memory_limit', '-1');
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '4.0.0');
+            define('PSALM_VERSION', '5.0.0');
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', '4.0.0');
+            define('PHP_PARSER_VERSION', '5.0.0');
         }
 
         parent::setUpBeforeClass();

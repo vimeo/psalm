@@ -28,8 +28,6 @@ class DiagnosticTest extends AsyncTestCase
 {
     protected Codebase $codebase;
     private int $increment = 0;
-    protected ProjectAnalyzer $project_analyzer;
-    protected FakeFileProvider $file_provider;
 
     public function setUp(): void
     {
