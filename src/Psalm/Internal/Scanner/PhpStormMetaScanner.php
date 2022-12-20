@@ -88,15 +88,22 @@ class PhpStormMetaScanner
         if ($identifier instanceof PhpParser\Node\Expr\StaticCall
             && $identifier->class instanceof PhpParser\Node\Name\FullyQualified
             && $identifier->name instanceof PhpParser\Node\Identifier
-            && $identifier->getArgs()
-            && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && (
+                $identifier->getArgs() === []
+                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            )
         ) {
             $meta_fq_classlike_name = implode('\\', $identifier->class->parts);
 
             $meta_method_name = strtolower($identifier->name->name);
 
             if ($map) {
-                $offset = $identifier->getArgs()[0]->value->value;
+                $offset = 0;
+                if ($identifier->getArgs()
+                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                ) {
+                    $offset = $identifier->getArgs()[0]->value->value;
+                }
 
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
@@ -233,13 +240,20 @@ class PhpStormMetaScanner
 
         if ($identifier instanceof PhpParser\Node\Expr\FuncCall
             && $identifier->name instanceof PhpParser\Node\Name\FullyQualified
-            && $identifier->getArgs()
-            && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && (
+                $identifier->getArgs() === []
+                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            )
         ) {
             $function_id = strtolower(implode('\\', $identifier->name->parts));
 
             if ($map) {
-                $offset = $identifier->getArgs()[0]->value->value;
+                $offset = 0;
+                if ($identifier->getArgs()
+                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                ) {
+                    $offset = $identifier->getArgs()[0]->value->value;
+                }
 
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
