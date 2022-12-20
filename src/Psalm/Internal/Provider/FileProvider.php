@@ -77,7 +77,7 @@ class FileProvider
         if (isset($this->temp_files[$file_path])) {
             $this->temp_files[$file_path] = [
                 'version'=> null,
-                'content' => $file_contents
+                'content' => $file_contents,
             ];
         }
 
@@ -141,7 +141,7 @@ class FileProvider
         unset(
             $this->temp_files[$file_path],
             self::$open_files[$file_path],
-            $this->open_files_paths[$file_path]
+            $this->open_files_paths[$file_path],
         );
     }
 
