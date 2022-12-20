@@ -76,8 +76,8 @@ class ClassTemplateExtendsTest extends TestCase
                     $a = a::getInstance();
                 ',
                 'assertions' => [
-                    '$a===' => 'a'
-                ]
+                    '$a===' => 'a',
+                ],
             ],
             'phanTuple' => [
                 'code' => '<?php
