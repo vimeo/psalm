@@ -16,13 +16,6 @@ use AdvancedJsonRpc\SuccessResponse;
 abstract class Message extends AdvancedJsonRpcMessage
 {
     /**
-     * A String specifying the version of the JSON-RPC protocol. MUST be exactly "2.0".
-     *
-     * @var string
-     */
-    public $jsonrpc = '2.0';
-
-    /**
      * Returns the appropriate Message subclass
      *
      * @param array $msg

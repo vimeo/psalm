@@ -1608,8 +1608,11 @@ final class Codebase
     /**
      * @return list<CompletionItem>
      */
-    public function getCompletionItemsForClassishThing(string $type_string, string $gap, bool $snippets_supported = false): array
-    {
+    public function getCompletionItemsForClassishThing(
+        string $type_string,
+        string $gap,
+        bool $snippets_supported = false
+    ): array {
         $completion_items = [];
 
         $type = Type::parseString($type_string);

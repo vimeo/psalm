@@ -935,7 +935,7 @@ class LanguageServer extends Dispatcher
             $this->client->event(
                 new LogMessage(
                     MessageType::INFO,
-                    $status . (!empty($additional_info) ? ': ' . $additional_info : '')
+                    $status . (!empty($additional_info) ? ': ' . $additional_info : ''),
                 ),
             );
         } catch (Throwable $err) {

@@ -17,10 +17,7 @@ class TextDocument
 {
     private ClientHandler $handler;
 
-    /**
-     * @var LanguageServer
-     */
-    private $server;
+    private LanguageServer $server;
 
     public function __construct(ClientHandler $handler, LanguageServer $server)
     {

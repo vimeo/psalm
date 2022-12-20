@@ -11,24 +11,19 @@ use Psalm\Internal\LanguageServer\LanguageServer;
 
 /**
  * Provides method handlers for all textDocument/* methods
+ *
+ * @internal
  */
 class Workspace
 {
-    /**
-     * @var ClientHandler
-     */
-    private $handler;
+    private ClientHandler $handler;
 
     /**
-     * @var JsonMapper
      * @psalm-suppress UnusedProperty
      */
-    private $mapper;
+    private JsonMapper $mapper;
 
-    /**
-     * @var LanguageServer
-     */
-    private $server;
+    private LanguageServer $server;
 
     public function __construct(ClientHandler $handler, JsonMapper $mapper, LanguageServer $server)
     {
@@ -57,8 +52,8 @@ class Workspace
                 [
                     'section' => $section,
                     'scopeUri' => $scopeUri,
-                ]
-            ]
+                ],
+            ],
         ]);
     }
 }
