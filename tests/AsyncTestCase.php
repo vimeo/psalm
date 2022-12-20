@@ -68,12 +68,12 @@ class AsyncTestCase extends BaseAsyncTestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new FakeParserCacheProvider()
+            new FakeParserCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $this->testConfig,
-            $providers
+            $providers,
         );
 
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
@@ -85,22 +85,16 @@ class AsyncTestCase extends BaseAsyncTestCase
         RuntimeCaches::clearAll();
     }
 
-    /**
-     * @param string $file_path
-     * @param string $contents
-     *
-     */
-    public function addFile($file_path, $contents): void
+    public function addFile(string $file_path, string $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan($file_path);
     }
 
     /**
-     * @param  string         $file_path
      * @psalm-suppress UnusedMethod
      */
-    public function analyzeFile($file_path, Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
+    public function analyzeFile(string $file_path, Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
     {
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -123,7 +117,7 @@ class AsyncTestCase extends BaseAsyncTestCase
         $file_analyzer = new FileAnalyzer(
             $this->project_analyzer,
             $file_path,
-            $codebase->config->shortenFileName($file_path)
+            $codebase->config->shortenFileName($file_path),
         );
         $file_analyzer->analyze($context);
 
@@ -137,10 +131,9 @@ class AsyncTestCase extends BaseAsyncTestCase
     }
 
     /**
-     * @param  bool $withDataSet
      * @psalm-suppress UnusedMethod
      */
-    protected function getTestName($withDataSet = true): string
+    protected function getTestName(bool $withDataSet = true): string
     {
         return $this->getName($withDataSet);
     }
@@ -159,9 +152,7 @@ class AsyncTestCase extends BaseAsyncTestCase
      */
     public static function assertArrayKeysAreZeroOrString(array $array, string $message = ''): void
     {
-        $isZeroOrString = /** @param mixed $key */ function ($key): bool {
-            return $key === 0 || is_string($key);
-        };
+        $isZeroOrString = /** @param mixed $key */ fn($key): bool => $key === 0 || is_string($key);
         $validKeys = array_filter($array, $isZeroOrString, ARRAY_FILTER_USE_KEY);
         self::assertTrue(count($array) === count($validKeys), $message);
     }
