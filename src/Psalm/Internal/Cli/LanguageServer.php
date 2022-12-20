@@ -175,7 +175,8 @@ final class LanguageServer
                     Clears all cache files that the language server uses for this specific project (exits after)
 
                 --clear-cache-on-boot
-                    Clears all cache files that the language server uses for this specific project on boot (does not exit)
+                    Clears all cache files that the language server uses for this specific project on boot
+                    (does not exit)
 
                 --use-ini-defaults
                     Use PHP-provided ini defaults for memory and error display
