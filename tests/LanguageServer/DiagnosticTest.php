@@ -30,7 +30,6 @@ class DiagnosticTest extends AsyncTestCase
     private int $increment = 0;
     protected ProjectAnalyzer $project_analyzer;
     protected FakeFileProvider $file_provider;
-    protected static string $src_dir_path;
 
     public function setUp(): void
     {
@@ -46,7 +45,7 @@ class DiagnosticTest extends AsyncTestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->codebase = new Codebase($config, $providers);

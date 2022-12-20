@@ -2,9 +2,9 @@
 
 namespace Psalm\Tests\FileUpdates;
 
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
@@ -54,7 +54,7 @@ class TemporaryUpdateTest extends TestCase
             [],
             1,
             null,
-            $this->codebase
+            $this->codebase,
         );
 
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
