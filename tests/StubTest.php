@@ -418,9 +418,9 @@ class StubTest extends TestCase
                 '$c2===' => "'hello'",
 
                 '$d1===' => "5",
-                '$d2===' => "'hello'"
+                '$d2===' => "'hello'",
             ],
-            $context
+            $context,
         );
     }
 

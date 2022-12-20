@@ -254,16 +254,16 @@ final class IssueBuffer
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
     {
         $config = Config::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
 
-        $event = new BeforeAddIssueEvent($e, $is_fixable);
+        $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
         if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
             return false;
-        };
+        }
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
-
-        $project_analyzer = ProjectAnalyzer::getInstance();
 
         if (!$project_analyzer->show_issues) {
             return false;
@@ -271,7 +271,7 @@ final class IssueBuffer
 
         $is_tainted = strpos($issue_type, 'Tainted') === 0;
 
-        if ($project_analyzer->getCodebase()->taint_flow_graph && !$is_tainted) {
+        if ($codebase->taint_flow_graph && !$is_tainted) {
             return false;
         }
 
