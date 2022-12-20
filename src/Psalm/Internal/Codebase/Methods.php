@@ -771,14 +771,14 @@ class Methods
                 if (((!$old_contained_by_new && !$new_contained_by_old)
                     || ($old_contained_by_new && $new_contained_by_old))
                     && !$candidate_type->hasTemplate()
-                    && !$overridden_storage->return_type->hasTemplate()
+                    && !$overridden_storage_return_type->hasTemplate()
                 ) {
                     $attempted_intersection = null;
                     if ($old_contained_by_new) { //implicitly $new_contained_by_old as well
                         try {
                             $attempted_intersection = Type::intersectUnionTypes(
                                 $candidate_type,
-                                $overridden_storage->return_type,
+                                $overridden_storage_return_type,
                                 $source_analyzer->getCodebase(),
                             );
                         } catch (InvalidArgumentException $e) {
@@ -786,7 +786,7 @@ class Methods
                         }
                     } else {
                         $attempted_intersection = Type::intersectUnionTypes(
-                            $overridden_storage->return_type,
+                            $overridden_storage_return_type,
                             $candidate_type,
                             $source_analyzer->getCodebase(),
                         );
@@ -803,7 +803,7 @@ class Methods
                     return $candidate_type;
                 }
 
-                if ($old_contained_by_new) {
+                if ($old_contained_by_new || $overridden_storage_return_type->hasTemplate()) {
                     $self_class = $appearing_fq_class_storage->name;
 
                     return $candidate_type;
@@ -811,7 +811,7 @@ class Methods
 
                 $self_class = $overridden_method_id->fq_class_name;
 
-                return $overridden_storage->return_type;
+                return $overridden_storage_return_type;
             }
         }
 
