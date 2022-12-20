@@ -5,12 +5,15 @@ namespace Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Type\Atomic;
 
+/**
+ * @internal
+ */
 class ClassTypeAlias implements TypeAlias
 {
     /**
      * @var list<Atomic>
      */
-    public $replacement_atomic_types;
+    public array $replacement_atomic_types;
 
     /**
      * @param list<Atomic> $replacement_atomic_types

@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Block\DoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForAnalyzer;
@@ -23,7 +24,7 @@ use Psalm\Internal\Analyzer\Statements\ContinueAnalyzer;
 use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ClassConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
@@ -42,6 +43,8 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\CheckType;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
 use Psalm\Issue\InvalidDocblock;
@@ -56,6 +59,7 @@ use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeStatementAnalysisEvent;
 use Psalm\Type;
 use UnexpectedValueException;
 
@@ -63,10 +67,11 @@ use function array_change_key_case;
 use function array_column;
 use function array_combine;
 use function array_keys;
-use function array_merge;
+use function array_map;
 use function array_search;
 use function assert;
 use function count;
+use function explode;
 use function fwrite;
 use function get_class;
 use function in_array;
@@ -89,68 +94,51 @@ use const STDERR;
  */
 class StatementsAnalyzer extends SourceAnalyzer
 {
-    /**
-     * @var SourceAnalyzer
-     */
-    protected $source;
+    protected SourceAnalyzer $source;
 
-    /**
-     * @var FileAnalyzer
-     */
-    protected $file_analyzer;
+    protected FileAnalyzer $file_analyzer;
 
-    /**
-     * @var Codebase
-     */
-    protected $codebase;
+    protected Codebase $codebase;
 
     /**
      * @var array<string, CodeLocation>
      */
-    private $all_vars = [];
+    private array $all_vars = [];
 
     /**
      * @var array<string, int>
      */
-    private $var_branch_points = [];
+    private array $var_branch_points = [];
 
     /**
      * Possibly undefined variables should be initialised if we're altering code
      *
      * @var array<string, int>|null
      */
-    private $vars_to_initialize;
+    private ?array $vars_to_initialize = null;
 
     /**
      * @var array<string, FunctionAnalyzer>
      */
-    private $function_analyzers = [];
+    private array $function_analyzers = [];
 
     /**
      * @var array<string, array{0: string, 1: CodeLocation}>
      */
-    private $unused_var_locations = [];
+    private array $unused_var_locations = [];
 
     /**
-     * @var ?array<string, bool>
+     * @var array<string, true>
      */
-    public $byref_uses;
+    public array $byref_uses = [];
 
-    /**
-     * @var ParsedDocblock|null
-     */
-    private $parsed_docblock;
+    private ?ParsedDocblock $parsed_docblock = null;
 
-    /**
-     * @var ?string
-     */
-    private $fake_this_class;
+    private ?string $fake_this_class = null;
 
-    /** @var NodeDataProvider */
-    public $node_data;
+    public NodeDataProvider $node_data;
 
-    /** @var ?DataFlowGraph */
-    public $data_flow_graph;
+    public ?DataFlowGraph $data_flow_graph = null;
 
     /**
      * Locations of foreach values
@@ -160,7 +148,7 @@ class StatementsAnalyzer extends SourceAnalyzer
      * @var array<string, list<CodeLocation>>
      * @psalm-internal Psalm\Internal\Analyzer
      */
-    public $foreach_var_locations = [];
+    public array $foreach_var_locations = [];
 
     public function __construct(SourceAnalyzer $source, NodeDataProvider $node_data)
     {
@@ -180,7 +168,6 @@ class StatementsAnalyzer extends SourceAnalyzer
      * Checks an array of statements for validity
      *
      * @param  array<PhpParser\Node\Stmt>   $stmts
-     *
      * @return null|false
      */
     public function analyze(
@@ -215,7 +202,6 @@ class StatementsAnalyzer extends SourceAnalyzer
             && $codebase->find_unused_variables
             && $context->check_variables
         ) {
-            //var_dump($this->data_flow_graph);
             $this->checkUnreferencedVars($stmts, $context);
         }
 
@@ -310,9 +296,9 @@ class StatementsAnalyzer extends SourceAnalyzer
                             $statements_analyzer->node_data,
                             $const->value,
                             $statements_analyzer->getAliases(),
-                            $statements_analyzer
+                            $statements_analyzer,
                         ) ?? Type::getMixed(),
-                        $context
+                        $context,
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
@@ -325,7 +311,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                     $stmt->expr->getArgs()[0]->value,
                     $statements_analyzer->node_data,
                     $codebase,
-                    $statements_analyzer->getAliases()
+                    $statements_analyzer->getAliases(),
                 );
 
                 if ($const_name !== null) {
@@ -337,9 +323,9 @@ class StatementsAnalyzer extends SourceAnalyzer
                             $statements_analyzer->node_data,
                             $stmt->expr->getArgs()[1]->value,
                             $statements_analyzer->getAliases(),
-                            $statements_analyzer
+                            $statements_analyzer,
                         ) ?? Type::getMixed(),
-                        $context
+                        $context,
                     );
                 }
             }
@@ -355,6 +341,10 @@ class StatementsAnalyzer extends SourceAnalyzer
         Context $context,
         ?Context $global_context
     ): ?bool {
+        if (self::dispatchBeforeStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
+            return false;
+        }
+
         $ignore_variable_property = false;
         $ignore_variable_method = false;
 
@@ -367,6 +357,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         $new_issues = null;
         $traced_variables = [];
 
+        $checked_types = [];
         if ($docblock = $stmt->getDocComment()) {
             $statements_analyzer->parseStatementDocblock($docblock, $stmt, $context);
 
@@ -376,12 +367,19 @@ class StatementsAnalyzer extends SourceAnalyzer
                         '/(?:\s*,\s*|\s+)/',
                         $traced_variable_line,
                         -1,
-                        PREG_SPLIT_NO_EMPTY
+                        PREG_SPLIT_NO_EMPTY,
                     );
                     if ($possible_traced_variable_names) {
-                        $traced_variables = array_merge($traced_variables, $possible_traced_variable_names);
+                        $traced_variables = [...$traced_variables, ...$possible_traced_variable_names];
                     }
                 }
+            }
+
+            foreach ($statements_analyzer->parsed_docblock->tags['psalm-check-type'] ?? [] as $inexact_check) {
+                $checked_types[] = [$inexact_check, false];
+            }
+            foreach ($statements_analyzer->parsed_docblock->tags['psalm-check-type-exact'] ?? [] as $exact_check) {
+                $checked_types[] = [$exact_check, true];
             }
 
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-ignore-variable-method'])) {
@@ -417,7 +415,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                             IssueBuffer::addUnusedSuppression(
                                 $statements_analyzer->getFilePath(),
                                 $offset,
-                                $issue_type
+                                $issue_type,
                             );
                         }
                     }
@@ -451,21 +449,21 @@ class StatementsAnalyzer extends SourceAnalyzer
                             $statements_analyzer->getSource(),
                             $statements_analyzer->getAliases(),
                             $template_type_map,
-                            $file_storage->type_aliases
+                            $file_storage->type_aliases,
                         );
                 } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
                         new MissingDocblockType(
                             $e->getMessage(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        )
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
                     );
                 } catch (DocblockParseException $e) {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             $e->getMessage(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        )
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
                     );
                 }
 
@@ -474,7 +472,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                         $statements_analyzer,
                         $stmt,
                         $var_comment,
-                        $context
+                        $context,
                     );
 
                     if ($var_comment->var_id === '$this'
@@ -500,17 +498,14 @@ class StatementsAnalyzer extends SourceAnalyzer
             && !($stmt instanceof PhpParser\Node\Stmt\HaltCompiler)
         ) {
             if ($codebase->find_unused_variables) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new UnevaluatedCode(
                         'Expressions after return/throw/continue',
-                        new CodeLocation($statements_analyzer->source, $stmt)
+                        new CodeLocation($statements_analyzer->source, $stmt),
                     ),
-                    $statements_analyzer->source->getSuppressedIssues()
-                )) {
-                    return null;
-                }
+                    $statements_analyzer->source->getSuppressedIssues(),
+                );
             }
-
             return null;
         }
 
@@ -544,10 +539,8 @@ class StatementsAnalyzer extends SourceAnalyzer
             UnsetAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
             ReturnAnalyzer::analyze($statements_analyzer, $stmt, $context);
-            $context->has_returned = true;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
             ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
-            $context->has_returned = true;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
             SwitchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
@@ -569,7 +562,7 @@ class StatementsAnalyzer extends SourceAnalyzer
                 $context,
                 false,
                 $global_context,
-                true
+                true,
             ) === false) {
                 return false;
             }
@@ -580,13 +573,13 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
             InstancePropertyAssignmentAnalyzer::analyzeStatement($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-            ClassConstFetchAnalyzer::analyzeClassConstAssignment($statements_analyzer, $stmt, $context);
+            ClassConstAnalyzer::analyzeAssignment($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             try {
                 $class_analyzer = new ClassAnalyzer(
                     $stmt,
                     $statements_analyzer->source,
-                    $stmt->name->name ?? null
+                    $stmt->name->name ?? null,
                 );
 
                 $class_analyzer->analyze(null, $global_context);
@@ -617,31 +610,16 @@ class StatementsAnalyzer extends SourceAnalyzer
             if (IssueBuffer::accepts(
                 new UnrecognizedStatement(
                     'Psalm does not understand ' . get_class($stmt),
-                    new CodeLocation($statements_analyzer->source, $stmt)
+                    new CodeLocation($statements_analyzer->source, $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             )) {
                 return false;
             }
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-
-        $event = new AfterStatementAnalysisEvent(
-            $stmt,
-            $context,
-            $statements_analyzer,
-            $codebase,
-            []
-        );
-
-        if ($codebase->config->eventDispatcher->dispatchAfterStatementAnalysis($event) === false) {
+        if (self::dispatchAfterStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
-        }
-
-        $file_manipulations = $event->getFileReplacements();
-        if ($file_manipulations) {
-            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
         }
 
         if ($new_issues) {
@@ -661,21 +639,133 @@ class StatementsAnalyzer extends SourceAnalyzer
                 IssueBuffer::maybeAdd(
                     new Trace(
                         $traced_variable . ': ' . $context->vars_in_scope[$traced_variable]->getId(),
-                        new CodeLocation($statements_analyzer->source, $stmt)
+                        new CodeLocation($statements_analyzer->source, $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedTrace(
                         'Attempt to trace undefined variable ' . $traced_variable,
-                        new CodeLocation($statements_analyzer->source, $stmt)
+                        new CodeLocation($statements_analyzer->source, $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
 
+        foreach ($checked_types as [$check_type_line, $is_exact]) {
+            [$checked_var, $check_type_string] = array_map('trim', explode('=', $check_type_line));
+
+            if ($check_type_string === '') {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        "Invalid format for @psalm-check-type" . ($is_exact ? "-exact" : ""),
+                        new CodeLocation($statements_analyzer->source, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } else {
+                $checked_var_id = $checked_var;
+                $possibly_undefined = strrpos($checked_var_id, "?") === strlen($checked_var_id) - 1;
+                if ($possibly_undefined) {
+                    $checked_var_id = substr($checked_var_id, 0, strlen($checked_var_id) - 1);
+                }
+
+                if (!isset($context->vars_in_scope[$checked_var_id])) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            "Attempt to check undefined variable $checked_var_id",
+                            new CodeLocation($statements_analyzer->source, $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } else {
+                    try {
+                        $checked_type = $context->vars_in_scope[$checked_var_id];
+                        $check_type = Type::parseString($check_type_string);
+                        /** @psalm-suppress InaccessibleProperty We just created this type */
+                        $check_type->possibly_undefined = $possibly_undefined;
+
+                        if ($check_type->possibly_undefined !== $checked_type->possibly_undefined
+                            || !UnionTypeComparator::isContainedBy($codebase, $checked_type, $check_type)
+                            || ($is_exact && !UnionTypeComparator::isContainedBy($codebase, $check_type, $checked_type))
+                        ) {
+                            $check_var = $checked_var_id . ($checked_type->possibly_undefined ? "?" : "");
+                            IssueBuffer::maybeAdd(
+                                new CheckType(
+                                    "Checked variable $checked_var = {$check_type->getId()} does not match "
+                                        . "$check_var = {$checked_type->getId()}",
+                                    new CodeLocation($statements_analyzer->source, $stmt),
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
+                    } catch (TypeParseTreeException $e) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidDocblock(
+                                $e->getMessage(),
+                                new CodeLocation($statements_analyzer->source, $stmt),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static function dispatchAfterStatementAnalysis(
+        PhpParser\Node\Stmt $stmt,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer
+    ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $event = new AfterStatementAnalysisEvent(
+            $stmt,
+            $context,
+            $statements_analyzer,
+            $codebase,
+            [],
+        );
+
+        if ($codebase->config->eventDispatcher->dispatchAfterStatementAnalysis($event) === false) {
+            return false;
+        }
+
+        $file_manipulations = $event->getFileReplacements();
+        if ($file_manipulations) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+        }
+        return null;
+    }
+
+    private static function dispatchBeforeStatementAnalysis(
+        PhpParser\Node\Stmt $stmt,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer
+    ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $event = new BeforeStatementAnalysisEvent(
+            $stmt,
+            $context,
+            $statements_analyzer,
+            $codebase,
+            [],
+        );
+
+        if ($codebase->config->eventDispatcher->dispatchBeforeStatementAnalysis($event) === false) {
+            return false;
+        }
+
+        $file_manipulations = $event->getFileReplacements();
+        if ($file_manipulations) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+        }
         return null;
     }
 
@@ -692,8 +782,8 @@ class StatementsAnalyzer extends SourceAnalyzer
             IssueBuffer::maybeAdd(
                 new InvalidDocblock(
                     $e->getMessage(),
-                    new CodeLocation($this->getSource(), $stmt, null, true)
-                )
+                    new CodeLocation($this->getSource(), $stmt, null, true),
+                ),
             );
 
             $this->parsed_docblock = null;
@@ -709,8 +799,8 @@ class StatementsAnalyzer extends SourceAnalyzer
                     new UndefinedDocblockClass(
                         'Scope class ' . $trimmed . ' does not exist',
                         new CodeLocation($this->getSource(), $stmt, null, true),
-                        $trimmed
-                    )
+                        $trimmed,
+                    ),
                 );
             } else {
                 $this_type = Type::parseString($trimmed);
@@ -756,18 +846,18 @@ class StatementsAnalyzer extends SourceAnalyzer
                         new ComplexFunction(
                             'This function’s complexity is greater than the project limit'
                                 . ' (method graph size = ' . $count .', average path length = ' . round($mean). ')',
-                            $function_storage->location
+                            $function_storage->location,
                         ),
-                        $this->getSuppressedIssues()
+                        $this->getSuppressedIssues(),
                     );
                 } elseif ($source instanceof MethodAnalyzer) {
                     IssueBuffer::maybeAdd(
                         new ComplexMethod(
                             'This method’s complexity is greater than the project limit'
                                 . ' (method graph size = ' . $count .', average path length = ' . round($mean) . ')',
-                            $function_storage->location
+                            $function_storage->location,
                         ),
-                        $this->getSuppressedIssues()
+                        $this->getSuppressedIssues(),
                     );
                 }
             }
@@ -795,7 +885,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             $assignment_node = DataFlowNode::getForAssignment($var_id, $original_location);
 
             if (!isset($this->byref_uses[$var_id])
-                && !isset($context->vars_from_global[$var_id])
+                && !isset($context->referenced_globals[$var_id])
                 && !VariableFetchAnalyzer::isSuperGlobal($var_id)
                 && $this->data_flow_graph instanceof VariableUseGraph
                 && !$this->data_flow_graph->isVariableUsed($assignment_node)
@@ -814,12 +904,12 @@ class StatementsAnalyzer extends SourceAnalyzer
                 if ($is_foreach_var) {
                     $issue = new UnusedForeachValue(
                         $var_id . ' is never referenced or the value is not used',
-                        $original_location
+                        $original_location,
                     );
                 } else {
                     $issue = new UnusedVariable(
                         $var_id . ' is never referenced or the value is not used',
-                        $original_location
+                        $original_location,
                     );
                 }
 
@@ -834,14 +924,14 @@ class StatementsAnalyzer extends SourceAnalyzer
                         $stmts,
                         array_combine($var_list, $loc_list),
                         $var_id,
-                        $original_location
+                        $original_location,
                     );
                 }
 
                 IssueBuffer::maybeAdd(
                     $issue,
                     $this->getSuppressedIssues(),
-                    $issue instanceof UnusedVariable
+                    $issue instanceof UnusedVariable,
                 );
             }
         }
@@ -890,7 +980,8 @@ class StatementsAnalyzer extends SourceAnalyzer
         $stmt_type = $this->node_data->getType($stmt);
 
         if ($stmt_type) {
-            $stmt_type->parent_nodes[$use_node->id] = $use_node;
+            $stmt_type = $stmt_type->addParentNodes([$use_node->id => $use_node]);
+            $this->node_data->setType($stmt, $stmt_type);
         }
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
@@ -960,7 +1051,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param array<string, bool> $byref_uses
+     * @param array<string, true> $byref_uses
      */
     public function setByRefUses(array $byref_uses): void
     {
@@ -980,12 +1071,12 @@ class StatementsAnalyzer extends SourceAnalyzer
                 $ignored_exceptions = array_change_key_case(
                     $context->is_global ?
                         $config->ignored_exceptions_in_global_scope :
-                        $config->ignored_exceptions
+                        $config->ignored_exceptions,
                 );
                 $ignored_exceptions_and_descendants = array_change_key_case(
                     $context->is_global ?
                         $config->ignored_exceptions_and_descendants_in_global_scope :
-                        $config->ignored_exceptions_and_descendants
+                        $config->ignored_exceptions_and_descendants,
                 );
 
                 foreach ($context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocations) {
@@ -1030,6 +1121,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         return $this->parsed_docblock;
     }
 
+    /** @psalm-mutation-free */
     public function getFQCLN(): ?string
     {
         if ($this->fake_this_class) {

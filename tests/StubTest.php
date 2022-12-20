@@ -27,8 +27,7 @@ use const DIRECTORY_SEPARATOR;
 
 class StubTest extends TestCase
 {
-    /** @var TestConfig */
-    protected static $config;
+    protected static TestConfig $config;
 
     public static function setUpBeforeClass(): void
     {
@@ -55,8 +54,8 @@ class StubTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
         $project_analyzer->setPhpVersion('7.4', 'tests');
 
@@ -84,8 +83,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="stubs/invalidfile.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
     }
 
@@ -105,8 +104,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/systemclass.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -119,7 +118,7 @@ class StubTest extends TestCase
                 $a = new \SystemClass();
                 $b = $a->foo(5, "hello");
                 $c = \SystemClass::bar(5, "hello");
-                echo \SystemClass::HELLO;'
+                echo \SystemClass::HELLO;',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -145,8 +144,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="./tests/../tests/fixtures/stubs/systemclass.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.phpstub');
@@ -167,8 +166,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="' . $runDir . '/tests/fixtures/stubs/systemclass.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.phpstub');
@@ -192,8 +191,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/systemclass.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -206,7 +205,83 @@ class StubTest extends TestCase
                 $d = ROOT_CONST_CONSTANT;
                 $e = \ROOT_CONST_CONSTANT;
                 $f = ROOT_DEFINE_CONSTANT;
-                $g = \ROOT_DEFINE_CONSTANT;'
+                $g = \ROOT_DEFINE_CONSTANT;',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubFileParentClass(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('ImplementedParamTypeMismatch');
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/systemclass.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace A\B\C;
+
+                class Foo extends \SystemClass
+                {
+                    public function foo(string $a, string $b): string
+                    {
+                        return $a . $b;
+                    }
+                }
+            ',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubFileCircularReference(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('CircularReference');
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/CircularReference.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Foo extends Baz {}
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -228,8 +303,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/phpstorm.meta.php" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -292,7 +367,7 @@ class StubTest extends TestCase
 
                     $d1 = \foO(5);
                     $d2 = \baR(["hello"]);
-                }'
+                }',
         );
 
         $context = new Context();
@@ -315,8 +390,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/namespaced_class.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -330,7 +405,7 @@ class StubTest extends TestCase
                 $b = $a->foo(5, "hello");
                 $c = Foo\SystemClass::bar(5, "hello");
 
-                echo Foo\BAR;'
+                echo Foo\BAR;',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -352,8 +427,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -361,7 +436,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                echo barBar("hello");'
+                echo barBar("hello");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -383,8 +458,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -392,7 +467,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                variadic("bat", "bam");'
+                variadic("bat", "bam");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -416,8 +491,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -425,7 +500,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                variadic("bat", 5);'
+                variadic("bat", 5);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -445,8 +520,8 @@ class StubTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -458,7 +533,7 @@ class StubTest extends TestCase
                  * @param string ...$bar
                  */
                 function variadic() : void {}
-                variadic("hello");'
+                variadic("hello");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -480,8 +555,8 @@ class StubTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -490,7 +565,7 @@ class StubTest extends TestCase
             $file_path,
             '<?php
                 $a = random_bytes(16);
-                $b = new_random_bytes(16);'
+                $b = new_random_bytes(16);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -512,8 +587,8 @@ class StubTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -522,7 +597,7 @@ class StubTest extends TestCase
             $file_path,
             '<?php
                 /** @psalm-suppress MixedArgument */
-                echo CODE_DIR;'
+                echo CODE_DIR;',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -544,8 +619,8 @@ class StubTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -583,7 +658,7 @@ class StubTest extends TestCase
                 D::bat();
                 $d::bat();
 
-                class E implements IAlias {}'
+                class E implements IAlias {}',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -605,8 +680,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -615,7 +690,7 @@ class StubTest extends TestCase
             $file_path,
             '<?php
                 function_exists("fooBar");
-                echo barBar("hello");'
+                echo barBar("hello");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -637,8 +712,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/custom_functions.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -648,7 +723,7 @@ class StubTest extends TestCase
             '<?php
                 namespace A;
                 function_exists("fooBar");
-                echo barBar("hello");'
+                echo barBar("hello");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -668,8 +743,8 @@ class StubTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -677,7 +752,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                echo barBar("hello");'
+                echo barBar("hello");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -699,8 +774,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/namespaced_functions.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -708,7 +783,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                echo Foo\barBar("hello");'
+                echo Foo\barBar("hello");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -730,8 +805,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/conditional_namespaced_functions.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -739,7 +814,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                echo Foo\barBar("hello");'
+                echo Foo\barBar("hello");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -761,8 +836,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/conditional_interface.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -786,7 +861,7 @@ class StubTest extends TestCase
 
                 function baz(I8 $d) : void {
                     $d->getMessage();
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -808,8 +883,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/DomainException.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -817,7 +892,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                $a = new DomainException(5);'
+                $a = new DomainException(5);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -830,13 +905,13 @@ class StubTest extends TestCase
             '7.0',
             '<?php
                 $a = new SomeClass;
-                $a->something("zzz");'
+                $a->something("zzz");',
         ];
         yield '8.0' => [
             '8.0',
             '<?php
                 $a = new SomeClass;
-                $a->something();'
+                $a->something();',
         ];
     }
 
@@ -857,8 +932,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/VersionDependentMethods.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
@@ -885,8 +960,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -911,7 +986,7 @@ class StubTest extends TestCase
                 class A {}
 
                 (new PartiallyStubbedClass())->foo(A::class);
-                (new PartiallyStubbedClass())->bar(5);'
+                (new PartiallyStubbedClass())->bar(5);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -933,8 +1008,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -946,7 +1021,7 @@ class StubTest extends TestCase
 
                 class A extends PartiallyStubbedClass {}
 
-                (new A)->foo(A::class);'
+                (new A)->foo(A::class);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -968,8 +1043,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -981,7 +1056,7 @@ class StubTest extends TestCase
 
                 class Bar extends PartiallyStubbedClass  {}
 
-                new Bar();'
+                new Bar();',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1005,8 +1080,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1026,7 +1101,7 @@ class StubTest extends TestCase
                     }
                 }
 
-                (new PartiallyStubbedClass())->foo("dasda");'
+                (new PartiallyStubbedClass())->foo("dasda");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1050,8 +1125,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/partial_class.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1069,7 +1144,7 @@ class StubTest extends TestCase
                     public function foo(string $a) {
                         return new \stdClass;
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1091,8 +1166,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/templated_class.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1110,6 +1185,9 @@ class StubTest extends TestCase
                     public function find($id, $lockMode = null, $lockVersion = null) {}
                 }
 
+                /**
+                 * @psalm-suppress MissingTemplateParam
+                 */
                 class B extends A {}
 
                 class Obj {}
@@ -1117,7 +1195,7 @@ class StubTest extends TestCase
                 /**
                  * @method ?Obj find(int $id, $lockMode = null, $lockVersion = null)
                  */
-                class C extends B {}'
+                class C extends B {}',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1135,8 +1213,8 @@ class StubTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
@@ -1154,7 +1232,7 @@ class StubTest extends TestCase
                     public static function vendorFunction(VendorClass $v) : void {
                         $v->foo();
                     }
-                }'
+                }',
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1166,7 +1244,7 @@ class StubTest extends TestCase
                     public function foo() : void {}
                 }
 
-                \SomeVendor\VendorClass::vendorFunction(new MyClass);'
+                \SomeVendor\VendorClass::vendorFunction(new MyClass);',
         );
 
         $this->analyzeFile($file_path, new Context(), false);
@@ -1187,8 +1265,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/MissingClass.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1197,7 +1275,7 @@ class StubTest extends TestCase
             $file_path,
             '<?php
 
-                echo "hello";'
+                echo "hello";',
         );
 
         $this->expectException(InvalidClasslikeOverrideException::class);
@@ -1218,8 +1296,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/MissingMethod.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1228,7 +1306,7 @@ class StubTest extends TestCase
             $file_path,
             '<?php
 
-                echo "hello";'
+                echo "hello";',
         );
 
         $this->expectException(InvalidMethodOverrideException::class);
@@ -1249,8 +1327,8 @@ class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/Doctrine.phpstub" />
                     </stubs>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->addFile(
@@ -1280,7 +1358,7 @@ class StubTest extends TestCase
                          */
                         return new \stdClass;
                     }
-                }'
+                }',
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1294,7 +1372,7 @@ class StubTest extends TestCase
 
                 function em(EntityManager $em) : void {
                     echo $em->getReference(A::class, 1);
-                }'
+                }',
         );
 
         $this->expectException(CodeException::class);

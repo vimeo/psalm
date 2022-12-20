@@ -13,17 +13,14 @@ class ArrayKeyExistsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'arrayKeyExistsOnStringArrayShouldInformArrayness' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string[] $a
-                     * @return array{b: string}
+                     * @return array{b: string, ...}
                      */
                     function foo(array $a) {
                         if (array_key_exists("b", $a)) {
@@ -31,10 +28,10 @@ class ArrayKeyExistsTest extends TestCase
                         }
 
                         throw new \Exception("bad");
-                    }'
+                    }',
             ],
              'arrayKeyExistsThrice' => [
-                '<?php
+                'code' => '<?php
                     function three(array $a): void {
                         if (!array_key_exists("a", $a)
                             || !array_key_exists("b", $a)
@@ -48,10 +45,10 @@ class ArrayKeyExistsTest extends TestCase
 
                         echo $a["a"];
                         echo $a["b"];
-                    }'
+                    }',
             ],
             'arrayKeyExistsTwice' => [
-                '<?php
+                'code' => '<?php
                     function two(array $a): void {
                         if (!array_key_exists("a", $a) || !(is_string($a["a"]) || is_int($a["a"])) ||
                             !array_key_exists("b", $a) || !(is_string($a["b"]) || is_int($a["b"]))
@@ -61,10 +58,10 @@ class ArrayKeyExistsTest extends TestCase
 
                         echo $a["a"];
                         echo $a["b"];
-                    }'
+                    }',
             ],
             'assertConstantOffsetsInMethod' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         public const ARR = [
                             "a" => ["foo" => true],
@@ -79,11 +76,11 @@ class ArrayKeyExistsTest extends TestCase
                             return self::ARR[$key]["foo"];
                         }
                     }',
-                [],
-                ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'assertSelfClassConstantOffsetsInFunction' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     class C {
@@ -100,11 +97,11 @@ class ArrayKeyExistsTest extends TestCase
                             return self::ARR[$key]["foo"];
                         }
                     }',
-                [],
-                ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'assertNamedClassConstantOffsetsInFunction' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     class C {
@@ -121,11 +118,11 @@ class ArrayKeyExistsTest extends TestCase
 
                         return C::ARR[$key]["foo"];
                     }',
-                [],
-                ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'possiblyUndefinedArrayAccessWithArrayKeyExists' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0,1)) {
                       $a = ["a" => 1];
                     } else {
@@ -137,7 +134,7 @@ class ArrayKeyExistsTest extends TestCase
                     }',
             ],
             'arrayKeyExistsShoudldNotModifyIntType' => [
-                '<?php
+                'code' => '<?php
                     class HttpError {
                         const ERRS = [
                             403 => "a",
@@ -152,10 +149,10 @@ class ArrayKeyExistsTest extends TestCase
                         }
 
                         return "";
-                    }'
+                    }',
             ],
             'arrayKeyExistsWithClassConst' => [
-                '<?php
+                'code' => '<?php
                     class C {}
                     class D {}
 
@@ -170,10 +167,10 @@ class ArrayKeyExistsTest extends TestCase
                                 echo self::FLAGS[$i][C::class];
                             }
                         }
-                    }'
+                    }',
             ],
             'constantArrayKeyExistsWithClassConstant' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public const F = "key";
                     }
@@ -183,10 +180,10 @@ class ArrayKeyExistsTest extends TestCase
                         if (array_key_exists(Foo::F, $a)) {
                             echo $a[Foo::F];
                         }
-                    }'
+                    }',
             ],
             'assertTypeNarrowedByNestedIsset' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress MixedMethodCall
                      * @psalm-suppress MixedArgument
@@ -202,9 +199,8 @@ class ArrayKeyExistsTest extends TestCase
                     }',
             ],
             'assertArrayKeyExistsRefinesType' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
-                        /** @var array<int,string> */
                         public const DAYS = [
                             1 => "mon",
                             2 => "tue",
@@ -227,10 +223,10 @@ class ArrayKeyExistsTest extends TestCase
                             }
                             return self::doGetDayName($dayNum);
                         }
-                    }'
+                    }',
             ],
             'arrayKeyExistsInferString' => [
-                '<?php
+                'code' => '<?php
                     function foo(mixed $file) : string {
                         /** @psalm-suppress MixedArgument */
                         if (array_key_exists($file, ["a" => 1, "b" => 2])) {
@@ -239,12 +235,12 @@ class ArrayKeyExistsTest extends TestCase
 
                         return "";
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayKeyExistsComplex' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         private const MAP = [
                             "a" => 1,
@@ -263,10 +259,10 @@ class ArrayKeyExistsTest extends TestCase
                         public function doWork(string $a): void {
                             if (!array_key_exists($a, self::MAP)) {}
                         }
-                    }'
+                    }',
             ],
             'arrayKeyExistsAccess' => [
-                '<?php
+                'code' => '<?php
                     /** @param array<int, string> $arr */
                     function foo(array $arr) : void {
                         if (array_key_exists(1, $arr)) {
@@ -275,7 +271,7 @@ class ArrayKeyExistsTest extends TestCase
                     }',
             ],
             'arrayKeyExistsVariable' => [
-                '<?php
+                'code' => '<?php
                     class pony
                     {
                     }
@@ -290,10 +286,10 @@ class ArrayKeyExistsTest extends TestCase
                                 return $params[$key];
                             }
                         }
-                    }'
+                    }',
             ],
             'noCrashOnArrayKeyExistsBracket' => [
-                '<?php
+                'code' => '<?php
                     class MyCollection {
                         /**
                          * @param int $commenter
@@ -319,13 +315,13 @@ class ArrayKeyExistsTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset',
                     'MixedArgument',
                 ],
             ],
             'arrayKeyExistsTwoVars' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{a: string, b: string, c?: string} $info
                      */
@@ -335,10 +331,10 @@ class ArrayKeyExistsTest extends TestCase
                         }
 
                         return false;
-                    }'
+                    }',
             ],
             'allowIntKeysToo' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<1|2|3, string> $arr
                      * @return 1|2|3
@@ -350,10 +346,10 @@ class ArrayKeyExistsTest extends TestCase
                         }
 
                         return 1;
-                    }'
+                    }',
             ],
             'comparesStringAndAllIntKeysCorrectly' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<1|2|3, string> $arr
                      * @return bool
@@ -364,10 +360,10 @@ class ArrayKeyExistsTest extends TestCase
                             return true;
                         }
                         return false;
-                    }'
+                    }',
             ],
             'comparesStringAndAllIntKeysCorrectlyNegated' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<1|2|3, string> $arr
                      * @return bool
@@ -378,19 +374,125 @@ class ArrayKeyExistsTest extends TestCase
                             return false;
                         }
                         return true;
-                    }'
+                    }',
+            ],
+            'arrayKeyExistsAssertBothWays' => [
+                'code' => '<?php
+                    class a {
+                        const STATE_A = 0;
+                        const STATE_B = 1;
+                        const STATE_C = 2;
+                        /**
+                         * @return array<self::STATE_*, non-empty-string>
+                         * @psalm-pure
+                         */
+                        public static function getStateLabels(): array {
+                            return [
+                                self::STATE_A => "A",
+                                self::STATE_B => "B",
+                                self::STATE_C => "C",
+                            ];
+                        }
+                        /**
+                         * @param self::STATE_* $state
+                         */
+                        public static function getStateLabelIf(int $state): string {
+                            $states = self::getStateLabels();
+                            if (array_key_exists($state, $states)) {
+                                return $states[$state];
+                            }
+                            return "";
+                        }
+                    }',
+            ],
+            'arrayKeyExistsComplex2' => [
+                'code' => '<?php
+                            /** @var array{
+                             *			address_components: list<array{
+                             *				long_name: string,
+                             *				short_name: string,
+                             *				types: list<("accounting"|"administrative_area_level_1"|"administrative_area_level_2"|"administrative_area_level_3"|
+                             *		"administrative_area_level_4"|"administrative_area_level_5"|"airport"|"amusement_park"|"art_gallery"|"bar"|"bus_station"|"cafe"|
+                             *		"campground"|"car_rental"|"cemetery"|"colloquial_area"|"continent"|"country"|"courthouse"|"embassy"|"establishment"|"finance"|
+                             *		"floor"|"food"|"funeral_home"|"general_contractor"|"gym"|"health"|"hospital"|"intersection"|"lawyer"|"light_rail_station"|
+                             *		"local_government_office"|"locality"|"lodging"|"moving_company"|"museum"|"natural_feature"|"neighborhood"|"night_club"|"park"|
+                             *		"parking"|"plus_code"|"point_of_interest"|"police"|"political"|"post_box"|"post_office"|"postal_code"|"postal_code_prefix"|
+                             *		"postal_code_suffix"|"postal_town"|"premise"|"real_estate_agency"|"restaurant"|"route"|"rv_park"|"school"|"spa"|"storage"|"store"|
+                             *		"street_address"|"street_number"|"sublocality"|"sublocality_level_1"|"sublocality_level_2"|"sublocality_level_3"|
+                             *		"sublocality_level_4"|"sublocality_level_5"|"subpremise"|"subway_station"|"tourist_attraction"|"town_square"|"train_station"|
+                             *		"transit_station"|"travel_agency"|"university"|"ward"|"zoo")>
+                             *			}>,
+                             *			formatted_address: string,
+                             *			geometry: array{
+                             *				location: array{ lat: float, lng: float },
+                             *				location_type: string,
+                             *				viewport: array{
+                             *					northeast: array{ lat: float, lng: float },
+                             *					southwest: array{ lat: float, lng: float }
+                             *				}
+                             *			},
+                             *			partial_match: bool,
+                             *			types: list<string>
+                             * }
+                             */
+                            $data = [];
+                            $cmp = [];
+                            foreach ($data["address_components"] as $component) {
+                                foreach ($component["types"] as $type) {
+                                    $cmp[$type] = $component["long_name"];
+                                }
+                            }
+
+                            if (!\array_key_exists("locality", $cmp)) {
+                                $cmp["locality"] = "";
+                            }
+
+                            if (!\array_key_exists("administrative_area_level_1", $cmp)) {
+                                $cmp["administrative_area_level_1"] = "";
+                            }
+                            if ($cmp["administrative_area_level_1"] === "test") {
+                                $cmp["administrative_area_level_1"] = "";
+                            }',
+            ],
+            'arrayKeyExistsPoorPerformance' => [
+                'code' => '<?php
+                    class A {
+                        private const CRITICAL_ERRORS = [
+                            "category" => [],
+                            "name" => [],
+                            "geo" => [],
+                            "city" => [],
+                            "url" => [],
+                            "comment_critical" => [],
+                            "place" => [],
+                            "price" => [],
+                            "robot_error" => [],
+                            "manual" => [],
+                            "contacts" => [],
+                            "not_confirmed_by_other_source" => [],
+                        ];
+
+
+                        public function isCriticalError(int|string $key): bool {
+                            if (!\array_key_exists($key, A::CRITICAL_ERRORS)) {
+                                return false;
+                            }
+
+                            return true;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyUndefinedArrayAccessWithArrayKeyExistsOnWrongKey' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0,1)) {
                       $a = ["a" => 1];
                     } else {
@@ -403,7 +505,7 @@ class ArrayKeyExistsTest extends TestCase
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'possiblyUndefinedArrayAccessWithArrayKeyExistsOnMissingKey' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0,1)) {
                       $a = ["a" => 1];
                     } else {
@@ -416,7 +518,7 @@ class ArrayKeyExistsTest extends TestCase
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'dontCreateWeirdString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-param array{inner:string} $options
                      */
@@ -454,7 +556,7 @@ class ArrayKeyExistsTest extends TestCase
 
             if (array_key_exists($foo->status, $bar)) {
                 echo $bar[$foo->status];
-            }'
+            }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -479,7 +581,7 @@ class ArrayKeyExistsTest extends TestCase
 
             if (array_key_exists(Foo::$status, $bar)) {
                 echo $bar[Foo::$status];
-            }'
+            }',
         );
 
         $this->analyzeFile('somefile.php', new Context());

@@ -11,6 +11,9 @@ use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class EmptyAnalyzer
 {
     public static function analyze(
@@ -26,9 +29,9 @@ class EmptyAnalyzer
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of empty',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -41,9 +44,9 @@ class EmptyAnalyzer
                 new InvalidArgument(
                     'Calling empty on a boolean value is almost certainly unintended',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
-                    'empty'
+                    'empty',
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 

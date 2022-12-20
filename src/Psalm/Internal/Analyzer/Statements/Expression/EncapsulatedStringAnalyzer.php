@@ -10,7 +10,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
-use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -18,11 +17,14 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
-use function assert;
 use function in_array;
 
+/**
+ * @internal
+ */
 class EncapsulatedStringAnalyzer
 {
     public static function analyze(
@@ -30,7 +32,7 @@ class EncapsulatedStringAnalyzer
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
     ): bool {
-        $stmt_type = Type::getString();
+        $parent_nodes = [];
 
         $non_empty = false;
 
@@ -50,7 +52,7 @@ class EncapsulatedStringAnalyzer
                     $statements_analyzer,
                     $context,
                     $part_type,
-                    $part
+                    $part,
                 );
 
                 if (!$casted_part_type->allLiterals()) {
@@ -87,7 +89,7 @@ class EncapsulatedStringAnalyzer
                     $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
                     $statements_analyzer->data_flow_graph->addNode($new_parent_node);
 
-                    $stmt_type->parent_nodes[$new_parent_node->id] = $new_parent_node;
+                    $parent_nodes[$new_parent_node->id] = $new_parent_node;
 
                     $codebase = $statements_analyzer->getCodebase();
                     $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -102,7 +104,7 @@ class EncapsulatedStringAnalyzer
                                 $new_parent_node,
                                 'concat',
                                 $added_taints,
-                                $removed_taints
+                                $removed_taints,
                             );
                         }
                     }
@@ -120,19 +122,31 @@ class EncapsulatedStringAnalyzer
 
         if ($non_empty) {
             if ($literal_string !== null) {
-                $new_type = Type::getString($literal_string);
+                $stmt_type = new Union(
+                    [new TLiteralString($literal_string)],
+                    ['parent_nodes' => $parent_nodes],
+                );
             } elseif ($all_literals) {
-                $new_type = new Union([new TNonEmptyNonspecificLiteralString()]);
+                $stmt_type = new Union(
+                    [new TNonEmptyNonspecificLiteralString()],
+                    ['parent_nodes' => $parent_nodes],
+                );
             } else {
-                $new_type = new Union([new TNonEmptyString()]);
+                $stmt_type = new Union(
+                    [new TNonEmptyString()],
+                    ['parent_nodes' => $parent_nodes],
+                );
             }
         } elseif ($all_literals) {
-            $new_type = new Union([new TNonspecificLiteralString()]);
-        }
-        if (isset($new_type)) {
-            assert($new_type instanceof Union);
-            $new_type->parent_nodes = $stmt_type->parent_nodes;
-            $stmt_type = $new_type;
+            $stmt_type = new Union(
+                [new TNonspecificLiteralString()],
+                ['parent_nodes' => $parent_nodes],
+            );
+        } else {
+            $stmt_type = new Union(
+                [new TString()],
+                ['parent_nodes' => $parent_nodes],
+            );
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);

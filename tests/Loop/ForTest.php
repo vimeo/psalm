@@ -13,14 +13,19 @@ class ForTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
+            'forTrue' => [
+                'code' => '<?php
+                    function ret(): int {
+                        for (;;) {
+                            return 1;
+                        }
+                    }',
+            ],
             'implicitFourthLoop' => [
-                '<?php
+                'code' => '<?php
                     function test(): int {
                       $x = 0;
                       $y = 1;
@@ -34,7 +39,7 @@ class ForTest extends TestCase
                     }',
             ],
             'falseToBoolInContinueAndBreak' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
 
                     for ($i = 0; $i < 4; $i++) {
@@ -50,20 +55,21 @@ class ForTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
             'forLoopwithOKChange' => [
-                '<?php
+                'code' => '<?php
                     $j = 5;
                     for ($i = $j; $i < 4; $i++) {
                       $j = 9;
                     }',
             ],
             'preventNegativeZeroScrewingThingsUp' => [
-                '<?php
+                'code' => '<?php
                     function foo() : void {
+                      /** @var array<int, int> $v */
                       $v = [1 => 0];
                       for ($d = 0; $d <= 10; $d++) {
                         for ($k = -$d; $k <= $d; $k += 2) {
@@ -79,7 +85,7 @@ class ForTest extends TestCase
                     }',
             ],
             'whileTrueWithBreak' => [
-                '<?php
+                'code' => '<?php
                     for (;;) {
                         $a = "hello";
                         break;
@@ -94,7 +100,7 @@ class ForTest extends TestCase
                 ],
             ],
             'continueOutsideLoop' => [
-                '<?php
+                'code' => '<?php
                     class Node {
                         /** @var Node|null */
                         public $next;
@@ -109,37 +115,37 @@ class ForTest extends TestCase
                     }',
             ],
             'echoAfterFor' => [
-                '<?php
+                'code' => '<?php
                     for ($i = 0; $i < 5; $i++);
                     echo $i;',
             ],
             'nestedEchoAfterFor' => [
-                '<?php
+                'code' => '<?php
                     for ($i = 1; $i < 2; $i++) {
                         for ($j = 1; $j < 2; $j++) {}
                     }
 
-                    echo $i * $j;'
+                    echo $i * $j;',
             ],
             'reconcileOuterVars' => [
-                '<?php
+                'code' => '<?php
                     for ($i = 0; $i < 2; $i++) {
                         if ($i === 0) {
                             continue;
                         }
-                    }'
+                    }',
             ],
             'noException' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<int> $arr
                      */
                     function cartesianProduct(array $arr) : void {
                         for ($i = 20; $arr[$i] === 5 && $i > 0; $i--) {}
-                    }'
+                    }',
             ],
             'noCrashOnLongThing' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<array{a: array{int, int}}> $data
                      */
@@ -151,16 +157,17 @@ class ForTest extends TestCase
                                         continue;
                                     }
 
+                                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
                                     $data[0]["a"] = array_merge($data[0]["a"], $data[0]["a"]);
                                 }
                             }
                         }
 
                         return $data;
-                    }'
+                    }',
             ],
             'InfiniteForLoop' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return int
                      */
@@ -177,19 +184,16 @@ class ForTest extends TestCase
                         for (;1;) {
                             return 1;
                         }
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyUndefinedArrayInWhileAndForeach' => [
-                '<?php
+                'code' => '<?php
                     for ($i = 0; $i < 4; $i++) {
                         while (rand(0,10) === 5) {
                             $array[] = "hello";
@@ -201,14 +205,14 @@ class ForTest extends TestCase
                     'global variable $array, first seen on line 4',
             ],
             'forLoopInvalidation' => [
-                '<?php
+                'code' => '<?php
                     for ($i = 0; $i < 4; $i++) {
                       foreach ([1, 2, 3] as $i) {}
                     }',
                 'error_message' => 'LoopInvalidation',
             ],
             'forInfiniteNoBreak' => [
-                '<?php
+                'code' => '<?php
                     for (;;) {
                         $a = "hello";
                     }
@@ -217,7 +221,7 @@ class ForTest extends TestCase
                 'error_message' => 'UndefinedGlobalVariable',
             ],
             'nestedEchoAfterFor' => [
-                '<?php
+                'code' => '<?php
                     for ($i = 1; $i < 2; $i++) {
                         if (rand(0, 1)) break;
                         for ($j = 1; $j < 2; $j++) {}

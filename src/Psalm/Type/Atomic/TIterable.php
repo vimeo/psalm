@@ -2,27 +2,34 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function count;
 use function implode;
 use function substr;
 
 /**
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
+ *
+ * @psalm-immutable
  */
-class TIterable extends Atomic
+final class TIterable extends Atomic
 {
     use HasIntersectionTrait;
+    /**
+     * @use GenericTrait<array{Union, Union}>
+     */
     use GenericTrait;
 
     /**
      * @var array{Union, Union}
      */
-    public $type_params;
+    public array $type_params;
 
     /**
      * @var string
@@ -35,16 +42,19 @@ class TIterable extends Atomic
     public $has_docblock_params = false;
 
     /**
-     * @param list<Union> $type_params
+     * @param array{Union, Union}|array<never, never> $type_params
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(array $type_params = [])
+    public function __construct(array $type_params = [], array $extra_types = [], bool $from_docblock = false)
     {
-        if (count($type_params) === 2) {
+        if (isset($type_params[0], $type_params[1])) {
             $this->has_docblock_params = true;
             $this->type_params = $type_params;
         } else {
             $this->type_params = [Type::getMixed(), Type::getMixed()];
         }
+        $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -56,16 +66,16 @@ class TIterable extends Atomic
         return 'iterable';
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'iterable';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
-            $s .= $type_param->getId() . ', ';
+            $s .= $type_param->getId($exact) . ', ';
         }
 
         $extra_types = '';
@@ -77,11 +87,6 @@ class TIterable extends Atomic
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
-    public function __toString(): string
-    {
-        return $this->getId();
-    }
-
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
@@ -89,16 +94,12 @@ class TIterable extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
-        return $php_major_version > 7
-            || ($php_major_version === 7 && $php_minor_version >= 1)
-            ? 'iterable'
-            : null;
+        return $analysis_php_version_id >= 7_01_00 ? 'iterable' : null;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
     }
@@ -122,8 +123,75 @@ class TIterable extends Atomic
         return true;
     }
 
-    public function getChildNodes(): array
+    protected function getChildNodeKeys(): array
     {
-        return array_merge($this->type_params, $this->extra_types ?? []);
+        return ['type_params', 'extra_types'];
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithArgTypes(TemplateResult $template_result, ?Codebase $codebase): self
+    {
+        $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase,
+        );
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes(
+            $template_result,
+            $codebase,
+        );
+        return new static(
+            $type_params ?? $this->type_params,
+            $intersection ?? $this->extra_types,
+        );
+    }
+
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithStandins(
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer = null,
+        ?Atomic $input_type = null,
+        ?int $input_arg_offset = null,
+        ?string $calling_class = null,
+        ?string $calling_function = null,
+        bool $replace = true,
+        bool $add_lower_bound = false,
+        int $depth = 0
+    ): self {
+        $types = $this->replaceTypeParamsTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth,
+        );
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth,
+        );
+        if (!$types && !$intersection) {
+            return $this;
+        }
+        return new static(
+            $types ?? $this->type_params,
+            $intersection ?? $this->extra_types,
+        );
     }
 }

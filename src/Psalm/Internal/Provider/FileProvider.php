@@ -18,22 +18,25 @@ use function is_dir;
 
 use const DIRECTORY_SEPARATOR;
 
+/**
+ * @internal
+ */
 class FileProvider
 {
     /**
      * @var array<string, array{version: ?int, content: string}>
      */
-    protected $temp_files = [];
+    protected array $temp_files = [];
 
     /**
      * @var array<string, string>
      */
-    protected static $open_files = [];
+    protected static array $open_files = [];
 
     /**
      * @var array<string, string>
      */
-    protected $open_files_paths = [];
+    protected array $open_files_paths = [];
 
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
@@ -41,20 +44,25 @@ class FileProvider
             return $this->temp_files[$file_path]['content'];
         }
 
+        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         if (isset(self::$open_files[$file_path])) {
             return self::$open_files[$file_path];
         }
 
+        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         if (!file_exists($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
         }
 
+        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         if (is_dir($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
+        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         $file_contents = (string) file_get_contents($file_path);
 
+        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         self::$open_files[$file_path] = $file_contents;
 
         return $file_contents;
@@ -145,7 +153,6 @@ class FileProvider
     /**
      * @param array<string> $file_extensions
      * @param null|callable(string):bool $filter
-     *
      * @return list<string>
      */
     public function getFilesInDir(string $dir_path, array $file_extensions, callable $filter = null): array
@@ -154,14 +161,14 @@ class FileProvider
 
         $iterator = new RecursiveDirectoryIterator(
             $dir_path,
-            FilesystemIterator::CURRENT_AS_PATHNAME | FilesystemIterator::SKIP_DOTS
+            FilesystemIterator::CURRENT_AS_PATHNAME | FilesystemIterator::SKIP_DOTS,
         );
 
         if ($filter !== null) {
             $iterator = new RecursiveCallbackFilterIterator(
                 $iterator,
                 /** @param mixed $_ */
-                function (string $current, $_, RecursiveIterator $iterator) use ($filter): bool {
+                static function (string $current, $_, RecursiveIterator $iterator) use ($filter): bool {
                     if ($iterator->hasChildren()) {
                         $path = $current . DIRECTORY_SEPARATOR;
                     } else {
@@ -169,7 +176,7 @@ class FileProvider
                     }
 
                     return $filter($path);
-                }
+                },
             );
         }
 

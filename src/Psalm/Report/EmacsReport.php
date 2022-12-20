@@ -7,7 +7,7 @@ use Psalm\Report;
 
 use function sprintf;
 
-class EmacsReport extends Report
+final class EmacsReport extends Report
 {
     public function create(): string
     {
@@ -19,7 +19,7 @@ class EmacsReport extends Report
                 $issue_data->line_from,
                 $issue_data->column_from,
                 ($issue_data->severity === Config::REPORT_ERROR ? 'error' : 'warning'),
-                $issue_data->message
+                $issue_data->message,
             ) . "\n";
         }
 

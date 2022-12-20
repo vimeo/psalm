@@ -7,16 +7,19 @@ use function substr;
 /**
  * Represents the type that is the result of a bitmask combination of its parameters.
  * `int-mask<1, 2, 4>` corresponds to `0|1|2|3|4|5|6|7`
+ *
+ * @psalm-immutable
  */
-class TIntMask extends TInt
+final class TIntMask extends TInt
 {
     /** @var non-empty-array<TLiteralInt|TClassConstant> */
     public $values;
 
     /** @param non-empty-array<TLiteralInt|TClassConstant> $values */
-    public function __construct(array $values)
+    public function __construct(array $values, bool $from_docblock = false)
     {
         $this->values = $values;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -30,12 +33,12 @@ class TIntMask extends TInt
         return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
 
         foreach ($this->values as $value) {
-            $s .= $value->getId() . ', ';
+            $s .= $value->getId($exact) . ', ';
         }
 
         return 'int-mask<' . substr($s, 0, -2) . '>';
@@ -43,7 +46,6 @@ class TIntMask extends TInt
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -64,7 +66,7 @@ class TIntMask extends TInt
         return 'int-mask<' . substr($s, 0, -2) . '>';
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }

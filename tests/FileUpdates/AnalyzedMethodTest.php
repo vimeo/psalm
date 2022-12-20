@@ -34,30 +34,28 @@ class AnalyzedMethodTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**
      * @dataProvider providerTestValidUpdates
-     *
      * @param array<string, string> $start_files
      * @param array<string, string> $end_files
-     * @param array<string, string> $error_levels
-     *
+     * @param array<string, string> $ignored_issues
      */
     public function testValidInclude(
         array $start_files,
         array $end_files,
         array $initial_analyzed_methods,
         array $unaffected_analyzed_methods,
-        array $error_levels = []
+        array $ignored_issues = []
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -71,7 +69,7 @@ class AnalyzedMethodTest extends TestCase
         $config = $codebase->config;
         $config->throw_exception = false;
 
-        foreach ($error_levels as $error_type => $error_level) {
+        foreach ($ignored_issues as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
@@ -89,7 +87,7 @@ class AnalyzedMethodTest extends TestCase
         $this->assertSame(
             $initial_analyzed_methods,
             $codebase->analyzer->getAnalyzedMethods(),
-            'initial analyzed methods are not the same'
+            'initial analyzed methods are not the same',
         );
 
         foreach ($end_files as $file_path => $contents) {
@@ -103,12 +101,12 @@ class AnalyzedMethodTest extends TestCase
         $this->assertSame(
             $unaffected_analyzed_methods,
             $codebase->analyzer->getAnalyzedMethods(),
-            'unaffected analyzed methods are not the same'
+            'unaffected analyzed methods are not the same',
         );
     }
 
     /**
-     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,4?:array<string,string>}>
+     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,0?:array<string,string>}>
      */
     public function providerTestValidUpdates(): array
     {
@@ -1220,7 +1218,7 @@ class AnalyzedMethodTest extends TestCase
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
-                        'foo\a::bar' => 1
+                        'foo\a::bar' => 1,
                     ],
                 ],
             ],
@@ -1262,7 +1260,7 @@ class AnalyzedMethodTest extends TestCase
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
-                        'foo\a::bar' => 1
+                        'foo\a::bar' => 1,
                     ],
                 ],
             ],
@@ -1321,7 +1319,7 @@ class AnalyzedMethodTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => []
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [],
                 ],
             ],
         ];

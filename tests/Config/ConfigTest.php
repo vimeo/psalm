@@ -43,11 +43,9 @@ use const DIRECTORY_SEPARATOR;
 
 class ConfigTest extends TestCase
 {
-    /** @var TestConfig */
-    protected static $config;
+    protected static TestConfig $config;
 
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     /** @var callable(int, string, string=, int=, array=):bool|null */
     protected $original_error_handler = null;
@@ -79,8 +77,8 @@ class ConfigTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $p->setPhpVersion('7.3', 'tests');
@@ -98,8 +96,8 @@ class ConfigTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -121,8 +119,8 @@ class ConfigTest extends TestCase
                             <directory name="src/Psalm/Internal/Analyzer" />
                         </ignoreFiles>
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -145,14 +143,14 @@ class ConfigTest extends TestCase
                             <directory name="does/not/exist" />
                         </ignoreFiles>
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath(__DIR__.'/../../').'/does/not/exist/FileAnalyzer.php'));
+        $this->assertFalse($config->isInProjectDirs(realpath(__DIR__ . '/../../') . '/does/not/exist/FileAnalyzer.php'));
         $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
     }
 
@@ -188,11 +186,11 @@ class ConfigTest extends TestCase
                     <projectFiles>
                         <directory name="tests" />
                         <ignoreFiles>
-                            <directory name="tests/fixtures/symlinktest/ignored" />
+                            <directory name="tests/fixtures/symlinktest/ignored" resolveSymlinks="true" />
                         </ignoreFiles>
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -219,7 +217,7 @@ class ConfigTest extends TestCase
                     0,
                     $last_error['type'],
                     $last_error['file'],
-                    $last_error['line']
+                    $last_error['line'],
                 );
             }
         }
@@ -238,8 +236,8 @@ class ConfigTest extends TestCase
                             <directory name="src/**/Internal/Analyzer" />
                         </ignoreFiles>
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -263,8 +261,8 @@ class ConfigTest extends TestCase
                             <file name="src/Psalm/Internal/Analyzer/*Analyzer.php" />
                         </ignoreFiles>
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -290,8 +288,8 @@ class ConfigTest extends TestCase
                             <file name="src/Psalm/**/**/**/*Analyzer.php" />
                         </ignoreFiles>
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -318,8 +316,8 @@ class ConfigTest extends TestCase
                             <file name="**/**/**/**/**/*Analyzer.php" />
                         </ignoreFiles>
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -345,8 +343,8 @@ class ConfigTest extends TestCase
                     <issueHandlers>
                         <MissingReturnType errorLevel="suppress" />
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -374,14 +372,14 @@ class ConfigTest extends TestCase
                             </errorLevel>
                         </UndefinedFunction>
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
         $this->assertSame(
             Config::REPORT_SUPPRESS,
-            $config->getReportingLevelForFunction('UndefinedFunction', 'Some\Namespace\zzz')
+            $config->getReportingLevelForFunction('UndefinedFunction', 'Some\Namespace\zzz'),
         );
     }
 
@@ -403,8 +401,8 @@ class ConfigTest extends TestCase
                     <issueHandlers>
                         <UndefinedClass errorLevel="suppress" />
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -473,9 +471,14 @@ class ConfigTest extends TestCase
                                 <referencedVariable name="a" />
                             </errorLevel>
                         </UndefinedGlobalVariable>
+                        <InvalidConstantAssignmentValue>
+                            <errorLevel type="suppress">
+                                <referencedConstant name="Psalm\Bodger::FOO" />
+                            </errorLevel>
+                        </InvalidConstantAssignmentValue>
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -484,140 +487,148 @@ class ConfigTest extends TestCase
             'info',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Type.php')
-            )
+                realpath('src/Psalm/Type.php'),
+            ),
         );
 
         $this->assertSame(
             'error',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')
-            )
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
         );
 
         $this->assertSame(
             'error',
             $config->getReportingLevelForFile(
                 'PossiblyInvalidArgument',
-                realpath('src/psalm.php')
-            )
+                realpath('src/psalm.php'),
+            ),
         );
 
         $this->assertSame(
             'info',
             $config->getReportingLevelForFile(
                 'PossiblyInvalidArgument',
-                realpath('examples/TemplateChecker.php')
-            )
+                realpath('examples/TemplateChecker.php'),
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\Badger'
-            )
+                'Psalm\Badger',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\BadActor'
-            )
+                'Psalm\BadActor',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\GoodActor'
-            )
+                'Psalm\GoodActor',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\MagicFactory'
-            )
+                'Psalm\MagicFactory',
+            ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\Bodger'
-            )
+                'Psalm\Bodger',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Bodger::find1'
-            )
+                'Psalm\Bodger::find1',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Bodger::find2'
-            )
+                'Psalm\Bodger::find2',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Badger::find2'
-            )
-        );
-
-        $this->assertNull(
-            $config->getReportingLevelForProperty(
-                'UndefinedMethod',
-                'Psalm\Bodger::$find3'
-            )
+                'Psalm\Badger::find2',
+            ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForProperty(
                 'UndefinedMethod',
-                'Psalm\Bodger::$find4'
-            )
+                'Psalm\Bodger::$find3',
+            ),
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForProperty(
+                'UndefinedMethod',
+                'Psalm\Bodger::$find4',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedFunction',
-                'fooBar'
-            )
+                'fooBar',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedFunction',
-                'foobar'
-            )
+                'foobar',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForVariable(
                 'UndefinedGlobalVariable',
-                'a'
-            )
+                'a',
+            ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForVariable(
                 'UndefinedGlobalVariable',
-                'b'
-            )
+                'b',
+            ),
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForClassConstant(
+                'InvalidConstantAssignmentValue',
+                'Psalm\Bodger::FOO',
+            ),
         );
     }
 
@@ -632,20 +643,20 @@ class ConfigTest extends TestCase
                         <directory name="src" />
                         <directory name="tests" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
         $config->setAdvancedErrorLevel('MissingReturnType', [
             [
                 'type' => 'suppress',
-                'directory' => [['name' => 'tests']]
+                'directory' => [['name' => 'tests']],
             ],
             [
                 'type' => 'error',
-                'directory' => [['name' => 'src/Psalm/Internal/Analyzer']]
-            ]
+                'directory' => [['name' => 'src/Psalm/Internal/Analyzer']],
+            ],
         ], 'info');
         $config->setAdvancedErrorLevel('UndefinedClass', [
             [
@@ -654,8 +665,8 @@ class ConfigTest extends TestCase
                     ['name' => 'Psalm\Badger'],
                     ['name' => 'Psalm\*Actor'],
                     ['name' => '*MagicFactory'],
-                ]
-            ]
+                ],
+            ],
         ]);
         $config->setAdvancedErrorLevel('UndefinedMethod', [
             [
@@ -663,186 +674,186 @@ class ConfigTest extends TestCase
                 'referencedMethod' => [
                     ['name' => 'Psalm\Bodger::find1'],
                     ['name' => '*::find2'],
-                ]
-            ]
+                ],
+            ],
         ]);
         $config->setAdvancedErrorLevel('UndefinedFunction', [
             [
                 'type' => 'suppress',
                 'referencedFunction' => [
-                    ['name' => 'fooBar']
-                ]
-            ]
+                    ['name' => 'fooBar'],
+                ],
+            ],
         ]);
         $config->setAdvancedErrorLevel('PossiblyInvalidArgument', [
             [
                 'type' => 'suppress',
                 'directory' => [
                     ['name' => 'tests'],
-                ]
+                ],
             ],
             [
                 'type' => 'info',
                 'directory' => [
                     ['name' => 'examples'],
-                ]
-            ]
+                ],
+            ],
         ]);
         $config->setAdvancedErrorLevel('UndefinedPropertyFetch', [
             [
                 'type' => 'suppress',
                 'referencedProperty' => [
-                    ['name' => 'Psalm\Bodger::$find3']
-                ]
-            ]
+                    ['name' => 'Psalm\Bodger::$find3'],
+                ],
+            ],
         ]);
         $config->setAdvancedErrorLevel('UndefinedGlobalVariable', [
             [
                 'type' => 'suppress',
                 'referencedVariable' => [
-                    ['name' => 'a']
-                ]
-            ]
+                    ['name' => 'a'],
+                ],
+            ],
         ]);
 
         $this->assertSame(
             'info',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Type.php')
-            )
+                realpath('src/Psalm/Type.php'),
+            ),
         );
 
         $this->assertSame(
             'error',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')
-            )
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
         );
 
         $this->assertSame(
             'error',
             $config->getReportingLevelForFile(
                 'PossiblyInvalidArgument',
-                realpath('src/psalm.php')
-            )
+                realpath('src/psalm.php'),
+            ),
         );
 
         $this->assertSame(
             'info',
             $config->getReportingLevelForFile(
                 'PossiblyInvalidArgument',
-                realpath('examples/TemplateChecker.php')
-            )
+                realpath('examples/TemplateChecker.php'),
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\Badger'
-            )
+                'Psalm\Badger',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\BadActor'
-            )
+                'Psalm\BadActor',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\GoodActor'
-            )
+                'Psalm\GoodActor',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\MagicFactory'
-            )
+                'Psalm\MagicFactory',
+            ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\Bodger'
-            )
+                'Psalm\Bodger',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Bodger::find1'
-            )
+                'Psalm\Bodger::find1',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Bodger::find2'
-            )
+                'Psalm\Bodger::find2',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Badger::find2'
-            )
-        );
-
-        $this->assertNull(
-            $config->getReportingLevelForProperty(
-                'UndefinedMethod',
-                'Psalm\Bodger::$find3'
-            )
+                'Psalm\Badger::find2',
+            ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForProperty(
                 'UndefinedMethod',
-                'Psalm\Bodger::$find4'
-            )
+                'Psalm\Bodger::$find3',
+            ),
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForProperty(
+                'UndefinedMethod',
+                'Psalm\Bodger::$find4',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedFunction',
-                'fooBar'
-            )
+                'fooBar',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedFunction',
-                'foobar'
-            )
+                'foobar',
+            ),
         );
 
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForVariable(
                 'UndefinedGlobalVariable',
-                'a'
-            )
+                'a',
+            ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForVariable(
                 'UndefinedGlobalVariable',
-                'b'
-            )
+                'b',
+            ),
         );
     }
 
@@ -853,14 +864,11 @@ class ConfigTest extends TestCase
             array_map(
                 /**
                  * @param string $issue_name
-                 *
                  * @return string
                  */
-                function ($issue_name): string {
-                    return '<' . $issue_name . ' errorLevel="suppress" />' . "\n";
-                },
-                IssueHandler::getAllIssueTypes()
-            )
+                fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
+                IssueHandler::getAllIssueTypes(),
+            ),
         );
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -875,8 +883,8 @@ class ConfigTest extends TestCase
                     <issueHandlers>
                     ' . $all_possible_handlers . '
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
     }
 
@@ -896,8 +904,8 @@ class ConfigTest extends TestCase
                     <issueHandlers>
                         <ImpossibleIssue errorLevel="suppress" />
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
     }
 
@@ -914,8 +922,8 @@ class ConfigTest extends TestCase
                     <mockClasses>
                         <class name="MyMockClass" />
                     </mockClasses>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -927,74 +935,7 @@ class ConfigTest extends TestCase
 
                 $a = new MyMockClass();
                 $a->foo($b = 5);
-                echo $b;'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testExitFunctions(): void
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2),
-                '<?xml version="1.0"?>
-                <psalm>
-                    <exitFunctions>
-                        <function name="leave" />
-                        <function name="Foo\namespacedLeave" />
-                        <function name="Foo\Bar::staticLeave" />
-                    </exitFunctions>
-                </psalm>'
-            )
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                namespace {
-                    function leave() : void {
-                        exit();
-                    }
-
-                    function mightLeave() : string {
-                        if (rand(0, 1)) {
-                            leave();
-                        } else {
-                            return "here";
-                        }
-                    }
-
-                    function mightLeaveWithNamespacedFunction() : string {
-                        if (rand(0, 1)) {
-                            \Foo\namespacedLeave();
-                        } else {
-                            return "here";
-                        }
-                    }
-
-                    function mightLeaveWithStaticMethod() : string {
-                        if (rand(0, 1)) {
-                            Foo\Bar::staticLeave();
-                        } else {
-                            return "here";
-                        }
-                    }
-                }
-
-                namespace Foo {
-                    function namespacedLeave() : void {
-                        exit();
-                    }
-
-                    class Bar {
-                        public static function staticLeave() : void {
-                            exit();
-                        }
-                    }
-                }'
+                echo $b;',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1016,8 +957,8 @@ class ConfigTest extends TestCase
                             </errorLevel>
                         </InvalidThrow>
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1042,7 +983,7 @@ class ConfigTest extends TestCase
                     foo();
                 } catch (I $e) {
                     handleThrow($e);
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1064,8 +1005,8 @@ class ConfigTest extends TestCase
                             </errorLevel>
                         </InvalidCatch>
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1090,7 +1031,7 @@ class ConfigTest extends TestCase
                     foo();
                 } catch (I $e) {
                     handleThrow($e);
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1115,8 +1056,8 @@ class ConfigTest extends TestCase
                             </errorLevel>
                         </InvalidThrow>
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1141,7 +1082,7 @@ class ConfigTest extends TestCase
                     foo();
                 } catch (I $e) {
                     handleThrow($e);
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1154,9 +1095,9 @@ class ConfigTest extends TestCase
         $this->assertEquals(
             [
                 realpath($root . '/Bar.php'),
-                realpath($root . '/Bat.php')
+                realpath($root . '/Bat.php'),
             ],
-            $config->getProjectFiles()
+            $config->getProjectFiles(),
         );
     }
 
@@ -1188,8 +1129,8 @@ class ConfigTest extends TestCase
                         <var name="glob4" type="string|null" />
                         <var name="_GET" type="array{str:string}" />
                     </globals>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1215,15 +1156,18 @@ class ConfigTest extends TestCase
                         ord($_GET["str"]);
                     }
 
-                    $glob1 = 0;
-                    error_reporting($glob1);
+                    $z = $glob1;
+                    $z = 0;
+                    error_reporting($z);
 
+                    $old = $_GET["str"];
                     $_GET["str"] = 0;
                     error_reporting($_GET["str"]);
+                    $_GET["str"] = $old;
 
                     function example2(): void {
-                        global $glob1, $glob2, $glob3;
-                        error_reporting($glob1);
+                        global $z, $glob2, $glob3;
+                        error_reporting($z);
                         ord($glob2["str"]);
                         $glob3->func();
                         ord($_GET["str"]);
@@ -1263,7 +1207,7 @@ class ConfigTest extends TestCase
                         ord($glob1 ?: "str");
                         ord($_GET["str"] ?? "str");
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1283,8 +1227,8 @@ class ConfigTest extends TestCase
                         <classAndDescendants name="Exc4" onlyGlobalScope="true" />
                         <classAndDescendants name="Exc5" />
                     </ignoreExceptions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1327,7 +1271,7 @@ class ConfigTest extends TestCase
                     throwsExc1();
                     throwsExc3();
                     throwsExc6();
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1349,8 +1293,8 @@ class ConfigTest extends TestCase
                         <classAndDescendants name="Exc3" />
                         <classAndDescendants name="Exc4" onlyGlobalScope="true" />
                     </ignoreExceptions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -1362,7 +1306,7 @@ class ConfigTest extends TestCase
 
                 function example() : void {
                     throw new Exc2();
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1379,8 +1323,8 @@ class ConfigTest extends TestCase
                         <directory name="src" />
                         <directory name="tests" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -1393,7 +1337,7 @@ class ConfigTest extends TestCase
                     . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR
                     . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR
                     . 'src' . DIRECTORY_SEPARATOR . 'Psalm',
-            ]
+            ],
         );
 
         $classloader->addPsr4(
@@ -1403,19 +1347,19 @@ class ConfigTest extends TestCase
                     . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR
                     . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR
                     . 'tests',
-            ]
+            ],
         );
 
         $config->setComposerClassLoader($classloader);
 
         $this->assertSame(
             dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Psalm' . DIRECTORY_SEPARATOR . 'Foo.php',
-            $config->getPotentialComposerFilePathForClassLike('Psalm\\Foo')
+            $config->getPotentialComposerFilePathForClassLike('Psalm\\Foo'),
         );
 
         $this->assertSame(
             dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Foo.php',
-            $config->getPotentialComposerFilePathForClassLike('Psalm\\Tests\\Foo')
+            $config->getPotentialComposerFilePathForClassLike('Psalm\\Tests\\Foo'),
         );
     }
 
@@ -1423,7 +1367,7 @@ class ConfigTest extends TestCase
     {
         $cfg = Config::loadFromXML(
             dirname(__DIR__, 2),
-            '<?xml version="1.0"?><psalm phpVersion="7.1"></psalm>'
+            '<?xml version="1.0"?><psalm phpVersion="7.1"></psalm>',
         );
         $this->assertSame('7.1', $cfg->getPhpVersion());
     }
@@ -1446,8 +1390,8 @@ class ConfigTest extends TestCase
                 dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm usePhpStormMetaPath="false">
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->assertFalse($this->project_analyzer->getConfig()->use_phpstorm_meta_path);
@@ -1463,8 +1407,8 @@ class ConfigTest extends TestCase
                     <universalObjectCrates>
                         <class name="DateTime" />
                     </universalObjectCrates>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->assertContains('datetime', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
@@ -1474,7 +1418,7 @@ class ConfigTest extends TestCase
     {
         $cfg = Config::loadFromXML(
             dirname(__DIR__, 2),
-            '<?xml version="1.0"?><psalm inferPropertyTypesFromConstructor="false"></psalm>'
+            '<?xml version="1.0"?><psalm inferPropertyTypesFromConstructor="false"></psalm>',
         );
         $this->assertFalse($cfg->infer_property_types_from_constructor);
     }
@@ -1486,10 +1430,10 @@ class ConfigTest extends TestCase
     {
         return [
             'regular' => [0, null], // flags, expected exception code
-            'invalid scanner class' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_INVALID, 1622727271],
-            'invalid analyzer class' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_INVALID, 1622727281],
-            'override scanner' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_TWICE, 1622727272],
-            'override analyzer' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_TWICE, 1622727282],
+            'invalid scanner class' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_INVALID, 1_622_727_271],
+            'invalid analyzer class' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_INVALID, 1_622_727_281],
+            'override scanner' => [FileTypeSelfRegisteringPlugin::FLAG_SCANNER_TWICE, 1_622_727_272],
+            'override analyzer' => [FileTypeSelfRegisteringPlugin::FLAG_ANALYZER_TWICE, 1_622_727_282],
         ];
     }
 
@@ -1502,7 +1446,7 @@ class ConfigTest extends TestCase
         $extension = uniqid('test');
         $names = [
             'scanner' => uniqid('PsalmTestFileTypeScanner'),
-            'analyzer' => uniqid('PsalmTestFileTypeAnaylzer'),
+            'analyzer' => uniqid('PsalmTestFileTypeAnalyzer'),
             'extension' => $extension,
         ];
         $scannerMock = $this->getMockBuilder(FileScanner::class)
@@ -1517,18 +1461,16 @@ class ConfigTest extends TestCase
         FileTypeSelfRegisteringPlugin::$names = $names;
         FileTypeSelfRegisteringPlugin::$flags = $flags;
 
-        /** @var non-empty-string $xml */
         $xml = sprintf(
             '<?xml version="1.0"?>
             <psalm><plugins><pluginClass class="%s"/></plugins></psalm>',
-            FileTypeSelfRegisteringPlugin::class
+            FileTypeSelfRegisteringPlugin::class,
         );
-        $projectAnalyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(dirname(__DIR__, 2), $xml)
-        );
-
 
         try {
+            $projectAnalyzer = $this->getProjectAnalyzerWithConfig(
+                TestConfig::loadFromXML(dirname(__DIR__, 2), $xml),
+            );
             $config = $projectAnalyzer->getConfig();
             $config->initializePlugins($projectAnalyzer);
         } catch (ConfigException $exception) {
@@ -1538,7 +1480,7 @@ class ConfigTest extends TestCase
             self::assertSame(
                 $expectedExceptionCode,
                 $actualExceptionCode,
-                'Exception code did not match.'
+                'Exception code did not match.',
             );
             return;
         }
@@ -1566,8 +1508,8 @@ class ConfigTest extends TestCase
                         <directory ignoreTypeStats="" name="src/Psalm/Report" />
                         <directory name="src/Psalm/SourceControl" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -1599,8 +1541,8 @@ class ConfigTest extends TestCase
                         <directory useStrictTypes="" name="src/Psalm/Report" />
                         <directory name="src/Psalm/SourceControl" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();
@@ -1632,7 +1574,7 @@ class ConfigTest extends TestCase
                 <issueHandlers>
                     <xi:include href="zz.xml" />
                 </issueHandlers>
-            </psalm>'
+            </psalm>',
         );
     }
 
@@ -1660,8 +1602,8 @@ class ConfigTest extends TestCase
                         </xi:fallback>
                     </xi:include>
                 </issueHandlers>
-            </psalm>'
-            )
+            </psalm>',
+            ),
         );
 
         $config = $this->project_analyzer->getConfig();

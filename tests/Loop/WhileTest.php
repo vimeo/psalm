@@ -11,14 +11,19 @@ class WhileTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
+            'whileTrue' => [
+                'code' => '<?php
+                    function ret(): int {
+                        do {
+                            return 1;
+                        } while (true);
+                    }',
+            ],
             'whileVar' => [
-                '<?php
+                'code' => '<?php
                     $worked = false;
 
                     while (rand(0,100) === 10) {
@@ -29,7 +34,7 @@ class WhileTest extends TestCase
                 ],
             ],
             'objectValueWithTwoTypes' => [
-                '<?php
+                'code' => '<?php
                     class B {}
                     class A {
                         /** @var A|B */
@@ -54,7 +59,7 @@ class WhileTest extends TestCase
                 ],
             ],
             'objectValueWithInstanceofProperty' => [
-                '<?php
+                'code' => '<?php
                     class B {}
                     class A {
                         /** @var A|B */
@@ -82,7 +87,7 @@ class WhileTest extends TestCase
                 ],
             ],
             'objectValueNullable' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?A */
                         public $parent;
@@ -106,7 +111,7 @@ class WhileTest extends TestCase
                 ],
             ],
             'objectValueWithAnd' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?A */
                         public $parent;
@@ -130,7 +135,7 @@ class WhileTest extends TestCase
                 ],
             ],
             'loopWithNoParadox' => [
-                '<?php
+                'code' => '<?php
                     $a = ["b", "c", "d"];
                     array_pop($a);
                     while ($a) {
@@ -139,7 +144,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'noRedundantConditionInWhileAssignment' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       /** @var ?int */
                       public $bar;
@@ -154,7 +159,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'whileTrueWithBreak' => [
-                '<?php
+                'code' => '<?php
                     while (true) {
                         $a = "hello";
                         break;
@@ -169,7 +174,7 @@ class WhileTest extends TestCase
                 ],
             ],
             'whileWithNotEmptyCheck' => [
-                '<?php
+                'code' => '<?php
                     class A {
                       /** @var A|null */
                       public $a;
@@ -191,7 +196,7 @@ class WhileTest extends TestCase
                 ],
             ],
             'whileInstanceOf' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var null|A */
                         public $parent;
@@ -206,7 +211,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'whileInstanceOfAndNotEmptyCheck' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var null|A */
                         public $parent;
@@ -226,7 +231,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'noRedundantConditionAfterArrayAssignment' => [
-                '<?php
+                'code' => '<?php
                     $data = ["a" => false];
                     while (!$data["a"]) {
                         if (rand() % 2 > 0) {
@@ -235,7 +240,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'additionSubtractionAssignment' => [
-                '<?php
+                'code' => '<?php
                     $a = 0;
 
                     while (rand(0, 1)) {
@@ -244,10 +249,10 @@ class WhileTest extends TestCase
                         } elseif ($a) {
                             $a = $a - 1;
                         }
-                    }'
+                    }',
             ],
             'additionSubtractionInc' => [
-                '<?php
+                'code' => '<?php
                     $a = 0;
 
                     while (rand(0, 1)) {
@@ -259,7 +264,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'invalidateBothByRefAssignments' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string &$i) : void {}
                     function bar(?string &$i) : void {}
 
@@ -274,7 +279,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'applyLoopConditionalAfterIf' => [
-                '<?php
+                'code' => '<?php
                     class Obj {}
                     class A extends Obj {
                         /** @var A|null */
@@ -293,7 +298,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'shouldBeFine' => [
-                '<?php
+                'code' => '<?php
                     class Obj {}
                     class A extends Obj {
                         /** @var A|null */
@@ -324,7 +329,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'comparisonAfterContinue' => [
-                '<?php
+                'code' => '<?php
                     $foo = null;
                     while (rand(0, 1)) {
                         if (rand(0, 1)) {
@@ -338,13 +343,13 @@ class WhileTest extends TestCase
                     }',
             ],
             'noRedundantConditionAfterWhile' => [
-                '<?php
+                'code' => '<?php
                     $i = 5;
                     while (--$i > 0) {}
                     echo $i === 0;',
             ],
             'noRedundantConditionOnAddedSubtractedInLoop' => [
-                '<?php
+                'code' => '<?php
                     $depth = 0;
                     $position = 0;
                     while (!$depth) {
@@ -354,20 +359,20 @@ class WhileTest extends TestCase
                             $depth--;
                         }
                         $position++;
-                    }'
+                    }',
             ],
             'variableDefinedInWhileConditional' => [
-                '<?php
+                'code' => '<?php
                     function foo() : void {
                         $pointers = ["hi"];
 
                         while (rand(0, 1) && -1 < ($parent = 0)) {
                             print $pointers[$parent];
                         }
-                    }'
+                    }',
             ],
             'assingnedConditionallyReassignedToMixedInLoop' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $arr): void {
                         while (rand(0, 1)) {
                             $t = true;
@@ -380,7 +385,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'varChangedAfterUseInsideLoop' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $s) : void {}
 
                     /**
@@ -403,15 +408,15 @@ class WhileTest extends TestCase
                     }',
             ],
             'invalidateWhileAssertion' => [
-                '<?php
+                'code' => '<?php
                     function test(array $x, int $i) : void {
                         while (isset($x[$i]) && is_array($x[$i])) {
                             $i++;
                         }
-                    }'
+                    }',
             ],
             'possiblyUndefinedInWhile' => [
-                '<?php
+                'code' => '<?php
                     function getRenderersForClass(string $a): void {
                         while ($b = getString($b ?? $a)) {
                             $c = "hello";
@@ -420,10 +425,10 @@ class WhileTest extends TestCase
 
                     function getString(string $s) : ?string {
                         return rand(0, 1) ? $s : null;
-                    }'
+                    }',
             ],
             'thornyLoop' => [
-                '<?php
+                'code' => '<?php
 
                     function searchCode(string $content, array &$tmp) : void {
                         // separer les balises du texte
@@ -437,10 +442,10 @@ class WhileTest extends TestCase
                             $str .= "hello";
                             unset($parse);
                         }
-                    }'
+                    }',
             ],
             'assignToTKeyedArrayListPreserveListness' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return non-empty-list<string>
                      */
@@ -455,7 +460,7 @@ class WhileTest extends TestCase
                     }',
             ],
             'reconcilePositiveInt' => [
-                '<?php
+                'code' => '<?php
                     $counter = 0;
 
                     while (rand(0, 1)) {
@@ -464,10 +469,10 @@ class WhileTest extends TestCase
                         } else {
                             $counter = $counter + 1;
                         }
-                    }'
+                    }',
             ],
             'nonEmptyListIterationChangeVarWithContinue' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-list<int> $arr */
                     function foo(array $arr) : void {
                         while (array_shift($arr)) {
@@ -480,10 +485,10 @@ class WhileTest extends TestCase
 
                             echo "here";
                         }
-                    }'
+                    }',
             ],
             'nonEmptyListIterationChangeVarWithoutContinue' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-list<int> $arr */
                     function foo(array $arr) : void {
                         while (array_shift($arr)) {
@@ -495,101 +500,10 @@ class WhileTest extends TestCase
 
                             echo "here";
                         }
-                    }'
-            ],
-            'propertyAssertionInsideWhile' => [
-                '<?php
-                    class Foo {
-                        public array $a = [];
-                        public array $b = [];
-                        public array $c = [];
-
-                        public function one(): bool {
-                            $has_changes = false;
-
-                            while ($this->a) {
-                                $has_changes = true;
-                                $this->alter();
-                            }
-
-                            return $has_changes;
-                        }
-
-                        public function two(): bool {
-                            $has_changes = false;
-
-                            while ($this->a || $this->b) {
-                                $has_changes = true;
-                                $this->alter();
-                            }
-
-                            return $has_changes;
-                        }
-
-                        public function three(): bool {
-                            $has_changes = false;
-
-                            while ($this->a || $this->b || $this->c) {
-                                $has_changes = true;
-                                $this->alter();
-                            }
-
-                            return $has_changes;
-                        }
-
-                        public function four(): bool {
-                            $has_changes = false;
-
-                            while (($this->a && $this->b) || $this->c) {
-                                $has_changes = true;
-                                $this->alter();
-                            }
-
-                            return $has_changes;
-                        }
-
-                        public function alter() : void {
-                            if (rand(0, 1)) {
-                                array_pop($this->a);
-                            } elseif (rand(0, 1)) {
-                                array_pop($this->a);
-                            } else {
-                                array_pop($this->c);
-                            }
-                        }
-                    }'
-            ],
-            'propertyAssertionInsideWhileNested' => [
-                '<?php
-                    class Foo {
-                        public array $a = [];
-                        public array $b = [];
-                        public array $c = [];
-
-                        public function five(): bool {
-                            $has_changes = false;
-
-                            while ($this->a || ($this->b && $this->c)) {
-                                $has_changes = true;
-                                $this->alter();
-                            }
-
-                            return $has_changes;
-                        }
-
-                        public function alter() : void {
-                            if (rand(0, 1)) {
-                                array_pop($this->a);
-                            } elseif (rand(0, 1)) {
-                                array_pop($this->a);
-                            } else {
-                                array_pop($this->c);
-                            }
-                        }
-                    }'
+                    }',
             ],
             'ifNestedInsideLoop' => [
-                '<?php
+                'code' => '<?php
                     function analyse(): int {
                         $state = 1;
 
@@ -606,10 +520,10 @@ class WhileTest extends TestCase
                         }
 
                         return $state;
-                    }'
+                    }',
             ],
             'ifNotNestedInsideLoop' => [
-                '<?php
+                'code' => '<?php
                     function analyse(): int {
                         $state = 1;
 
@@ -624,10 +538,10 @@ class WhileTest extends TestCase
                         }
 
                         return $state;
-                    }'
+                    }',
             ],
             'continueShouldAddToContext' => [
-                '<?php
+                'code' => '<?php
                     function foo() : void {
                         $link = null;
 
@@ -645,10 +559,10 @@ class WhileTest extends TestCase
                                 continue;
                             }
                         }
-                    }'
+                    }',
             ],
             'continue2Returns' => [
-                '<?php
+                'code' => '<?php
                     function foo(): array {
                         while (rand(0, 1)) {
                             while (rand(0, 1)) {
@@ -661,10 +575,10 @@ class WhileTest extends TestCase
                         }
 
                         return [];
-                    }'
+                    }',
             ],
             'propertyTypeUpdatedInBranch' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         public ?int $foo = null;
@@ -683,10 +597,10 @@ class WhileTest extends TestCase
                                 $a->setFoo();
                             } elseif ($a->foo !== null) {}
                         }
-                    }'
+                    }',
             ],
             'propertyTypeUpdatedInBranchWithBreak' => [
-                '<?php
+                'code' => '<?php
                     class A
                     {
                         public ?int $foo = null;
@@ -709,19 +623,19 @@ class WhileTest extends TestCase
                         }
 
                         if ($a->foo !== null) {}
-                    }'
+                    }',
             ],
             'whileTrueDontHaveExitPathForReturn' => [
-                '<?php
+                'code' => '<?php
                     function getResultWithRetry(): string
                     {
                         while (new stdClass) {
                             return "";
                         }
-                    }'
+                    }',
             ],
             'ComplexWhileTrueDontHaveExitPathForReturn' => [
-                '<?php
+                'code' => '<?php
                     class Test {
                         private int $retryAttempts = 10;
 
@@ -749,19 +663,47 @@ class WhileTest extends TestCase
                                 }
                             }
                         }
-                    }'
+                    }',
+            ],
+            'continuingEducation' => [
+                'code' => '<?php
+                    function breakUpPathIntoParts(): void {
+                        $b = false;
+
+                        while (rand(0, 1)) {
+                            if ($b) {
+                                echo "hello";
+
+                                continue;
+                            }
+
+                            $b = true;
+                        }
+                    }',
+            ],
+            'breakInWhileTrueIsNotInfiniteLoop' => [
+                'code' => '<?php
+                    /** @return Generator<array-key, mixed> */
+                    function f()
+                    {
+                        if (rand(0,1)) {
+                            throw new Exception;
+                        }
+
+                        while (true) {
+                            yield 1;
+                            break;
+                        }
+                    }',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'whileTrueNoBreak' => [
-                '<?php
+                'code' => '<?php
                     while (true) {
                         $a = "hello";
                     }
@@ -770,7 +712,7 @@ class WhileTest extends TestCase
                 'error_message' => 'UndefinedGlobalVariable',
             ],
             'invalidateByRefAssignmentWithRedundantCondition' => [
-                '<?php
+                'code' => '<?php
                     function foo(?string $i) : void {}
                     function bar(?string $i) : void {}
 

@@ -17,7 +17,7 @@ use function trim;
  *
  * with a few modifications
  */
-class JunitReport extends Report
+final class JunitReport extends Report
 {
     public function create(): string
     {
@@ -146,7 +146,6 @@ class JunitReport extends Report
 
     /**
      * @param  list<IssueData> $failures
-     *
      * @return array<string, non-empty-list<IssueData>>
      */
     private function groupByType(array $failures): array

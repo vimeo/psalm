@@ -4,33 +4,30 @@ namespace Psalm\Tests\FileManipulation;
 
 class ParamTypeManipulationTest extends FileManipulationTestCase
 {
-    /**
-     * @return array<string,array{string,string,string,string[],bool}>
-     */
     public function providerValidCodeParse(): array
     {
         return [
             'fixMismatchingDocblockParamType70' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @param int $s
                      */
                     function foo(string $s): string {
                         return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @param string $s
                      */
                     function foo(string $s): string {
                         return "hello";
                     }',
-                '7.0',
-                ['MismatchingDocblockParamType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MismatchingDocblockParamType'],
+                'safe_types' => true,
             ],
             'fixNamespacedMismatchingDocblockParamsType70' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo\Bar {
                         class A {
                             /**
@@ -44,7 +41,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                         class B {}
                         class C {}
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Foo\Bar {
                         class A {
                             /**
@@ -58,18 +55,18 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                         class B {}
                         class C {}
                     }',
-                '7.0',
-                ['MismatchingDocblockParamType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MismatchingDocblockParamType'],
+                'safe_types' => true,
             ],
             'noStringParamType' => [
-                '<?php
+                'input' => '<?php
                     class C {
                         public function fooFoo($a): void {}
                     }
 
                     (new C)->fooFoo("hello");',
-                '<?php
+                'output' => '<?php
                     class C {
                         /**
                          * @psalm-param \'hello\' $a
@@ -78,12 +75,12 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new C)->fooFoo("hello");',
-                '7.1',
-                ['MissingParamType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
             'noStringParamTypeWithVariableCall' => [
-                '<?php
+                'input' => '<?php
                     class C {
                         public function fooFoo($a): void {}
                     }
@@ -93,7 +90,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     $c->fooFoo("hello");
 
                     (new C)->fooFoo("hello");',
-                '<?php
+                'output' => '<?php
                     class C {
                         /**
                          * @param string $a
@@ -108,12 +105,12 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     $c->fooFoo("hello");
 
                     (new C)->fooFoo("hello");',
-                '7.1',
-                ['MissingParamType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
             'noStringParamTypeWithDocblockCall' => [
-                '<?php
+                'input' => '<?php
                     class C {
                         public function fooFoo($a): void {}
                     }
@@ -124,7 +121,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     function callsWithString($a): void {
                         (new C)->fooFoo($a);
                     }',
-                '<?php
+                'output' => '<?php
                     class C {
                         /**
                          * @param string $a
@@ -138,18 +135,18 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     function callsWithString($a): void {
                         (new C)->fooFoo($a);
                     }',
-                '7.1',
-                ['MissingParamType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
             'noStringParamType56' => [
-                '<?php
+                'input' => '<?php
                     class C {
                         public function fooFoo($a): void {}
                     }
 
                     (new C)->fooFoo("hello");',
-                '<?php
+                'output' => '<?php
                     class C {
                         /**
                          * @param string $a
@@ -160,29 +157,29 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     }
 
                     (new C)->fooFoo("hello");',
-                '5.6',
-                ['MissingParamType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
             'noBoolParamTypeWithDefault' => [
-                '<?php
+                'input' => '<?php
                     class C {
                         public function fooFoo($a = true): void {}
                     }
 
                     (new C)->fooFoo(false);',
-                '<?php
+                'output' => '<?php
                     class C {
                         public function fooFoo(bool $a = true): void {}
                     }
 
                     (new C)->fooFoo(false);',
-                '7.1',
-                ['MissingParamType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
             'noStringParamTypeParent' => [
-                '<?php
+                'input' => '<?php
                     class C {
                         public function fooFoo($a): void {}
                     }
@@ -190,7 +187,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     class D extends C {}
 
                     (new D)->fooFoo("hello");',
-                '<?php
+                'output' => '<?php
                     class C {
                         /**
                          * @psalm-param \'hello\' $a
@@ -201,29 +198,29 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     class D extends C {}
 
                     (new D)->fooFoo("hello");',
-                '7.1',
-                ['MissingParamType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
             'stringParamTypeNoOp' => [
-                '<?php
+                'input' => '<?php
                     class C {
                         public function fooFoo(string $a): void {}
                     }
 
                     (new C)->fooFoo("hello");',
-                '<?php
+                'output' => '<?php
                     class C {
                         public function fooFoo(string $a): void {}
                     }
 
                     (new C)->fooFoo("hello");',
-                '7.1',
-                ['MissingParamType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
             'addMissingByRefParamType' => [
-                '<?php
+                'input' => '<?php
                     class C {
                         public function foo(&$bar) : void {
                             $bar .= " me";
@@ -232,7 +229,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
 
                     $a = "hello";
                     (new C)->foo($a);',
-                '<?php
+                'output' => '<?php
                     class C {
                         /**
                          * @psalm-param \'hello\' $bar
@@ -244,12 +241,12 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
 
                     $a = "hello";
                     (new C)->foo($a);',
-                '7.1',
-                ['MissingParamType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
             'NamespacedParamNeeded' => [
-                '<?php
+                'input' => '<?php
                     class C {
                         public function foo($bar) : void {
                             echo $bar;
@@ -258,7 +255,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
 
                     $a = stdClass::class;
                     (new C)->foo($a);',
-                '<?php
+                'output' => '<?php
                     class C {
                         /**
                          * @psalm-param stdClass::class $bar
@@ -270,12 +267,12 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
 
                     $a = stdClass::class;
                     (new C)->foo($a);',
-                '7.1',
-                ['MissingParamType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
             'StaticParamForbidden' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         private function foo($bar) : void {
                         }
@@ -292,7 +289,7 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     (new A)->test();
                     (new A)->test();
                 ',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @param static $bar
@@ -312,9 +309,9 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                     (new A)->test();
                     (new A)->test();
                 ',
-                '8.0',
-                ['MissingParamType'],
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
             ],
         ];
     }

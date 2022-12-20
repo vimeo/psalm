@@ -28,12 +28,12 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -57,12 +57,13 @@ use function strtolower;
  * methods.
  *
  * The happy path (i.e 99% of method calls) is handled in ExistingAtomicMethodCallAnalyzer
+ *
+ * @internal
  */
 class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  TNamedObject|TTemplateParam|null $static_type
-     *
      * @psalm-suppress ComplexMethod it's really complex, but unavoidably so
      */
     public static function analyze(
@@ -75,7 +76,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?Atomic $static_type,
         bool $is_intersection,
         ?string $lhs_var_id,
-        AtomicMethodCallAnalysisResult $result
+        AtomicMethodCallAnalysisResult $result,
+        ?TemplateResult $inferred_template_result = null
     ): void {
         if ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
@@ -83,18 +85,18 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $extra_types = $lhs_type_part->extra_types;
 
             $lhs_type_part = array_values(
-                $lhs_type_part->as->getAtomicTypes()
+                $lhs_type_part->as->getAtomicTypes(),
             )[0];
 
-            $lhs_type_part->from_docblock = true;
-
             if ($lhs_type_part instanceof TNamedObject) {
-                $lhs_type_part->extra_types = $extra_types;
+                $lhs_type_part = $lhs_type_part->setIntersectionTypes($extra_types)->setFromDocblock(true);
             } elseif ($lhs_type_part instanceof TObject && $extra_types) {
-                $lhs_type_part = array_shift($extra_types);
+                $lhs_type_part = array_shift($extra_types)->setFromDocblock(true);
                 if ($extra_types) {
-                    $lhs_type_part->extra_types = $extra_types;
+                    $lhs_type_part = $lhs_type_part->setIntersectionTypes($extra_types);
                 }
+            } else {
+                $lhs_type_part = $lhs_type_part->setFromDocblock(true);
             }
 
             $result->has_mixed_method_call = true;
@@ -112,7 +114,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $lhs_var_id,
                 $context,
                 $is_intersection,
-                $result
+                $result,
             );
 
             return;
@@ -151,7 +153,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 null,
                 null,
                 true,
-                $context
+                $context,
             );
 
             return;
@@ -167,7 +169,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $context->self,
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
-                new ClassLikeNameOptions(true, false, true, true, $lhs_type_part->from_docblock)
+                new ClassLikeNameOptions(true, false, true, true, $lhs_type_part->from_docblock),
             );
         }
 
@@ -185,7 +187,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($fq_class_name) . '::',
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
                 );
             }
 
@@ -195,7 +197,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 if ($method_name_type && $method_name_type->isSingleStringLiteral()) {
                     $method_identifier = new MethodIdentifier(
                         $fq_class_name,
-                        strtolower($method_name_type->getSingleStringLiteral()->value)
+                        strtolower($method_name_type->getSingleStringLiteral()->value),
                     );
                     //the call to methodExists will register that the method was called from somewhere
                     if ($codebase->methods->methodExists(
@@ -205,7 +207,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $statements_analyzer,
                         $statements_analyzer->getFilePath(),
                         true,
-                        $context->insideUse()
+                        $context->insideUse(),
                     )) {
                         $method_storage = $codebase->methods->getStorage($method_identifier);
 
@@ -213,7 +215,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                             'Closure',
                             $method_storage->params,
                             $method_storage->return_type,
-                            $method_storage->pure
+                            $method_storage->pure,
                         )]);
                     }
                 }
@@ -230,7 +232,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 null,
                 null,
                 true,
-                $context
+                $context,
             );
 
             $result->return_type = Type::getMixed();
@@ -258,7 +260,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 : null,
             $statements_analyzer->getFilePath(),
             false,
-            $context->insideUse()
+            $context->insideUse(),
         );
 
         $fake_method_exists = false;
@@ -270,7 +272,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $fq_class_name,
                     $method_id->method_name,
                     $source,
-                    null
+                    null,
                 );
 
                 if ($method_exists) {
@@ -297,7 +299,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $source,
                         $stmt,
                         $statements_analyzer,
-                        $fq_class_name
+                        $fq_class_name,
                     );
             } elseif ($class_storage->mixin_declaring_fqcln
                 && $class_storage->namedMixins
@@ -314,7 +316,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $stmt,
                         $statements_analyzer,
                         $fq_class_name,
-                        $lhs_var_id
+                        $lhs_var_id,
                     );
             }
         }
@@ -334,7 +336,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $lhs_type_part,
                     $lhs_var_id,
                     $result,
-                    $intersection_types
+                    $intersection_types,
                 );
         }
 
@@ -344,7 +346,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
                 $context,
-                $statements_analyzer->getSource()
+                $statements_analyzer->getSource(),
             )
         ) {
             $interface_has_method = false;
@@ -358,7 +360,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $fq_class_name = $interface_storage->name;
                         $method_id = new MethodIdentifier(
                             $fq_class_name,
-                            $method_name_lc
+                            $method_name_lc,
                         );
                         break;
                     }
@@ -378,7 +380,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                         : null,
                     $statements_analyzer->getFilePath(),
                     true,
-                    $context->insideUse()
+                    $context->insideUse(),
                 )
             ) {
                 $new_call_context = MissingMethodCallHandler::handleMagicMethod(
@@ -391,7 +393,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $codebase->config,
                     $all_intersection_return_type,
                     $result,
-                    $lhs_type_part
+                    $lhs_type_part,
                 );
 
                 if ($new_call_context) {
@@ -416,7 +418,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             && $context->self
             && $fq_class_name !== $context->self
             && $codebase->methods->methodExists(
-                new MethodIdentifier($context->self, $method_name_lc)
+                new MethodIdentifier($context->self, $method_name_lc),
             )
         ) {
             $method_id = new MethodIdentifier($context->self, $method_name_lc);
@@ -435,7 +437,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $context->calling_method_id,
                     $codebase->collect_locations && $method_id !== $source_method_id
                         ? new CodeLocation($source, $stmt->name)
-                        : null
+                        : null,
                 ));
 
         if (!$corrected_method_exists
@@ -455,7 +457,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $intersection_method_id,
                 $cased_method_id,
                 $result,
-                $lhs_type_part
+                $lhs_type_part,
             );
 
             return;
@@ -474,7 +476,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $static_type,
             $lhs_var_id,
             $method_id,
-            $result
+            $result,
+            $inferred_template_result,
         );
 
         $statements_analyzer->node_data = $old_node_data;
@@ -492,7 +495,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $context,
                     $statements_analyzer->getSource(),
                     $name_code_location,
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -501,14 +504,13 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $result,
             $return_type_candidate,
             $all_intersection_return_type,
-            $codebase
+            $codebase,
         );
     }
 
     /**
      * @param  TNamedObject|TTemplateParam $lhs_type_part
      * @param   array<string, Atomic> $intersection_types
-     *
      * @return  array{?Union, array<string>}
      */
     private static function getIntersectionReturnType(
@@ -541,7 +543,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $lhs_type_part,
                 true,
                 $lhs_var_id,
-                $intersection_result
+                $intersection_result,
             );
 
             $result->returns_by_ref = $intersection_result->returns_by_ref;
@@ -554,7 +556,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             $all_intersection_existent_method_ids = array_merge(
                 $all_intersection_existent_method_ids,
-                $intersection_result->existent_method_ids
+                $intersection_result->existent_method_ids,
             );
 
             if ($intersection_result->return_type) {
@@ -564,7 +566,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $all_intersection_return_type = Type::intersectUnionTypes(
                         $all_intersection_return_type,
                         $intersection_result->return_type,
-                        $codebase
+                        $codebase,
                     ) ?? Type::getMixed();
                 }
             }
@@ -583,7 +585,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $return_type_candidate = Type::intersectUnionTypes(
                 $all_intersection_return_type,
                 $return_type_candidate,
-                $codebase
+                $codebase,
             ) ?? Type::getMixed();
         }
 
@@ -609,7 +611,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             case TTemplateParam::class:
             case TEmptyMixed::class:
-            case TEmpty::class:
+            case TNever::class:
             case TMixed::class:
             case TNonEmptyMixed::class:
             case TObject::class:
@@ -628,14 +630,14 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                 if ($lhs_type_part instanceof TObjectWithProperties
                     && $stmt->name instanceof PhpParser\Node\Identifier
-                    && isset($lhs_type_part->methods[$stmt->name->name])
+                    && isset($lhs_type_part->methods[strtolower($stmt->name->name)])
                 ) {
-                    $result->existent_method_ids[] = $lhs_type_part->methods[$stmt->name->name];
+                    $result->existent_method_ids[] = $lhs_type_part->methods[strtolower($stmt->name->name)];
                 } elseif (!$is_intersection) {
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($stmt->name->name),
-                            $context->calling_method_id ?: $statements_analyzer->getFileName()
+                            $context->calling_method_id ?: $statements_analyzer->getFileName(),
                         );
                     }
 
@@ -655,10 +657,10 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                         if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                             foreach ($lhs_type->parent_nodes as $parent_node) {
-                                $origin_locations = array_merge(
-                                    $origin_locations,
-                                    $statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
-                                );
+                                $origin_locations = [
+                                    ...$origin_locations,
+                                    ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
+                                ];
                             }
                         }
 
@@ -674,25 +676,29 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                             new MixedMethodCall(
                                 $message,
                                 $name_code_location,
-                                $origin_location
+                                $origin_location,
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     }
                 }
 
-                if (ArgumentsAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt->getArgs(),
-                    null,
-                    null,
-                    true,
-                    $context
-                ) === false) {
-                    return;
-                }
+                if ($stmt->isFirstClassCallable()) {
+                    $result->return_type = Type::getClosure();
+                } else {
+                    if (ArgumentsAnalyzer::analyze(
+                        $statements_analyzer,
+                        $stmt->getArgs(),
+                        null,
+                        null,
+                        true,
+                        $context,
+                    ) === false) {
+                        return;
+                    }
 
-                $result->return_type = Type::getMixed();
+                    $result->return_type = Type::getMixed();
+                }
                 return;
 
             default:
@@ -728,7 +734,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             foreach ($class_storage->templatedMixins as $mixin) {
                 $param_position = array_search(
                     $mixin->param_name,
-                    $template_type_keys
+                    $template_type_keys,
                 );
 
                 if ($param_position !== false
@@ -737,17 +743,17 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $current_type_param = $lhs_type_part->type_params[$param_position];
                     if ($current_type_param->isSingle()) {
                         $lhs_type_part_new = array_values(
-                            $current_type_param->getAtomicTypes()
+                            $current_type_param->getAtomicTypes(),
                         )[0];
 
                         if ($lhs_type_part_new instanceof TNamedObject) {
                             $new_method_id = new MethodIdentifier(
                                 $lhs_type_part_new->value,
-                                $method_name_lc
+                                $method_name_lc,
                             );
 
                             $mixin_class_storage = $codebase->classlike_storage_provider->get(
-                                $lhs_type_part_new->value
+                                $lhs_type_part_new->value,
                             );
 
                             if ($codebase->methods->methodExists(
@@ -762,15 +768,15 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                                     : null,
                                 $statements_analyzer->getFilePath(),
                                 true,
-                                $context->insideUse()
+                                $context->insideUse(),
                             )) {
-                                $lhs_type_part = clone $lhs_type_part_new;
+                                $lhs_type_part = $lhs_type_part_new;
                                 $class_storage = $mixin_class_storage;
 
                                 $naive_method_exists = true;
                                 $method_id = $new_method_id;
                             } elseif (isset($mixin_class_storage->pseudo_methods[$method_name_lc])) {
-                                $lhs_type_part = clone $lhs_type_part_new;
+                                $lhs_type_part = $lhs_type_part_new;
                                 $class_storage = $mixin_class_storage;
                                 $method_id = $new_method_id;
                             }
@@ -785,7 +791,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $class_storage,
             $naive_method_exists,
             $method_id,
-            $fq_class_name
+            $fq_class_name,
         ];
     }
 
@@ -815,7 +821,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             $new_method_id = new MethodIdentifier(
                 $mixin->value,
-                $method_name_lc
+                $method_name_lc,
             );
 
             if ($codebase->methods->methodExists(
@@ -830,10 +836,10 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     : null,
                 $statements_analyzer->getFilePath(),
                 true,
-                $context->insideUse()
+                $context->insideUse(),
             )) {
                 $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                    $class_storage->mixin_declaring_fqcln
+                    $class_storage->mixin_declaring_fqcln,
                 );
 
                 $mixin_class_template_params = ClassTemplateParamCollector::collect(
@@ -842,14 +848,12 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $codebase->classlike_storage_provider->get($fq_class_name),
                     null,
                     $lhs_type_part,
-                    $lhs_var_id === '$this'
+                    $lhs_var_id === '$this',
                 );
 
-                $lhs_type_part = clone $mixin;
-
-                $lhs_type_part->replaceTemplateTypesWithArgTypes(
+                $lhs_type_part = $mixin->replaceTemplateTypesWithArgTypes(
                     new TemplateResult([], $mixin_class_template_params ?: []),
-                    $codebase
+                    $codebase,
                 );
 
                 $lhs_type_expanded = TypeExpander::expandUnion(
@@ -860,7 +864,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $class_storage->parent_class,
                     true,
                     false,
-                    $class_storage->final
+                    $class_storage->final,
                 );
 
                 $new_lhs_type_part = $lhs_type_expanded->getSingleAtomic();
@@ -884,7 +888,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $class_storage,
             $naive_method_exists,
             $method_id,
-            $fq_class_name
+            $fq_class_name,
         ];
     }
 }

@@ -11,6 +11,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array
@@ -42,7 +45,7 @@ class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderI
                         $atomic_type,
                         null,
                         $source,
-                        true
+                        true,
                     );
 
                     if ($candidate_callable) {
@@ -50,7 +53,7 @@ class ClosureFromCallableReturnTypeProvider implements MethodReturnTypeProviderI
                             'Closure',
                             $candidate_callable->params,
                             $candidate_callable->return_type,
-                            $candidate_callable->is_pure
+                            $candidate_callable->is_pure,
                         );
                     } else {
                         return Type::getClosure();

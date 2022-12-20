@@ -30,7 +30,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
         if (!isset($file_storage->functions[$function_id])) {
             throw new UnexpectedValueException(
-                'Function ' . $function_id . ' should be defined in ' . $source->getFilePath()
+                'Function ' . $function_id . ' should be defined in ' . $source->getFilePath(),
             );
         }
 
@@ -95,7 +95,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 $function_analyzer->analyze(
                     $function_context,
                     $statements_analyzer->node_data,
-                    $context
+                    $context,
                 );
 
                 if ($config->reportIssueInFile('InvalidReturnType', $statements_analyzer->getFilePath())) {
@@ -103,7 +103,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                     $function_storage = $codebase->functions->getStorage(
                         $statements_analyzer,
-                        strtolower($method_id)
+                        strtolower($method_id),
                     );
 
                     $return_type = $function_storage->return_type;
@@ -115,7 +115,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         $return_type,
                         $statements_analyzer->getFQCLN(),
                         $return_type_location,
-                        $function_context->has_returned
+                        $function_context->has_returned,
                     );
                 }
             }

@@ -36,7 +36,7 @@ class CompletionTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->codebase = new Codebase($config, $providers);
@@ -73,7 +73,7 @@ class CompletionTest extends TestCase
                     public function foo() {
                         $this->
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -103,7 +103,7 @@ class CompletionTest extends TestCase
 
                         $a = "foo";
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -133,7 +133,7 @@ class CompletionTest extends TestCase
 
                         if(rand(0, 1)) {}
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -154,7 +154,7 @@ class CompletionTest extends TestCase
 
                         if(rand(0, 1)) {}
                     }
-                }'
+                }',
         );
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
@@ -182,7 +182,7 @@ class CompletionTest extends TestCase
 
                         if(rand(0, 1)) {}
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -203,7 +203,7 @@ class CompletionTest extends TestCase
 
                         if(rand(0, 1)) {}
                     }
-                }'
+                }',
         );
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
@@ -231,7 +231,7 @@ class CompletionTest extends TestCase
 
                         list($a, $b) = $c;
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -252,7 +252,7 @@ class CompletionTest extends TestCase
 
                         list($a, $b) = $c;
                     }
-                }'
+                }',
         );
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
@@ -286,7 +286,7 @@ class CompletionTest extends TestCase
                     public function foo() : void {
                         $this->cee_me->
                     }
-                }'
+                }',
         );
 
         $codebase = $this->codebase;
@@ -324,7 +324,7 @@ class CompletionTest extends TestCase
                     public function foo() : void {
                         $this->cee_me->o
                     }
-                }'
+                }',
         );
 
         $codebase = $this->codebase;
@@ -362,7 +362,7 @@ class CompletionTest extends TestCase
                     public function foo() : void {
                         $this->cee_me->ot
                     }
-                }'
+                }',
         );
 
         $codebase = $this->codebase;
@@ -409,7 +409,7 @@ class CompletionTest extends TestCase
                     public function foo() : void {
                         $this->cee_me->
                     }
-                }'
+                }',
         );
 
         $codebase = $this->codebase;
@@ -446,7 +446,7 @@ class CompletionTest extends TestCase
                 function foo(A $a) {
                     $a->foo()->
                 }
-                '
+                ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -477,7 +477,7 @@ class CompletionTest extends TestCase
                 function bar(A $a, C $c) {
                     $a->foo($c->)
                 }
-                '
+                ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -508,7 +508,7 @@ class CompletionTest extends TestCase
                 function bar(A $a, C $c) {
                     $a->foo($c)->
                 }
-                '
+                ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -533,7 +533,7 @@ class CompletionTest extends TestCase
 
                 function bar(A $a) {
                     $a ->
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -560,7 +560,7 @@ class CompletionTest extends TestCase
                     $a
                         ->
                 }
-                '
+                ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -590,7 +590,7 @@ class CompletionTest extends TestCase
                 function bar(A $a) {
                     $a->foo() ->
                 }
-                '
+                ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -621,7 +621,7 @@ class CompletionTest extends TestCase
                     $a->foo()
                         ->
                 }
-                '
+                ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -650,7 +650,7 @@ class CompletionTest extends TestCase
 
                 function bar(Collection $a) {
                     $a->map(function ($foo) {})->
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -679,7 +679,7 @@ class CompletionTest extends TestCase
 
                 function baz(Collection $a) {
                     $a->map(function ($foo) {return $foo;})->
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -706,7 +706,7 @@ class CompletionTest extends TestCase
                     }
 
                     public function baz() {}
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -737,7 +737,7 @@ class CompletionTest extends TestCase
             '<?php
                 function foo() : void {
                     throw new Ex
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -760,7 +760,7 @@ class CompletionTest extends TestCase
 
                 function foo() : void {
                     throw new Ex
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -775,7 +775,7 @@ class CompletionTest extends TestCase
                 'symbol',
                 110,
             ],
-            $completion_data
+            $completion_data,
         );
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
@@ -812,7 +812,7 @@ class CompletionTest extends TestCase
 
                 function foo() : void {
                     new ArrayO
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -827,7 +827,7 @@ class CompletionTest extends TestCase
                 'symbol',
                 220,
             ],
-            $completion_data
+            $completion_data,
         );
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
@@ -858,7 +858,7 @@ class CompletionTest extends TestCase
                     public function foo() : void {
                         \Ex
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -873,7 +873,7 @@ class CompletionTest extends TestCase
                 'symbol',
                 150,
             ],
-            $completion_data
+            $completion_data,
         );
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
@@ -901,7 +901,7 @@ class CompletionTest extends TestCase
                     public function foo() : void {
                         Ex
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -916,7 +916,7 @@ class CompletionTest extends TestCase
                 'symbol',
                 149,
             ],
-            $completion_data
+            $completion_data,
         );
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
@@ -950,7 +950,7 @@ class CompletionTest extends TestCase
 
                 }
 
-                my_function_in'
+                my_function_in',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -981,7 +981,7 @@ class CompletionTest extends TestCase
 
                 }
 
-                strlen'
+                strlen',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1007,7 +1007,7 @@ class CompletionTest extends TestCase
             '<?php
                 namespace Bar;
                 use phpunit\framework as phpf;
-                atleaston'
+                atleaston',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1034,7 +1034,7 @@ class CompletionTest extends TestCase
             '<?php
                 namespace Bar;
                 use phpunit\framework as phpf;
-                Atleaston'
+                Atleaston',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1060,7 +1060,7 @@ class CompletionTest extends TestCase
             '<?php
 
             function my_function() {
-            }'
+            }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1082,7 +1082,7 @@ class CompletionTest extends TestCase
 
         $this->addFile(
             'somefile.php',
-            '<?php'
+            '<?php',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1105,7 +1105,7 @@ class CompletionTest extends TestCase
 
             namespace Foo;
             use function phpunit\framework\atleastonce;
-            '
+            ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1128,7 +1128,7 @@ class CompletionTest extends TestCase
 
             namespace Foo;
             use phpunit\framework;
-            '
+            ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1151,7 +1151,7 @@ class CompletionTest extends TestCase
 
             namespace Foo;
             use phpunit\framework;
-            '
+            ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1173,7 +1173,7 @@ class CompletionTest extends TestCase
             '<?php
             namespace Foo;
             function my_function() {
-            }'
+            }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1206,7 +1206,7 @@ class CompletionTest extends TestCase
 
                 function foo($a) : void {
                     if ($a instanceof Ant) {}
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1221,7 +1221,7 @@ class CompletionTest extends TestCase
                 'symbol',
                 267,
             ],
-            $completion_data
+            $completion_data,
         );
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
@@ -1246,7 +1246,7 @@ class CompletionTest extends TestCase
                     static function add() : void {
                     }
                 }
-                Alpha::'
+                Alpha::',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1281,7 +1281,7 @@ class CompletionTest extends TestCase
 
                 $alpha->
 
-                $a = 5;'
+                $a = 5;',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1315,7 +1315,7 @@ class CompletionTest extends TestCase
 
                 Alpha::
 
-                $a = 5;'
+                $a = 5;',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1339,7 +1339,7 @@ class CompletionTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                for ($x = 0; $x <= 10; $x++) {}'
+                for ($x = 0; $x <= 10; $x++) {}',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1359,7 +1359,7 @@ class CompletionTest extends TestCase
             '<?php
                 $my_array = ["foo" => 1, "bar" => 2];
                 $my_array[]
-                '
+                ',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1373,7 +1373,7 @@ class CompletionTest extends TestCase
                 '[',
                 86,
             ],
-            $completion_data
+            $completion_data,
         );
 
         $completion_items = $codebase->getCompletionItemsForArrayKeys($completion_data[0]);
@@ -1395,7 +1395,7 @@ class CompletionTest extends TestCase
                 function my_func(string $arg_a, bool $arg_b) : string {
                 }
 
-                my_func()'
+                my_func()',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1419,7 +1419,7 @@ class CompletionTest extends TestCase
                 function my_func(string $arg_a, bool $arg_b) : string {
                 }
 
-                my_func( "yes", )'
+                my_func( "yes", )',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1448,7 +1448,7 @@ class CompletionTest extends TestCase
                     public static function bar() : void {}
 
                     public function baz() : void {}
-                }'
+                }',
         );
 
         $codebase = $this->codebase;

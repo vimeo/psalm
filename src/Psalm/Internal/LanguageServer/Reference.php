@@ -9,21 +9,9 @@ use LanguageServerProtocol\Range;
  */
 class Reference
 {
-    /**
-     * @var string
-     */
-    public $file_path;
-
-    /**
-     * @var string
-     */
-    public $symbol;
-
-
-    /**
-     * @var Range
-     */
-    public $range;
+    public string $file_path;
+    public string $symbol;
+    public Range $range;
 
     public function __construct(string $file_path, string $symbol, Range $range)
     {

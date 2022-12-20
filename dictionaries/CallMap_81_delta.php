@@ -17,7 +17,7 @@
 return [
   'added' => [
     'array_is_list' => ['bool', 'array' => 'array'],
-    'enum_exists' => ['bool', 'enum' => 'class-string', 'autoload=' => 'bool'],
+    'enum_exists' => ['bool', 'enum' => 'string', 'autoload=' => 'bool'],
     'fsync' => ['bool', 'stream' => 'resource'],
     'fdatasync' => ['bool', 'stream' => 'resource'],
     'imageavif' => ['bool', 'image'=>'GdImage', 'file='=>'resource|string|null', 'quality='=>'int', 'speed='=>'int'],
@@ -37,6 +37,8 @@ return [
     'Fiber::getCurrent' => ['?self'],
     'Fiber::suspend' => ['mixed', 'value='=>'null|mixed'],
     'FiberError::__construct' => ['void'],
+    'GMP::__serialize' => ['array'],
+    'GMP::__unserialize' => ['void', 'data'=>'array'],
     'ReflectionClass::isEnum' => ['bool'],
     'ReflectionEnum::getBackingType' => ['?ReflectionType'],
     'ReflectionEnum::getCase' => ['ReflectionEnumUnitCase', 'name' => 'string'],
@@ -50,6 +52,9 @@ return [
     'ReflectionFunctionAbstract::hasTentativeReturnType' => ['bool'],
     'ReflectionFunctionAbstract::isStatic' => ['bool'],
     'ReflectionObject::isEnum' => ['bool'],
+    'sodium_crypto_stream_xchacha20' => ['non-empty-string', 'length'=>'positive-int', 'nonce'=>'non-empty-string', 'key'=>'non-empty-string'],
+    'sodium_crypto_stream_xchacha20_keygen' => ['non-empty-string'],
+    'sodium_crypto_stream_xchacha20_xor' => ['string', 'message'=>'string', 'nonce'=>'non-empty-string', 'key'=>'non-empty-string'],
   ],
 
   'changed' => [
@@ -460,6 +465,14 @@ return [
     'ini_set' => [
         'old' => ['string|false', 'option'=>'string', 'value'=>'string'],
         'new' => ['string|false', 'option'=>'string', 'value'=>'string|int|float|bool|null'],
+    ],
+    'IntlDateFormatter::__construct' => [
+        'old' => ['void', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
+        'new' => ['void', 'locale'=>'?string', 'dateType='=>'int', 'timeType='=>'int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
+    ],
+    'IntlDateFormatter::create' => [
+      'old' => ['?IntlDateFormatter', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
+      'new' => ['?IntlDateFormatter', 'locale'=>'?string', 'dateType='=>'int', 'timeType='=>'int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
     ],
     'ldap_add' => [
       'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],

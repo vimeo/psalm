@@ -4,7 +4,7 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
-class RedundantCondition extends CodeIssue
+final class RedundantCondition extends CodeIssue
 {
     public const ERROR_LEVEL = 4;
     public const SHORTCODE = 122;

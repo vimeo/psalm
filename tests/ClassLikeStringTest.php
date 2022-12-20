@@ -26,7 +26,7 @@ class ClassLikeStringTest extends TestCase
 
                 $a = "A";
 
-                new $a();'
+                new $a();',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -47,20 +47,17 @@ class ClassLikeStringTest extends TestCase
 
                 $a = "A";
 
-                $a::foo();'
+                $a::foo();',
         );
 
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'arrayOfClassConstants' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<class-string> $arr
                      */
@@ -72,7 +69,7 @@ class ClassLikeStringTest extends TestCase
                     takesClassConstants([A::class, B::class]);',
             ],
             'arrayOfStringClasses' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<class-string> $arr
                      */
@@ -82,11 +79,11 @@ class ClassLikeStringTest extends TestCase
                     class B {}
 
                     takesClassConstants(["A", "B"]);',
-                'annotations' => [],
-                'error_levels' => ['ArgumentTypeCoercion'],
+                'assertions' => [],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
             ],
             'singleClassConstantAsConstant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param class-string $s
                      */
@@ -97,7 +94,7 @@ class ClassLikeStringTest extends TestCase
                     takesClassConstants(A::class);',
             ],
             'singleClassConstantWithString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param class-string $s
                      */
@@ -107,10 +104,10 @@ class ClassLikeStringTest extends TestCase
 
                     /** @psalm-suppress ArgumentTypeCoercion */
                     takesClassConstants("A");',
-                'annotations' => [],
+                'assertions' => [],
             ],
             'returnClassConstant' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -121,7 +118,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'returnClassConstantAllowCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -130,11 +127,11 @@ class ClassLikeStringTest extends TestCase
                     function takesClassConstants() : string {
                         return "A";
                     }',
-                'annotations' => [],
-                'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
+                'assertions' => [],
+                'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'returnClassConstantArray' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -146,7 +143,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'returnClassConstantArrayAllowCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -156,11 +153,11 @@ class ClassLikeStringTest extends TestCase
                     function takesClassConstants() : array {
                         return ["A", "B"];
                     }',
-                'annotations' => [],
-                'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
+                'assertions' => [],
+                'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'ifClassStringEquals' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -171,7 +168,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'classStringCombination' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /** @return class-string */
@@ -186,7 +183,7 @@ class ClassLikeStringTest extends TestCase
                     bar(rand(0, 1) ? A::class : foo());',
             ],
             'assertionToClassString' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     function foo(string $s) : void {
@@ -200,10 +197,10 @@ class ClassLikeStringTest extends TestCase
                         new $s();
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedMethodCall'],
+                'ignored_issues' => ['MixedMethodCall'],
             ],
             'constantArrayOffset' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const FOO = [
                             B::class => "bar",
@@ -219,7 +216,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'arrayEquivalence' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -233,7 +230,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'switchMixedVar' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
                     class C {}
@@ -251,7 +248,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'reconcileToFalsy' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-param ?class-string $s */
                     function bar(?string $s) : void {}
 
@@ -268,7 +265,7 @@ class ClassLikeStringTest extends TestCase
                     bar($a);',
             ],
             'allowTraitClassComparison' => [
-                '<?php
+                'code' => '<?php
                     trait T {
                         public function foo() : void {
                             if (self::class === A::class) {}
@@ -285,7 +282,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'refineStringToClassString' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     function foo(string $s) : ?A {
@@ -296,7 +293,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'takesChildOfClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class AChild extends A {}
 
@@ -308,7 +305,7 @@ class ClassLikeStringTest extends TestCase
                     foo(AChild::class);',
             ],
             'returnClassConstantClassStringParameterized' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -319,7 +316,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'returnGetCalledClassClassStringParameterized' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @return class-string<A> $s
@@ -330,7 +327,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'returnGetClassClassStringParameterized' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -341,7 +338,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'returnGetParentClassClassStringParameterizedNoArg' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B extends A {
@@ -354,7 +351,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'createClassOfTypeFromString' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -373,7 +370,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'createClassOfTypeFromStringUsingIsSubclassOf' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -392,7 +389,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'checkSubclassOfAbstract' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {
                         public static function Bar() : bool;
                     };
@@ -412,7 +409,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'explicitIntersectionClassString' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {
                         public static function one() : void;
                     };
@@ -430,7 +427,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'implicitIntersectionClassString' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {
                         public static function one() : bool;
                     };
@@ -452,7 +449,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'instanceofClassString' => [
-                '<?php
+                'code' => '<?php
                     function f(Exception $e): ?InvalidArgumentException {
                         $type = InvalidArgumentException::class;
                         if ($e instanceof $type) {
@@ -463,7 +460,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'instanceofClassStringNotLiteral' => [
-                '<?php
+                'code' => '<?php
                     final class Z {
                     /**
                      * @psalm-var class-string<stdClass> $class
@@ -477,10 +474,10 @@ class ClassLikeStringTest extends TestCase
                         }
                         return null;
                     }
-                }'
+                }',
             ],
             'returnTemplatedClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      *
@@ -492,7 +489,7 @@ class ClassLikeStringTest extends TestCase
                     identity(DateTimeImmutable::class)::createFromMutable(new DateTime());',
             ],
             'filterIsObject' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param interface-string<DateTimeInterface>|DateTimeInterface $maybe
                      *
@@ -507,7 +504,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'filterIsString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param interface-string<DateTimeInterface>|DateTimeInterface $maybe
                      *
@@ -522,7 +519,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'mergeLiteralClassStringsWithGeneric' => [
-                '<?php
+                'code' => '<?php
                     class Base {}
                     class A extends Base {}
                     class B extends Base {}
@@ -537,7 +534,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'mergeGenericClassStringsWithLiteral' => [
-                '<?php
+                'code' => '<?php
                     class Base {}
                     class A extends Base {}
                     class B extends Base {}
@@ -552,7 +549,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'noCrashWithIsSubclassOfNonExistentVariable' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     function foo() : void {
@@ -564,7 +561,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'allowClassExistsCheckOnClassString' => [
-                '<?php
+                'code' => '<?php
                     class C
                     {
                         public function __construct() {
@@ -575,7 +572,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'allowClassExistsCheckOnString' => [
-                '<?php
+                'code' => '<?php
                     class C
                     {
                         public function __construct() {
@@ -586,7 +583,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'allowComparisonToStaticClassString' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const CLASSES = ["foobar" => B::class];
 
@@ -598,7 +595,7 @@ class ClassLikeStringTest extends TestCase
                     class B extends A {}',
             ],
             'noCrashWhenClassExists' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     if (class_exists(A::class)) {
@@ -607,7 +604,7 @@ class ClassLikeStringTest extends TestCase
             ],
 
             'noCrashWhenClassExistsNegated' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     if (!class_exists(A::class)) {
@@ -615,7 +612,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'createNewObjectFromGetClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -657,10 +654,10 @@ class ClassLikeStringTest extends TestCase
 
 
                     /** @param class-string<Example> $className */
-                    function takesExampleClassString(string $className): void {}'
+                    function takesExampleClassString(string $className): void {}',
             ],
             'noCrashOnPolyfill' => [
-                '<?php
+                'code' => '<?php
                     if (class_exists(My_Parent::class) && !class_exists(My_Extend::class)) {
                         /**
                          * Extended class
@@ -678,7 +675,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'selfResolvedOnStaticProperty' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class Foo {
@@ -692,10 +689,10 @@ class ClassLikeStringTest extends TestCase
                         {
                             return self::$c;
                         }
-                    }'
+                    }',
             ],
             'traitClassStringClone' => [
-                '<?php
+                'code' => '<?php
                     trait Factory
                     {
                         /** @return class-string<static> */
@@ -731,10 +728,10 @@ class ClassLikeStringTest extends TestCase
                             $class = static::getFactoryClass();
                             return new $class;
                         }
-                    }'
+                    }',
             ],
             'staticClassReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -744,10 +741,10 @@ class ClassLikeStringTest extends TestCase
                             $class = static::class;
                             return new $class();
                         }
-                    }'
+                    }',
             ],
             'getCalledClassIsStaticClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -757,10 +754,10 @@ class ClassLikeStringTest extends TestCase
                             $c = get_called_class();
                             return new $c();
                         }
-                    }'
+                    }',
             ],
             'accessConstantOnClassStringVariable' => [
-                '<?php
+                'code' => '<?php
                     class Beep {
                         /** @var string */
                         public static $boop = "boop";
@@ -770,7 +767,7 @@ class ClassLikeStringTest extends TestCase
                 ',
             ],
             'ClassConstFetchWithTemplate' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of object
                      * @psalm-param T $obj
@@ -783,7 +780,7 @@ class ClassLikeStringTest extends TestCase
                     }',
             ],
             'classStringAllowsClasses' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param class-string $s
                      */
@@ -804,24 +801,92 @@ class ClassLikeStringTest extends TestCase
                     takesThrowable(InvalidArgumentException::class);',
             ],
             'reflectionClassCoercion' => [
-                '<?php
+                'code' => '<?php
                     /** @return ReflectionClass<object> */
                     function takesString(string $s) {
                         /** @psalm-suppress ArgumentTypeCoercion */
                         return new ReflectionClass($s);
                     }',
             ],
+            'checkDifferentSubclass' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+
+                    /** @param class-string<A> $s */
+                    function takesAString(string $a): void {}
+                    /** @param class-string<B> $s */
+                    function takesBString(string $a): void {}
+
+                    /** @param class-string $s */
+                    function foo(string $s): void {
+                        if (is_subclass_of($s, A::class)) {
+                            takesAString($s);
+                        }
+                        if (is_subclass_of($s, B::class)) {
+                            takesBString($s);
+                        }
+                    }',
+            ],
+            'checkDifferentSubclassAfterNotClassExists' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+
+                    /** @param class-string<A> $s */
+                    function takesAString(string $a): void {}
+                    /** @param class-string<B> $s */
+                    function takesBString(string $a): void {}
+
+                    function foo(string $s): void {
+                        if (!class_exists($s, false)) {
+                            return;
+                        }
+                        if (is_subclass_of($s, A::class)) {
+                            takesAString($s);
+                        }
+                        if (is_subclass_of($s, B::class)) {
+                            takesBString($s);
+                        }
+                    }',
+            ],
+            'compareGetClassToLiteralClass' => [
+                'code' => '<?php
+                    class A {}
+                    class B extends A {}
+
+                    function foo(A $a): void {
+                        if (get_class($a) === A::class) {}
+                    }',
+            ],
+            'classStringUnion' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        /** @var class-string<TypeOne>|class-string<TypeTwo> */
+                        public ?string $bar = null;
+                        /** @var class-string<TypeOne|TypeTwo> */
+                        public ?string $baz = null;
+                    }
+
+                    class TypeOne {}
+
+                    class TypeTwo {}
+
+                    $foo = new Foo;
+                    $foo->bar = TypeOne::class;
+                    $foo->bar = TypeOne::class;
+                    $foo->baz = TypeTwo::class;
+                    $foo->baz = TypeTwo::class;',
+            ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'arrayOfStringClasses' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<class-string> $arr
                      */
@@ -834,7 +899,7 @@ class ClassLikeStringTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'arrayOfNonExistentStringClasses' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<class-string> $arr
                      */
@@ -844,7 +909,7 @@ class ClassLikeStringTest extends TestCase
                 'error_message' => 'UndefinedClass',
             ],
             'singleClassConstantWithInvalidDocblock' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param clas-string $s
                      */
@@ -852,7 +917,7 @@ class ClassLikeStringTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'returnClassConstantDisallowCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -864,7 +929,7 @@ class ClassLikeStringTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
             'returnClassConstantArrayDisallowCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -876,7 +941,7 @@ class ClassLikeStringTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
             'returnClassConstantArrayAllowCoercionWithUndefinedClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -886,10 +951,10 @@ class ClassLikeStringTest extends TestCase
                         return ["A", "B"];
                     }',
                 'error_message' => 'UndefinedClass',
-                'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
+                'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'badClassStringConstructor' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         public function __construct(int $_)
@@ -908,7 +973,7 @@ class ClassLikeStringTest extends TestCase
                 'error_message' => 'TooFewArguments',
             ],
             'unknownConstructorCall' => [
-                '<?php
+                'code' => '<?php
                     /** @param class-string $s */
                     function bar(string $s) : void {
                         new $s();
@@ -916,7 +981,7 @@ class ClassLikeStringTest extends TestCase
                 'error_message' => 'MixedMethodCall',
             ],
             'doesNotTakeChildOfClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class AChild extends A {}
 
@@ -929,7 +994,7 @@ class ClassLikeStringTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'createClassOfWrongTypeFromString' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 

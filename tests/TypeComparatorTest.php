@@ -10,6 +10,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
+use Psalm\Type\Atomic\TPropertiesOf;
 
 use function array_diff_key;
 use function array_keys;
@@ -26,12 +27,12 @@ class TypeComparatorTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new FakeParserCacheProvider()
+            new FakeParserCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
     }
 
@@ -47,8 +48,8 @@ class TypeComparatorTest extends TestCase
             UnionTypeComparator::isContainedBy(
                 $this->project_analyzer->getCodebase(),
                 $type_1,
-                $type_2
-            )
+                $type_2,
+            ),
         );
     }
 
@@ -67,21 +68,28 @@ class TypeComparatorTest extends TestCase
             'int-mask' => true,
             'pure-Closure' => true,
         ];
+        foreach (TPropertiesOf::tokenNames() as $token_name) {
+            $basic_generic_types[$token_name] = true;
+        }
 
         $basic_types = array_diff_key(
             TypeTokenizer::PSALM_RESERVED_WORDS,
             $basic_generic_types,
             [
                 'open-resource' => true, // unverifiable
-                'mysql-escaped-string' => true, // deprecated
                 'non-empty-countable' => true, // bit weird, maybe a bug?
-            ]
+            ],
+            [
+                'array' => true, // Requires a shape
+                'list' => true, // Requires a shape
+            ],
         );
+        $basic_types['array{test: 123}'] = true;
+        $basic_types['list{123}'] = true;
+
         return array_map(
-            function ($type) {
-                return [$type];
-            },
-            array_keys($basic_types)
+            fn($type) => [$type],
+            array_keys($basic_types),
         );
     }
 
@@ -97,8 +105,8 @@ class TypeComparatorTest extends TestCase
             UnionTypeComparator::isContainedBy(
                 $this->project_analyzer->getCodebase(),
                 $child_type,
-                $parent_type
-            )
+                $parent_type,
+            ),
         );
     }
 
@@ -114,19 +122,19 @@ class TypeComparatorTest extends TestCase
             ],
             'listAcceptsEmptyArray' => [
                 'list',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'arrayAcceptsEmptyArray' => [
                 'array',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'arrayOptionalKeyed1AcceptsEmptyArray' => [
                 'array{foo?: string}',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'arrayOptionalKeyed2AcceptsEmptyArray' => [
                 'array{foo?: string}&array<string, mixed>',
-                'array<empty, empty>',
+                'array<never, never>',
             ],
             'Lowercase-stringAndCallable-string' => [
                 'lowercase-string',

@@ -3,21 +3,23 @@
 namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
-use PackageVersions\Versions;
+use JsonException;
 use Phar;
 use Psalm\Config;
 use Psalm\Config\Creator;
 use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Composer;
 use Psalm\Report;
+use RuntimeException;
 
+use function array_filter;
 use function array_slice;
 use function assert;
 use function count;
 use function define;
 use function dirname;
+use function extension_loaded;
 use function fgets;
 use function file_exists;
 use function file_get_contents;
@@ -30,6 +32,7 @@ use function is_array;
 use function is_dir;
 use function is_string;
 use function json_decode;
+use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -44,10 +47,16 @@ use function substr_replace;
 use function trim;
 
 use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
+use const PHP_VERSION;
+use const PHP_VERSION_ID;
 use const STDERR;
 use const STDIN;
 
+/**
+ * @internal
+ */
 final class CliUtils
 {
     public static function requireAutoloaders(
@@ -62,6 +71,7 @@ final class CliUtils
         $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
 
         if ($in_phar) {
+            // require this before anything else
             $stringable_path = __DIR__ . '/../../../vendor/symfony/polyfill-php80/Resources/stubs/Stringable.php';
             if (file_exists($stringable_path)) {
                 require_once $stringable_path;
@@ -82,7 +92,7 @@ final class CliUtils
         foreach ($autoload_roots as $autoload_root) {
             $has_autoloader = false;
 
-            $nested_autoload_file = dirname($autoload_root, 2). DIRECTORY_SEPARATOR . 'autoload.php';
+            $nested_autoload_file = dirname($autoload_root, 2) . DIRECTORY_SEPARATOR . 'autoload.php';
 
             // note: don't realpath $nested_autoload_file, or phar version will fail
             if (file_exists($nested_autoload_file)) {
@@ -122,7 +132,6 @@ final class CliUtils
         foreach ($autoload_files as $file) {
             /**
              * @psalm-suppress UnresolvableInclude
-             *
              * @var mixed
              */
             $autoloader = require_once $file;
@@ -140,19 +149,19 @@ final class CliUtils
             } else {
                 fwrite(
                     STDERR,
-                    'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n"
+                    'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n",
                 );
             }
 
             fwrite(
                 STDERR,
-                'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n"
+                'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n",
             );
             exit(1);
         }
 
-        define('PSALM_VERSION', Versions::getVersion('vimeo/psalm'));
-        define('PHP_PARSER_VERSION', Versions::getVersion('nikic/php-parser'));
+        define('PSALM_VERSION', VersionUtils::getPsalmVersion());
+        define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
 
         return $first_autoloader;
     }
@@ -167,11 +176,20 @@ final class CliUtils
         if (!file_exists($composer_json_path)) {
             return 'vendor';
         }
-
-        if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+        try {
+            $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
             fwrite(
                 STDERR,
-                'Invalid composer.json at ' . $composer_json_path . "\n"
+                'Invalid composer.json at ' . $composer_json_path . "\n" . $e->getMessage() . "\n",
+            );
+            exit(1);
+        }
+
+        if (!$composer_json) {
+            fwrite(
+                STDERR,
+                'Invalid composer.json at ' . $composer_json_path . "\n",
             );
             exit(1);
         }
@@ -236,7 +254,6 @@ final class CliUtils
 
     /**
      * @param  string|array|null|false $f_paths
-     *
      * @return list<string>|null
      */
     public static function getPathsToCheck($f_paths): ?array
@@ -284,6 +301,9 @@ final class CliUtils
             stream_set_blocking(STDIN, false);
             if ($stdin = fgets(STDIN)) {
                 $filtered_input_paths = preg_split('/\s+/', trim($stdin));
+                if ($filtered_input_paths === false) {
+                    throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
+                }
             }
             $blocked = $meta['blocked'];
             stream_set_blocking(STDIN, $blocked);
@@ -317,171 +337,6 @@ final class CliUtils
         return $paths_to_check;
     }
 
-    /**
-     * @psalm-pure
-     * @todo move to Psalm\Internal\Cli\Psalm once \Psalm\getPsalmHelpText() is removed in Psalm 5
-     */
-    public static function getPsalmHelpText(): string
-    {
-        return <<<HELP
-Usage:
-    psalm [options] [file...]
-
-Basic configuration:
-    -c, --config=psalm.xml
-        Path to a psalm.xml configuration file. Run psalm --init to create one.
-
-    --use-ini-defaults
-        Use PHP-provided ini defaults for memory and error display
-
-    --memory-limit=LIMIT
-        Use a specific memory limit. Cannot be combined with --use-ini-defaults
-
-    --disable-extension=[extension]
-        Used to disable certain extensions while Psalm is running.
-
-    --threads=INT
-        If greater than one, Psalm will run analysis on multiple threads, speeding things up.
-
-    --no-diff
-        Turns off Psalm’s diff mode, checks all files regardless of whether they’ve changed.
-
-    --php-version=PHP_VERSION
-        Explicitly set PHP version to analyse code against.
-
-Surfacing issues:
-    --show-info[=BOOLEAN]
-        Show non-exception parser findings (defaults to false).
-
-    --show-snippet[=true]
-        Show code snippets with errors. Options are 'true' or 'false'
-
-    --find-dead-code[=auto]
-    --find-unused-code[=auto]
-        Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
-
-    --find-unused-psalm-suppress
-        Finds all @psalm-suppress annotations that aren’t used
-
-    --find-references-to=[class|method|property]
-        Searches the codebase for references to the given fully-qualified class or method,
-        where method is in the format class::methodName
-
-    --no-suggestions
-        Hide suggestions
-
-    --taint-analysis
-        Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
-
-    --dump-taint-graph=OUTPUT_PATH
-        Output the taint graph using the DOT language – requires --taint-analysis
-
-Issue baselines:
-    --set-baseline=PATH
-        Save all current error level issues to a file, to mark them as info in subsequent runs
-
-        Add --include-php-versions to also include a list of PHP extension versions
-
-    --use-baseline=PATH
-        Allows you to use a baseline other than the default baseline provided in your config
-
-    --ignore-baseline
-        Ignore the error baseline
-
-    --update-baseline
-        Update the baseline by removing fixed issues. This will not add new issues to the baseline
-
-        Add --include-php-versions to also include a list of PHP extension versions
-
-Plugins:
-    --plugin=PATH
-        Executes a plugin, an alternative to using the Psalm config
-
-Output:
-    -m, --monochrome
-        Enable monochrome output
-
-    --output-format=console
-        Changes the output format.
-        Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube, github,
-                           phpstorm, codeclimate
-
-    --no-progress
-        Disable the progress indicator
-
-    --long-progress
-        Use a progress indicator suitable for Continuous Integration logs
-
-    --stats
-        Shows a breakdown of Psalm’s ability to infer types in the codebase
-
-Reports:
-    --report=PATH
-        The path where to output report file. The output format is based on the file extension.
-        (Currently supported formats: ".json", ".xml", ".txt", ".emacs", ".pylint", ".console",
-        ".sarif", "checkstyle.xml", "sonarqube.json", "codeclimate.json", "summary.json", "junit.xml")
-
-    --report-show-info[=BOOLEAN]
-        Whether the report should include non-errors in its output (defaults to true)
-
-Caching:
-    --clear-cache
-        Clears all cache files that Psalm uses for this specific project
-
-    --clear-global-cache
-        Clears all cache files that Psalm uses for all projects
-
-    --no-cache
-        Runs Psalm without using cache
-
-    --no-reflection-cache
-        Runs Psalm without using cached representations of unchanged classes and files.
-        Useful if you want the afterClassLikeVisit plugin hook to run every time you visit a file.
-
-    --no-file-cache
-        Runs Psalm without using caching every single file for later diffing.
-        This reduces the space Psalm uses on disk and file I/O.
-
-Miscellaneous:
-    -h, --help
-        Display this help message
-
-    -v, --version
-        Display the Psalm version
-
-    -i, --init [source_dir=src] [level=3]
-        Create a psalm config file in the current directory that points to [source_dir]
-        at the required level, from 1, most strict, to 8, most permissive.
-
-    --debug
-        Debug information
-
-    --debug-by-line
-        Debug information on a line-by-line level
-
-    --debug-emitted-issues
-        Print a php backtrace to stderr when emitting issues.
-
-    -r, --root
-        If running Psalm globally you’ll need to specify a project root. Defaults to cwd
-
-    --generate-json-map=PATH
-        Generate a map of node references and types in JSON format, saved to the given path.
-
-    --generate-stubs=PATH
-        Generate stubs for the project and dump the file in the given path
-
-    --shepherd[=host]
-        Send data to Shepherd, Psalm’s GitHub integration tool.
-
-    --alter
-        Run Psalter
-
-    --language-server
-        Run Psalm Language Server
-
-HELP;
-    }
 
     public static function initializeConfig(
         ?string $path_to_config,
@@ -502,7 +357,7 @@ HELP;
                             fwrite(
                                 STDERR,
                                 'Could not locate a config XML file in path ' . $current_dir
-                                    . '. Have you run \'psalm --init\' ?' . PHP_EOL
+                                    . '. Have you run \'psalm --init\' ?' . PHP_EOL,
                             );
                             exit(1);
                         }
@@ -513,14 +368,14 @@ HELP;
                     $config = Creator::createBareConfig(
                         $current_dir,
                         null,
-                        self::getVendorDir($current_dir)
+                        self::getVendorDir($current_dir),
                     );
                 }
             }
         } catch (ConfigException $e) {
             fwrite(
                 STDERR,
-                $e->getMessage() . PHP_EOL
+                $e->getMessage() . PHP_EOL,
             );
             exit(1);
         }
@@ -554,7 +409,7 @@ HELP;
             $amended_config_file_contents = preg_replace(
                 '/errorBaseline=".*?"/',
                 "errorBaseline=\"{$baseline_path}\"",
-                $config_file_contents
+                $config_file_contents,
             );
         } else {
             $end_psalm_open_tag = strpos($config_file_contents, '>', (int)strpos($config_file_contents, '<psalm'));
@@ -569,14 +424,14 @@ HELP;
                     $config_file_contents,
                     "    errorBaseline=\"{$baseline_path}\"\n>",
                     $end_psalm_open_tag,
-                    1
+                    1,
                 );
             } else {
                 $amended_config_file_contents = substr_replace(
                     $config_file_contents,
                     " errorBaseline=\"{$baseline_path}\">",
                     $end_psalm_open_tag,
-                    1
+                    1,
                 );
             }
         }
@@ -616,13 +471,13 @@ HELP;
             $limit = (int)$matches[1];
             switch (strtoupper($matches[2] ?? '')) {
                 case 'G':
-                    $limit *= 1024 * 1024 * 1024;
+                    $limit *= 1_024 * 1_024 * 1_024;
                     break;
                 case 'M':
-                    $limit *= 1024 * 1024;
+                    $limit *= 1_024 * 1_024;
                     break;
                 case 'K':
-                    $limit *= 1024;
+                    $limit *= 1_024;
                     break;
             }
         }
@@ -661,5 +516,55 @@ HELP;
             || isset($_SERVER['GITLAB_CI'])
             || isset($_SERVER['GITHUB_WORKFLOW'])
             || isset($_SERVER['DRONE']);
+    }
+
+    public static function checkRuntimeRequirements(): void
+    {
+        $required_php_version = 7_04_00;
+        $required_php_version_text = '7.4.0';
+
+        // the following list was taken from vendor/composer/platform_check.php
+        // It includes both Psalm's requirements (from composer.json) and the
+        // requirements of our dependencies `netresearch/jsonmapper` and
+        // `phpdocumentor/reflection-docblock`. The latter is transitive
+        // dependency of `felixfbecker/advanced-json-rpc`
+        $required_extensions = [
+            'dom',
+            'filter',
+            'json',
+            'libxml',
+            'pcre',
+            'reflection',
+            'simplexml',
+            'spl',
+            'tokenizer',
+        ];
+        $issues = [];
+
+        if (PHP_VERSION_ID < $required_php_version) {
+            $issues[] = 'Psalm requires a PHP version ">= ' . $required_php_version_text . '".'
+                        . ' You are running ' . PHP_VERSION . '.';
+        }
+
+        $missing_extensions = array_filter(
+            $required_extensions,
+            static fn(string $ext) => !extension_loaded($ext)
+        );
+
+        if ($missing_extensions) {
+            $issues[] = 'Psalm requires the following PHP extensions to be installed: '
+                        . implode(', ', $missing_extensions)
+                        . '.';
+        }
+
+        if ($issues) {
+            fwrite(
+                STDERR,
+                'Psalm has detected issues in your platform:' . PHP_EOL . PHP_EOL
+                . implode(PHP_EOL, $issues)
+                . PHP_EOL . PHP_EOL,
+            );
+            exit(1);
+        }
     }
 }

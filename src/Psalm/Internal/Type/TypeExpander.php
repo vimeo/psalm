@@ -4,9 +4,13 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\Exception\UnresolvableConstantException;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Type\SimpleAssertionReconciler;
 use Psalm\Internal\Type\SimpleNegatedAssertionReconciler;
 use Psalm\Internal\Type\TypeParser;
+use Psalm\Storage\Assertion\IsType;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -14,13 +18,12 @@ use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyOfClassConstant;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -29,9 +32,10 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
-use Psalm\Type\Atomic\TValueOfClassConstant;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use ReflectionProperty;
@@ -43,7 +47,6 @@ use function array_merge;
 use function array_values;
 use function count;
 use function get_class;
-use function is_array;
 use function is_string;
 use function reset;
 use function strpos;
@@ -56,8 +59,8 @@ use function substr;
 class TypeExpander
 {
     /**
-     * @param  string|TNamedObject|TTemplateParam|null $static_class_type
-     *
+     * @psalm-suppress InaccessibleProperty We just created the type
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      */
     public static function expandUnion(
         Codebase $codebase,
@@ -69,13 +72,12 @@ class TypeExpander
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
-        bool $expand_templates = false
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false
     ): Union {
-        $return_type = clone $return_type;
-
         $new_return_type_parts = [];
 
-        $has_array_output = false;
+        $had_split_values = false;
 
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $parts = self::expandAtomic(
@@ -88,21 +90,21 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
 
-            if (is_array($parts)) {
-                $new_return_type_parts = array_merge($new_return_type_parts, $parts);
-                $has_array_output = true;
-            } else {
-                $new_return_type_parts[] = $parts;
+            if ($return_type_part instanceof TTypeAlias || count($parts) > 1) {
+                $had_split_values = true;
             }
+
+            $new_return_type_parts = [...$new_return_type_parts, ...$parts];
         }
 
-        if ($has_array_output) {
+        if ($had_split_values) {
             $fleshed_out_type = TypeCombiner::combine(
                 $new_return_type_parts,
-                $codebase
+                $codebase,
             );
         } else {
             $fleshed_out_type = new Union($new_return_type_parts);
@@ -117,6 +119,7 @@ class TypeExpander
         $fleshed_out_type->initialized = $return_type->initialized;
         $fleshed_out_type->from_property = $return_type->from_property;
         $fleshed_out_type->from_static_property = $return_type->from_static_property;
+        $fleshed_out_type->explicit_never = $return_type->explicit_never;
         $fleshed_out_type->had_template = $return_type->had_template;
         $fleshed_out_type->parent_nodes = $return_type->parent_nodes;
 
@@ -124,9 +127,11 @@ class TypeExpander
     }
 
     /**
-     * @param  string|TNamedObject|TTemplateParam|null $static_class_type
-     *
-     * @return Atomic|non-empty-list<Atomic>
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
+     * @param-out Atomic $return_type
+     * @return non-empty-list<Atomic>
+     * @psalm-suppress ConflictingReferenceConstraint, ReferenceConstraintViolation The output type is always Atomic
+     * @psalm-suppress ComplexMethod
      */
     public static function expandAtomic(
         Codebase $codebase,
@@ -138,15 +143,17 @@ class TypeExpander
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
-        bool $expand_templates = false
-    ) {
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false
+    ): array {
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
         ) {
             if ($return_type->extra_types) {
                 $new_intersection_types = [];
 
-                foreach ($return_type->extra_types as &$extra_type) {
+                $extra_types = [];
+                foreach ($return_type->extra_types as $extra_type) {
                     self::expandAtomic(
                         $codebase,
                         $extra_type,
@@ -156,21 +163,22 @@ class TypeExpander
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
                         $expand_generic,
-                        $expand_templates
+                        $expand_templates,
+                        $throw_on_unresolvable_constant,
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
                         $new_intersection_types = array_merge(
                             $new_intersection_types,
-                            $extra_type->extra_types
+                            $extra_type->extra_types,
                         );
-                        $extra_type->extra_types = [];
+                        $extra_type = $extra_type->setIntersectionTypes([]);
                     }
+                    $extra_types[$extra_type->getKey()] = $extra_type;
                 }
 
-                if ($new_intersection_types) {
-                    $return_type->extra_types = array_merge($return_type->extra_types, $new_intersection_types);
-                }
+                /** @psalm-suppress ArgumentTypeCoercion */
+                $return_type = $return_type->setIntersectionTypes(array_merge($extra_types, $new_intersection_types));
             }
 
             if ($return_type instanceof TNamedObject) {
@@ -181,7 +189,7 @@ class TypeExpander
                     $static_class_type,
                     $parent_class,
                     $final,
-                    $expand_generic
+                    $expand_generic,
                 );
             }
         }
@@ -189,7 +197,7 @@ class TypeExpander
         if ($return_type instanceof TClassString
             && $return_type->as_type
         ) {
-            $new_as_type = clone $return_type->as_type;
+            $new_as_type = $return_type->as_type;
 
             self::expandAtomic(
                 $codebase,
@@ -201,17 +209,20 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
 
-            if ($new_as_type instanceof TNamedObject) {
-                $return_type->as_type = $new_as_type;
-                $return_type->as = $return_type->as_type->value;
+            if ($new_as_type instanceof TNamedObject && $new_as_type !== $return_type->as_type) {
+                $return_type = $return_type->setAs(
+                    $new_as_type->value,
+                    $new_as_type,
+                );
             }
         } elseif ($return_type instanceof TTemplateParam) {
             $new_as_type = self::expandUnion(
                 $codebase,
-                clone $return_type->as,
+                $return_type->as,
                 $self_class,
                 $static_class_type,
                 $parent_class,
@@ -219,47 +230,51 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
 
             if ($expand_templates) {
                 return array_values($new_as_type->getAtomicTypes());
             }
 
-            $return_type->as = $new_as_type;
+            $return_type = $return_type->replaceAs($new_as_type);
         }
 
         if ($return_type instanceof TClassConstant) {
-            if ($return_type->fq_classlike_name === 'self' && $self_class) {
-                $return_type->fq_classlike_name = $self_class;
+            if ($self_class) {
+                $return_type = $return_type->replaceClassLike(
+                    'self',
+                    $self_class,
+                );
             }
-
-            if ($return_type->fq_classlike_name === 'static' && $self_class) {
-                $return_type->fq_classlike_name = is_string($static_class_type) ? $static_class_type : $self_class;
+            if (is_string($static_class_type) || $self_class) {
+                $return_type = $return_type->replaceClassLike(
+                    'static',
+                    is_string($static_class_type) ? $static_class_type : $self_class,
+                );
             }
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
                 if (strtolower($return_type->const_name) === 'class') {
-                    return new TLiteralClassString($return_type->fq_classlike_name);
+                    return [new TLiteralClassString($return_type->fq_classlike_name)];
                 }
 
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
 
                 if (strpos($return_type->const_name, '*') !== false) {
-                    $matching_constants = array_merge(
-                        array_keys($class_storage->constants),
-                        array_keys($class_storage->enum_cases)
-                    );
+                    $matching_constants = [
+                        ...array_keys($class_storage->constants),
+                        ...array_keys($class_storage->enum_cases),
+                    ];
 
                     $const_name_part = substr($return_type->const_name, 0, -1);
 
                     if ($const_name_part) {
                         $matching_constants = array_filter(
                             $matching_constants,
-                            function ($constant_name) use ($const_name_part): bool {
-                                return $constant_name !== $const_name_part
-                                    && strpos($constant_name, $const_name_part) === 0;
-                            }
+                            static fn($constant_name): bool => $constant_name !== $const_name_part
+                                && strpos($constant_name, $const_name_part) === 0
                         );
                     }
                 } else {
@@ -273,7 +288,7 @@ class TypeExpander
                         $class_constant = $codebase->classlikes->getClassConstantType(
                             $return_type->fq_classlike_name,
                             $matching_constant,
-                            ReflectionProperty::IS_PRIVATE
+                            ReflectionProperty::IS_PRIVATE,
                         );
                     } catch (CircularReferenceException $e) {
                         $class_constant = null;
@@ -281,11 +296,9 @@ class TypeExpander
 
                     if ($class_constant) {
                         if ($class_constant->isSingle()) {
-                            $class_constant = clone $class_constant;
-
                             $matching_constant_types = array_merge(
                                 array_values($class_constant->getAtomicTypes()),
-                                $matching_constant_types
+                                $matching_constant_types,
                             );
                         }
                     }
@@ -296,7 +309,16 @@ class TypeExpander
                 }
             }
 
-            return $return_type;
+            return [$return_type];
+        }
+
+        if ($return_type instanceof TPropertiesOf) {
+            return self::expandPropertiesOf(
+                $codebase,
+                $return_type,
+                $self_class,
+                $static_class_type,
+            );
         }
 
         if ($return_type instanceof TTypeAlias) {
@@ -306,94 +328,92 @@ class TypeExpander
                 $declaring_fq_classlike_name = $self_class;
             }
 
-            if ($evaluate_class_constants && $codebase->classOrInterfaceExists($declaring_fq_classlike_name)) {
-                $class_storage = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name);
-
-                $type_alias_name = $return_type->alias_name;
-
-                if (isset($class_storage->type_aliases[$type_alias_name])) {
-                    $resolved_type_alias = $class_storage->type_aliases[$type_alias_name];
-
-                    if ($resolved_type_alias->replacement_atomic_types) {
-                        $replacement_atomic_types = $resolved_type_alias->replacement_atomic_types;
-
-                        $recursively_fleshed_out_types = [];
-
-                        foreach ($replacement_atomic_types as $replacement_atomic_type) {
-                            $recursively_fleshed_out_type = self::expandAtomic(
-                                $codebase,
-                                $replacement_atomic_type,
-                                $self_class,
-                                $static_class_type,
-                                $parent_class,
-                                $evaluate_class_constants,
-                                $evaluate_conditional_types,
-                                $final,
-                                $expand_generic,
-                                $expand_templates
-                            );
-
-                            if (is_array($recursively_fleshed_out_type)) {
-                                $recursively_fleshed_out_types = array_merge(
-                                    $recursively_fleshed_out_type,
-                                    $recursively_fleshed_out_types
-                                );
-                            } else {
-                                $recursively_fleshed_out_types[] = $recursively_fleshed_out_type;
-                            }
-                        }
-
-                        return $recursively_fleshed_out_types;
-                    }
-                }
+            if (!($evaluate_class_constants && $codebase->classOrInterfaceExists($declaring_fq_classlike_name))) {
+                return [$return_type];
             }
 
-            return $return_type;
+            $class_storage = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name);
+
+            $type_alias_name = $return_type->alias_name;
+
+            if (!isset($class_storage->type_aliases[$type_alias_name])) {
+                return [$return_type];
+            }
+
+            $resolved_type_alias = $class_storage->type_aliases[$type_alias_name];
+            $replacement_atomic_types = $resolved_type_alias->replacement_atomic_types;
+
+            if (!$replacement_atomic_types) {
+                return [$return_type];
+            }
+
+            $recursively_fleshed_out_types = [];
+            foreach ($replacement_atomic_types as $replacement_atomic_type) {
+                $more_recursively_fleshed_out_types = self::expandAtomic(
+                    $codebase,
+                    $replacement_atomic_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+
+                $recursively_fleshed_out_types = [
+                    ...$more_recursively_fleshed_out_types,
+                    ...$recursively_fleshed_out_types,
+                ];
+            }
+
+            foreach ($return_type->extra_types ?? [] as $alias) {
+                $more_recursively_fleshed_out_types = self::expandAtomic(
+                    $codebase,
+                    $alias,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+
+                $recursively_fleshed_out_types = [
+                    ...$more_recursively_fleshed_out_types,
+                    ...$recursively_fleshed_out_types,
+                ];
+            }
+
+            return $recursively_fleshed_out_types;
         }
 
-        if ($return_type instanceof TKeyOfClassConstant
-            || $return_type instanceof TValueOfClassConstant
+        if ($return_type instanceof TKeyOf
+            || $return_type instanceof TValueOf
         ) {
-            if ($return_type->fq_classlike_name === 'self' && $self_class) {
-                $return_type->fq_classlike_name = $self_class;
-            }
-
-            if ($evaluate_class_constants && $codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
-                try {
-                    $class_constant_type = $codebase->classlikes->getClassConstantType(
-                        $return_type->fq_classlike_name,
-                        $return_type->const_name,
-                        ReflectionProperty::IS_PRIVATE
-                    );
-                } catch (CircularReferenceException $e) {
-                    $class_constant_type = null;
-                }
-
-                if ($class_constant_type) {
-                    foreach ($class_constant_type->getAtomicTypes() as $const_type_atomic) {
-                        if ($const_type_atomic instanceof TKeyedArray
-                            || $const_type_atomic instanceof TArray
-                        ) {
-                            if ($const_type_atomic instanceof TKeyedArray) {
-                                $const_type_atomic = $const_type_atomic->getGenericArrayType();
-                            }
-
-                            if ($return_type instanceof TKeyOfClassConstant) {
-                                return array_values($const_type_atomic->type_params[0]->getAtomicTypes());
-                            }
-
-                            return array_values($const_type_atomic->type_params[1]->getAtomicTypes());
-                        }
-                    }
-                }
-            }
-
-            return $return_type;
+            return self::expandKeyOfValueOf(
+                $codebase,
+                $return_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
         }
 
         if ($return_type instanceof TIntMask) {
             if (!$evaluate_class_constants) {
-                return new TInt();
+                return [new TInt()];
             }
 
             $potential_ints = [];
@@ -409,15 +429,14 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
 
-                if (is_array($new_value_type)) {
-                    $new_value_type = reset($new_value_type);
-                }
+                $new_value_type = reset($new_value_type);
 
                 if (!$new_value_type instanceof TLiteralInt) {
-                    return new TInt();
+                    return [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
@@ -428,7 +447,7 @@ class TypeExpander
 
         if ($return_type instanceof TIntMaskOf) {
             if (!$evaluate_class_constants) {
-                return new TInt();
+                return [new TInt()];
             }
 
             $value_type = $return_type->value;
@@ -443,127 +462,21 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
             );
-
-            if (!is_array($new_value_types)) {
-                return new TInt();
-            }
 
             $potential_ints = [];
 
             foreach ($new_value_types as $new_value_type) {
                 if (!$new_value_type instanceof TLiteralInt) {
-                    return new TInt();
+                    return [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
             }
 
             return TypeParser::getComputedIntsFromMask($potential_ints);
-        }
-
-        if ($return_type instanceof TArray
-            || $return_type instanceof TGenericObject
-            || $return_type instanceof TIterable
-        ) {
-            foreach ($return_type->type_params as $k => $type_param) {
-                /** @psalm-suppress PropertyTypeCoercion */
-                $return_type->type_params[$k] = self::expandUnion(
-                    $codebase,
-                    $type_param,
-                    $self_class,
-                    $static_class_type,
-                    $parent_class,
-                    $evaluate_class_constants,
-                    $evaluate_conditional_types,
-                    $final,
-                    $expand_generic,
-                    $expand_templates
-                );
-            }
-        } elseif ($return_type instanceof TKeyedArray) {
-            foreach ($return_type->properties as &$property_type) {
-                $property_type = self::expandUnion(
-                    $codebase,
-                    $property_type,
-                    $self_class,
-                    $static_class_type,
-                    $parent_class,
-                    $evaluate_class_constants,
-                    $evaluate_conditional_types,
-                    $final,
-                    $expand_generic,
-                    $expand_templates
-                );
-            }
-        } elseif ($return_type instanceof TList) {
-            $return_type->type_param = self::expandUnion(
-                $codebase,
-                $return_type->type_param,
-                $self_class,
-                $static_class_type,
-                $parent_class,
-                $evaluate_class_constants,
-                $evaluate_conditional_types,
-                $final,
-                $expand_generic,
-                $expand_templates
-            );
-        }
-
-        if ($return_type instanceof TObjectWithProperties) {
-            foreach ($return_type->properties as &$property_type) {
-                $property_type = self::expandUnion(
-                    $codebase,
-                    $property_type,
-                    $self_class,
-                    $static_class_type,
-                    $parent_class,
-                    $evaluate_class_constants,
-                    $evaluate_conditional_types,
-                    $final,
-                    $expand_generic,
-                    $expand_templates
-                );
-            }
-        }
-
-        if ($return_type instanceof TCallable
-            || $return_type instanceof TClosure
-        ) {
-            if ($return_type->params) {
-                foreach ($return_type->params as $param) {
-                    if ($param->type) {
-                        $param->type = self::expandUnion(
-                            $codebase,
-                            $param->type,
-                            $self_class,
-                            $static_class_type,
-                            $parent_class,
-                            $evaluate_class_constants,
-                            $evaluate_conditional_types,
-                            $final,
-                            $expand_generic,
-                            $expand_templates
-                        );
-                    }
-                }
-            }
-            if ($return_type->return_type) {
-                $return_type->return_type = self::expandUnion(
-                    $codebase,
-                    $return_type->return_type,
-                    $self_class,
-                    $static_class_type,
-                    $parent_class,
-                    $evaluate_class_constants,
-                    $evaluate_conditional_types,
-                    $final,
-                    $expand_generic,
-                    $expand_templates
-                );
-            }
         }
 
         if ($return_type instanceof TConditional) {
@@ -577,20 +490,173 @@ class TypeExpander
                 $evaluate_conditional_types,
                 $final,
                 $expand_generic,
-                $expand_templates
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
+        }
+        if ($return_type instanceof TList) {
+            $return_type = $return_type->getKeyedArray();
+        }
+
+        if ($return_type instanceof TArray
+            || $return_type instanceof TGenericObject
+            || $return_type instanceof TIterable
+        ) {
+            $type_params = $return_type->type_params;
+            foreach ($type_params as &$type_param) {
+                $type_param = self::expandUnion(
+                    $codebase,
+                    $type_param,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+            }
+            unset($type_param);
+            /** @psalm-suppress InvalidArgument Psalm bug */
+            $return_type = $return_type->setTypeParams($type_params);
+        } elseif ($return_type instanceof TKeyedArray) {
+            $properties = $return_type->properties;
+            $changed = false;
+            foreach ($properties as $k => $property_type) {
+                $property_type = self::expandUnion(
+                    $codebase,
+                    $property_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+                if ($property_type !== $properties[$k]) {
+                    $changed = true;
+                    $properties[$k] = $property_type;
+                }
+            }
+            unset($property_type);
+            $fallback_params = $return_type->fallback_params;
+            if ($fallback_params) {
+                foreach ($fallback_params as $k => $property_type) {
+                    $property_type = self::expandUnion(
+                        $codebase,
+                        $property_type,
+                        $self_class,
+                        $static_class_type,
+                        $parent_class,
+                        $evaluate_class_constants,
+                        $evaluate_conditional_types,
+                        $final,
+                        $expand_generic,
+                        $expand_templates,
+                        $throw_on_unresolvable_constant,
+                    );
+                    if ($property_type !== $fallback_params[$k]) {
+                        $changed = true;
+                        $fallback_params[$k] = $property_type;
+                    }
+                }
+                unset($property_type);
+            }
+            if ($changed) {
+                $return_type = new TKeyedArray(
+                    $properties,
+                    $return_type->class_strings,
+                    $fallback_params,
+                    $return_type->is_list,
+                    $return_type->from_docblock,
+                );
+            }
+        }
+
+        if ($return_type instanceof TObjectWithProperties) {
+            $properties = $return_type->properties;
+            foreach ($properties as &$property_type) {
+                $property_type = self::expandUnion(
+                    $codebase,
+                    $property_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+            }
+            unset($property_type);
+            $return_type = $return_type->setProperties($properties);
+        }
+
+        if ($return_type instanceof TCallable
+            || $return_type instanceof TClosure
+        ) {
+            $params = $return_type->params;
+            if ($params) {
+                foreach ($params as &$param) {
+                    if ($param->type) {
+                        $param = $param->setType(self::expandUnion(
+                            $codebase,
+                            $param->type,
+                            $self_class,
+                            $static_class_type,
+                            $parent_class,
+                            $evaluate_class_constants,
+                            $evaluate_conditional_types,
+                            $final,
+                            $expand_generic,
+                            $expand_templates,
+                            $throw_on_unresolvable_constant,
+                        ));
+                    }
+                }
+                unset($param);
+            }
+            $sub_return_type = $return_type->return_type;
+            if ($sub_return_type) {
+                $sub_return_type = self::expandUnion(
+                    $codebase,
+                    $sub_return_type,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+            }
+
+            $return_type = $return_type->replace(
+                $params,
+                $sub_return_type,
             );
         }
 
-        return $return_type;
+        return [$return_type];
     }
 
     /**
-     * @param  string|TNamedObject|TTemplateParam|null $static_class_type
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
+     * @param-out TNamedObject|TTemplateParam $return_type
      * @return TNamedObject|TTemplateParam
      */
     private static function expandNamedObject(
         Codebase $codebase,
-        TNamedObject $return_type,
+        TNamedObject &$return_type,
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
@@ -604,27 +670,23 @@ class TypeExpander
         ) {
             $value = $codebase->classlikes->getUnAliasedName($return_type->value);
             $container_class_storage = $codebase->classlike_storage_provider->get(
-                $value
+                $value,
             );
 
             if ($container_class_storage->template_types
                 && array_filter(
                     $container_class_storage->template_types,
-                    function ($type_map) {
-                        return !reset($type_map)->hasMixed();
-                    }
+                    static fn($type_map): bool => !reset($type_map)->hasMixed()
                 )
             ) {
                 $return_type = new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
-                            function ($type_map) {
-                                return clone reset($type_map);
-                            },
-                            $container_class_storage->template_types
-                        )
-                    )
+                            static fn($type_map) => reset($type_map),
+                            $container_class_storage->template_types,
+                        ),
+                    ),
                 );
 
                 // we don't want to expand generic types recursively
@@ -635,61 +697,79 @@ class TypeExpander
         $return_type_lc = strtolower($return_type->value);
 
         if ($static_class_type && ($return_type_lc === 'static' || $return_type_lc === '$this')) {
+            $is_static = $return_type->is_static;
+            $is_static_resolved = null;
+            if (!$final) {
+                $is_static = true;
+                $is_static_resolved = true;
+            }
             if (is_string($static_class_type)) {
-                $return_type->value = $static_class_type;
+                $return_type = $return_type->setValueIsStatic(
+                    $static_class_type,
+                    $is_static,
+                    $is_static_resolved,
+                );
             } else {
                 if ($return_type instanceof TGenericObject
                     && $static_class_type instanceof TGenericObject
                 ) {
-                    $return_type->value = $static_class_type->value;
+                    $return_type = $return_type->setValueIsStatic(
+                        $static_class_type->value,
+                        $is_static,
+                        $is_static_resolved,
+                    );
+                } elseif ($static_class_type instanceof TNamedObject) {
+                    $return_type = $static_class_type->setIsStatic(
+                        $is_static,
+                        $is_static_resolved,
+                    );
                 } else {
-                    $return_type = clone $static_class_type;
+                    $return_type = $static_class_type;
                 }
             }
-
-            if (!$final && $return_type instanceof TNamedObject) {
-                $return_type->was_static = true;
-            }
-        } elseif ($return_type->was_static
+        } elseif ($return_type->is_static && !$return_type->is_static_resolved
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)
         ) {
-            $return_type = clone $return_type;
-            $cloned_static = clone $static_class_type;
-            $extra_static = $cloned_static->extra_types ?: [];
-            $cloned_static->extra_types = null;
+            $return_type_types = $return_type->getIntersectionTypes();
+            $cloned_static = $static_class_type->setIntersectionTypes([]);
+            $extra_static = $static_class_type->extra_types;
 
             if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
-                $return_type->extra_types[$static_class_type->getKey()] = clone $cloned_static;
+                $return_type_types[$cloned_static->getKey()] = $cloned_static;
             }
 
             foreach ($extra_static as $extra_static_type) {
                 if ($extra_static_type->getKey(false) !== $return_type->getKey(false)) {
-                    $return_type->extra_types[$extra_static_type->getKey()] = clone $extra_static_type;
+                    $return_type_types[$extra_static_type->getKey()] = $extra_static_type;
                 }
             }
-        } elseif ($return_type->was_static && is_string($static_class_type) && $final) {
-            $return_type->value = $static_class_type;
-            $return_type->was_static = false;
+            $return_type = $return_type->setIntersectionTypes($return_type_types)
+                ->setIsStatic(true, true);
+        } elseif ($return_type->is_static && is_string($static_class_type) && $final) {
+            $return_type = $return_type->setValueIsStatic(
+                $static_class_type,
+                false,
+            );
         } elseif ($self_class && $return_type_lc === 'self') {
-            $return_type->value = $self_class;
+            $return_type = $return_type->setValue($self_class);
         } elseif ($parent_class && $return_type_lc === 'parent') {
-            $return_type->value = $parent_class;
+            $return_type = $return_type->setValue($parent_class);
         } else {
-            $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
+            $new_value = $codebase->classlikes->getUnAliasedName($return_type->value);
+            $return_type = $return_type->setValue($new_value);
         }
 
         return $return_type;
     }
 
     /**
-     * @param  string|TNamedObject|TTemplateParam|null $static_class_type
-     *
-     * @return Atomic|non-empty-list<Atomic>
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
+     * @return non-empty-list<Atomic>
      */
     private static function expandConditional(
         Codebase $codebase,
-        TConditional $return_type,
+        TConditional &$return_type,
         ?string $self_class,
         $static_class_type,
         ?string $parent_class,
@@ -697,8 +777,9 @@ class TypeExpander
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
-        bool $expand_templates = false
-    ) {
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false
+    ): array {
         $new_as_type = self::expandUnion(
             $codebase,
             $return_type->as_type,
@@ -709,10 +790,9 @@ class TypeExpander
             $evaluate_conditional_types,
             $final,
             $expand_generic,
-            $expand_templates
+            $expand_templates,
+            $throw_on_unresolvable_constant,
         );
-
-        $return_type->as_type = $new_as_type;
 
         if ($evaluate_conditional_types) {
             $assertion = null;
@@ -729,11 +809,12 @@ class TypeExpander
                         $evaluate_conditional_types,
                         $final,
                         $expand_generic,
-                        $expand_templates
+                        $expand_templates,
+                        $throw_on_unresolvable_constant,
                     );
 
-                    if (!is_array($candidate)) {
-                        $assertion = $candidate->getAssertionString();
+                    if (count($candidate) === 1) {
+                        $assertion = new IsType($candidate[0]);
                     }
                 }
             }
@@ -741,7 +822,7 @@ class TypeExpander
             $if_conditional_return_types = [];
 
             foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
-                $candidate = self::expandAtomic(
+                $candidate_types = self::expandAtomic(
                     $codebase,
                     $if_atomic_type,
                     $self_class,
@@ -751,21 +832,17 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
 
-                $candidate_types = is_array($candidate) ? $candidate : [$candidate];
-
-                $if_conditional_return_types = array_merge(
-                    $if_conditional_return_types,
-                    $candidate_types
-                );
+                $if_conditional_return_types = [...$if_conditional_return_types, ...$candidate_types];
             }
 
             $else_conditional_return_types = [];
 
             foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
-                $candidate = self::expandAtomic(
+                $candidate_types = self::expandAtomic(
                     $codebase,
                     $else_atomic_type,
                     $self_class,
@@ -775,27 +852,23 @@ class TypeExpander
                     $evaluate_conditional_types,
                     $final,
                     $expand_generic,
-                    $expand_templates
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
                 );
 
-                $candidate_types = is_array($candidate) ? $candidate : [$candidate];
-
-                $else_conditional_return_types = array_merge(
-                    $else_conditional_return_types,
-                    $candidate_types
-                );
+                $else_conditional_return_types = [...$else_conditional_return_types, ...$candidate_types];
             }
 
             if ($assertion && $return_type->param_name === (string) $return_type->if_type) {
                 $if_conditional_return_type = TypeCombiner::combine(
                     $if_conditional_return_types,
-                    $codebase
+                    $codebase,
                 );
 
                 $if_conditional_return_type = SimpleAssertionReconciler::reconcile(
                     $assertion,
                     $codebase,
-                    $if_conditional_return_type
+                    $if_conditional_return_type,
                 );
 
 
@@ -807,13 +880,13 @@ class TypeExpander
             if ($assertion && $return_type->param_name === (string) $return_type->else_type) {
                 $else_conditional_return_type = TypeCombiner::combine(
                     $else_conditional_return_types,
-                    $codebase
+                    $codebase,
                 );
 
                 $else_conditional_return_type = SimpleNegatedAssertionReconciler::reconcile(
                     $codebase,
                     $assertion,
-                    $else_conditional_return_type
+                    $else_conditional_return_type,
                 );
 
                 if ($else_conditional_return_type) {
@@ -821,20 +894,14 @@ class TypeExpander
                 }
             }
 
-            $all_conditional_return_types = array_merge(
-                $if_conditional_return_types,
-                $else_conditional_return_types
-            );
+            $all_conditional_return_types = [...$if_conditional_return_types, ...$else_conditional_return_types];
 
             $number_of_types = count($all_conditional_return_types);
-            // we filter TNever and TEmpty that have no bearing on the return type
+            // we filter TNever that have no bearing on the return type
             if ($number_of_types > 1) {
                 $all_conditional_return_types = array_filter(
                     $all_conditional_return_types,
-                    static function (Atomic $atomic_type): bool {
-                        return !($atomic_type instanceof TEmpty
-                            || $atomic_type instanceof TNever);
-                    }
+                    static fn(Atomic $atomic_type): bool => !$atomic_type instanceof TNever,
                 );
             }
 
@@ -843,67 +910,247 @@ class TypeExpander
             if ($number_of_types > 1) {
                 $all_conditional_return_types = array_filter(
                     $all_conditional_return_types,
-                    static function (Atomic $atomic_type): bool {
-                        return !$atomic_type instanceof TVoid;
-                    }
+                    static fn(Atomic $atomic_type): bool => !$atomic_type instanceof TVoid,
                 );
 
                 if (count($all_conditional_return_types) !== $number_of_types) {
-                    $null_type = new TNull();
-                    $null_type->from_docblock = true;
-                    $all_conditional_return_types[] = $null_type;
+                    $all_conditional_return_types[] = new TNull(true);
                 }
             }
 
             if ($all_conditional_return_types) {
                 $combined = TypeCombiner::combine(
                     array_values($all_conditional_return_types),
-                    $codebase
+                    $codebase,
                 );
+
+                $return_type = $return_type->setTypes($new_as_type);
 
                 return array_values($combined->getAtomicTypes());
             }
         }
 
-        $return_type->conditional_type = self::expandUnion(
-            $codebase,
-            $return_type->conditional_type,
-            $self_class,
-            $static_class_type,
-            $parent_class,
-            $evaluate_class_constants,
-            $evaluate_conditional_types,
-            $final,
-            $expand_generic,
-            $expand_templates
+        $return_type = $return_type->setTypes(
+            $new_as_type,
+            self::expandUnion(
+                $codebase,
+                $return_type->conditional_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            ),
+            self::expandUnion(
+                $codebase,
+                $return_type->if_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            ),
+            self::expandUnion(
+                $codebase,
+                $return_type->else_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            ),
         );
+        return [$return_type];
+    }
 
-        $return_type->if_type = self::expandUnion(
-            $codebase,
-            $return_type->if_type,
-            $self_class,
-            $static_class_type,
-            $parent_class,
-            $evaluate_class_constants,
-            $evaluate_conditional_types,
-            $final,
-            $expand_generic,
-            $expand_templates
-        );
+    /**
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
+     * @return non-empty-list<Atomic>
+     */
+    private static function expandPropertiesOf(
+        Codebase $codebase,
+        TPropertiesOf &$return_type,
+        ?string $self_class,
+        $static_class_type
+    ): array {
+        if ($self_class) {
+            $return_type = $return_type->replaceClassLike(
+                'self',
+                $self_class,
+            );
+            $return_type = $return_type->replaceClassLike(
+                'static',
+                is_string($static_class_type) ? $static_class_type : $self_class,
+            );
+        }
 
-        $return_type->else_type = self::expandUnion(
-            $codebase,
-            $return_type->else_type,
-            $self_class,
-            $static_class_type,
-            $parent_class,
-            $evaluate_class_constants,
-            $evaluate_conditional_types,
-            $final,
-            $expand_generic,
-            $expand_templates
-        );
+        $class_storage = null;
+        if ($codebase->classExists($return_type->classlike_type->value)) {
+            $class_storage = $codebase->classlike_storage_provider->get($return_type->classlike_type->value);
+        } else {
+            foreach ($return_type->classlike_type->extra_types as $type) {
+                if ($type instanceof TNamedObject && $codebase->classExists($type->value)) {
+                    $class_storage = $codebase->classlike_storage_provider->get($type->value);
+                    break;
+                }
+            }
+        }
 
-        return $return_type;
+        if (!$class_storage) {
+            return [$return_type];
+        }
+
+        $all_sealed = true;
+        $properties = [];
+        foreach ([$class_storage->name, ...array_values($class_storage->parent_classes)] as $class) {
+            if (!$codebase->classExists($class)) {
+                continue;
+            }
+            $storage = $codebase->classlike_storage_provider->get($class);
+            if (!$storage->final) {
+                $all_sealed = false;
+            }
+            foreach ($storage->properties as $key => $property) {
+                if (isset($properties[$key])) {
+                    continue;
+                }
+                if ($return_type->visibility_filter !== null
+                    && $property->visibility !== $return_type->visibility_filter
+                ) {
+                    continue;
+                }
+                if ($property->is_static || !$property->type) {
+                    continue;
+                }
+                $type = $return_type->classlike_type instanceof TGenericObject
+                    ? AtomicPropertyFetchAnalyzer::localizePropertyType(
+                        $codebase,
+                        $property->type,
+                        $return_type->classlike_type,
+                        $storage,
+                        $storage,
+                    )
+                    : $property->type
+                ;
+                $properties[$key] = $type;
+            }
+        }
+
+        if ($properties === []) {
+            return [$return_type];
+        }
+        return [new TKeyedArray(
+            $properties,
+            null,
+            $all_sealed ? null : [Type::getString(), Type::getMixed()],
+        )];
+    }
+
+    /**
+     * @param TKeyOf|TValueOf $return_type
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type
+     * @return non-empty-list<Atomic>
+     */
+    private static function expandKeyOfValueOf(
+        Codebase $codebase,
+        Atomic &$return_type,
+        ?string $self_class,
+        $static_class_type,
+        ?string $parent_class,
+        bool $evaluate_class_constants = true,
+        bool $evaluate_conditional_types = false,
+        bool $final = false,
+        bool $expand_generic = false,
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false
+    ): array {
+        // Expand class constants to their atomics
+        $type_atomics = [];
+        foreach ($return_type->type->getAtomicTypes() as $type_param) {
+            if (!$evaluate_class_constants || !$type_param instanceof TClassConstant) {
+                $type_param_expanded = self::expandAtomic(
+                    $codebase,
+                    $type_param,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                );
+                $type_atomics = [...$type_atomics, ...$type_param_expanded];
+                continue;
+            }
+
+            if ($self_class) {
+                $type_param = $type_param->replaceClassLike('self', $self_class);
+            }
+
+            if ($throw_on_unresolvable_constant
+                && !$codebase->classOrInterfaceExists($type_param->fq_classlike_name)
+            ) {
+                throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
+            }
+
+            try {
+                $constant_type = $codebase->classlikes->getClassConstantType(
+                    $type_param->fq_classlike_name,
+                    $type_param->const_name,
+                    ReflectionProperty::IS_PRIVATE,
+                );
+            } catch (CircularReferenceException $e) {
+                return [$return_type];
+            }
+
+            if (!$constant_type
+                || (
+                    $return_type instanceof TKeyOf
+                    && !TKeyOf::isViableTemplateType($constant_type)
+                )
+                || (
+                    $return_type instanceof TValueOf
+                    && !TValueOf::isViableTemplateType($constant_type)
+                )
+            ) {
+                if ($throw_on_unresolvable_constant) {
+                    throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
+                } else {
+                    return [$return_type];
+                }
+            }
+
+            $type_atomics = array_merge(
+                $type_atomics,
+                array_values($constant_type->getAtomicTypes()),
+            );
+        }
+        if ($type_atomics === []) {
+            return [$return_type];
+        }
+
+        if ($return_type instanceof TKeyOf) {
+            $new_return_types = TKeyOf::getArrayKeyType(new Union($type_atomics));
+        } else {
+            $new_return_types = TValueOf::getValueType(new Union($type_atomics), $codebase);
+        }
+        if ($new_return_types === null) {
+            return [$return_type];
+        }
+        return array_values($new_return_types->getAtomicTypes());
     }
 }

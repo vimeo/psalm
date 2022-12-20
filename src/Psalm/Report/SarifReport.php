@@ -16,7 +16,7 @@ use function strpos;
  *
  * https://docs.oasis-open.org/sarif/sarif/v2.1.0/cs01/sarif-v2.1.0-cs01.html
  */
-class SarifReport extends Report
+final class SarifReport extends Report
 {
     public function create(): string
     {
@@ -80,7 +80,7 @@ class SarifReport extends Report
                                 'endColumn' => $issue_data->column_to,
                             ],
                         ],
-                    ]
+                    ],
                 ],
             ];
 
@@ -95,7 +95,7 @@ class SarifReport extends Report
                                 'locations' => [],
                             ],
                         ],
-                    ]
+                    ],
                 ];
 
                 foreach ($issue_data->taint_trace as $trace) {

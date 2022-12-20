@@ -10,14 +10,11 @@ class ConstValuesTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'enumStringOrEnumIntCorrect' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /** @psalm-param ( "foo\"with" | "bar" | 1 | 2 | 3 ) $s */
@@ -29,7 +26,7 @@ class ConstValuesTest extends TestCase
                     foo(3);',
             ],
             'enumStringOrEnumIntWithoutSpacesCorrect' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /** @psalm-param "foo\"with"|"bar"|1|2|3|4.0|4.1 $s */
@@ -43,7 +40,7 @@ class ConstValuesTest extends TestCase
                     foo(4.1);',
             ],
             'noRedundantConditionWithSwitch' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /**
@@ -59,7 +56,7 @@ class ConstValuesTest extends TestCase
                     }',
             ],
             'classConstantCorrect' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     class C {
@@ -74,7 +71,7 @@ class ConstValuesTest extends TestCase
                     foo("baz");',
             ],
             'selfClassConstGoodValue' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const FOO = "foo";
                         const BAR = "bar";
@@ -88,7 +85,7 @@ class ConstValuesTest extends TestCase
                     A::foo("foo");',
             ],
             'classConstants' => [
-                '<?php
+                'code' => '<?php
                     namespace NS {
                         use OtherNS\C as E;
                         class C {}
@@ -108,14 +105,11 @@ class ConstValuesTest extends TestCase
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'enumStringOrEnumIntIncorrectString' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /** @psalm-param ( "foo" | "bar" | 1 | 2 | 3 ) $s */
@@ -124,7 +118,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'enumStringOrEnumIntIncorrectInt' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /** @psalm-param ( "foo" | "bar" | 1 | 2 | 3 ) $s */
@@ -133,7 +127,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'enumStringOrEnumIntWithoutSpacesIncorrect' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /** @psalm-param "foo\"with"|"bar"|1|2|3 $s */
@@ -142,7 +136,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'enumWrongFloat' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /** @psalm-param 1.2|3.4|5.6 $s */
@@ -151,7 +145,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'classConstantIncorrect' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     class C {
@@ -164,7 +158,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'classConstantNoClass' => [
-                '<?php
+                'code' => '<?php
                     namespace Ns;
 
                     /** @psalm-param "foo"|"bar"|C::A|C::B $s */
@@ -172,7 +166,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'UndefinedDocblockClass',
             ],
             'selfClassConstBadValue' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const FOO = "foo";
                         const BAR = "bar";
@@ -187,7 +181,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'selfClassConstBadConst' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const FOO = "foo";
                         const BAR = "bar";
@@ -200,7 +194,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'classConstantInvalidValue' => [
-                '<?php
+                'code' => '<?php
                     namespace NS {
                         use OtherNS\C as E;
                         class C {}
@@ -217,7 +211,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'nonExistentConstantClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return Foo::HELLO|5
                      */
@@ -228,7 +222,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'UndefinedDocblockClass',
             ],
             'nonExistentClassConstant' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
                     /**
                      * @return Foo::HELLO|5
@@ -240,7 +234,7 @@ class ConstValuesTest extends TestCase
                 'error_message' => 'UndefinedConstant',
             ],
             'noIntToFloatEnum' => [
-                '<?php
+                'code' => '<?php
                     /** @param 0.3|0.5 $p */
                     function f($p): void {}
                     f(1);',

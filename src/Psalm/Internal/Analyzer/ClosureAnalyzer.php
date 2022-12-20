@@ -5,7 +5,6 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
@@ -14,10 +13,10 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function array_map;
 use function in_array;
 use function is_string;
 use function preg_match;
@@ -47,6 +46,8 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         parent::__construct($function, $source, $storage);
     }
 
+
+    /** @psalm-mutation-free */
     public function getTemplateTypeMap(): ?array
     {
         return $this->source->getTemplateTypeMap();
@@ -88,14 +89,13 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 $context->self &&
                 $codebase->classExtends(
                     $context->self,
-                    (string)$statements_analyzer->getFQCLN()
+                    (string)$statements_analyzer->getFQCLN(),
                 )
             ) {
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                $use_context->vars_in_scope['$this'] = clone $context->vars_in_scope['$this'];
+                $use_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
             } elseif ($context->self) {
-                $this_atomic = new TNamedObject($context->self);
-                $this_atomic->was_static = true;
+                $this_atomic = new TNamedObject($context->self, true);
 
                 $use_context->vars_in_scope['$this'] = new Union([$this_atomic]);
             }
@@ -103,7 +103,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         foreach ($context->vars_in_scope as $var => $type) {
             if (strpos($var, '$this->') === 0) {
-                $use_context->vars_in_scope[$var] = clone $type;
+                $use_context->vars_in_scope[$var] = $type;
             }
         }
 
@@ -115,7 +115,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 $self_class_storage,
                 $use_context,
                 $context->self,
-                $statements_analyzer->getParentFQCLN()
+                $statements_analyzer->getParentFQCLN(),
             );
         }
 
@@ -136,7 +136,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
                 if ($use->byRef && !$context->hasVariable($use_var_id)) {
-                    $context->vars_in_scope[$use_var_id] = Type::getMixed();
+                    $context->vars_in_scope[$use_var_id] = new Union([new TMixed()], ['by_ref' => true]);
                 }
 
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
@@ -148,25 +148,27 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                         $statements_analyzer->data_flow_graph->addPath(
                             $parent_node,
                             new DataFlowNode('closure-use', 'closure use', null),
-                            'closure-use'
+                            'closure-use',
                         );
                     }
                 }
 
                 $use_context->vars_in_scope[$use_var_id] =
                     $context->hasVariable($use_var_id) && !$use->byRef
-                    ? clone $context->vars_in_scope[$use_var_id]
+                    ? $context->vars_in_scope[$use_var_id]
                     : Type::getMixed();
 
                 if ($use->byRef) {
-                    $use_context->vars_in_scope[$use_var_id]->by_ref = true;
+                    $use_context->vars_in_scope[$use_var_id] =
+                        $use_context->vars_in_scope[$use_var_id]->setProperties(['by_ref' => true]);
+                    $use_context->references_to_external_scope[$use_var_id] = true;
                 }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
-                        $use_context->vars_in_scope[$var_id] = clone $type;
+                        $use_context->vars_in_scope[$var_id] = $type;
                         $use_context->vars_possibly_in_scope[$var_id] = true;
                     }
                 }
@@ -181,7 +183,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
             foreach ($short_closure_visitor->getUsedVariables() as $use_var_id => $_) {
                 if ($context->hasVariable($use_var_id)) {
-                    $use_context->vars_in_scope[$use_var_id] = clone $context->vars_in_scope[$use_var_id];
+                    $use_context->vars_in_scope[$use_var_id] = $context->vars_in_scope[$use_var_id];
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
@@ -190,7 +192,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                             $statements_analyzer->data_flow_graph->addPath(
                                 $parent_node,
                                 new DataFlowNode('closure-use', 'closure use', null),
-                                'closure-use'
+                                'closure-use',
                             );
                         }
                     }
@@ -231,17 +233,15 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         PhpParser\Node\Expr\Closure $stmt,
         Context $context
     ): ?bool {
-        $param_names = array_map(
-            function (PhpParser\Node\Param $p): string {
-                if (!$p->var instanceof PhpParser\Node\Expr\Variable
-                    || !is_string($p->var->name)
-                ) {
-                    return '';
-                }
-                return $p->var->name;
-            },
-            $stmt->params
-        );
+        $param_names = [];
+
+        foreach ($stmt->params as $i => $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                $param_names[$i] = $param->var->name;
+            } else {
+                $param_names[$i] = '';
+            }
+        }
 
         foreach ($stmt->uses as $use) {
             if (!is_string($use->var->name)) {
@@ -254,9 +254,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new DuplicateParam(
                         'Closure use duplicates param name ' . $use_var_id,
-                        new CodeLocation($statements_analyzer->getSource(), $use->var)
+                        new CodeLocation($statements_analyzer->getSource(), $use->var),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 )) {
                     return false;
                 }
@@ -275,7 +275,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                         $statements_analyzer->registerVariable(
                             $use_var_id,
                             new CodeLocation($statements_analyzer, $use->var),
-                            null
+                            null,
                         );
                     }
 
@@ -287,9 +287,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                         if (IssueBuffer::accepts(
                             new UndefinedVariable(
                                 'Cannot find referenced variable ' . $use_var_id,
-                                new CodeLocation($statements_analyzer->getSource(), $use->var)
+                                new CodeLocation($statements_analyzer->getSource(), $use->var),
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         )) {
                             return false;
                         }
@@ -305,9 +305,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $use_var_id . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_analyzer->getSource(), $use->var)
+                            new CodeLocation($statements_analyzer->getSource(), $use->var),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
                         return false;
                     }
@@ -319,9 +319,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $use_var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $use->var)
+                            new CodeLocation($statements_analyzer->getSource(), $use->var),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
                         return false;
                     }
@@ -329,8 +329,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     continue;
                 }
             } elseif ($use->byRef) {
-                $new_type = Type::getMixed();
-                $new_type->parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
+                $new_type = new Union([new TMixed()], [
+                    'parent_nodes' => $context->vars_in_scope[$use_var_id]->parent_nodes,
+                ]);
 
                 $context->remove($use_var_id);
 

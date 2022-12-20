@@ -4,14 +4,11 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `bool` type where the exact value is unknown.
+ *
+ * @psalm-immutable
  */
 class TBool extends Scalar
 {
-    public function __toString(): string
-    {
-        return 'bool';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'bool';
@@ -24,9 +21,8 @@ class TBool extends Scalar
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
-        return $php_major_version >= 7 ? 'bool' : null;
+        return $analysis_php_version_id >= 7_00_00 ? 'bool' : null;
     }
 }

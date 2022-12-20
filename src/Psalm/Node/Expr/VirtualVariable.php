@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Node\VirtualNode;
 
-class VirtualVariable extends Variable implements VirtualNode
+final class VirtualVariable extends Variable implements VirtualNode
 {
 
 }

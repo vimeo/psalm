@@ -8,6 +8,9 @@ use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class DomNodeAppendChild implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array
@@ -34,7 +37,7 @@ class DomNodeAppendChild implements MethodReturnTypeProviderInterface
         if (($first_arg_type = $source->node_data->getType($call_args[0]->value))
             && $first_arg_type->hasObjectType()
         ) {
-            return clone $first_arg_type;
+            return $first_arg_type;
         }
 
         return null;

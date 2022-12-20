@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class MissingDependency extends ClassIssue
+final class MissingDependency extends ClassIssue
 {
     public const SHORTCODE = 157;
 }

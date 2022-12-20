@@ -77,6 +77,7 @@ class AtomicPropertyFetchAnalyzer
 {
     /**
      * @param array<string> $invalid_fetch_types $invalid_fetch_types
+     * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -122,8 +123,8 @@ class AtomicPropertyFetchAnalyzer
                 $stmt,
                 Type::combineUnionTypes(
                     $lhs_type_part->properties[$prop_name],
-                    $stmt_type
-                )
+                    $stmt_type,
+                ),
             );
 
             return;
@@ -171,7 +172,7 @@ class AtomicPropertyFetchAnalyzer
                 $class_exists,
                 $interface_exists,
                 $fq_class_name,
-                $override_property_visibility
+                $override_property_visibility,
             );
 
             if (!$class_exists && !$interface_exists) {
@@ -193,8 +194,8 @@ class AtomicPropertyFetchAnalyzer
                     $stmt,
                     new Union([
                         new TString(),
-                        new TInt()
-                    ])
+                        new TInt(),
+                    ]),
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
                 self::handleEnumValue($statements_analyzer, $stmt, $class_storage);
@@ -215,7 +216,7 @@ class AtomicPropertyFetchAnalyzer
                     $in_assignment,
                     $stmt_var_id,
                     $has_magic_getter,
-                    $var_id
+                    $var_id,
                 );
             }
 
@@ -227,7 +228,7 @@ class AtomicPropertyFetchAnalyzer
             !$in_assignment,
             $statements_analyzer,
             $context,
-            $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
+            $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
         );
 
         // add method before changing fq_class_name
@@ -253,12 +254,12 @@ class AtomicPropertyFetchAnalyzer
                         $context,
                         $codebase->collect_locations
                                 ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                : null
+                                : null,
                     )
                         || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
                 ) {
                     $fq_class_name = $mixin->value;
-                    $lhs_type_part = clone $mixin;
+                    $lhs_type_part = $mixin;
                     $class_storage = $new_class_storage;
 
                     if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
@@ -273,7 +274,7 @@ class AtomicPropertyFetchAnalyzer
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $property_id,
             true,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         if (self::propertyFetchCanBeAnalyzed(
@@ -293,7 +294,7 @@ class AtomicPropertyFetchAnalyzer
             $declaring_property_class,
             $class_storage,
             $get_method_id,
-            $in_assignment
+            $in_assignment,
         ) === false) {
             return;
         }
@@ -305,7 +306,7 @@ class AtomicPropertyFetchAnalyzer
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                $property_id
+                $property_id,
             );
         }
 
@@ -320,7 +321,7 @@ class AtomicPropertyFetchAnalyzer
                 $context,
                 $codebase->collect_locations
                     ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    : null
+                    : null,
             )
         ) {
             $property_id = $context->self . '::$' . $prop_name;
@@ -345,7 +346,7 @@ class AtomicPropertyFetchAnalyzer
                 $in_assignment,
                 $stmt_var_id,
                 $has_magic_getter,
-                $var_id
+                $var_id,
             );
 
             return;
@@ -357,7 +358,7 @@ class AtomicPropertyFetchAnalyzer
                 $context,
                 $statements_analyzer,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             ) === false) {
                 return;
             }
@@ -369,7 +370,7 @@ class AtomicPropertyFetchAnalyzer
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $property_id,
             true,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         if ($declaring_property_class === null) {
@@ -385,20 +386,20 @@ class AtomicPropertyFetchAnalyzer
                         new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
-                            $new_property_name
-                        )
+                            $new_property_name,
+                        ),
                     ];
 
                     FileManipulationBuffer::add(
                         $statements_analyzer->getFilePath(),
-                        $file_manipulations
+                        $file_manipulations,
                     );
                 }
             }
         }
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get(
-            $declaring_property_class
+            $declaring_property_class,
         );
 
         if (isset($declaring_class_storage->properties[$prop_name])) {
@@ -412,9 +413,9 @@ class AtomicPropertyFetchAnalyzer
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
                             . ' but called from ' . $context->self,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -425,7 +426,7 @@ class AtomicPropertyFetchAnalyzer
                     $property_id,
                     $property_storage,
                     $declaring_class_storage,
-                    $context
+                    $context,
                 );
             }
         }
@@ -441,7 +442,7 @@ class AtomicPropertyFetchAnalyzer
             $property_id,
             $fq_class_name,
             $prop_name,
-            $lhs_type_part
+            $lhs_type_part,
         );
 
         if (!$context->collect_mutations
@@ -453,9 +454,9 @@ class AtomicPropertyFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImpurePropertyFetch(
                         'Cannot access a property on a mutable object from a pure context',
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
@@ -471,17 +472,19 @@ class AtomicPropertyFetchAnalyzer
             $property_id,
             $class_storage,
             $in_assignment,
-            $context
+            $context,
         );
 
         if ($class_storage->mutation_free) {
-            $class_property_type->has_mutations = false;
+            $class_property_type = $class_property_type->setProperties([
+                'has_mutations' => false,
+            ]);
         }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
         $statements_analyzer->node_data->setType(
             $stmt,
-            Type::combineUnionTypes($class_property_type, $stmt_type)
+            Type::combineUnionTypes($class_property_type, $stmt_type),
         );
     }
 
@@ -497,7 +500,7 @@ class AtomicPropertyFetchAnalyzer
         $property_id = $declaring_property_class . '::$' . $prop_name;
         $codebase = $statements_analyzer->getCodebase();
         $declaring_class_storage = $codebase->classlike_storage_provider->get(
-            $declaring_property_class
+            $declaring_property_class,
         );
 
         if (isset($declaring_class_storage->properties[$prop_name])) {
@@ -508,9 +511,9 @@ class AtomicPropertyFetchAnalyzer
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -544,7 +547,7 @@ class AtomicPropertyFetchAnalyzer
                         $statements_analyzer,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $statements_analyzer->getSuppressedIssues(),
-                        false
+                        false,
                     ) !== true)
             )
             && $codebase->methods->methodExists(
@@ -557,7 +560,7 @@ class AtomicPropertyFetchAnalyzer
                     && !$context->collect_mutations
                     ? $statements_analyzer
                     : null,
-                $statements_analyzer->getFilePath()
+                $statements_analyzer->getFilePath(),
             )
         ) {
             $has_magic_getter = true;
@@ -565,10 +568,10 @@ class AtomicPropertyFetchAnalyzer
             if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
                 $stmt_type = TypeExpander::expandUnion(
                     $codebase,
-                    clone $class_storage->pseudo_property_get_types['$' . $prop_name],
+                    $class_storage->pseudo_property_get_types['$' . $prop_name],
                     $class_storage->name,
                     $class_storage->name,
-                    $class_storage->parent_class
+                    $class_storage->parent_class,
                 );
 
                 if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
@@ -583,12 +586,10 @@ class AtomicPropertyFetchAnalyzer
                         $class_storage,
                         $declaring_property_class
                             ? $codebase->classlike_storage_provider->get(
-                                $declaring_property_class
-                            ) : $class_storage
+                                $declaring_property_class,
+                            ) : $class_storage,
                     );
                 }
-
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                 self::processTaints(
                     $statements_analyzer,
@@ -597,8 +598,10 @@ class AtomicPropertyFetchAnalyzer
                     $property_id,
                     $class_storage,
                     $in_assignment,
-                    $context
+                    $context,
                 );
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                 return false;
             }
@@ -616,10 +619,10 @@ class AtomicPropertyFetchAnalyzer
                     new VirtualArg(
                         new VirtualString(
                             $prop_name,
-                            $stmt->name->getAttributes()
-                        )
-                    )
-                ]
+                            $stmt->name->getAttributes(),
+                        ),
+                    ),
+                ],
             );
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -632,7 +635,7 @@ class AtomicPropertyFetchAnalyzer
                 $statements_analyzer,
                 $fake_method_call,
                 $context,
-                false
+                false,
             );
 
             if (!in_array('InternalMethod', $suppressed_issues, true)) {
@@ -647,7 +650,7 @@ class AtomicPropertyFetchAnalyzer
                 $stmt_type = $statements_analyzer->node_data->getType($stmt);
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    Type::combineUnionTypes($fake_method_call_type, $stmt_type)
+                    Type::combineUnionTypes($fake_method_call_type, $stmt_type),
                 );
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -670,9 +673,9 @@ class AtomicPropertyFetchAnalyzer
                     new UndefinedMagicPropertyFetch(
                         'Magic instance property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 return false;
@@ -694,7 +697,7 @@ class AtomicPropertyFetchAnalyzer
             $property_declaring_class_storage,
             $property_declaring_class_storage->name,
             $property_class_storage,
-            $property_class_storage->template_types ?: []
+            $property_class_storage->template_types ?: [],
         );
 
         $extended_types = $property_class_storage->template_extended_params;
@@ -731,7 +734,7 @@ class AtomicPropertyFetchAnalyzer
                         if (isset($property_class_storage->template_types[$param_name])) {
                             $position = array_search(
                                 $param_name,
-                                array_keys($property_class_storage->template_types)
+                                array_keys($property_class_storage->template_types),
                             );
                         }
 
@@ -743,10 +746,10 @@ class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            TemplateInferredTypeReplacer::replace(
+            $class_property_type = TemplateInferredTypeReplacer::replace(
                 $class_property_type,
                 new TemplateResult([], $template_types),
-                $codebase
+                $codebase,
             );
         }
 
@@ -756,7 +759,7 @@ class AtomicPropertyFetchAnalyzer
     public static function processTaints(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        Union $type,
+        Union &$type,
         string $property_id,
         ClassLikeStorage $class_storage,
         bool $in_assignment,
@@ -767,9 +770,6 @@ class AtomicPropertyFetchAnalyzer
         }
 
         $data_flow_graph = $statements_analyzer->data_flow_graph;
-
-        $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $added_taints = [];
         $removed_taints = [];
@@ -783,16 +783,16 @@ class AtomicPropertyFetchAnalyzer
         }
 
         if ($class_storage->specialize_instance) {
-            $var_id = ExpressionIdentifier::getArrayVarId(
+            $var_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt->var,
                 null,
-                $statements_analyzer
+                $statements_analyzer,
             );
 
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
-                $statements_analyzer
+                $statements_analyzer,
             );
 
             if ($var_id) {
@@ -802,20 +802,23 @@ class AtomicPropertyFetchAnalyzer
                     && $var_type
                     && in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
                 ) {
-                    $var_type->parent_nodes = [];
+                    $statements_analyzer->node_data->setType($stmt->var, $var_type->setParentNodes([]));
                     return;
                 }
 
+                $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+                $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
                 $var_node = DataFlowNode::getForAssignment(
                     $var_id,
-                    $var_location
+                    $var_location,
                 );
 
                 $data_flow_graph->addNode($var_node);
 
                 $property_node = DataFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
-                    $property_location
+                    $property_location,
                 );
 
                 $data_flow_graph->addNode($property_node);
@@ -826,7 +829,7 @@ class AtomicPropertyFetchAnalyzer
                     'property-fetch'
                         . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : ''),
                     $added_taints,
-                    $removed_taints
+                    $removed_taints,
                 );
 
                 if ($var_type && $var_type->parent_nodes) {
@@ -836,57 +839,88 @@ class AtomicPropertyFetchAnalyzer
                             $var_node,
                             '=',
                             $added_taints,
-                            $removed_taints
+                            $removed_taints,
                         );
                     }
                 }
 
-                $type->parent_nodes = [$property_node->id => $property_node];
+                $type = $type->setParentNodes([$property_node->id => $property_node], true);
             }
         } else {
-            $var_property_id = ExpressionIdentifier::getArrayVarId(
+            self::processUnspecialTaints(
+                $statements_analyzer,
                 $stmt,
-                null,
-                $statements_analyzer
-            );
-
-            $localized_property_node = DataFlowNode::getForAssignment(
-                $var_property_id
-                    ?: $property_id . '-' . $property_location->file_name . ':' . $property_location->raw_file_start,
-                $property_location
-            );
-
-            $data_flow_graph->addNode($localized_property_node);
-
-            $property_node = new DataFlowNode(
+                $type,
                 $property_id,
-                $property_id,
-                null,
-                null
+                $in_assignment,
+                $added_taints,
+                $removed_taints,
             );
-
-            $data_flow_graph->addNode($property_node);
-
-            if ($in_assignment) {
-                $data_flow_graph->addPath(
-                    $localized_property_node,
-                    $property_node,
-                    'property-assignment',
-                    $added_taints,
-                    $removed_taints
-                );
-            } else {
-                $data_flow_graph->addPath(
-                    $property_node,
-                    $localized_property_node,
-                    'property-fetch',
-                    $added_taints,
-                    $removed_taints
-                );
-            }
-
-            $type->parent_nodes = [$localized_property_node->id => $localized_property_node];
         }
+    }
+
+    /**
+     * @param ?array<string> $added_taints
+     * @param ?array<string> $removed_taints
+     */
+    public static function processUnspecialTaints(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        Union &$type,
+        string $property_id,
+        bool $in_assignment,
+        ?array $added_taints,
+        ?array $removed_taints
+    ): void {
+        if (!$statements_analyzer->data_flow_graph) {
+            return;
+        }
+
+        $data_flow_graph = $statements_analyzer->data_flow_graph;
+
+        $var_property_id = ExpressionIdentifier::getExtendedVarId(
+            $stmt,
+            null,
+            $statements_analyzer,
+        );
+
+        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $localized_property_node = DataFlowNode::getForAssignment(
+            $var_property_id ?: $property_id,
+            $property_location,
+        );
+
+        $data_flow_graph->addNode($localized_property_node);
+
+        $property_node = new DataFlowNode(
+            $property_id,
+            $property_id,
+            null,
+            null,
+        );
+
+        $data_flow_graph->addNode($property_node);
+
+        if ($in_assignment) {
+            $data_flow_graph->addPath(
+                $localized_property_node,
+                $property_node,
+                'property-assignment',
+                $added_taints,
+                $removed_taints,
+            );
+        } else {
+            $data_flow_graph->addPath(
+                $property_node,
+                $localized_property_node,
+                'property-fetch',
+                $added_taints,
+                $removed_taints,
+            );
+        }
+
+        $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
     }
 
     private static function handleEnumName(
@@ -897,7 +931,7 @@ class AtomicPropertyFetchAnalyzer
         if ($lhs_type_part instanceof TEnumCase) {
             $statements_analyzer->node_data->setType(
                 $stmt,
-                new Union([new TLiteralString($lhs_type_part->case_name)])
+                new Union([new TLiteralString($lhs_type_part->case_name)]),
             );
         } else {
             $statements_analyzer->node_data->setType($stmt, Type::getNonEmptyString());
@@ -926,7 +960,7 @@ class AtomicPropertyFetchAnalyzer
         /** @psalm-suppress ArgumentTypeCoercion */
         $statements_analyzer->node_data->setType(
             $stmt,
-            new Union($case_values)
+            new Union($case_values),
         );
     }
 
@@ -944,9 +978,9 @@ class AtomicPropertyFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImpurePropertyFetch(
                         'Cannot access a property on a mutable object from a pure context',
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif ($context->inside_isset
                 && $statements_analyzer->getSource()
@@ -964,9 +998,9 @@ class AtomicPropertyFetchAnalyzer
                 new UndefinedThisPropertyFetch(
                     'Instance property ' . $property_id . ' is not defined',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $property_id
+                    $property_id,
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         } else {
             if ($has_magic_getter) {
@@ -974,18 +1008,18 @@ class AtomicPropertyFetchAnalyzer
                     new UndefinedMagicPropertyFetch(
                         'Magic instance property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedPropertyFetch(
                         'Instance property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -1038,9 +1072,9 @@ class AtomicPropertyFetchAnalyzer
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $lhs_type_part->value
+                        $lhs_type_part->value,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 )) {
                     return;
                 }
@@ -1057,18 +1091,18 @@ class AtomicPropertyFetchAnalyzer
                     new UndefinedDocblockClass(
                         'Cannot get properties of undefined docblock class ' . $lhs_type_part->value,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $lhs_type_part->value
+                        $lhs_type_part->value,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedClass(
                         'Cannot get properties of undefined class ' . $lhs_type_part->value,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $lhs_type_part->value
+                        $lhs_type_part->value,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -1093,7 +1127,7 @@ class AtomicPropertyFetchAnalyzer
         if ($config->use_phpdoc_property_without_magic_or_parent
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
         ) {
-            $stmt_type = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+            $stmt_type = $class_storage->pseudo_property_get_types['$' . $prop_name];
 
             if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
                 if (!$lhs_type_part instanceof TGenericObject) {
@@ -1107,12 +1141,10 @@ class AtomicPropertyFetchAnalyzer
                     $class_storage,
                     $declaring_property_class
                         ? $codebase->classlike_storage_provider->get(
-                            $declaring_property_class
-                        ) : $class_storage
+                            $declaring_property_class,
+                        ) : $class_storage,
                 );
             }
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             self::processTaints(
                 $statements_analyzer,
@@ -1121,8 +1153,10 @@ class AtomicPropertyFetchAnalyzer
                 $property_id,
                 $class_storage,
                 $in_assignment,
-                $context
+                $context,
             );
+
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             return;
         }
@@ -1138,7 +1172,7 @@ class AtomicPropertyFetchAnalyzer
             $stmt_var_id,
             $property_id,
             $has_magic_getter,
-            $var_id
+            $var_id,
         );
     }
 
@@ -1159,13 +1193,13 @@ class AtomicPropertyFetchAnalyzer
             $property_id,
             false,
             $statements_analyzer,
-            $context
+            $context,
         );
 
         if (!$class_property_type) {
             if ($declaring_class_storage->location
                 && $config->isInProjectDirs(
-                    $declaring_class_storage->location->file_path
+                    $declaring_class_storage->location->file_path,
                 )
             ) {
                 IssueBuffer::maybeAdd(
@@ -1173,9 +1207,9 @@ class AtomicPropertyFetchAnalyzer
                         'Property ' . $fq_class_name . '::$' . $prop_name
                         . ' does not have a declared type',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -1183,10 +1217,10 @@ class AtomicPropertyFetchAnalyzer
         } else {
             $class_property_type = TypeExpander::expandUnion(
                 $codebase,
-                clone $class_property_type,
+                $class_property_type,
                 $declaring_class_storage->name,
                 $declaring_class_storage->name,
-                $declaring_class_storage->parent_class
+                $declaring_class_storage->parent_class,
             );
 
             if (count($template_types = $declaring_class_storage->getClassTemplateTypes()) !== 0) {
@@ -1199,7 +1233,7 @@ class AtomicPropertyFetchAnalyzer
                     $class_property_type,
                     $lhs_type_part,
                     $class_storage,
-                    $declaring_class_storage
+                    $declaring_class_storage,
                 );
             } elseif ($lhs_type_part instanceof TGenericObject) {
                 $class_property_type = self::localizePropertyType(
@@ -1207,7 +1241,7 @@ class AtomicPropertyFetchAnalyzer
                     $class_property_type,
                     $lhs_type_part,
                     $class_storage,
-                    $declaring_class_storage
+                    $declaring_class_storage,
                 );
             }
         }

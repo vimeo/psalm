@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PDO;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
@@ -10,6 +9,9 @@ use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 {
     public static function getClassLikeNames(): array
@@ -36,7 +38,7 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                 || ExpressionAnalyzer::analyze(
                     $statements_source,
                     $call_args[0]->value,
-                    $context
+                    $context,
                 ) === false
             ) {
                 return null;
@@ -50,54 +52,59 @@ class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                         'mode',
                         false,
                         Type::getInt(),
+                        Type::getInt(),
                         null,
                         null,
-                        false
+                        false,
                     ),
                 ];
 
                 $value = $first_call_arg_type->getSingleIntLiteral()->value;
 
                 switch ($value) {
-                    case PDO::FETCH_COLUMN:
+                    case 7: // PDO::FETCH_COLUMN
                         $params[] = new FunctionLikeParameter(
                             'colno',
                             false,
                             Type::getInt(),
+                            Type::getInt(),
                             null,
                             null,
-                            false
+                            false,
                         );
                         break;
 
-                    case PDO::FETCH_CLASS:
+                    case 8: // PDO::FETCH_CLASS
                         $params[] = new FunctionLikeParameter(
                             'classname',
                             false,
                             Type::getClassString(),
+                            Type::getClassString(),
                             null,
                             null,
-                            false
+                            false,
                         );
 
                         $params[] = new FunctionLikeParameter(
                             'ctorargs',
                             false,
                             Type::getArray(),
+                            Type::getArray(),
                             null,
                             null,
-                            true
+                            true,
                         );
                         break;
 
-                    case PDO::FETCH_INTO:
+                    case 9: // PDO::FETCH_INTO
                         $params[] = new FunctionLikeParameter(
                             'object',
                             false,
                             Type::getObject(),
+                            Type::getObject(),
                             null,
                             null,
-                            false
+                            false,
                         );
                         break;
                 }

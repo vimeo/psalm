@@ -4,8 +4,10 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an enum with a specific value
+ *
+ * @psalm-immutable
  */
-class TEnumCase extends TNamedObject
+final class TEnumCase extends TNamedObject
 {
     /**
      * @var string
@@ -24,7 +26,7 @@ class TEnumCase extends TNamedObject
         return 'enum(' . $this->value . '::' . $this->case_name . ')';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'enum(' . $this->value . '::' . $this->case_name . ')';
     }
@@ -33,20 +35,18 @@ class TEnumCase extends TNamedObject
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         return $this->value;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

@@ -48,6 +48,9 @@ require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../LanguageServer/ClientConfiguration.php';
 
+/**
+ * @internal
+ */
 final class LanguageServer
 {
     /**
@@ -56,10 +59,10 @@ final class LanguageServer
      */
     public static function run(array $argv): void
     {
+        CliUtils::checkRuntimeRequirements();
         $clientConfiguration = new ClientConfiguration();
-
         gc_disable();
-        ErrorHandler::install();
+        ErrorHandler::install($argv);
         $valid_short_options = [
             'h',
             'v',
@@ -88,7 +91,7 @@ final class LanguageServer
             'show-diagnostic-warnings::',
             'on-change-debounce-ms::',
             'use-extended-diagnostic-codes',
-            'verbose'
+            'verbose',
         ];
 
         $args = array_slice($argv, 1);
@@ -100,7 +103,7 @@ final class LanguageServer
         }
 
         array_map(
-            function (string $arg) use ($valid_long_options): void {
+            static function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
@@ -111,14 +114,14 @@ final class LanguageServer
                         fwrite(
                             STDERR,
                             'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments' . PHP_EOL
+                            . 'Type --help to see a list of supported arguments' . PHP_EOL,
                         );
                         error_log('Bad argument');
                         exit(1);
                     }
                 }
             },
-            $args
+            $args,
         );
 
         // get options from command line
@@ -127,7 +130,7 @@ final class LanguageServer
         if (!array_key_exists('use-ini-defaults', $options)) {
             ini_set('display_errors', '1');
             ini_set('display_startup_errors', '1');
-            ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
+            ini_set('memory_limit', (string) (8 * 1_024 * 1_024 * 1_024));
         }
 
         if (array_key_exists('help', $options)) {
@@ -149,75 +152,75 @@ final class LanguageServer
 
         if (array_key_exists('h', $options)) {
             echo <<<HELP
-Usage:
-    psalm-language-server [options]
+            Usage:
+                psalm-language-server [options]
 
-Options:
-    -h, --help
-        Display this help message
+            Options:
+                -h, --help
+                    Display this help message
 
-    -v, --version
-        Display the Psalm version
+                -v, --version
+                    Display the Psalm version
 
-    -c, --config=psalm.xml
-        Path to a psalm.xml configuration file. Run psalm --init to create one.
+                -c, --config=psalm.xml
+                    Path to a psalm.xml configuration file. Run psalm --init to create one.
 
-    -r, --root
-        If running Psalm globally you'll need to specify a project root. Defaults to cwd
+                -r, --root
+                    If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-    --find-dead-code
-        Look for dead code
+                --find-dead-code
+                    Look for dead code
 
-    --clear-cache
-        Clears all cache files that the language server uses for this specific project (exits after)
+                --clear-cache
+                    Clears all cache files that the language server uses for this specific project (exits after)
 
-    --clear-cache-on-boot
-        Clears all cache files that the language server uses for this specific project on boot (does not exit)
+                --clear-cache-on-boot
+                    Clears all cache files that the language server uses for this specific project on boot (does not exit)
 
-    --use-ini-defaults
-        Use PHP-provided ini defaults for memory and error display
+                --use-ini-defaults
+                    Use PHP-provided ini defaults for memory and error display
 
-    --tcp=url
-        Use TCP mode (by default Psalm uses STDIO)
+                --tcp=url
+                    Use TCP mode (by default Psalm uses STDIO)
 
-    --tcp-server
-        Use TCP in server mode (default is client)
+                --tcp-server
+                    Use TCP in server mode (default is client)
 
-    --disable-on-change[=line-number-threshold]
-        If added, the language server will not respond to onChange events.
-        You can also specify a line count over which Psalm will not run on-change events.
+                --disable-on-change[=line-number-threshold]
+                    If added, the language server will not respond to onChange events.
+                    You can also specify a line count over which Psalm will not run on-change events.
 
-    --enable-code-actions[=BOOL]
-        Enables or disables code actions. Default is true.
+                --enable-code-actions[=BOOL]
+                    Enables or disables code actions. Default is true.
 
-    --enable-provide-diagnostics[=BOOL]
-        Enables or disables providing diagnostics. Default is true.
+                --enable-provide-diagnostics[=BOOL]
+                    Enables or disables providing diagnostics. Default is true.
 
-    --enable-autocomplete[=BOOL]
-        Enables or disables autocomplete on methods and properties. Default is true.
+                --enable-autocomplete[=BOOL]
+                    Enables or disables autocomplete on methods and properties. Default is true.
 
-    --enable-provide-hover[=BOOL]
-        Enables or disables providing hover. Default is true.
+                --enable-provide-hover[=BOOL]
+                    Enables or disables providing hover. Default is true.
 
-    --enable-provide-signature-help[=BOOL]
-        Enables or disables providing signature help. Default is true.
+                --enable-provide-signature-help[=BOOL]
+                    Enables or disables providing signature help. Default is true.
 
-    --enable-provide-definition[=BOOL]
-        Enables or disables providing definition. Default is true.
+                --enable-provide-definition[=BOOL]
+                    Enables or disables providing definition. Default is true.
 
-    --show-diagnostic-warnings[=BOOL]
-        Enables or disables showing diagnostic warnings. Default is true.
+                --show-diagnostic-warnings[=BOOL]
+                    Enables or disables showing diagnostic warnings. Default is true.
 
-    --use-extended-diagnostic-codes (DEPRECATED)
-        Enables sending help uri links with the code in diagnostic messages.
+                --use-extended-diagnostic-codes (DEPRECATED)
+                    Enables sending help uri links with the code in diagnostic messages.
 
-    --on-change-debounce-ms=[INT]
-        The number of milliseconds to debounce onChange events.
+                --on-change-debounce-ms=[INT]
+                    The number of milliseconds to debounce onChange events.
 
-    --verbose
-        Will send log messages to the client with information.
+                --verbose
+                    Will send log messages to the client with information.
 
-HELP;
+            HELP;
 
             exit;
         }
@@ -239,7 +242,7 @@ HELP;
             if (!$root_path) {
                 fwrite(
                     STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL
+                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
                 );
                 exit(1);
             }
@@ -254,9 +257,8 @@ HELP;
         $first_autoloader = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
-                return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
-            }
+            static fn(): ?\Composer\Autoload\ClassLoader =>
+                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
 
         if (array_key_exists('v', $options)) {
@@ -286,7 +288,7 @@ HELP;
             $path_to_config,
             $current_dir,
             Report::TYPE_CONSOLE,
-            $first_autoloader
+            $first_autoloader,
         );
         $config->setIncludeCollector($include_collector);
 
@@ -346,6 +348,12 @@ HELP;
             || !is_string($options['show-diagnostic-warnings'])
             || strtolower($options['show-diagnostic-warnings']) !== 'false'
         );
+
+        /**
+         *         if ($config->find_unused_variables) {
+         *   $project_analyzer->getCodebase()->reportUnusedVariables();
+         * }
+         */
 
         $find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
         if ($config->find_unused_code) {

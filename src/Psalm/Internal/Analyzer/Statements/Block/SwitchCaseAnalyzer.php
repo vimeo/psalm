@@ -82,7 +82,6 @@ class SwitchCaseAnalyzer
             $case_context->branch_point = $case_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
         }
 
-        $case_context->parent_context = $context;
         $case_scope = $case_context->case_scope = new CaseScope($case_context);
 
         $case_equality_expr = null;
@@ -94,7 +93,7 @@ class SwitchCaseAnalyzer
         if ($switch_var_id && strpos($switch_var_id, '$__tmp_switch__') === 0) {
             $switch_condition = new VirtualVariable(
                 substr($switch_var_id, 1),
-                $stmt->cond->getAttributes()
+                $stmt->cond->getAttributes(),
             );
 
             $fake_switch_condition = true;
@@ -109,7 +108,6 @@ class SwitchCaseAnalyzer
             if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
                 unset($case_scope->parent_context);
                 unset($case_context->case_scope);
-                unset($case_context->parent_context);
 
                 return false;
             }
@@ -121,8 +119,8 @@ class SwitchCaseAnalyzer
             $traverser = new PhpParser\NodeTraverser;
             $traverser->addVisitor(
                 new ConditionCloningVisitor(
-                    $statements_analyzer->node_data
-                )
+                    $statements_analyzer->node_data,
+                ),
             );
 
             /** @var PhpParser\Node\Expr */
@@ -131,7 +129,7 @@ class SwitchCaseAnalyzer
             if ($fake_switch_condition) {
                 $statements_analyzer->node_data->setType(
                     $switch_condition,
-                    $case_context->vars_in_scope[$switch_var_id] ?? Type::getMixed()
+                    $case_context->vars_in_scope[$switch_var_id] ?? Type::getMixed(),
                 );
             }
 
@@ -151,14 +149,14 @@ class SwitchCaseAnalyzer
                                 new VirtualArg(
                                     new VirtualVariable(
                                         substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes()
+                                        $stmt->cond->getAttributes(),
                                     ),
                                     false,
                                     false,
-                                    $stmt->cond->getAttributes()
+                                    $stmt->cond->getAttributes(),
                                 ),
                             ],
-                            $stmt->cond->getAttributes()
+                            $stmt->cond->getAttributes(),
                         );
                     } elseif ($type instanceof TDependentGetType) {
                         $type_statements[] = new VirtualFuncCall(
@@ -167,14 +165,14 @@ class SwitchCaseAnalyzer
                                 new VirtualArg(
                                     new VirtualVariable(
                                         substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes()
+                                        $stmt->cond->getAttributes(),
                                     ),
                                     false,
                                     false,
-                                    $stmt->cond->getAttributes()
+                                    $stmt->cond->getAttributes(),
                                 ),
                             ],
-                            $stmt->cond->getAttributes()
+                            $stmt->cond->getAttributes(),
                         );
                     } elseif ($type instanceof TDependentGetDebugType) {
                         $type_statements[] = new VirtualFuncCall(
@@ -183,14 +181,14 @@ class SwitchCaseAnalyzer
                                 new VirtualArg(
                                     new VirtualVariable(
                                         substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes()
+                                        $stmt->cond->getAttributes(),
                                     ),
                                     false,
                                     false,
-                                    $stmt->cond->getAttributes()
+                                    $stmt->cond->getAttributes(),
                                 ),
                             ],
-                            $stmt->cond->getAttributes()
+                            $stmt->cond->getAttributes(),
                         );
                     } else {
                         $type_statements = null;
@@ -204,7 +202,7 @@ class SwitchCaseAnalyzer
                     if ($fake_switch_condition) {
                         $statements_analyzer->node_data->setType(
                             $switch_condition,
-                            $case_context->vars_in_scope[$switch_var_id] ?? Type::getMixed()
+                            $case_context->vars_in_scope[$switch_var_id] ?? Type::getMixed(),
                         );
                     }
                 }
@@ -224,13 +222,13 @@ class SwitchCaseAnalyzer
                 $case_equality_expr = new VirtualIdentical(
                     $switch_condition,
                     $case->cond,
-                    $case->cond->getAttributes()
+                    $case->cond->getAttributes(),
                 );
             } else {
                 $case_equality_expr = new VirtualEqual(
                     $switch_condition,
                     $case->cond,
-                    $case->cond->getAttributes()
+                    $case->cond->getAttributes(),
                 );
             }
         }
@@ -252,7 +250,7 @@ class SwitchCaseAnalyzer
                         new VirtualArg(new VirtualLNumber(0)),
                         new VirtualArg(new VirtualLNumber(1)),
                     ],
-                    $case->getAttributes()
+                    $case->getAttributes(),
                 );
             }
 
@@ -260,7 +258,7 @@ class SwitchCaseAnalyzer
                 ? new VirtualBooleanOr(
                     $switch_scope->leftover_case_equality_expr,
                     $case_equality_expr,
-                    $case->cond ? $case->cond->getAttributes() : $case->getAttributes()
+                    $case->cond ? $case->cond->getAttributes() : $case->getAttributes(),
                 )
                 : $case_equality_expr;
 
@@ -273,7 +271,7 @@ class SwitchCaseAnalyzer
                 $case_if_stmt = new VirtualIf(
                     $switch_scope->leftover_case_equality_expr,
                     ['stmts' => $case_stmts],
-                    $case->getAttributes()
+                    $case->getAttributes(),
                 );
 
                 $switch_scope->leftover_statements = [$case_if_stmt];
@@ -281,7 +279,6 @@ class SwitchCaseAnalyzer
 
             unset($case_scope->parent_context);
             unset($case_context->case_scope);
-            unset($case_context->parent_context);
 
             $statements_analyzer->node_data = $old_node_data;
 
@@ -298,14 +295,14 @@ class SwitchCaseAnalyzer
                         new VirtualArg(new VirtualLNumber(0)),
                         new VirtualArg(new VirtualLNumber(1)),
                     ],
-                    $case->getAttributes()
+                    $case->getAttributes(),
                 );
             }
 
             $case_equality_expr = new VirtualBooleanOr(
                 $switch_scope->leftover_case_equality_expr,
                 $case_or_default_equality_expr,
-                $case_or_default_equality_expr->getAttributes()
+                $case_or_default_equality_expr->getAttributes(),
             );
         }
 
@@ -316,7 +313,7 @@ class SwitchCaseAnalyzer
         ) {
             $new_case_equality_expr = self::simplifyCaseEqualityExpression(
                 $case_equality_expr,
-                $switch_condition
+                $switch_condition,
             );
 
             if ($new_case_equality_expr) {
@@ -327,7 +324,7 @@ class SwitchCaseAnalyzer
                 ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $new_case_equality_expr->getArgs()[1]->value,
-                    $case_context
+                    $case_context,
                 );
 
                 $case_context->inside_conditional = $was_inside_conditional;
@@ -353,16 +350,13 @@ class SwitchCaseAnalyzer
                 $statements_analyzer,
                 $codebase,
                 false,
-                false
+                false,
             );
         }
 
         if ($switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
             $entry_clauses = Algebra::simplifyCNF(
-                array_merge(
-                    $original_context->clauses,
-                    $switch_scope->negated_clauses
-                )
+                [...$original_context->clauses, ...$switch_scope->negated_clauses],
             );
         } else {
             $entry_clauses = $original_context->clauses;
@@ -375,13 +369,13 @@ class SwitchCaseAnalyzer
                 $case_clauses,
                 $statements_analyzer,
                 $case->cond,
-                []
+                [],
             );
 
             if (count($entry_clauses) + count($case_clauses) < 50) {
-                $case_context->clauses = Algebra::simplifyCNF(array_merge($entry_clauses, $case_clauses));
+                $case_context->clauses = Algebra::simplifyCNF([...$entry_clauses, ...$case_clauses]);
             } else {
-                $case_context->clauses = array_merge($entry_clauses, $case_clauses);
+                $case_context->clauses = [...$entry_clauses, ...$case_clauses];
             }
         } else {
             $case_context->clauses = $entry_clauses;
@@ -403,11 +397,12 @@ class SwitchCaseAnalyzer
                 $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
             }
 
-            $case_vars_in_scope_reconciled =
+            [$case_vars_in_scope_reconciled, $case_references_in_scope_reconciled] =
                 Reconciler::reconcileKeyedTypes(
                     $reconcilable_if_types,
                     [],
                     $case_context->vars_in_scope,
+                    $case_context->references_in_scope,
                     $changed_var_ids,
                     $case->cond && $switch_var_id ? [$switch_var_id => true] : [],
                     $statements_analyzer,
@@ -416,8 +411,8 @@ class SwitchCaseAnalyzer
                     new CodeLocation(
                         $statements_analyzer->getSource(),
                         $case->cond ?? $case,
-                        $context->include_location
-                    )
+                        $context->include_location,
+                    ),
                 );
 
             if (!in_array('RedundantCondition', $suppressed_issues, true)) {
@@ -429,6 +424,7 @@ class SwitchCaseAnalyzer
             }
 
             $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
+            $case_context->references_in_scope = $case_references_in_scope_reconciled;
             foreach ($reconcilable_if_types as $var_id => $_) {
                 $case_context->vars_possibly_in_scope[$var_id] = true;
             }
@@ -453,24 +449,15 @@ class SwitchCaseAnalyzer
                         $statements_analyzer,
                         $codebase,
                         false,
-                        false
+                        false,
                     );
                 } catch (ComplicatedExpressionException $e) {
                     $negated_case_clauses = [];
                 }
             }
 
-            $switch_scope->negated_clauses = array_merge(
-                $switch_scope->negated_clauses,
-                $negated_case_clauses
-            );
+            $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
         }
-
-        $pre_possibly_assigned_var_ids = $case_context->possibly_assigned_var_ids;
-        $case_context->possibly_assigned_var_ids = [];
-
-        $pre_assigned_var_ids = $case_context->assigned_var_ids;
-        $case_context->assigned_var_ids = [];
 
         $statements_analyzer->analyze($case_stmts, $case_context);
 
@@ -478,27 +465,13 @@ class SwitchCaseAnalyzer
         $traverser->addVisitor(
             new TypeMappingVisitor(
                 $statements_analyzer->node_data,
-                $old_node_data
-            )
+                $old_node_data,
+            ),
         );
 
         $traverser->traverse([$case]);
 
         $statements_analyzer->node_data = $old_node_data;
-
-        /** @var array<string, int> */
-        $new_case_assigned_var_ids = $case_context->assigned_var_ids;
-        $case_context->assigned_var_ids = $pre_assigned_var_ids + $new_case_assigned_var_ids;
-
-        /** @var array<string, bool> */
-        $new_case_possibly_assigned_var_ids = $case_context->possibly_assigned_var_ids;
-        $case_context->possibly_assigned_var_ids =
-            $pre_possibly_assigned_var_ids + $new_case_possibly_assigned_var_ids;
-
-        $context->referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $case_context->referenced_var_ids
-        );
 
         if ($case_exit_type !== 'return_throw') {
             if (self::handleNonReturningCase(
@@ -509,11 +482,10 @@ class SwitchCaseAnalyzer
                 $case_context,
                 $original_context,
                 $case_exit_type,
-                $switch_scope
+                $switch_scope,
             ) === false) {
                 unset($case_scope->parent_context);
                 unset($case_context->case_scope);
-                unset($case_context->parent_context);
 
                 return false;
             }
@@ -524,14 +496,14 @@ class SwitchCaseAnalyzer
             if ($switch_scope->possibly_redefined_vars === null) {
                 $switch_scope->possibly_redefined_vars = array_intersect_key(
                     $case_scope->break_vars,
-                    $context->vars_in_scope
+                    $context->vars_in_scope,
                 );
             } else {
                 foreach ($case_scope->break_vars as $var_id => $type) {
                     if (isset($context->vars_in_scope[$var_id])) {
                         $switch_scope->possibly_redefined_vars[$var_id] = Type::combineUnionTypes(
-                            clone $type,
-                            $switch_scope->possibly_redefined_vars[$var_id] ?? null
+                            $type,
+                            $switch_scope->possibly_redefined_vars[$var_id] ?? null,
                         );
                     }
                 }
@@ -544,8 +516,8 @@ class SwitchCaseAnalyzer
                             unset($switch_scope->new_vars_in_scope[$var_id]);
                         } else {
                             $switch_scope->new_vars_in_scope[$var_id] = Type::combineUnionTypes(
-                                clone $case_scope->break_vars[$var_id],
-                                $type
+                                $case_scope->break_vars[$var_id],
+                                $type,
                             );
                         }
                     } else {
@@ -558,8 +530,8 @@ class SwitchCaseAnalyzer
                 foreach ($switch_scope->redefined_vars as $var_id => $type) {
                     if (isset($case_scope->break_vars[$var_id])) {
                         $switch_scope->redefined_vars[$var_id] = Type::combineUnionTypes(
-                            clone $case_scope->break_vars[$var_id],
-                            $type
+                            $case_scope->break_vars[$var_id],
+                            $type,
                         );
                     } else {
                         unset($switch_scope->redefined_vars[$var_id]);
@@ -570,7 +542,6 @@ class SwitchCaseAnalyzer
 
         unset($case_scope->parent_context);
         unset($case_context->case_scope);
-        unset($case_context->parent_context);
 
         return null;
     }
@@ -591,14 +562,14 @@ class SwitchCaseAnalyzer
         if (!$case->cond
             && $switch_var_id
             && isset($case_context->vars_in_scope[$switch_var_id])
-            && $case_context->vars_in_scope[$switch_var_id]->isEmpty()
+            && $case_context->vars_in_scope[$switch_var_id]->isNever()
         ) {
             if (IssueBuffer::accepts(
                 new ParadoxicalCondition(
                     'All possible case statements have been met, default is impossible here',
-                    new CodeLocation($statements_analyzer->getSource(), $case)
+                    new CodeLocation($statements_analyzer->getSource(), $case),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             )) {
                 return false;
             }
@@ -610,8 +581,8 @@ class SwitchCaseAnalyzer
                 if (IssueBuffer::accepts(
                     new ContinueOutsideLoop(
                         'Continue called when not in loop',
-                        new CodeLocation($statements_analyzer->getSource(), $case)
-                    )
+                        new CodeLocation($statements_analyzer->getSource(), $case),
+                    ),
                 )) {
                     return false;
                 }
@@ -624,8 +595,8 @@ class SwitchCaseAnalyzer
             } else {
                 foreach ($case_redefined_vars as $var_id => $type) {
                     $switch_scope->possibly_redefined_vars[$var_id] = Type::combineUnionTypes(
-                        clone $type,
-                        $switch_scope->possibly_redefined_vars[$var_id] ?? null
+                        $type,
+                        $switch_scope->possibly_redefined_vars[$var_id] ?? null,
                     );
                 }
             }
@@ -639,7 +610,7 @@ class SwitchCaseAnalyzer
                     } else {
                         $switch_scope->redefined_vars[$var_id] = Type::combineUnionTypes(
                             $type,
-                            clone $case_redefined_vars[$var_id]
+                            $case_redefined_vars[$var_id],
                         );
                     }
                 }
@@ -651,7 +622,7 @@ class SwitchCaseAnalyzer
                 $switch_scope->new_vars_in_scope = $context_new_vars;
                 $switch_scope->new_vars_possibly_in_scope = array_diff_key(
                     $case_context->vars_possibly_in_scope,
-                    $context->vars_possibly_in_scope
+                    $context->vars_possibly_in_scope,
                 );
             } else {
                 foreach ($switch_scope->new_vars_in_scope as $new_var => $type) {
@@ -659,16 +630,16 @@ class SwitchCaseAnalyzer
                         unset($switch_scope->new_vars_in_scope[$new_var]);
                     } else {
                         $switch_scope->new_vars_in_scope[$new_var] =
-                            Type::combineUnionTypes(clone $case_context->vars_in_scope[$new_var], $type);
+                            Type::combineUnionTypes($case_context->vars_in_scope[$new_var], $type);
                     }
                 }
 
                 $switch_scope->new_vars_possibly_in_scope = array_merge(
                     array_diff_key(
                         $case_context->vars_possibly_in_scope,
-                        $context->vars_possibly_in_scope
+                        $context->vars_possibly_in_scope,
                     ),
-                    $switch_scope->new_vars_possibly_in_scope
+                    $switch_scope->new_vars_possibly_in_scope,
                 );
             }
         }
@@ -695,23 +666,23 @@ class SwitchCaseAnalyzer
                             $var,
                             false,
                             false,
-                            $var->getAttributes()
+                            $var->getAttributes(),
                         ),
                         new VirtualArg(
                             new VirtualArray(
                                 $nested_or_options,
-                                $case_equality_expr->getAttributes()
+                                $case_equality_expr->getAttributes(),
                             ),
                             false,
                             false,
-                            $case_equality_expr->getAttributes()
+                            $case_equality_expr->getAttributes(),
                         ),
                         new VirtualArg(
                             new VirtualConstFetch(
-                                new VirtualFullyQualified(['true'])
-                            )
+                                new VirtualFullyQualified(['true']),
+                            ),
                         ),
-                    ]
+                    ],
                 );
             }
         }
@@ -736,7 +707,7 @@ class SwitchCaseAnalyzer
                 $case_equality_expr->right,
                 null,
                 false,
-                $case_equality_expr->right->getAttributes()
+                $case_equality_expr->right->getAttributes(),
             );
 
             return $in_array_values;
@@ -757,13 +728,13 @@ class SwitchCaseAnalyzer
             $case_equality_expr->right->right,
             null,
             false,
-            $case_equality_expr->right->right->getAttributes()
+            $case_equality_expr->right->right->getAttributes(),
         );
 
         return self::getOptionsFromNestedOr(
             $case_equality_expr->left,
             $var,
-            $in_array_values
+            $in_array_values,
         );
     }
 }

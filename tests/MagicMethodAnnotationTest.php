@@ -40,7 +40,7 @@ class MagicMethodAnnotationTest extends TestCase
                 $b = $child->setString(5);
                 $c = $child->getBool("hello");
                 $d = $child->getArray();
-                $e = $child->getCallable();'
+                $e = $child->getCallable();',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -59,6 +59,7 @@ class MagicMethodAnnotationTest extends TestCase
                     public function find() {}
                 }
 
+                /** @psalm-suppress MissingTemplateParam */
                 class B extends A {}
 
                 class Obj {}
@@ -66,7 +67,7 @@ class MagicMethodAnnotationTest extends TestCase
                 /**
                  * @method Obj|null find()
                  */
-                class C extends B {}'
+                class C extends B {}',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -88,7 +89,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                 $child = new Child();
 
-                $child->getString();'
+                $child->getString();',
         );
 
         $context = new Context();
@@ -114,7 +115,7 @@ class MagicMethodAnnotationTest extends TestCase
                  */
                 class Child extends ParentClass {}
 
-                $child = Child::getMe();'
+                $child = Child::getMe();',
         );
 
         $context = new Context();
@@ -138,7 +139,7 @@ class MagicMethodAnnotationTest extends TestCase
 
                 function foo(MyException $e): int {
                     return $e->getCode();
-                }'
+                }',
         );
 
         $context = new Context();
@@ -146,14 +147,11 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'validSimpleAnnotations' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -194,7 +192,7 @@ class MagicMethodAnnotationTest extends TestCase
                 ],
             ],
             'validAnnotationWithDefault' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -210,7 +208,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $child->setArray(["boo"], 8);',
             ],
             'validAnnotationWithByRefParam' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -230,7 +228,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $child->configure("foo", $array);',
             ],
             'validAnnotationWithNonEmptyDefaultArray' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -246,7 +244,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $child->setArray(["boo"]);',
             ],
             'validAnnotationWithNonEmptyDefaultOldStyleArray' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -262,7 +260,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $child->setArray(["boo"]);',
             ],
             'validStaticAnnotationWithDefault' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public static function __callStatic(string $name, array $args) {}
                     }
@@ -280,7 +278,7 @@ class MagicMethodAnnotationTest extends TestCase
                 ],
             ],
             'validAnnotationWithVariadic' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -295,7 +293,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $child->setInts(1, 2, 3, 4);',
             ],
             'validUnionAnnotations' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -317,7 +315,7 @@ class MagicMethodAnnotationTest extends TestCase
                 ],
             ],
             'namespacedValidAnnotations' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     class ParentClass {
@@ -335,14 +333,14 @@ class MagicMethodAnnotationTest extends TestCase
                     $c = $child->setBool("hello", "true");',
             ],
             'globalMethod' => [
-                '<?php
+                'code' => '<?php
                     /** @method void global() */
                     class A {
                         public function __call(string $s) {}
                     }',
             ],
             'magicMethodInternalCall' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method I[] work()
                      */
@@ -355,7 +353,7 @@ class MagicMethodAnnotationTest extends TestCase
                     }',
             ],
             'magicMethodOverridesParentWithMoreSpecificType' => [
-                '<?php
+                'code' => '<?php
                     class C {}
                     class D extends C {}
 
@@ -369,7 +367,7 @@ class MagicMethodAnnotationTest extends TestCase
                     class B extends A {}',
             ],
             'complicatedMagicMethodInheritance' => [
-                '<?php
+                'code' => '<?php
                     class BaseActiveRecord {
                         /**
                          * @param string $class
@@ -416,7 +414,7 @@ class MagicMethodAnnotationTest extends TestCase
                     }',
             ],
             'magicMethodReturnSelf' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method static self getSelf()
                      * @method $this getThis()
@@ -428,13 +426,13 @@ class MagicMethodAnnotationTest extends TestCase
 
                     $a = C::getSelf();
                     $b = (new C)->getThis();',
-                [
+                'assertions' => [
                     '$a' => 'C',
                     '$b' => 'C',
                 ],
             ],
             'allowMagicMethodStatic' => [
-                '<?php
+                'code' => '<?php
                     /** @method static getStatic() */
                     class C {
                         public function __call(string $c, array $args) {}
@@ -444,13 +442,13 @@ class MagicMethodAnnotationTest extends TestCase
 
                     $c = (new C)->getStatic();
                     $d = (new D)->getStatic();',
-                [
+                'assertions' => [
                     '$c' => 'C',
                     '$d' => 'D',
                 ],
             ],
             'validSimplePsalmAnnotations' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -470,7 +468,7 @@ class MagicMethodAnnotationTest extends TestCase
                 ],
             ],
             'overrideMethodAnnotations' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -492,7 +490,7 @@ class MagicMethodAnnotationTest extends TestCase
                 ],
             ],
             'alwaysAllowAnnotationOnInterface' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method string sayHello()
                      */
@@ -509,7 +507,7 @@ class MagicMethodAnnotationTest extends TestCase
                     echo makeConcrete()->sayHello();',
             ],
             'inheritInterfacePseudoMethodsFromParent' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     interface ClassMetadata {}
@@ -542,7 +540,7 @@ class MagicMethodAnnotationTest extends TestCase
                     test2(concreteEm()->getOtherMetadata());',
             ],
             'fullyQualifiedParam' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo {
                         /**
                          * @method  void setInteger(\Closure $c)
@@ -558,7 +556,7 @@ class MagicMethodAnnotationTest extends TestCase
                     }',
             ],
             'allowMethodsNamedBooleanAndInteger' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method boolean(int $foo) : bool
                      * @method integer(int $foo) : bool
@@ -570,10 +568,10 @@ class MagicMethodAnnotationTest extends TestCase
                     $child = new Child();
 
                     $child->boolean(5);
-                    $child->integer(5);'
+                    $child->integer(5);',
             ],
             'overrideWithSelfBeforeMethodName' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function make(): self {
                             return new self();
@@ -587,17 +585,17 @@ class MagicMethodAnnotationTest extends TestCase
 
                     function makeB(): B {
                         return B::make();
-                    }'
+                    }',
             ],
             'validMethodAsAnnotation' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method string as(string $value)
                      */
-                    class Foo {}'
+                    class Foo {}',
             ],
             'annotationWithSealedSuppressingUndefinedMagicMethod' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -609,10 +607,10 @@ class MagicMethodAnnotationTest extends TestCase
 
                     $child = new Child();
                     /** @psalm-suppress UndefinedMagicMethod */
-                    $child->foo();'
+                    $child->foo();',
             ],
             'allowFinalOverrider' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @return static
@@ -628,10 +626,10 @@ class MagicMethodAnnotationTest extends TestCase
                     /**
                      * @method static B foo()
                      */
-                    final class B extends A {}'
+                    final class B extends A {}',
             ],
             'namespacedMethod' => [
-                '<?php
+                'code' => '<?php
                     declare(strict_types = 1);
 
                     namespace App;
@@ -679,10 +677,10 @@ class MagicMethodAnnotationTest extends TestCase
                         {
                             $this->items = $foos;
                         }
-                    }'
+                    }',
             ],
             'parseFloatInDefault' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo {
                         /**
                          * @method int randomInt()
@@ -705,10 +703,10 @@ class MagicMethodAnnotationTest extends TestCase
 
                     namespace Bar {
                         (new \Foo\G)->randomInt();
-                    }'
+                    }',
             ],
             'negativeInDefault' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method void foo($a = -0.1, $b = -12)
                      */
@@ -718,10 +716,10 @@ class MagicMethodAnnotationTest extends TestCase
                         {
                         }
                     }
-                    (new G)->foo();'
+                    (new G)->foo();',
             ],
             'namespacedNegativeInDefault' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo {
                         /**
                          * @method void foo($a = -0.1, $b = -12)
@@ -733,10 +731,10 @@ class MagicMethodAnnotationTest extends TestCase
                             }
                         }
                         (new G)->foo();
-                    }'
+                    }',
             ],
             'namespacedUnion' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     /**
@@ -748,10 +746,10 @@ class MagicMethodAnnotationTest extends TestCase
                         }
                     }
 
-                    (new Cache)->bar(new \DateTime(), new Cache());'
+                    (new Cache)->bar(new \DateTime(), new Cache());',
             ],
             'magicMethodInheritance' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method string foo()
                      */
@@ -772,10 +770,10 @@ class MagicMethodAnnotationTest extends TestCase
                     function consumeInt(int $i): void {}
 
                     consumeString($b->foo());
-                    consumeInt($b->bar());'
+                    consumeInt($b->bar());',
             ],
             'magicMethodInheritanceOnInterface' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method string foo()
                      */
@@ -784,10 +782,10 @@ class MagicMethodAnnotationTest extends TestCase
                     function consumeString(string $s): void {}
 
                     /** @var I2 $i */
-                    consumeString($i->foo());'
+                    consumeString($i->foo());',
             ],
             'magicStaticMethodInheritance' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method static string foo()
                      */
@@ -806,10 +804,10 @@ class MagicMethodAnnotationTest extends TestCase
                     function consumeInt(int $i): void {}
 
                     consumeString(B::foo());
-                    consumeInt(B::bar());'
+                    consumeInt(B::bar());',
             ],
             'magicStaticMethodInheritanceWithoutCallStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method static int bar()
                      */
@@ -817,10 +815,10 @@ class MagicMethodAnnotationTest extends TestCase
                     class B extends A {}
                     function consumeInt(int $i): void {}
 
-                    consumeInt(B::bar());'
+                    consumeInt(B::bar());',
             ],
             'callUsingParent' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method static create(array $data)
                      */
@@ -851,10 +849,10 @@ class MagicMethodAnnotationTest extends TestCase
                     consumeFoo($b->create([]));
 
                     $d = new BlahModel();
-                    consumeBlah($d->create([]));'
+                    consumeBlah($d->create([]));',
             ],
             'returnThisShouldKeepGenerics' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template E
                      * @method $this foo()
@@ -878,13 +876,13 @@ class MagicMethodAnnotationTest extends TestCase
 
                     /** @var I<B> $i */
                     $c = $i->foo();',
-                [
-                    '$b' => 'A<B>',
-                    '$c' => 'I<B>',
-                ]
+                'assertions' => [
+                    '$b' => 'A<B>&static',
+                    '$c' => 'I<B>&static',
+                ],
             ],
             'genericsOfInheritedMethodsShouldBeResolved' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template E
                      * @method E get()
@@ -933,23 +931,20 @@ class MagicMethodAnnotationTest extends TestCase
                     /** @var D<B> $d */
                     $d = new D();
                     $e = $d->get();',
-                [
+                'assertions' => [
                     '$b' => 'B',
                     '$c' => 'B',
                     '$e' => 'B',
-                ]
+                ],
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'annotationWithBadDocblock' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -961,7 +956,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'annotationWithByRefParam' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -973,7 +968,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'annotationWithSealed' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -989,7 +984,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMagicMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - Magic method Child::foo does not exist',
             ],
             'annotationInvalidArg' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -1002,10 +997,10 @@ class MagicMethodAnnotationTest extends TestCase
                     $child = new Child();
 
                     $child->setString("five");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'unionAnnotationInvalidArg' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -1018,10 +1013,10 @@ class MagicMethodAnnotationTest extends TestCase
                     $child = new Child();
 
                     $b = $child->setBool("hello", 5);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'validAnnotationWithInvalidVariadicCall' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                     }
@@ -1037,7 +1032,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'magicMethodOverridesParentWithDifferentReturnType' => [
-                '<?php
+                'code' => '<?php
                     class C {}
                     class D {}
 
@@ -1052,7 +1047,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:33',
             ],
             'magicMethodOverridesParentWithDifferentParamType' => [
-                '<?php
+                'code' => '<?php
                     class C {}
                     class D extends C {}
 
@@ -1067,7 +1062,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'ImplementedParamTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:33',
             ],
             'parseBadMethodAnnotation' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method aaa
                      */
@@ -1079,7 +1074,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'methodwithDash' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * A test class
                      *
@@ -1089,7 +1084,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'methodWithAmpersandAndSpace' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method void alloc(string & $result)
                      */
@@ -1097,7 +1092,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'inheritSealedMethods' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-seal-methods
                      */
@@ -1112,7 +1107,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMagicMethod',
             ],
             'lonelyMethod' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method
                      */
@@ -1120,7 +1115,7 @@ class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'magicParentCallShouldNotPolluteContext' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @method baz(): Foo
                      */
@@ -1141,7 +1136,7 @@ class MagicMethodAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedVariable',
-            ]
+            ],
         ];
     }
 
@@ -1160,7 +1155,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $error_message = 'UndefinedMagicMethod';
@@ -1185,7 +1180,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1208,7 +1203,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1230,7 +1225,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1251,7 +1246,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1274,7 +1269,7 @@ class MagicMethodAnnotationTest extends TestCase
               /** @var A & B $b */
               $b = new B();
               $b->otherMethod();
-              '
+              ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -1297,7 +1292,7 @@ class MagicMethodAnnotationTest extends TestCase
               /** @var A & B $b */
               $b = new B();
               $b->nonExistantMethod();
-              '
+              ',
         );
 
         $error_message = 'UndefinedMagicMethod';

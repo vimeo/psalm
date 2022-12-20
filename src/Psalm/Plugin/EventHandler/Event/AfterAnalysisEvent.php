@@ -6,29 +6,21 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\SourceControl\SourceControlInfo;
 
-class AfterAnalysisEvent
+final class AfterAnalysisEvent
 {
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
     /**
      * @var IssueData[][]
      */
-    private $issues;
-    /**
-     * @var array
-     */
-    private $build_info;
-    /**
-     * @var SourceControlInfo|null
-     */
-    private $source_control_info;
+    private array $issues;
+    private array $build_info;
+    private ?SourceControlInfo $source_control_info;
 
     /**
      * Called after analysis is complete
      *
      * @param array<string, list<IssueData>> $issues
+     * @internal
      */
     public function __construct(
         Codebase $codebase,

@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\PreDec;
 use Psalm\Node\VirtualNode;
 
-class VirtualPreDec extends PreDec implements VirtualNode
+final class VirtualPreDec extends PreDec implements VirtualNode
 {
 
 }

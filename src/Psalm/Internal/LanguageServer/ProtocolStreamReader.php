@@ -18,6 +18,8 @@ use function trim;
 
 /**
  * Source: https://github.com/felixfbecker/php-language-server/tree/master/src/ProtocolStreamReader.php
+ *
+ * @internal
  */
 class ProtocolStreamReader implements ProtocolReader
 {
@@ -29,20 +31,14 @@ class ProtocolStreamReader implements ProtocolReader
     /**
      * This is checked by ProtocolStreamReader so that it will stop reading from streams in the forked process.
      * There could be buffered bytes in stdin/over TCP, those would be processed by TCP if it were not for this check.
-     *
-     * @var bool
      */
-    private $is_accepting_new_requests = true;
-    /** @var int */
-    private $parsing_mode = self::PARSE_HEADERS;
-    /** @var string */
-    private $buffer = '';
+    private bool $is_accepting_new_requests = true;
+    private int $parsing_mode = self::PARSE_HEADERS;
+    private string $buffer = '';
     /** @var string[] */
-    private $headers = [];
-    /** @var ?int */
-    private $content_length;
-    /** @var bool */
-    private $did_emit_close = false;
+    private array $headers = [];
+    private ?int $content_length = null;
+    private bool $did_emit_close = false;
 
     /**
      * @param resource $input
@@ -70,14 +66,14 @@ class ProtocolStreamReader implements ProtocolReader
                 }
 
                 $this->emitClose();
-            }
+            },
         );
 
         $this->on(
             'close',
             static function () use ($input): void {
                 $input->close();
-            }
+            },
         );
     }
 
@@ -95,7 +91,9 @@ class ProtocolStreamReader implements ProtocolReader
                         $this->buffer = '';
                     } elseif (substr($this->buffer, -2) === "\r\n") {
                         $parts = explode(':', $this->buffer);
-                        $this->headers[$parts[0]] = trim($parts[1]);
+                        if (isset($parts[1])) {
+                            $this->headers[$parts[0]] = trim($parts[1]);
+                        }
                         $this->buffer = '';
                     }
                     break;
@@ -117,7 +115,7 @@ class ProtocolStreamReader implements ProtocolReader
                             ++$emitted_messages;
                             $this->emit('message', [$msg]);
                             /**
-                             * @psalm-suppress DocblockTypeContradiction
+                             * @psalm-suppress TypeDoesNotContainType
                              */
                             if (!$this->is_accepting_new_requests) {
                                 // If we fork, don't read any bytes in the input buffer from the worker process.

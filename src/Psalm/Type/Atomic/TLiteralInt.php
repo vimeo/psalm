@@ -4,15 +4,18 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an integer value where the exact numeric value is known.
+ *
+ * @psalm-immutable
  */
-class TLiteralInt extends TInt
+final class TLiteralInt extends TInt
 {
     /** @var int */
     public $value;
 
-    public function __construct(int $value)
+    public function __construct(int $value, bool $from_docblock = false)
     {
         $this->value = $value;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -20,19 +23,22 @@ class TLiteralInt extends TInt
         return 'int(' . $this->value . ')';
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
+        if (!$exact) {
+            return 'int';
+        }
+
         return (string) $this->value;
     }
 
-    public function getAssertionString(bool $exact = false): string
+    public function getAssertionString(): string
     {
         return 'int(' . $this->value . ')';
     }
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

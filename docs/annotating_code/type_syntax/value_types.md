@@ -2,19 +2,19 @@
 
 Psalm also allows you to specify values in types.
 
-### null
+## null
 
 This is the `null` value, destroyer of worlds. Use it sparingly. Psalm supports you writing `?Foo` to mean `null|Foo`.
 
-### true, false
+## true, false
 
 Use of `true` and `false` is also PHPDoc-compatible
 
-### "some_string", 4, 3.14
+## "some_string", 4, 3.14
 
 Psalm also allows you specify literal values in types, e.g. `@return "good"|"bad"`
 
-### Regular class constants
+## Regular class constants
 
 Psalm allows you to include class constants in types, e.g. `@return Foo::GOOD|Foo::BAD`. You can also specify explicit class strings e.g. `Foo::class|Bar::class`
 

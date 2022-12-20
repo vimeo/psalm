@@ -8,14 +8,11 @@ class ThisOutTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'changeInterface' => [
-                '<?php
+                'code' => '<?php
                       interface Foo {
                           /**
                            * @return void
@@ -34,10 +31,10 @@ class ThisOutTest extends TestCase
                       $bar = new Bar();
                       $bar->baz();
                       $bar->far();
-                '
+                ',
             ],
             'changeTemplateArguments' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant T as int
                      */
@@ -85,8 +82,8 @@ class ThisOutTest extends TestCase
                     '$data1===' => 'list<1>',
                     '$data2===' => 'list<2>',
                     '$data3===' => 'list<2|3>',
-                ]
-            ]
+                ],
+            ],
         ];
     }
 }

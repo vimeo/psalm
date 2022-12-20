@@ -3,6 +3,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -14,6 +15,8 @@ use function substr;
 
 /**
  * Denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`
+ *
+ * @psalm-immutable
  */
 class TNamedObject extends Atomic
 {
@@ -27,33 +30,93 @@ class TNamedObject extends Atomic
     /**
      * @var bool
      */
-    public $was_static = false;
+    public $is_static = false;
+
+    /**
+     * @var bool
+     */
+    public $is_static_resolved = false;
 
     /**
      * Whether or not this type can represent a child of the class named in $value
+     *
      * @var bool
      */
     public $definite_class = false;
 
     /**
      * @param string $value the name of the object
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
-    public function __construct(string $value, bool $was_static = false, bool $definite_class = false)
-    {
+    public function __construct(
+        string $value,
+        bool $is_static = false,
+        bool $definite_class = false,
+        array $extra_types = [],
+        bool $from_docblock = false
+    ) {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
         }
 
         $this->value = $value;
-        $this->was_static = $was_static;
+        $this->is_static = $is_static;
         $this->definite_class = $definite_class;
+        $this->extra_types = $extra_types;
+        $this->from_docblock = $from_docblock;
     }
 
-    public function __toString(): string
+    /**
+     * @return static
+     */
+    public function setIsStatic(bool $is_static, ?bool $is_static_resolved = null): self
     {
-        return $this->getKey();
+        $is_static_resolved ??= $this->is_static_resolved;
+        if ($this->is_static === $is_static && $this->is_static_resolved === $is_static_resolved) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->is_static = $is_static;
+        $cloned->is_static_resolved = $is_static_resolved;
+        return $cloned;
     }
 
+    /**
+     * @return static
+     */
+    public function setValue(string $value): self
+    {
+        if ($value[0] === '\\') {
+            $value = substr($value, 1);
+        }
+        if ($value === $this->value) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->value = $value;
+        return $cloned;
+    }
+    /**
+     * @return static
+     */
+    public function setValueIsStatic(string $value, bool $is_static, ?bool $is_static_resolved = null): self
+    {
+        $is_static_resolved ??= $this->is_static_resolved;
+        if ($value[0] === '\\') {
+            $value = substr($value, 1);
+        }
+        if ($value === $this->value
+            && $this->is_static === $is_static
+            && $this->is_static_resolved === $is_static_resolved
+        ) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->value = $value;
+        $cloned->is_static = $is_static;
+        $cloned->is_static_resolved = $is_static;
+        return $cloned;
+    }
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
@@ -63,26 +126,23 @@ class TNamedObject extends Atomic
         return $this->value;
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         if ($this->extra_types) {
             return $this->value . '&' . implode(
                 '&',
                 array_map(
-                    function ($type) {
-                        return $type->getId(true);
-                    },
-                    $this->extra_types
-                )
+                    static fn(Atomic $type): string => $type->getId($exact, true),
+                    $this->extra_types,
+                ),
             );
         }
 
-        return $this->was_static ? $this->value . '&static' : $this->value;
+        return $this->is_static && $exact ? $this->value . '&static' : $this->value;
     }
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -98,7 +158,7 @@ class TNamedObject extends Atomic
             $namespace,
             $aliased_classes,
             $this_class,
-            $use_phpdoc_format
+            $use_phpdoc_format,
         );
 
         return Type::getStringFromFQCLN(
@@ -107,7 +167,7 @@ class TNamedObject extends Atomic
             $aliased_classes,
             $this_class,
             true,
-            $this->was_static
+            $this->is_static,
         ) . $intersection_types;
     }
 
@@ -118,43 +178,81 @@ class TNamedObject extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         if ($this->value === 'static') {
-            return $php_major_version >= 8 ? 'static' : null;
+            return $analysis_php_version_id >= 8_00_00 ? 'static' : null;
         }
 
-        if ($this->was_static && $this->value === $this_class) {
-            return $php_major_version >= 8 ? 'static' : 'self';
+        if ($this->is_static && $this->value === $this_class) {
+            return $analysis_php_version_id >= 8_00_00 ? 'static' : 'self';
         }
 
         $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
         $intersection = strrpos($result, '&');
-        if ($intersection === false || (
-                ($php_major_version === 8 && $php_minor_version >= 1) ||
-                ($php_major_version >= 9)
-            )
-        ) {
+        if ($intersection === false || $analysis_php_version_id >= 8_01_00) {
             return $result;
         }
         return substr($result, $intersection+1);
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return ($this->value !== 'static' && $this->was_static === false) || $php_major_version >= 8;
+        return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 
+    /**
+     * @return static
+     */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+    ): self {
+        $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
+        if (!$intersection) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->extra_types = $intersection;
+        return $cloned;
     }
 
-    public function getChildNodes(): array
+    /**
+     * @return static
+     */
+    public function replaceTemplateTypesWithStandins(
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer = null,
+        ?Atomic $input_type = null,
+        ?int $input_arg_offset = null,
+        ?string $calling_class = null,
+        ?string $calling_function = null,
+        bool $replace = true,
+        bool $add_lower_bound = false,
+        int $depth = 0
+    ): self {
+        $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth,
+        );
+        if ($intersection) {
+            $cloned = clone $this;
+            $cloned->extra_types = $intersection;
+            return $cloned;
+        }
+        return $this;
+    }
+    protected function getChildNodeKeys(): array
     {
-        return $this->extra_types ?? [];
+        return ['extra_types'];
     }
 }

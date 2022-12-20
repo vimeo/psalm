@@ -10,6 +10,8 @@ use Psalm\Node\Expr\VirtualIsset;
 use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Type;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Union;
 
 use function substr;
 
@@ -48,28 +50,33 @@ class CoalesceAnalyzer
 
             ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $cloned);
 
-            $condition_type = $statements_analyzer->node_data->getType($left_expr) ?? Type::getMixed();
-
             if ($root_expr !== $left_expr) {
-                $condition_type->possibly_undefined = true;
+                $condition_type = $statements_analyzer->node_data->getType($left_expr);
+                if ($condition_type) {
+                    $condition_type = $condition_type->setPossiblyUndefined(true);
+                } else {
+                    $condition_type = new Union([new TMixed()], ['possibly_undefined' => true]);
+                }
+            } else {
+                $condition_type = $statements_analyzer->node_data->getType($left_expr) ?? Type::getMixed();
             }
 
             $context->vars_in_scope[$left_var_id] = $condition_type;
 
             $left_expr = new VirtualVariable(
                 substr($left_var_id, 1),
-                $left_expr->getAttributes()
+                $left_expr->getAttributes(),
             );
         }
 
         $ternary = new VirtualTernary(
             new VirtualIsset(
                 [$left_expr],
-                $stmt->left->getAttributes()
+                $stmt->left->getAttributes(),
             ),
             $left_expr,
             $stmt->right,
-            $stmt->getAttributes()
+            $stmt->getAttributes(),
         );
 
         $old_node_data = $statements_analyzer->node_data;

@@ -41,7 +41,8 @@ class StaticCallAnalyzer extends CallAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
-        Context $context
+        Context $context,
+        ?TemplateResult $template_result = null
     ): bool {
         $method_id = null;
 
@@ -66,17 +67,13 @@ class StaticCallAnalyzer extends CallAnalyzer
                         : null;
 
                     if (!$class_storage || !$class_storage->parent_class) {
-                        if (IssueBuffer::accepts(
+                        return !IssueBuffer::accepts(
                             new ParentNotFound(
                                 'Cannot call method on parent as this class does not extend another',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-
-                        return true;
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
                     }
 
                     $fq_class_name = $class_storage->parent_class;
@@ -89,22 +86,18 @@ class StaticCallAnalyzer extends CallAnalyzer
                 } elseif ($context->self) {
                     if ($stmt->class->parts[0] === 'static' && isset($context->vars_in_scope['$this'])) {
                         $fq_class_name = (string) $context->vars_in_scope['$this'];
-                        $lhs_type = clone $context->vars_in_scope['$this'];
+                        $lhs_type = $context->vars_in_scope['$this'];
                     } else {
                         $fq_class_name = $context->self;
                     }
                 } else {
-                    if (IssueBuffer::accepts(
+                    return !IssueBuffer::accepts(
                         new NonStaticSelfCall(
                             'Cannot use ' . $stmt->class->parts[0] . ' outside class context',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return true;
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
@@ -119,13 +112,13 @@ class StaticCallAnalyzer extends CallAnalyzer
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
                         $context->calling_method_id,
                         'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
-                        false
+                        false,
                     );
                 }
 
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
-                    $aliases
+                    $aliases,
                 );
 
                 if ($context->isPhantomClass($fq_class_name)) {
@@ -159,7 +152,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                             ? $context->calling_method_id
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
-                        new ClassLikeNameOptions(false, false, false, true)
+                        new ClassLikeNameOptions(false, false, false, true),
                     );
                 }
 
@@ -176,7 +169,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $fq_class_name
+                    $fq_class_name,
                 );
             }
 
@@ -198,7 +191,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 null,
                 null,
                 true,
-                $context
+                $context,
             ) === false) {
                 return false;
             }
@@ -219,7 +212,8 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $lhs_type->ignore_nullable_issues,
                 $moved_call,
                 $has_mock,
-                $has_existing_method
+                $has_existing_method,
+                $template_result,
             );
         }
 
@@ -227,10 +221,10 @@ class StaticCallAnalyzer extends CallAnalyzer
             return self::checkMethodArgs(
                 $method_id,
                 $stmt->getArgs(),
-                null,
+                new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer
+                $statements_analyzer,
             );
         }
 
@@ -250,7 +244,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\StaticCall $stmt,
         MethodIdentifier $method_id,
         string $cased_method_id,
-        Union $return_type_candidate,
+        Union &$return_type_candidate,
         ?MethodStorage $method_storage,
         ?TemplateResult $template_result,
         ?Context $context = null
@@ -278,13 +272,13 @@ class StaticCallAnalyzer extends CallAnalyzer
                 (string) $method_id,
                 $cased_method_id,
                 $method_location,
-                $node_location
+                $node_location,
             );
         } else {
             $method_source = DataFlowNode::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $method_location
+                $method_location,
             );
         }
 
@@ -296,12 +290,10 @@ class StaticCallAnalyzer extends CallAnalyzer
 
         if ($method_storage && $template_result) {
             foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
-                $conditionally_removed_taint = clone $conditionally_removed_taint;
-
-                TemplateInferredTypeReplacer::replace(
+                $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
                     $conditionally_removed_taint,
                     $template_result,
-                    $codebase
+                    $codebase,
                 );
 
                 $expanded_type = TypeExpander::expandUnion(
@@ -311,7 +303,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                     null,
                     null,
                     true,
-                    true
+                    true,
                 );
 
                 foreach ($expanded_type->getLiteralStrings() as $literal_string) {
@@ -334,7 +326,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             $assignment_node = DataFlowNode::getForAssignment(
                 $method_id . '-escaped',
                 $method_location,
-                $method_source->specialization_key
+                $method_source->specialization_key,
             );
 
             $statements_analyzer->data_flow_graph->addPath(
@@ -342,12 +334,12 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                array_merge($conditionally_removed_taints, $removed_taints)
+                [...$conditionally_removed_taints, ...$removed_taints],
             );
 
-            $return_type_candidate->parent_nodes[$assignment_node->id] = $assignment_node;
+            $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {
-            $return_type_candidate->parent_nodes = [$method_source->id => $method_source];
+            $return_type_candidate = $return_type_candidate->setParentNodes([$method_source->id => $method_source]);
         }
 
         if ($method_storage
@@ -357,7 +349,7 @@ class StaticCallAnalyzer extends CallAnalyzer
             $method_node = TaintSource::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $method_storage->signature_return_type_location ?: $method_storage->location
+                $method_storage->signature_return_type_location ?: $method_storage->location,
             );
 
             $method_node->taints = $method_storage->taint_source_types;
@@ -375,7 +367,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 $node_location,
                 $method_source,
                 array_merge($method_storage->removed_taints, $removed_taints),
-                $added_taints
+                $added_taints,
             );
         }
     }

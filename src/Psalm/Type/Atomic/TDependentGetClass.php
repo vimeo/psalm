@@ -2,13 +2,14 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
  * Represents a string whose value is a fully-qualified class found by get_class($var)
+ *
+ * @psalm-immutable
  */
-class TDependentGetClass extends TString implements DependentType
+final class TDependentGetClass extends TString implements DependentType
 {
     /**
      * Used to hold information as to what this refers to
@@ -31,12 +32,12 @@ class TDependentGetClass extends TString implements DependentType
         $this->as_type = $as_type;
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return $this->as_type->isMixed()
             || $this->as_type->hasObject()
             ? 'class-string'
-            : 'class-string<' . $this->as_type->getId() . '>';
+            : 'class-string<' . $this->as_type->getId($exact) . '>';
     }
 
     public function getKey(bool $include_extra = true): string
@@ -51,12 +52,12 @@ class TDependentGetClass extends TString implements DependentType
         return $this->typeof;
     }
 
-    public function getReplacement(): Atomic
+    public function getReplacement(): TClassString
     {
         return new TClassString();
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }

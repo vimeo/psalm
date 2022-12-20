@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\AssignOp\Pow;
 use Psalm\Node\VirtualNode;
 
-class VirtualPow extends Pow implements VirtualNode
+final class VirtualPow extends Pow implements VirtualNode
 {
 
 }

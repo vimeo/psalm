@@ -8,15 +8,12 @@ use function array_merge;
 
 trait PsalmRunnerTrait
 {
-    /** @var string */
-    private $psalm = __DIR__ . '/../../psalm';
+    private string $psalm = __DIR__ . '/../../psalm';
 
-    /** @var string */
-    private $psalter = __DIR__ . '/../../psalter';
+    private string $psalter = __DIR__ . '/../../psalter';
 
     /**
      * @param list<string> $args
-     *
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
     private function runPsalm(

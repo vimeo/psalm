@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use function substr;
 use function substr_count;
 
+/** @psalm-immutable */
 class ParseErrorLocation extends CodeLocation
 {
     public function __construct(
@@ -16,9 +17,9 @@ class ParseErrorLocation extends CodeLocation
         string $file_path,
         string $file_name
     ) {
-        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset, ImpureMethodCall */
         $this->file_start = (int)$error->getAttributes()['startFilePos'];
-        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset, ImpureMethodCall */
         $this->file_end = (int)$error->getAttributes()['endFilePos'];
         $this->raw_file_start = $this->file_start;
         $this->raw_file_end = $this->file_end;
@@ -29,7 +30,7 @@ class ParseErrorLocation extends CodeLocation
         $this->preview_start = $this->file_start;
         $this->raw_line_number = substr_count(
             substr($file_contents, 0, $this->file_start),
-            "\n"
+            "\n",
         ) + 1;
     }
 }

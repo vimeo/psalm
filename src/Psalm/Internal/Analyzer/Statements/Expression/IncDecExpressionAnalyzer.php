@@ -17,6 +17,9 @@ use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Node\Scalar\VirtualLNumber;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class IncDecExpressionAnalyzer
 {
     /**
@@ -60,7 +63,7 @@ class IncDecExpressionAnalyzer
                 $fake_right_expr,
                 $stmt,
                 $return_type,
-                $context
+                $context,
             );
 
             $result_type = $return_type ?? Type::getMixed();
@@ -71,10 +74,10 @@ class IncDecExpressionAnalyzer
                 $stmt,
                 $stmt->var,
                 $fake_right_expr,
-                'inc'
+                'inc',
             );
 
-            $var_id = ExpressionIdentifier::getArrayVarId($stmt->var, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->var, null);
 
             $codebase = $statements_analyzer->getCodebase();
 
@@ -91,7 +94,7 @@ class IncDecExpressionAnalyzer
                     $var_id,
                     $context->vars_in_scope[$var_id],
                     $return_type,
-                    $statements_analyzer
+                    $statements_analyzer,
                 );
             }
         } else {
@@ -101,18 +104,18 @@ class IncDecExpressionAnalyzer
                 ? new VirtualPlus(
                     $stmt->var,
                     $fake_right_expr,
-                    $stmt->var->getAttributes()
+                    $stmt->var->getAttributes(),
                 )
                 : new VirtualMinus(
                     $stmt->var,
                     $fake_right_expr,
-                    $stmt->var->getAttributes()
+                    $stmt->var->getAttributes(),
                 );
 
             $fake_assignment = new VirtualAssign(
                 $stmt->var,
                 $operation,
-                $stmt->getAttributes()
+                $stmt->getAttributes(),
             );
 
             $old_node_data = $statements_analyzer->node_data;
@@ -126,7 +129,7 @@ class IncDecExpressionAnalyzer
             if ($stmt instanceof PreInc || $stmt instanceof PreDec) {
                 $old_node_data->setType(
                     $stmt,
-                    $statements_analyzer->node_data->getType($operation) ?? Type::getMixed()
+                    $statements_analyzer->node_data->getType($fake_assignment) ?? Type::getMixed(),
                 );
             }
 

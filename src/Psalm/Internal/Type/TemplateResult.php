@@ -4,8 +4,6 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
 
-use function array_map;
-
 /**
  * This class captures the result of running Psalm's argument analysis with
  * regard to generic parameters.
@@ -20,35 +18,35 @@ use function array_map;
  * parameters — given a parameter type `callable(): T2` and an argument typed as
  * `callable(): string`, `string` will be added as a _lower_ bound for the template
  * param `T2`.
+ *
+ * @internal
  */
 class TemplateResult
 {
     /**
      * @var array<string, array<string, Union>>
      */
-    public $template_types;
+    public array $template_types;
 
     /**
      * @var array<string, array<string, non-empty-list<TemplateBound>>>
      */
-    public $lower_bounds;
+    public array $lower_bounds;
 
     /**
      * @var array<string, array<string, TemplateBound>>
      */
-    public $upper_bounds = [];
+    public array $upper_bounds = [];
 
     /**
      * If set to true then we shouldn't update the template bounds
-     *
-     * @var bool
      */
-    public $readonly = false;
+    public bool $readonly = false;
 
     /**
      * @var list<Union>
      */
-    public $upper_bounds_unintersectable_types = [];
+    public array $upper_bounds_unintersectable_types = [];
 
     /**
      * @param  array<string, array<string, Union>> $template_types
@@ -57,17 +55,12 @@ class TemplateResult
     public function __construct(array $template_types, array $lower_bounds)
     {
         $this->template_types = $template_types;
+        $this->lower_bounds = [];
 
-        $this->lower_bounds = array_map(
-            function ($type_map) {
-                return array_map(
-                    function ($type) {
-                        return [new TemplateBound($type)];
-                    },
-                    $type_map
-                );
-            },
-            $lower_bounds
-        );
+        foreach ($lower_bounds as $key1 => $boundSet) {
+            foreach ($boundSet as $key2 => $bound) {
+                $this->lower_bounds[$key1][$key2] = [new TemplateBound($bound)];
+            }
+        }
     }
 }

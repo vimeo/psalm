@@ -4,51 +4,48 @@ namespace Psalm\Tests\FileManipulation;
 
 class MissingReturnTypeTest extends FileManipulationTestCase
 {
-    /**
-     * @return array<string,array{string,string,string,string[],bool,5?:bool}>
-     */
     public function providerValidCodeParse(): array
     {
         return [
             'addMissingVoidReturnType56' => [
-                '<?php
+                'input' => '<?php
                     function foo() { }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return void
                      */
                     function foo() { }',
-                '5.6',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingVoidReturnType70' => [
-                '<?php
+                'input' => '<?php
                     function foo() { }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return void
                      */
                     function foo() { }',
-                '7.0',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingVoidReturnType71' => [
-                '<?php
+                'input' => '<?php
                     function foo() { }',
-                '<?php
+                'output' => '<?php
                     function foo(): void { }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingStringReturnType56' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return string
                      *
@@ -57,29 +54,29 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function foo() {
                         return "hello";
                     }',
-                '5.6',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingStringReturnType70' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(): string {
                         return "hello";
                     }',
-                '7.0',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingNullableStringReturnType56' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return null|string
                      *
@@ -88,16 +85,16 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '5.6',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingNullableStringReturnType70' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return null|string
                      *
@@ -106,93 +103,93 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '7.0',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingStringReturnType71' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(): ?string {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingStringReturnTypeWithComment71' => [
-                '<?php
+                'input' => '<?php
                     function foo() /** : ?string */ {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(): ?string /** : ?string */ {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingStringReturnTypeWithSingleLineComment71' => [
-                '<?php
+                'input' => '<?php
                     function foo()// cool
                     {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(): ?string// cool
                     {
                         return rand(0, 1) ? "hello" : null;
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingStringArrayReturnType56' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return ["hello"];
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: \'hello\'}
+                     * @psalm-return list{\'hello\'}
                      */
                     function foo() {
                         return ["hello"];
                     }',
-                '5.6',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingStringArrayReturnType70' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return ["hello"];
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{0: \'hello\'}
+                     * @psalm-return list{\'hello\'}
                      */
                     function foo(): array {
                         return ["hello"];
                     }',
-                '7.0',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingTKeyedArrayReturnType70' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return string[]
                      *
@@ -201,12 +198,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function foo(): array {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
                     }',
-                '7.0',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingTKeyedArrayReturnTypeWithEmptyArray' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         if (rand(0, 1)) {
                             return [];
@@ -217,7 +214,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             "b" => 2,
                         ];
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return int[]
                      *
@@ -233,12 +230,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             "b" => 2,
                         ];
                     }',
-                '7.0',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingTKeyedArrayReturnTypeWithNestedArrays' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return [
                             "a" => 1,
@@ -254,7 +251,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             ],
                         ];
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return ((int|int[])[]|int)[]
                      *
@@ -275,12 +272,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             ],
                         ];
                     }',
-                '7.0',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingTKeyedArrayReturnTypeSeparateStatements70' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         if (rand(0, 1)) {
                             return ["a" => "hello", "b" => "hello again"];
@@ -292,7 +289,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
 
                         return ["a" => "goodbye"];
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return string[]
                      *
@@ -309,12 +306,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
 
                         return ["a" => "goodbye"];
                     }',
-                '7.0',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingStringArrayReturnTypeFromCall71' => [
-                '<?php
+                'input' => '<?php
                     /** @return string[] */
                     function foo(): array {
                         return ["hello"];
@@ -323,7 +320,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function bar() {
                         return foo();
                     }',
-                '<?php
+                'output' => '<?php
                     /** @return string[] */
                     function foo(): array {
                         return ["hello"];
@@ -337,12 +334,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function bar(): array {
                         return foo();
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingDocblockStringArrayReturnTypeFromCall71' => [
-                '<?php
+                'input' => '<?php
                     /** @return string[] */
                     function foo() {
                         return ["hello"];
@@ -351,7 +348,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function bar() {
                         return foo();
                     }',
-                '<?php
+                'output' => '<?php
                     /** @return string[] */
                     function foo() {
                         return ["hello"];
@@ -365,12 +362,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function bar() {
                         return foo();
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingNullableStringReturnType71' => [
-                '<?php
+                'input' => '<?php
                     /** @return string[] */
                     function foo(): array {
                         return ["hello"];
@@ -382,7 +379,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         }
                         return null;
                     }',
-                '<?php
+                'output' => '<?php
                     /** @return string[] */
                     function foo(): array {
                         return ["hello"];
@@ -397,28 +394,28 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         }
                         return null;
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingNullableStringReturnTypeWithMaybeReturn71' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                       if (rand(0, 1)) return new stdClass;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return null|stdClass
                      */
                     function foo() {
                       if (rand(0, 1)) return new stdClass;
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingUnsafeNullableStringReturnType71' => [
-                '<?php
+                'input' => '<?php
                     /** @return string[] */
                     function foo(): array {
                         return ["hello"];
@@ -430,7 +427,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         }
                         return null;
                     }',
-                '<?php
+                'output' => '<?php
                     /** @return string[] */
                     function foo(): array {
                         return ["hello"];
@@ -442,18 +439,18 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         }
                         return null;
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'addSelfReturnType' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() {
                             return $this;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return static
@@ -462,12 +459,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'addIterableReturnType' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return bar();
                     }
@@ -475,7 +472,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function bar(): iterable {
                         return [1, 2, 3];
                     }',
-                '<?php
+                'output' => '<?php
                     function foo(): iterable {
                         return bar();
                     }
@@ -483,12 +480,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function bar(): iterable {
                         return [1, 2, 3];
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'addGenericIterableReturnType' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return bar();
                     }
@@ -497,7 +494,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function bar(): iterable {
                         return [1, 2, 3];
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @psalm-return iterable<mixed, int>
                      */
@@ -509,12 +506,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function bar(): iterable {
                         return [1, 2, 3];
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'addMissingNullableReturnTypeInDocblockOnly71' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                       if (rand(0, 1)) {
                         return;
@@ -534,7 +531,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
 
                       return "hello";
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return null|string
                      *
@@ -564,42 +561,42 @@ class MissingReturnTypeTest extends FileManipulationTestCase
 
                       return "hello";
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'addMissingVoidReturnTypeToOldArray71' => [
-                '<?php
+                'input' => '<?php
                     function foo(array $a = array()) {}
                     function bar(array $a = array() )  {}',
-                '<?php
+                'output' => '<?php
                     function foo(array $a = array()): void {}
                     function bar(array $a = array() ): void  {}',
-                '7.1',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'dontAddMissingVoidReturnType56' => [
-                '<?php
+                'input' => '<?php
                     /** @return void */
                     function foo() { }
 
                     function bar() {
                         return foo();
                     }',
-                '<?php
+                'output' => '<?php
                     /** @return void */
                     function foo() { }
 
                     function bar() {
                         return foo();
                     }',
-                '5.6',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'dontAddMissingVoidReturnTypehintForSubclass71' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() {}
                     }
@@ -607,7 +604,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     class B extends A {
                         public function foo() {}
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return void
@@ -621,12 +618,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                          */
                         public function foo() {}
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'dontAddMissingVoidReturnTypehintForPrivateMethodInSubclass71' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         private function foo() {}
                     }
@@ -634,7 +631,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     class B extends A {
                         private function foo() {}
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         private function foo(): void {}
                     }
@@ -642,12 +639,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     class B extends A {
                         private function foo(): void {}
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'dontAddMissingClassReturnTypehintForSubclass71' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() {
                             return $this;
@@ -659,7 +656,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return static
@@ -677,12 +674,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'dontAddMissingClassReturnTypehintForSubSubclass71' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() {
                             return $this;
@@ -696,7 +693,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return static
@@ -716,12 +713,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingTemplateReturnType' => [
-                '<?php
+                'input' => '<?php
                     /**
                      * @template T as object
                      *
@@ -732,7 +729,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function foo($t) {
                         return $t;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @template T as object
                      *
@@ -747,41 +744,41 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function foo($t) {
                         return $t;
                     }',
-                '7.4',
-                ['MissingReturnType'],
-                true
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'missingReturnTypeAnonymousClass' => [
-                '<?php
+                'input' => '<?php
                     function logger() {
                         return new class {};
                     }',
-                '<?php
+                'output' => '<?php
                     function logger(): object {
                         return new class {};
                     }',
-                '7.4',
-                ['MissingReturnType'],
-                true
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'missingReturnTypeAnonymousClassPre72' => [
-                '<?php
+                'input' => '<?php
                     function logger() {
                         return new class {};
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return object
                      */
                     function logger() {
                         return new class {};
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                true
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
             ],
             'addMissingReturnTypeWhenParentHasNone' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         /** @psalm-suppress MissingReturnType */
                         public function foo() {
@@ -794,7 +791,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /** @psalm-suppress MissingReturnType */
                         public function foo() {
@@ -810,12 +807,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return;
                         }
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'dontAddMissingReturnTypeWhenChildHasNone' => [
-                '<?php
+                'input' => '<?php
                     class A {
                         public function foo() {}
                     }
@@ -824,7 +821,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         /** @psalm-suppress MissingReturnType */
                         public function foo() {}
                     }',
-                '<?php
+                'output' => '<?php
                     class A {
                         /**
                          * @return void
@@ -836,34 +833,34 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         /** @psalm-suppress MissingReturnType */
                         public function foo() {}
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'noEmptyArrayAnnotation' => [
-                '<?php
+                'input' => '<?php
                     function foo() {
                         return [];
                     }',
-                '<?php
+                'output' => '<?php
                     /**
-                     * @psalm-return array<empty, empty>
+                     * @psalm-return array<never, never>
                      */
                     function foo(): array {
                         return [];
                     }',
-                '7.3',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'noReturnNullButReturnTrue' => [
-                '<?php
+                'input' => '<?php
                     function a() {
                         if (rand(0,1)){
                             return true;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return null|true
                      */
@@ -872,12 +869,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return true;
                         }
                     }',
-                '7.3',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'returnNullAndReturnTrue' => [
-                '<?php
+                'input' => '<?php
                     function a() {
                         if (rand(0,1)){
                             return true;
@@ -885,7 +882,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
 
                         return null;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return null|true
                      */
@@ -896,12 +893,12 @@ class MissingReturnTypeTest extends FileManipulationTestCase
 
                         return null;
                     }',
-                '7.3',
-                ['MissingReturnType'],
-                false,
+                'php_version' => '7.3',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
             ],
             'staticReturn5.6' => [
-                '<?php
+                'input' => '<?php
                     class HelloWorld
                     {
                         public function sayHello()
@@ -909,7 +906,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class HelloWorld
                     {
                         /**
@@ -920,13 +917,13 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '5.6',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'staticReturn7.0' => [
-                '<?php
+                'input' => '<?php
                     class HelloWorld
                     {
                         public function sayHello()
@@ -934,7 +931,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class HelloWorld
                     {
                         /**
@@ -945,13 +942,13 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '7.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'staticReturn8.0' => [
-                '<?php
+                'input' => '<?php
                     class HelloWorld
                     {
                         public function sayHello()
@@ -959,7 +956,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     class HelloWorld
                     {
                         public function sayHello(): static
@@ -967,17 +964,17 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                             return $this;
                         }
                     }',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'arrayKeyReturn' => [
-                '<?php
+                'input' => '<?php
                     function scope(array $array) {
                         return (array_keys($array))[0] ?? null;
                     }',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return (int|string)|null
                      *
@@ -986,41 +983,41 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function scope(array $array) {
                         return (array_keys($array))[0] ?? null;
                     }',
-                '7.1',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'returnIntOrString' => [
-                '<?php
+                'input' => '<?php
                     function scope(int $i, string $s) {
                         return rand(0, 1) ? $i : $s;
                     }',
-                '<?php
+                'output' => '<?php
                     function scope(int $i, string $s): int|string {
                         return rand(0, 1) ? $i : $s;
                     }',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'returnIntOrString80' => [
-                '<?php
+                'input' => '<?php
                     function scope(int $i, string $s) {
                         return rand(0, 1) ? $i : $s;
                     }',
-                '<?php
+                'output' => '<?php
                     function scope(int $i, string $s): int|string {
                         return rand(0, 1) ? $i : $s;
                     }',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'returnExtendedAnonymClass' => [
-                '<?php
+                'input' => '<?php
                     class A {}
 
                     function f()
@@ -1029,7 +1026,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         /** @psalm-trace $a */;
                         return $a;
                     }',
-                '<?php
+                'output' => '<?php
                     class A {}
 
                     function f(): A
@@ -1038,20 +1035,20 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         /** @psalm-trace $a */;
                         return $a;
                     }',
-                '8.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'returnExtendedAnonymClassOld' => [
-                '<?php
+                'input' => '<?php
                     class A {}
 
                     function f()
                     {
                         return new class extends A {};
                     }',
-                '<?php
+                'output' => '<?php
                     class A {}
 
                     /**
@@ -1061,18 +1058,18 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     {
                         return new class extends A {};
                     }',
-                '7.0',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'never' => [
-                '<?php
+                'input' => '<?php
                     function f() {
                         exit(1);
                     }
                 ',
-                '<?php
+                'output' => '<?php
                     /**
                      * @return never
                      */
@@ -1080,13 +1077,13 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         exit(1);
                     }
                 ',
-                '5.6',
-                ['MissingReturnType'],
-                false,
-                true,
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
             ],
             'WithAttributes' => [
-                '<?php
+                'input' => '<?php
 
                     class A
                     {
@@ -1096,7 +1093,7 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         }
                     }
                     ',
-                '<?php
+                'output' => '<?php
 
                     class A
                     {
@@ -1106,10 +1103,10 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                         }
                     }
                     ',
-                '7.1',
-                ['MissingReturnType'],
-                true,
-                true,
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+                'allow_backwards_incompatible_changes' => true,
             ],
         ];
     }

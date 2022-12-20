@@ -21,10 +21,10 @@ use LanguageServerProtocol\TextDocumentItem;
 use LanguageServerProtocol\TextEdit;
 use LanguageServerProtocol\VersionedTextDocumentIdentifier;
 use LanguageServerProtocol\WorkspaceEdit;
+use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use UnexpectedValueException;
 
@@ -35,23 +35,16 @@ use function substr_count;
 
 /**
  * Provides method handlers for all textDocument/* methods
+ *
+ * @internal
  */
 class TextDocument
 {
-    /**
-     * @var LanguageServer
-     */
-    protected $server;
+    protected LanguageServer $server;
 
-    /**
-     * @var Codebase
-     */
-    protected $codebase;
+    protected Codebase $codebase;
 
-    /**
-     * @var ProjectAnalyzer
-     */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function __construct(
         LanguageServer $server,
@@ -78,7 +71,7 @@ class TextDocument
     {
         $this->server->logDebug(
             'textDocument/didOpen',
-            ['version' => $textDocument->version, 'uri' => $textDocument->uri]
+            ['version' => $textDocument->version, 'uri' => $textDocument->uri],
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -101,7 +94,7 @@ class TextDocument
     {
         $this->server->logDebug(
             'textDocument/didSave',
-            ['uri' => (array) $textDocument]
+            ['uri' => (array) $textDocument],
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -116,14 +109,13 @@ class TextDocument
     /**
      * The document change notification is sent from the client to the server to signal changes to a text document.
      *
-     * @param VersionedTextDocumentIdentifier $textDocument
      * @param TextDocumentContentChangeEvent[] $contentChanges
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges): void
     {
         $this->server->logDebug(
             'textDocument/didChange',
-            ['version' => $textDocument->version, 'uri' => $textDocument->uri]
+            ['version' => $textDocument->version, 'uri' => $textDocument->uri],
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -153,13 +145,12 @@ class TextDocument
      * is independent of whether a text document is open or closed.
      *
      * @param TextDocumentIdentifier $textDocument The document that was closed
-     *
      */
     public function didClose(TextDocumentIdentifier $textDocument): void
     {
         $this->server->logDebug(
             'textDocument/didClose',
-            ['uri' => $textDocument->uri]
+            ['uri' => $textDocument->uri],
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -183,7 +174,7 @@ class TextDocument
         }
 
         $this->server->logDebug(
-            'textDocument/definition'
+            'textDocument/definition',
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -216,9 +207,9 @@ class TextDocument
                 LanguageServer::pathToUri($code_location->file_path),
                 new Range(
                     new Position($code_location->getLineNumber() - 1, $code_location->getColumn() - 1),
-                    new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1)
-                )
-            )
+                    new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1),
+                ),
+            ),
         );
     }
 
@@ -237,7 +228,7 @@ class TextDocument
         }
 
         $this->server->logDebug(
-            'textDocument/hover'
+            'textDocument/hover',
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -269,6 +260,7 @@ class TextDocument
             return new Success(null);
         }
 
+        /** @psalm-suppress InvalidArgument */
         return new Success(new Hover($markup, $reference->range));
     }
 
@@ -293,7 +285,7 @@ class TextDocument
         }
 
         $this->server->logDebug(
-            'textDocument/completion'
+            'textDocument/completion',
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -323,7 +315,7 @@ class TextDocument
                     $completion_items = $this->codebase->getCompletionItemsForPartialSymbol(
                         $recent_type,
                         $offset,
-                        $file_path
+                        $file_path,
                     );
                 }
                 return new Success(new CompletionList($completion_items, false));
@@ -365,7 +357,7 @@ class TextDocument
         }
 
         $this->server->logDebug(
-            'textDocument/signatureHelp'
+            'textDocument/signatureHelp',
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -401,8 +393,8 @@ class TextDocument
             new SignatureHelp(
                 [$signature_information],
                 0,
-                $argument_location[1]
-            )
+                $argument_location[1],
+            ),
         );
     }
 
@@ -410,7 +402,6 @@ class TextDocument
      * The code action request is sent from the client to the server to compute commands
      * for a given text document and range. These commands are typically code fixes to
      * either fix problems or to beautify/refactor code.
-     *
      */
     public function codeAction(TextDocumentIdentifier $textDocument, Range $range, CodeActionContext $context): Promise
     {
@@ -419,7 +410,7 @@ class TextDocument
         }
 
         $this->server->logDebug(
-            'textDocument/codeAction'
+            'textDocument/codeAction',
         );
 
         $file_path = LanguageServer::uriToPath($textDocument->uri);
@@ -440,7 +431,7 @@ class TextDocument
 
             $snippetRange = new Range(
                 new Position($data['line_from']-1),
-                new Position($data['line_to'])
+                new Position($data['line_to']),
             );
 
             $indentation = '';
@@ -462,10 +453,10 @@ class TextDocument
                             "{$indentation}/**\n".
                             "{$indentation} * @psalm-suppress {$data['type']}\n".
                             "{$indentation} */\n".
-                            "{$data['snippet']}\n"
-                        )
-                    ]
-                ])
+                            "{$data['snippet']}\n",
+                        ),
+                    ],
+                ]),
             );
 
             /*
@@ -493,7 +484,7 @@ class TextDocument
         }
 
         return new Success(
-            array_values($fixers)
+            array_values($fixers),
         );
     }
 }

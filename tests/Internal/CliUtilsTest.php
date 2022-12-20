@@ -61,7 +61,7 @@ class CliUtilsTest extends TestCase
         self::assertEquals($expected, $result);
     }
 
-    /** @return iterable<string,array{list<string>|null,list<string>,fpaths?:list<string>}> */
+    /** @return iterable<string,list{0: list<string>|null, 1: list<string>, 2?: list<string>}> */
     public function provideGetPathsToCheck(): iterable
     {
         $psalm = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'psalm';
@@ -69,7 +69,7 @@ class CliUtilsTest extends TestCase
             __DIR__
             . DIRECTORY_SEPARATOR . '..'
             . DIRECTORY_SEPARATOR. 'fixtures'
-            . DIRECTORY_SEPARATOR . 'DummyProject'
+            . DIRECTORY_SEPARATOR . 'DummyProject',
         );
         $currentDir = (string)realpath('.');
 
@@ -111,13 +111,13 @@ class CliUtilsTest extends TestCase
         yield 'withFpathToCurrentDir' => [
             [$currentDir],
             [$psalm, '-f', '.'],
-            ['.']
+            ['.'],
         ];
 
         yield 'withFpathToProjectDir' => [
             [$dummyProjectDir],
             [$psalm, '-f', $dummyProjectDir],
-            [$dummyProjectDir]
+            [$dummyProjectDir],
         ];
     }
 

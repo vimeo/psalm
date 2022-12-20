@@ -8,10 +8,13 @@ use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Internal\Provider\NodeDataProvider;
 
+/**
+ * @internal
+ */
 class TypeMappingVisitor extends NodeVisitorAbstract
 {
-    private $fake_type_provider;
-    private $real_type_provider;
+    private NodeDataProvider $fake_type_provider;
+    private NodeDataProvider $real_type_provider;
 
     public function __construct(
         NodeDataProvider $fake_type_provider,
@@ -33,7 +36,7 @@ class TypeMappingVisitor extends NodeVisitorAbstract
 
         if ($node_type) {
             /** @psalm-suppress ArgumentTypeCoercion */
-            $this->real_type_provider->setType($origNode, clone $node_type);
+            $this->real_type_provider->setType($origNode, $node_type);
         }
 
         return null;

@@ -13,6 +13,9 @@ use Psalm\Type;
 
 use function end;
 
+/**
+ * @internal
+ */
 class ContinueAnalyzer
 {
     public static function analyze(
@@ -37,9 +40,9 @@ class ContinueAnalyzer
                 if (IssueBuffer::accepts(
                     new ContinueOutsideLoop(
                         'Continue call outside loop context',
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
                     ),
-                    $statements_analyzer->getSource()->getSuppressedIssues()
+                    $statements_analyzer->getSource()->getSuppressedIssues(),
                 )) {
                     return;
                 }
@@ -56,40 +59,35 @@ class ContinueAnalyzer
 
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
-            if ($loop_scope->redefined_loop_vars === null) {
-                $loop_scope->redefined_loop_vars = $redefined_vars;
-            } else {
-                foreach ($loop_scope->redefined_loop_vars as $redefined_var => $type) {
-                    if (!isset($redefined_vars[$redefined_var])) {
-                        unset($loop_scope->redefined_loop_vars[$redefined_var]);
-                    } else {
-                        $loop_scope->redefined_loop_vars[$redefined_var] = Type::combineUnionTypes(
-                            $redefined_vars[$redefined_var],
-                            $type
-                        );
-                    }
+            foreach ($loop_scope->redefined_loop_vars as $redefined_var => $type) {
+                if (!isset($redefined_vars[$redefined_var])) {
+                    unset($loop_scope->redefined_loop_vars[$redefined_var]);
+                } else {
+                    $loop_scope->redefined_loop_vars[$redefined_var] = Type::combineUnionTypes(
+                        $redefined_vars[$redefined_var],
+                        $type,
+                    );
                 }
             }
 
             foreach ($redefined_vars as $var => $type) {
                 $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
                     $type,
-                    $loop_scope->possibly_redefined_loop_vars[$var] ?? null
+                    $loop_scope->possibly_redefined_loop_vars[$var] ?? null,
                 );
             }
 
             if ($context->finally_scope) {
-                foreach ($context->vars_in_scope as $var_id => $type) {
+                foreach ($context->vars_in_scope as $var_id => &$type) {
                     if (isset($context->finally_scope->vars_in_scope[$var_id])) {
                         $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->finally_scope->vars_in_scope[$var_id],
                             $type,
-                            $statements_analyzer->getCodebase()
+                            $statements_analyzer->getCodebase(),
                         );
                     } else {
+                        $type = $type->setPossiblyUndefined(true, true);
                         $context->finally_scope->vars_in_scope[$var_id] = $type;
-                        $type->possibly_undefined = true;
-                        $type->possibly_undefined_from_try = true;
                     }
                 }
             }

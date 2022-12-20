@@ -17,7 +17,6 @@ use UnexpectedValueException;
 
 use function array_diff;
 use function array_filter;
-use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_values;
@@ -67,13 +66,13 @@ class DoAnalyzer
             $stmt->cond,
             $context->self,
             $statements_analyzer,
-            $codebase
+            $codebase,
         );
 
         $while_clauses = array_values(
             array_filter(
                 $while_clauses,
-                function (Clause $c) use ($mixed_var_ids): bool {
+                static function (Clause $c) use ($mixed_var_ids): bool {
                     $keys = array_keys($c->possibilities);
 
                     $mixed_var_ids = array_diff($mixed_var_ids, $keys);
@@ -87,8 +86,8 @@ class DoAnalyzer
                     }
 
                     return true;
-                }
-            )
+                },
+            ),
         );
 
         if (!$while_clauses) {
@@ -103,7 +102,7 @@ class DoAnalyzer
             $loop_scope,
             $inner_loop_context,
             true,
-            true
+            true,
         ) === false) {
             return false;
         }
@@ -117,24 +116,25 @@ class DoAnalyzer
 
         $negated_while_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
-                array_merge($context->clauses, $negated_while_clauses)
-            )
+                [...$context->clauses, ...$negated_while_clauses],
+            ),
         );
 
         if ($negated_while_types) {
             $changed_var_ids = [];
 
-            $inner_loop_context->vars_in_scope =
+            [$inner_loop_context->vars_in_scope, $inner_loop_context->references_in_scope] =
                 Reconciler::reconcileKeyedTypes(
                     $negated_while_types,
                     [],
                     $inner_loop_context->vars_in_scope,
+                    $inner_loop_context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
                     [],
                     true,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->cond),
                 );
         }
 
@@ -146,7 +146,7 @@ class DoAnalyzer
                 if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
-                        $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                        $loop_scope->possibly_defined_loop_parent_vars[$var_id],
                     );
                 }
             } else {
@@ -158,12 +158,7 @@ class DoAnalyzer
 
         $context->vars_possibly_in_scope = array_merge(
             $context->vars_possibly_in_scope,
-            $do_context->vars_possibly_in_scope
-        );
-
-        $context->referenced_var_ids = array_intersect_key(
-            $do_context->referenced_var_ids,
-            $context->referenced_var_ids
+            $do_context->vars_possibly_in_scope,
         );
 
         if ($context->collect_exceptions) {

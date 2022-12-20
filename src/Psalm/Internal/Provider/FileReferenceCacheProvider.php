@@ -23,10 +23,11 @@ use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
 
 /**
- * @psalm-import-type  FileMapType from Analyzer
+ * @psalm-import-type FileMapType from Analyzer
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
+ * @internal
  */
 class FileReferenceCacheProvider
 {
@@ -51,10 +52,7 @@ class FileReferenceCacheProvider
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
 
-    /**
-     * @var Config
-     */
-    protected $config;
+    protected Config $config;
 
     public function __construct(Config $config)
     {
@@ -64,9 +62,7 @@ class FileReferenceCacheProvider
     public function hasConfigChanged(): bool
     {
         $new_hash = $this->config->computeHash();
-        $has_changed = $new_hash !== $this->getConfigHashCache();
-        $this->setConfigHashCache($new_hash);
-        return $has_changed;
+        return $new_hash !== $this->getConfigHashCache();
     }
 
     /**
@@ -928,11 +924,13 @@ class FileReferenceCacheProvider
         }
     }
 
+    //phpcs:disable -- Remove this once the phpstan phpdoc parser MR is merged
     /**
      * @return array<string, array{int, int}>|false
      */
     public function getTypeCoverage()
     {
+        //phpcs:enable -- Remove this once the phpstan phpdoc parser MR is merged
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
@@ -943,12 +941,12 @@ class FileReferenceCacheProvider
             if ($this->config->use_igbinary) {
                 /** @var array<string, array{int, int}> */
                 $type_coverage_cache = igbinary_unserialize(
-                    Providers::safeFileGetContents($type_coverage_cache_location)
+                    Providers::safeFileGetContents($type_coverage_cache_location),
                 );
             } else {
                 /** @var array<string, array{int, int}> */
                 $type_coverage_cache = unserialize(
-                    Providers::safeFileGetContents($type_coverage_cache_location)
+                    Providers::safeFileGetContents($type_coverage_cache_location),
                 );
             }
 
@@ -994,7 +992,7 @@ class FileReferenceCacheProvider
         return false;
     }
 
-    public function setConfigHashCache(string $hash): void
+    public function setConfigHashCache(string $hash = ''): void
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
@@ -1002,12 +1000,16 @@ class FileReferenceCacheProvider
             return;
         }
 
+        if ($hash === '') {
+            $hash = $this->config->computeHash();
+        }
+
         if (!is_dir($cache_directory)) {
             try {
                 if (mkdir($cache_directory, 0777, true) === false) {
                     // any other error than directory already exists/permissions issue
                     throw new RuntimeException(
-                        'Failed to create ' . $cache_directory . ' cache directory for unknown reasons'
+                        'Failed to create ' . $cache_directory . ' cache directory for unknown reasons',
                     );
                 }
             } catch (RuntimeException $e) {
@@ -1025,7 +1027,7 @@ class FileReferenceCacheProvider
         file_put_contents(
             $config_hash_cache_location,
             $hash,
-            LOCK_EX
+            LOCK_EX,
         );
     }
 }

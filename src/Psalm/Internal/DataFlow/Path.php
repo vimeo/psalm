@@ -2,18 +2,25 @@
 
 namespace Psalm\Internal\DataFlow;
 
+use Psalm\Storage\ImmutableNonCloneableTrait;
+
 /**
  * @psalm-immutable
+ * @internal
  */
 class Path
 {
-    public $type;
+    use ImmutableNonCloneableTrait;
 
-    public $unescaped_taints;
+    public string $type;
 
-    public $escaped_taints;
+    /** @var ?array<string> */
+    public ?array $unescaped_taints = null;
 
-    public $length;
+    /** @var ?array<string> */
+    public ?array $escaped_taints = null;
+
+    public int $length;
 
     /**
      * @param ?array<string> $unescaped_taints

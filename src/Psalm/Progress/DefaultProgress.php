@@ -9,14 +9,14 @@ use function strlen;
 
 class DefaultProgress extends LongProgress
 {
-    private const TOO_MANY_FILES = 1500;
+    private const TOO_MANY_FILES = 1_500;
 
     // Update the progress bar at most once per 0.1 seconds.
     // This reduces flickering and reduces the amount of time spent writing to STDERR and updating the terminal.
     private const PROGRESS_BAR_SAMPLE_INTERVAL = 0.1;
 
     /** @var float the last time when the progress bar UI was updated */
-    private $previous_update_time = 0.0;
+    private float $previous_update_time = 0.0;
 
     public function taskDone(int $level): void
     {
@@ -41,7 +41,7 @@ class DefaultProgress extends LongProgress
 
             $inner_progress = self::renderInnerProgressBar(
                 self::NUMBER_OF_COLUMNS,
-                $this->progress / $this->number_of_tasks
+                $this->progress / $this->number_of_tasks,
             );
 
             $this->write($inner_progress . ' ' . $this->getOverview() . "\r");

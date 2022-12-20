@@ -8,6 +8,7 @@ use Throwable;
 use function defined;
 use function error_reporting;
 use function fwrite;
+use function implode;
 use function ini_set;
 use function set_error_handler;
 use function set_exception_handler;
@@ -16,13 +17,21 @@ use const E_ALL;
 use const E_STRICT;
 use const STDERR;
 
+/**
+ * @internal
+ */
 final class ErrorHandler
 {
-    /** @var bool */
-    private static $exceptions_enabled = true;
+    private static bool $exceptions_enabled = true;
 
-    public static function install(): void
+    private static string $args = '';
+
+    /**
+     * @param array<int,string> $argv
+     */
+    public static function install(array $argv = array()): void
     {
+        self::$args = implode(' ', $argv);
         self::setErrorReporting();
         self::installErrorHandler();
         self::installExceptionHandler();
@@ -64,8 +73,10 @@ final class ErrorHandler
         ): bool {
             if (ErrorHandler::$exceptions_enabled && ($error_code & error_reporting())) {
                 throw new RuntimeException(
-                    'PHP Error: ' . $error_message . ' in ' . $error_filename . ':' . $error_line,
-                    $error_code
+                    'PHP Error: ' . $error_message
+                    . ' in ' . $error_filename . ':' . $error_line
+                    . ' for command with CLI args "' . ErrorHandler::$args . '"',
+                    $error_code,
                 );
             }
             // let PHP handle suppressed errors how it sees fit

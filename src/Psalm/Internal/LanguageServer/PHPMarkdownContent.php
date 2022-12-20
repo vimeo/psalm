@@ -11,22 +11,16 @@ use ReturnTypeWillChange;
 
 use function get_object_vars;
 
+/**
+ * @internal
+ */
 class PHPMarkdownContent extends MarkupContent implements JsonSerializable
 {
-    /**
-     * @var string
-     */
-    public $code;
+    public string $code;
 
-    /**
-     * @var string|null
-     */
-    public $title;
+    public ?string $title = null;
 
-    /**
-     * @var string|null
-     */
-    public $description;
+    public ?string $description = null;
 
     public function __construct(string $code, ?string $title = null, ?string $description = null)
     {
@@ -43,7 +37,7 @@ class PHPMarkdownContent extends MarkupContent implements JsonSerializable
         }
         parent::__construct(
             MarkupKind::MARKDOWN,
-            "$markdown```php\n<?php\n$code\n```"
+            "$markdown```php\n<?php\n$code\n```",
         );
     }
 

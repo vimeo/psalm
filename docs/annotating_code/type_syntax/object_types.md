@@ -1,8 +1,14 @@
 # Object types
 
-`object`, `stdClass`, `Foo`, `Bar\Baz` etc. are examples of object types. These types are also valid types in PHP.
+## Unnamed objects
 
-#### Object properties
+`object` are examples of unnamed object types. This type is also a valid type in PHP.
+
+## Named objects
+
+`stdClass`, `Foo`, `Bar\Baz` etc. are examples of named object types. These types are also valid types in PHP.
+
+## Object properties
 
 Psalm supports specifying the properties of an object and their expected types, e.g.:
 
@@ -21,11 +27,11 @@ Optional properties can be denoted by a trailing `?`, e.g.:
 /** @param object{optional?: string} */
 ```
 
-#### Generic object types
+## Generic object types
 
 Psalm supports using generic object types like `ArrayObject<int, string>`. Any generic object should be typehinted with appropriate [`@template` tags](../templated_annotations.md).
 
-#### Generators
+## Generators
 
 Generator types support up to four parameters, e.g. `Generator<int, string, mixed, void>`:
 

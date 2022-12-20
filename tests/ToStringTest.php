@@ -10,14 +10,11 @@ class ToStringTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'validToString' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         function __toString() {
                             return "hello";
@@ -26,7 +23,7 @@ class ToStringTest extends TestCase
                     echo (new A);',
             ],
             'inheritedToString' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         function __toString() {
                             return "hello";
@@ -43,7 +40,7 @@ class ToStringTest extends TestCase
                     echo (string) $c;',
             ],
             'goodCast' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __toString(): string
                         {
@@ -61,13 +58,13 @@ class ToStringTest extends TestCase
                     barBar(new A());',
             ],
             'resourceToString' => [
-                '<?php
+                'code' => '<?php
                     $a = fopen("php://memory", "r");
                     if ($a === false) exit;
                     $b = (string) $a;',
             ],
             'canBeObject' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __toString() {
                             return "A";
@@ -80,7 +77,7 @@ class ToStringTest extends TestCase
                     foo(new A);',
             ],
             'castArrayKey' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string[] $arr
                      */
@@ -95,17 +92,17 @@ class ToStringTest extends TestCase
                     }',
             ],
             'allowToStringAfterMethodExistsCheck' => [
-                '<?php
+                'code' => '<?php
                     function getString(object $value) : ?string {
                         if (method_exists($value, "__toString")) {
                             return (string) $value;
                         }
 
                         return null;
-                    }'
+                    }',
             ],
             'refineToStringType' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-return non-empty-string */
                     function doesCast() : string {
                         return (string) (new A());
@@ -121,10 +118,10 @@ class ToStringTest extends TestCase
                         function __toString(): string {
                             return "ha";
                         }
-                    }'
+                    }',
             ],
             'intersectionCanBeString' => [
-                '<?php
+                'code' => '<?php
                     interface EmptyInterface {}
 
                     class StringCastable implements EmptyInterface
@@ -149,10 +146,10 @@ class ToStringTest extends TestCase
                     if (is_callable([$object, \'__toString\'])) {
                         $a = (string) $object;
                         echo $a;
-                    }'
+                    }',
             ],
             'PHP80-stringableInterface' => [
-                '<?php
+                'code' => '<?php
                     interface Foo extends Stringable {}
 
                     function takesString(string $s) : void {}
@@ -169,12 +166,12 @@ class ToStringTest extends TestCase
                     }
 
                     takesFoo(new FooImplementer());',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'implicitStringable' => [
-                '<?php
+                'code' => '<?php
                     function foo(Stringable $s): void {}
 
                     class Bar {
@@ -184,21 +181,21 @@ class ToStringTest extends TestCase
                     }
 
                     foo(new Bar());',
-                [],
-                [],
-                '8.0',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'toStringNever' => [
-                '<?php
+                'code' => '<?php
                     class B{
                         public function __toString() {
                             throw new BadMethodCallException("bad");
                         }
                     }
-                '
+                ',
             ],
             'toStringToImplode' => [
-                '<?php
+                'code' => '<?php
                     class Bar {
                         public function __toString() {
                             return "foo";
@@ -210,40 +207,37 @@ class ToStringTest extends TestCase
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'echoClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     echo (new A);',
                 'error_message' => 'InvalidArgument',
             ],
             'echoCastClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     echo (string)(new A);',
                 'error_message' => 'InvalidCast',
             ],
             'invalidToStringReturnType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         function __toString(): void { }
                     }',
                 'error_message' => 'InvalidToString',
             ],
             'invalidInferredToStringReturnType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         function __toString() { }
                     }',
                 'error_message' => 'InvalidToString',
             ],
             'invalidInferredToStringReturnTypeWithTruePhp8' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         function __toString() {
                             /** @psalm-suppress InvalidReturnStatement */
@@ -251,12 +245,11 @@ class ToStringTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidToString',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'implicitCastWithStrictTypes' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
                     class A {
                         public function __toString(): string
                         {
@@ -269,7 +262,7 @@ class ToStringTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'implicitCastWithStrictTypesToEchoOrSprintf' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
                     class A {
                         public function __toString(): string
                         {
@@ -282,7 +275,7 @@ class ToStringTest extends TestCase
                 'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCast' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __toString(): string
                         {
@@ -295,7 +288,7 @@ class ToStringTest extends TestCase
                 'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastToUnion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function __toString(): string
                         {
@@ -309,7 +302,7 @@ class ToStringTest extends TestCase
                 'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastFromInterface' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function __toString();
                     }
@@ -322,29 +315,15 @@ class ToStringTest extends TestCase
                     }',
                 'error_message' => 'ImplicitToStringCast',
             ],
-            'implicitConcatenation' => [
-                '<?php
-                    interface I {
-                        public function __toString();
-                    }
-
-                    function takesI(I $i): void
-                    {
-                        $a = $i . "hello";
-                    }',
-                'error_message' => 'ImplicitToStringCast',
-                [],
-                true,
-            ],
             'resourceCannotBeCoercedToString' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $s) : void {}
                     $a = fopen("php://memory", "r");
                     takesString($a);',
                 'error_message' => 'InvalidArgument',
             ],
             'resourceOrFalseToString' => [
-                '<?php
+                'code' => '<?php
                     $a = fopen("php://memory", "r");
                     if (rand(0, 1)) {
                         $a = [];
@@ -353,14 +332,14 @@ class ToStringTest extends TestCase
                 'error_message' => 'PossiblyInvalidCast',
             ],
             'cannotCastInsideString' => [
-                '<?php
+                'code' => '<?php
                     class NotStringCastable {}
                     $object = new NotStringCastable();
                     echo "$object";',
                 'error_message' => 'InvalidCast',
             ],
             'warnAboutNullableCast' => [
-                '<?php
+                'code' => '<?php
                     class ClassWithToString {
                         public function __toString(): string {
                             return "";
@@ -377,7 +356,7 @@ class ToStringTest extends TestCase
                 'error_message' => 'ImplicitToStringCast',
             ],
             'possiblyInvalidCastOnIsSubclassOf' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
 
                     /**
@@ -396,7 +375,7 @@ class ToStringTest extends TestCase
                 'error_message' => 'PossiblyInvalidOperand',
             ],
             'allowToStringAfterMethodExistsCheckWithTypo' => [
-                '<?php
+                'code' => '<?php
                     function getString(object $value) : ?string {
                         if (method_exists($value, "__toStrong")) {
                             return (string) $value;
@@ -407,13 +386,13 @@ class ToStringTest extends TestCase
                 'error_message' => 'InvalidCast',
             ],
             'alwaysEvaluateToStringVar' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress UndefinedFunction */
                     fora((string) $address);',
                 'error_message' => 'UndefinedGlobalVariable',
             ],
             'implicitStringableDisallowed' => [
-                '<?php
+                'code' => '<?php
                     interface Stringable {
                         function __toString() {}
                     }
@@ -427,12 +406,11 @@ class ToStringTest extends TestCase
 
                     foo(new Bar());',
                 'error_message' => 'InvalidArgument',
-                [],
-                false,
-                '7.4',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'implicitCastInArray' => [
-                '<?php
+                'code' => '<?php
                     interface S {
                         public function __toString(): string;
                     }
@@ -441,10 +419,10 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInList' => [
-                '<?php
+                'code' => '<?php
                     interface S {
                         public function __toString(): string;
                     }
@@ -453,10 +431,10 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInTuple' => [
-                '<?php
+                'code' => '<?php
                     interface S {
                         public function __toString(): string;
                     }
@@ -465,10 +443,10 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInShape' => [
-                '<?php
+                'code' => '<?php
                     interface S {
                         public function __toString(): string;
                     }
@@ -477,10 +455,10 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInIterable' => [
-                '<?php
+                'code' => '<?php
                     interface S {
                         public function __toString(): string;
                     }
@@ -489,10 +467,10 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInToString' => [
-                '<?php
+                'code' => '<?php
                     declare(strict_types=1);
 
                     final class A
@@ -503,10 +481,10 @@ class ToStringTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'toStringTypecastNonString' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         function __toString(): string {
                             return "ha";
@@ -518,12 +496,12 @@ class ToStringTest extends TestCase
                 'error_message' => 'InvalidCast',
             ],
             'riskyArrayToIntCast' => [
-                '<?php
+                'code' => '<?php
                     echo (int) array();',
                 'error_message' => 'RiskyCast',
             ],
             'riskyArrayToFloatCast' => [
-                '<?php
+                'code' => '<?php
                     echo (float) array(\'hello\');',
                 'error_message' => 'RiskyCast',
             ],

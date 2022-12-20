@@ -6,6 +6,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -23,6 +24,9 @@ use Psalm\Type\Atomic\TTemplateParam;
 use function array_merge;
 use function array_pop;
 
+/**
+ * @internal
+ */
 class CloneAnalyzer
 {
     public static function analyze(
@@ -36,6 +40,7 @@ class CloneAnalyzer
             return false;
         }
 
+        $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
         $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
         if ($stmt_expr_type) {
@@ -62,22 +67,30 @@ class CloneAnalyzer
                     } else {
                         $clone_method_id = new MethodIdentifier(
                             $clone_type_part->value,
-                            '__clone'
+                            '__clone',
                         );
 
                         $does_method_exist = $codebase_methods->methodExists(
                             $clone_method_id,
                             $context->calling_method_id,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            $location,
                         );
                         $is_method_visible = MethodAnalyzer::isMethodVisible(
                             $clone_method_id,
                             $context,
-                            $statements_analyzer->getSource()
+                            $statements_analyzer->getSource(),
                         );
                         if ($does_method_exist && !$is_method_visible) {
                             $invalid_clones[] = $clone_type_part->getId();
                         } else {
+                            MethodCallProhibitionAnalyzer::analyze(
+                                $codebase,
+                                $context,
+                                $clone_method_id,
+                                $statements_analyzer->getNamespace(),
+                                $location,
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
                             $possibly_valid = true;
                             $immutable_cloned = true;
                         }
@@ -105,9 +118,9 @@ class CloneAnalyzer
                 IssueBuffer::maybeAdd(
                     new MixedClone(
                         'Cannot clone mixed',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        $location,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -116,31 +129,30 @@ class CloneAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidClone(
                             'Cannot clone ' . $invalid_clones[0],
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            $location,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidClone(
                             'Cannot clone ' . $invalid_clones[0],
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            $location,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
                 return true;
             }
 
-            $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
-
             if ($immutable_cloned) {
-                $stmt_expr_type = clone $stmt_expr_type;
-                $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
-                $stmt_expr_type->reference_free = true;
-                $stmt_expr_type->allow_mutations = true;
+                $stmt_expr_type = $stmt_expr_type->setProperties([
+                    'reference_free' => true,
+                    'allow_mutations' => true,
+                ]);
             }
+            $statements_analyzer->node_data->setType($stmt, $stmt_expr_type);
         }
 
         return true;

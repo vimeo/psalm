@@ -7,35 +7,21 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class MethodParamsProviderEvent
+final class MethodParamsProviderEvent
 {
-    /**
-     * @var string
-     */
-    private $fq_classlike_name;
-    /**
-     * @var string
-     */
-    private $method_name_lowercase;
+    private string $fq_classlike_name;
+    private string $method_name_lowercase;
     /**
      * @var list<PhpParser\Node\Arg>|null
      */
-    private $call_args;
-    /**
-     * @var StatementsSource|null
-     */
-    private $statements_source;
-    /**
-     * @var Context|null
-     */
-    private $context;
-    /**
-     * @var CodeLocation|null
-     */
-    private $code_location;
+    private ?array $call_args;
+    private ?StatementsSource $statements_source;
+    private ?Context $context;
+    private ?CodeLocation $code_location;
 
     /**
      * @param  list<PhpParser\Node\Arg>    $call_args
+     * @internal
      */
     public function __construct(
         string $fq_classlike_name,

@@ -15,18 +15,17 @@ use function strlen;
  */
 class Message
 {
-    /**
-     * @var ?MessageBody
-     */
-    public $body;
+    public ?MessageBody $body = null;
 
     /**
      * @var string[]
      */
-    public $headers;
+    public array $headers;
 
     /**
      * Parses a message
+     *
+     * @psalm-suppress UnusedMethod
      */
     public static function parse(string $msg): Message
     {
@@ -36,7 +35,9 @@ class Message
         foreach ($parts as $line) {
             if ($line) {
                 $pair = explode(': ', $line);
-                $obj->headers[$pair[0]] = $pair[1];
+                if (isset($pair[1])) {
+                    $obj->headers[$pair[0]] = $pair[1];
+                }
             }
         }
 

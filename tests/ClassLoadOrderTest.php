@@ -10,14 +10,11 @@ class ClassLoadOrderTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'singleFileInheritance' => [
-                '<?php
+                'code' => '<?php
                     class A extends B {}
 
                     class B {
@@ -32,13 +29,13 @@ class ClassLoadOrderTest extends TestCase
                     }',
             ],
             'constSandwich' => [
-                '<?php
+                'code' => '<?php
                     class A { const B = 42;}
                     $a = A::B;
                     class C {}',
             ],
             'deferredReference' => [
-                '<?php
+                'code' => '<?php
                     class B {
                         const C = A;
                     }
@@ -51,7 +48,7 @@ class ClassLoadOrderTest extends TestCase
                 ],
             ],
             'moreCyclicalReferences' => [
-                '<?php
+                'code' => '<?php
                     class B extends C {
                         public function d(): A {
                             return new A;
@@ -69,7 +66,7 @@ class ClassLoadOrderTest extends TestCase
                     }',
             ],
             'referenceToSubclassInMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function b(B $b): void {
 
@@ -87,7 +84,7 @@ class ClassLoadOrderTest extends TestCase
                     }',
             ],
             'referenceToClassInMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function b(A $b): void {
                             $b->b(new A());
@@ -95,7 +92,7 @@ class ClassLoadOrderTest extends TestCase
                     }',
             ],
             'classTraversal' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     class A {
@@ -122,32 +119,29 @@ class ClassLoadOrderTest extends TestCase
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'inheritanceLoopOne' => [
-                '<?php
+                'code' => '<?php
                     class C extends C {}',
                 'error_message' => 'Circular reference',
             ],
             'inheritanceLoopTwo' => [
-                '<?php
+                'code' => '<?php
                     class E extends F {}
                     class F extends E {}',
                 'error_message' => 'Circular reference',
             ],
             'inheritanceLoopThree' => [
-                '<?php
+                'code' => '<?php
                     class G extends H {}
                     class H extends I {}
                     class I extends G {}',
                 'error_message' => 'Circular reference',
             ],
             'SKIPPED-invalidDeferredReference' => [
-                '<?php
+                'code' => '<?php
                     class B {
                         const C = A;
                     }

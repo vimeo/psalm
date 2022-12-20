@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\DataFlowNodeData;
 abstract class TaintedInput extends CodeIssue
 {
     public const ERROR_LEVEL = -2;
+    /** @var int<0, max> */
     public const SHORTCODE = 205;
 
     /**
@@ -73,7 +74,7 @@ abstract class TaintedInput extends CodeIssue
             $selection_bounds[1],
             $snippet_bounds[0],
             $location->getColumn(),
-            $location->getEndColumn()
+            $location->getEndColumn(),
         );
     }
 

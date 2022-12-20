@@ -8,15 +8,15 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TTrue;
-use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 
-class ContainsLiteralVisitor extends NodeVisitor
+/**
+ * @internal
+ */
+class ContainsLiteralVisitor extends TypeVisitor
 {
-    /**
-     * @var bool
-     */
-    private $contains_literal = false;
+    private bool $contains_literal = false;
 
     protected function enterNode(TypeNode $type): ?int
     {
@@ -27,12 +27,12 @@ class ContainsLiteralVisitor extends NodeVisitor
             || $type instanceof TFalse
         ) {
             $this->contains_literal = true;
-            return NodeVisitor::STOP_TRAVERSAL;
+            return self::STOP_TRAVERSAL;
         }
 
-        if ($type instanceof TArray && $type->type_params[1]->isEmpty()) {
+        if ($type instanceof TArray && $type->isEmptyArray()) {
             $this->contains_literal = true;
-            return NodeVisitor::STOP_TRAVERSAL;
+            return self::STOP_TRAVERSAL;
         }
 
         return null;

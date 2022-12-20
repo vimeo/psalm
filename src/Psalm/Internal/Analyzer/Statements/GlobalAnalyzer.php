@@ -15,6 +15,9 @@ use Psalm\IssueBuffer;
 
 use function is_string;
 
+/**
+ * @internal
+ */
 class GlobalAnalyzer
 {
     public static function analyze(
@@ -26,10 +29,10 @@ class GlobalAnalyzer
         if (!$context->collect_initializations && !$global_context) {
             IssueBuffer::maybeAdd(
                 new InvalidGlobal(
-                    'Cannot use global scope here',
-                    new CodeLocation($statements_analyzer, $stmt)
+                    'Cannot use global scope here (unless this file is included from a non-global scope)',
+                    new CodeLocation($statements_analyzer, $stmt),
                 ),
-                $statements_analyzer->getSource()->getSuppressedIssues()
+                $statements_analyzer->getSource()->getSuppressedIssues(),
             );
         }
 
@@ -48,36 +51,47 @@ class GlobalAnalyzer
                         $context->vars_in_scope[$var_id] =
                             VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
                     } elseif (isset($function_storage->global_types[$var_id])) {
-                        $context->vars_in_scope[$var_id] = clone $function_storage->global_types[$var_id];
+                        $context->vars_in_scope[$var_id] = $function_storage->global_types[$var_id];
                         $context->vars_possibly_in_scope[$var_id] = true;
                     } else {
                         $context->vars_in_scope[$var_id] =
                             $global_context && $global_context->hasVariable($var_id)
-                                ? clone $global_context->vars_in_scope[$var_id]
+                                ? $global_context->vars_in_scope[$var_id]
                                 : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
 
                         $context->vars_possibly_in_scope[$var_id] = true;
 
                         $context->byref_constraints[$var_id] = new ReferenceConstraint();
                     }
+
                     $assignment_node = DataFlowNode::getForAssignment(
                         $var_id,
-                        new CodeLocation($statements_analyzer, $var)
+                        new CodeLocation($statements_analyzer, $var),
                     );
-                    $context->vars_in_scope[$var_id]->parent_nodes = [
+                    $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setParentNodes([
                         $assignment_node->id => $assignment_node,
-                    ];
-                    $context->vars_from_global[$var_id] = true;
+                    ]);
+                    $context->references_to_external_scope[$var_id] = true;
+
+                    if (isset($context->references_in_scope[$var_id])) {
+                        // Global shadows existing reference
+                        $context->decrementReferenceCount($var_id);
+                        unset($context->references_in_scope[$var_id]);
+                    }
                     $statements_analyzer->registerVariable(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var),
-                        $context->branch_point
+                        $context->branch_point,
                     );
                     $statements_analyzer->getCodebase()->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
                         $var,
-                        $var_id
+                        $var_id,
                     );
+
+                    if ($global_context !== null && $global_context->hasVariable($var_id)) {
+                        $global_context->referenced_globals[$var_id] = true;
+                    }
                 }
             }
         }

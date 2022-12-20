@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
-use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -43,10 +42,10 @@ class SwitchAnalyzer
 
         $context->inside_conditional = $was_inside_conditional;
 
-        $switch_var_id = ExpressionIdentifier::getArrayVarId(
+        $switch_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->cond,
             null,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         if (!$switch_var_id
@@ -73,8 +72,6 @@ class SwitchAnalyzer
 
         $case_action_map = [];
 
-        $config = Config::getInstance();
-
         // create a map of case statement -> ultimate exit type
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
@@ -82,8 +79,7 @@ class SwitchAnalyzer
             $case_actions = $case_action_map[$i] = ScopeAnalyzer::getControlActions(
                 $case->stmts,
                 $statements_analyzer->node_data,
-                $config->exit_functions,
-                ['switch']
+                ['switch'],
             );
 
             if (!in_array(ScopeAnalyzer::ACTION_NONE, $case_actions, true)) {
@@ -135,7 +131,7 @@ class SwitchAnalyzer
                 $case_exit_type,
                 $case_actions,
                 $i === $l - 1,
-                $switch_scope
+                $switch_scope,
             ) === false
             ) {
                 return;
@@ -146,10 +142,7 @@ class SwitchAnalyzer
 
         if (!$has_default && $switch_scope->negated_clauses && $switch_var_id) {
             $entry_clauses = Algebra::simplifyCNF(
-                array_merge(
-                    $original_context->clauses,
-                    $switch_scope->negated_clauses
-                )
+                [...$original_context->clauses, ...$switch_scope->negated_clauses],
             );
 
             $reconcilable_if_types = Algebra::getTruthsFromFormula($entry_clauses);
@@ -158,20 +151,21 @@ class SwitchAnalyzer
             if ($reconcilable_if_types && isset($reconcilable_if_types[$switch_var_id])) {
                 $changed_var_ids = [];
 
-                $case_vars_in_scope_reconciled =
+                [$case_vars_in_scope_reconciled, $_] =
                     Reconciler::reconcileKeyedTypes(
                         $reconcilable_if_types,
                         [],
                         $original_context->vars_in_scope,
+                        $original_context->references_in_scope,
                         $changed_var_ids,
                         [],
                         $statements_analyzer,
                         [],
-                        $original_context->inside_loop
+                        $original_context->inside_loop,
                     );
 
                 if (isset($case_vars_in_scope_reconciled[$switch_var_id])
-                    && $case_vars_in_scope_reconciled[$switch_var_id]->isEmpty()
+                    && $case_vars_in_scope_reconciled[$switch_var_id]->isNever()
                 ) {
                     $all_options_matched = true;
                 }
@@ -201,7 +195,7 @@ class SwitchAnalyzer
                     ) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $context->vars_in_scope[$var_id]
+                            $context->vars_in_scope[$var_id],
                         );
                     }
                 }
@@ -213,7 +207,7 @@ class SwitchAnalyzer
                 if (isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
-                        $context->vars_in_scope[$var_id]
+                        $context->vars_in_scope[$var_id],
                     );
                 }
             }
@@ -225,7 +219,7 @@ class SwitchAnalyzer
 
         $context->vars_possibly_in_scope = array_merge(
             $context->vars_possibly_in_scope,
-            $switch_scope->new_vars_possibly_in_scope
+            $switch_scope->new_vars_possibly_in_scope,
         );
 
         //a switch can't return in all options without a default

@@ -12,3 +12,5 @@
 /tests/fixtures/symlinktest/*
 .vscode
 .idea/
+.vscode/
+.php-version

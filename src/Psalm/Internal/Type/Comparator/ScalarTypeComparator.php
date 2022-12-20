@@ -5,7 +5,6 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallableString;
@@ -13,10 +12,8 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
-use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -33,11 +30,9 @@ use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
@@ -182,7 +177,7 @@ class ScalarTypeComparator
 
             $container_type_part = new TClassString(
                 'object',
-                $first_type instanceof TNamedObject ? $first_type : null
+                $first_type instanceof TNamedObject ? $first_type : null,
             );
         }
 
@@ -196,12 +191,12 @@ class ScalarTypeComparator
                     $first_type->param_name,
                     $first_type->as->getId(),
                     $object_type instanceof TNamedObject ? $object_type : null,
-                    $first_type->defining_class
+                    $first_type->defining_class,
                 );
             } else {
                 $input_type_part = new TClassString(
                     'object',
-                    $first_type instanceof TNamedObject ? $first_type : null
+                    $first_type instanceof TNamedObject ? $first_type : null,
                 );
             }
         }
@@ -263,31 +258,8 @@ class ScalarTypeComparator
 
         if ($container_type_part instanceof TArrayKey
             && ($input_type_part instanceof TInt
-                || $input_type_part instanceof TString
-                || $input_type_part instanceof TTemplateKeyOf)
+                || $input_type_part instanceof TString)
         ) {
-            return true;
-        }
-
-        if ($input_type_part instanceof TTemplateKeyOf) {
-            foreach ($input_type_part->as->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TArray) {
-                    /** @var Scalar $array_key_atomic */
-                    foreach ($atomic_type->type_params[0]->getAtomicTypes() as $array_key_atomic) {
-                        if (!self::isContainedBy(
-                            $codebase,
-                            $array_key_atomic,
-                            $container_type_part,
-                            $allow_interface_equality,
-                            $allow_float_int_equality,
-                            $atomic_comparison_result
-                        )) {
-                            return false;
-                        }
-                    }
-                }
-            }
-
             return true;
         }
 
@@ -297,20 +269,13 @@ class ScalarTypeComparator
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
                 $atomic_comparison_result->type_coerced_from_mixed = true;
-                $atomic_comparison_result->scalar_type_match_found = true;
+                $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
             }
 
             return false;
         }
 
         if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
-            return true;
-        }
-
-        if (get_class($container_type_part) === TDependentListKey::class
-            && ($input_type_part instanceof TLiteralInt
-                || $input_type_part instanceof TPositiveInt)
-        ) {
             return true;
         }
 
@@ -364,17 +329,7 @@ class ScalarTypeComparator
             return true;
         }
 
-        if (get_class($container_type_part) === TDependentListKey::class
-            && $input_type_part instanceof TInt
-        ) {
-            return true;
-        }
-
-        if ((get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt)
-            || (get_class($input_type_part) === TPositiveInt::class
-                && $container_type_part instanceof TLiteralInt
-                && $container_type_part->value > 0)
-        ) {
+        if (get_class($input_type_part) === TInt::class && $container_type_part instanceof TLiteralInt) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
                 $atomic_comparison_result->type_coerced_from_scalar = true;
@@ -386,53 +341,11 @@ class ScalarTypeComparator
         if ($input_type_part instanceof TIntRange && $container_type_part instanceof TIntRange) {
             return IntegerRangeComparator::isContainedBy(
                 $input_type_part,
-                $container_type_part
+                $container_type_part,
             );
         }
 
-        if ($input_type_part instanceof TInt && $container_type_part instanceof TPositiveInt) {
-            if ($input_type_part instanceof TPositiveInt) {
-                return true;
-            }
-            if ($input_type_part instanceof TLiteralInt) {
-                return $input_type_part->value > 0;
-            }
-            if ($input_type_part instanceof TIntRange) {
-                return $input_type_part->isPositive();
-            }
-
-            if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = true;
-                $atomic_comparison_result->type_coerced_from_scalar = true;
-            }
-
-            return false;
-        }
-
         if ($input_type_part instanceof TInt && $container_type_part instanceof TIntRange) {
-            if ($input_type_part instanceof TPositiveInt) {
-                if ($container_type_part->min_bound > 1) {
-                    //any positive int can't be pushed inside a range with a min > 1
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced = true;
-                        $atomic_comparison_result->type_coerced_from_scalar = true;
-                    }
-
-                    return false;
-                }
-
-                if ($container_type_part->max_bound !== null) {
-                    //any positive int can't be pushed inside a range where the max bound isn't max without coercion
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced = true;
-                        $atomic_comparison_result->type_coerced_from_scalar = true;
-                    }
-
-                    return false;
-                }
-
-                return true;
-            }
             if ($input_type_part instanceof TLiteralInt) {
                 $min_bound = $container_type_part->min_bound;
                 $max_bound = $container_type_part->max_bound;
@@ -499,7 +412,7 @@ class ScalarTypeComparator
                 $input_type_part,
                 $container_type_part,
                 $allow_interface_equality,
-                $atomic_comparison_result
+                $atomic_comparison_result,
             );
         }
 
@@ -535,8 +448,7 @@ class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TString
-            && ($input_type_part instanceof TNumericString
-                || $input_type_part instanceof THtmlEscapedString)
+            && $input_type_part instanceof TNumericString
         ) {
             if ($container_type_part instanceof TLiteralString) {
                 if (is_numeric($container_type_part->value) && $atomic_comparison_result) {
@@ -550,8 +462,7 @@ class ScalarTypeComparator
         }
 
         if ($input_type_part instanceof TString
-            && ($container_type_part instanceof TNumericString
-                || $container_type_part instanceof THtmlEscapedString)
+            && $container_type_part instanceof TNumericString
         ) {
             if ($input_type_part instanceof TLiteralString) {
                 return is_numeric($input_type_part->value);
@@ -574,7 +485,7 @@ class ScalarTypeComparator
                     $codebase,
                     $input_callable,
                     $container_callable,
-                    $atomic_comparison_result ?? new TypeComparisonResult()
+                    $atomic_comparison_result ?? new TypeComparisonResult(),
                 ) === false
                 ) {
                     return false;
@@ -619,19 +530,21 @@ class ScalarTypeComparator
         if ($input_type_part instanceof TNumeric) {
             if ($container_type_part->isNumericType()) {
                 if ($atomic_comparison_result) {
-                    $atomic_comparison_result->scalar_type_match_found = true;
+                    $atomic_comparison_result->type_coerced = true;
+                    $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
                 }
             }
         }
 
-        if ($input_type_part instanceof Scalar) {
-            if (!$container_type_part instanceof TLiteralInt
-                && !$container_type_part instanceof TLiteralString
-                && !$container_type_part instanceof TLiteralFloat
-            ) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->scalar_type_match_found = true;
-                }
+        if (!$container_type_part instanceof TLiteralInt
+            && !$container_type_part instanceof TLiteralString
+            && !$container_type_part instanceof TLiteralFloat
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced
+                    = $atomic_comparison_result->type_coerced_from_scalar
+                    = $input_type_part instanceof TScalar;
+                $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
             }
         }
 

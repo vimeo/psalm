@@ -13,14 +13,11 @@ class ScopeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'newVarInIf' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0,100) === 10) {
                         $badge = "hello";
                     }
@@ -31,7 +28,7 @@ class ScopeTest extends TestCase
                     echo $badge;',
             ],
             'newVarInIfWithElseReturn' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0,100) === 10) {
                         $badge = "hello";
                     }
@@ -42,20 +39,20 @@ class ScopeTest extends TestCase
                     echo $badge;',
             ],
             'passByRefInVarWithBoolean' => [
-                '<?php
+                'code' => '<?php
                     $a = preg_match("/bad/", "badger", $matches) > 0;
                     if ($a) {
                         echo $matches[1];
                     }',
             ],
             'functionExists' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0,1) && function_exists("flabble")) {
                         flabble();
                     }',
             ],
             'nestedPropertyFetchInElseif' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var A|null */
                         public $foo;
@@ -74,7 +71,7 @@ class ScopeTest extends TestCase
                     }',
             ],
             'globalReturn' => [
-                '<?php
+                'code' => '<?php
                     $foo = "foo";
 
                     function a(): string {
@@ -84,7 +81,7 @@ class ScopeTest extends TestCase
                     }',
             ],
             'globalReturnWithAnnotation' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @global string $foo
                      */
@@ -95,7 +92,7 @@ class ScopeTest extends TestCase
                     }',
             ],
             'negateAssertionAndOther' => [
-                '<?php
+                'code' => '<?php
                     $a = rand(0, 10) ? "hello" : null;
 
                     if (rand(0, 10) > 1 && is_string($a)) {
@@ -106,7 +103,7 @@ class ScopeTest extends TestCase
                 ],
             ],
             'repeatAssertionWithOther' => [
-                '<?php
+                'code' => '<?php
                     function getString() : string {
                         return "hello";
                     }
@@ -120,10 +117,10 @@ class ScopeTest extends TestCase
                 'assertions' => [
                     '$a' => 'null|string',
                 ],
-                'error_levels' => ['PossiblyFalseArgument'],
+                'ignored_issues' => ['PossiblyFalseArgument'],
             ],
             'refineOredType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function doThing(): void
                         {
@@ -138,7 +135,7 @@ class ScopeTest extends TestCase
                     class C extends A {}',
             ],
             'instanceOfSubtraction' => [
-                '<?php
+                'code' => '<?php
                     class Foo {}
                     class FooBar extends Foo{}
                     class FooBarBat extends FooBar{}
@@ -153,7 +150,7 @@ class ScopeTest extends TestCase
                     }',
             ],
             'staticNullRef' => [
-                '<?php
+                'code' => '<?php
                     /** @return void */
                     function foo() {
                         static $bar = null;
@@ -166,17 +163,17 @@ class ScopeTest extends TestCase
                     }',
             ],
             'suppressInvalidThis' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress InvalidScope */
                     if (!isset($this->value)) {
                         $this->value = ["x", "y"];
                         echo count($this->value) - 2;
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedPropertyAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedPropertyAssignment', 'MixedArgument'],
             ],
             'typedStatic' => [
-                '<?php
+                'code' => '<?php
                     function a(): ?int {
                         /** @var ?int */
                         static $foo = 5;
@@ -191,21 +188,21 @@ class ScopeTest extends TestCase
                     }',
             ],
             'psalmScopeThisInTemplate' => [
-                '<?php
+                'code' => '<?php
                     $e = new Exception(); // necessary to trick Psalm’s scanner for test
                     /** @psalm-scope-this Exception */
                 ?>
                 <h1><?= $this->getMessage() ?></h1>',
             ],
             'psalmVarThisInTemplate' => [
-                '<?php
+                'code' => '<?php
                     $e = new Exception(); // necessary to trick Psalm’s scanner for test
                     /** @var Exception $this */
                 ?>
                 <h1><?= $this->getMessage() ?></h1>',
             ],
             'psalmVarThisAbsoluteClassInTemplate' => [
-                '<?php
+                'code' => '<?php
                     $e = new Exception(); // necessary to trick Psalm’s scanner for test
                     /** @var \Exception $this */
                 ?>
@@ -214,14 +211,11 @@ class ScopeTest extends TestCase
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyUndefinedVarInIf' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0,100) === 10) {
                         $b = "s";
                     }
@@ -231,7 +225,7 @@ class ScopeTest extends TestCase
                     . 'variable $b, first seen on line 3',
             ],
             'possiblyUndefinedArrayInIf' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0,100) === 10) {
                         $array[] = "hello";
                     }
@@ -241,14 +235,14 @@ class ScopeTest extends TestCase
                     . 'variable $array, first seen on line 3',
             ],
             'invalidGlobal' => [
-                '<?php
+                'code' => '<?php
                     $a = "heli";
 
                     global $a;',
                 'error_message' => 'InvalidGlobal',
             ],
             'thisInStatic' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public static function fooFoo() {
                             echo $this;
@@ -257,7 +251,7 @@ class ScopeTest extends TestCase
                 'error_message' => 'InvalidScope',
             ],
             'static' => [
-                '<?php
+                'code' => '<?php
                     function a(): string {
                         static $foo = "foo";
 
@@ -266,7 +260,7 @@ class ScopeTest extends TestCase
                 'error_message' => 'MixedReturnStatement',
             ],
             'staticNullRef' => [
-                '<?php
+                'code' => '<?php
                     /** @return void */
                     function foo() {
                         /** @var int */
@@ -281,7 +275,7 @@ class ScopeTest extends TestCase
                 'error_message' => 'DocblockTypeContradiction',
             ],
             'typedStaticCannotHaveNullDefault' => [
-                '<?php
+                'code' => '<?php
                     function a(): void {
                         /** @var string */
                         static $foo = null;
@@ -289,7 +283,7 @@ class ScopeTest extends TestCase
                 'error_message' => 'ReferenceConstraintViolation',
             ],
             'typedStaticCannotBeAssignedInt' => [
-                '<?php
+                'code' => '<?php
                     function a(): void {
                         /** @var string */
                         static $foo = "foo";
@@ -299,7 +293,7 @@ class ScopeTest extends TestCase
                 'error_message' => 'ReferenceConstraintViolation',
             ],
             'typedStaticCannotBeAssignedNull' => [
-                '<?php
+                'code' => '<?php
                     function a(): void {
                         /** @var string */
                         static $foo = "foo";

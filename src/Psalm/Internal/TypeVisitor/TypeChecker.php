@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\ReservedWord;
@@ -20,66 +21,52 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\NodeVisitor;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function array_keys;
 use function array_search;
 use function count;
-use function is_array;
 use function md5;
 use function strpos;
 use function strtolower;
 
-class TypeChecker extends NodeVisitor
+/**
+ * @internal
+ */
+class TypeChecker extends TypeVisitor
 {
-    /**
-     * @var StatementsSource
-     */
-    private $source;
+    private StatementsSource $source;
 
-    /**
-     * @var CodeLocation
-     */
-    private $code_location;
+    private CodeLocation $code_location;
 
     /**
      * @var array<string>
      */
-    private $suppressed_issues;
+    private array $suppressed_issues;
 
     /**
      * @var array<string, bool>
      */
-    private $phantom_classes;
+    private array $phantom_classes;
 
-    /**
-     * @var bool
-     */
-    private $inferred;
+    private bool $inferred;
 
-    /**
-     * @var bool
-     */
-    private $inherited;
+    private bool $inherited;
 
-    /**
-     * @var bool
-     */
-    private $prevent_template_covariance;
+    private bool $prevent_template_covariance;
 
-    /** @var bool */
-    private $has_errors = false;
+    private bool $has_errors = false;
 
-    private $calling_method_id;
+    private ?string $calling_method_id = null;
 
     /**
      * @param  array<string>    $suppressed_issues
@@ -106,15 +93,16 @@ class TypeChecker extends NodeVisitor
     }
 
     /**
-     * @psalm-suppress MoreSpecificImplementedParamType
-     *
-     * @param  Atomic|Union $type
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     protected function enterNode(TypeNode $type): ?int
     {
+        if (!$type instanceof Atomic && !$type instanceof Union && !$type instanceof MutableUnion) {
+            return null;
+        }
+
         if ($type->checked) {
-            return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+            return self::DONT_TRAVERSE_CHILDREN;
         }
 
         if ($type instanceof TNamedObject) {
@@ -125,18 +113,9 @@ class TypeChecker extends NodeVisitor
             $this->checkTemplateParam($type);
         } elseif ($type instanceof TResource) {
             $this->checkResource($type);
-        } elseif ($type instanceof TArray) {
-            if (count($type->type_params) > 2) {
-                IssueBuffer::maybeAdd(
-                    new TooManyTemplateParams(
-                        $type->getId(). ' has too many template params, expecting 2',
-                        $this->code_location
-                    ),
-                    $this->suppressed_issues
-                );
-            }
         }
 
+        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
         $type->checked = true;
 
         return null;
@@ -160,7 +139,7 @@ class TypeChecker extends NodeVisitor
                 $this->source->getFilePath(),
                 $this->code_location->raw_file_start + $atomic->offset_start,
                 $this->code_location->raw_file_start + $atomic->offset_end,
-                $atomic->value
+                $atomic->value,
             );
         }
 
@@ -170,7 +149,7 @@ class TypeChecker extends NodeVisitor
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $this->calling_method_id,
                 'use:' . $atomic->text . ':' . md5($this->source->getFilePath()),
-                false
+                false,
             );
         }
 
@@ -182,7 +161,7 @@ class TypeChecker extends NodeVisitor
                 $this->source->getFQCLN(),
                 $this->calling_method_id,
                 $this->suppressed_issues,
-                new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock)
+                new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
             ) === false
         ) {
             $this->has_errors = true;
@@ -198,14 +177,25 @@ class TypeChecker extends NodeVisitor
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
 
             if ($class_storage->deprecated) {
-                IssueBuffer::maybeAdd(
-                    new DeprecatedClass(
-                        'Class ' . $atomic->value . ' is marked as deprecated',
-                        $this->code_location,
-                        $atomic->value
-                    ),
-                    $this->source->getSuppressedIssues() + $this->suppressed_issues
-                );
+                if ($class_storage->is_interface) {
+                    IssueBuffer::maybeAdd(
+                        new DeprecatedInterface(
+                            'Interface ' . $atomic->value . ' is marked as deprecated',
+                            $this->code_location,
+                            $atomic->value,
+                        ),
+                        $this->source->getSuppressedIssues() + $this->suppressed_issues,
+                    );
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new DeprecatedClass(
+                            'Class ' . $atomic->value . ' is marked as deprecated',
+                            $this->code_location,
+                            $atomic->value,
+                        ),
+                        $this->source->getSuppressedIssues() + $this->suppressed_issues,
+                    );
+                }
             }
         }
 
@@ -235,18 +225,18 @@ class TypeChecker extends NodeVisitor
                 new MissingTemplateParam(
                     $atomic->value . ' has missing template params, expecting '
                         . $template_type_count,
-                    $this->code_location
+                    $this->code_location,
                 ),
-                $this->suppressed_issues
+                $this->suppressed_issues,
             );
         } elseif ($template_type_count < $template_param_count) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $atomic->getId(). ' has too many template params, expecting '
                         . $template_type_count,
-                    $this->code_location
+                    $this->code_location,
                 ),
-                $this->suppressed_issues
+                $this->suppressed_issues,
             );
         }
 
@@ -266,7 +256,7 @@ class TypeChecker extends NodeVisitor
                         $expected_type_param,
                         $defining_class,
                         null,
-                        null
+                        null,
                     );
 
                     $type_param = TypeExpander::expandUnion(
@@ -274,7 +264,7 @@ class TypeChecker extends NodeVisitor
                         $type_param,
                         $defining_class,
                         null,
-                        null
+                        null,
                     );
 
                     if (!UnionTypeComparator::isContainedBy($codebase, $type_param, $expected_type_param)) {
@@ -285,9 +275,9 @@ class TypeChecker extends NodeVisitor
                                     . ' expects type '
                                     . $expected_type_param->getId()
                                     . ', type ' . $type_param->getId() . ' given',
-                                $this->code_location
+                                $this->code_location,
                             ),
-                            $this->suppressed_issues
+                            $this->suppressed_issues,
                         );
                     }
                 }
@@ -312,7 +302,7 @@ class TypeChecker extends NodeVisitor
             null,
             null,
             $this->suppressed_issues,
-            new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock)
+            new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
         ) === false
         ) {
             $this->has_errors = true;
@@ -321,23 +311,23 @@ class TypeChecker extends NodeVisitor
 
         $const_name = $atomic->const_name;
         if (strpos($const_name, '*') !== false) {
-            $expanded = TypeExpander::expandAtomic(
+            TypeExpander::expandAtomic(
                 $this->source->getCodebase(),
                 $atomic,
                 $fq_classlike_name,
                 $fq_classlike_name,
                 null,
                 true,
-                true
+                true,
             );
 
-            $is_defined = is_array($expanded) && count($expanded) > 0;
+            $is_defined = true;
         } else {
             $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
                 $fq_classlike_name,
                 $atomic->const_name,
                 ReflectionProperty::IS_PRIVATE,
-                null
+                null,
             );
 
             $is_defined = null !== $class_constant_type;
@@ -347,9 +337,9 @@ class TypeChecker extends NodeVisitor
             IssueBuffer::maybeAdd(
                 new UndefinedConstant(
                     'Constant ' . $fq_classlike_name . '::' . $const_name . ' is not defined',
-                    $this->code_location
+                    $this->code_location,
                 ),
-                $this->source->getSuppressedIssues()
+                $this->source->getSuppressedIssues(),
             );
         }
     }
@@ -385,9 +375,9 @@ class TypeChecker extends NodeVisitor
                         new InvalidTemplateParam(
                             'Template param ' . $atomic->param_name . ' of '
                                 . $atomic->defining_class . ' is marked covariant and cannot be used here',
-                            $this->code_location
+                            $this->code_location,
                         ),
-                        $this->source->getSuppressedIssues()
+                        $this->source->getSuppressedIssues(),
                     );
                 }
             }
@@ -401,9 +391,9 @@ class TypeChecker extends NodeVisitor
                 new ReservedWord(
                     '\'resource\' is a reserved word',
                     $this->code_location,
-                    'resource'
+                    'resource',
                 ),
-                $this->source->getSuppressedIssues()
+                $this->source->getSuppressedIssues(),
             );
         }
     }

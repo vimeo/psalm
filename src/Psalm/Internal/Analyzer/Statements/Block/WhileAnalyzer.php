@@ -10,7 +10,6 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use UnexpectedValueException;
 
-use function array_intersect_key;
 use function array_merge;
 use function in_array;
 
@@ -28,7 +27,8 @@ class WhileAnalyzer
         Context $context
     ): ?bool {
         $while_true = ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch && $stmt->cond->name->parts === ['true'])
-            || ($stmt->cond instanceof PhpParser\Node\Scalar\LNumber && $stmt->cond->value > 0);
+            || (($t = $statements_analyzer->node_data->getType($stmt->cond))
+                && $t->isAlwaysTruthy());
 
         $pre_context = null;
 
@@ -56,7 +56,7 @@ class WhileAnalyzer
             self::getAndExpressions($stmt->cond),
             [],
             $loop_scope,
-            $inner_loop_context
+            $inner_loop_context,
         ) === false) {
             return false;
         }
@@ -89,7 +89,7 @@ class WhileAnalyzer
                     if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id],
                         );
                     }
                 } else {
@@ -103,16 +103,11 @@ class WhileAnalyzer
         if ($can_leave_loop) {
             $context->vars_possibly_in_scope = array_merge(
                 $context->vars_possibly_in_scope,
-                $while_context->vars_possibly_in_scope
+                $while_context->vars_possibly_in_scope,
             );
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
-
-        $context->referenced_var_ids = array_intersect_key(
-            $while_context->referenced_var_ids,
-            $context->referenced_var_ids
-        );
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($while_context);
@@ -128,10 +123,7 @@ class WhileAnalyzer
         PhpParser\Node\Expr $expr
     ): array {
         if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-            return array_merge(
-                self::getAndExpressions($expr->left),
-                self::getAndExpressions($expr->right)
-            );
+            return [...self::getAndExpressions($expr->left), ...self::getAndExpressions($expr->right)];
         }
 
         return [$expr];

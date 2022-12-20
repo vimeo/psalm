@@ -9,11 +9,13 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
 
 use function count;
 
+/**
+ * @internal
+ */
 class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -48,8 +50,6 @@ class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $min_value = $first_atomic_type->value;
             } elseif ($first_atomic_type instanceof TIntRange) {
                 $min_value = $first_atomic_type->min_bound;
-            } elseif ($first_atomic_type instanceof TPositiveInt) {
-                $min_value = 1;
             }
         }
 
@@ -60,8 +60,6 @@ class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $max_value = $second_atomic_type->value;
             } elseif ($second_atomic_type instanceof TIntRange) {
                 $max_value = $second_atomic_type->max_bound;
-            } elseif ($second_atomic_type instanceof TPositiveInt) {
-                // no max value, we keep null
             }
         }
 

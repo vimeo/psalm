@@ -12,6 +12,9 @@ use UnexpectedValueException;
 
 use function in_array;
 
+/**
+ * @internal
+ */
 class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -42,7 +45,7 @@ class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $function_id,
                 $function_id,
                 null,
-                $code_location
+                $code_location,
             );
 
             $statements_source->data_flow_graph->addNode($function_return_sink);
@@ -52,7 +55,7 @@ class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     $function_id,
                     $i,
                     null,
-                    $code_location
+                    $code_location,
                 );
 
                 $statements_source->data_flow_graph->addNode($function_param_sink);
@@ -60,11 +63,11 @@ class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $statements_source->data_flow_graph->addPath(
                     $function_param_sink,
                     $function_return_sink,
-                    'arg'
+                    'arg',
                 );
             }
 
-            $type->parent_nodes = [$function_return_sink->id => $function_return_sink];
+            return $type->setParentNodes([$function_return_sink->id => $function_return_sink]);
         }
 
         return $type;

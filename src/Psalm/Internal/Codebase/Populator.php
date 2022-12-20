@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
-use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -12,13 +11,9 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Issue\CircularReference;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
+use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
-use Psalm\Type;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -26,8 +21,10 @@ use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_splice;
 use function count;
 use function in_array;
+use function key;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -39,43 +36,22 @@ use function strtolower;
  */
 class Populator
 {
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $classlike_storage_provider;
+    private ClassLikeStorageProvider $classlike_storage_provider;
 
-    /**
-     * @var FileStorageProvider
-     */
-    private $file_storage_provider;
+    private FileStorageProvider $file_storage_provider;
 
     /**
      * @var array<lowercase-string, list<ClassLikeStorage>>
      */
-    private $invalid_class_storages = [];
+    private array $invalid_class_storages = [];
 
-    /**
-     * @var Progress
-     */
-    private $progress;
+    private Progress $progress;
 
-    /**
-     * @var ClassLikes
-     */
-    private $classlikes;
+    private ClassLikes $classlikes;
 
-    /**
-     * @var Config
-     */
-    private $config;
-
-    /**
-     * @var FileReferenceProvider
-     */
-    private $file_reference_provider;
+    private FileReferenceProvider $file_reference_provider;
 
     public function __construct(
-        Config $config,
         ClassLikeStorageProvider $classlike_storage_provider,
         FileStorageProvider $file_storage_provider,
         ClassLikes $classlikes,
@@ -86,7 +62,6 @@ class Populator
         $this->file_storage_provider = $file_storage_provider;
         $this->classlikes = $classlikes;
         $this->progress = $progress;
-        $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
     }
 
@@ -109,26 +84,6 @@ class Populator
         }
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
-            if ($this->config->allow_phpstorm_generics) {
-                foreach ($class_storage->properties as $property_storage) {
-                    if ($property_storage->type) {
-                        $this->convertPhpStormGenericToPsalmGeneric($property_storage->type, true);
-                    }
-                }
-
-                foreach ($class_storage->methods as $method_storage) {
-                    if ($method_storage->return_type) {
-                        $this->convertPhpStormGenericToPsalmGeneric($method_storage->return_type);
-                    }
-
-                    foreach ($method_storage->params as $param_storage) {
-                        if ($param_storage->type) {
-                            $this->convertPhpStormGenericToPsalmGeneric($param_storage->type);
-                        }
-                    }
-                }
-            }
-
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
@@ -137,22 +92,6 @@ class Populator
                 }
 
                 $class_storage->dependent_classlikes += $dependee_storage->dependent_classlikes;
-            }
-        }
-
-        if ($this->config->allow_phpstorm_generics) {
-            foreach ($all_file_storage as $file_storage) {
-                foreach ($file_storage->functions as $function_storage) {
-                    if ($function_storage->return_type) {
-                        $this->convertPhpStormGenericToPsalmGeneric($function_storage->return_type);
-                    }
-
-                    foreach ($function_storage->params as $param_storage) {
-                        if ($param_storage->type) {
-                            $this->convertPhpStormGenericToPsalmGeneric($param_storage->type);
-                        }
-                    }
-                }
             }
         }
 
@@ -171,13 +110,13 @@ class Populator
         $fq_classlike_name_lc = strtolower($storage->name);
 
         if (isset($dependent_classlikes[$fq_classlike_name_lc])) {
-            if ($storage->location && IssueBuffer::accepts(
-                new CircularReference(
-                    'Circular reference discovered when loading ' . $storage->name,
-                    $storage->location
-                )
-            )) {
-                // fall through
+            if ($storage->location) {
+                IssueBuffer::maybeAdd(
+                    new CircularReference(
+                        'Circular reference discovered when loading ' . $storage->name,
+                        $storage->location,
+                    ),
+                );
             }
 
             return;
@@ -187,10 +126,17 @@ class Populator
 
         $dependent_classlikes[$fq_classlike_name_lc] = true;
 
-        $this->populateDataFromTraits($storage, $storage_provider, $dependent_classlikes);
+        foreach ($storage->used_traits as $used_trait_lc => $_) {
+            $this->populateDataFromTrait($storage, $storage_provider, $dependent_classlikes, $used_trait_lc);
+        }
 
         if ($storage->parent_classes) {
-            $this->populateDataFromParentClass($storage, $storage_provider, $dependent_classlikes);
+            $this->populateDataFromParentClass(
+                $storage,
+                $storage_provider,
+                $dependent_classlikes,
+                reset($storage->parent_classes),
+            );
         }
 
         if (!strpos($fq_classlike_name_lc, '\\')
@@ -202,9 +148,23 @@ class Populator
             $storage->methods['__construct'] = $storage->methods[$fq_classlike_name_lc];
         }
 
-        $this->populateInterfaceDataFromParentInterfaces($storage, $storage_provider, $dependent_classlikes);
+        foreach ($storage->direct_interface_parents as $parent_interface_lc => $_) {
+            $this->populateInterfaceDataFromParentInterface(
+                $storage,
+                $storage_provider,
+                $dependent_classlikes,
+                $parent_interface_lc,
+            );
+        }
 
-        $this->populateDataFromImplementedInterfaces($storage, $storage_provider, $dependent_classlikes);
+        foreach ($storage->direct_class_interfaces as $implemented_interface_lc => $_) {
+            $this->populateDataFromImplementedInterface(
+                $storage,
+                $storage_provider,
+                $dependent_classlikes,
+                $implemented_interface_lc,
+            );
+        }
 
         if ($storage->location) {
             $file_path = $storage->location->file_path;
@@ -220,7 +180,7 @@ class Populator
             foreach ($storage->class_implements as $implemented_interface) {
                 $this->file_reference_provider->addFileInheritanceToClass(
                     $file_path,
-                    strtolower($implemented_interface)
+                    strtolower($implemented_interface),
                 );
             }
 
@@ -257,15 +217,15 @@ class Populator
 
         if (!$storage->is_interface && !$storage->is_trait) {
             foreach ($storage->methods as $method) {
-                $method->internal = array_merge($storage->internal, $method->internal);
+                $method->internal = [...$storage->internal, ...$method->internal];
             }
 
             foreach ($storage->properties as $property) {
-                $property->internal = array_merge($storage->internal, $property->internal);
+                $property->internal = [...$storage->internal, ...$property->internal];
             }
         }
 
-        $this->populateOverriddenMethods($storage);
+        $this->populateOverriddenMethods($storage, $storage_provider);
 
         $this->progress->debug('Have populated ' . $storage->name . "\n");
 
@@ -273,7 +233,29 @@ class Populator
 
         if (isset($this->invalid_class_storages[$fq_classlike_name_lc])) {
             foreach ($this->invalid_class_storages[$fq_classlike_name_lc] as $dependency) {
+                // Dependencies may not be fully set yet, so we have to loop through dependencies of dependencies
+                $dependencies = [strtolower($dependency->name) => true];
+                do {
+                    $current_dependency_name = key(array_splice($dependencies, 0, 1)); // Key shift
+                    $current_dependency = $storage_provider->get($current_dependency_name);
+                    $dependencies += $current_dependency->dependent_classlikes;
+
+                    if (isset($current_dependency->dependent_classlikes[$fq_classlike_name_lc])) {
+                        if ($dependency->location) {
+                            IssueBuffer::maybeAdd(
+                                new CircularReference(
+                                    'Circular reference discovered when loading ' . $dependency->name,
+                                    $dependency->location,
+                                ),
+                            );
+                        }
+
+                        continue 2;
+                    }
+                } while (!empty($dependencies));
+
                 $dependency->populated = false;
+                unset($dependency->invalid_dependencies[$fq_classlike_name_lc]);
                 $this->populateClassLikeStorage($dependency, $dependent_classlikes);
             }
 
@@ -282,8 +264,65 @@ class Populator
     }
 
     private function populateOverriddenMethods(
-        ClassLikeStorage $storage
+        ClassLikeStorage $storage,
+        ClassLikeStorageProvider $storage_provider
     ): void {
+        $interface_method_implementers = [];
+        foreach ($storage->class_implements as $interface) {
+            try {
+                $implemented_interface = strtolower(
+                    $this->classlikes->getUnAliasedName(
+                        $interface,
+                    ),
+                );
+                $implemented_interface_storage = $storage_provider->get($implemented_interface);
+            } catch (InvalidArgumentException $e) {
+                continue;
+            }
+
+            $implemented_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
+
+            foreach ($implemented_interface_storage->methods as $method_name => $method) {
+                if ($method->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                    $interface_method_implementers[$method_name][] = new MethodIdentifier(
+                        $implemented_interface_storage->name,
+                        $method_name,
+                    );
+                }
+            }
+        }
+
+        foreach ($interface_method_implementers as $method_name => $interface_method_ids) {
+            if (count($interface_method_ids) === 1) {
+                if (isset($storage->methods[$method_name])) {
+                    $method_storage = $storage->methods[$method_name];
+
+                    if ($method_storage->signature_return_type
+                        && !$method_storage->signature_return_type->isVoid()
+                        && $method_storage->return_type === $method_storage->signature_return_type
+                    ) {
+                        $interface_fqcln = $interface_method_ids[0]->fq_class_name;
+                        $interface_storage = $storage_provider->get($interface_fqcln);
+
+                        if (isset($interface_storage->methods[$method_name])) {
+                            $interface_method_storage = $interface_storage->methods[$method_name];
+
+                            if ($interface_method_storage->throws
+                                && (!$method_storage->throws || $method_storage->inheritdoc)
+                            ) {
+                                $method_storage->throws += $interface_method_storage->throws;
+                            }
+                        }
+                    }
+                }
+            }
+
+            foreach ($interface_method_ids as $interface_method_id) {
+                $storage->overridden_method_ids[$method_name][$interface_method_id->fq_class_name]
+                    = $interface_method_id;
+            }
+        }
+
         $storage->documenting_method_ids = [];
 
         foreach ($storage->methods as $method_name => $method_storage) {
@@ -308,7 +347,7 @@ class Populator
                         $candidate_overridden_ids = array_intersect_key(
                             $candidate_overridden_ids,
                             ($declaring_class_storage->overridden_method_ids[$method_name] ?? [])
-                                + [$declaring_method_id->fq_class_name => $declaring_method_id]
+                                + [$declaring_method_id->fq_class_name => $declaring_method_id],
                         );
                     }
                 }
@@ -335,7 +374,7 @@ class Populator
                         } else {
                             if (in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
-                                $declaring_class_storage->parent_interfaces
+                                $declaring_class_storage->parent_interfaces,
                             )) {
                                 $storage->documenting_method_ids[$method_name] = $declaring_method_id;
                                 $method_storage->inherited_return_type = true;
@@ -345,7 +384,7 @@ class Populator
 
                                 if (!in_array(
                                     $declaring_class,
-                                    $documenting_class_storage->parent_interfaces
+                                    $documenting_class_storage->parent_interfaces,
                                 ) && $documenting_class_storage->is_interface
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
@@ -375,75 +414,35 @@ class Populator
         }
     }
 
-    private function populateDataFromTraits(
+    private function populateDataFromTrait(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
-        array $dependent_classlikes
+        array $dependent_classlikes,
+        string $used_trait_lc
     ): void {
-        foreach ($storage->used_traits as $used_trait_lc => $_) {
-            try {
-                $used_trait_lc = strtolower(
-                    $this->classlikes->getUnAliasedName(
-                        $used_trait_lc
-                    )
-                );
-                $trait_storage = $storage_provider->get($used_trait_lc);
-            } catch (InvalidArgumentException $e) {
-                continue;
-            }
-
-            $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
-
-            $this->inheritMethodsFromParent($storage, $trait_storage);
-            $this->inheritPropertiesFromParent($storage, $trait_storage);
-
-            if ($trait_storage->template_types) {
-                $storage->template_extended_params[$trait_storage->name] = [];
-
-                if (isset($storage->template_extended_offsets[$trait_storage->name])) {
-                    foreach ($storage->template_extended_offsets[$trait_storage->name] as $i => $type) {
-                        $trait_template_type_names = array_keys($trait_storage->template_types);
-
-                        $mapped_name = $trait_template_type_names[$i] ?? null;
-
-                        if ($mapped_name) {
-                            $storage->template_extended_params[$trait_storage->name][$mapped_name] = $type;
-                        }
-                    }
-
-                    if ($trait_storage->template_extended_params) {
-                        foreach ($trait_storage->template_extended_params as $t_storage_class => $type_map) {
-                            foreach ($type_map as $i => $type) {
-                                $storage->template_extended_params[$t_storage_class][$i] = self::extendType(
-                                    $type,
-                                    $storage
-                                );
-                            }
-                        }
-                    }
-                } else {
-                    foreach ($trait_storage->template_types as $template_name => $template_type_map) {
-                        foreach ($template_type_map as $template_type) {
-                            $default_param = clone $template_type;
-                            $default_param->from_docblock = false;
-                            $storage->template_extended_params[$trait_storage->name][$template_name]
-                                = $default_param;
-                        }
-                    }
-                }
-            } elseif ($trait_storage->template_extended_params) {
-                $storage->template_extended_params = array_merge(
-                    $storage->template_extended_params ?: [],
-                    $trait_storage->template_extended_params
-                );
-            }
-
-            $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
-            $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
-
-            $storage->pseudo_methods += $trait_storage->pseudo_methods;
-            $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
+        try {
+            $used_trait_lc = strtolower(
+                $this->classlikes->getUnAliasedName(
+                    $used_trait_lc,
+                ),
+            );
+            $trait_storage = $storage_provider->get($used_trait_lc);
+        } catch (InvalidArgumentException $e) {
+            return;
         }
+
+        $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
+
+        $this->inheritMethodsFromParent($storage, $trait_storage);
+        $this->inheritPropertiesFromParent($storage, $trait_storage);
+
+        self::extendTemplateParams($storage, $trait_storage, false);
+
+        $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
+        $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
+
+        $storage->pseudo_methods += $trait_storage->pseudo_methods;
+        $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
 
     private static function extendType(
@@ -480,14 +479,13 @@ class Populator
     private function populateDataFromParentClass(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
-        array $dependent_classlikes
+        array $dependent_classlikes,
+        string $parent_storage_class
     ): void {
-        $parent_storage_class = reset($storage->parent_classes);
-
         $parent_storage_class = strtolower(
             $this->classlikes->getUnAliasedName(
-                $parent_storage_class
-            )
+                $parent_storage_class,
+            ),
         );
 
         try {
@@ -495,7 +493,7 @@ class Populator
         } catch (InvalidArgumentException $e) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
-            $storage->invalid_dependencies[] = $parent_storage_class;
+            $storage->invalid_dependencies[$parent_storage_class] = true;
 
             $this->invalid_class_storages[$parent_storage_class][] = $storage;
 
@@ -506,53 +504,7 @@ class Populator
 
         $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
-        if ($parent_storage->template_types) {
-            $storage->template_extended_params[$parent_storage->name] = [];
-
-            if (isset($storage->template_extended_offsets[$parent_storage->name])) {
-                foreach ($storage->template_extended_offsets[$parent_storage->name] as $i => $type) {
-                    $parent_template_type_names = array_keys($parent_storage->template_types);
-
-                    $mapped_name = $parent_template_type_names[$i] ?? null;
-
-                    if ($mapped_name) {
-                        $storage->template_extended_params[$parent_storage->name][$mapped_name] = $type;
-                    }
-                }
-
-                if ($parent_storage->template_extended_params) {
-                    foreach ($parent_storage->template_extended_params as $t_storage_class => $type_map) {
-                        foreach ($type_map as $i => $type) {
-                            $storage->template_extended_params[$t_storage_class][$i] = self::extendType(
-                                $type,
-                                $storage
-                            );
-                        }
-                    }
-                }
-            } else {
-                foreach ($parent_storage->template_types as $template_name => $template_type_map) {
-                    foreach ($template_type_map as $template_type) {
-                        $default_param = clone $template_type;
-                        $default_param->from_docblock = false;
-                        $storage->template_extended_params[$parent_storage->name][$template_name]
-                            = $default_param;
-                    }
-                }
-
-                if ($parent_storage->template_extended_params) {
-                    $storage->template_extended_params = array_merge(
-                        $storage->template_extended_params,
-                        $parent_storage->template_extended_params
-                    );
-                }
-            }
-        } elseif ($parent_storage->template_extended_params) {
-            $storage->template_extended_params = array_merge(
-                $storage->template_extended_params ?: [],
-                $parent_storage->template_extended_params
-            );
-        }
+        self::extendTemplateParams($storage, $parent_storage, true);
 
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
@@ -560,7 +512,7 @@ class Populator
         $storage->class_implements = array_merge($storage->class_implements, $parent_storage->class_implements);
         $storage->invalid_dependencies = array_merge(
             $storage->invalid_dependencies,
-            $parent_storage->invalid_dependencies
+            $parent_storage->invalid_dependencies,
         );
 
         if ($parent_storage->has_visitor_issues) {
@@ -570,12 +522,11 @@ class Populator
         $storage->constants = array_merge(
             array_filter(
                 $parent_storage->constants,
-                function ($constant) {
-                    return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED;
-                }
+                static fn(ClassConstantStorage $constant): bool
+                    => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED,
             ),
-            $storage->constants
+            $storage->constants,
         );
 
         if ($parent_storage->preserve_constructor_signature) {
@@ -604,256 +555,172 @@ class Populator
         $storage->declaring_pseudo_method_ids += $parent_storage->declaring_pseudo_method_ids;
     }
 
-    private function populateInterfaceDataFromParentInterfaces(
+    private function populateInterfaceData(
         ClassLikeStorage $storage,
+        ClassLikeStorage $interface_storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes
     ): void {
-        $parent_interfaces = [];
+        $this->populateClassLikeStorage($interface_storage, $dependent_classlikes);
 
-        foreach ($storage->direct_interface_parents as $parent_interface_lc => $_) {
+        // copy over any constants
+        $storage->constants = array_merge(
+            array_filter(
+                $interface_storage->constants,
+                static fn(ClassConstantStorage $constant): bool
+                    => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC,
+            ),
+            $storage->constants,
+        );
+
+        $storage->invalid_dependencies = array_merge(
+            $storage->invalid_dependencies,
+            $interface_storage->invalid_dependencies,
+        );
+
+        self::extendTemplateParams($storage, $interface_storage, false);
+
+        $new_parents = array_keys($interface_storage->parent_interfaces);
+        $new_parents[] = $interface_storage->name;
+        foreach ($new_parents as $new_parent) {
             try {
-                $parent_interface_lc = strtolower(
+                $new_parent = strtolower(
                     $this->classlikes->getUnAliasedName(
-                        $parent_interface_lc
-                    )
+                        $new_parent,
+                    ),
                 );
-                $parent_interface_storage = $storage_provider->get($parent_interface_lc);
-            } catch (InvalidArgumentException $e) {
-                $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
-
-                $storage->invalid_dependencies[] = $parent_interface_lc;
-                continue;
-            }
-
-            $this->populateClassLikeStorage($parent_interface_storage, $dependent_classlikes);
-
-            // copy over any constants
-            $storage->constants = array_merge(
-                array_filter(
-                    $parent_interface_storage->constants,
-                    function ($constant) {
-                        return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-                    }
-                ),
-                $storage->constants
-            );
-
-            $storage->invalid_dependencies = array_merge(
-                $storage->invalid_dependencies,
-                $parent_interface_storage->invalid_dependencies
-            );
-
-            if ($parent_interface_storage->template_types) {
-                $storage->template_extended_params[$parent_interface_storage->name] = [];
-
-                if (isset($storage->template_extended_offsets[$parent_interface_storage->name])) {
-                    foreach ($storage->template_extended_offsets[$parent_interface_storage->name] as $i => $type) {
-                        $parent_template_type_names = array_keys($parent_interface_storage->template_types);
-
-                        $mapped_name = $parent_template_type_names[$i] ?? null;
-
-                        if ($mapped_name) {
-                            $storage->template_extended_params[$parent_interface_storage->name][$mapped_name] = $type;
-                        }
-                    }
-
-                    if ($parent_interface_storage->template_extended_params) {
-                        foreach ($parent_interface_storage->template_extended_params as $t_storage_class => $type_map) {
-                            foreach ($type_map as $i => $type) {
-                                $storage->template_extended_params[$t_storage_class][$i] = self::extendType(
-                                    $type,
-                                    $storage
-                                );
-                            }
-                        }
-                    }
-                } else {
-                    foreach ($parent_interface_storage->template_types as $template_name => $template_type_map) {
-                        foreach ($template_type_map as $template_type) {
-                            $default_param = clone $template_type;
-                            $default_param->from_docblock = false;
-                            $storage->template_extended_params[$parent_interface_storage->name][$template_name]
-                                = $default_param;
-                        }
-                    }
-                }
-            } elseif ($parent_interface_storage->template_extended_params) {
-                $storage->template_extended_params = array_merge(
-                    $storage->template_extended_params ?: [],
-                    $parent_interface_storage->template_extended_params
-                );
-            }
-
-            $parent_interfaces = array_merge($parent_interfaces, $parent_interface_storage->parent_interfaces);
-
-            $this->inheritMethodsFromParent($storage, $parent_interface_storage);
-
-            $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
-            $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
-        }
-
-        $storage->parent_interfaces = array_merge($parent_interfaces, $storage->parent_interfaces);
-
-        foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
-            try {
-                $parent_interface_lc = strtolower(
-                    $this->classlikes->getUnAliasedName(
-                        $parent_interface_lc
-                    )
-                );
-                $parent_interface_storage = $storage_provider->get($parent_interface_lc);
+                $new_parent_interface_storage = $storage_provider->get($new_parent);
             } catch (InvalidArgumentException $e) {
                 continue;
             }
 
-            $parent_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
+            $new_parent_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
         }
     }
 
-    private function populateDataFromImplementedInterfaces(
+    private static function extendTemplateParams(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage,
+        bool $from_direct_parent
+    ): void {
+        if ($parent_storage->yield && !$storage->yield) {
+            $storage->yield = $parent_storage->yield;
+            $storage->declaring_yield_fqcn ??= $parent_storage->name;
+        }
+        if ($parent_storage->template_types) {
+            $storage->template_extended_params[$parent_storage->name] = [];
+
+            if (isset($storage->template_extended_offsets[$parent_storage->name])) {
+                foreach ($storage->template_extended_offsets[$parent_storage->name] as $i => $type) {
+                    $parent_template_type_names = array_keys($parent_storage->template_types);
+
+                    $mapped_name = $parent_template_type_names[$i] ?? null;
+
+                    if ($mapped_name) {
+                        $storage->template_extended_params[$parent_storage->name][$mapped_name]
+                            = $type;
+                    }
+                }
+
+                if ($parent_storage->template_extended_params) {
+                    foreach ($parent_storage->template_extended_params as $t_storage_class => $type_map) {
+                        foreach ($type_map as $i => $type) {
+                            $storage->template_extended_params[$t_storage_class][$i] = self::extendType(
+                                $type,
+                                $storage,
+                            );
+                        }
+                    }
+                }
+            } else {
+                foreach ($parent_storage->template_types as $template_name => $template_type_map) {
+                    foreach ($template_type_map as $template_type) {
+                        $default_param = $template_type->setProperties(['from_docblock' => false]);
+                        $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;
+                    }
+                }
+
+                if ($from_direct_parent) {
+                    if ($parent_storage->template_extended_params) {
+                        $storage->template_extended_params = array_merge(
+                            $storage->template_extended_params,
+                            $parent_storage->template_extended_params,
+                        );
+                    }
+                }
+            }
+        } elseif ($parent_storage->template_extended_params) {
+            $storage->template_extended_params = array_merge(
+                $storage->template_extended_params ?: [],
+                $parent_storage->template_extended_params,
+            );
+        }
+    }
+
+    private function populateInterfaceDataFromParentInterface(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
-        array $dependent_classlikes
+        array $dependent_classlikes,
+        string $parent_interface_lc
     ): void {
-        $extra_interfaces = [];
-
-        foreach ($storage->direct_class_interfaces as $implemented_interface_lc => $_) {
-            try {
-                $implemented_interface_lc = strtolower(
-                    $this->classlikes->getUnAliasedName(
-                        $implemented_interface_lc
-                    )
-                );
-                $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
-            } catch (InvalidArgumentException $e) {
-                $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
-
-                $storage->invalid_dependencies[] = $implemented_interface_lc;
-                continue;
-            }
-
-            $this->populateClassLikeStorage($implemented_interface_storage, $dependent_classlikes);
-
-            // copy over any constants
-            $storage->constants = array_merge(
-                array_filter(
-                    $implemented_interface_storage->constants,
-                    function ($constant) {
-                        return $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-                    }
+        try {
+            $parent_interface_lc = strtolower(
+                $this->classlikes->getUnAliasedName(
+                    $parent_interface_lc,
                 ),
-                $storage->constants
             );
+            $parent_interface_storage = $storage_provider->get($parent_interface_lc);
+        } catch (InvalidArgumentException $e) {
+            $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
-            $storage->invalid_dependencies = array_merge(
-                $storage->invalid_dependencies,
-                $implemented_interface_storage->invalid_dependencies
+            $storage->invalid_dependencies[$parent_interface_lc] = true;
+            return;
+        }
+
+        $this->populateInterfaceData($storage, $parent_interface_storage, $storage_provider, $dependent_classlikes);
+
+        $this->inheritMethodsFromParent($storage, $parent_interface_storage);
+
+        $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
+        $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
+
+        $storage->parent_interfaces = array_merge(
+            $parent_interface_storage->parent_interfaces,
+            $storage->parent_interfaces,
+        );
+    }
+
+    private function populateDataFromImplementedInterface(
+        ClassLikeStorage $storage,
+        ClassLikeStorageProvider $storage_provider,
+        array $dependent_classlikes,
+        string $implemented_interface_lc
+    ): void {
+        try {
+            $implemented_interface_lc = strtolower(
+                $this->classlikes->getUnAliasedName(
+                    $implemented_interface_lc,
+                ),
             );
+            $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
+        } catch (InvalidArgumentException $e) {
+            $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
-            if ($implemented_interface_storage->template_types) {
-                $storage->template_extended_params[$implemented_interface_storage->name] = [];
-
-                if (isset($storage->template_extended_offsets[$implemented_interface_storage->name])) {
-                    foreach ($storage->template_extended_offsets[$implemented_interface_storage->name] as $i => $type) {
-                        $parent_template_type_names = array_keys($implemented_interface_storage->template_types);
-
-                        $mapped_name = $parent_template_type_names[$i] ?? null;
-
-                        if ($mapped_name) {
-                            $storage->template_extended_params[$implemented_interface_storage->name][$mapped_name]
-                                = $type;
-                        }
-                    }
-
-                    if ($implemented_interface_storage->template_extended_params) {
-                        foreach ($implemented_interface_storage->template_extended_params as $e_i => $type_map) {
-                            foreach ($type_map as $i => $type) {
-                                $storage->template_extended_params[$e_i][$i] = self::extendType(
-                                    $type,
-                                    $storage
-                                );
-                            }
-                        }
-                    }
-                } else {
-                    foreach ($implemented_interface_storage->template_types as $template_name => $template_type_map) {
-                        foreach ($template_type_map as $template_type) {
-                            $default_param = clone $template_type;
-                            $default_param->from_docblock = false;
-                            $storage->template_extended_params[$implemented_interface_storage->name][$template_name]
-                                = $default_param;
-                        }
-                    }
-                }
-            } elseif ($implemented_interface_storage->template_extended_params) {
-                $storage->template_extended_params = array_merge(
-                    $storage->template_extended_params ?: [],
-                    $implemented_interface_storage->template_extended_params
-                );
-            }
-
-            $extra_interfaces = array_merge($extra_interfaces, $implemented_interface_storage->parent_interfaces);
+            $storage->invalid_dependencies[$implemented_interface_lc] = true;
+            return;
         }
 
-        $storage->class_implements = array_merge($storage->class_implements, $extra_interfaces);
+        $this->populateInterfaceData(
+            $storage,
+            $implemented_interface_storage,
+            $storage_provider,
+            $dependent_classlikes,
+        );
 
-        $interface_method_implementers = [];
-
-        foreach ($storage->class_implements as $implemented_interface_lc => $_) {
-            try {
-                $implemented_interface = strtolower(
-                    $this->classlikes->getUnAliasedName(
-                        $implemented_interface_lc
-                    )
-                );
-                $implemented_interface_storage = $storage_provider->get($implemented_interface);
-            } catch (InvalidArgumentException $e) {
-                continue;
-            }
-
-            $implemented_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
-
-            foreach ($implemented_interface_storage->methods as $method_name => $method) {
-                if ($method->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
-                    $interface_method_implementers[$method_name][] = new MethodIdentifier(
-                        $implemented_interface_storage->name,
-                        $method_name
-                    );
-                }
-            }
-        }
-
-        foreach ($interface_method_implementers as $method_name => $interface_method_ids) {
-            if (count($interface_method_ids) === 1) {
-                if (isset($storage->methods[$method_name])) {
-                    $method_storage = $storage->methods[$method_name];
-
-                    if ($method_storage->signature_return_type
-                        && !$method_storage->signature_return_type->isVoid()
-                        && $method_storage->return_type === $method_storage->signature_return_type
-                    ) {
-                        $interface_fqcln = $interface_method_ids[0]->fq_class_name;
-                        $interface_storage = $storage_provider->get($interface_fqcln);
-
-                        if (isset($interface_storage->methods[$method_name])) {
-                            $interface_method_storage = $interface_storage->methods[$method_name];
-
-                            if ($interface_method_storage->throws
-                                && (!$method_storage->throws || $method_storage->inheritdoc)
-                            ) {
-                                $method_storage->throws += $interface_method_storage->throws;
-                            }
-                        }
-                    }
-                }
-            }
-
-            foreach ($interface_method_ids as $interface_method_id) {
-                $storage->overridden_method_ids[$method_name][$interface_method_id->fq_class_name]
-                    = $interface_method_id;
-            }
-        }
+        $storage->class_implements = array_merge(
+            $storage->class_implements,
+            $implemented_interface_storage->parent_interfaces,
+        );
     }
 
     /**
@@ -896,12 +763,12 @@ class Populator
 
             $storage->declaring_function_ids = array_merge(
                 $included_file_storage->declaring_function_ids,
-                $storage->declaring_function_ids
+                $storage->declaring_function_ids,
             );
 
             $storage->declaring_constants = array_merge(
                 $included_file_storage->declaring_constants,
-                $storage->declaring_constants
+                $storage->declaring_constants,
             );
         }
 
@@ -935,7 +802,7 @@ class Populator
 
                 try {
                     $included_trait_file_storage = $this->file_storage_provider->get(
-                        $trait_storage->location->file_path
+                        $trait_storage->location->file_path,
                     );
                 } catch (InvalidArgumentException $e) {
                     continue;
@@ -943,13 +810,13 @@ class Populator
 
                 $storage->declaring_function_ids = array_merge(
                     $included_trait_file_storage->declaring_function_ids,
-                    $storage->declaring_function_ids
+                    $storage->declaring_function_ids,
                 );
             }
 
             $storage->declaring_function_ids = array_merge(
                 $included_file_storage->declaring_function_ids,
-                $storage->declaring_function_ids
+                $storage->declaring_function_ids,
             );
         }
 
@@ -988,65 +855,6 @@ class Populator
         $storage->populated = true;
     }
 
-    private function convertPhpStormGenericToPsalmGeneric(Union $candidate, bool $is_property = false): void
-    {
-        if (!$candidate->from_docblock) {
-            //never convert a type that comes from a signature
-            return;
-        }
-
-        $atomic_types = $candidate->getAtomicTypes();
-
-        if (isset($atomic_types['array']) && count($atomic_types) > 1 && !isset($atomic_types['null'])) {
-            $iterator_name = null;
-            $generic_params = null;
-            $iterator_key = null;
-
-            try {
-                foreach ($atomic_types as $type_key => $type) {
-                    if ($type instanceof TIterable
-                        || ($type instanceof TNamedObject
-                            && (!$type->from_docblock || $is_property)
-                            && (
-                                strtolower($type->value) === 'traversable'
-                                || $this->classlikes->interfaceExtends(
-                                    $type->value,
-                                    'Traversable'
-                                )
-                                || $this->classlikes->classImplements(
-                                    $type->value,
-                                    'Traversable'
-                                )
-                            ))
-                    ) {
-                        $iterator_name = $type->value;
-                        $iterator_key = $type_key;
-                    } elseif ($type instanceof TArray) {
-                        $generic_params = $type->type_params;
-                    }
-                }
-            } catch (InvalidArgumentException $e) {
-                // ignore class-not-found issues
-            }
-
-            if ($iterator_name && $iterator_key && $generic_params) {
-                if ($iterator_name === 'iterable') {
-                    $generic_iterator = new TIterable($generic_params);
-                } else {
-                    if (strtolower($iterator_name) === 'generator') {
-                        $generic_params[] = Type::getMixed();
-                        $generic_params[] = Type::getMixed();
-                    }
-                    $generic_iterator = new TGenericObject($iterator_name, $generic_params);
-                }
-
-                $candidate->removeType('array');
-                $candidate->removeType($iterator_key);
-                $candidate->addType($generic_iterator);
-            }
-        }
-    }
-
     protected function inheritMethodsFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage
@@ -1067,7 +875,7 @@ class Populator
             ) {
                 $aliased_method_names = array_merge(
                     $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true)
+                    array_keys($storage->trait_alias_map, $method_name_lc, true),
                 );
             }
 
@@ -1078,7 +886,7 @@ class Populator
 
                 $implemented_method_id = new MethodIdentifier(
                     $fq_class_name,
-                    $aliased_method_name
+                    $aliased_method_name,
                 );
 
                 $storage->appearing_method_ids[$aliased_method_name] =
@@ -1137,7 +945,7 @@ class Populator
             ) {
                 $aliased_method_names = array_merge(
                     $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true)
+                    array_keys($storage->trait_alias_map, $method_name_lc, true),
                 );
             }
 
@@ -1146,7 +954,7 @@ class Populator
                     $implementing_method_id = $storage->declaring_method_ids[$aliased_method_name];
 
                     $implementing_class_storage = $this->classlike_storage_provider->get(
-                        $implementing_method_id->fq_class_name
+                        $implementing_method_id->fq_class_name,
                     );
 
                     if (!$implementing_class_storage->methods[$implementing_method_id->method_name]->abstract

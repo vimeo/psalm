@@ -27,7 +27,6 @@ class AstDiffer
      * @param Closure(Stmt, Stmt, string, string, bool=): bool $is_equal
      * @param array<int, Stmt> $a
      * @param array<int, Stmt> $b
-     *
      * @return array{0:non-empty-list<array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
      */
     protected static function calculateTrace(
@@ -40,6 +39,7 @@ class AstDiffer
         $n = count($a);
         $m = count($b);
         $max = $n + $m;
+        /** @var array<int, int> $v */
         $v = [1 => 0];
         $bc = [];
         $trace = [];
@@ -78,9 +78,7 @@ class AstDiffer
      * @param array<int, Stmt> $a
      * @param array<int, Stmt> $b
      * @param array<int, bool> $bc
-     *
      * @return list<DiffElem>
-     *
      * @psalm-pure
      */
     protected static function extractDiff(array $trace, int $x, int $y, array $a, array $b, array $bc): array
@@ -103,7 +101,7 @@ class AstDiffer
                 $result[] = new DiffElem(
                     $bc[$x - 1] ? DiffElem::TYPE_KEEP_SIGNATURE : DiffElem::TYPE_KEEP,
                     $a[$x - 1],
-                    $b[$y - 1]
+                    $b[$y - 1],
                 );
                 --$x;
                 --$y;

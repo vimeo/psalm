@@ -8,14 +8,11 @@ class Php56Test extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'constArray' => [
-                '<?php
+                'code' => '<?php
                     const ARR = ["a", "b"];
                     $a = ARR[0];',
                 'assertions' => [
@@ -23,7 +20,7 @@ class Php56Test extends TestCase
                 ],
             ],
             'classConstFeatures' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         const ONE = 1;
                         const TWO = self::ONE * 2;
@@ -76,7 +73,7 @@ class Php56Test extends TestCase
                 ],
             ],
             'constFeatures' => [
-                '<?php
+                'code' => '<?php
                     const ONE = 1;
                     const TWO = ONE * 2;
                     const BITWISE = ONE & 2;
@@ -97,12 +94,12 @@ class Php56Test extends TestCase
                 ],
             ],
             'exponentiation' => [
-                '<?php
+                'code' => '<?php
                     $a = 2;
                     $a **= 3;',
             ],
             'constantAliasInNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace Name\Space {
                         const FOO = 42;
                     }
@@ -115,7 +112,7 @@ class Php56Test extends TestCase
                     }',
             ],
             'constantAliasInClass' => [
-                '<?php
+                'code' => '<?php
                     namespace Name\Space {
                         const FOO = 42;
                     }
@@ -133,7 +130,7 @@ class Php56Test extends TestCase
                     }',
             ],
             'functionAliasInNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace Name\Space {
                         /**
                          * @return void
@@ -149,7 +146,7 @@ class Php56Test extends TestCase
                     }',
             ],
             'functionAliasInClass' => [
-                '<?php
+                'code' => '<?php
                     namespace Name\Space {
                         /**
                          * @return void
@@ -170,7 +167,7 @@ class Php56Test extends TestCase
                     }',
             ],
             'yieldReturn' => [
-                '<?php
+                'code' => '<?php
                     function foo() : Traversable {
                         if (rand(0, 1)) {
                             yield "hello";

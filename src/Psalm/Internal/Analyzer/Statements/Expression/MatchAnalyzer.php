@@ -23,6 +23,7 @@ use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -40,6 +41,9 @@ use function in_array;
 use function spl_object_id;
 use function substr;
 
+/**
+ * @internal
+ */
 class MatchAnalyzer
 {
     public static function analyze(
@@ -63,10 +67,10 @@ class MatchAnalyzer
 
         $context->inside_conditional = $was_inside_conditional;
 
-        $switch_var_id = ExpressionIdentifier::getArrayVarId(
+        $switch_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->cond,
             null,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         $match_condition = $stmt->cond;
@@ -76,7 +80,8 @@ class MatchAnalyzer
                 && $stmt->cond->name instanceof PhpParser\Node\Name
                 && ($stmt->cond->name->parts === ['get_class']
                     || $stmt->cond->name->parts === ['gettype']
-                    || $stmt->cond->name->parts === ['get_debug_type'])
+                    || $stmt->cond->name->parts === ['get_debug_type']
+                    || $stmt->cond->name->parts === ['count'])
                 && $stmt->cond->getArgs()
             ) {
                 $first_arg = $stmt->cond->getArgs()[0];
@@ -94,14 +99,14 @@ class MatchAnalyzer
                             new VirtualArg(
                                 new VirtualVariable(
                                     substr($switch_var_id, 1),
-                                    $first_arg->value->getAttributes()
+                                    $first_arg->value->getAttributes(),
                                 ),
                                 false,
                                 false,
-                                $first_arg->getAttributes()
-                            )
+                                $first_arg->getAttributes(),
+                            ),
                         ],
-                        $stmt->cond->getAttributes()
+                        $stmt->cond->getAttributes(),
                     );
                 }
             } elseif ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
@@ -116,7 +121,7 @@ class MatchAnalyzer
 
                 $match_condition = new VirtualVariable(
                     substr($switch_var_id, 1),
-                    $stmt->cond->getAttributes()
+                    $stmt->cond->getAttributes(),
                 );
             }
         }
@@ -139,9 +144,9 @@ class MatchAnalyzer
             IssueBuffer::maybeAdd(
                 new UnhandledMatchCondition(
                     'This match expression does not match anything',
-                    new CodeLocation($statements_analyzer->getSource(), $match_condition)
+                    new CodeLocation($statements_analyzer->getSource(), $match_condition),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             return false;
@@ -161,13 +166,13 @@ class MatchAnalyzer
                     new VirtualNew(
                         new VirtualFullyQualified(
                             'UnhandledMatchError',
-                            $stmt->getAttributes()
+                            $stmt->getAttributes(),
                         ),
                         [],
-                        $stmt->getAttributes()
-                    )
+                        $stmt->getAttributes(),
+                    ),
                 ),
-                $stmt->getAttributes()
+                $stmt->getAttributes(),
             );
         }
 
@@ -180,7 +185,7 @@ class MatchAnalyzer
                 self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes()),
                 $arm->body,
                 $ternary,
-                $arm->getAttributes()
+                $arm->getAttributes(),
             );
         }
 
@@ -222,7 +227,7 @@ class MatchAnalyzer
             $all_match_condition = self::convertCondsToConditional(
                 $all_conds,
                 $match_condition,
-                $match_condition->getAttributes()
+                $match_condition->getAttributes(),
             );
 
             ExpressionAnalyzer::analyze($statements_analyzer, $all_match_condition, $context);
@@ -235,38 +240,37 @@ class MatchAnalyzer
                 $statements_analyzer,
                 $codebase,
                 false,
-                false
+                false,
             );
 
             $reconcilable_types = Algebra::getTruthsFromFormula(
-                Algebra::negateFormula($clauses)
+                Algebra::negateFormula($clauses),
             );
 
             // if the if has an || in the conditional, we cannot easily reason about it
             if ($reconcilable_types) {
                 $changed_var_ids = [];
 
-                $vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+                [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $reconcilable_types,
                     [],
                     $context->vars_in_scope,
+                    $context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
                     [],
                     $context->inside_loop,
-                    null
+                    null,
                 );
 
                 if (isset($vars_in_scope_reconciled[$switch_var_id])) {
                     $array_literal_types = array_filter(
                         $vars_in_scope_reconciled[$switch_var_id]->getAtomicTypes(),
-                        function ($type) {
-                            return $type instanceof TLiteralInt
-                                || $type instanceof TLiteralString
-                                || $type instanceof TLiteralFloat
-                                || $type instanceof TEnumCase;
-                        }
+                        static fn(Atomic $type): bool => $type instanceof TLiteralInt
+                            || $type instanceof TLiteralString
+                            || $type instanceof TLiteralFloat
+                            || $type instanceof TEnumCase,
                     );
 
                     if ($array_literal_types) {
@@ -274,9 +278,9 @@ class MatchAnalyzer
                             new UnhandledMatchCondition(
                                 'This match expression is not exhaustive - consider values '
                                     . $vars_in_scope_reconciled[$switch_var_id]->getId(),
-                                new CodeLocation($statements_analyzer->getSource(), $match_condition)
+                                new CodeLocation($statements_analyzer->getSource(), $match_condition),
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     }
                 }
@@ -306,15 +310,14 @@ class MatchAnalyzer
             return new VirtualIdentical(
                 $match_condition,
                 $conds[0],
-                $attributes
+                $attributes,
             );
         }
 
         $array_items = array_map(
-            function ($cond): PhpParser\Node\Expr\ArrayItem {
-                return new VirtualArrayItem($cond, null, false, $cond->getAttributes());
-            },
-            $conds
+            static fn(PhpParser\Node\Expr $cond): PhpParser\Node\Expr\ArrayItem =>
+                new VirtualArrayItem($cond, null, false, $cond->getAttributes()),
+            $conds,
         );
 
         return new VirtualFuncCall(
@@ -324,28 +327,28 @@ class MatchAnalyzer
                     $match_condition,
                     false,
                     false,
-                    $attributes
+                    $attributes,
                 ),
                 new VirtualArg(
                     new VirtualArray(
                         $array_items,
-                        $attributes
+                        $attributes,
                     ),
                     false,
                     false,
-                    $attributes
+                    $attributes,
                 ),
                 new VirtualArg(
                     new VirtualConstFetch(
                         new VirtualFullyQualified(['true']),
-                        $attributes
+                        $attributes,
                     ),
                     false,
                     false,
-                    $attributes
+                    $attributes,
                 ),
             ],
-            $attributes
+            $attributes,
         );
     }
 }

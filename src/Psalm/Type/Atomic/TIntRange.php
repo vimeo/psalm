@@ -7,8 +7,10 @@ use function min;
 
 /**
  * Denotes an interval of integers between two bounds
+ *
+ * @psalm-immutable
  */
-class TIntRange extends TInt
+final class TIntRange extends TInt
 {
     public const BOUND_MIN = 'min';
     public const BOUND_MAX = 'max';
@@ -22,15 +24,19 @@ class TIntRange extends TInt
      */
     public $max_bound;
 
-    public function __construct(?int $min_bound, ?int $max_bound)
-    {
+    /** @var string|null */
+    public $dependent_list_key;
+
+    public function __construct(
+        ?int $min_bound,
+        ?int $max_bound,
+        bool $from_docblock = false,
+        ?string $dependent_list_key = null
+    ) {
         $this->min_bound = $min_bound;
         $this->max_bound = $max_bound;
-    }
-
-    public function __toString(): string
-    {
-        return $this->getKey();
+        $this->from_docblock = $from_docblock;
+        $this->dependent_list_key = $dependent_list_key;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -38,7 +44,7 @@ class TIntRange extends TInt
         return 'int<' . ($this->min_bound ?? 'min') . ', ' . ($this->max_bound ?? 'max') . '>';
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }
@@ -125,10 +131,6 @@ class TIntRange extends TInt
     {
         if ($int_atomic instanceof TIntRange) {
             return $int_atomic;
-        }
-
-        if ($int_atomic instanceof TPositiveInt) {
-            return new TIntRange(1, null);
         }
 
         if ($int_atomic instanceof TLiteralInt) {

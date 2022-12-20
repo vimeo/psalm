@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 /**
@@ -16,14 +14,11 @@ use Psalm\Type\Union;
  */
 class ArrayType
 {
-    /** @var Union */
-    public $key;
+    public Union $key;
 
-    /** @var Union */
-    public $value;
+    public Union $value;
 
-    /** @var bool */
-    public $is_list;
+    public bool $is_list;
 
     public function __construct(Union $key, Union $value, bool $is_list)
     {
@@ -32,21 +27,20 @@ class ArrayType
         $this->is_list = $is_list;
     }
 
+    /**
+     * @return (
+     *     $type is TArrayKey ? self : (
+     *         $type is TArray ? self : null
+     *     )
+     * )
+     */
     public static function infer(Atomic $type): ?self
     {
         if ($type instanceof TKeyedArray) {
             return new self(
                 $type->getGenericKeyType(),
                 $type->getGenericValueType(),
-                $type->is_list
-            );
-        }
-
-        if ($type instanceof TList) {
-            return new self(
-                Type::getInt(),
-                $type->type_param,
-                true
+                $type->is_list,
             );
         }
 
@@ -54,7 +48,7 @@ class ArrayType
             return new self(
                 $type->type_params[0],
                 $type->type_params[1],
-                false
+                false,
             );
         }
 

@@ -2,14 +2,15 @@
 
 namespace Psalm\Internal\Provider;
 
+use JsonException;
 use PhpParser;
 use PhpParser\Node\Stmt;
 use Psalm\Config;
-use Psalm\Internal\Provider\Providers;
 use RuntimeException;
 use UnexpectedValueException;
 
 use function clearstatcache;
+use function error_log;
 use function file_put_contents;
 use function filemtime;
 use function gettype;
@@ -30,6 +31,7 @@ use function unlink;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
 use const LOCK_EX;
 use const PHP_VERSION_ID;
 use const SCANDIR_SORT_NONE;
@@ -43,29 +45,23 @@ class ParserCacheProvider
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
     /**
      * A map of filename hashes to contents hashes
      *
      * @var array<string, string>|null
      */
-    protected $existing_file_content_hashes;
+    protected ?array $existing_file_content_hashes = null;
 
     /**
      * A map of recently-added filename hashes to contents hashes
      *
      * @var array<string, string>
      */
-    protected $new_file_content_hashes = [];
+    protected array $new_file_content_hashes = [];
 
-    /**
-     * @var bool
-     */
-    private $use_file_cache;
+    private bool $use_file_cache;
 
     public function __construct(Config $config, bool $use_file_cache = true)
     {
@@ -165,6 +161,37 @@ class ParserCacheProvider
             if (!$root_cache_directory) {
                 throw new UnexpectedValueException('No cache directory defined');
             }
+            if (is_readable($file_hashes_path)) {
+                $hashes_encoded = Providers::safeFileGetContents($file_hashes_path);
+
+                if (!$hashes_encoded) {
+                    error_log('Unexpected value when loading from file content hashes');
+                    $this->existing_file_content_hashes = [];
+
+                    return [];
+                }
+
+                try {
+                    $hashes_decoded = json_decode($hashes_encoded, true, 512, JSON_THROW_ON_ERROR);
+                } catch (JsonException $e) {
+                    error_log('Failed to parse hashes: ' . $e->getMessage());
+                    $this->existing_file_content_hashes = [];
+
+                    return [];
+                }
+
+                if (!is_array($hashes_decoded)) {
+                    error_log('Unexpected value ' . gettype($hashes_decoded));
+                    $this->existing_file_content_hashes = [];
+
+                    return [];
+                }
+
+                /** @var array<string, string> $hashes_decoded */
+                $this->existing_file_content_hashes = $hashes_decoded;
+            } else {
+                $this->existing_file_content_hashes = [];
+            }
 
             if (!is_readable($file_hashes_path)) {
                 // might not exist yet
@@ -177,11 +204,12 @@ class ParserCacheProvider
                 throw new UnexpectedValueException('File content hashes should be in cache');
             }
 
+            /** @psalm-suppress MixedAssignment */
             $hashes_decoded = json_decode($hashes_encoded, true);
 
             if (!is_array($hashes_decoded)) {
                 throw new UnexpectedValueException(
-                    'File content hashes are of invalid type ' . gettype($hashes_decoded)
+                    'File content hashes are of invalid type ' . gettype($hashes_decoded),
                 );
             }
 
@@ -227,7 +255,6 @@ class ParserCacheProvider
 
     /**
      * @param array<string, string> $file_content_hashes
-     *
      */
     public function addNewFileContentHashes(array $file_content_hashes): void
     {
@@ -260,8 +287,8 @@ class ParserCacheProvider
 
         file_put_contents(
             $file_hashes_path,
-            json_encode($file_content_hashes),
-            LOCK_EX
+            json_encode($file_content_hashes, JSON_THROW_ON_ERROR),
+            LOCK_EX,
         );
     }
 
@@ -313,7 +340,7 @@ class ParserCacheProvider
 
     private function getParserCacheKey(string $file_path): string
     {
-        if (PHP_VERSION_ID >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00) {
             $hash = hash('xxh128', $file_path);
         } else {
             $hash = hash('md4', $file_path);
@@ -341,7 +368,7 @@ class ParserCacheProvider
                 if (mkdir($parser_cache_directory, 0777, true) === false) {
                     // any other error than directory already exists/permissions issue
                     throw new RuntimeException(
-                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons'
+                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons',
                     );
                 }
             } catch (RuntimeException $e) {

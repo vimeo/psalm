@@ -16,6 +16,7 @@ use Amp\Promise;
 use Amp\Success;
 use Generator;
 use InvalidArgumentException;
+use JsonMapper;
 use LanguageServerProtocol\ClientCapabilities;
 use LanguageServerProtocol\ClientInfo;
 use LanguageServerProtocol\CodeDescription;
@@ -34,6 +35,7 @@ use LanguageServerProtocol\ServerCapabilities;
 use LanguageServerProtocol\SignatureHelpOptions;
 use LanguageServerProtocol\TextDocumentSyncKind;
 use LanguageServerProtocol\TextDocumentSyncOptions;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -95,58 +97,40 @@ class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls
-     *
-     * @var ?ServerTextDocument
      */
-    public $textDocument;
+    public ?ServerTextDocument $textDocument = null;
 
     /**
      * Handles workspace/* method calls
-     *
-     * @var ?ServerWorkspace
      */
-    public $workspace;
+    public ?ServerWorkspace $workspace = null;
 
-    /**
-     * @var ProtocolReader
-     */
-    protected $protocolReader;
+    protected ProtocolReader $protocolReader;
 
-    /**
-     * @var ProtocolWriter
-     */
-    protected $protocolWriter;
+    protected ProtocolWriter $protocolWriter;
 
-    /**
-     * @var LanguageClient
-     */
-    public $client;
+    public LanguageClient $client;
 
-    /**
-     * @var ClientCapabilities|null
-     */
-    public $clientCapabilities;
+    public ?ClientCapabilities $clientCapabilities = null;
 
-    /**
-     * @var string|null
-     */
-    public $trace;
+    public ?string $trace = null;
 
-    /**
-     * @var ProjectAnalyzer
-     */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
-    /**
-     * @var Codebase
-     */
-    protected $codebase;
+    protected Codebase $codebase;
+    protected array $onsave_paths_to_analyze = [];
 
     /**
      * The AMP Delay token
-     * @var string
      */
-    protected $versionedAnalysisDelayToken = '';
+    protected string $versionedAnalysisDelayToken = '';
+
+    /**
+     * This should actually be a private property on `parent`
+     *
+     * @psalm-suppress UnusedProperty
+     */
+    protected JsonMapper $mapper;
 
     public function __construct(
         ProtocolReader $reader,
@@ -172,7 +156,7 @@ class LanguageServer extends Dispatcher
             function (): void {
                 $this->shutdown();
                 $this->exit();
-            }
+            },
         );
         $this->protocolReader->on(
             'message',
@@ -213,7 +197,7 @@ class LanguageServer extends Dispatcher
                             (string) $e,
                             ErrorCode::INTERNAL_ERROR,
                             null,
-                            $e
+                            $e,
                         );
                     }
                     if ($error !== null) {
@@ -233,8 +217,8 @@ class LanguageServer extends Dispatcher
                         }
                         yield $this->protocolWriter->write(new Message($responseBody));
                     }
-                }
-            )
+                },
+            ),
         );
 
         $this->protocolReader->on(
@@ -242,7 +226,7 @@ class LanguageServer extends Dispatcher
             function (): void {
                 //$this->verboseLog('Received message group');
                 //$this->doAnalysis();
-            }
+            },
         );
 
         $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
@@ -264,13 +248,13 @@ class LanguageServer extends Dispatcher
             new FileStorageCacheProvider($config),
             new ClassLikeStorageCacheProvider($config),
             new FileReferenceCacheProvider($config),
-            new ProjectCacheProvider(Composer::getLockFilePath($base_dir))
+            new ProjectCacheProvider(Composer::getLockFilePath($base_dir)),
         );
 
         $codebase = new Codebase(
             $config,
             $providers,
-            $progress
+            $progress,
         );
 
         if ($config->find_unused_variables) {
@@ -288,7 +272,7 @@ class LanguageServer extends Dispatcher
             [],
             1,
             $progress,
-            $codebase
+            $codebase,
         );
 
         if ($clientConfiguration->onchangeLineLimit) {
@@ -314,7 +298,7 @@ class LanguageServer extends Dispatcher
                 $project_analyzer,
                 $codebase,
                 $clientConfiguration,
-                $progress
+                $progress,
             );
             Loop::run();
         } elseif ($clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
@@ -337,7 +321,7 @@ class LanguageServer extends Dispatcher
                 fwrite(
                     STDERR,
                     "pcntl_fork() is disabled by php configuration (disable_functions directive)."
-                    . " Only a single connection will be accepted\n"
+                    . " Only a single connection will be accepted\n",
                 );
                 $fork_available = false;
             }
@@ -361,7 +345,7 @@ class LanguageServer extends Dispatcher
                             'close',
                             function (): void {
                                 fwrite(STDOUT, "Connection closed\n");
-                            }
+                            },
                         );
                         new self(
                             $reader,
@@ -369,7 +353,7 @@ class LanguageServer extends Dispatcher
                             $project_analyzer,
                             $codebase,
                             $clientConfiguration,
-                            $progress
+                            $progress,
                         );
                         // Just for safety
                         exit(0);
@@ -383,7 +367,7 @@ class LanguageServer extends Dispatcher
                         $project_analyzer,
                         $codebase,
                         $clientConfiguration,
-                        $progress
+                        $progress,
                     );
                     Loop::run();
                 }
@@ -397,7 +381,7 @@ class LanguageServer extends Dispatcher
                 $project_analyzer,
                 $codebase,
                 $clientConfiguration,
-                $progress
+                $progress,
             );
             Loop::run();
         }
@@ -466,7 +450,7 @@ class LanguageServer extends Dispatcher
                     $this->textDocument = new ServerTextDocument(
                         $this,
                         $this->codebase,
-                        $this->project_analyzer
+                        $this->project_analyzer,
                     );
                 }
 
@@ -474,7 +458,7 @@ class LanguageServer extends Dispatcher
                     $this->workspace = new ServerWorkspace(
                         $this,
                         $this->codebase,
-                        $this->project_analyzer
+                        $this->project_analyzer,
                     );
                 }
 
@@ -605,7 +589,7 @@ class LanguageServer extends Dispatcher
                 $initializeResultServerInfo = new InitializeResultServerInfo('Psalm Language Server', PSALM_VERSION);
 
                 return new InitializeResult($serverCapabilities, $initializeResultServerInfo);
-            }
+            },
         );
     }
 
@@ -629,8 +613,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Queue Change File Analysis
-     * @param string $file_path
-     * @param string $uri
      */
     public function queueChangeFileAnalysis(string $file_path, string $uri, ?int $version = null): void
     {
@@ -639,8 +621,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Queue Open File Analysis
-     * @param string $file_path
-     * @param string $uri
      */
     public function queueOpenFileAnalysis(string $file_path, string $uri, ?int $version = null): void
     {
@@ -649,8 +629,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Queue Closed File Analysis
-     * @param string $file_path
-     * @param string $uri
      */
     public function queueClosedFileAnalysis(string $file_path, string $uri): void
     {
@@ -659,8 +637,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Queue Saved File Analysis
-     * @param string $file_path
-     * @param string $uri
      */
     public function queueSaveFileAnalysis(string $file_path, string $uri): void
     {
@@ -671,6 +647,7 @@ class LanguageServer extends Dispatcher
      * Queue File Analysis appending any opened files
      *
      * This allows for reanalysis of files that have been opened
+     *
      * @param array<string, string> $files
      */
     public function queueFileAnalysisWithOpenedFiles(array $files = []): void
@@ -682,7 +659,7 @@ class LanguageServer extends Dispatcher
                 $opened[$file_path] = $this->pathToUri($file_path);
                 return $opened;
             },
-            $files
+            $files,
         );
 
         $this->doVersionedAnalysis($opened);
@@ -692,7 +669,6 @@ class LanguageServer extends Dispatcher
      * Debounced Queue File Analysis with optional version
      *
      * @param array<string, string> $files
-     * @param int|null $version
      */
     public function doVersionedAnalysisDebounce(array $files, ?int $version = null): void
     {
@@ -703,9 +679,7 @@ class LanguageServer extends Dispatcher
             /** @psalm-suppress MixedAssignment,UnusedPsalmSuppress */
             $this->versionedAnalysisDelayToken = Loop::delay(
                 $this->client->clientConfiguration->onChangeDebounceMs,
-                function () use ($files, $version) {
-                    return $this->doVersionedAnalysis($files, $version);
-                }
+                fn() => $this->doVersionedAnalysis($files, $version),
             );
         }
     }
@@ -714,7 +688,6 @@ class LanguageServer extends Dispatcher
      * Queue File Analysis with optional version
      *
      * @param array<string, string> $files
-     * @param int|null $version
      */
     public function doVersionedAnalysis(array $files, ?int $version = null): void
     {
@@ -723,11 +696,11 @@ class LanguageServer extends Dispatcher
             $this->logDebug("Doing Analysis from version: $version");
             $this->codebase->reloadFiles(
                 $this->project_analyzer,
-                array_keys($files)
+                array_keys($files),
             );
 
             $this->codebase->analyzer->addFilesToAnalyze(
-                array_combine(array_keys($files), array_keys($files))
+                array_combine(array_keys($files), array_keys($files)),
             );
 
             $this->logDebug("Reloading Files");
@@ -743,13 +716,12 @@ class LanguageServer extends Dispatcher
      * Emit Publish Diagnostics
      *
      * @param array<string, string> $files
-     * @param int|null $version
      */
     public function emitVersionedIssues(array $files, ?int $version = null): void
     {
         $this->logDebug("Perform Analysis", [
             'files' => array_keys($files),
-            'version' => $version
+            'version' => $version,
         ]);
 
         $data = IssueBuffer::clear();
@@ -771,7 +743,7 @@ class LanguageServer extends Dispatcher
                     // Language server has 0 based lines and columns, phan has 1-based lines and columns.
                     $range = new Range(
                         new Position($start_line - 1, $start_column - 1),
-                        new Position($end_line - 1, $end_column - 1)
+                        new Position($end_line - 1, $end_column - 1),
                     );
                     switch ($severity) {
                         case Config::REPORT_INFO:
@@ -787,14 +759,14 @@ class LanguageServer extends Dispatcher
                         $range,
                         null,
                         $diagnostic_severity,
-                        'psalm'
+                        'psalm',
                     );
 
                     $diagnostic->data = [
                         'type' => $issue_data->type,
                         'snippet' => $issue_data->snippet,
                         'line_from' => $issue_data->line_from,
-                        'line_to' => $issue_data->line_to
+                        'line_to' => $issue_data->line_to,
                     ];
 
                     $diagnostic->code = $issue_data->shortcode;
@@ -825,8 +797,8 @@ class LanguageServer extends Dispatcher
                         }
 
                         return true;
-                    }
-                )
+                    },
+                ),
             );
 
             $this->client->textDocument->publishDiagnostics($uri, array_values($diagnostics), $version);
@@ -850,7 +822,7 @@ class LanguageServer extends Dispatcher
         $scanned_files = $codebase->scanner->getScannedFiles();
         $codebase->file_reference_provider->updateReferenceCache(
             $codebase,
-            $scanned_files
+            $scanned_files,
         );
         $this->clientStatus('closed');
         return new Success(null);
@@ -860,7 +832,6 @@ class LanguageServer extends Dispatcher
      * A notification to ask the server to exit its process.
      * The server should exit with success code 0 if the shutdown request has been received before;
      * otherwise with error code 1.
-     *
      */
     public function exit(): void
     {
@@ -899,8 +870,8 @@ class LanguageServer extends Dispatcher
             $this->client->logMessage(
                 new LogMessage(
                     $type,
-                    $message
-                )
+                    $message,
+                ),
             );
         } catch (Throwable $err) {
             // do nothing as we could potentially go into a loop here is not careful
@@ -910,8 +881,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Log Throwable Error
-     *
-     * @param Throwable $throwable
      */
     public function logThrowable(Throwable $throwable): void
     {
@@ -920,9 +889,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Log Error message to the client
-     *
-     * @param string $message
-     * @param array $context
      */
     public function logError(string $message, array $context = []): void
     {
@@ -932,8 +898,6 @@ class LanguageServer extends Dispatcher
     /**
      * Log Warning message to the client
      *
-     * @param string $message
-     * @param array $context
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function logWarning(string $message, array $context = []): void
@@ -943,9 +907,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Log Info message to the client
-     *
-     * @param string $message
-     * @param array $context
      */
     public function logInfo(string $message, array $context = []): void
     {
@@ -954,9 +915,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Log Debug message to the client
-     *
-     * @param string $message
-     * @param array $context
      */
     public function logDebug(string $message, array $context = []): void
     {
@@ -978,7 +936,7 @@ class LanguageServer extends Dispatcher
                 new LogMessage(
                     MessageType::INFO,
                     $status . (!empty($additional_info) ? ': ' . $additional_info : '')
-                )
+                ),
             );
         } catch (Throwable $err) {
             // do nothing
@@ -988,7 +946,6 @@ class LanguageServer extends Dispatcher
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
      *
-     * @param string $filepath
      * @psalm-pure
      */
     public static function pathToUri(string $filepath): string
@@ -1009,8 +966,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Transforms URI into file path
-     *
-     * @param string $uri
      */
     public static function uriToPath(string $uri): string
     {

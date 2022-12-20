@@ -36,28 +36,26 @@ class ErrorFixTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**
      * @dataProvider providerTestErrorFix
-     *
      * @param array<int, array<string, string>> $files
      * @param array<int, int> $error_counts
-     * @param array<string, string> $error_levels
-     *
+     * @param array<string, string> $ignored_issues
      */
     public function testErrorFix(
         array $files,
         array $error_counts,
-        array $error_levels = []
+        array $ignored_issues = []
     ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
 
@@ -65,7 +63,7 @@ class ErrorFixTest extends TestCase
 
         $config = $codebase->config;
 
-        foreach ($error_levels as $error_type => $error_level) {
+        foreach ($ignored_issues as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
@@ -104,7 +102,7 @@ class ErrorFixTest extends TestCase
     }
 
     /**
-     * @return array<string,array{files: array<int, array<string,string>>,error_counts:array<int,int>,error_levels?:array<string,string>}>
+     * @return array<string,array{files: array<int, array<string,string>>,error_counts:array<int,int>,ignored_issues?:array<string,string>}>
      */
     public function providerTestErrorFix(): array
     {
@@ -193,7 +191,7 @@ class ErrorFixTest extends TestCase
                     ],
                 ],
                 'error_counts' => [2, 1, 0],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
@@ -422,14 +420,14 @@ class ErrorFixTest extends TestCase
                             class A {
                                 protected int $x;
                                 protected int $y;
-                            }'
+                            }',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 protected int $x = 0;
                                 protected int $y;
-                            }'
+                            }',
                     ],
                 ],
                 'error_counts' => [2, 1],
@@ -445,7 +443,7 @@ class ErrorFixTest extends TestCase
 
                             class B extends A {
                                 public function __construct() {}
-                            }'
+                            }',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -456,7 +454,7 @@ class ErrorFixTest extends TestCase
 
                             class B extends A {
                                 public function __construct() {}
-                            }'
+                            }',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -467,7 +465,7 @@ class ErrorFixTest extends TestCase
 
                             class B extends A {
                                 public function __construct() {}
-                            }'
+                            }',
                     ],
                 ],
                 'error_counts' => [2, 1, 0],

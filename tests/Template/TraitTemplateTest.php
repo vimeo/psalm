@@ -11,14 +11,11 @@ class TraitTemplateTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'traitUseNotExtended' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -55,7 +52,7 @@ class TraitTemplateTest extends TestCase
                     }',
             ],
             'extendedTraitUse' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -103,7 +100,7 @@ class TraitTemplateTest extends TestCase
                     }',
             ],
             'extendedTraitUseAlreadyBound' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -145,7 +142,7 @@ class TraitTemplateTest extends TestCase
                     }',
             ],
             'badTemplateUseUnionType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -170,7 +167,7 @@ class TraitTemplateTest extends TestCase
                     }',
             ],
             'allowTraitExtendAndImplementWithExplicitParamType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -218,7 +215,7 @@ class TraitTemplateTest extends TestCase
                     }',
             ],
             'allowTraitExtendAndImplementWithoutExplicitParamType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -263,7 +260,7 @@ class TraitTemplateTest extends TestCase
                     }',
             ],
             'traitInImplicitExtendedClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -288,7 +285,7 @@ class TraitTemplateTest extends TestCase
                     }',
             ],
             'useTraitReturnTypeForInheritedInterface' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      * @template TNormalizedValue
@@ -334,10 +331,10 @@ class TraitTemplateTest extends TestCase
                         {
                             return trim($v);
                         }
-                    }'
+                    }',
             ],
             'useTraitReturnTypeForInheritedClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      * @template TNormalizedValue
@@ -383,10 +380,10 @@ class TraitTemplateTest extends TestCase
                         {
                             return trim($v);
                         }
-                    }'
+                    }',
             ],
             'inheritTraitPropertyTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     /** @template TValue */
                     trait A {
                         /** @psalm-var array{TValue} */
@@ -403,10 +400,10 @@ class TraitTemplateTest extends TestCase
                     class B {
                         /** @use A<TValue> */
                         use A;
-                    }'
+                    }',
             ],
             'inheritTraitPropertyArray' => [
-                '<?php
+                'code' => '<?php
                     /** @template TValue */
                     trait A {
                         /** @psalm-var array<TValue> */
@@ -423,10 +420,10 @@ class TraitTemplateTest extends TestCase
                     class B {
                         /** @use A<TValue> */
                         use A;
-                    }'
+                    }',
             ],
             'applyTemplatedValueInTraitProperty' => [
-                '<?php
+                'code' => '<?php
                     /** @template T */
                     trait ValueTrait {
                         /** @psalm-param T $value */
@@ -445,10 +442,10 @@ class TraitTemplateTest extends TestCase
                         public function __construct(string $value) {
                             $this->value = $value;
                         }
-                    }'
+                    }',
             ],
             'traitSelfAsParam' => [
-                '<?php
+                'code' => '<?php
                     trait InstancePool {
                         /**
                          * @template T as self
@@ -474,10 +471,10 @@ class TraitTemplateTest extends TestCase
                                 return new Foo();
                             });
                         }
-                    }'
+                    }',
             ],
             'templateExtendedGenericTrait' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template F
                      */
@@ -511,19 +508,16 @@ class TraitTemplateTest extends TestCase
                         public function get() {
                             return $this->value;
                         }
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'badTemplateUse' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -549,7 +543,7 @@ class TraitTemplateTest extends TestCase
                 'error_message' => 'UndefinedDocblockClass',
             ],
             'badTemplateUseBadFormat' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -575,7 +569,7 @@ class TraitTemplateTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'badTemplateUseInt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -601,7 +595,7 @@ class TraitTemplateTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'badTemplateExtendsShouldBeUse' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -627,7 +621,7 @@ class TraitTemplateTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'possiblyNullReferenceOnTraitDefinedMethod' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey as array-key
                      * @template TValue
@@ -678,10 +672,10 @@ class TraitTemplateTest extends TestCase
                             $this->offsetGet($offset)->bar();
                         }
                     }',
-                'error_message' => 'PossiblyNullReference'
+                'error_message' => 'PossiblyNullReference',
             ],
             'possiblyNullReferenceOnTraitDefinedMethodExtended' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey as array-key
                      * @template TValue
@@ -725,6 +719,9 @@ class TraitTemplateTest extends TestCase
                         use T1;
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class D extends C {
                         /**
                          * @param mixed $offset
@@ -734,7 +731,7 @@ class TraitTemplateTest extends TestCase
                             $this->offsetGet($offset)->bar();
                         }
                     }',
-                'error_message' => 'MixedMethodCall'
+                'error_message' => 'MixedMethodCall',
             ],
         ];
     }

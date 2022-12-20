@@ -4,6 +4,7 @@ namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
 use Psalm\Internal\Clause;
+use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
 /**
@@ -14,57 +15,57 @@ class IfScope
     /**
      * @var array<string, Union>|null
      */
-    public $new_vars;
+    public ?array $new_vars = null;
 
     /**
      * @var array<string, bool>
      */
-    public $new_vars_possibly_in_scope = [];
+    public array $new_vars_possibly_in_scope = [];
 
     /**
      * @var array<string, Union>|null
      */
-    public $redefined_vars;
+    public ?array $redefined_vars = null;
 
     /**
      * @var array<string, int>|null
      */
-    public $assigned_var_ids;
+    public ?array $assigned_var_ids = null;
 
     /**
      * @var array<string, bool>
      */
-    public $possibly_assigned_var_ids = [];
+    public array $possibly_assigned_var_ids = [];
 
     /**
      * @var array<string, Union>
      */
-    public $possibly_redefined_vars = [];
+    public array $possibly_redefined_vars = [];
 
     /**
      * @var array<string, bool>
      */
-    public $updated_vars = [];
+    public array $updated_vars = [];
 
     /**
-     * @var array<string, array<int, array<int, string>>>
+     * @var array<string, list<array<int, Assertion>>>
      */
-    public $negated_types = [];
+    public array $negated_types = [];
 
     /**
      * @var array<string, bool>
      */
-    public $if_cond_changed_var_ids = [];
+    public array $if_cond_changed_var_ids = [];
 
     /**
      * @var array<string, string>|null
      */
-    public $negatable_if_types;
+    public ?array $negatable_if_types = null;
 
     /**
      * @var list<Clause>
      */
-    public $negated_clauses = [];
+    public array $negated_clauses = [];
 
     /**
      * These are the set of clauses that could be applied after the `if`
@@ -73,15 +74,17 @@ class IfScope
      *
      * @var list<Clause>
      */
-    public $reasonable_clauses = [];
+    public array $reasonable_clauses = [];
 
     /**
      * @var string[]
      */
-    public $final_actions = [];
+    public array $if_actions = [];
 
     /**
-     * @var ?Context
+     * @var string[]
      */
-    public $post_leaving_if_context;
+    public array $final_actions = [];
+
+    public ?Context $post_leaving_if_context = null;
 }

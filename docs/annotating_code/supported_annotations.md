@@ -448,6 +448,31 @@ $username = $_GET['username']; // prints something like "test.php:4 $username: m
 
 *Note*: it throws [special low-level issue](../running_psalm/issues/Trace.md), so you have to set errorLevel to 1, override it in config or invoke Psalm with `--show-info=true`.
 
+### `@psalm-check-type`
+
+You can use this annotation to ensure the inferred type matches what you expect.
+
+```php
+<?php
+
+/** @psalm-check-type $foo = int */
+$foo = 1; // No issue
+
+/** @psalm-check-type $bar = int */
+$bar = "not-an-int"; // Checked variable $bar = int does not match $bar = 'not-an-int'
+```
+
+### `@psalm-check-type-exact`
+
+Like `@psalm-check-type`, but checks the exact type of the variable without allowing subtypes.
+
+```php
+<?php
+
+/** @psalm-check-type-exact $foo = int */
+$foo = 1; // Checked variable $foo = int does not match $foo = 1
+```
+
 ### `@psalm-taint-*`
 
 See [Security Analysis annotations](../security_analysis/annotations.md).

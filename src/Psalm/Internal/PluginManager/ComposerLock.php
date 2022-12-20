@@ -12,10 +12,13 @@ use function json_decode;
 use function json_last_error;
 use function json_last_error_msg;
 
+/**
+ * @internal
+ */
 class ComposerLock
 {
     /** @var string[] */
-    private $file_names;
+    private array $file_names;
 
     /** @param string[] $file_names */
     public function __construct(array $file_names)
@@ -25,9 +28,10 @@ class ComposerLock
 
     /**
      * @param mixed $package
-     *
-     * @psalm-assert-if-true array{name: string, extra: array{psalm: array{pluginClass: string}}} $package
-     *
+     * @psalm-assert-if-true array{
+     *      name: string,
+     *      extra: array{psalm: array{pluginClass: string}}
+     * } $package
      * @psalm-pure
      */
     public function isPlugin($package): bool
@@ -101,8 +105,8 @@ class ComposerLock
                 $packages,
                 array_merge(
                     $composer_lock_contents['packages'],
-                    $composer_lock_contents['packages-dev']
-                )
+                    $composer_lock_contents['packages-dev'],
+                ),
             );
         }
 

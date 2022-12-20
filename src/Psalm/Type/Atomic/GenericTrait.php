@@ -9,15 +9,8 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
-use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function array_map;
 use function array_values;
@@ -26,29 +19,31 @@ use function implode;
 use function strpos;
 use function substr;
 
+/**
+ * @template TTypeParams as array<Union>
+ * @psalm-immutable
+ */
 trait GenericTrait
 {
-    public function __toString(): string
+    /**
+     * @param TTypeParams $type_params
+     * @return static
+     */
+    public function setTypeParams(array $type_params): self
     {
-        $s = '';
-        foreach ($this->type_params as $type_param) {
-            $s .= $type_param . ', ';
+        if ($this->type_params === $type_params) {
+            return $this;
         }
-
-        $extra_types = '';
-
-        if ($this instanceof TNamedObject && $this->extra_types) {
-            $extra_types = '&' . implode('&', $this->extra_types);
-        }
-
-        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
+        $cloned = clone $this;
+        $cloned->type_params = $type_params;
+        return $cloned;
     }
 
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         $s = '';
         foreach ($this->type_params as $type_param) {
-            $s .= $type_param->getId() . ', ';
+            $s .= $type_param->getId($exact) . ', ';
         }
 
         $extra_types = '';
@@ -58,15 +53,13 @@ trait GenericTrait
                 $extra_types = '&' . implode(
                     '&',
                     array_map(
-                        function ($type) {
-                            return $type->getId(true);
-                        },
-                        $this->extra_types
-                    )
+                        static fn(Atomic $type): string => $type->getId($exact, true),
+                        $this->extra_types,
+                    ),
                 );
             }
 
-            if ($this->was_static) {
+            if ($this->is_static) {
                 $extra_types .= '&static';
             }
         }
@@ -76,7 +69,6 @@ trait GenericTrait
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -99,7 +91,7 @@ trait GenericTrait
 
             $value_type = $this->type_params[1];
 
-            if ($value_type->isMixed() || $value_type->isEmpty()) {
+            if ($value_type->isMixed() || $value_type->isNever()) {
                 return $base_value;
             }
 
@@ -144,14 +136,10 @@ trait GenericTrait
             $extra_types = '&' . implode(
                 '&',
                 array_map(
-                    /**
-                     * @return string
-                     */
-                    function (Atomic $extra_type) use ($namespace, $aliased_classes, $this_class): string {
-                        return $extra_type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
-                    },
-                    $this->extra_types
-                )
+                    static fn(Atomic $extra_type): string =>
+                        $extra_type->toNamespacedString($namespace, $aliased_classes, $this_class, false),
+                    $this->extra_types,
+                ),
             );
         }
 
@@ -160,36 +148,20 @@ trait GenericTrait
                 implode(
                     ', ',
                     array_map(
-                        /**
-                         * @return string
-                         */
-                        function (Union $type_param) use ($namespace, $aliased_classes, $this_class): string {
-                            return $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false);
-                        },
-                        $type_params
-                    )
+                        static fn(Union $type_param): string =>
+                            $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false),
+                        $type_params,
+                    ),
                 ) .
                 '>' . $extra_types;
     }
 
-    public function __clone()
-    {
-        foreach ($this->type_params as &$type_param) {
-            $type_param = clone $type_param;
-        }
-    }
-
     /**
-     * @return array<TypeNode>
+     * @return TTypeParams|null
      */
-    public function getChildNodes(): array
-    {
-        return $this->type_params;
-    }
-
-    public function replaceTemplateTypesWithStandins(
+    protected function replaceTypeParamsTemplateTypesWithStandins(
         TemplateResult $template_result,
-        ?Codebase $codebase = null,
+        Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
@@ -198,9 +170,9 @@ trait GenericTrait
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0
-    ): Atomic {
+    ): ?array {
         if ($input_type instanceof TList) {
-            $input_type = new TArray([Type::getInt(), $input_type->type_param]);
+            $input_type = $input_type->getKeyedArray();
         }
 
         $input_object_type_params = [];
@@ -209,19 +181,18 @@ trait GenericTrait
 
         if ($input_type instanceof TGenericObject
             && ($this instanceof TGenericObject || $this instanceof TIterable)
-            && $codebase
         ) {
             $input_object_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
                 $input_type,
                 $this,
-                $container_type_params_covariant
+                $container_type_params_covariant,
             );
         }
 
-        $atomic = clone $this;
+        $type_params = $this->type_params;
 
-        foreach ($atomic->type_params as $offset => $type_param) {
+        foreach ($type_params as $offset => $type_param) {
             $input_type_param = null;
 
             if (($input_type instanceof TIterable
@@ -233,10 +204,8 @@ trait GenericTrait
             } elseif ($input_type instanceof TKeyedArray) {
                 if ($offset === 0) {
                     $input_type_param = $input_type->getGenericKeyType();
-                } elseif ($offset === 1) {
-                    $input_type_param = $input_type->getGenericValueType();
                 } else {
-                    throw new UnexpectedValueException('Not expecting offset of ' . $offset);
+                    $input_type_param = $input_type->getGenericValueType();
                 }
             } elseif ($input_type instanceof TNamedObject
                 && isset($input_object_type_params[$offset])
@@ -244,8 +213,7 @@ trait GenericTrait
                 $input_type_param = $input_object_type_params[$offset];
             }
 
-            /** @psalm-suppress PropertyTypeCoercion */
-            $atomic->type_params[$offset] = TemplateStandinTypeReplacer::replace(
+            $type_params[$offset] = TemplateStandinTypeReplacer::replace(
                 $type_param,
                 $template_result,
                 $codebase,
@@ -260,35 +228,35 @@ trait GenericTrait
                     && $this instanceof TGenericObject
                     ? $this->value
                     : null,
-                $depth + 1
+                $depth + 1,
             );
         }
 
-        return $atomic;
+        return $type_params === $this->type_params ? null : $type_params;
     }
 
-    public function replaceTemplateTypesWithArgTypes(
+    /**
+     * @return TTypeParams|null
+     */
+    protected function replaceTypeParamsTemplateTypesWithArgTypes(
         TemplateResult $template_result,
         ?Codebase $codebase
-    ): void {
-        foreach ($this->type_params as $offset => $type_param) {
-            TemplateInferredTypeReplacer::replace(
+    ): ?array {
+        $type_params = $this->type_params;
+        foreach ($type_params as $offset => $type_param) {
+            $type_param = TemplateInferredTypeReplacer::replace(
                 $type_param,
                 $template_result,
-                $codebase
+                $codebase,
             );
 
             if ($this instanceof TArray && $offset === 0 && $type_param->isMixed()) {
-                $this->type_params[0] = Type::getArrayKey();
+                $type_param = Type::getArrayKey();
             }
+
+            $type_params[$offset] = $type_param;
         }
 
-        if ($this instanceof TGenericObject) {
-            $this->remapped_params = true;
-        }
-
-        if ($this instanceof TGenericObject || $this instanceof TIterable) {
-            $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
-        }
+        return $type_params === $this->type_params ? null : $type_params;
     }
 }

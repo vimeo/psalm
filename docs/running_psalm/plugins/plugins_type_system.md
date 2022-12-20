@@ -27,15 +27,13 @@ The classes are as follows:
 
 `TNull` - denotes the `null` type
 
-`TNever` - denotes the `no-return`/`never-return` type for functions that never return, either throwing an exception or terminating (like the builtin `exit()`).
+`TNever` - denotes the `no-return`/`never-return` type for functions that never return, either throwing an exception or terminating (like the builtin `exit()`). Also used for union types that can have no possible types (impossible intersections for example).  Empty arrays `[]` have the type `array<never, never>`.
 
 `TMixed` - denotes the `mixed` type, used when you don’t know the type of an expression.
 
 `TNonEmptyMixed `- as above, but not empty. Generated for `$x` inside the `if` statement `if ($x) {...}` when `$x` is `mixed` outside.
 
 `TEmptyMixed` - as above, but empty. Generated for `$x` inside the `if` statement `if (!$x) {...}` when `$x` is `mixed` outside.
-
-`TEmpty` - denotes the `empty` type, used to describe a type corresponding to no value whatsoever. Empty arrays `[]` have the type `array<empty, empty>`.
 
 `TIterable` - denotes the [`iterable` type](https://www.php.net/manual/en/language.types.iterable.php) (which can also result from an `is_iterable` check).
 
@@ -49,15 +47,21 @@ The classes are as follows:
 
 `TIntMask` - Represents the type that is the result of a bitmask combination of its parameters. `int-mask<1, 2, 4>` corresponds to `1|2|3|4|5|6|7`
 
-`TIntMaskOf` - as above, but used with with a reference to constants in code`int-mask-of<MyClass::CLASS_CONSTANT_*>` will corresponds to `1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
+`TIntMaskOf` - as above, but used with a reference to constants in code `int-mask-of<MyClass::CLASS_CONSTANT_*>` will corresponds to `1|2|3|4|5|6|7` if there are three constant 1, 2 and 4
 
-`TKeyOfClassConstant` - Represents an offset of a class constant array.
+`TKeyOf` - Represents an offset of an array (e.g. `key-of<MyClass::CLASS_CONSTANT>`).
 
-`TValueOfClassConstant` - Represents a value of a class constant array.
+`TValueOf` - Represents a value of an array or enum (e.g. `value-of<MyClass::CLASS_CONSTANT>`).
 
 `TTemplateIndexedAccess` - To be documented
 
-`TTemplateKeyOf` - Represents the type used when using TKeyOfClassConstant when the type of the class constant array is a template
+`TTemplateKeyOf` - Represents the type used when using TKeyOf when the type of the array is a template
+
+`TTemplateValueOf` - Represents the type used when using TValueOf when the type of the array or enum is a template
+
+`TPropertiesOf` - Represents properties and their types of a class as a keyed array (e.g. `properties-of<MyClass>`)
+
+`TTemplatePropertiesOf` - Represents the type used when using TPropertiesOf when type of the class is a template
 
 `TTypeAlias` - To be documented
 
@@ -85,7 +89,7 @@ All scalar types have literal versions e.g. `int` vs `int(5)`.
 
 `TLiteralInt` - is used to represent an integer value where the exact numeric value is known.
 
-`TPositiveInt` - denotes an int that is also positive (strictly > 0)
+`TIntRange` - allows to describe an int with bounded values (ie. `int<1, 5>`).
 
 #### Floats
 
@@ -141,7 +145,7 @@ if (true === $first) {
 
 `TCallableString` - denotes the `callable-string` type, used to represent an unknown string that is also `callable`.
 
-`THtmlEscapedString`, `TSqlSelectString` - these are special types, specifically for consumption by plugins.
+`TSqlSelectString` - this is a special type, specifically for consumption by plugins.
 
 `TLowercaseString` - denotes a string where every character is lowercased. (which can also result from a `strtolower` call).
 
@@ -161,8 +165,6 @@ if (true === $first) {
 
 `TArray` - denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
 
-`TList` - Represents an array that has some particularities: its keys are integers, they start at 0, they are consecutive and go upwards (no negative int)
-
 `TNonEmptyArray` - as above, but denotes an array known to be non-empty.
 
 `TKeyedArray` represents an 'object-like array' - an array with known keys.
@@ -172,6 +174,8 @@ $x = ["a" => 1, "b" => 2]; // is TKeyedArray, array{a: int, b: int}
 $y = rand(0, 1) ? ["a" => null] : ["a" => 1, "b" => "b"]; // is TKeyedArray with optional keys/values, array{a: ?int, b?: string}
 ```
 
+This type is also used to represent lists (instead of the now-deprecated `TList` type).  
+
 Note that not all associative arrays are considered object-like. If the keys are not known, the array is treated as a mapping between two types.
 
 ``` php
@@ -180,8 +184,6 @@ foreach (range(1,1) as $_) $a[(string)rand(0,1)] = rand(0,1); // array<string,in
 ```
 
 `TCallableArray` - denotes an array that is _also_ `callable`.
-
-`TCallableList` - denotes a list that is _also_ `callable`.
 
 `TCallableKeyedArray` - denotes an object-like array that is _also_ `callable`.
 
@@ -279,5 +281,3 @@ Another way of creating these instances is to use the class `Psalm\Type` which i
 ```
 
 You can find how Psalm would represent a given type as objects, by specifying the type as an input to this function, and calling `var_dump` on the result.
-
-

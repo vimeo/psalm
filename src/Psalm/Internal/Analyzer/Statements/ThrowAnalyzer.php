@@ -28,22 +28,23 @@ class ThrowAnalyzer
     ): bool {
         $context->inside_throw = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
+            $context->has_returned = true;
             return false;
         }
         $context->inside_throw = false;
+        $context->has_returned = true;
 
         if ($context->finally_scope) {
-            foreach ($context->vars_in_scope as $var_id => $type) {
+            foreach ($context->vars_in_scope as $var_id => &$type) {
                 if (isset($context->finally_scope->vars_in_scope[$var_id])) {
                     $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $context->finally_scope->vars_in_scope[$var_id],
                         $type,
-                        $statements_analyzer->getCodebase()
+                        $statements_analyzer->getCodebase(),
                     );
                 } else {
+                    $type = $type->setPossiblyUndefined(true, true);
                     $context->finally_scope->vars_in_scope[$var_id] = $type;
-                    $type->possibly_undefined = true;
-                    $type->possibly_undefined_from_try = true;
                 }
             }
         }
@@ -66,9 +67,9 @@ class ThrowAnalyzer
                             'Cannot throw ' . $throw_type_part
                                 . ' as it does not extend Exception or implement Throwable',
                             new CodeLocation($file_analyzer, $stmt),
-                            (string) $throw_type_part
+                            (string) $throw_type_part,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
                         return false;
                     }
@@ -85,7 +86,7 @@ class ThrowAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
-            $statements_analyzer->node_data->setType($stmt, Type::getEmpty());
+            $statements_analyzer->node_data->setType($stmt, Type::getNever());
         }
 
         return true;

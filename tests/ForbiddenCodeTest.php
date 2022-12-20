@@ -19,55 +19,49 @@ class ForbiddenCodeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'varDump' => [
-                '<?php
+                'code' => '<?php
                     var_dump("hello");',
                 'error_message' => 'ForbiddenCode',
             ],
             'varDumpCased' => [
-                '<?php
+                'code' => '<?php
                     vAr_dUMp("hello");',
                 'error_message' => 'ForbiddenCode',
             ],
             'execTicks' => [
-                '<?php
+                'code' => '<?php
                     `rm -rf`;',
                 'error_message' => 'ForbiddenCode',
             ],
             'exec' => [
-                '<?php
+                'code' => '<?php
                     shell_exec("rm -rf");',
                 'error_message' => 'ForbiddenCode',
             ],
             'execCased' => [
-                '<?php
+                'code' => '<?php
                     sHeLl_EXeC("rm -rf");',
                 'error_message' => 'ForbiddenCode',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'execWithSuppression' => [
-                '<?php
+                'code' => '<?php
                     @exec("pwd 2>&1", $output, $returnValue);
                     if ($returnValue === 0) {
                         echo "success";
                     }',
             ],
             'execWithoutSuppression' => [
-                '<?php
+                'code' => '<?php
                     exec("pwd 2>&1", $output, $returnValue);
                     if ($returnValue === 0) {
                         echo "success";
@@ -82,8 +76,8 @@ class ForbiddenCodeTest extends TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
-                <psalm></psalm>'
-            )
+                <psalm></psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -91,13 +85,13 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                echo "hello";'
+                echo "hello";',
         );
 
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testForbiddenEchoFunctionViaFunctions(): void
+    public function testForbiddenCodeFunctionViaFunctions(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');
         $this->expectException(CodeException::class);
@@ -109,8 +103,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="echo" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -118,30 +112,7 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                echo "hello";'
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testForbiddenEchoFunctionViaFlag(): void
-    {
-        $this->expectExceptionMessage('ForbiddenEcho');
-        $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2),
-                '<?xml version="1.0"?>
-                <psalm forbidEcho="true"></psalm>'
-            )
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                echo "hello";'
+                echo "hello";',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -153,8 +124,8 @@ class ForbiddenCodeTest extends TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
-                <psalm></psalm>'
-            )
+                <psalm></psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -162,7 +133,7 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                print "hello";'
+                print "hello";',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -180,8 +151,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="print" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -189,7 +160,7 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                print "hello";'
+                print "hello";',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -201,8 +172,8 @@ class ForbiddenCodeTest extends TestCase
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
-                <psalm></psalm>'
-            )
+                <psalm></psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -211,7 +182,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 $a = [1, 2, 3];
-                var_export($a);'
+                var_export($a);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -229,8 +200,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="var_export" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -239,7 +210,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 $a = [1, 2, 3];
-                var_export($a);'
+                var_export($a);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -257,8 +228,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="empty" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -266,7 +237,7 @@ class ForbiddenCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                empty(false);'
+                empty(false);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -284,8 +255,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="exit" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -294,7 +265,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 exit(2);
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -312,8 +283,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="die" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -322,7 +293,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 die(2);
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -340,8 +311,8 @@ class ForbiddenCodeTest extends TestCase
                     <forbiddenFunctions>
                         <function name="eval" />
                     </forbiddenFunctions>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -350,7 +321,7 @@ class ForbiddenCodeTest extends TestCase
             $file_path,
             '<?php
                 eval("foo bar");
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -362,8 +333,8 @@ class ForbiddenCodeTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $p->setPhpVersion('7.4', 'tests');

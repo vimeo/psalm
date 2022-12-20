@@ -8,18 +8,15 @@ class CoreStubsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         yield 'RecursiveArrayIterator::CHILD_ARRAYS_ONLY (#6464)' => [
-            '<?php
+            'code' => '<?php
 
-            new RecursiveArrayIterator([], RecursiveArrayIterator::CHILD_ARRAYS_ONLY);'
+            new RecursiveArrayIterator([], RecursiveArrayIterator::CHILD_ARRAYS_ONLY);',
         ];
         yield 'proc_open() named arguments' => [
-            '<?php
+            'code' => '<?php
 
             proc_open(
                 command: "ls",
@@ -30,11 +27,11 @@ class CoreStubsTest extends TestCase
                 options: null
             );',
             'assertions' => [],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '8.0',
         ];
         yield 'Iterating over \DatePeriod (#5954) PHP7 Traversable' => [
-            '<?php
+            'code' => '<?php
 
             $period = new DatePeriod(
                 new DateTimeImmutable("now"),
@@ -47,13 +44,13 @@ class CoreStubsTest extends TestCase
             }',
             'assertions' => [
                 '$period' => 'DatePeriod<DateTimeImmutable>',
-                '$dt' => 'DateTimeInterface|null'
+                '$dt' => 'DateTimeInterface|null',
             ],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '7.3',
         ];
         yield 'Iterating over \DatePeriod (#5954) PHP8 IteratorAggregate' => [
-            '<?php
+            'code' => '<?php
 
             $period = new DatePeriod(
                 new DateTimeImmutable("now"),
@@ -66,13 +63,13 @@ class CoreStubsTest extends TestCase
             }',
             'assertions' => [
                 '$period' => 'DatePeriod<DateTimeImmutable>',
-                '$dt' => 'DateTimeImmutable|null'
+                '$dt' => 'DateTimeImmutable|null',
             ],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '8.0',
         ];
         yield 'Iterating over \DatePeriod (#5954), ISO string' => [
-            '<?php
+            'code' => '<?php
 
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             $dt = null;
@@ -81,28 +78,50 @@ class CoreStubsTest extends TestCase
             }',
             'assertions' => [
                 '$period' => 'DatePeriod<string>',
-                '$dt' => 'DateTime|null'
+                '$dt' => 'DateTime|null',
             ],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '8.0',
         ];
         yield 'DatePeriod implements only Traversable on PHP 7' => [
-            '<?php
+            'code' => '<?php
 
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'error_levels' => [],
+            'ignored_issues' => [],
             'php_version' => '7.3',
         ];
         yield 'DatePeriod implements IteratorAggregate on PHP 8' => [
-            '<?php
+            'code' => '<?php
 
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'error_levels' => ['RedundantCondition'],
+            'ignored_issues' => ['RedundantCondition'],
             'php_version' => '8.0',
+        ];
+        yield 'sprintf yields a non-empty-string for non-empty-string value' => [
+            'code' => '<?php
+
+            /**
+             * @param non-empty-string $foo
+             * @return non-empty-string
+             */
+            function foo(string $foo): string
+            {
+                return sprintf("%s", $foo);
+            }
+            ',
+        ];
+        yield 'sprintf yields a string for possible empty string param' => [
+            'code' => '<?php
+
+            $a = sprintf("%s", "");
+            ',
+            'assertions' => [
+                '$a===' => 'string',
+            ],
         ];
     }
 }

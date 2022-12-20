@@ -10,14 +10,11 @@ class NamespaceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'emptyNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /** @return void */
                         function foo() {
@@ -36,7 +33,7 @@ class NamespaceTest extends TestCase
                     }',
             ],
             'constantReference' => [
-                '<?php
+                'code' => '<?php
                     namespace Aye\Bee {
                         const HELLO = "hello";
                     }
@@ -55,14 +52,14 @@ class NamespaceTest extends TestCase
                     }',
             ],
             'argvReference' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     $a = $argv;
                     $b = $argc;',
             ],
             'argvReferenceInFunction' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     function foo() : void {
@@ -71,17 +68,32 @@ class NamespaceTest extends TestCase
                         $c = $argv;
                     }',
             ],
+            'varsAreNotScoped' => [
+                'code' => '<?php
+                    namespace A {
+                        $a = "1";
+                    }
+                    namespace B\C {
+                        $bc = "2";
+                    }
+                    namespace {
+                        echo $a . PHP_EOL;
+                        echo $bc . PHP_EOL;
+                    }
+                ',
+                'assertions' => [
+                    '$a===' => "'1'",
+                    '$bc===' => "'2'",
+                ],
+            ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'callNamespacedFunctionFromEmptyNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace A {
                         /** @return void */
                         function foo() {
@@ -94,7 +106,7 @@ class NamespaceTest extends TestCase
                 'error_message' => 'UndefinedFunction',
             ],
             'callRootFunctionFromNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace {
                         /** @return void */
                         function foo() {

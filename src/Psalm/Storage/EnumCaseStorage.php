@@ -4,7 +4,7 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 
-class EnumCaseStorage
+final class EnumCaseStorage
 {
     /**
      * @var int|string|null

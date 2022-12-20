@@ -2,7 +2,7 @@
 
 namespace Psalm\Issue;
 
-class TaintedHtml extends TaintedInput
+final class TaintedHtml extends TaintedInput
 {
     public const SHORTCODE = 245;
 }

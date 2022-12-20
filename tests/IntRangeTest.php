@@ -22,14 +22,11 @@ class IntRangeTest extends TestCase
         $this->assertEquals(10, $range->max_bound);
     }
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'intRangeContained' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<1,12> $a
                      * @return int<-1, max>
@@ -39,7 +36,7 @@ class IntRangeTest extends TestCase
                     }',
             ],
             'positiveIntRange' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<1,12> $a
                      * @return positive-int
@@ -49,7 +46,7 @@ class IntRangeTest extends TestCase
                     }',
             ],
             'intRangeToInt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<1,12> $a
                      * @return int
@@ -59,7 +56,7 @@ class IntRangeTest extends TestCase
                     }',
             ],
             'intReduced' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = $b = $c = getInt();
                     assert($a >= 500);
@@ -72,10 +69,10 @@ class IntRangeTest extends TestCase
                     '$a===' => 'int<500, 4999>',
                     '$b===' => 'int<-5000, -502>',
                     '$c===' => 'int<-499, -61>',
-                ]
+                ],
             ],
             'complexAssertions' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = getInt();
                     assert($a >= 495 + 5);
@@ -84,10 +81,10 @@ class IntRangeTest extends TestCase
                     ',
                 'assertions' => [
                     '$a===' => 'int<500, 4999>',
-                ]
+                ],
             ],
             'negatedAssertions' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = $b = $c = $d = $e = $f = $g = $h = $i = $j = $k = $l = $m = $n = $o = $p = getInt();
                     //>
@@ -180,10 +177,10 @@ class IntRangeTest extends TestCase
                     '$n===' => 'int<-9, max>',
                     '$o===' => 'int<min, 499>',
                     '$p===' => 'int<min, -501>',
-                ]
+                ],
             ],
             'intOperations' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = getInt();
                     assert($a >= 500);
@@ -196,11 +193,11 @@ class IntRangeTest extends TestCase
                     '$b===' => 'int<0, 9>',
                     '$c===' => 'int<1, max>',
                     '$d===' => 'int<495, 4994>',
-                    '$e===' => 'int<500, 4999>'
-                ]
+                    '$e===' => 'int<500, 4999>',
+                ],
             ],
             'mod' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = $b = $c = $d = getInt();
                     assert($a >= 20);//positive range
@@ -215,21 +212,27 @@ class IntRangeTest extends TestCase
                     $h = $d % $e;
                     $i = -3 % $a;
                     $j = -3 % $b;
+                    /** @psalm-suppress NoValue */
                     $k = -3 % $c;
                     $l = -3 % $d;
                     $m = 3 % $a;
                     $n = 3 % $b;
+                    /** @psalm-suppress NoValue */
                     $o = 3 % $c;
                     $p = 3 % $d;
+                    /** @psalm-suppress NoValue */
                     $q = $a % 0;
                     $r = $a % 3;
                     $s = $a % -3;
+                    /** @psalm-suppress NoValue */
                     $t = $b % 0;
                     $u = $b % 3;
                     $v = $b % -3;
+                    /** @psalm-suppress NoValue */
                     $w = $c % 0;
                     $x = $c % 3;
                     $y = $c % -3;
+                    /** @psalm-suppress NoValue */
                     $z = $d % 0;
                     $aa = $d % 3;
                     $ab = $d % -3;
@@ -240,28 +243,28 @@ class IntRangeTest extends TestCase
                     '$h===' => 'int<-4, 4>',
                     '$i===' => 'int<min, 0>',
                     '$j===' => 'int<min, 0>',
-                    '$k===' => 'empty',
+                    '$k===' => 'never',
                     '$l===' => 'int',
                     '$m===' => 'int<0, max>',
                     '$n===' => 'int<min, 0>',
-                    '$o===' => 'empty',
+                    '$o===' => 'never',
                     '$p===' => 'int',
-                    '$q===' => 'empty',
+                    '$q===' => 'never',
                     '$r===' => 'int<0, 2>',
                     '$s===' => 'int<-2, 0>',
-                    '$t===' => 'empty',
+                    '$t===' => 'never',
                     '$u===' => 'int<-2, 0>',
                     '$v===' => 'int<2, 0>',
-                    '$w===' => 'empty',
+                    '$w===' => 'never',
                     '$x===' => 'int<0, 2>',
                     '$y===' => 'int<-2, 0>',
-                    '$z===' => 'empty',
+                    '$z===' => 'never',
                     '$aa===' => 'int<-2, 2>',
                     '$ab===' => 'int<-2, 2>',
-                ]
+                ],
             ],
             'pow' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = $b = $c = $d = getInt();
                     assert($a >= 2);//positive range
@@ -297,9 +300,9 @@ class IntRangeTest extends TestCase
                 ',
                 'assertions' => [
                     '$e===' => '0',
-                    '$f===' => 'empty',
+                    '$f===' => 'float',
                     '$g===' => '1',
-                    '$h===' => 'empty',
+                    '$h===' => '0|1|float',
                     '$i===' => 'int',
                     '$j===' => 'float',
                     '$k===' => '-1',
@@ -316,14 +319,14 @@ class IntRangeTest extends TestCase
                     '$v===' => 'float',
                     '$w===' => '1',
                     '$x===' => '0',
-                    '$y===' => 'empty',
+                    '$y===' => 'float',
                     '$z===' => '1',
                     '$aa===' => 'int<1, max>',
                     '$ab===' => 'float',
-                ]
+                ],
             ],
             'multiplications' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = $b = $c = $d = $e = $f = $g = $h = $i = $j = $k = $l = $m = $n = $o = $p = getInt();
                     assert($b <= -2);
@@ -375,30 +378,30 @@ class IntRangeTest extends TestCase
                     '$x===' => 'int<4, max>',
                     '$y===' => 'int',
                     '$z===' => 'int<-4, 4>',
-                ]
+                ],
             ],
             'SKIPPED-intLoopPositive' => [
-                '<?php
+                'code' => '<?php
                     //skipped, int range in loops not supported yet
                     for($i = 0; $i < 10; $i++){
 
                     }',
                 'assertions' => [
-                    '$i===' => 'int<0, 9>'
-                ]
+                    '$i===' => 'int<0, 9>',
+                ],
             ],
             'SKIPPED-intLoopNegative' => [
-                '<?php
+                'code' => '<?php
                     //skipped, int range in loops not supported yet
                     for($i = 10; $i > 1; $i--){
 
                     }',
                 'assertions' => [
-                    '$i===' => 'int<2, 10>'
-                ]
+                    '$i===' => 'int<2, 10>',
+                ],
             ],
             'integrateExistingArrayPositive' => [
-                '<?php
+                'code' => '<?php
                     /** @return int<5, max> */
                     function getInt()
                     {
@@ -409,11 +412,11 @@ class IntRangeTest extends TestCase
                     $a = getInt();
                     $_arr[$a] = 12;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<0, max>, "a"|"b"|"c"|12>'
-                ]
+                    '$_arr===' => "non-empty-array<int<0, max>, 'a'|'b'|'c'|12>",
+                ],
             ],
             'integrateExistingArrayNegative' => [
-                '<?php
+                'code' => '<?php
                     /** @return int<min, -1> */
                     function getInt()
                     {
@@ -424,11 +427,11 @@ class IntRangeTest extends TestCase
                     $a = getInt();
                     $_arr[$a] = 12;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<min, 2>, "a"|"b"|"c"|12>'
-                ]
+                    '$_arr===' => "non-empty-array<int<min, 2>, 'a'|'b'|'c'|12>",
+                ],
             ],
             'SKIPPED-statementsInLoopAffectsEverything' => [
-                '<?php
+                'code' => '<?php
                     //skipped, int range in loops not supported yet
                     $remainder = 1;
                     for ($i = 0; $i < 5; $i++) {
@@ -437,12 +440,11 @@ class IntRangeTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    '$remainder===' => 'int<min, 1>'
-                ]
+                    '$remainder===' => 'int<min, 1>',
+                ],
             ],
-            'SKIPPED-IntRangeRestrictWhenUntouched' => [
-                '<?php
-                    //skipped, int range in loops not supported yet
+            'IntRangeRestrictWhenUntouched' => [
+                'code' => '<?php
                     foreach ([1, 2, 3] as $i) {
                         if ($i > 1) {
                             takesInt($i);
@@ -454,26 +456,48 @@ class IntRangeTest extends TestCase
                         return;
                     }',
             ],
-            'SKIPPED-wrongLoopAssertion' => [
-                '<?php
-                    //skipped, int range in loops not supported yet
+            'intRangeExpandedByLoop' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 10; $i++) {
+                        takesInt($i);
+                    }
+                    for (; $i < 20; $i++) {
+                        takesInt($i);
+                    }
+
+                    /** @psalm-param int<0, 20> $i */
+                    function takesInt(int $i): void{
+                        return;
+                    }',
+            ],
+            'statementsInLoopPreserveNonNegativeIntRange' => [
+                'code' => '<?php
+                    $sum = 0;
+                    foreach ([-6, 0, 2] as $i) {
+                        if ($i > 0) {
+                            $sum += $i;
+                        }
+                    }
+                    takesNonNegativeInt($sum);
+
+                    /** @psalm-param int<0, max> $i */
+                    function takesNonNegativeInt(int $i): void{
+                        return;
+                    }',
+            ],
+            'wrongLoopAssertion' => [
+                'code' => '<?php
                     function a(): array {
                         $type_tokens = getArray();
 
                         for ($i = 0, $l = rand(0,100); $i < $l; ++$i) {
-
-                            /** @psalm-trace $i */;
                             if ($i > 0 && rand(0,1)) {
                                 continue;
                             }
-                            /** @psalm-trace $i  */;
-
 
                             $type_tokens[$i] = "";
 
-                            /** @psalm-trace $type_tokens */;
-
-                            if($i > 1){
+                            if ($i > 1) {
                                 $type_tokens[$i - 2];
                             }
                         }
@@ -481,14 +505,13 @@ class IntRangeTest extends TestCase
                         return [];
                     }
 
-
                     /** @return array<int, string> */
-                    function getArray(): array{
+                    function getArray(): array {
                         return [];
-                    }'
+                    }',
             ],
             'IntRangeContainedInMultipleInt' => [
-                '<?php
+                'code' => '<?php
                     $_arr = [];
 
                     foreach ([0, 1] as $i) {
@@ -498,10 +521,10 @@ class IntRangeTest extends TestCase
                     /** @var int<0,1> $j */
                     $j = 0;
 
-                    echo $_arr[$j];'
+                    echo $_arr[$j];',
             ],
             'modulo' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = getInt();
                     $b = $a % 10;
@@ -511,11 +534,11 @@ class IntRangeTest extends TestCase
                 'assertions' => [
                     '$b===' => 'int<-9, 9>',
                     '$c===' => 'int<0, 9>',
-                    '$d===' => '0|positive-int'
+                    '$d===' => 'int<0, max>',
                 ],
             ],
             'minus' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = $b = $d = $e = getInt();
                     assert($a > 5);
@@ -534,7 +557,7 @@ class IntRangeTest extends TestCase
                 ],
             ],
             'bits' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = $b = $c = getInt();
                     assert($a > 5);
@@ -554,7 +577,7 @@ class IntRangeTest extends TestCase
                 ],
             ],
             'UnaryMinus' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = $c = $e = getInt();
                     assert($a > 5);
@@ -572,7 +595,7 @@ class IntRangeTest extends TestCase
                 ],
             ],
             'countOnKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     $conf   = [
                        "K",
                        "M",
@@ -585,10 +608,11 @@ class IntRangeTest extends TestCase
                 ],
             ],
             'intersections' => [
-                '<?php
-                    function getInt(): int{return 0;}
+                'code' => '<?php
+                    /** @return int<0, 10> */
+                    function getInt(): int{ return rand(0, 10); }
+
                     $a = getInt();
-                    /** @var int<0, 10> $a */
                     $b = -$a;
                     $c = null;
                     if($b === $a){
@@ -601,7 +625,7 @@ class IntRangeTest extends TestCase
                 ],
             ],
             'minMax' => [
-                '<?php
+                'code' => '<?php
                     function getInt(): int{return 0;}
                     $a = $b = $c = $d = $e = getInt();
                     assert($b > 10);
@@ -614,6 +638,8 @@ class IntRangeTest extends TestCase
                     $i = max($b, $c, $d);
                     $j = max($d, $e);
                     $k = max($e, 40);
+                    $l = min($a, ...[$b, $c], $d);
+                    $m = max(...[$a, ...[$b, $c]], $d);
                     ',
                 'assertions' => [
                     '$f===' => 'int<min, -16>',
@@ -622,10 +648,12 @@ class IntRangeTest extends TestCase
                     '$i===' => 'int<20, max>',
                     '$j===' => 'int<20, max>',
                     '$k===' => 'int<40, max>',
+                    '$l===' => 'int<min, -16>',
+                    '$m===' => 'int<20, max>',
                 ],
             ],
             'dontCrashOnFalsy' => [
-                '<?php
+                'code' => '<?php
 
                     function doAnalysis(): void
                     {
@@ -637,7 +665,7 @@ class IntRangeTest extends TestCase
 
                         /** @var int<0, max> $count */
                         $count = 1;
-                        /** @var int $middle */
+                        /** @var int<0, max> $middle */
                         $middle = 1;
                         /** @var int<0, max> $remainder */
                         $remainder = 1;
@@ -658,7 +686,7 @@ class IntRangeTest extends TestCase
                     }',
             ],
             'positiveIntToRangeWithInferior' => [
-                '<?php
+                'code' => '<?php
                     /** @var positive-int $length */
                     $length = 0;
 
@@ -670,7 +698,7 @@ class IntRangeTest extends TestCase
                 ],
             ],
             'positiveIntToRangeWithSuperiorOrEqual' => [
-                '<?php
+                'code' => '<?php
                     /** @var positive-int $length */
                     $length = 0;
 
@@ -682,7 +710,7 @@ class IntRangeTest extends TestCase
                 ],
             ],
             'literalEquality' => [
-                '<?php
+                'code' => '<?php
 
                     /** @var string $secret */
                     $length = strlen($secret);
@@ -697,7 +725,7 @@ class IntRangeTest extends TestCase
                 ],
             ],
             'PositiveIntCombinedWithIntRange' => [
-                '<?php
+                'code' => '<?php
                     /** @var positive-int */
                     $int = 1;
                     /** @var array<int<0, max>, int<0, max>> */
@@ -709,8 +737,134 @@ class IntRangeTest extends TestCase
                     '$_arr===' => 'non-empty-array<int<0, max>, int<0, max>>',
                 ],
             ],
+            'noErrorPushingBigShapeIntoConstant' => [
+                'code' => '<?php
+                        class DocComment
+                            {
+                                private const PSALM_ANNOTATIONS = [
+                                    "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+                                    "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""
+                                ];
+                            }',
+                'assertions' => [
+                ],
+            ],
+            'assertionsAndNegationsOnRanges' => [
+                'code' => '<?php
+                    /** @var int $int */
+                    $int = 1;
+                    $a = $b = $c = $d = $e = $f = $g = $h = $int;
+
+                    if ($a < 1) {
+                        $res1 = $a; //should be int<min, 0>
+                        throw new Exception();
+                    }
+
+                    $res2 = $a; //should be int<1, max>
+
+                    if ($b > 1) {
+                        $res3 = $b; //should be int<2, max>
+                        throw new Exception();
+                    }
+
+                    $res4 = $b; //should be int<min, 1>
+
+                    if ($c <= 1) {
+                        $res5 = $c; //should be int<min, 1>
+                        throw new Exception();
+                    }
+
+                    $res6 = $c; //should be int<2, max>
+
+                    if ($d >= 1) {
+                        $res7 = $d; //should be int<1, max>
+                        throw new Exception();
+                    }
+
+                    $res8 = $d; //should be int<min, 0>
+
+
+
+                    if (1 < $e) {
+                        $res9 = $e; //should be int<2, max>
+                        throw new Exception();
+                    }
+
+                    $res10 = $e; //should be int<min, 1>
+
+                    if (1 > $f) {
+                        $res11 = $f; //should be int<min, 0>
+                        throw new Exception();
+                    }
+
+                    $res12 = $f; //should be int<1, max>
+
+                    if (1 <= $g) {
+                        $res13 = $g; //should be int<1, max>
+                        throw new Exception();
+                    }
+
+                    $res14 = $g; //should be int<min, 0>
+
+                    if (1 >= $h) {
+                        $res15 = $h; //should be int<min, 1>
+                        throw new Exception();
+                    }
+
+                    $res16 = $h; //should be int<2, max>',
+                'assertions' => [
+                    //'$res1' => 'int<min, 0>',
+                    '$res2' => 'int<1, max>',
+                    //'$res3' => 'int<2, max>',
+                    '$res4' => 'int<min, 1>',
+                    //'$res5' => 'int<min, 1>',
+                    '$res6' => 'int<2, max>',
+                    //'$res7' => 'int<1, max>',
+                    '$res8' => 'int<min, 0>',
+
+                    //'$res9' => 'int<2, max>',
+                    '$res10' => 'int<min, 1>',
+                    //'$res11' => 'int<min, 0>',
+                    '$res12' => 'int<1, max>',
+                    //'$res13' => 'int<1, max>',
+                    '$res14' => 'int<min, 0>',
+                    //'$res15' => 'int<min, 1>',
+                    '$res16' => 'int<2, max>',
+
+                ],
+            ],
+            'arraykeyCanBeRange' => [
+                'code' => '<?php
+                    /**
+                     * @param array-key $key
+                     * @param positive-int $expected
+                     */
+                    function matches($key, int $expected): bool {
+                        if ($key !== $expected) {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+            ],
+            'literalArrayUnpack' => [
+                'code' => '<?php
+                    /** @var int<0, 5> */
+                    $a = 2;
+                    /** @var int<6, 10> */
+                    $b = 9;
+
+                    /**
+                     * @param int<0, 5> $_a
+                     * @param int<6, 10> $_b
+                     */
+                    function foo(int $_a, int $_b): void {}
+
+                    foo(...[$a, $b]);
+                ',
+            ],
             'minMaxInNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo {
                         /**
                          * @param int<0, max> $_a
@@ -719,18 +873,15 @@ class IntRangeTest extends TestCase
                         function bar(int $_a, int $_b): void {}
                     }
                 ',
-            ]
+            ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'intRangeNotContained' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<1,12> $a
                      * @return int<-1, 11>
@@ -742,7 +893,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidReturnType',
             ],
             'assertOutOfRange' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<1, 5> $a
                      */
@@ -752,7 +903,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'DocblockTypeContradiction',
             ],
             'assertRedundantInferior' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<min, 5> $a
                      */
@@ -762,7 +913,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'assertImpossibleInferior' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<5, max> $a
                      */
@@ -772,7 +923,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'DocblockTypeContradiction',
             ],
             'maxSpecifiedAsFirst' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<max, 0> $a
                      */
@@ -782,7 +933,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'minSpecifiedAsSecond' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<0, min> $a
                      */
@@ -792,7 +943,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'unknownConstant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<0, FOO> $a
                      */
@@ -802,7 +953,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'floatAsABoundary' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<0, 5.5> $a
                      */
@@ -812,7 +963,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'stringAsABoundary' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<0, "bar"> $a
                      */
@@ -822,7 +973,7 @@ class IntRangeTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'minGreaterThanMax' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int<4, 3> $a
                      */

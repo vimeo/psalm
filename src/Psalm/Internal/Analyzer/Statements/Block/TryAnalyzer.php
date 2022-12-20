@@ -52,8 +52,7 @@ class TryAnalyzer
             $catch_actions[$i] = ScopeAnalyzer::getControlActions(
                 $catch->stmts,
                 $statements_analyzer->node_data,
-                $codebase->config->exit_functions,
-                []
+                [],
             );
             $all_catches_leave = $all_catches_leave && !in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
         }
@@ -67,24 +66,18 @@ class TryAnalyzer
 
         $old_context = clone $context;
 
-        if ($all_catches_leave && !$stmt->finally) {
-            $try_context = $context;
-        } else {
-            $try_context = clone $context;
+        $try_context = clone $context;
 
-            if ($codebase->alter_code) {
-                $try_context->branch_point = $try_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
-            }
+        if ($codebase->alter_code) {
+            $try_context->branch_point = $try_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        }
 
-            if ($stmt->finally) {
-                $try_context->finally_scope = new FinallyScope($try_context->vars_in_scope);
-            }
+        if ($stmt->finally) {
+            $try_context->finally_scope = new FinallyScope($try_context->vars_in_scope);
         }
 
         $assigned_var_ids = $try_context->assigned_var_ids;
         $context->assigned_var_ids = [];
-
-        $old_referenced_var_ids = $try_context->referenced_var_ids;
 
         $was_inside_try = $context->inside_try;
         $context->inside_try = true;
@@ -93,23 +86,12 @@ class TryAnalyzer
         }
         $context->inside_try = $was_inside_try;
 
-        if ($try_context->finally_scope) {
-            foreach ($context->vars_in_scope as $var_id => $type) {
-                $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                    $try_context->finally_scope->vars_in_scope[$var_id] ?? null,
-                    $type,
-                    $statements_analyzer->getCodebase()
-                );
-            }
-        }
-
         $context->has_returned = false;
 
         $try_block_control_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
-            $codebase->config->exit_functions,
-            []
+            [],
         );
 
         /** @var array<string, int> */
@@ -117,37 +99,34 @@ class TryAnalyzer
 
         $context->assigned_var_ids = array_merge(
             $assigned_var_ids,
-            $newly_assigned_var_ids
+            $newly_assigned_var_ids,
         );
 
-        $possibly_referenced_var_ids = array_merge(
-            $context->referenced_var_ids,
-            $old_referenced_var_ids
-        );
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            if (!isset($try_context->vars_in_scope[$var_id])) {
+                $try_context->vars_in_scope[$var_id] = $type;
 
-        if ($try_context !== $context) {
-            foreach ($context->vars_in_scope as $var_id => $type) {
-                if (!isset($try_context->vars_in_scope[$var_id])) {
-                    $try_context->vars_in_scope[$var_id] = clone $type;
-
-                    $context->vars_in_scope[$var_id]->possibly_undefined = true;
-                    $context->vars_in_scope[$var_id]->possibly_undefined_from_try = true;
-                } else {
-                    $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $try_context->vars_in_scope[$var_id],
-                        $type
-                    );
-                }
+                $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true, true);
+            } else {
+                $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $try_context->vars_in_scope[$var_id],
+                    $type,
+                );
             }
-
-            $try_context->vars_possibly_in_scope = $context->vars_possibly_in_scope;
-            $try_context->possibly_thrown_exceptions = $context->possibly_thrown_exceptions;
-
-            $context->referenced_var_ids = array_intersect_key(
-                $try_context->referenced_var_ids,
-                $context->referenced_var_ids
-            );
         }
+
+        if ($try_context->finally_scope) {
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $try_context->finally_scope->vars_in_scope[$var_id] ?? null,
+                    $type,
+                    $statements_analyzer->getCodebase(),
+                );
+            }
+        }
+
+        $try_context->vars_possibly_in_scope = $context->vars_possibly_in_scope;
+        $try_context->possibly_thrown_exceptions = $context->possibly_thrown_exceptions;
 
         $try_leaves_loop = $context->loop_scope
             && $context->loop_scope->final_actions
@@ -184,13 +163,14 @@ class TryAnalyzer
 
             foreach ($catch_context->vars_in_scope as $var_id => $type) {
                 if (!isset($old_context->vars_in_scope[$var_id])) {
-                    $type = clone $type;
-                    $type->possibly_undefined_from_try = true;
-                    $catch_context->vars_in_scope[$var_id] = $type;
+                    $catch_context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(
+                        $catch_context->vars_in_scope[$var_id]->possibly_undefined,
+                        true,
+                    );
                 } else {
                     $catch_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
-                        $old_context->vars_in_scope[$var_id]
+                        $old_context->vars_in_scope[$var_id],
                     );
                 }
             }
@@ -204,7 +184,7 @@ class TryAnalyzer
             foreach ($catch->types as $catch_type) {
                 $fq_catch_class = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $catch_type,
-                    $statements_analyzer->getAliases()
+                    $statements_analyzer->getAliases(),
                 );
 
                 $fq_catch_class = $codebase->classlikes->getUnAliasedName($fq_catch_class);
@@ -215,22 +195,20 @@ class TryAnalyzer
                         $statements_analyzer,
                         $catch_type,
                         $fq_catch_class,
-                        $context->calling_method_id
+                        $context->calling_method_id,
                     );
                 }
 
                 if ($original_context->check_classes) {
-                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,
                         $fq_catch_class,
                         new CodeLocation($statements_analyzer->getSource(), $catch_type, $context->include_location),
                         $context->self,
                         $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues(),
-                        new ClassLikeNameOptions(true)
-                    ) === false) {
-                        // fall through
-                    }
+                        new ClassLikeNameOptions(true),
+                    );
                 }
 
                 if (($codebase->classExists($fq_catch_class)
@@ -245,9 +223,9 @@ class TryAnalyzer
                         new InvalidCatch(
                             'Class/interface ' . $fq_catch_class . ' cannot be caught',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $fq_catch_class
+                            $fq_catch_class,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -285,29 +263,27 @@ class TryAnalyzer
 
                 $catch_context->vars_in_scope[$catch_var_id] = new Union(
                     array_map(
-                        function (string $fq_catch_class) use ($codebase): TNamedObject {
-                            $catch_class_type = new TNamedObject($fq_catch_class);
-
-                            if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
+                        static fn(string $fq_catch_class): TNamedObject => new TNamedObject(
+                            $fq_catch_class,
+                            false,
+                            false,
+                            version_compare(PHP_VERSION, '7.0.0dev', '>=')
                                 && strtolower($fq_catch_class) !== 'throwable'
                                 && $codebase->interfaceExists($fq_catch_class)
                                 && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
-                            ) {
-                                $catch_class_type->addIntersectionType(new TNamedObject('Throwable'));
-                            }
-
-                            return $catch_class_type;
-                        },
-                        $fq_catch_classes
-                    )
+                                    ? ['Throwable' => new TNamedObject('Throwable')]
+                                    : [],
+                        ),
+                        $fq_catch_classes,
+                    ),
                 );
 
                 // removes dependent vars from $context
                 $catch_context->removeDescendents(
                     $catch_var_id,
-                    null,
                     $catch_context->vars_in_scope[$catch_var_id],
-                    $statements_analyzer
+                    $catch_context->vars_in_scope[$catch_var_id],
+                    $statements_analyzer,
                 );
 
                 $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
@@ -318,27 +294,29 @@ class TryAnalyzer
                     $statements_analyzer->registerVariable(
                         $catch_var_id,
                         $location,
-                        $catch_context->branch_point
+                        $catch_context->branch_point,
                     );
                 } else {
                     $statements_analyzer->registerVariableAssignment(
                         $catch_var_id,
-                        $location
+                        $location,
                     );
                 }
 
                 if ($statements_analyzer->data_flow_graph) {
                     $catch_var_node = DataFlowNode::getForAssignment($catch_var_id, $location);
 
-                    $catch_context->vars_in_scope[$catch_var_id]->parent_nodes = [
-                        $catch_var_node->id => $catch_var_node
-                    ];
+                    $catch_context->vars_in_scope[$catch_var_id] =
+                        $catch_context->vars_in_scope[$catch_var_id]->addParentNodes([
+                            $catch_var_node->id => $catch_var_node,
+                        ])
+                    ;
 
                     if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
                         $statements_analyzer->data_flow_graph->addPath(
                             $catch_var_node,
                             new DataFlowNode('variable-use', 'variable use', null),
-                            'variable-use'
+                            'variable-use',
                         );
                     }
                 }
@@ -352,7 +330,7 @@ class TryAnalyzer
                 }
             }
 
-            $old_catch_assigned_var_ids = $catch_context->referenced_var_ids;
+            $old_catch_assigned_var_ids = $catch_context->assigned_var_ids;
 
             $catch_context->assigned_var_ids = [];
 
@@ -362,8 +340,7 @@ class TryAnalyzer
             $catch_actions[$i] = ScopeAnalyzer::getControlActions(
                 $catch->stmts,
                 $statements_analyzer->node_data,
-                $codebase->config->exit_functions,
-                []
+                [],
             );
 
             foreach ($issues_to_suppress as $issue_to_suppress) {
@@ -377,16 +354,6 @@ class TryAnalyzer
 
             $catch_context->assigned_var_ids += $old_catch_assigned_var_ids;
 
-            $context->referenced_var_ids = array_intersect_key(
-                $catch_context->referenced_var_ids,
-                $context->referenced_var_ids
-            );
-
-            $possibly_referenced_var_ids = array_merge(
-                $catch_context->referenced_var_ids,
-                $possibly_referenced_var_ids
-            );
-
             if ($catch_context->collect_exceptions) {
                 $context->mergeExceptions($catch_context);
             }
@@ -398,7 +365,7 @@ class TryAnalyzer
             if ($catch_doesnt_leave_parent_scope) {
                 $definitely_newly_assigned_var_ids = array_intersect_key(
                     $new_catch_assigned_var_ids,
-                    $definitely_newly_assigned_var_ids
+                    $definitely_newly_assigned_var_ids,
                 );
 
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
@@ -407,40 +374,42 @@ class TryAnalyzer
                     } elseif (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
-                            $type
+                            $type,
                         );
                     }
                 }
 
                 $context->vars_possibly_in_scope = array_merge(
                     $catch_context->vars_possibly_in_scope,
-                    $context->vars_possibly_in_scope
+                    $context->vars_possibly_in_scope,
                 );
             } else {
                 if ($stmt->finally) {
                     $context->vars_possibly_in_scope = array_merge(
                         $catch_context->vars_possibly_in_scope,
-                        $context->vars_possibly_in_scope
+                        $context->vars_possibly_in_scope,
                     );
                 }
             }
 
             if ($try_context->finally_scope) {
-                foreach ($catch_context->vars_in_scope as $var_id => $type) {
+                foreach ($catch_context->vars_in_scope as $var_id => &$type) {
                     if (isset($try_context->finally_scope->vars_in_scope[$var_id])) {
                         if ($try_context->finally_scope->vars_in_scope[$var_id] !== $type) {
                             $try_context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $try_context->finally_scope->vars_in_scope[$var_id],
                                 $type,
-                                $statements_analyzer->getCodebase()
+                                $statements_analyzer->getCodebase(),
                             );
                         }
                     } else {
-                        $try_context->finally_scope->vars_in_scope[$var_id] = $type;
-                        $type->possibly_undefined = true;
-                        $type->possibly_undefined_from_try = true;
+                        $try_context->finally_scope->vars_in_scope[$var_id] = $type->setPossiblyUndefined(
+                            true,
+                            true,
+                        );
                     }
                 }
+                unset($type);
             }
         }
 
@@ -470,20 +439,22 @@ class TryAnalyzer
                     if (isset($context->vars_in_scope[$var_id])
                         && isset($finally_context->vars_in_scope[$var_id])
                     ) {
-                        if ($context->vars_in_scope[$var_id]->possibly_undefined
-                            && $context->vars_in_scope[$var_id]->possibly_undefined_from_try
-                        ) {
-                            $context->vars_in_scope[$var_id]->possibly_undefined = false;
-                            $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
-                        }
+                        $possibly_undefined = $context->vars_in_scope[$var_id]->possibly_undefined
+                            && $context->vars_in_scope[$var_id]->possibly_undefined_from_try;
 
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
                             $finally_context->vars_in_scope[$var_id],
-                            $codebase
+                            $codebase,
                         );
+                        if ($possibly_undefined) {
+                            /** @psalm-suppress InaccessibleProperty We just created this type */
+                            $context->vars_in_scope[$var_id]->possibly_undefined = false;
+                            /** @psalm-suppress InaccessibleProperty We just created this type */
+                            $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
+                        }
                     } elseif (isset($finally_context->vars_in_scope[$var_id])) {
-                        $context->vars_in_scope[$var_id] = clone $finally_context->vars_in_scope[$var_id];
+                        $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
                     }
                 }
             }
@@ -491,14 +462,13 @@ class TryAnalyzer
 
         foreach ($definitely_newly_assigned_var_ids as $var_id => $_) {
             if (isset($context->vars_in_scope[$var_id])) {
-                $new_type = clone $context->vars_in_scope[$var_id];
-
-                if ($new_type->possibly_undefined_from_try) {
-                    $new_type->possibly_undefined = false;
-                    $new_type->possibly_undefined_from_try = false;
+                if ($context->vars_in_scope[$var_id]->possibly_undefined_from_try) {
+                    $context->vars_in_scope[$var_id] =
+                        $context->vars_in_scope[$var_id]->setPossiblyUndefined(
+                            false,
+                            false,
+                        );
                 }
-
-                $context->vars_in_scope[$var_id] = $new_type;
             }
         }
 

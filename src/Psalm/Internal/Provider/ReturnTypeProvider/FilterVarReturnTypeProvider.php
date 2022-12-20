@@ -27,6 +27,9 @@ use const FILTER_VALIDATE_MAC;
 use const FILTER_VALIDATE_REGEXP;
 use const FILTER_VALIDATE_URL;
 
+/**
+ * @internal
+ */
 class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -92,16 +95,16 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                         if (isset($atomic_type->properties['options'])
                             && $atomic_type->properties['options']->hasArray()
-                            && ($options_array = $atomic_type->properties['options']->getAtomicTypes()['array'] ?? null)
+                            && ($options_array = $atomic_type->properties['options']->getArray())
                             && $options_array instanceof TKeyedArray
                             && isset($options_array->properties['default'])
                         ) {
                             $filter_type = Type::combineUnionTypes(
                                 $filter_type,
-                                $options_array->properties['default']
+                                $options_array->properties['default'],
                             );
                         } else {
-                            $filter_type->addType(new TFalse);
+                            $filter_type = $filter_type->getBuilder()->addType(new TFalse)->freeze();
                         }
 
                         if (isset($atomic_type->properties['flags'])
@@ -113,20 +116,20 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             if ($filter_type->hasBool()
                                 && $filter_flag_type->value === FILTER_NULL_ON_FAILURE
                             ) {
-                                $filter_type->addType(new TNull);
+                                $filter_type = $filter_type->getBuilder()->addType(new TNull)->freeze();
                             }
                         }
                     } elseif ($atomic_type instanceof TLiteralInt) {
                         if ($atomic_type->value === FILTER_NULL_ON_FAILURE) {
                             $filter_null = true;
-                            $filter_type->addType(new TNull);
+                            $filter_type = $filter_type->getBuilder()->addType(new TNull)->freeze();
                         }
                     }
                 }
             }
 
             if (!$has_object_like && !$filter_null && $filter_type) {
-                $filter_type->addType(new TFalse);
+                $filter_type = $filter_type->getBuilder()->addType(new TFalse)->freeze();
             }
         }
 
@@ -141,7 +144,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $function_id,
                 $function_id,
                 null,
-                $code_location
+                $code_location,
             );
 
             $statements_source->data_flow_graph->addNode($function_return_sink);
@@ -151,7 +154,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $function_id,
                 0,
                 null,
-                $code_location
+                $code_location,
             );
 
             $statements_source->data_flow_graph->addNode($function_param_sink);
@@ -159,10 +162,10 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $statements_source->data_flow_graph->addPath(
                 $function_param_sink,
                 $function_return_sink,
-                'arg'
+                'arg',
             );
 
-            $filter_type->parent_nodes = [$function_return_sink->id => $function_return_sink];
+            return $filter_type->setParentNodes([$function_return_sink->id => $function_return_sink]);
         }
 
         return $filter_type;

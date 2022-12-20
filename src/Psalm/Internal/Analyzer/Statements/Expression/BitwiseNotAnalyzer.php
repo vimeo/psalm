@@ -21,6 +21,9 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class BitwiseNotAnalyzer
 {
     public static function analyze(
@@ -41,12 +44,13 @@ class BitwiseNotAnalyzer
             $unacceptable_type = null;
             $has_valid_operand = false;
 
+            $stmt_expr_type = $stmt_expr_type->getBuilder();
             foreach ($stmt_expr_type->getAtomicTypes() as $type_string => $type_part) {
                 if ($type_part instanceof TInt || $type_part instanceof TString) {
                     if ($type_part instanceof TLiteralInt) {
-                        $type_part->value = ~$type_part->value;
+                        $type_part = new TLiteralInt(~$type_part->value);
                     } elseif ($type_part instanceof TLiteralString) {
-                        $type_part->value = ~$type_part->value;
+                        $type_part = new TLiteralString(~$type_part->value);
                     }
 
                     $acceptable_types[] = $type_part;
@@ -72,17 +76,17 @@ class BitwiseNotAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidOperand(
                             $message,
-                            new CodeLocation($statements_analyzer, $stmt)
+                            new CodeLocation($statements_analyzer, $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidOperand(
                             $message,
-                            new CodeLocation($statements_analyzer, $stmt)
+                            new CodeLocation($statements_analyzer, $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -110,9 +114,10 @@ class BitwiseNotAnalyzer
 
             $new_parent_node = DataFlowNode::getForAssignment('bitwisenot', $var_location);
             $statements_analyzer->data_flow_graph->addNode($new_parent_node);
-            $result_type->parent_nodes = [
+            $result_type = $result_type->setParentNodes([
                 $new_parent_node->id => $new_parent_node,
-            ];
+            ]);
+            $statements_analyzer->node_data->setType($stmt, $result_type);
 
             if ($stmt_value_type && $stmt_value_type->parent_nodes) {
                 foreach ($stmt_value_type->parent_nodes as $parent_node) {

@@ -10,14 +10,11 @@ class DeprecatedAnnotationTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'deprecatedMethod' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @deprecated
@@ -26,8 +23,18 @@ class DeprecatedAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'deprecatedCloneMethod' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @deprecated
+                         */
+                        public function __clone() {
+                        }
+                    }',
+            ],
             'deprecatedClassUsedInsideClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @deprecated
                      */
@@ -38,12 +45,12 @@ class DeprecatedAnnotationTest extends TestCase
                     }',
             ],
             'annotationOnStatement' => [
-                '<?php
+                'code' => '<?php
                     /** @deprecated */
-                    $a = "A";'
+                    $a = "A";',
             ],
             'noNoticeOnInheritance' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @deprecated
                      */
@@ -71,10 +78,10 @@ class DeprecatedAnnotationTest extends TestCase
                         public function getDifferentFoos() {
                             return [];
                         }
-                    }'
+                    }',
             ],
             'suppressDeprecatedClassOnMember' => [
-                    '<?php
+                    'code' => '<?php
 
                         /**
                          * @deprecated
@@ -91,18 +98,15 @@ class DeprecatedAnnotationTest extends TestCase
                              */
                             public $property;
                         }
-                ']
+                '],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'deprecatedMethodWithCall' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @deprecated
@@ -114,8 +118,22 @@ class DeprecatedAnnotationTest extends TestCase
                     Foo::barBar();',
                 'error_message' => 'DeprecatedMethod',
             ],
+            'deprecatedCloneMethodWithCall' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @deprecated
+                         */
+                        public function __clone() {
+                        }
+                    }
+
+                    $a = new Foo;
+                    $aa = clone $a;',
+                'error_message' => 'DeprecatedMethod',
+            ],
             'deprecatedClassWithStaticCall' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @deprecated
                      */
@@ -128,7 +146,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedClass',
             ],
             'deprecatedClassWithNew' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @deprecated
                      */
@@ -138,7 +156,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedClass',
             ],
             'deprecatedClassWithExtends' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @deprecated
                      */
@@ -148,7 +166,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedClass',
             ],
             'deprecatedPropertyGet' => [
-                '<?php
+                'code' => '<?php
                     class A{
                         /**
                          * @deprecated
@@ -160,7 +178,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedProperty',
             ],
             'deprecatedPropertySet' => [
-                '<?php
+                'code' => '<?php
                     class A{
                         /**
                          * @deprecated
@@ -173,7 +191,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedProperty',
             ],
             'deprecatedPropertyGetFromInsideTheClass' => [
-                '<?php
+                'code' => '<?php
                     class A{
                         /**
                          * @deprecated
@@ -189,7 +207,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedProperty',
             ],
             'deprecatedPropertySetFromInsideTheClass' => [
-                '<?php
+                'code' => '<?php
                     class A{
                         /**
                          * @deprecated
@@ -205,7 +223,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedProperty',
             ],
             'deprecatedClassConstant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @deprecated
                      */
@@ -217,7 +235,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedClass',
             ],
             'deprecatedClassStringConstant' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @deprecated
                      */
@@ -227,7 +245,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedClass',
             ],
             'deprecatedClassAsParam' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @deprecated
                      */
@@ -237,7 +255,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedClass',
             ],
             'deprecatedStaticPropertyFetch' => [
-                '<?php
+                'code' => '<?php
 
                     class Bar
                     {
@@ -252,7 +270,7 @@ class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedProperty',
             ],
             'deprecatedEnumCaseFetch' => [
-                '<?php
+                'code' => '<?php
                     enum Foo {
                         case A;
 
@@ -263,10 +281,30 @@ class DeprecatedAnnotationTest extends TestCase
                     Foo::B;
                 ',
                 'error_message' => 'DeprecatedConstant',
-                [],
-                false,
-                '8.1',
-            ]
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'deprecatedInterfaceInGenerics' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    interface MyInterface {}
+
+                    /** @extends ArrayObject<array-key, MyInterface> */
+                    class MyClass extends ArrayObject {}
+                ',
+                'error_message' => 'DeprecatedInterface',
+            ],
+            'deprecatedTrait' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    trait T {}
+
+                    class C {
+                        use T;
+                    }
+                ',
+                'error_message' => 'DeprecatedTrait',
+            ],
         ];
     }
 }

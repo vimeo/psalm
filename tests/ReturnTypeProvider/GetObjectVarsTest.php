@@ -12,18 +12,29 @@ class GetObjectVarsTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         yield 'returnsPublicProperties' => [
-            '<?php
-                class C {
+            'code' => '<?php
+                final class C {
                     /** @var string */
                     public $prop = "val";
                 }
                 $ret = get_object_vars(new C);
             ',
-            ['$ret' => 'array{prop: string}'],
+            'assertions' => ['$ret' => 'array{prop: string}'],
+        ];
+
+        yield 'returnsSealedArrayForFinalClass' => [
+            'code' => '<?php
+                final class C {
+                    /** @var string */
+                    public $prop = "val";
+                }
+                $ret = get_object_vars(new C);
+            ',
+            'assertions' => ['$ret' => 'array{prop: string}'],
         ];
 
         yield 'omitsPrivateAndProtectedPropertiesWhenCalledOutsideOfClassScope' => [
-            '<?php
+            'code' => '<?php
                 final class C {
                     /** @var string */
                     private $priv = "val";
@@ -33,12 +44,12 @@ class GetObjectVarsTest extends TestCase
                 }
                 $ret = get_object_vars(new C);
             ',
-            ['$ret' => 'array<empty, empty>'],
+            'assertions' => ['$ret' => 'array<never, never>'],
         ];
 
         yield 'includesPrivateAndProtectedPropertiesWhenCalledInsideClassScope' => [
-            '<?php
-                class C {
+            'code' => '<?php
+                final class C {
                     /** @var string */
                     private $priv = "val";
 
@@ -51,11 +62,11 @@ class GetObjectVarsTest extends TestCase
                     }
                 }
             ',
-            [],
+            'assertions' => [],
         ];
 
         yield 'includesProtectedAndOmitsPrivateFromParentWhenCalledInDescendant' => [
-            '<?php
+            'code' => '<?php
                 class C {
                     /** @var string */
                     private $priv = "val";
@@ -67,18 +78,18 @@ class GetObjectVarsTest extends TestCase
                     public $pub = "val";
                 }
 
-                class D extends C {
-                    /** @return array{prot: string} */
+                final class D extends C {
+                    /** @return array{prot: string, pub: string} */
                     public function method(): array {
                         return get_object_vars($this);
                     }
                 }
             ',
-            [],
+            'assertions' => [],
         ];
 
         yield 'propertiesOfObjectWithKeys' => [
-            '<?php
+            'code' => '<?php
                 /**
                  * @param object{a:int, b:string, c:bool} $p
                  * @return array{a:int, b:string, c:bool}
@@ -87,17 +98,75 @@ class GetObjectVarsTest extends TestCase
                     return get_object_vars($p);
                 }
             ',
-            [],
+            'assertions' => [],
         ];
 
         yield 'propertiesOfCastScalar' => [
-            '<?php $ret = get_object_vars((object)true);',
-            ['$ret' => 'array{scalar: true}'],
+            'code' => '<?php $ret = get_object_vars((object)true);',
+            'assertions' => ['$ret' => 'array{scalar: true}'],
         ];
 
         yield 'propertiesOfPOPO' => [
-            '<?php $ret = get_object_vars((object)["a" => 1]);',
-            ['$ret' => 'array{a: int}'],
+            'code' => '<?php $ret = get_object_vars((object)["a" => 1]);',
+            'assertions' => ['$ret' => 'array{a: int}'],
+        ];
+
+        yield 'templatedProperties' => [
+            'code' => '<?php
+                /** @template T */
+                final class a {
+                    /** @param T $t */
+                    public function __construct(public mixed $t) {}
+                }
+
+                $a = get_object_vars(new a("test"));',
+            'assertions' => [
+                '$a===' => "array{t: 'test'}",
+            ],
+        ];
+
+        yield 'SKIPPED-dynamicProperties' => [
+            'code' => '<?php
+                class a {
+                    public function __construct(public string $t) {}
+                }
+
+                $a = new a("test");
+                $a->b = "test";
+                $test = get_object_vars($a);',
+            'assertions' => [
+                '$test===' => "array{t: 'test'}",
+            ],
+        ];
+
+        yield 'SKIPPED-dynamicProperties82' => [
+            'code' => '<?php
+                #[AllowDynamicProperties]
+                class a {
+                    public function __construct(public string $t) {}
+                }
+
+                $a = new a("test");
+                $a->b = "test";
+                $test = get_object_vars($a);',
+            'assertions' => [
+                '$test===' => "array{t: 'test'}",
+            ],
+            'php_version' => '8.2',
+        ];
+
+        yield 'SKIPPED-noDynamicProperties82' => [
+            'code' => '<?php
+                class a {
+                    public function __construct(public string $t) {}
+                }
+
+                $a = new a("test");
+                $test = get_object_vars($a);',
+            'assertions' => [
+                '$test===' => "array{t: 'test'}",
+            ],
+            'php_version' => '8.2',
         ];
     }
 }

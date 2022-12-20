@@ -7,7 +7,7 @@ use Psalm\Report;
 
 use function sprintf;
 
-class TextReport extends Report
+final class TextReport extends Report
 {
     public function create(): string
     {
@@ -20,7 +20,7 @@ class TextReport extends Report
                 $issue_data->column_from,
                 ($issue_data->severity === Config::REPORT_ERROR ? 'error' : 'warning'),
                 $issue_data->type,
-                $issue_data->message
+                $issue_data->message,
             ) . "\n";
         }
 

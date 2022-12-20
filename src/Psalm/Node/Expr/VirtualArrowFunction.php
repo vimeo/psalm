@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\ArrowFunction;
 use Psalm\Node\VirtualNode;
 
-class VirtualArrowFunction extends ArrowFunction implements VirtualNode
+final class VirtualArrowFunction extends ArrowFunction implements VirtualNode
 {
 
 }

@@ -92,9 +92,9 @@ takesList(["hello"]); // this is fine
 takesList([1 => "hello"]); // triggers warning in Psalm
 ```
 
-## Object-like arrays
+## Array shapes
 
-Psalm supports a special format for arrays where the key offsets are known: object-like arrays, also known as **array shapes**.
+Psalm supports a special format for arrays where the key offsets are known: array shapes, also known as "object-like arrays".
 
 Given an array
 
@@ -121,6 +121,85 @@ Optional keys can be denoted by a trailing `?`, e.g.:
 /** @return array{optional?: string, bar: int} */
 ```
 
+Tip: if you find yourself copying the same complex array shape over and over again to avoid `InvalidArgument` issues, try using [type aliases](utility_types.md#type-aliases), instead.
+
+### Validating array shapes
+
+Use [Valinor](https://github.com/CuyZ/Valinor) in strict mode to easily assert array shapes at runtime using Psalm array shape syntax (instead of manually asserting keys with isset):
+
+```php
+try {
+  $array = (new \CuyZ\Valinor\MapperBuilder())
+      ->mapper()
+      ->map(
+          'array{a: string, b: int}',
+          json_decode(file_get_contents('https://.../'), true)
+      );
+
+  /** @psalm-trace $array */; // array{a: string, b: int}
+
+  echo $array['a'];
+  echo $array['b'];
+} catch (\CuyZ\Valinor\Mapper\MappingError $error) {
+  // Do something…
+}
+```
+
+Valinor provides both runtime and static Psalm assertions with full Psalm syntax support and many other features, check out the [Valinor documentation](https://valinor.cuyz.io/latest/) for more info!
+
+## List shapes
+
+Starting in Psalm 5, Psalm also supports a special format for list arrays where the key offsets are known.
+
+Given a list array
+
+```php
+<?php
+["hello", "world", new stdClass, false];
+```
+
+Psalm will type it internally as:
+
+```
+list{string, string, stdClass, false}
+```
+
+You can specify types in that format yourself, e.g.
+
+```php
+/** @return list{string, int} */
+/** @return list{0: string, 1: int} */
+```
+
+Optional keys can be denoted by a specifying keys for all elements and specifying a trailing `?` for optional keys, e.g.:
+
+```php
+/** @return list{0: string, 1?: int} */
+```
+
+List shapes are essentially n-tuples [from a type theory perspective](https://en.wikipedia.org/wiki/Tuple#Type_theory).
+
+
+## Unsealed array and list shapes
+
+Starting from Psalm v5, array shapes and list shapes can be marked as open by adding `...` as their last element.
+
+Here we have a function `handleOptions` that takes an array of options. The type tells us it has a single known key with type `string`, and potentially many other keys of unknown types.
+
+
+```php
+/** @param array{verbose: string, ...} $options */
+function handleOptions(array $options): float {
+    if ($options['verbose']) {
+        var_dump($options);
+    }
+}
+
+$options = get_opt(/* some code */);
+$options['verbose'] = isset($options['verbose']);
+handleOptions($options);
+```
+
 ## Callable arrays
 
 An array holding a callable, like PHP's native `call_user_func()` and friends supports it:
@@ -135,3 +214,4 @@ $callable = [$object, 'aMethod'];
 ## non-empty-array
 
 An array which is not allowed to be empty.
+[Generic syntax](#generic-arrays) is also supported: `non-empty-array<string, int>`.

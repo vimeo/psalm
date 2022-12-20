@@ -43,9 +43,6 @@ return [
 'mysqli_stmt::prepare' => [['sql']],
 'passthru' => [['shell']],
 'pcntl_exec' => [['shell']],
-'PDO::prepare' => [['sql']],
-'PDO::query' => [['sql']],
-'PDO::exec' => [['sql']],
 'pg_exec' => [[], ['sql']],
 'pg_prepare' => [[], [], ['sql']],
 'pg_put_line' => [[], ['sql']],
@@ -62,4 +59,5 @@ return [
 'proc_open' => [['shell']],
 'curl_init' => [['ssrf']],
 'curl_setopt' => [[], [], ['ssrf']],
+'getimagesize' => [['ssrf']],
 ];

@@ -33,7 +33,7 @@ class DocCommentTest extends BaseTestCase
                     [
                         0 => 'bool',
                     ],
-            ]
+            ],
         );
 
         $expectedDoc = '/**
@@ -71,7 +71,7 @@ class DocCommentTest extends BaseTestCase
                     [
                         0 => 'bool',
                     ],
-            ]
+            ],
         );
 
         $expectedDoc = '/**
@@ -107,7 +107,7 @@ class DocCommentTest extends BaseTestCase
                     [
                         0 => 'bool',
                     ],
-            ]
+            ],
         );
 
         $expectedDoc = '/**
@@ -141,7 +141,7 @@ class DocCommentTest extends BaseTestCase
  */
 ';
         $docComment = DocComment::parsePreservingLength(
-            new Doc($expectedDoc)
+            new Doc($expectedDoc),
         );
 
         $this->assertSame($expectedDoc, $docComment->render(''));
@@ -163,7 +163,7 @@ class DocCommentTest extends BaseTestCase
      */
     ';
         $docComment = DocComment::parsePreservingLength(
-            new Doc($expectedDoc)
+            new Doc($expectedDoc),
         );
 
         $this->assertSame($expectedDoc, $docComment->render('    '));
@@ -187,7 +187,7 @@ class DocCommentTest extends BaseTestCase
  */
 ';
         $docComment = DocComment::parsePreservingLength(
-            new Doc($expectedDoc)
+            new Doc($expectedDoc),
         );
 
         $this->assertSame($expectedDoc, $docComment->render(''));

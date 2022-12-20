@@ -13,7 +13,6 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
@@ -101,6 +100,8 @@ class UnionTypeComparator
             $some_type_coerced = false;
             $some_type_coerced_from_mixed = false;
 
+            $some_missing_shape_fields = null;
+
             if ($input_type_part instanceof TArrayKey
                 && ($container_type->hasInt() && $container_type->hasString())
             ) {
@@ -118,7 +119,7 @@ class UnionTypeComparator
             if ($input_type_part instanceof TIntRange && $container_type->hasInt()) {
                 if (IntegerRangeComparator::isContainedByUnion(
                     $input_type_part,
-                    $container_type
+                    $container_type,
                 )) {
                     continue;
                 }
@@ -193,7 +194,7 @@ class UnionTypeComparator
                     $container_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 );
 
                 if ($input_type_part instanceof TMixed
@@ -222,14 +223,15 @@ class UnionTypeComparator
                         && $atomic_comparison_result->replacement_atomic_type
                     ) {
                         if (!$union_comparison_result->replacement_union_type) {
-                            $union_comparison_result->replacement_union_type = clone $input_type;
+                            $union_comparison_result->replacement_union_type = $input_type;
                         }
 
-                        $union_comparison_result->replacement_union_type->removeType($input_type->getKey());
-
-                        $union_comparison_result->replacement_union_type->addType(
-                            $atomic_comparison_result->replacement_atomic_type
+                        $replacement = $union_comparison_result->replacement_union_type->getBuilder();
+                        $replacement->removeType($input_type->getKey());
+                        $replacement->addType(
+                            $atomic_comparison_result->replacement_atomic_type,
                         );
+                        $union_comparison_result->replacement_union_type = $replacement->freeze();
                     }
                 }
 
@@ -271,6 +273,10 @@ class UnionTypeComparator
                         $all_type_coerced_from_as_mixed = false;
                     } else {
                         $all_type_coerced_from_as_mixed = true;
+                    }
+
+                    if ($atomic_comparison_result->missing_shape_fields) {
+                        $some_missing_shape_fields = $atomic_comparison_result->missing_shape_fields;
                     }
                 }
 
@@ -331,6 +337,10 @@ class UnionTypeComparator
                     if (!$scalar_type_match_found) {
                         $union_comparison_result->scalar_type_match_found = false;
                     }
+
+                    if ($some_missing_shape_fields && !$some_type_coerced && !$scalar_type_match_found) {
+                        $union_comparison_result->missing_shape_fields = $some_missing_shape_fields;
+                    }
                 }
 
                 return false;
@@ -342,8 +352,6 @@ class UnionTypeComparator
 
     /**
      * Used for comparing signature typehints, uses PHP's light contravariance rules
-     *
-     *
      */
     public static function isContainedByInPhp(
         ?Union $input_type,
@@ -369,10 +377,10 @@ class UnionTypeComparator
             return false;
         }
 
-        $input_type_not_null = clone $input_type;
+        $input_type_not_null = $input_type->getBuilder();
         $input_type_not_null->removeType('null');
 
-        $container_type_not_null = clone $container_type;
+        $container_type_not_null = $container_type->getBuilder();
         $container_type_not_null->removeType('null');
 
         if ($input_type_not_null->getId() === $container_type_not_null->getId()) {
@@ -426,7 +434,7 @@ class UnionTypeComparator
                     $container_type_part,
                     false,
                     false,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 );
 
                 if (($is_atomic_contained_by && !$atomic_comparison_result->to_string_cast)
@@ -442,7 +450,6 @@ class UnionTypeComparator
 
     /**
      * Can any part of the $type1 be equal to any part of $type2
-     *
      */
     public static function canExpressionTypesBeIdentical(
         Codebase $codebase,
@@ -460,28 +467,12 @@ class UnionTypeComparator
 
         foreach (self::getTypeParts($codebase, $type1) as $type1_part) {
             foreach (self::getTypeParts($codebase, $type2) as $type2_part) {
-                //special cases for TIntRange because it can contain a part of the other type.
-                //For exemple int<0,1> and positive-int can be identical but none contain the other
-                if (($type1_part instanceof TIntRange && $type2_part instanceof TPositiveInt)) {
-                    $intersection_range = TIntRange::intersectIntRanges(
-                        TIntRange::convertToIntRange($type2_part),
-                        $type1_part
-                    );
-                    return $intersection_range !== null;
-                }
-
-                if ($type2_part instanceof TIntRange && $type1_part instanceof TPositiveInt) {
-                    $intersection_range = TIntRange::intersectIntRanges(
-                        TIntRange::convertToIntRange($type1_part),
-                        $type2_part
-                    );
-                    return $intersection_range !== null;
-                }
-
+                //special case for TIntRange because it can contain a part of another TIntRange.
+                //For exemple int<0,10> and int<5, 15> can be identical but none contain the other
                 if ($type1_part instanceof TIntRange && $type2_part instanceof TIntRange) {
                     $intersection_range = TIntRange::intersectIntRanges(
                         $type1_part,
-                        $type2_part
+                        $type2_part,
                     );
                     return $intersection_range !== null;
                 }
@@ -490,7 +481,7 @@ class UnionTypeComparator
                     $codebase,
                     $type1_part,
                     $type2_part,
-                    $allow_interface_equality
+                    $allow_interface_equality,
                 );
 
                 if ($either_contains) {
@@ -529,14 +520,8 @@ class UnionTypeComparator
                 $fq_classlike_name,
                 null,
                 true,
-                true
+                true,
             );
-            if ($expanded instanceof Atomic) {
-                if (!$expanded instanceof TTypeAlias && !$expanded instanceof TClassConstant) {
-                    $atomic_types[] = $expanded;
-                }
-                continue;
-            }
 
             array_push($atomic_types, ...$expanded);
         }

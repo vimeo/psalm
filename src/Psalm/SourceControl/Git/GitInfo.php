@@ -27,7 +27,7 @@ use Psalm\SourceControl\SourceControlInfo;
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  */
-class GitInfo extends SourceControlInfo
+final class GitInfo extends SourceControlInfo
 {
     /**
      * Branch name.
@@ -83,7 +83,6 @@ class GitInfo extends SourceControlInfo
 
     /**
      * Return branch name.
-     *
      */
     public function getBranch(): string
     {
@@ -92,7 +91,6 @@ class GitInfo extends SourceControlInfo
 
     /**
      * Return HEAD commit.
-     *
      */
     public function getHead(): CommitInfo
     {

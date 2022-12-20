@@ -4,6 +4,6 @@ namespace Psalm\Exception;
 
 use Exception;
 
-class UnanalyzedFileException extends Exception
+final class UnanalyzedFileException extends Exception
 {
 }

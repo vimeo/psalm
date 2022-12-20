@@ -4,13 +4,11 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an object-like array that is _also_ `callable`.
+ *
+ * @psalm-immutable
  */
-class TCallableKeyedArray extends TKeyedArray
+final class TCallableKeyedArray extends TKeyedArray
 {
-    public const KEY = 'callable-array';
-
-    public function getKey(bool $include_extra = true): string
-    {
-        return 'array';
-    }
+    protected const NAME_ARRAY = 'callable-array';
+    protected const NAME_LIST = 'callable-list';
 }

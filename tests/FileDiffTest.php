@@ -18,9 +18,7 @@ class FileDiffTest extends TestCase
 {
     /**
      * @dataProvider getChanges
-     *
      * @param string[] $same_methods
-     *
      */
     public function testCode(
         string $a,
@@ -37,24 +35,24 @@ class FileDiffTest extends TestCase
 
         $has_errors = false;
 
-        $a_stmts = StatementsProvider::parseStatements($a, '7.4', $has_errors);
-        $b_stmts = StatementsProvider::parseStatements($b, '7.4', $has_errors);
+        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00, $has_errors);
+        $b_stmts = StatementsProvider::parseStatements($b, 7_04_00, $has_errors);
 
         $diff = FileStatementsDiffer::diff($a_stmts, $b_stmts, $a, $b);
 
         $this->assertSame(
             $same_methods,
-            $diff[0]
+            $diff[0],
         );
 
         $this->assertSame(
             $same_signatures,
-            $diff[1]
+            $diff[1],
         );
 
         $this->assertSame(
             $changed_methods,
-            $diff[2]
+            $diff[2],
         );
 
         $this->assertSame(count($diff_map_offsets), count($diff[3]));
@@ -62,13 +60,10 @@ class FileDiffTest extends TestCase
         $found_offsets = array_map(
             /**
              * @param array{0: int, 1: int, 2: int, 3: int} $arr
-             *
              * @return array{0: int, 1: int}
              */
-            function (array $arr): array {
-                return [$arr[2], $arr[3]];
-            },
-            $diff[3]
+            fn(array $arr): array => [$arr[2], $arr[3]],
+            $diff[3],
         );
 
         $this->assertSame($diff_map_offsets, $found_offsets);
@@ -78,12 +73,10 @@ class FileDiffTest extends TestCase
 
     /**
      * @dataProvider getChanges
-     *
      * @param string[] $same_methods
      * @param string[] $same_signatures
      * @param string[] $changed_methods
      * @param array<array-key,array{int,int}> $diff_map_offsets
-     *
      */
     public function testPartialAstDiff(
         string $a,
@@ -101,7 +94,7 @@ class FileDiffTest extends TestCase
 
         $has_errors = false;
 
-        $a_stmts = StatementsProvider::parseStatements($a, '7.4', $has_errors);
+        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00, $has_errors);
 
         $traverser = new PhpParser\NodeTraverser;
         $traverser->addVisitor(new CloningVisitor);
@@ -111,8 +104,8 @@ class FileDiffTest extends TestCase
 
         $this->assertTreesEqual($a_stmts, $a_stmts_copy);
 
-        $b_stmts = StatementsProvider::parseStatements($b, '7.4', $has_errors, null, $a, $a_stmts_copy, $file_changes);
-        $b_clean_stmts = StatementsProvider::parseStatements($b, '7.4', $has_errors);
+        $b_stmts = StatementsProvider::parseStatements($b, 7_04_00, $has_errors, null, $a, $a_stmts_copy, $file_changes);
+        $b_clean_stmts = StatementsProvider::parseStatements($b, 7_04_00, $has_errors);
 
         $this->assertTreesEqual($b_clean_stmts, $b_stmts);
 
@@ -120,17 +113,17 @@ class FileDiffTest extends TestCase
 
         $this->assertSame(
             $same_methods,
-            $diff[0]
+            $diff[0],
         );
 
         $this->assertSame(
             $same_signatures,
-            $diff[1]
+            $diff[1],
         );
 
         $this->assertSame(
             $changed_methods,
-            $diff[2]
+            $diff[2],
         );
 
         $this->assertSame(count($diff_map_offsets), count($diff[3]));
@@ -138,13 +131,10 @@ class FileDiffTest extends TestCase
         $found_offsets = array_map(
             /**
              * @param array{0: int, 1: int, 2: int, 3: int} $arr
-             *
              * @return array{0: int, 1: int}
              */
-            function (array $arr): array {
-                return [$arr[2], $arr[3]];
-            },
-            $diff[3]
+            fn(array $arr): array => [$arr[2], $arr[3]],
+            $diff[3],
         );
 
         $this->assertSame($diff_map_offsets, $found_offsets);
@@ -153,7 +143,6 @@ class FileDiffTest extends TestCase
     /**
      * @param  array<int, PhpParser\Node\Stmt>  $a
      * @param  array<int, PhpParser\Node\Stmt>  $b
-     *
      */
     private function assertTreesEqual(array $a, array $b): void
     {
@@ -184,7 +173,7 @@ class FileDiffTest extends TestCase
 
             $this->assertSame(
                 $a_stmt->getAttribute('startFilePos'),
-                $b_stmt->getAttribute('startFilePos')
+                $b_stmt->getAttribute('startFilePos'),
             );
             $this->assertSame(
                 $a_stmt->getAttribute('endFilePos'),
@@ -192,7 +181,7 @@ class FileDiffTest extends TestCase
                 ($a_stmt instanceof PhpParser\Node\Stmt\Expression
                     ? get_class($a_stmt->expr)
                     : get_class($a_stmt))
-                    . ' on line ' . $a_stmt->getLine()
+                    . ' on line ' . $a_stmt->getLine(),
             );
             $this->assertSame($a_stmt->getLine(), $b_stmt->getLine());
 
@@ -1643,7 +1632,7 @@ class FileDiffTest extends TestCase
                 [],
                 ['c\a::foo', 'c\a::bar', 'c\a::zap', 'c\a::top', 'c\a::rot', 'c\a::bar'],
                 [],
-                [[124, 405], [432, 711], [738, 1016], [1043, 1284]],
+                [[124, 405], [432, 711], [738, 1_016], [1_043, 1_284]],
             ],
             'noUseChange' => [
                 '<?php

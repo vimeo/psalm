@@ -9,9 +9,12 @@ use PhpParser\Node\Expr;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Internal\Provider\NodeDataProvider;
 
+/**
+ * @internal
+ */
 class ConditionCloningVisitor extends NodeVisitorAbstract
 {
-    private $type_provider;
+    private NodeDataProvider $type_provider;
 
     public function __construct(NodeDataProvider $old_type_provider)
     {
@@ -31,7 +34,7 @@ class ConditionCloningVisitor extends NodeVisitorAbstract
         $node_type = $this->type_provider->getType($origNode);
 
         if ($node_type) {
-            $this->type_provider->setType($node, clone $node_type);
+            $this->type_provider->setType($node, $node_type);
         }
 
         return $node;

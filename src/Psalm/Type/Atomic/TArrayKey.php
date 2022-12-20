@@ -4,14 +4,11 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `array-key` type, used for something that could be the offset of an `array`.
+ *
+ * @psalm-immutable
  */
 class TArrayKey extends Scalar
 {
-    public function __toString(): string
-    {
-        return 'array-key';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'array-key';
@@ -24,13 +21,12 @@ class TArrayKey extends Scalar
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }

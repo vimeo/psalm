@@ -19,38 +19,28 @@ class LanguageClient
 {
     /**
      * Handles textDocument/* methods
-     *
-     * @var ClientTextDocument
      */
-    public $textDocument;
+    public ClientTextDocument $textDocument;
 
     /**
      * Handles workspace/* methods
-     *
-     * @var ClientWorkspace
      */
-    public $workspace;
+    public ClientWorkspace $workspace;
 
     /**
      * The client handler
-     *
-     * @var ClientHandler
      */
-    private $handler;
+    private ClientHandler $handler;
 
     /**
      * The Language Server
-     *
-     * @var LanguageServer
      */
-    private $server;
+    private LanguageServer $server;
 
     /**
      * The Client Configuration
-     *
-     * @var ClientConfiguration
      */
-    public $clientConfiguration;
+    public ClientConfiguration $clientConfiguration;
 
     public function __construct(
         ProtocolReader $reader,
@@ -89,7 +79,6 @@ class LanguageClient
      * A notification to log the trace of the server’s execution.
      * The amount and content of these notifications depends on the current trace configuration.
      *
-     * @param LogTrace $logTrace
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function logTrace(LogTrace $logTrace): void
@@ -106,7 +95,7 @@ class LanguageClient
 
         $this->handler->notify(
             '$/logTrace',
-            $logTrace
+            $logTrace,
         );
     }
 
@@ -119,7 +108,7 @@ class LanguageClient
     {
         $this->handler->notify(
             'window/logMessage',
-            $logMessage
+            $logMessage,
         );
     }
 
@@ -133,14 +122,12 @@ class LanguageClient
      * Most clients even don’t handle the event directly
      * but forward them to the extensions owing the corresponding
      * server issuing the event.
-     *
-     * @param LogMessage $logMessage
      */
     public function event(LogMessage $logMessage): void
     {
         $this->handler->notify(
             'telemetry/event',
-            $logMessage
+            $logMessage,
         );
     }
 

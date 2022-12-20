@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\AssignOp\Div;
 use Psalm\Node\VirtualNode;
 
-class VirtualDiv extends Div implements VirtualNode
+final class VirtualDiv extends Div implements VirtualNode
 {
 
 }

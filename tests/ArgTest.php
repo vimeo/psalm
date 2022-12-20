@@ -5,19 +5,18 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 class ArgTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'argumentUnpackingLiteral' => [
-                '<?php
+                'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
                         return $a + $b + $c;
                     }
@@ -25,7 +24,7 @@ class ArgTest extends TestCase
                     echo add(1, ...[2, 3]);',
             ],
             'arrayPushArgumentUnpackingWithGoodArg' => [
-                '<?php
+                'code' => '<?php
                     $a = ["foo"];
                     $b = ["foo", "bar"];
 
@@ -35,15 +34,15 @@ class ArgTest extends TestCase
                 ],
             ],
             'arrayMergeArgumentUnpacking' => [
-                '<?php
+                'code' => '<?php
                     $a = [[1, 2]];
                     $b = array_merge([], ...$a);',
                 'assertions' => [
-                    '$b' => 'array{0: int, 1: int}',
+                    '$b===' => 'list{1, 2}',
                 ],
             ],
             'preserveTypesWhenUnpacking' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array<int,array<int,string>>
                      */
@@ -83,7 +82,7 @@ class ArgTest extends TestCase
                     }',
             ],
             'unpackArg' => [
-                '<?php
+                'code' => '<?php
                     function Foo(string $a, string ...$b) : void {}
 
                     /** @return array<array-key, string> */
@@ -93,7 +92,7 @@ class ArgTest extends TestCase
                     }',
             ],
             'unpackByRefArg' => [
-                '<?php
+                'code' => '<?php
                     function example (int &...$x): void {}
                     $y = 0;
                     example($y);
@@ -105,13 +104,13 @@ class ArgTest extends TestCase
                 ],
             ],
             'callMapClassOptionalArg' => [
-                '<?php
+                'code' => '<?php
                     class Hello {}
                     $m = new ReflectionMethod(Hello::class, "goodbye");
                     $m->invoke(null, "cool");',
             ],
             'sortFunctions' => [
-                '<?php
+                'code' => '<?php
                     $a = ["b" => 5, "a" => 8];
                     ksort($a);
                     $b = ["b" => 5, "a" => 8];
@@ -122,11 +121,11 @@ class ArgTest extends TestCase
                 'assertions' => [
                     '$a' => 'array{a: int, b: int}',
                     '$b' => 'non-empty-list<int>',
-                    '$c' => 'list<empty>',
+                    '$c' => 'list<never>',
                 ],
             ],
             'arrayModificationFunctions' => [
-                '<?php
+                'code' => '<?php
                     $a = ["b" => 5, "a" => 8];
                     array_unshift($a, (bool)rand(0, 1));
                     $b = ["b" => 5, "a" => 8];
@@ -138,13 +137,13 @@ class ArgTest extends TestCase
                 ],
             ],
             'byRefArgAssignment' => [
-                '<?php
+                'code' => '<?php
                     $a = ["hello", "goodbye"];
                     shuffle($a);
                     $a = [0, 1];',
             ],
             'correctOrderValidation' => [
-                '<?php
+                'code' => '<?php
                     function getString(int $i) : string {
                         return rand(0, 1) ? "hello" : "";
                     }
@@ -156,16 +155,16 @@ class ArgTest extends TestCase
                     if (!($i = getString($i))) {}',
             ],
             'allowNullInObjectUnion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string|null|object $b
                      */
                     function foo($b) : void {}
                     foo(null);',
             ],
-            'allowArrayIntScalarForArrayStringWithScalarIgnored' => [
-                '<?php
-                    /** @param array<int|string> $arr */
+            'allowArrayIntScalarForArrayStringWithArgumentTypeCoercionIgnored' => [
+                'code' => '<?php
+                    /** @param array<array-key> $arr */
                     function foo(array $arr) : void {
                     }
 
@@ -174,11 +173,11 @@ class ArgTest extends TestCase
                       return [];
                     }
 
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     foo(bar());',
             ],
-            'allowArrayScalarForArrayStringWithScalarIgnored' => [
-                '<?php declare(strict_types=1);
+            'allowArrayScalarForArrayStringWithArgumentTypeCoercionIgnored' => [
+                'code' => '<?php declare(strict_types=1);
                     /** @param array<string> $arr */
                     function foo(array $arr) : void {}
 
@@ -187,27 +186,27 @@ class ArgTest extends TestCase
                         return [];
                     }
 
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress ArgumentTypeCoercion */
                     foo(bar());',
             ],
             'unpackObjectlikeListArgs' => [
-                '<?php
+                'code' => '<?php
                     $a = [new DateTime(), 1];
                     function f(DateTime $d, int $a): void {}
                     f(...$a);',
             ],
             'unpackWithoutAlteringArray' => [
-                '<?php
+                'code' => '<?php
                     function takeVariadicInts(int ...$inputs): void {}
 
                     $a = [3, 5, 7];
                     takeVariadicInts(...$a);',
-                [
-                    '$a' => 'non-empty-list<int>'
-                ]
+                'assertions' => [
+                    '$a' => 'non-empty-list<int>',
+                ],
             ],
             'iterableSplat' => [
-                '<?php
+                'code' => '<?php
                     /** @param iterable<int, mixed> $args */
                     function foo(iterable $args): int {
                         return intval(...$args);
@@ -219,7 +218,7 @@ class ArgTest extends TestCase
                     }',
             ],
             'unpackListWithOptional' => [
-                '<?php
+                'code' => '<?php
                     function foo(string ...$rest):void {}
 
                     $rest = ["zzz"];
@@ -228,10 +227,10 @@ class ArgTest extends TestCase
                         $rest[] = "xxx";
                     }
 
-                    foo("first", ...$rest);'
+                    foo("first", ...$rest);',
             ],
             'useNamedArguments' => [
-                '<?php
+                'code' => '<?php
                     class CustomerData {
                         public function __construct(
                             public string $name,
@@ -249,57 +248,57 @@ class ArgTest extends TestCase
                             name: $input["name"],
                             email: $input["email"],
                         );
-                    }'
+                    }',
             ],
             'useNamedArgumentsSimple' => [
-                '<?php
+                'code' => '<?php
                     function takesArguments(string $name, int $age) : void {}
 
                     takesArguments(name: "hello", age: 5);
-                    takesArguments(age: 5, name: "hello");'
+                    takesArguments(age: 5, name: "hello");',
             ],
             'useNamedArgumentsSpread' => [
-                '<?php
+                'code' => '<?php
                     function takesArguments(string $name, int $age) : void {}
 
                     $args = ["name" => "hello", "age" => 5];
                     takesArguments(...$args);',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'useNamedVariadicArguments' => [
-                '<?php
+                'code' => '<?php
                     function takesArguments(int ...$args) : void {}
 
                     takesArguments(age: 5);',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'useUnpackedNamedVariadicArguments' => [
-                '<?php
+                'code' => '<?php
                     function takesArguments(int ...$args) : void {}
 
                     takesArguments(...["age" => 5]);',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'variadicArgsOptional' => [
-                '<?php
+                'code' => '<?php
                     bar(...["aaaaa"]);
-                    function bar(string $p1, int $p3 = 10) : void {}'
+                    function bar(string $p1, int $p3 = 10) : void {}',
             ],
             'mkdirNamedParameters' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
                     mkdir("/var/test/123", recursive: true);',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'variadicArgumentWithNoNamedArgumentsIsList' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @no-named-arguments
@@ -312,8 +311,19 @@ class ArgTest extends TestCase
                     }
                 ',
             ],
+            'SealedAcceptSealed' => [
+                'code' => '<?php
+                    /** @param array{test: string} $a */
+                    function a(array $a): string {
+                        return $a["test"];
+                    }
+
+                    $sealed = ["test" => "str"];
+                    a($sealed);
+                ',
+            ],
             'variadicCallbackArgsCountMatch' => [
-                '<?php
+                'code' => '<?php
                 /**
                  * @param callable(string, string):void $callback
                  * @return void
@@ -329,7 +339,7 @@ class ArgTest extends TestCase
                 caller("foo");',
             ],
             'variadicCallableArgsCountMatch' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable(string, ...int):void $callback
                      * @return void
@@ -349,14 +359,11 @@ class ArgTest extends TestCase
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'arrayPushArgumentUnpackingWithBadArg' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = "hello";
 
@@ -366,7 +373,7 @@ class ArgTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'possiblyInvalidArgument' => [
-                '<?php
+                'code' => '<?php
                     $foo = [
                         "a",
                         ["b"],
@@ -381,7 +388,7 @@ class ArgTest extends TestCase
                 'error_message' => 'PossiblyInvalidArgument',
             ],
             'possiblyInvalidArgumentWithOverlap' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
                     class C {}
@@ -395,7 +402,7 @@ class ArgTest extends TestCase
                 'error_message' => 'PossiblyInvalidArgument',
             ],
             'possiblyInvalidArgumentWithMixed' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
                     /**
                      * @psalm-suppress MissingParamType
                      * @psalm-suppress MixedArgument
@@ -410,7 +417,7 @@ class ArgTest extends TestCase
                 'error_message' => 'PossiblyInvalidArgument',
             ],
             'expectsNonNullAndPassedPossiblyNull' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed|null $mixed_or_null
                      */
@@ -420,10 +427,10 @@ class ArgTest extends TestCase
                          */
                         new Exception($mixed_or_null);
                     }',
-                'error_message' => 'PossiblyNullArgument'
+                'error_message' => 'PossiblyNullArgument',
             ],
             'useInvalidNamedArgument' => [
-                '<?php
+                'code' => '<?php
                     class CustomerData {
                         public function __construct(
                             public string $name,
@@ -442,10 +449,10 @@ class ArgTest extends TestCase
                             email: $input["email"],
                         );
                     }',
-                'error_message' => 'InvalidNamedArgument'
+                'error_message' => 'InvalidNamedArgument',
             ],
             'usePositionalArgAfterNamed' => [
-                '<?php
+                'code' => '<?php
                     final class Person
                     {
                         public function __construct(
@@ -455,10 +462,10 @@ class ArgTest extends TestCase
                     }
 
                     new Person(name: "", 0);',
-                'error_message' => 'InvalidNamedArgument'
+                'error_message' => 'InvalidNamedArgument',
             ],
             'useUnpackedInvalidNamedArgument' => [
-                '<?php
+                'code' => '<?php
                     class CustomerData {
                         public function __construct(
                             public string $name,
@@ -474,12 +481,11 @@ class ArgTest extends TestCase
                         return new CustomerData(...$input);
                     }',
                 'error_message' => 'InvalidNamedArgument',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'noNamedArgsMethod' => [
-                '<?php
+                'code' => '<?php
                     class CustomerData
                     {
                         /** @no-named-arguments */
@@ -503,7 +509,7 @@ class ArgTest extends TestCase
                 'error_message' => 'NamedArgumentNotAllowed',
             ],
             'noNamedArgsFunction' => [
-                '<?php
+                'code' => '<?php
                     /** @no-named-arguments */
                     function takesArguments(string $name, int $age) : void {}
 
@@ -511,7 +517,7 @@ class ArgTest extends TestCase
                 'error_message' => 'NamedArgumentNotAllowed',
             ],
             'arrayWithoutAllNamedParameters' => [
-                '<?php
+                'code' => '<?php
                     class User {
                         public function __construct(
                             public int $id,
@@ -527,12 +533,11 @@ class ArgTest extends TestCase
                         return new User(...$data);
                     }',
                 'error_message' => 'MixedArgument',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayWithoutAllNamedParametersSuppressMixed' => [
-                '<?php
+                'code' => '<?php
                     class User {
                         public function __construct(
                             public int $id,
@@ -549,22 +554,20 @@ class ArgTest extends TestCase
                         return new User(...$data);
                     }',
                 'error_message' => 'TooFewArguments',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'wrongTypeVariadicArguments' => [
-                '<?php
+                'code' => '<?php
                     function takesArguments(int ...$args) : void {}
 
                     takesArguments(age: "abc");',
                 'error_message' => 'InvalidScalarArgument',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'byrefVarSetsPossible' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param mixed $a
                      * @psalm-param-out int $a
@@ -581,73 +584,70 @@ class ArgTest extends TestCase
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'overwriteNamedParam' => [
-                '<?php
+                'code' => '<?php
                     function test(int $param, int $param2): void {
                         echo $param + $param2;
                     }
 
                     test(param: 1, param: 2);',
                 'error_message' => 'InvalidNamedArgument',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'overwriteOrderedNamedParam' => [
-                '<?php
+                'code' => '<?php
                     function test(int $param, int $param2): void {
                         echo $param + $param2;
                     }
 
                     test(1, param: 2);',
                 'error_message' => 'InvalidNamedArgument',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'overwriteOrderedWithUnpackedNamedParam' => [
-                '<?php
+                'code' => '<?php
                     function test(int $param, int $param2): void {
                         echo $param + $param2;
                     }
 
                     test(1, ...["param" => 2]);',
                 'error_message' => 'InvalidNamedArgument',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'variadicArgumentIsNotList' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-return list<int> */
                     function foo(int ...$values): array
                     {
                         return $values;
                     }
                 ',
-                'error_message' => 'MixedReturnTypeCoercion',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'preventUnpackingPossiblyIterable' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $arg1, int $arg2): void {}
 
                     /** @var iterable<int, int>|object */
                     $test = [1, 2];
                     foo(...$test);
                 ',
-                'error_message' => 'PossiblyInvalidArgument'
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'SKIPPED-preventUnpackingPossiblyArray' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $arg1, int $arg2): void {}
 
                     /** @var array<int, int>|object */
                     $test = [1, 2];
                     foo(...$test);
                 ',
-                'error_message' => 'PossiblyInvalidArgument'
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'noNamedArguments' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress UnusedParam
                      * @no-named-arguments
@@ -657,12 +657,11 @@ class ArgTest extends TestCase
                     foo(arg2: 0, arg1: 1);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
-                [],
-                false,
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'noNamedArgumentsUnpackIterable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress UnusedParam
                      * @no-named-arguments
@@ -674,12 +673,11 @@ class ArgTest extends TestCase
                     foo(...$test);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
-                [],
-                false,
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'variadicArgumentWithNoNamedArgumentsPreventsPassingArrayWithStringKey' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @no-named-arguments
                      * @psalm-return list<int>
@@ -694,7 +692,7 @@ class ArgTest extends TestCase
                 'error_message' => 'NamedArgumentNotAllowed',
             ],
             'unpackNonArrayKeyIterable' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress UnusedParam */
                     function foo(string ...$args): void {}
 
@@ -705,7 +703,7 @@ class ArgTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'numericStringIsNotNonFalsy' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-falsy-string $arg */
                     function foo(string $arg): string
                     {
@@ -723,7 +721,7 @@ class ArgTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'objectIsNotObjectWithProperties' => [
-                '<?php
+                'code' => '<?php
 
                     function makeObj(): object {
                         return (object)["a" => 42];
@@ -737,7 +735,7 @@ class ArgTest extends TestCase
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'objectRedundantCast' => [
-                '<?php
+                'code' => '<?php
 
                     function makeObj(): object {
                         return (object)["a" => 42];
@@ -750,7 +748,7 @@ class ArgTest extends TestCase
                 'error_message' => 'RedundantCast',
             ],
             'MissingMandatoryParamWithNamedParams' => [
-                '<?php
+                'code' => '<?php
                 class User
                 {
                     public function __construct(
@@ -767,8 +765,33 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'TooFewArguments',
             ],
+            'SealedRefuseUnsealed' => [
+                'code' => '<?php
+                    /** @param array{test: string} $a */
+                    function a(array $a): string {
+                        return $a["test"];
+                    }
+
+                    /** @var array{test: string, ...} */
+                    $unsealed = [];
+                    a($unsealed);
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'SealedRefuseSealedExtra' => [
+                'code' => '<?php
+                    /** @param array{test: string} $a */
+                    function a(array $a): string {
+                        return $a["test"];
+                    }
+
+                    $sealedExtraKeys = ["test" => "str", "somethingElse" => "test"];
+                    a($sealedExtraKeys);
+                ',
+                'error_message' => 'InvalidArgument - src'  . DIRECTORY_SEPARATOR . 'somefile.php:8:23 - Argument 1 of a expects array{test: string}, but array{somethingElse: \'test\', test: \'str\'} with additional array shape fields (somethingElse) was provided',
+            ],
             'callbackArgsCountMismatch' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable(string, string):void $callback
                      * @return void
@@ -785,7 +808,7 @@ class ArgTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
             ],
             'callableArgsCountMismatch' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param callable(string):void $callback
                      * @return void

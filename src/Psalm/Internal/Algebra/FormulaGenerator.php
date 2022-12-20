@@ -12,13 +12,15 @@ use Psalm\Internal\Clause;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
+use Psalm\Storage\Assertion\Truthy;
 
-use function array_merge;
 use function count;
 use function spl_object_id;
-use function strlen;
 use function substr;
 
+/**
+ * @internal
+ */
 class FormulaGenerator
 {
      /**
@@ -45,7 +47,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
             $right_assertions = self::getFormula(
@@ -56,13 +58,10 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
-            return array_merge(
-                $left_assertions,
-                $right_assertions
-            );
+            return [...$left_assertions, ...$right_assertions];
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
@@ -76,7 +75,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
             $right_clauses = self::getFormula(
@@ -87,7 +86,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
             return Algebra::combineOredClauses($left_clauses, $right_clauses, $conditional_object_id);
@@ -98,13 +97,13 @@ class FormulaGenerator
                 $and_expr = new VirtualBooleanAnd(
                     new VirtualBooleanNot(
                         $conditional->expr->left,
-                        $conditional->getAttributes()
+                        $conditional->getAttributes(),
                     ),
                     new VirtualBooleanNot(
                         $conditional->expr->right,
-                        $conditional->getAttributes()
+                        $conditional->getAttributes(),
                     ),
-                    $conditional->expr->getAttributes()
+                    $conditional->expr->getAttributes(),
                 );
 
                 return self::getFormula(
@@ -115,7 +114,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    false
+                    false,
                 );
             }
 
@@ -135,7 +134,7 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         $inside_negation,
-                        $cache
+                        $cache,
                     );
 
                     if ($cache && $source instanceof StatementsAnalyzer) {
@@ -156,18 +155,18 @@ class FormulaGenerator
                         }
 
                         foreach ($anded_types as $orred_types) {
+                            $mapped_orred_types = [];
+                            foreach ($orred_types as $orred_type) {
+                                $mapped_orred_types[(string)$orred_type] = $orred_type;
+                            }
                             $clauses[] = new Clause(
-                                [$var => $orred_types],
+                                [$var => $mapped_orred_types],
                                 $conditional_object_id,
                                 spl_object_id($conditional->expr),
                                 false,
                                 true,
-                                $orred_types[0][0] === '='
-                                    || $orred_types[0][0] === '~'
-                                    || (strlen($orred_types[0]) > 1
-                                        && ($orred_types[0][1] === '='
-                                            || $orred_types[0][1] === '~')),
-                                $redefined ? [$var => true] : []
+                                $orred_types[0]->hasEquality(),
+                                $redefined ? [$var => true] : [],
                             );
                         }
                     }
@@ -180,13 +179,13 @@ class FormulaGenerator
                 $and_expr = new VirtualBooleanOr(
                     new VirtualBooleanNot(
                         $conditional->expr->left,
-                        $conditional->getAttributes()
+                        $conditional->getAttributes(),
                     ),
                     new VirtualBooleanNot(
                         $conditional->expr->right,
-                        $conditional->getAttributes()
+                        $conditional->getAttributes(),
                     ),
-                    $conditional->expr->getAttributes()
+                    $conditional->expr->getAttributes(),
                 );
 
                 return self::getFormula(
@@ -197,7 +196,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    false
+                    false,
                 );
             }
 
@@ -209,8 +208,8 @@ class FormulaGenerator
                     $this_class_name,
                     $source,
                     $codebase,
-                    !$inside_negation
-                )
+                    !$inside_negation,
+                ),
             );
         }
 
@@ -235,8 +234,8 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         !$inside_negation,
-                        $cache
-                    )
+                        $cache,
+                    ),
                 );
             }
 
@@ -255,8 +254,8 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         !$inside_negation,
-                        $cache
-                    )
+                        $cache,
+                    ),
                 );
             }
 
@@ -274,7 +273,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    $cache
+                    $cache,
                 );
             }
 
@@ -292,7 +291,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    $cache
+                    $cache,
                 );
             }
         }
@@ -318,8 +317,8 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         !$inside_negation,
-                        $cache
-                    )
+                        $cache,
+                    ),
                 );
             }
 
@@ -338,8 +337,8 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         !$inside_negation,
-                        $cache
-                    )
+                        $cache,
+                    ),
                 );
             }
 
@@ -357,7 +356,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    $cache
+                    $cache,
                 );
             }
 
@@ -375,7 +374,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    $cache
+                    $cache,
                 );
             }
         }
@@ -389,7 +388,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
         }
 
@@ -406,7 +405,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
             if ($cache && $source instanceof StatementsAnalyzer) {
@@ -427,18 +426,18 @@ class FormulaGenerator
                 }
 
                 foreach ($anded_types as $orred_types) {
+                    $mapped_orred_types = [];
+                    foreach ($orred_types as $orred_type) {
+                        $mapped_orred_types[(string)$orred_type] = $orred_type;
+                    }
                     $clauses[] = new Clause(
-                        [$var => $orred_types],
+                        [$var => $mapped_orred_types],
                         $conditional_object_id,
                         $creating_object_id,
                         false,
                         true,
-                        $orred_types[0][0] === '='
-                            || $orred_types[0][0] === '~'
-                            || (strlen($orred_types[0]) > 1
-                                && ($orred_types[0][1] === '='
-                                    || $orred_types[0][1] === '~')),
-                        $redefined ? [$var => true] : []
+                        $orred_types[0]->hasEquality(),
+                        $redefined ? [$var => true] : [],
                     );
                 }
             }
@@ -452,6 +451,12 @@ class FormulaGenerator
         $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
             . ':' . $conditional->getAttribute('endFilePos');
 
-        return [new Clause([$conditional_ref => ['!falsy']], $conditional_object_id, $creating_object_id)];
+        return [
+            new Clause(
+                [$conditional_ref => ['truthy' => new Truthy()]],
+                $conditional_object_id,
+                $creating_object_id,
+            ),
+        ];
     }
 }

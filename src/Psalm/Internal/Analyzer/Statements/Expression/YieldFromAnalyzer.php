@@ -14,6 +14,9 @@ use Psalm\Type\Atomic\TKeyedArray;
 
 use function strtolower;
 
+/**
+ * @internal
+ */
 class YieldFromAnalyzer
 {
     public static function analyze(
@@ -44,7 +47,7 @@ class YieldFromAnalyzer
                 $context,
                 $key_type,
                 $value_type,
-                $always_non_empty_array
+                $always_non_empty_array,
             ) === false
             ) {
                 $context->inside_call = $was_inside_call;
@@ -60,9 +63,9 @@ class YieldFromAnalyzer
                         && strtolower($atomic_type->value) === 'generator'
                         && isset($atomic_type->type_params[3])
                     ) {
-                        $yield_from_type = clone $atomic_type->type_params[3];
+                        $yield_from_type = $atomic_type->type_params[3];
                     } elseif ($atomic_type instanceof TArray) {
-                        $yield_from_type = clone $atomic_type->type_params[1];
+                        $yield_from_type = $atomic_type->type_params[1];
                     } elseif ($atomic_type instanceof TKeyedArray) {
                         $yield_from_type = $atomic_type->getGenericValueType();
                     }

@@ -16,6 +16,8 @@ use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
+use Psalm\Report\ByIssueLevelAndTypeReport;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CodeClimateReport;
 use Psalm\Report\CompactReport;
@@ -77,7 +79,7 @@ use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const PSALM_VERSION;
 use const STDERR;
 
-class IssueBuffer
+final class IssueBuffer
 {
     /**
      * @var array<string, list<IssueData>>
@@ -121,10 +123,11 @@ class IssueBuffer
     protected static $used_suppressions = [];
 
     /** @var array<array-key,mixed> */
-    private static $server = [];
+    private static array $server = [];
 
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
+     *
      * @param string[]  $suppressed_issues
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
@@ -138,15 +141,12 @@ class IssueBuffer
 
     /**
      * This will add an issue to be emitted if it's not suppressed
+     *
      * @param string[]  $suppressed_issues
      */
     public static function maybeAdd(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): void
     {
-        if (self::isSuppressed($e, $suppressed_issues)) {
-            return;
-        }
-
-        self::add($e, $is_fixable);
+        self::accepts($e, $suppressed_issues, $is_fixable);
     }
 
     /**
@@ -174,6 +174,7 @@ class IssueBuffer
      * - The issue is suppressed in config
      * - We're in a recording state
      * - The issue is included in the list of issues to be suppressed in param
+     *
      * @param string[] $suppressed_issues
      */
     public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []): bool
@@ -248,12 +249,16 @@ class IssueBuffer
      *
      * @psalm-internal Psalm\IssueBuffer
      * @psalm-internal Psalm\Type\Reconciler::getValueForKey
-     *
      * @throws  CodeException
      */
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
     {
         $config = Config::getInstance();
+
+        $event = new BeforeAddIssueEvent($e, $is_fixable);
+        if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
+            return false;
+        };
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
@@ -292,7 +297,7 @@ class IssueBuffer
             . $trace_var
             . '-' . $e->getShortLocation()
             . ':' . $e->code_location->getColumn()
-            . ' ' . $e->dupe_key;
+            . ' ' . ($e->dupe_key ?? $e->message);
 
         if ($reporting_level === Config::REPORT_INFO) {
             if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
@@ -319,7 +324,7 @@ class IssueBuffer
                 $issue_type
                     . ' - ' . $e->getShortLocationWithPrevious()
                     . ':' . $e->code_location->getColumn()
-                    . ' - ' . $message
+                    . ' - ' . $message,
             );
         }
 
@@ -492,9 +497,9 @@ class IssueBuffer
                             $file_path,
                             $config->shortenFileName($file_path),
                             $start,
-                            $end
-                        )
-                    )
+                            $end,
+                        ),
+                    ),
                 );
             }
         }
@@ -507,7 +512,6 @@ class IssueBuffer
 
     /**
      * @param array<string, list<IssueData>> $issues_data
-     *
      */
     public static function addIssues(array $issues_data): void
     {
@@ -517,7 +521,7 @@ class IssueBuffer
                     . '-' . $issue->file_name
                     . ':' . $issue->line_from
                     . ':' . $issue->column_from
-                    . ' ' . $issue->dupe_key;
+                    . ' ' . ($issue->dupe_key ?? $issue->message);
 
                 if (!self::alreadyEmitted($emitted_key)) {
                     self::$issues_data[$file_path][] = $issue;
@@ -528,7 +532,6 @@ class IssueBuffer
 
     /**
      * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
-     *
      */
     public static function finish(
         ProjectAnalyzer $project_analyzer,
@@ -544,9 +547,7 @@ class IssueBuffer
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($codebase->config->config_issues as $issue) {
-            if (self::accepts($issue)) {
-                // fall through
-            }
+            self::maybeAdd($issue);
         }
 
         $error_count = 0;
@@ -558,7 +559,7 @@ class IssueBuffer
         if (self::$issues_data) {
             if (in_array(
                 $project_analyzer->stdout_report_options->format,
-                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
+                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
             )) {
                 echo "\n";
             }
@@ -568,21 +569,10 @@ class IssueBuffer
             foreach (self::$issues_data as $file_path => $file_issues) {
                 usort(
                     $file_issues,
-                    function (IssueData $d1, IssueData $d2): int {
-                        if ($d1->file_path === $d2->file_path) {
-                            if ($d1->line_from === $d2->line_from) {
-                                if ($d1->column_from === $d2->column_from) {
-                                    return 0;
-                                }
-
-                                return $d1->column_from > $d2->column_from ? 1 : -1;
-                            }
-
-                            return $d1->line_from > $d2->line_from ? 1 : -1;
-                        }
-
-                        return $d1->file_path > $d2->file_path ? 1 : -1;
-                    }
+                    static fn(IssueData $d1, IssueData $d2): int =>
+                        [$d1->file_path, $d1->line_from, $d1->column_from]
+                            <=>
+                        [$d2->file_path, $d2->line_from, $d2->column_from]
                 );
                 self::$issues_data[$file_path] = $file_issues;
             }
@@ -603,7 +593,7 @@ class IssueBuffer
                                 $position = array_search(
                                     trim($issue_data->selected_text),
                                     $issue_baseline[$file][$type]['s'],
-                                    true
+                                    true,
                                 );
 
                                 if ($position !== false) {
@@ -627,7 +617,7 @@ class IssueBuffer
         echo self::getOutput(
             $issues_data,
             $project_analyzer->stdout_report_options,
-            $codebase->analyzer->getTotalTypeCoverage($codebase)
+            $codebase->analyzer->getTotalTypeCoverage($codebase),
         );
 
         foreach ($issues_data as $file_issues) {
@@ -641,9 +631,7 @@ class IssueBuffer
         }
 
 
-        if ($codebase->config->eventDispatcher->after_analysis
-            || $codebase->config->eventDispatcher->legacy_after_analysis
-        ) {
+        if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;
             $build_info = (new BuildInfoCollector(self::$server))->collect();
 
@@ -658,7 +646,7 @@ class IssueBuffer
                 $codebase,
                 $issues_data,
                 $build_info,
-                $source_control_info
+                $source_control_info,
             );
 
             $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);
@@ -678,14 +666,14 @@ class IssueBuffer
                 self::getOutput(
                     $issues_data,
                     $report_options,
-                    $codebase->analyzer->getTotalTypeCoverage($codebase)
-                )
+                    $codebase->analyzer->getTotalTypeCoverage($codebase),
+                ),
             );
         }
 
         if (in_array(
             $project_analyzer->stdout_report_options->format,
-            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
+            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
         )) {
             echo str_repeat('-', 30) . "\n";
 
@@ -734,7 +722,7 @@ class IssueBuffer
 
             if ($start_time) {
                 echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-                echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
+                echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
 
                 $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
                 echo $analysis_summary . "\n";
@@ -761,7 +749,7 @@ class IssueBuffer
                             break;
                         }
 
-                        echo $function_id . ': ' . round(1000 * $time, 2) . 'ms per node' . "\n";
+                        echo $function_id . ': ' . round(1_000 * $time, 2) . 'ms per node' . "\n";
                     }
 
                     echo "\n";
@@ -830,7 +818,6 @@ class IssueBuffer
     /**
      * @param array<string, array<int, IssueData>> $issues_data
      * @param array{int, int} $mixed_counts
-     *
      */
     public static function getOutput(
         array $issues_data,
@@ -842,7 +829,9 @@ class IssueBuffer
 
         $normalized_data = $issues_data === [] ? [] : array_merge(...array_values($issues_data));
 
-        switch ($report_options->format) {
+        $format = $report_options->format;
+
+        switch ($format) {
             case Report::TYPE_COMPACT:
                 $output = new CompactReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
@@ -859,13 +848,17 @@ class IssueBuffer
                 $output = new JsonReport($normalized_data, self::$fixable_issue_counts, $report_options);
                 break;
 
+            case Report::TYPE_BY_ISSUE_LEVEL:
+                $output = new ByIssueLevelAndTypeReport($normalized_data, self::$fixable_issue_counts, $report_options);
+                break;
+
             case Report::TYPE_JSON_SUMMARY:
                 $output = new JsonSummaryReport(
                     $normalized_data,
                     self::$fixable_issue_counts,
                     $report_options,
                     $mixed_expression_count,
-                    $total_expression_count
+                    $total_expression_count,
                 );
                 break;
 
@@ -976,6 +969,7 @@ class IssueBuffer
 
     /**
      * Decrease the recording level after leaving a loop
+     *
      * @see startRecording
      */
     public static function stopRecording(): void
@@ -989,6 +983,7 @@ class IssueBuffer
 
     /**
      * This will return the recorded issues for the current recording level
+     *
      * @return array<int, CodeIssue>
      */
     public static function clearRecordingLevel(): array

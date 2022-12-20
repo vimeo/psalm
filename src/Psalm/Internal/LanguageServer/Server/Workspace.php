@@ -9,9 +9,9 @@ use Amp\Success;
 use InvalidArgumentException;
 use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
-use Psalm\Internal\LanguageServer\Codebase;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\Provider\FileReferenceProvider;
 
@@ -22,23 +22,16 @@ use function realpath;
 
 /**
  * Provides method handlers for all workspace/* methods
+ *
+ * @internal
  */
 class Workspace
 {
-    /**
-     * @var LanguageServer
-     */
-    protected $server;
+    protected LanguageServer $server;
 
-    /**
-     * @var Codebase
-     */
-    protected $codebase;
+    protected Codebase $codebase;
 
-    /**
-     * @var ProjectAnalyzer
-     */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function __construct(
         LanguageServer $server,
@@ -64,7 +57,7 @@ class Workspace
     public function didChangeWatchedFiles(array $changes): void
     {
         $this->server->logDebug(
-            'workspace/didChangeWatchedFiles'
+            'workspace/didChangeWatchedFiles',
         );
 
         $realFiles = array_filter(
@@ -74,7 +67,7 @@ class Workspace
                 } catch (InvalidArgumentException $e) {
                     return null;
                 }
-            }, $changes)
+            }, $changes),
         );
 
         $composerLockFile = realpath(Composer::getLockFilePath($this->codebase->config->base_dir));
@@ -121,7 +114,7 @@ class Workspace
     public function didChangeConfiguration($settings): void
     {
         $this->server->logDebug(
-            'workspace/didChangeConfiguration'
+            'workspace/didChangeConfiguration',
         );
         $this->server->client->refreshConfiguration();
     }
@@ -130,18 +123,17 @@ class Workspace
      * The workspace/executeCommand request is sent from the client to the server to
      * trigger command execution on the server.
      *
-     * @param string $command
      * @param mixed $arguments
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function executeCommand($command, $arguments): Promise
+    public function executeCommand(string $command, $arguments): Promise
     {
         $this->server->logDebug(
             'workspace/executeCommand',
             [
                 'command' => $command,
                 'arguments' => $arguments,
-            ]
+            ],
         );
 
         switch ($command) {
@@ -152,11 +144,11 @@ class Workspace
                 $this->codebase->reloadFiles(
                     $this->project_analyzer,
                     [$file],
-                    true
+                    true,
                 );
 
                 $this->codebase->analyzer->addFilesToAnalyze(
-                    [$file => $file]
+                    [$file => $file],
                 );
                 $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 

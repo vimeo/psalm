@@ -15,8 +15,7 @@ use function strpos;
 
 class MethodMoveTest extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {
@@ -27,7 +26,6 @@ class MethodMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $methods_to_move
      */
     public function testValidCode(
@@ -46,8 +44,8 @@ class MethodMoveTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $context = new Context();
@@ -56,7 +54,7 @@ class MethodMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code
+            $input_code,
         );
 
         $codebase = $this->project_analyzer->getCodebase();
@@ -75,13 +73,13 @@ class MethodMoveTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,array<string, string>}>
+     * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'moveSimpleStaticMethodWithForeachIterator' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -103,7 +101,7 @@ class MethodMoveTest extends TestCase
                             foreach (A::Foo() as $f) {}
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -127,12 +125,12 @@ class MethodMoveTest extends TestCase
                             return new ArrayObject([1, 2, 3]);
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns\A::Foo' => 'Ns\B::Fe',
                 ],
             ],
             'moveSimpleStaticMethodWithConstant' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -146,7 +144,7 @@ class MethodMoveTest extends TestCase
                     class B {
 
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -162,12 +160,12 @@ class MethodMoveTest extends TestCase
                             echo A::C;
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns\A::Foo' => 'Ns\B::Fe',
                 ],
             ],
             'moveSimpleStaticMethodWithProperty' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -185,7 +183,7 @@ class MethodMoveTest extends TestCase
                     class B {
 
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -205,12 +203,12 @@ class MethodMoveTest extends TestCase
                             A::$baz = 14;
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns\A::Foo' => 'Ns\B::Fe',
                 ],
             ],
             'moveStaticMethodIntoNamespaceWithExistingUse' => [
-                '<?php
+                'input' => '<?php
                     namespace {
                         class A {
                             public static function Foo() : void {}
@@ -232,7 +230,7 @@ class MethodMoveTest extends TestCase
 
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace {
                         class A {
 
@@ -256,12 +254,12 @@ class MethodMoveTest extends TestCase
                             public static function Fedcba() : void {}
                         }
                     }',
-                [
+                'migrations' => [
                     'A::Foo' => 'Ns\A\B::Fedcba',
                 ],
             ],
             'moveEmptyStaticMethodOnly' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -273,7 +271,7 @@ class MethodMoveTest extends TestCase
 
                     class B {
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -287,12 +285,12 @@ class MethodMoveTest extends TestCase
                          */
                         public static function Fedcba() : void {}
                     }',
-                [
+                'migrations' => [
                     'Ns\A::Foo' => 'Ns\B::Fedcba',
                 ],
             ],
             'moveStaticMethodOnly' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -329,7 +327,7 @@ class MethodMoveTest extends TestCase
                     class B {
                         const D = 5;
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -365,12 +363,12 @@ class MethodMoveTest extends TestCase
                             return $a;
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns\A::Foo' => 'Ns\B::Fedbca',
                 ],
             ],
             'moveTwoStaticMethods' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -407,7 +405,7 @@ class MethodMoveTest extends TestCase
                     class B {
                         const D = 5;
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -445,13 +443,13 @@ class MethodMoveTest extends TestCase
 
                         public static function Blacksheep() : void {}
                     }',
-                [
+                'migrations' => [
                     'Ns\A::Foo' => 'Ns\B::Fedbca',
                     'Ns\A::Bar' => 'Ns\B::Blacksheep',
                 ],
             ],
             'moveInstanceMethodIntoSubclassOnly' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -488,7 +486,7 @@ class MethodMoveTest extends TestCase
                     class AChild extends A {
                         const D = 5;
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -524,12 +522,12 @@ class MethodMoveTest extends TestCase
                             return $a;
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns\A::Foo' => 'Ns\AChild::Fedbca',
                 ],
             ],
             'moveStaticMethodAndReferencesFromAbove' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -548,7 +546,7 @@ class MethodMoveTest extends TestCase
                             A::Foo();
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class A {
@@ -569,12 +567,12 @@ class MethodMoveTest extends TestCase
                             echo A::C;
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns\A::Foo' => 'Ns\B::Fe',
                 ],
             ],
             'moveStaticMethodAndReferencesFromBelow' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class B {
@@ -593,7 +591,7 @@ class MethodMoveTest extends TestCase
                             echo self::C;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class B {
@@ -614,12 +612,12 @@ class MethodMoveTest extends TestCase
 
 
                     }',
-                [
+                'migrations' => [
                     'Ns\A::Foo' => 'Ns\B::Fe',
                 ],
             ],
             'moveStaticMethodAndReferencesAcrossNamespaces' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns1 {
                         class A {
                             const C = 5;
@@ -640,7 +638,7 @@ class MethodMoveTest extends TestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns1 {
                         class A {
                             const C = 5;
@@ -663,12 +661,12 @@ class MethodMoveTest extends TestCase
                             }
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns1\A::Foo' => 'Ns2\Ns3\B::Fe',
                 ],
             ],
             'moveStaticMethodAndReferencesAcrossNamespacesWithExistingUse' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns1 {
                         class A {
                             const C = 5;
@@ -691,7 +689,7 @@ class MethodMoveTest extends TestCase
                             }
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns1 {
                         class A {
                             const C = 5;
@@ -716,12 +714,12 @@ class MethodMoveTest extends TestCase
                             }
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns1\A::Foo' => 'Ns2\Ns3\B::Fedcba',
                 ],
             ],
             'renameInstanceMethod' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -749,7 +747,7 @@ class MethodMoveTest extends TestCase
                             foreach ($a->Foo() as $f) {}
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -777,7 +775,7 @@ class MethodMoveTest extends TestCase
                             foreach ($a->Fedcba() as $f) {}
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns\A::foo' => 'Ns\A::Fedcba',
                 ],
             ],

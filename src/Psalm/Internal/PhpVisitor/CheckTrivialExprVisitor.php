@@ -12,7 +12,7 @@ class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
     /**
      * @var array<int, PhpParser\Node\Expr>
      */
-    protected $non_trivial_expr = [];
+    protected array $non_trivial_expr = [];
 
     private function checkNonTrivialExpr(PhpParser\Node\Expr $node): bool
     {

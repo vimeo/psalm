@@ -13,7 +13,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
-use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
@@ -24,12 +23,11 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
@@ -60,6 +58,8 @@ class VariableFetchAnalyzer
 
     /**
      * @param bool $from_global - when used in a global keyword
+     * @param bool $assigned_to_reference This is set to true when the expression being analyzed
+     *                                    here is being assigned to another variable by reference.
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -68,33 +68,30 @@ class VariableFetchAnalyzer
         bool $passed_by_reference = false,
         ?Union $by_ref_type = null,
         bool $array_assignment = false,
-        bool $from_global = false
+        bool $from_global = false,
+        bool $assigned_to_reference = false
     ): bool {
         $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt->name === 'this') {
             if ($statements_analyzer->isStatic()) {
-                if (IssueBuffer::accepts(
+                return !IssueBuffer::accepts(
                     new InvalidScope(
                         'Invalid reference to $this in a static context',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-
-                return true;
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
 
             if (!isset($context->vars_in_scope['$this'])) {
                 if (IssueBuffer::accepts(
                     new InvalidScope(
                         'Invalid reference to $this in a non-class context',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 )) {
                     return false;
                 }
@@ -105,7 +102,7 @@ class VariableFetchAnalyzer
                 return true;
             }
 
-            $statements_analyzer->node_data->setType($stmt, clone $context->vars_in_scope['$this']);
+            $statements_analyzer->node_data->setType($stmt, $context->vars_in_scope['$this']);
 
             if ($codebase->store_node_types
                     && !$context->collect_initializations
@@ -115,7 +112,7 @@ class VariableFetchAnalyzer
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt,
-                    $stmt_type->getId()
+                    $stmt_type->getId(),
                 );
             }
 
@@ -124,9 +121,9 @@ class VariableFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new ImpureVariable(
                             'Cannot reference $this in a pure context',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
@@ -147,11 +144,12 @@ class VariableFetchAnalyzer
                     $context->vars_possibly_in_scope[$var_name] = true;
                     $statements_analyzer->node_data->setType($stmt, Type::getMixed());
                 } else {
-                    $stmt_type = clone $context->vars_in_scope[$var_name];
-
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                    $stmt_type = $context->vars_in_scope[$var_name];
 
                     self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+
+                    $context->vars_in_scope[$var_name] = $stmt_type;
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -164,10 +162,11 @@ class VariableFetchAnalyzer
             $var_name = '$' . $stmt->name;
 
             if (isset($context->vars_in_scope[$var_name])) {
-                $type = clone $context->vars_in_scope[$var_name];
+                $type = $context->vars_in_scope[$var_name];
 
                 self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
 
+                $context->vars_in_scope[$var_name] = $type;
                 $statements_analyzer->node_data->setType($stmt, $type);
 
                 return true;
@@ -178,13 +177,13 @@ class VariableFetchAnalyzer
             self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
 
             $statements_analyzer->node_data->setType($stmt, $type);
-            $context->vars_in_scope[$var_name] = clone $type;
+            $context->vars_in_scope[$var_name] = $type;
             $context->vars_possibly_in_scope[$var_name] = true;
 
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
                 $stmt,
-                $var_name
+                $var_name,
             );
 
             return true;
@@ -195,9 +194,9 @@ class VariableFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImpureVariable(
                         'Cannot reference an unknown variable in a pure context',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
@@ -219,7 +218,7 @@ class VariableFetchAnalyzer
                 $stmt,
                 $by_ref_type,
                 $by_ref_type,
-                $context
+                $context,
             );
 
             return true;
@@ -231,11 +230,16 @@ class VariableFetchAnalyzer
             if (!isset($context->vars_possibly_in_scope[$var_name])
                 || !$statements_analyzer->getFirstAppearance($var_name)
             ) {
-                if ($array_assignment) {
-                    // if we're in an array assignment, let's assign the variable
-                    // because PHP allows it
-
-                    $context->vars_in_scope[$var_name] = Type::getArray();
+                if ($array_assignment || $assigned_to_reference) {
+                    if ($array_assignment) {
+                        // if we're in an array assignment, let's assign the variable because PHP allows it
+                        $stmt_type = Type::getArray();
+                    } else {
+                        // If a variable is assigned by reference to a variable that
+                        // does not exist, they are automatically initialized as `null`
+                        $stmt_type = Type::getNull();
+                    }
+                    $context->vars_in_scope[$var_name] = $stmt_type;
                     $context->vars_possibly_in_scope[$var_name] = true;
 
                     // it might have been defined first in another if/else branch
@@ -243,8 +247,18 @@ class VariableFetchAnalyzer
                         $statements_analyzer->registerVariable(
                             $var_name,
                             new CodeLocation($statements_analyzer, $stmt),
-                            $context->branch_point
+                            $context->branch_point,
                         );
+                    }
+                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+                    if ($assigned_to_reference) {
+                        // Since this variable was created by being assigned to as a reference (ie for
+                        // `$a = &$b` this variable is $b), we need to analyze it as an assignment to null.
+                        AssignmentAnalyzer::analyze($statements_analyzer, $stmt, null, $stmt_type, $context, null);
+
+                        // Stop here, we don't want it to be considered possibly undefined like the array case.
+                        return true;
                     }
                 } elseif (!$context->inside_isset
                     || $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
@@ -254,9 +268,9 @@ class VariableFetchAnalyzer
                             new UndefinedGlobalVariable(
                                 'Cannot find referenced variable ' . $var_name . ' in global scope',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $var_name
+                                $var_name,
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
 
                         $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -267,9 +281,9 @@ class VariableFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $var_name,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
 
                     $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -301,10 +315,10 @@ class VariableFetchAnalyzer
                             'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $var_name
+                            $var_name,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
-                        (bool) $statements_analyzer->getBranchPoint($var_name)
+                        (bool) $statements_analyzer->getBranchPoint($var_name),
                     );
                 } else {
                     if ($codebase->alter_code) {
@@ -325,10 +339,10 @@ class VariableFetchAnalyzer
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $var_name . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
-                        (bool) $statements_analyzer->getBranchPoint($var_name)
+                        (bool) $statements_analyzer->getBranchPoint($var_name),
                     );
                 }
 
@@ -339,26 +353,27 @@ class VariableFetchAnalyzer
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
                         $stmt,
-                        $first_appearance->raw_file_start . '-' . $first_appearance->raw_file_end . ':mixed'
+                        $first_appearance->raw_file_start . '-' . $first_appearance->raw_file_end . ':mixed',
                     );
                 }
 
                 $stmt_type = Type::getMixed();
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-
                 self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+
+                $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_name, $stmt);
 
                 return true;
             }
         } else {
-            $stmt_type = clone $context->vars_in_scope[$var_name];
-
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            $stmt_type = $context->vars_in_scope[$var_name];
 
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
+
+            $context->vars_in_scope[$var_name] = $stmt_type;
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
                 if ($context->is_global) {
@@ -366,17 +381,17 @@ class VariableFetchAnalyzer
                         new PossiblyUndefinedGlobalVariable(
                             'Possibly undefined global variable ' . $var_name . ' defined in try block',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $var_name
+                            $var_name,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $var_name . ' defined in try block',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -388,7 +403,7 @@ class VariableFetchAnalyzer
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt,
-                    $stmt_type->getId()
+                    $stmt_type->getId(),
                 );
             }
 
@@ -404,7 +419,7 @@ class VariableFetchAnalyzer
                         $stmt,
                         $first_appearance->raw_file_start
                             . '-' . $first_appearance->raw_file_end
-                            . ':' . $stmt_type->getId()
+                            . ':' . $stmt_type->getId(),
                     );
                 }
             }
@@ -417,7 +432,7 @@ class VariableFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Variable $stmt,
         string $var_name,
-        Union $stmt_type,
+        Union &$stmt_type,
         Context $context
     ): void {
         $codebase = $statements_analyzer->getCodebase();
@@ -434,12 +449,12 @@ class VariableFetchAnalyzer
             if (!$stmt_type->parent_nodes) {
                 $assignment_node = DataFlowNode::getForAssignment(
                     $var_name,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 );
 
-                $stmt_type->parent_nodes = [
-                    $assignment_node->id => $assignment_node
-                ];
+                $stmt_type = $stmt_type->setParentNodes([
+                    $assignment_node->id => $assignment_node,
+                ]);
             }
 
             foreach ($stmt_type->parent_nodes as $parent_node) {
@@ -449,9 +464,9 @@ class VariableFetchAnalyzer
                         new DataFlowNode(
                             'variable-use',
                             'variable use',
-                            null
+                            null,
                         ),
-                        'use-inside-call'
+                        'use-inside-call',
                     );
                 } elseif ($context->inside_conditional) {
                     $statements_analyzer->data_flow_graph->addPath(
@@ -459,9 +474,9 @@ class VariableFetchAnalyzer
                         new DataFlowNode(
                             'variable-use',
                             'variable use',
-                            null
+                            null,
                         ),
-                        'use-inside-conditional'
+                        'use-inside-conditional',
                     );
                 } elseif ($context->inside_isset) {
                     $statements_analyzer->data_flow_graph->addPath(
@@ -469,9 +484,9 @@ class VariableFetchAnalyzer
                         new DataFlowNode(
                             'variable-use',
                             'variable use',
-                            null
+                            null,
                         ),
-                        'use-inside-isset'
+                        'use-inside-isset',
                     );
                 } else {
                     $statements_analyzer->data_flow_graph->addPath(
@@ -479,9 +494,9 @@ class VariableFetchAnalyzer
                         new DataFlowNode(
                             'variable-use',
                             'variable use',
-                            null
+                            null,
                         ),
-                        'variable-use'
+                        'variable-use',
                     );
                 }
             }
@@ -491,7 +506,7 @@ class VariableFetchAnalyzer
     private static function taintVariable(
         StatementsAnalyzer $statements_analyzer,
         string $var_name,
-        Union $type,
+        Union &$type,
         PhpParser\Node\Expr\Variable $stmt
     ): void {
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
@@ -509,14 +524,14 @@ class VariableFetchAnalyzer
                     $var_name,
                     null,
                     null,
-                    TaintKindGroup::ALL_INPUT
+                    TaintKindGroup::ALL_INPUT,
                 );
 
                 $statements_analyzer->data_flow_graph->addSource($server_taint_source);
 
-                $type->parent_nodes = [
-                    $server_taint_source->id => $server_taint_source
-                ];
+                $type = $type->setParentNodes([
+                    $server_taint_source->id => $server_taint_source,
+                ]);
             }
         }
     }
@@ -529,9 +544,12 @@ class VariableFetchAnalyzer
         return in_array(
             $var_id,
             self::SUPER_GLOBALS,
-            true
+            true,
         );
     }
+
+    /** @var array<value-of<self::SUPER_GLOBALS>|'$_FILES full path'|'$argv'|'$argc', Union> */
+    private static array $globalCache = [];
 
     public static function getGlobalType(string $var_id, int $codebase_analysis_php_version_id): Union
     {
@@ -541,48 +559,68 @@ class VariableFetchAnalyzer
             return Type::parseString($config->globals[$var_id]);
         }
 
+        if (!self::$globalCache) {
+            foreach (self::SUPER_GLOBALS as $v) {
+                self::$globalCache[$v] = self::getGlobalTypeInner($v);
+            }
+            self::$globalCache['$_FILES full path'] = self::getGlobalTypeInner(
+                '$_FILES',
+                true,
+            );
+            self::$globalCache['$argv'] = self::getGlobalTypeInner('$argv');
+            self::$globalCache['$argc'] = self::getGlobalTypeInner('$argc');
+        }
+
+        if ($codebase_analysis_php_version_id >= 8_01_00 && $var_id === '$_FILES') {
+            $var_id = '$_FILES full path';
+        }
+
+        if (isset(self::$globalCache[$var_id])) {
+            return self::$globalCache[$var_id];
+        }
+
+        return Type::getMixed();
+    }
+
+    /**
+     * @param value-of<self::SUPER_GLOBALS>|'$argv'|'$argc' $var_id
+     */
+    private static function getGlobalTypeInner(string $var_id, bool $files_full_path = false): Union
+    {
         if ($var_id === '$argv') {
             // only in CLI, null otherwise
-            $argv_nullable = new Union([
-                new TNonEmptyList(Type::getString()),
-                new TNull()
+            return new Union([
+                Type::getNonEmptyListAtomic(Type::getString()),
+                new TNull(),
+            ], [
+                'ignore_nullable_issues' => true,
             ]);
             // use TNull explicitly instead of this
             // as it will cause weird errors due to ignore_nullable_issues true
             // e.g. InvalidPropertyAssignmentValue
             // $this->argv 'list<string>' cannot be assigned type 'non-empty-list<string>'
-            // $argv_nullable->possibly_undefined = true;
-            $argv_nullable->ignore_nullable_issues = true;
-            return $argv_nullable;
         }
 
         if ($var_id === '$argc') {
             // only in CLI, null otherwise
-            $argc_nullable = new Union([
+            return new Union([
                 new TIntRange(1, null),
-                new TNull()
+                new TNull(),
+            ], [
+                'ignore_nullable_issues' => true,
             ]);
-            // $argc_nullable->possibly_undefined = true;
-            $argc_nullable->ignore_nullable_issues = true;
-            return $argc_nullable;
-        }
-
-        if (!self::isSuperGlobal($var_id)) {
-            return Type::getMixed();
         }
 
         if ($var_id === '$http_response_header') {
-            return new Union([
-                new TList(Type::getNonEmptyString())
-            ]);
+            return Type::getList(Type::getNonEmptyString());
         }
 
         if ($var_id === '$GLOBALS') {
             return new Union([
                 new TNonEmptyArray([
                     Type::getNonEmptyString(),
-                    Type::getMixed()
-                ])
+                    Type::getMixed(),
+                ]),
             ]);
         }
 
@@ -591,7 +629,7 @@ class VariableFetchAnalyzer
                 [
                     Type::getNonEmptyString(),
                     Type::getString(),
-                ]
+                ],
             );
 
             return new Union([$type]);
@@ -606,51 +644,45 @@ class VariableFetchAnalyzer
                         new TString(),
                         new TArray([
                             $array_key,
-                            Type::getMixed()
-                        ])
-                    ])
-                ]
+                            Type::getMixed(),
+                        ]),
+                    ]),
+                ],
             );
 
             $type = new TArray(
                 [
                     $array_key,
                     new Union([new TString(), $array]),
-                ]
+                ],
             );
 
             return new Union([$type]);
         }
 
         if ($var_id === '$_SERVER' || $var_id === '$_ENV') {
-            $string_helper = Type::getString();
-            $string_helper->possibly_undefined = true;
-
-            $non_empty_string_helper = Type::getNonEmptyString();
-            $non_empty_string_helper->possibly_undefined = true;
+            $string_helper = new Union([new TString()], ['possibly_undefined' => true]);
+            $non_empty_string_helper = new Union([new TNonEmptyString()], ['possibly_undefined' => true]);
 
             $argv_helper = new Union([
-                new TNonEmptyList(Type::getString())
-            ]);
-            $argv_helper->possibly_undefined = true;
+                Type::getNonEmptyListAtomic(Type::getString()),
+            ], ['possibly_undefined' => true]);
 
             $argc_helper = new Union([
-                new TIntRange(1, null)
-            ]);
-            $argc_helper->possibly_undefined = true;
+                new TIntRange(1, null),
+            ], ['possibly_undefined' => true]);
 
             $request_time_helper = new Union([
-                new TIntRange(time(), null)
-            ]);
-            $request_time_helper->possibly_undefined = true;
+                new TIntRange(time(), null),
+            ], ['possibly_undefined' => true]);
 
-            $request_time_float_helper = Type::getFloat();
-            $request_time_float_helper->possibly_undefined = true;
+            $request_time_float_helper = new Union([
+                new TFloat(),
+            ], ['possibly_undefined' => true]);
 
-            $bool_string_helper = new Union([new TBool(), new TString()]);
-            $bool_string_helper->possibly_undefined = true;
+            $bool_string_helper = new Union([new TBool(), new TString()], ['possibly_undefined' => true]);
 
-            $detailed_type_members = [
+            $arr = [
                 // https://www.php.net/manual/en/reserved.variables.server.php
                 'PHP_SELF'             => $non_empty_string_helper,
                 'GATEWAY_INTERFACE'    => $non_empty_string_helper,
@@ -728,75 +760,47 @@ class VariableFetchAnalyzer
             ];
 
             if ($var_id === '$_SERVER') {
-                // those elements are not usually present in $_ENV
-                $detailed_type_members['argc'] = $argc_helper;
-                $detailed_type_members['argv'] = $argv_helper;
+                $arr['argv'] = $argv_helper;
+                $arr['argc'] = $argc_helper;
             }
 
-            $detailed_type = new TKeyedArray($detailed_type_members);
-
-            // generic case for all other elements
-            $detailed_type->previous_key_type = Type::getNonEmptyString();
-            $detailed_type->previous_value_type = Type::getString();
+            $detailed_type = new TKeyedArray(
+                $arr,
+                null,
+                [Type::getNonEmptyString(), Type::getString()],
+            );
 
             return new Union([$detailed_type]);
         }
 
         if ($var_id === '$_FILES') {
+            $str = Type::getString();
             $values = [
-                'name' => new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]),
-                'type' => new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]),
-                'size' => new Union([
-                    new TIntRange(0, null),
-                    new TNonEmptyList(Type::getInt()),
-                ]),
-                'tmp_name' => new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]),
-                'error' => new Union([
-                    new TIntRange(0, 8),
-                    new TNonEmptyList(Type::getInt()),
-                ]),
+                'name' => $str,
+                'type' => $str,
+                'tmp_name' => $str,
+                'size' => Type::getListKey(),
+                'error' => new Union([new TIntRange(0, 8)]),
             ];
 
-            if ($codebase_analysis_php_version_id >= 80100) {
-                $values['full_path'] = new Union([
-                    new TString(),
-                    new TNonEmptyList(Type::getString()),
-                ]);
+            if ($files_full_path) {
+                $values['full_path'] = $str;
             }
 
-            $type = new TKeyedArray($values);
+            $type = new Union([new TKeyedArray($values)]);
+            $parent = new TArray([Type::getNonEmptyString(), $type]);
 
-            // $_FILES['userfile']['...'] case
-            $named_type = new TArray([Type::getNonEmptyString(), new Union([$type])]);
-
-            // by default $_FILES is an empty array
-            $default_type = new TArray([Type::getNever(), Type::getNever()]);
-
-            // ideally we would have 4 separate arrays with distinct types, but that isn't possible with psalm atm
-            return TypeCombiner::combine([$default_type, $type, $named_type]);
+            return new Union([$parent]);
         }
 
-        if ($var_id === '$_SESSION') {
-            // keys must be string
-            $type = new Union([
-                new TArray([
-                    Type::getNonEmptyString(),
-                    Type::getMixed(),
-                ])
-            ]);
-            $type->possibly_undefined = true;
-            return $type;
-        }
+        // $var_id === $_SESSION
 
-        return Type::getMixed();
+        // keys must be string
+        return new Union([
+            new TArray([
+                Type::getNonEmptyString(),
+                Type::getMixed(),
+            ]),
+        ], ['possibly_undefined' => true]);
     }
 }

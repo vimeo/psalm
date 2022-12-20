@@ -2,6 +2,7 @@
 
 namespace Psalm\Config;
 
+use FilesystemIterator;
 use Psalm\Exception\ConfigException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -68,6 +69,11 @@ class FileFilter
     /**
      * @var array<string>
      */
+    protected $class_constant_ids = [];
+
+    /**
+     * @var array<string>
+     */
     protected $var_names = [];
 
     /**
@@ -112,6 +118,7 @@ class FileFilter
             foreach ($config['directory'] as $directory) {
                 $directory_path = (string) ($directory['name'] ?? '');
                 $ignore_type_stats = (bool) ($directory['ignoreTypeStats'] ?? false);
+                $resolve_symlinks = (bool) ($directory['resolveSymlinks'] ?? false);
                 $declare_strict_types = (bool) ($directory['useStrictTypes'] ?? false);
 
                 if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
@@ -123,7 +130,7 @@ class FileFilter
                 if (strpos($prospective_directory_path, '*') !== false) {
                     $globs = array_map(
                         'realpath',
-                        glob($prospective_directory_path, GLOB_ONLYDIR)
+                        glob($prospective_directory_path, GLOB_ONLYDIR),
                     );
 
                     if (empty($globs)) {
@@ -133,7 +140,7 @@ class FileFilter
 
                         throw new ConfigException(
                             'Could not resolve config path to ' . $base_dir
-                            . DIRECTORY_SEPARATOR . $directory_path
+                            . DIRECTORY_SEPARATOR . $directory_path,
                         );
                     }
 
@@ -145,7 +152,7 @@ class FileFilter
 
                             throw new ConfigException(
                                 'Could not resolve config path to ' . $base_dir
-                                . DIRECTORY_SEPARATOR . $directory_path . ':' . $glob_index
+                                . DIRECTORY_SEPARATOR . $directory_path . ':' . $glob_index,
                             );
                         }
 
@@ -170,38 +177,44 @@ class FileFilter
                     }
 
                     throw new ConfigException(
-                        'Could not resolve config path to ' . $prospective_directory_path
+                        'Could not resolve config path to ' . $prospective_directory_path,
                     );
                 }
 
                 if (!is_dir($directory_path)) {
                     throw new ConfigException(
                         $base_dir . DIRECTORY_SEPARATOR . $directory_path
-                        . ' is not a directory'
+                        . ' is not a directory',
                     );
                 }
 
-                /** @var RecursiveDirectoryIterator */
-                $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory_path));
-                $iterator->rewind();
+                if ($resolve_symlinks) {
+                    /** @var RecursiveDirectoryIterator */
+                    $iterator = new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS),
+                    );
+                    $iterator->rewind();
 
-                while ($iterator->valid()) {
-                    if (!$iterator->isDot() && $iterator->isLink()) {
-                        $linked_path = readlink($iterator->getPathname());
+                    while ($iterator->valid()) {
+                        if ($iterator->isLink()) {
+                            $linked_path = readlink($iterator->getPathname());
 
-                        if (stripos($linked_path, $directory_path) !== 0) {
-                            if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
-                                $filter->ignore_type_stats[$directory_path] = true;
-                            }
+                            if (stripos($linked_path, $directory_path) !== 0) {
+                                if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
+                                    $filter->ignore_type_stats[$directory_path] = true;
+                                }
 
-                            if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
-                                $filter->declare_strict_types[$directory_path] = true;
-                            }
+                                if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
+                                    $filter->declare_strict_types[$directory_path] = true;
+                                }
 
-                            if (is_dir($linked_path)) {
-                                $filter->addDirectory($linked_path);
+                                if (is_dir($linked_path)) {
+                                    $filter->addDirectory($linked_path);
+                                }
                             }
                         }
+
+                        $iterator->next();
                     }
 
                     $iterator->next();
@@ -235,8 +248,8 @@ class FileFilter
                         'realpath',
                         array_filter(
                             glob($prospective_file_path, GLOB_NOSORT),
-                            'file_exists'
-                        )
+                            'file_exists',
+                        ),
                     );
 
                     if (empty($globs)) {
@@ -246,7 +259,7 @@ class FileFilter
 
                         throw new ConfigException(
                             'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                            $file_path
+                            $file_path,
                         );
                     }
 
@@ -254,7 +267,7 @@ class FileFilter
                         if (!$file_path && !$allow_missing_files) {
                             throw new ConfigException(
                                 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                                $file_path . ':' . $glob_index
+                                $file_path . ':' . $glob_index,
                             );
                         }
                         $filter->addFile($file_path);
@@ -266,7 +279,7 @@ class FileFilter
 
                 if (!$file_path && !$allow_missing_files) {
                     throw new ConfigException(
-                        'Could not resolve config path to ' . $prospective_file_path
+                        'Could not resolve config path to ' . $prospective_file_path,
                     );
                 }
 
@@ -295,7 +308,7 @@ class FileFilter
 
                 if (!preg_match('/^[^:]+::[^:]+$/', $method_id) && !static::isRegularExpression($method_id)) {
                     throw new ConfigException(
-                        'Invalid referencedMethod ' . $method_id
+                        'Invalid referencedMethod ' . $method_id,
                     );
                 }
 
@@ -314,6 +327,13 @@ class FileFilter
             /** @var array $referenced_property */
             foreach ($config['referencedProperty'] as $referenced_property) {
                 $filter->property_ids[] = strtolower((string) ($referenced_property['name'] ?? ''));
+            }
+        }
+
+        if (isset($config['referencedConstant']) && is_iterable($config['referencedConstant'])) {
+            /** @var array $referenced_constant */
+            foreach ($config['referencedConstant'] as $referenced_constant) {
+                $filter->class_constant_ids[] = strtolower((string) ($referenced_constant['name'] ?? ''));
             }
         }
 
@@ -345,6 +365,7 @@ class FileFilter
                 $config['directory'][] = [
                     'name' => (string) $directory['name'],
                     'ignoreTypeStats' => strtolower((string) ($directory['ignoreTypeStats'] ?? '')) === 'true',
+                    'resolveSymlinks' => strtolower((string) ($directory['resolveSymlinks'] ?? '')) === 'true',
                     'useStrictTypes' => strtolower((string) ($directory['useStrictTypes'] ?? '')) === 'true',
                 ];
             }
@@ -390,6 +411,14 @@ class FileFilter
             }
         }
 
+        if ($e->referencedConstant) {
+            $config['referencedConstant'] = [];
+            /** @var SimpleXMLElement $referenced_constant */
+            foreach ($e->referencedConstant as $referenced_constant) {
+                $config['referencedConstant'][]['name'] = strtolower((string)$referenced_constant['name']);
+            }
+        }
+
         if ($e->referencedVariable) {
             $config['referencedVariable'] = [];
 
@@ -405,10 +434,8 @@ class FileFilter
     private static function isRegularExpression(string $string): bool
     {
         set_error_handler(
-            function (): bool {
-                return false;
-            },
-            E_WARNING
+            static fn(): bool => true,
+            E_WARNING,
         );
         $is_regexp = preg_match($string, '') !== false;
         restore_error_handler();
@@ -523,6 +550,11 @@ class FileFilter
     public function allowsProperty(string $property_id): bool
     {
         return in_array(strtolower($property_id), $this->property_ids, true);
+    }
+
+    public function allowsClassConstant(string $constant_id): bool
+    {
+        return in_array(strtolower($constant_id), $this->class_constant_ids, true);
     }
 
     public function allowsVariable(string $var_name): bool

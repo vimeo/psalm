@@ -10,13 +10,12 @@ use Psalm\Internal\LanguageServer\LanguageServer;
 
 /**
  * Provides method handlers for all textDocument/* methods
+ *
+ * @internal
  */
 class TextDocument
 {
-    /**
-     * @var ClientHandler
-     */
-    private $handler;
+    private ClientHandler $handler;
 
     /**
      * @var LanguageServer

@@ -123,17 +123,17 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $template_types;
 
     /**
-     * @var array<int, Assertion>
+     * @var array<int, Possibilities>
      */
     public $assertions = [];
 
     /**
-     * @var array<int, Assertion>
+     * @var array<int, Possibilities>
      */
     public $if_true_assertions = [];
 
     /**
-     * @var array<int, Assertion>
+     * @var array<int, Possibilities>
      */
     public $if_false_assertions = [];
 
@@ -247,8 +247,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
                     $realType = $param->type ?: 'mixed';
                     return "    {$realType} \${$param->name}";
                 },
-                $this->params
-            )
+                $this->params,
+            ),
         ) . "\n" : '';
         $return_type = $this->return_type ?: 'mixed';
         $symbol_text = "function {$this->cased_name}({$params}): {$return_type}";
@@ -278,11 +278,9 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
         $symbol_text = 'function ' . $this->cased_name . '('   . implode(
             ',',
             array_map(
-                function (FunctionLikeParameter $param): string {
-                    return  ($param->type ?: 'mixed') . ' $' . $param->name;
-                },
-                $this->params
-            )
+                fn(FunctionLikeParameter $param): string => ($param->type ?: 'mixed') . ' $' . $param->name,
+                $this->params,
+            ),
         ) .  ') : ' . ($this->return_type ?: 'mixed');
 
         if (!$this instanceof MethodStorage) {
@@ -307,7 +305,6 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
 
     /**
      * @internal
-     *
      * @param list<FunctionLikeParameter> $params
      */
     public function setParams(array $params): void

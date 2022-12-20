@@ -99,7 +99,7 @@ class LongProgress extends Progress
             str_repeat(' ', $leadingSpaces),
             $this->progress,
             $this->number_of_tasks,
-            $percentage
+            $percentage,
         );
     }
 

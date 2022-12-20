@@ -7,41 +7,43 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
+use function array_reverse;
+
 class TypeCombinationTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
     /**
      * @dataProvider providerTestValidTypeCombination
-     *
-     * @param string $expected
      * @param non-empty-list<string> $types
-     *
      */
-    public function testValidTypeCombination($expected, $types): void
+    public function testValidTypeCombination(string $expected, array $types): void
     {
         $converted_types = [];
 
         foreach ($types as $type) {
             $converted_type = self::getAtomic($type);
+            /** @psalm-suppress InaccessibleProperty */
             $converted_type->from_docblock = true;
             $converted_types[] = $converted_type;
         }
 
         $this->assertSame(
             $expected,
-            TypeCombiner::combine($converted_types)->getId()
+            TypeCombiner::combine($converted_types)->getId(),
+        );
+
+        $this->assertSame(
+            $expected,
+            TypeCombiner::combine(array_reverse($converted_types))->getId(),
         );
     }
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'multipleValuedArray' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
                     $var = [];
@@ -49,7 +51,7 @@ class TypeCombinationTest extends TestCase
                     $var[] = new B();',
             ],
             'preventLiteralAndClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param "array"|class-string $type_name
                      */
@@ -58,7 +60,7 @@ class TypeCombinationTest extends TestCase
                     }',
             ],
             'NeverTwice' => [
-                '<?php
+                'code' => '<?php
                     /** @return no-return */
                     function other() {
                         throw new Exception();
@@ -67,7 +69,7 @@ class TypeCombinationTest extends TestCase
                     rand(0,1) ? die() : other();',
             ],
             'ArrayAndTraversableNotIterable' => [
-                '<?php declare(strict_types=1);
+                'code' => '<?php declare(strict_types=1);
 
                     /** @param mixed $identifier */
                     function isNullIdentifier($identifier): bool
@@ -95,6 +97,20 @@ class TypeCombinationTest extends TestCase
     public function providerTestValidTypeCombination(): array
     {
         return [
+            'complexArrayFallback1' => [
+                'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
+                [
+                    'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: null}&array<string, mixed>',
+                    'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>}&array<string, mixed>',
+                ],
+            ],
+            'complexArrayFallback2' => [
+                'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                [
+                    'list<a>',
+                    'list{0, 0}',
+                ],
+            ],
             'intOrString' => [
                 'int|string',
                 [
@@ -109,10 +125,10 @@ class TypeCombinationTest extends TestCase
                     'null',
                 ],
             ],
-            'mixedOrEmpty' => [
+            'mixedOrNever' => [
                 'mixed',
                 [
-                    'empty',
+                    'never',
                     'mixed',
                 ],
             ],
@@ -124,10 +140,10 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'mixedOrEmptyArray' => [
-                'array<empty, empty>|mixed',
+                'array<never, never>|mixed',
                 [
                     'mixed',
-                    'array<empty, empty>',
+                    'array<never, never>',
                 ],
             ],
             'falseTrueToBool' => [
@@ -197,16 +213,16 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'emptyArrays' => [
-                'array<empty, empty>',
+                'array<never, never>',
                 [
-                    'array<empty,empty>',
-                    'array<empty,empty>',
+                    'array<never, never>',
+                    'array<never, never>',
                 ],
             ],
             'arrayStringOrEmptyArray' => [
                 'array<array-key, string>',
                 [
-                    'array<empty>',
+                    'array<never>',
                     'array<string>',
                 ],
             ],
@@ -227,7 +243,7 @@ class TypeCombinationTest extends TestCase
             'arrayMixedOrEmpty' => [
                 'array<array-key, mixed>',
                 [
-                    'array<empty>',
+                    'array<never>',
                     'array<mixed>',
                 ],
             ],
@@ -309,16 +325,16 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayObjectAndParamsWithEmptyArray' => [
-                'ArrayObject<int, string>|array<empty, empty>',
+                'ArrayObject<int, string>|array<never, never>',
                 [
                     'ArrayObject<int, string>',
-                    'array<empty, empty>',
+                    'array<never, never>',
                 ],
             ],
             'emptyArrayWithArrayObjectAndParams' => [
-                'ArrayObject<int, string>|array<empty, empty>',
+                'ArrayObject<int, string>|array<never, never>',
                 [
-                    'array<empty, empty>',
+                    'array<never, never>',
                     'ArrayObject<int, string>',
                 ],
             ],
@@ -370,28 +386,28 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineObjectTypeWithIntKeyedArray' => [
-                'array<"a"|int, int|string>',
+                "array<'a'|int, int|string>",
                 [
                     'array{a: int}',
                     'array<int, string>',
                 ],
             ],
             'combineNestedObjectTypeWithTKeyedArrayIntKeyedArray' => [
-                'array{a: array<"a"|int, int|string>}',
+                "array{a: array<'a'|int, int|string>}",
                 [
                     'array{a: array{a: int}}',
                     'array{a: array<int, string>}',
                 ],
             ],
             'combineIntKeyedObjectTypeWithNestedIntKeyedArray' => [
-                'array<int, array<"a"|int, int|string>>',
+                "array<int, array<'a'|int, int|string>>",
                 [
                     'array<int, array{a:int}>',
                     'array<int, array<int, string>>',
                 ],
             ],
             'combineNestedObjectTypeWithNestedIntKeyedArray' => [
-                'array<"a"|int, array<"a"|int, int|string>>',
+                "array<'a'|int, array<'a'|int, int|string>>",
                 [
                     'array{a: array{a: int}}',
                     'array<int, array<int, string>>',
@@ -462,7 +478,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'objectLikePlusArrayEqualsArray' => [
-                'array<"a"|"b"|"c", 1|2|3>',
+                "array<'a'|'b'|'c', 1|2|3>",
                 [
                     'array<"a"|"b"|"c", 1|2|3>',
                     'array{a: 1|2, b: 2|3, c: 1|3}',
@@ -549,7 +565,7 @@ class TypeCombinationTest extends TestCase
                 'callable',
                 [
                     'callable-string',
-                    'callable'
+                    'callable',
                 ],
             ],
             'combineCallableAndCallableObject' => [
@@ -563,7 +579,7 @@ class TypeCombinationTest extends TestCase
                 'callable',
                 [
                     'callable-object',
-                    'callable'
+                    'callable',
                 ],
             ],
             'combineCallableAndCallableArray' => [
@@ -577,7 +593,7 @@ class TypeCombinationTest extends TestCase
                 'callable',
                 [
                     'callable-array',
-                    'callable'
+                    'callable',
                 ],
             ],
             'combineCallableArrayAndArray' => [
@@ -623,35 +639,35 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineNonEmptyListWithTKeyedArrayList' => [
-                'array{0: null|string}<int, string>',
+                'list{null|string, ...<int<0, max>, string>}',
                 [
                     'non-empty-list<string>',
-                    'array{null}'
+                    'array{null}',
                 ],
             ],
             'combineZeroAndPositiveInt' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     '0',
                     'positive-int',
                 ],
             ],
             'combinePositiveIntAndZero' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     'positive-int',
                     '0',
                 ],
             ],
             'combinePositiveIntAndMinusOne' => [
-                'int',
+                'int<-1, max>',
                 [
                     'positive-int',
                     '-1',
                 ],
             ],
             'combinePositiveIntZeroAndMinusOne' => [
-                'int',
+                'int<-1, max>',
                 [
                     '0',
                     'positive-int',
@@ -659,14 +675,14 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineMinusOneAndPositiveInt' => [
-                'int',
+                'int<-1, max>',
                 [
                     '-1',
                     'positive-int',
                 ],
             ],
             'combineZeroMinusOneAndPositiveInt' => [
-                'int',
+                'int<-1, max>',
                 [
                     '0',
                     '-1',
@@ -674,7 +690,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineZeroOneAndPositiveInt' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     '0',
                     '1',
@@ -682,7 +698,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combinePositiveIntOneAndZero' => [
-                '0|positive-int',
+                'int<0, max>',
                 [
                     'positive-int',
                     '1',
@@ -690,7 +706,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combinePositiveInts' => [
-                'positive-int',
+                'int<1, max>',
                 [
                     'positive-int',
                     'positive-int',
@@ -701,112 +717,112 @@ class TypeCombinationTest extends TestCase
                 [
                     'non-empty-array<int, int>',
                     'array{0?:int}',
-                ]
+                ],
             ],
             'combineNonEmptyStringAndLiteral' => [
                 'non-empty-string',
                 [
                     'non-empty-string',
                     '"foo"',
-                ]
+                ],
             ],
             'combineLiteralAndNonEmptyString' => [
                 'non-empty-string',
                 [
                     '"foo"',
-                    'non-empty-string'
-                ]
+                    'non-empty-string',
+                ],
             ],
             'combineTruthyStringAndNonEmptyString' => [
                 'non-empty-string',
                 [
                     'truthy-string',
-                    'non-empty-string'
-                ]
+                    'non-empty-string',
+                ],
             ],
             'combineNonFalsyNonEmptyString' => [
                 'non-empty-string',
                 [
                     'non-falsy-string',
-                    'non-empty-string'
-                ]
+                    'non-empty-string',
+                ],
             ],
             'combineNonEmptyNonFalsyString' => [
                 'non-empty-string',
                 [
                     'non-empty-string',
-                    'non-falsy-string'
-                ]
+                    'non-falsy-string',
+                ],
             ],
             'combineNonEmptyStringAndNumericString' => [
                 'non-empty-string',
                 [
                     'non-empty-string',
-                    'numeric-string'
-                ]
+                    'numeric-string',
+                ],
             ],
             'combineNumericStringAndNonEmptyString' => [
                 'non-empty-string',
                 [
                     'numeric-string',
-                    'non-empty-string'
-                ]
+                    'non-empty-string',
+                ],
             ],
             'combineNonEmptyLowercaseAndNonFalsyString' => [
                 'non-empty-string',
                 [
                     'non-falsy-string',
                     'non-empty-lowercase-string',
-                ]
+                ],
             ],
             'combineNonEmptyAndEmptyScalar' => [
                 'scalar',
                 [
                     'non-empty-scalar',
                     'empty-scalar',
-                ]
+                ],
             ],
             'combineLiteralStringAndNonspecificLiteral' => [
                 'literal-string',
                 [
                     'literal-string',
                     '"foo"',
-                ]
+                ],
             ],
             'combineNonspecificLiteralAndLiteralString' => [
                 'literal-string',
                 [
                     '"foo"',
                     'literal-string',
-                ]
+                ],
             ],
             'combineLiteralIntAndNonspecificLiteral' => [
                 'literal-int',
                 [
                     'literal-int',
                     '5',
-                ]
+                ],
             ],
             'combineNonspecificLiteralAndLiteralInt' => [
                 'literal-int',
                 [
                     '5',
                     'literal-int',
-                ]
+                ],
             ],
             'combineNonspecificLiteralAndPositiveInt' => [
                 'int',
                 [
                     'positive-int',
                     'literal-int',
-                ]
+                ],
             ],
             'combinePositiveAndLiteralInt' => [
                 'int',
                 [
                     'literal-int',
                     'positive-int',
-                ]
+                ],
             ],
             'combineNonEmptyStringAndNonEmptyNonSpecificLiteralString' => [
                 'non-empty-string',
@@ -825,11 +841,7 @@ class TypeCombinationTest extends TestCase
         ];
     }
 
-    /**
-     * @param  string $string
-     *
-     */
-    private static function getAtomic($string): Atomic
+    private static function getAtomic(string $string): Atomic
     {
         return Type::parseString($string)->getSingleAtomic();
     }

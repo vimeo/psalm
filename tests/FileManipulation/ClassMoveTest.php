@@ -15,8 +15,7 @@ use function strpos;
 
 class ClassMoveTest extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {
@@ -27,7 +26,6 @@ class ClassMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $constants_to_move
      */
     public function testValidCode(
@@ -46,8 +44,8 @@ class ClassMoveTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $context = new Context();
@@ -56,7 +54,7 @@ class ClassMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code
+            $input_code,
         );
 
         $codebase = $this->project_analyzer->getCodebase();
@@ -75,13 +73,13 @@ class ClassMoveTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,array<string, string>}>
+     * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'renameEmptyClass' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {}
@@ -106,7 +104,7 @@ class ClassMoveTest extends TestCase
                     $i = new A();
 
                     if ($i instanceof A) {}',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class B {}
@@ -131,12 +129,12 @@ class ClassMoveTest extends TestCase
                     $i = new B();
 
                     if ($i instanceof B) {}',
-                [
+                'migrations' => [
                     'Ns\A' => 'Ns\B',
                 ],
             ],
             'renameEmptyClassWithSpacesInDocblock' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {}
@@ -150,7 +148,7 @@ class ClassMoveTest extends TestCase
                     function foo(?A $a, $b, $c) : ?A {
                         return $a;
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class B {}
@@ -164,12 +162,12 @@ class ClassMoveTest extends TestCase
                     function foo(?B $a, $b, $c) : ?B {
                         return $a;
                     }',
-                [
+                'migrations' => [
                     'Ns\A' => 'Ns\B',
                 ],
             ],
             'renameClassWithInstanceMethod' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -183,7 +181,7 @@ class ClassMoveTest extends TestCase
                     function foo(A $a) : A {
                         return $a->foo($a, $a);
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class B {
@@ -197,12 +195,12 @@ class ClassMoveTest extends TestCase
                     function foo(B $a) : B {
                         return $a->foo($a, $a);
                     }',
-                [
+                'migrations' => [
                     'Ns\A' => 'Ns\B',
                 ],
             ],
             'renameClassWithStaticMethod' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class AParent {
@@ -233,7 +231,7 @@ class ClassMoveTest extends TestCase
                     function foo() {
                         A::foo(new A(), A::foo());
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class AParent {
@@ -264,12 +262,12 @@ class ClassMoveTest extends TestCase
                     function foo() {
                         B::foo(new B(), B::foo());
                     }',
-                [
+                'migrations' => [
                     'Ns\A' => 'Ns\B',
                 ],
             ],
             'renameClassWithInstanceProperty' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -283,7 +281,7 @@ class ClassMoveTest extends TestCase
                          */
                         public $two;
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class B {
@@ -297,12 +295,12 @@ class ClassMoveTest extends TestCase
                          */
                         public $two;
                     }',
-                [
+                'migrations' => [
                     'Ns\A' => 'Ns\B',
                 ],
             ],
             'renameClassWithStaticProperty' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     class A {
@@ -321,7 +319,7 @@ class ClassMoveTest extends TestCase
                     A::$one = "two";
 
                     foreach (A::$vars as $var) {}',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     class B {
@@ -340,12 +338,12 @@ class ClassMoveTest extends TestCase
                     B::$one = "two";
 
                     foreach (B::$vars as $var) {}',
-                [
+                'migrations' => [
                     'Ns\A' => 'Ns\B',
                 ],
             ],
             'moveClassIntoNamespace' => [
-                '<?php
+                'input' => '<?php
                     use Exception;
 
                     class A {
@@ -378,7 +376,7 @@ class ClassMoveTest extends TestCase
 
                         public function bar() : void {}
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Foo\Bar\Baz;
 
                     use Exception;
@@ -413,12 +411,12 @@ class ClassMoveTest extends TestCase
 
                         public function bar() : void {}
                     }',
-                [
+                'migrations' => [
                     'A' => 'Foo\Bar\Baz\B',
                 ],
             ],
             'moveClassDeeperIntoNamespaceAdjustUseWithoutAlias' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo {
                         use Bar\Bat;
 
@@ -442,7 +440,7 @@ class ClassMoveTest extends TestCase
                             const FAR = 7;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Foo {
                         use Bar\Baz\Bahh;
 
@@ -466,12 +464,12 @@ class ClassMoveTest extends TestCase
                             const FAR = 7;
                         }
                     }',
-                [
+                'migrations' => [
                     'Bar\Bat' => 'Bar\Baz\Bahh',
                 ],
             ],
             'moveClassesIntoNamespace' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo {
                         class A {
                             /** @var ?B */
@@ -507,7 +505,7 @@ class ClassMoveTest extends TestCase
                             public $z = null;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Bar\Baz {
                         class A {
                             /** @var B|null */
@@ -543,13 +541,13 @@ class ClassMoveTest extends TestCase
                             public $z = null;
                         }
                     }',
-                [
+                'migrations' => [
                     'Foo\A' => 'Bar\Baz\A',
                     'Foo\B' => 'Bar\Baz\B',
                 ],
             ],
             'moveClassesIntoNamespaceWithoutAlias' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo {
                         class A {
                             /** @var ?B */
@@ -588,7 +586,7 @@ class ClassMoveTest extends TestCase
 
                         foreach (\Foo\A::$vars as $var) {}
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Bar\Baz {
                         class A {
                             /** @var B|null */
@@ -627,13 +625,13 @@ class ClassMoveTest extends TestCase
 
                         foreach (Baz\A::$vars as $var) {}
                     }',
-                [
+                'migrations' => [
                     'Foo\A' => 'Bar\Baz\A',
                     'Foo\B' => 'Bar\Baz\B',
                 ],
             ],
             'moveClassDeeperIntoNamespaceAdjustUseWithAlias' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo {
                         use Bar\Bat as Kappa;
 
@@ -657,7 +655,7 @@ class ClassMoveTest extends TestCase
                             const FAR = 7;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Foo {
                         use Bar\Baz\Bahh as Kappa;
 
@@ -681,12 +679,12 @@ class ClassMoveTest extends TestCase
                             const FAR = 7;
                         }
                     }',
-                [
+                'migrations' => [
                     'Bar\Bat' => 'Bar\Baz\Bahh',
                 ],
             ],
             'moveClassDeeperIntoNamespaceDontAdjustGroupUse' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo {
                         use Bar\{Bat};
 
@@ -698,7 +696,7 @@ class ClassMoveTest extends TestCase
                     namespace Bar {
                         class Bat {}
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Foo {
                         use Bar\{Bat};
 
@@ -710,12 +708,12 @@ class ClassMoveTest extends TestCase
                     namespace Bar\Baz {
                         class Bahh {}
                     }',
-                [
+                'migrations' => [
                     'Bar\Bat' => 'Bar\Baz\Bahh',
                 ],
             ],
             'moveClassBewareOfPropertyNotSetInConstructorCheck' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo {
                         class Base
                         {
@@ -730,7 +728,7 @@ class ClassMoveTest extends TestCase
                     namespace Foo {
                         class Hello extends Base {}
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Foo {
                         class Base
                         {
@@ -745,8 +743,31 @@ class ClassMoveTest extends TestCase
                     namespace Foo\Bar {
                         class Hello extends \Foo\Base {}
                     }',
-                [
+                'migrations' => [
                     'Foo\Hello' => 'Foo\Bar\Hello',
+                ],
+            ],
+            'renamesAllStaticPropReferences' => [
+                'input' => '<?php
+                    namespace Foo;
+
+                    class Bar {
+                        public static $props = [1, 2, 3];
+                    }
+                    echo Bar::$props[1];
+                    echo Bar::$props[2];
+                ',
+                'output' => '<?php
+                    namespace Zoo;
+
+                    class Baz {
+                        public static $props = [1, 2, 3];
+                    }
+                    echo \Zoo\Baz::$props[1];
+                    echo \Zoo\Baz::$props[2];
+                ',
+                'migrations' => [
+                    'Foo\Bar' => 'Zoo\Baz',
                 ],
             ],
         ];

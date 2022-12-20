@@ -19,17 +19,14 @@ class ClassLikeStorageProvider
      *
      * @var array<string, ClassLikeStorage>
      */
-    private static $storage = [];
+    private static array $storage = [];
 
     /**
      * @var array<string, ClassLikeStorage>
      */
-    private static $new_storage = [];
+    private static array $new_storage = [];
 
-    /**
-     * @var ?ClassLikeStorageCacheProvider
-     */
-    public $cache;
+    public ?ClassLikeStorageCacheProvider $cache = null;
 
     public function __construct(?ClassLikeStorageCacheProvider $cache = null)
     {
@@ -37,15 +34,18 @@ class ClassLikeStorageProvider
     }
 
     /**
+     * @psalm-mutation-free
      * @throws InvalidArgumentException when class does not exist
      */
     public function get(string $fq_classlike_name): ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         if (!isset(self::$storage[$fq_classlike_name_lc])) {
             throw new InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name_lc);
         }
 
+        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         return self::$storage[$fq_classlike_name_lc];
     }
 
@@ -94,7 +94,6 @@ class ClassLikeStorageProvider
 
     /**
      * @param array<string, ClassLikeStorage> $more
-     *
      */
     public function addMore(array $more): void
     {

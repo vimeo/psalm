@@ -13,14 +13,142 @@ class TypeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
+            'sealArray' => [
+                'code' => '<?php
+                    /** @var array */
+                    $a = [];
+
+                    assert(isset($a["a"]));
+                    assert(count($a) === 1);
+                    ',
+                'assertions' => [
+                    '$a===' => 'array{a: mixed}',
+                ],
+            ],
+            'sealedArrayCount' => [
+                'code' => '<?php
+                    $a = random_int(0,1) ? [] : [0, 1];
+
+                    $b = null;
+                    if (count($a) === 2) {
+                        $b = $a;
+                    }',
+                'assertions' => [
+                    '$a===' => 'list{0?: 0, 1?: 1}',
+                    '$b===' => 'list{0, 1}|null',
+                ],
+            ],
+            'sealedArrayMagic' => [
+                'code' => '<?php
+
+                /** @var array{invoice?: string, utd?: "utd", cancel_agreement?: "test", installment?: "test"} */
+                $b = [];
+
+
+                $buttons = [];
+                foreach ($b as $text) {
+                    $buttons[] = $text;
+                }
+                if (count($buttons) === 0) {
+                    echo "Zero";
+                }
+
+
+                /** @var ?string */
+                $test = null;
+                $urls = array_filter([$test]);
+
+                $mainUrlSet = false;
+                foreach ($urls as $_) {
+                    if (!$mainUrlSet) {
+                        $mainUrlSet = true;
+                    }
+                }
+                if (!$mainUrlSet) {
+                    echo "SKIP";
+                }
+
+
+                /**
+                 * @param string|list<bool|array{0:string, 1:string}> $time
+                 */
+                function mapTime($time): void
+                {
+                    $atime = is_array($time) ? $time : [];
+                    if ($time === "24h") {
+                        return;
+                    }
+
+                    for ($day = 0; $day < 7; ++$day) {
+                        if (!array_key_exists($day, $atime) || !is_array($atime[$day])) {
+                            continue;
+                        }
+
+                        $dayWh = $atime[$day];
+                        array_pop($dayWh);
+                    }
+                }',
+                'assertions' => [
+                    '$buttons===' => 'list<string>',
+                    '$urls===' => 'list{0?: non-falsy-string}',
+                    '$mainUrlSet===' => 'bool',
+                ],
+            ],
+            'validSealedArrayAssertions' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 2) {
+                        echo "Have C!";
+                    }
+
+                    if (count($a) < 3) {
+                        echo "Do not have C!";
+                    }
+                ',
+            ],
+            'validSealedArrayAssertions2' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    assert(count($a) > 2);
+                ',
+                'assertions' => [
+                    '$a===' => 'array{a: string, b: string, c: string}',
+                ],
+            ],
+            'instanceOfInterface' => [
+                'code' => '<?php
+                    interface Supplier {
+                        public function get(): iterable;
+                    }
+
+                    class SomeClass {
+                        protected Supplier|iterable $prop;
+
+                        public function __construct(Supplier|iterable $value) {
+                            $this->prop = $value;
+                        }
+
+                        public function do(): void {
+                            $var = $this->prop;
+
+                            if ($var instanceof Supplier) {
+                                $var->get();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullableMethodWithTernaryGuard' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -34,7 +162,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithTernaryIfNullGuard' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -48,7 +176,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithTernaryEmptyGuard' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -62,7 +190,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithTernaryIsNullGuard' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -76,7 +204,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithIfGuard' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -92,7 +220,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithTernaryGuardWithThis' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -110,7 +238,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithTernaryIfNullGuardWithThis' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -128,7 +256,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithIfGuardWithThis' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -149,7 +277,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithExceptionThrown' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -167,7 +295,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithRedefinitionAndElse' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @var int|null */
                         public $two;
@@ -191,7 +319,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithBooleanIfGuard' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -212,7 +340,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithNonNullBooleanIfGuard' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -233,7 +361,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithNonNullBooleanIfGuardAndBooleanAnd' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -254,7 +382,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodInConditionWithIfGuardBefore' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @var string */
                         public $a = "";
@@ -282,7 +410,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithBooleanIfGuardBefore' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -305,7 +433,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedRedefinition' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -323,7 +451,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedRedefinitionInElse' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -344,7 +472,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedNestedRedefinition' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -374,7 +502,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedSwitchRedefinition' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -402,7 +530,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedSwitchRedefinitionDueToException' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -431,7 +559,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedSwitchThatAlwaysReturns' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -457,7 +585,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithReturn' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -483,7 +611,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithElseReturn' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -509,7 +637,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithElseifReturn' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -538,7 +666,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedSwitchBreak' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -562,7 +690,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'nullableMethodWithGuardedRedefinitionOnThis' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -585,29 +713,29 @@ class TypeTest extends TestCase
                     }',
             ],
             'arrayUnionTypeAssertion' => [
-                '<?php
+                'code' => '<?php
                     $ids = (1 + 1 === 2) ? [] : null;
 
                     if ($ids === null) {
                         $ids = [];
                     }',
                 'assertions' => [
-                    '$ids' => 'array<empty, empty>',
+                    '$ids' => 'array<never, never>',
                 ],
             ],
             'arrayUnionTypeAssertionWithIsArray' => [
-                '<?php
+                'code' => '<?php
                     $ids = (1 + 1 === 2) ? [] : null;
 
                     if (!is_array($ids)) {
                         $ids = [];
                     }',
                 'assertions' => [
-                    '$ids' => 'array<empty, empty>',
+                    '$ids' => 'array<never, never>',
                 ],
             ],
             '2dArrayUnionTypeAssertionWithIsArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return array<array<string>>|null */
                     function foo() {
                         $ids = rand(0, 1) ? [["hello"]] : null;
@@ -620,7 +748,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'variableReassignment' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -638,7 +766,7 @@ class TypeTest extends TestCase
                     $one->barBar();',
             ],
             'variableReassignmentInIf' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -658,7 +786,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'unionTypeFlow' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -690,7 +818,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'unionTypeFlowWithThrow' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -707,7 +835,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'unionTypeFlowWithElseif' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -727,7 +855,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'typedAdjustment' => [
-                '<?php
+                'code' => '<?php
                     $var = 0;
 
                     if (5 + 3 === 8) {
@@ -740,7 +868,7 @@ class TypeTest extends TestCase
                 ],
             ],
             'typeMixedAdjustment' => [
-                '<?php
+                'code' => '<?php
                     $var = 0;
 
                     $arr = ["hello"];
@@ -755,7 +883,7 @@ class TypeTest extends TestCase
                 ],
             ],
             'typeAdjustmentIfNull' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -769,7 +897,7 @@ class TypeTest extends TestCase
                 ],
             ],
             'whileTrue' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /**
                          * @return array|false
@@ -787,7 +915,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'passingParam' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {
@@ -799,7 +927,7 @@ class TypeTest extends TestCase
                     $b->barBar(new A);',
             ],
             'nullToNullableParam' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {
@@ -811,7 +939,7 @@ class TypeTest extends TestCase
                     $b->barBar(null);',
             ],
             'objectToNullableObjectParam' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {
@@ -823,7 +951,7 @@ class TypeTest extends TestCase
                     $b->barBar(new A);',
             ],
             'paramCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                         /** @return void */
@@ -840,7 +968,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'paramElseifCoercion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                         /** @return void */
@@ -864,7 +992,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'plusPlus' => [
-                '<?php
+                'code' => '<?php
                     $a = 0;
                     $b = $a++;',
                 'assertions' => [
@@ -872,7 +1000,7 @@ class TypeTest extends TestCase
                 ],
             ],
             'typedValueAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array|string $a
                      */
@@ -885,13 +1013,13 @@ class TypeTest extends TestCase
                     }',
             ],
             'isIntOnUnaryPlus' => [
-                '<?php
+                'code' => '<?php
                     $a = +"5";
                     if (!is_int($a)) {
                     }',
             ],
             'suppressOneSuppressesAll' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -912,7 +1040,7 @@ class TypeTest extends TestCase
                 'assertions' => [],
             ],
             'trueFalseTest' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return true */
                         public function returnsTrue() { return true; }
@@ -930,7 +1058,7 @@ class TypeTest extends TestCase
                     }',
             ],
             'intersectionTypeAfterInstanceof' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -948,7 +1076,7 @@ class TypeTest extends TestCase
                     interface I {}',
             ],
             'intersectionTypeInsideInstanceof' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -971,7 +1099,7 @@ class TypeTest extends TestCase
                     function takesA(A $i): void {}',
             ],
             'intersectionInNamespace' => [
-                '<?php
+                'code' => '<?php
                     namespace NS;
                     use Countable;
 
@@ -991,7 +1119,7 @@ class TypeTest extends TestCase
                     mycount($collection);',
             ],
             'scalarTypeParam' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param scalar $var
                      */
@@ -1004,17 +1132,17 @@ class TypeTest extends TestCase
                     test(false);',
             ],
             'assignOpUpdateArray' => [
-                '<?php
+                'code' => '<?php
                     $optgroup = ["a" => ""];
 
                     if (rand(0, 1)) {
                         $optgroup["a"] .= "v";
                     }
 
-                    if ($optgroup["a"] !== "") {}'
+                    if ($optgroup["a"] !== "") {}',
             ],
             'redefineArrayKeyInsideIsStringConditional' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string|int $key
                      */
@@ -1026,10 +1154,59 @@ class TypeTest extends TestCase
 
                             if (!isset($arr[$key])) {}
                         }
-                    }'
+                    }',
+            ],
+            'redefineArrayKeyInsideIsStringConditionalElse' => [
+                'code' => '<?php
+                    /**
+                     * @param string|int $key
+                     */
+                    function get($key, array $arr) : void {
+                        if (!isset($arr[$key])) {
+                            if (!is_string($key)) {
+                                // do nothing
+                            } else {
+                                $key = "p" . $key;
+                            }
+
+                            if (!isset($arr[$key])) {}
+                        }
+                    }',
+            ],
+            'redefineArrayKeyInsideIsStringConditionalElseif' => [
+                'code' => '<?php
+                    /**
+                     * @param string|int $key
+                     */
+                    function get($key, array $arr) : void {
+                        if (!isset($arr[$key])) {
+                            if (!is_string($key)) {
+                                // do nothing
+                            } elseif (rand(0, 1)) {
+                                $key = "p" . $key;
+                            }
+
+                            if (!isset($arr[$key])) {}
+                        }
+                    }',
+            ],
+            'redefineArrayKeyInsideIsStringConditionalWhile' => [
+                'code' => '<?php
+                    /**
+                     * @param string|int $key
+                     */
+                    function get($key, array $arr) : void {
+                        if (!isset($arr[$key])) {
+                            while (rand(0, 1)) {
+                                $key = "p" . $key;
+                            }
+
+                            if (!isset($arr[$key])) {}
+                        }
+                    }',
             ],
             'redefineArrayKeyInsideIsIntConditional' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string|int $key
                      */
@@ -1041,29 +1218,29 @@ class TypeTest extends TestCase
 
                             if (!isset($arr[$key])) {}
                         }
-                    }'
+                    }',
             ],
             'arrayKeyCanBeNumeric' => [
-                '<?php
+                'code' => '<?php
                     /** @param array<string> $arr */
                     function foo(array $arr) : void {
                         foreach ($arr as $k => $_) {
                             if (is_numeric($k)) {}
                             if (!is_numeric($k)) {}
                         }
-                    }'
+                    }',
             ],
             'narrowScalar' => [
-                '<?php
+                'code' => '<?php
                     /** @var scalar $s */
                     $s = 1;
 
                     if (!is_int($s) && !is_bool($s) && !is_float($s)) {
                         strlen($s);
-                    }'
+                    }',
             ],
             'narrowWithCountToAllowNonTupleKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<string> $arr
                      */
@@ -1076,10 +1253,10 @@ class TypeTest extends TestCase
                     /**
                      * @param array{0:string, 1: string} $input
                      */
-                    function consume($input): void{}'
+                    function consume($input): void{}',
             ],
             'notDateTimeWithDateTimeInterface' => [
-                '<?php
+                'code' => '<?php
                     function foo(DateTimeInterface $dateTime): DateTimeInterface {
                         $dateInterval = new DateInterval("P1D");
 
@@ -1094,7 +1271,7 @@ class TypeTest extends TestCase
                 ',
             ],
             'notDateTimeImmutableWithDateTimeInterface' => [
-                '<?php
+                'code' => '<?php
                     function foo(DateTimeInterface $dateTime): DateTimeInterface {
                         $dateInterval = new DateInterval("P1D");
 
@@ -1109,7 +1286,7 @@ class TypeTest extends TestCase
                 ',
             ],
             'CountEqual0MakesNonEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     function a(array $a): void {
                         if (count($a) === 0) {
                             throw new \LogicException;
@@ -1129,19 +1306,19 @@ class TypeTest extends TestCase
                         }
                     }
                     /** @param non-empty-array $a */
-                    function expectNonEmptyArray(array $a): array { return $a; }'
+                    function expectNonEmptyArray(array $a): array { return $a; }',
             ],
         ];
     }
 
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyUndefinedVariable' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0, 1)) {
                         $a = 5;
                     }
@@ -1150,7 +1327,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'nullableMethodCall' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -1165,7 +1342,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodCallWithThis' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return void */
                         public function fooFoo() {}
@@ -1184,7 +1361,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithIfGuard' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -1206,7 +1383,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithWrongBooleanIfGuard' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -1228,7 +1405,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithWrongIfGuardedBefore' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -1252,7 +1429,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithWrongBooleanIfGuardBefore' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -1276,7 +1453,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithGuardedNestedIncompleteRedefinition' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -1304,7 +1481,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithGuardedSwitchRedefinitionNoDefault' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -1329,7 +1506,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithGuardedSwitchRedefinitionEmptyDefault' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -1357,7 +1534,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -1387,7 +1564,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'variableReassignmentInIfWithOutsideCall' => [
-                '<?php
+                'code' => '<?php
                     class One {
                         /** @return void */
                         public function fooFoo() {}
@@ -1410,7 +1587,7 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedMethod',
             ],
             'wrongParam' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {
@@ -1423,7 +1600,7 @@ class TypeTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'intToNullableObjectParam' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {
@@ -1436,7 +1613,7 @@ class TypeTest extends TestCase
                 'error_message' => 'InvalidArgument',
             ],
             'paramCoercionWithBadArg' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                         /** @return void */
@@ -1454,14 +1631,14 @@ class TypeTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'nullCheckInsideForeachWithNoLeaveStatement' => [
-                '<?php
+                'code' => '<?php
                     $a = null;
 
                     $a->fooBar();',
                 'error_message' => 'NullReference',
             ],
             'possiblyUndefinedMethod' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo(): void {}
                     }
@@ -1483,21 +1660,75 @@ class TypeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedMethod',
             ],
             'notTrueTest' => [
-                '<?php
+                'code' => '<?php
                     /** @return true */
                     function returnsTrue() { return rand() % 2 > 0; }
                     ',
                 'error_message' => 'InvalidReturnStatement',
             ],
             'notFalseTest' => [
-                '<?php
+                'code' => '<?php
                     /** @return false */
                     function returnsFalse() { return rand() % 2 > 0; }
                     ',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'invalidSealedArrayAssertion1' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 1) {
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'invalidSealedArrayAssertion2' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 3) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'invalidSealedArrayAssertion3' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) > 4) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'invalidSealedArrayAssertion4' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) < 1) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'invalidSealedArrayAssertion5' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) < 2) {
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'invalidSealedArrayAssertion6' => [
+                'code' => '<?php
+                    /** @var array{a: string, b: string, c?: string} */
+                    $a = [];
+
+                    if (count($a) < 4) {
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
             'intersectionTypeClassCheckAfterInstanceof' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */
@@ -1522,7 +1753,7 @@ class TypeTest extends TestCase
                     . ' but parent type A&static provided',
             ],
             'intersectionTypeInterfaceCheckAfterInstanceof' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-consistent-constructor
                      */

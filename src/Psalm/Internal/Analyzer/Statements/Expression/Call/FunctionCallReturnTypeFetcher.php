@@ -27,7 +27,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
-use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
@@ -39,9 +38,8 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TPositiveInt;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -85,7 +83,7 @@ class FunctionCallReturnTypeFetcher
                 new TLiteralString($function_id),
                 null,
                 $statements_analyzer,
-                true
+                true,
             );
 
             if ($candidate_callable) {
@@ -93,7 +91,7 @@ class FunctionCallReturnTypeFetcher
                     'Closure',
                     $candidate_callable->params,
                     $candidate_callable->return_type,
-                    $candidate_callable->is_pure
+                    $candidate_callable->is_pure,
                 )]);
             } else {
                 $stmt_type = Type::getClosure();
@@ -104,7 +102,7 @@ class FunctionCallReturnTypeFetcher
                 $function_id,
                 $stmt,
                 $context,
-                new CodeLocation($statements_analyzer->getSource(), $function_name)
+                new CodeLocation($statements_analyzer->getSource(), $function_name),
             );
         }
 
@@ -117,17 +115,17 @@ class FunctionCallReturnTypeFetcher
                                 $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => [
                                         new TemplateBound(
-                                            Type::getInt(false, count($stmt->getArgs()))
-                                        )
-                                    ]
+                                            Type::getInt(false, count($stmt->getArgs())),
+                                        ),
+                                    ],
                                 ];
                             } elseif ($template_name === 'TPhpMajorVersion') {
                                 $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => [
                                         new TemplateBound(
-                                            Type::getInt(false, $codebase->php_major_version)
-                                        )
-                                    ]
+                                            Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
+                                        ),
+                                    ],
                                 ];
                             } elseif ($template_name === 'TPhpVersionId') {
                                 $template_result->lower_bounds[$template_name] = [
@@ -135,19 +133,18 @@ class FunctionCallReturnTypeFetcher
                                         new TemplateBound(
                                             Type::getInt(
                                                 false,
-                                                10000 * $codebase->php_major_version
-                                                + 100 * $codebase->php_minor_version
-                                            )
-                                        )
-                                    ]
+                                                $codebase->analysis_php_version_id,
+                                            ),
+                                        ),
+                                    ],
                                 ];
                             } else {
                                 $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => [
                                         new TemplateBound(
-                                            Type::getEmpty()
-                                        )
-                                    ]
+                                            Type::getNever(),
+                                        ),
+                                    ],
                                 ];
                             }
                         }
@@ -157,13 +154,13 @@ class FunctionCallReturnTypeFetcher
                 if ($function_storage && !$context->isSuppressingExceptions($statements_analyzer)) {
                     $context->mergeFunctionExceptions(
                         $function_storage,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     );
                 }
 
                 try {
                     if ($function_storage && $function_storage->return_type) {
-                        $return_type = clone $function_storage->return_type;
+                        $return_type = $function_storage->return_type;
 
                         if ($template_result->lower_bounds && $function_storage->template_types) {
                             $return_type = TypeExpander::expandUnion(
@@ -171,13 +168,13 @@ class FunctionCallReturnTypeFetcher
                                 $return_type,
                                 null,
                                 null,
-                                null
+                                null,
                             );
 
-                            TemplateInferredTypeReplacer::replace(
+                            $return_type = TemplateInferredTypeReplacer::replace(
                                 $return_type,
                                 $template_result,
-                                $codebase
+                                $codebase,
                             );
                         }
 
@@ -190,7 +187,7 @@ class FunctionCallReturnTypeFetcher
                             true,
                             false,
                             false,
-                            true
+                            true,
                         );
 
                         $return_type_location = $function_storage->return_type_location;
@@ -202,7 +199,7 @@ class FunctionCallReturnTypeFetcher
                             $statements_analyzer->getSource(),
                             $codebase,
                             $return_type,
-                            []
+                            [],
                         );
 
                         $config->eventDispatcher->dispatchAfterFunctionCallAnalysis($event);
@@ -211,18 +208,19 @@ class FunctionCallReturnTypeFetcher
                         if ($file_manipulations) {
                             FileManipulationBuffer::add(
                                 $statements_analyzer->getFilePath(),
-                                $file_manipulations
+                                $file_manipulations,
                             );
                         }
 
+                        $return_type = $return_type->setByRef($function_storage->returns_by_ref);
                         $stmt_type = $return_type;
-                        $return_type->by_ref = $function_storage->returns_by_ref;
 
                         // only check the type locally if it's defined externally
                         if ($return_type_location &&
                             !$is_stubbed && // makes lookups or array_* functions quicker
                             !$config->isInProjectDirs($return_type_location->file_path)
                         ) {
+                            /** @psalm-suppress UnusedMethodCall Actually generates issues */
                             $return_type->check(
                                 $statements_analyzer,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -231,7 +229,7 @@ class FunctionCallReturnTypeFetcher
                                 true,
                                 false,
                                 false,
-                                $context->calling_method_id
+                                $context->calling_method_id,
                             );
                         }
                     }
@@ -249,7 +247,7 @@ class FunctionCallReturnTypeFetcher
                     $function_id,
                     $stmt->getArgs(),
                     $callmap_callable,
-                    $context
+                    $context,
                 );
             }
         }
@@ -269,7 +267,7 @@ class FunctionCallReturnTypeFetcher
             $function_storage,
             $stmt_type,
             $template_result,
-            $context
+            $context,
         );
 
         if ($function_storage->proxy_calls !== null) {
@@ -328,18 +326,16 @@ class FunctionCallReturnTypeFetcher
                 case 'hrtime':
                     $keyed_array = new TKeyedArray([
                         Type::getInt(),
-                        Type::getInt()
-                    ]);
-                    $keyed_array->sealed = true;
-                    $keyed_array->is_list = true;
+                        Type::getInt(),
+                    ], null, null, true);
                     return new Union([$keyed_array]);
 
                 case 'get_called_class':
                     return new Union([
                         new TClassString(
                             $context->self ?: 'object',
-                            $context->self ? new TNamedObject($context->self, true) : null
-                        )
+                            $context->self ? new TNamedObject($context->self, true) : null,
+                        ),
                     ]);
 
                 case 'get_parent_class':
@@ -349,8 +345,8 @@ class FunctionCallReturnTypeFetcher
                         if ($classlike_storage->parent_classes) {
                             return new Union([
                                 new TClassString(
-                                    array_values($classlike_storage->parent_classes)[0]
-                                )
+                                    array_values($classlike_storage->parent_classes)[0],
+                                ),
                             ]);
                         }
                     }
@@ -363,8 +359,10 @@ class FunctionCallReturnTypeFetcher
 
                         if (count($atomic_types) === 1) {
                             if (isset($atomic_types['array'])) {
+                                if ($atomic_types['array'] instanceof TList) {
+                                    $atomic_types['array'] = $atomic_types['array']->getKeyedArray();
+                                }
                                 if ($atomic_types['array'] instanceof TCallableArray
-                                    || $atomic_types['array'] instanceof TCallableList
                                     || $atomic_types['array'] instanceof TCallableKeyedArray
                                 ) {
                                     return Type::getInt(false, 2);
@@ -374,59 +372,28 @@ class FunctionCallReturnTypeFetcher
                                     return new Union([
                                         $atomic_types['array']->count !== null
                                             ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TPositiveInt
-                                    ]);
-                                }
-
-                                if ($atomic_types['array'] instanceof TNonEmptyList) {
-                                    return new Union([
-                                        $atomic_types['array']->count !== null
-                                            ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TPositiveInt
+                                            : new TIntRange(1, null),
                                     ]);
                                 }
 
                                 if ($atomic_types['array'] instanceof TKeyedArray) {
-                                    $min = 0;
-                                    $max = 0;
-                                    foreach ($atomic_types['array']->properties as $property) {
-                                        // empty, never and possibly undefined can't count for min value
-                                        if (!$property->possibly_undefined
-                                            && !$property->isEmpty()
-                                            && !$property->isNever()
-                                        ) {
-                                            $min++;
-                                        }
+                                    $min = $atomic_types['array']->getMinCount();
+                                    $max = $atomic_types['array']->getMaxCount();
 
-                                        //empty and never can't count for max value because we know keys are undefined
-                                        if (!$property->isEmpty() && !$property->isNever()) {
-                                            $max++;
-                                        }
+                                    if ($min === $max) {
+                                        return new Union([new TLiteralInt($max)]);
                                     }
-
-                                    if ($atomic_types['array']->sealed) {
-                                        //the KeyedArray is sealed, we can use the min and max
-                                        if ($min === $max) {
-                                            return new Union([new TLiteralInt($max)]);
-                                        }
-
-                                        return new Union([new TIntRange($min, $max)]);
-                                    }
-
-                                    //the type is not sealed, we can only use the min
-                                    return new Union([new TIntRange($min, null)]);
+                                    return new Union([new TIntRange($min, $max)]);
                                 }
 
                                 if ($atomic_types['array'] instanceof TArray
-                                    && $atomic_types['array']->type_params[0]->isEmpty()
-                                    && $atomic_types['array']->type_params[1]->isEmpty()
+                                    && $atomic_types['array']->isEmptyArray()
                                 ) {
                                     return Type::getInt(false, 0);
                                 }
 
                                 return new Union([
-                                    new TLiteralInt(0),
-                                    new TPositiveInt
+                                    new TIntRange(0, null),
                                 ]);
                             }
                         }
@@ -437,17 +404,13 @@ class FunctionCallReturnTypeFetcher
                 case 'hrtime':
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         if ((string) $first_arg_type === 'true') {
-                            $int = Type::getInt();
-                            $int->from_calculation = true;
-                            return $int;
+                            return Type::getInt(true);
                         }
 
                         $keyed_array = new TKeyedArray([
                             Type::getInt(),
-                            Type::getInt()
-                        ]);
-                        $keyed_array->sealed = true;
-                        $keyed_array->is_list = true;
+                            Type::getInt(),
+                        ], null, null, true);
 
                         if ((string) $first_arg_type === 'false') {
                             return new Union([$keyed_array]);
@@ -455,13 +418,11 @@ class FunctionCallReturnTypeFetcher
 
                         return new Union([
                             $keyed_array,
-                            new TInt()
+                            new TInt(),
                         ]);
                     }
 
-                    $int = Type::getInt();
-                    $int->from_calculation = true;
-                    return $int;
+                    return Type::getInt(true);
 
                 case 'min':
                 case 'max':
@@ -470,18 +431,13 @@ class FunctionCallReturnTypeFetcher
 
                         if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
                             if ($first_arg_type->hasArray()) {
-                                /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                                $array_type = $first_arg_type->getAtomicTypes()['array'];
+                                $array_type = $first_arg_type->getArray();
                                 if ($array_type instanceof TKeyedArray) {
                                     return $array_type->getGenericValueType();
                                 }
 
                                 if ($array_type instanceof TArray) {
-                                    return clone $array_type->type_params[1];
-                                }
-
-                                if ($array_type instanceof TList) {
-                                    return clone $array_type->type_param;
+                                    return $array_type->type_params[1];
                                 }
                             } elseif ($first_arg_type->hasScalarType()
                                 && ($second_arg = ($call_args[1]->value ?? null))
@@ -506,25 +462,23 @@ class FunctionCallReturnTypeFetcher
                     break;
 
                 case 'fgetcsv':
-                    $string_type = Type::getString();
-                    $string_type->addType(new TNull);
-                    $string_type->ignore_nullable_issues = true;
-
-                    $call_map_return_type = new Union([
-                        new TNonEmptyList(
-                            $string_type
-                        ),
-                        new TFalse,
-                        new TNull
+                    $string_type = new Union([
+                        new TString,
+                        new TNull,
+                    ], [
+                        'ignore_nullable_issues' => true,
                     ]);
 
-                    if ($codebase->config->ignore_internal_nullable_issues) {
-                        $call_map_return_type->ignore_nullable_issues = true;
-                    }
-
-                    if ($codebase->config->ignore_internal_falsable_issues) {
-                        $call_map_return_type->ignore_falsable_issues = true;
-                    }
+                    $call_map_return_type = new Union([
+                        Type::getNonEmptyListAtomic(
+                            $string_type,
+                        ),
+                        new TFalse,
+                        new TNull,
+                    ], [
+                        'ignore_nullable_issues' => $codebase->config->ignore_internal_nullable_issues,
+                        'ignore_falsable_issues' => $codebase->config->ignore_internal_falsable_issues,
+                    ]);
 
                     return $call_map_return_type;
                 case 'mb_strtolower':
@@ -540,9 +494,7 @@ class FunctionCallReturnTypeFetcher
             }
         }
 
-        $stmt_type = $callmap_callable->return_type
-            ? clone $callmap_callable->return_type
-            : Type::getMixed();
+        $stmt_type = $callmap_callable->return_type ?: Type::getMixed();
 
         switch ($function_id) {
             case 'mb_strpos':
@@ -564,7 +516,7 @@ class FunctionCallReturnTypeFetcher
                 if ($stmt_type->isFalsable()
                     && $codebase->config->ignore_internal_falsable_issues
                 ) {
-                    $stmt_type->ignore_falsable_issues = true;
+                    $stmt_type = $stmt_type->setProperties(['ignore_falsable_issues' => true]);
                 }
         }
 
@@ -576,7 +528,7 @@ class FunctionCallReturnTypeFetcher
         PhpParser\Node\Expr\FuncCall $stmt,
         string $function_id,
         FunctionLikeStorage $function_storage,
-        Union $stmt_type,
+        Union &$stmt_type,
         TemplateResult $template_result,
         Context $context
     ): ?DataFlowNode {
@@ -604,7 +556,7 @@ class FunctionCallReturnTypeFetcher
             $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 ? ($function_storage->signature_return_type_location ?: $function_storage->location)
                 : ($function_storage->return_type_location ?: $function_storage->location),
-            $function_storage->specialize_call ? $node_location : null
+            $function_storage->specialize_call ? $node_location : null,
         );
 
         $statements_analyzer->data_flow_graph->addNode($function_call_node);
@@ -614,12 +566,10 @@ class FunctionCallReturnTypeFetcher
         $conditionally_removed_taints = [];
 
         foreach ($function_storage->conditionally_removed_taints as $conditionally_removed_taint) {
-            $conditionally_removed_taint = clone $conditionally_removed_taint;
-
-            TemplateInferredTypeReplacer::replace(
+            $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
                 $conditionally_removed_taint,
                 $template_result,
-                $codebase
+                $codebase,
             );
 
             $expanded_type = TypeExpander::expandUnion(
@@ -629,7 +579,7 @@ class FunctionCallReturnTypeFetcher
                 null,
                 null,
                 true,
-                true
+                true,
             );
 
             if (!$expanded_type->isNullable()) {
@@ -643,7 +593,7 @@ class FunctionCallReturnTypeFetcher
             $assignment_node = DataFlowNode::getForAssignment(
                 $function_id . '-escaped',
                 $function_storage->signature_return_type_location ?: $function_storage->location,
-                $function_call_node->specialization_key
+                $function_call_node->specialization_key,
             );
 
             $statements_analyzer->data_flow_graph->addPath(
@@ -651,12 +601,12 @@ class FunctionCallReturnTypeFetcher
                 $assignment_node,
                 'conditionally-escaped',
                 $added_taints,
-                array_merge($removed_taints, $conditionally_removed_taints)
+                [...$removed_taints, ...$conditionally_removed_taints],
             );
 
-            $stmt_type->parent_nodes[$assignment_node->id] = $assignment_node;
+            $stmt_type = $stmt_type->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {
-            $stmt_type->parent_nodes[$function_call_node->id] = $function_call_node;
+            $stmt_type = $stmt_type->addParentNodes([$function_call_node->id => $function_call_node]);
         }
 
         if ($function_storage->return_source_params
@@ -697,7 +647,7 @@ class FunctionCallReturnTypeFetcher
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
             $removed_taints = array_merge(
                 $removed_taints,
-                $codebase->config->eventDispatcher->dispatchRemoveTaints($event)
+                $codebase->config->eventDispatcher->dispatchRemoveTaints($event),
             );
 
             self::taintUsingFlows(
@@ -709,7 +659,7 @@ class FunctionCallReturnTypeFetcher
                 $node_location,
                 $function_call_node,
                 $removed_taints,
-                $added_taints
+                $added_taints,
             );
         }
 
@@ -717,7 +667,7 @@ class FunctionCallReturnTypeFetcher
             $method_node = TaintSource::getForMethodReturn(
                 $function_id,
                 $function_id,
-                $node_location
+                $node_location,
             );
 
             $method_node->taints = $function_storage->taint_source_types;
@@ -762,7 +712,7 @@ class FunctionCallReturnTypeFetcher
             foreach ($taintable_arg_index as $arg_index) {
                 $arg_location = new CodeLocation(
                     $statements_analyzer,
-                    $args[$arg_index]->value
+                    $args[$arg_index]->value,
                 );
 
                 $function_param_sink = DataFlowNode::getForMethodArgument(
@@ -770,7 +720,7 @@ class FunctionCallReturnTypeFetcher
                     $function_id,
                     $arg_index,
                     $arg_location,
-                    $function_storage->specialize_call ? $node_location : null
+                    $function_storage->specialize_call ? $node_location : null,
                 );
 
                 $graph->addNode($function_param_sink);
@@ -780,7 +730,7 @@ class FunctionCallReturnTypeFetcher
                     $function_call_node,
                     $path_type,
                     array_merge($added_taints, $function_storage->added_taints),
-                    $removed_taints
+                    $removed_taints,
                 );
             }
         }

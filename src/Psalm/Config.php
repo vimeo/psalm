@@ -5,8 +5,11 @@ namespace Psalm;
 use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
+use DOMAttr;
 use DOMDocument;
+use DOMElement;
 use InvalidArgumentException;
+use JsonException;
 use LogicException;
 use OutOfBoundsException;
 use Psalm\CodeLocation\Raw;
@@ -24,6 +27,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
+use Psalm\Issue\ClassConstantIssue;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
@@ -32,18 +36,20 @@ use Psalm\Issue\MethodIssue;
 use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
+use Psalm\Plugin\PluginFileExtensionsInterface;
+use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use RuntimeException;
 use SimpleXMLElement;
 use SimpleXMLIterator;
+use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
-use Webmozart\PathUtil\Path;
 use XdgBaseDir\Xdg;
 use stdClass;
 
-use function array_map;
+use function array_key_exists;
 use function array_merge;
 use function array_pad;
 use function array_pop;
@@ -57,9 +63,12 @@ use function count;
 use function dirname;
 use function explode;
 use function extension_loaded;
+use function fclose;
 use function file_exists;
 use function file_get_contents;
 use function filetype;
+use function flock;
+use function fopen;
 use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
@@ -68,8 +77,10 @@ use function glob;
 use function implode;
 use function in_array;
 use function is_a;
+use function is_array;
 use function is_dir;
 use function is_file;
+use function is_resource;
 use function is_string;
 use function json_decode;
 use function libxml_clear_errors;
@@ -96,14 +107,17 @@ use function substr;
 use function substr_count;
 use function sys_get_temp_dir;
 use function unlink;
+use function usleep;
 use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 use const GLOB_NOSORT;
+use const JSON_THROW_ON_ERROR;
 use const LIBXML_ERR_ERROR;
 use const LIBXML_ERR_FATAL;
 use const LIBXML_NONET;
 use const LIBXML_NOWARNING;
+use const LOCK_EX;
 use const PHP_EOL;
 use const PHP_VERSION_ID;
 use const PSALM_VERSION;
@@ -155,13 +169,10 @@ class Config
 
     /**
      * These are special object classes that allow any and all properties to be get/set on them
-     * @var array<int, class-string>
+     *
+     * @var array<int, lowercase-string>
      */
-    protected $universal_object_crates = [
-        stdClass::class,
-        SimpleXMLElement::class,
-        SimpleXMLIterator::class,
-    ];
+    protected $universal_object_crates;
 
     /**
      * @var static|null
@@ -192,20 +203,14 @@ class Config
     public $throw_exception = false;
 
     /**
-     * Whether or not to load Xdebug stub
-     *
-     * @deprecated going to be removed in Psalm 5
-     *
-     * @var bool|null
-     */
-    public $load_xdebug_stub;
-
-    /**
      * The directory to store PHP Parser (and other) caches
      *
+     * @internal
      * @var string|null
      */
     public $cache_directory;
+
+    private bool $cache_directory_initialized = false;
 
     /**
      * The directory to store all Psalm project caches
@@ -240,55 +245,53 @@ class Config
 
     /**
      * The PHP version to assume as declared in the config file
-     *
-     * @var string|null
      */
-    private $configured_php_version;
+    private ?string $configured_php_version = null;
 
     /**
      * @var array<int, string>
      */
-    private $file_extensions = ['php'];
+    private array $file_extensions = ['php'];
 
     /**
      * @var array<string, class-string<FileScanner>>
      */
-    private $filetype_scanners = [];
+    private array $filetype_scanners = [];
 
     /**
      * @var array<string, class-string<FileAnalyzer>>
      */
-    private $filetype_analyzers = [];
+    private array $filetype_analyzers = [];
 
     /**
      * @var array<string, string>
      */
-    private $filetype_scanner_paths = [];
+    private array $filetype_scanner_paths = [];
 
     /**
      * @var array<string, string>
      */
-    private $filetype_analyzer_paths = [];
+    private array $filetype_analyzer_paths = [];
 
     /**
      * @var array<string, IssueHandler>
      */
-    private $issue_handlers = [];
+    private array $issue_handlers = [];
 
     /**
      * @var array<int, string>
      */
-    private $mock_classes = [];
+    private array $mock_classes = [];
 
     /**
      * @var array<string, string>
      */
-    private $preloaded_stub_files = [];
+    private array $preloaded_stub_files = [];
 
     /**
      * @var array<string, string>
      */
-    private $stub_files = [];
+    private array $stub_files = [];
 
     /**
      * @var bool
@@ -321,11 +324,6 @@ class Config
 
     /** @var bool */
     public $use_igbinary = false;
-
-    /**
-     * @var bool
-     */
-    public $allow_phpstorm_generics = false;
 
     /**
      * @var bool
@@ -445,11 +443,6 @@ class Config
     /**
      * @var bool
      */
-    public $forbid_echo = false;
-
-    /**
-     * @var bool
-     */
     public $find_unused_code = false;
 
     /**
@@ -508,7 +501,7 @@ class Config
     /**
      * @var array<array{class:string,config:?SimpleXMLElement}>
      */
-    private $plugin_classes = [];
+    private array $plugin_classes = [];
 
     /**
      * @var bool
@@ -521,20 +514,12 @@ class Config
     public $allow_named_arg_calls = true;
 
     /** @var array<string, mixed> */
-    private $predefined_constants = [];
+    private array $predefined_constants = [];
 
     /** @var array<callable-string, bool> */
-    private $predefined_functions = [];
+    private array $predefined_functions = [];
 
-    /** @var ClassLoader|null */
-    private $composer_class_loader;
-
-    /**
-     * Custom functions that always exit
-     *
-     * @var array<lowercase-string, bool>
-     */
-    public $exit_functions = [];
+    private ?ClassLoader $composer_class_loader = null;
 
     /**
      * @var string
@@ -560,10 +545,9 @@ class Config
     /**
      * @var int
      */
-    public $max_string_length = 1000;
+    public $max_string_length = 1_000;
 
-    /** @var ?IncludeCollector */
-    private $include_collector;
+    private ?IncludeCollector $include_collector = null;
 
     /**
      * @var TaintAnalysisFileFilter|null
@@ -575,10 +559,7 @@ class Config
      */
     public $debug_emitted_issues = false;
 
-    /**
-     * @var bool
-     */
-    private $report_info = true;
+    private bool $report_info = true;
 
     /**
      * @var EventDispatcher
@@ -601,10 +582,53 @@ class Config
     /** @var ?int */
     public $threads;
 
+    /**
+     * A list of php extensions supported by Psalm.
+     * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
+     *
+     * @psalm-readonly-allow-private-mutation
+     * @var array<string, bool>
+     */
+    public $php_extensions = [
+        "apcu" => false,
+        "decimal" => false,
+        "dom" => false,
+        "ds" => false,
+        "ffi" => false,
+        "geos" => false,
+        "gmp" => false,
+        "mongodb" => false,
+        "mysqli" => false,
+        "pdo" => false,
+        "random" => false,
+        "redis" => false,
+        "simplexml" => false,
+        "soap" => false,
+        "xdebug" => false,
+    ];
+
+    /**
+     * A list of php extensions required by the project that aren't fully supported by Psalm.
+     *
+     * @var array<string, true>
+     */
+    public $php_extensions_not_supported = [];
+
+    /**
+     * @var array<class-string, PluginInterface>
+     */
+    private array $plugins = [];
+
+    /** @internal */
     protected function __construct()
     {
         self::$instance = $this;
         $this->eventDispatcher = new EventDispatcher();
+        $this->universal_object_crates = [
+            strtolower(stdClass::class),
+            strtolower(SimpleXMLElement::class),
+            strtolower(SimpleXMLIterator::class),
+        ];
     }
 
     /**
@@ -613,7 +637,6 @@ class Config
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @throws ConfigException if a config path is not found
-     *
      */
     public static function getConfigForPath(string $path, string $current_dir): Config
     {
@@ -630,7 +653,6 @@ class Config
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @throws ConfigException
-     *
      */
     public static function locateConfigFile(string $path): ?string
     {
@@ -679,7 +701,7 @@ class Config
             $config->hash = sha1($file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
-                'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage()
+                'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
             );
         }
 
@@ -696,9 +718,9 @@ class Config
 
     /**
      * Creates a new config object from an XML string
+     *
      * @param  string|null      $current_dir Current working directory, if different to $base_dir
      * @param  non-empty-string $file_contents
-     *
      * @throws ConfigException
      */
     public static function loadFromXML(
@@ -737,7 +759,6 @@ class Config
 
     /**
      * @param non-empty-string $file_contents
-     *
      * @throws ConfigException
      */
     private static function validateXmlConfig(string $base_dir, string $file_contents): void
@@ -760,7 +781,7 @@ class Config
 
         if (!$psalm_node) {
             throw new ConfigException(
-                'Missing psalm node'
+                'Missing psalm node',
             );
         }
 
@@ -781,7 +802,7 @@ class Config
         foreach ($errors as $error) {
             if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
                 throw new ConfigException(
-                    'Error on line ' . $error->line . ":\n" . '    ' . $error->message
+                    'Error on line ' . $error->line . ":\n" . '    ' . $error->message,
                 );
             }
         }
@@ -804,7 +825,7 @@ class Config
             $newline_offset = strpos($string, "\n", $offset);
             if (false === $newline_offset) {
                 throw new OutOfBoundsException(
-                    'Line ' . $line_number . ' is not found in a string with ' . ($i + 1) . ' lines'
+                    'Line ' . $line_number . ' is not found in a string with ' . ($i + 1) . ' lines',
                 );
             }
             $offset = $newline_offset + 1;
@@ -817,6 +838,58 @@ class Config
         return $offset;
     }
 
+    private static function processDeprecatedAttribute(
+        DOMAttr $attribute,
+        string $file_contents,
+        self $config,
+        string $config_path
+    ): void {
+        $line = $attribute->getLineNo();
+        assert($line > 0); // getLineNo() always returns non-zero for nodes loaded from file
+
+        $offset = self::lineNumberToByteOffset($file_contents, $line);
+        $attribute_start = strrpos($file_contents, $attribute->name, $offset - strlen($file_contents)) ?: 0;
+        $attribute_end = $attribute_start + strlen($attribute->name) - 1;
+
+        $config->config_issues[] = new ConfigIssue(
+            'Attribute "' . $attribute->name . '" is deprecated '
+            . 'and is going to be removed in the next major version',
+            new Raw(
+                $file_contents,
+                $config_path,
+                basename($config_path),
+                $attribute_start,
+                $attribute_end,
+            ),
+        );
+    }
+
+    private static function processDeprecatedElement(
+        DOMElement $deprecated_element_xml,
+        string $file_contents,
+        self $config,
+        string $config_path
+    ): void {
+        $line = $deprecated_element_xml->getLineNo();
+        assert($line > 0);
+
+        $offset = self::lineNumberToByteOffset($file_contents, $line);
+        $element_start = strpos($file_contents, $deprecated_element_xml->localName, $offset) ?: 0;
+        $element_end = $element_start + strlen($deprecated_element_xml->localName) - 1;
+
+        $config->config_issues[] = new ConfigIssue(
+            'Element "' . $deprecated_element_xml->localName . '" is deprecated '
+            . 'and is going to be removed in the next major version',
+            new Raw(
+                $file_contents,
+                $config_path,
+                basename($config_path),
+                $element_start,
+                $element_end,
+            ),
+        );
+    }
+
     private static function processConfigDeprecations(
         self $config,
         DOMDocument $dom_document,
@@ -825,18 +898,11 @@ class Config
     ): void {
         $config->config_issues = [];
 
-        // Attributes to be removed in Psalm 5
-        $deprecated_attributes = [
-            'allowCoercionFromStringToClassConst',
-            'allowPhpStormGenerics',
-            'forbidEcho',
-            'loadXdebugStub',
-            'totallyTyped'
-        ];
+        // Attributes to be removed in Psalm 6
+        $deprecated_attributes = [];
 
-        $deprecated_elements = [
-            'exitFunctions',
-        ];
+        /** @var list<string> */
+        $deprecated_elements = [];
 
         $psalm_element_item = $dom_document->getElementsByTagName('psalm')->item(0);
         assert($psalm_element_item !== null);
@@ -844,65 +910,28 @@ class Config
 
         foreach ($attributes as $attribute) {
             if (in_array($attribute->name, $deprecated_attributes, true)) {
-                $line = $attribute->getLineNo();
-                assert($line > 0); // getLineNo() always returns non-zero for nodes loaded from file
-
-                $offset = self::lineNumberToByteOffset($file_contents, $line);
-                $attribute_start = strrpos($file_contents, $attribute->name, $offset - strlen($file_contents)) ?: 0;
-                $attribute_end = $attribute_start + strlen($attribute->name) - 1;
-
-                $config->config_issues[] = new ConfigIssue(
-                    'Attribute "' . $attribute->name . '" is deprecated '
-                    . 'and is going to be removed in the next major version',
-                    new Raw(
-                        $file_contents,
-                        $config_path,
-                        basename($config_path),
-                        $attribute_start,
-                        $attribute_end
-                    )
-                );
+                self::processDeprecatedAttribute($attribute, $file_contents, $config, $config_path);
             }
         }
 
         foreach ($deprecated_elements as $deprecated_element) {
             $deprecated_elements_xml = $dom_document->getElementsByTagNameNS(
                 self::CONFIG_NAMESPACE,
-                $deprecated_element
+                $deprecated_element,
             );
             if ($deprecated_elements_xml->length) {
                 $deprecated_element_xml = $deprecated_elements_xml->item(0);
-                assert($deprecated_element_xml !== null);
-                $line = $deprecated_element_xml->getLineNo();
-                assert($line > 0);
-
-                $offset = self::lineNumberToByteOffset($file_contents, $line);
-                $element_start = strpos($file_contents, $deprecated_element, $offset) ?: 0;
-                $element_end = $element_start + strlen($deprecated_element) - 1;
-
-                $config->config_issues[] = new ConfigIssue(
-                    'Element "' . $deprecated_element . '" is deprecated '
-                    . 'and is going to be removed in the next major version',
-                    new Raw(
-                        $file_contents,
-                        $config_path,
-                        basename($config_path),
-                        $element_start,
-                        $element_end
-                    )
-                );
+                self::processDeprecatedElement($deprecated_element_xml, $file_contents, $config, $config_path);
             }
         }
     }
 
     /**
      * @param non-empty-string $file_contents
-     *
      * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
-     *
      * @throws ConfigException
      */
     private static function fromXmlAndPaths(
@@ -920,7 +949,7 @@ class Config
                 $config,
                 $dom_document,
                 $file_contents,
-                $config_path
+                $config_path,
             );
         }
 
@@ -937,7 +966,6 @@ class Config
             'strictBinaryOperands' => 'strict_binary_operands',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'disableVarParsing' => 'disable_var_parsing',
-            'allowPhpStormGenerics' => 'allow_phpstorm_generics',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
             'disableSuppressAll' => 'disable_suppress_all',
             'usePhpDocMethodsWithoutMagicCall' => 'use_phpdoc_method_without_magic_or_parent',
@@ -947,11 +975,9 @@ class Config
             'addParamDefaultToDocblockType' => 'add_param_default_to_docblock_type',
             'checkForThrowsDocblock' => 'check_for_throws_docblock',
             'checkForThrowsInGlobalScope' => 'check_for_throws_in_global_scope',
-            'forbidEcho' => 'forbid_echo',
             'ignoreInternalFunctionFalseReturn' => 'ignore_internal_falsable_issues',
             'ignoreInternalFunctionNullReturn' => 'ignore_internal_nullable_issues',
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
-            'loadXdebugStub' => 'load_xdebug_stub',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'reportMixedIssues' => 'show_mixed_issues',
@@ -973,7 +999,7 @@ class Config
                 $attribute_text = (string) $config_xml[$xmlName];
                 $config->setBooleanAttribute(
                     $internalName,
-                    $attribute_text === 'true' || $attribute_text === '1'
+                    $attribute_text === 'true' || $attribute_text === '1',
                 );
             }
         }
@@ -983,6 +1009,47 @@ class Config
         } else {
             $config->base_dir = $current_dir;
             $base_dir = $current_dir;
+        }
+
+        $composer_json_path = Composer::getJsonFilePath($config->base_dir);
+
+        $composer_json = null;
+        if (file_exists($composer_json_path)) {
+            $composer_json = json_decode(file_get_contents($composer_json_path), true);
+            if (!is_array($composer_json)) {
+                throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+            }
+        }
+        $required_extensions = [];
+        foreach (($composer_json["require"] ?? []) as $required => $_) {
+            if (strpos($required, "ext-") === 0) {
+                $required_extensions[strtolower(substr($required, 4))] = true;
+            }
+        }
+        foreach ($required_extensions as $required_ext => $_) {
+            if (isset($config->php_extensions[$required_ext])) {
+                $config->php_extensions[$required_ext] = true;
+            } else {
+                $config->php_extensions_not_supported[$required_ext] = true;
+            }
+        }
+
+        if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {
+            foreach ($config_xml->enableExtensions->extension as $extension) {
+                assert(isset($extension["name"]));
+                $extensionName = (string) $extension["name"];
+                assert(array_key_exists($extensionName, $config->php_extensions));
+                $config->php_extensions[$extensionName] = true;
+            }
+        }
+
+        if (isset($config_xml->disableExtensions) && isset($config_xml->disableExtensions->extension)) {
+            foreach ($config_xml->disableExtensions->extension as $extension) {
+                assert(isset($extension["name"]));
+                $extensionName = (string) $extension["name"];
+                assert(array_key_exists($extensionName, $config->php_extensions));
+                $config->php_extensions[$extensionName] = false;
+            }
         }
 
         if (isset($config_xml['phpVersion'])) {
@@ -1011,32 +1078,6 @@ class Config
 
         $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
 
-        $cwd = null;
-
-        if ($config->resolve_from_config_file) {
-            $cwd = getcwd();
-            chdir($config->base_dir);
-        }
-
-        if (!is_dir($config->cache_directory)) {
-            try {
-                if (mkdir($config->cache_directory, 0777, true) === false) {
-                    // any other error than directory already exists/permissions issue
-                    throw new RuntimeException('Failed to create Psalm cache directory for unknown reasons');
-                }
-            } catch (RuntimeException $e) {
-                if (!is_dir($config->cache_directory)) {
-                    // rethrow the error with default message
-                    // it contains the reason why creation failed
-                    throw $e;
-                }
-            }
-        }
-
-        if ($cwd) {
-            chdir($cwd);
-        }
-
         if (isset($config_xml['serializer'])) {
             $attribute_text = (string) $config_xml['serializer'];
             $config->use_igbinary = $attribute_text === 'igbinary';
@@ -1061,23 +1102,11 @@ class Config
 
             if (!in_array($attribute_text, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
                 throw new ConfigException(
-                    'Invalid error level ' . $config_xml['errorLevel']
+                    'Invalid error level ' . $config_xml['errorLevel'],
                 );
             }
 
             $config->level = $attribute_text;
-        } elseif (isset($config_xml['totallyTyped'])) {
-            $totally_typed = (string) $config_xml['totallyTyped'];
-
-            if ($totally_typed === 'true' || $totally_typed === '1') {
-                $config->level = 1;
-            } else {
-                $config->level = 2;
-
-                if ($config->show_mixed_issues === null) {
-                    $config->show_mixed_issues = false;
-                }
-            }
         } else {
             $config->level = 2;
         }
@@ -1130,7 +1159,7 @@ class Config
             $config->taint_analysis_ignored_files = TaintAnalysisFileFilter::loadFromXMLElement(
                 $config_xml->taintAnalysis->ignoreFiles,
                 $base_dir,
-                false
+                false,
             );
         }
 
@@ -1188,13 +1217,6 @@ class Config
             }
         }
 
-        if (isset($config_xml->exitFunctions) && isset($config_xml->exitFunctions->function)) {
-            /** @var SimpleXMLElement $exit_function */
-            foreach ($config_xml->exitFunctions->function as $exit_function) {
-                $config->exit_functions[strtolower((string) $exit_function['name'])] = true;
-            }
-        }
-
         if (isset($config_xml->stubs) && isset($config_xml->stubs->file)) {
             /** @var SimpleXMLElement $stub_file */
             foreach ($config_xml->stubs->file as $stub_file) {
@@ -1209,7 +1231,7 @@ class Config
                         'Cannot resolve stubfile path '
                             . rtrim($config->base_dir, DIRECTORY_SEPARATOR)
                             . DIRECTORY_SEPARATOR
-                            . $stub_file['name']
+                            . $stub_file['name'],
                     );
                 }
 
@@ -1265,13 +1287,13 @@ class Config
                         /** @var string $key */
                         $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
                             $issue_handler,
-                            $base_dir
+                            $base_dir,
                         );
                     } else {
                         /** @var string $key */
                         $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
                             $issue_handler,
-                            $base_dir
+                            $base_dir,
                         );
                     }
                 }
@@ -1323,7 +1345,6 @@ class Config
 
     /**
      * @throws ConfigException if a Config file could not be found
-     *
      */
     private function loadFileExtensions(SimpleXMLElement $extensions): void
     {
@@ -1373,6 +1394,40 @@ class Config
         return $this->plugin_classes;
     }
 
+    public function processPluginFileExtensions(ProjectAnalyzer $projectAnalyzer): void
+    {
+        $projectAnalyzer->progress->debug('Process plugin adjustments...' . PHP_EOL);
+        $socket = new PluginFileExtensionsSocket($this);
+        foreach ($this->plugin_classes as $pluginClassEntry) {
+            $pluginClassName = $pluginClassEntry['class'];
+            $pluginConfig = $pluginClassEntry['config'];
+            $plugin = $this->loadPlugin($projectAnalyzer, $pluginClassName);
+            if (!$plugin instanceof PluginFileExtensionsInterface) {
+                continue;
+            }
+            try {
+                $plugin->processFileExtensions($socket, $pluginConfig);
+            } catch (Throwable $t) {
+                throw new ConfigException(
+                    'Failed to process plugin file extensions ' . $pluginClassName,
+                    1_635_800_581,
+                    $t,
+                );
+            }
+            $projectAnalyzer->progress->debug('Initialized plugin ' . $pluginClassName . ' successfully' . PHP_EOL);
+        }
+        // populate additional aspects after plugins have been initialized
+        foreach ($socket->getAdditionalFileExtensions() as $fileExtension) {
+            $this->file_extensions[] = $fileExtension;
+        }
+        foreach ($socket->getAdditionalFileTypeScanners() as $extension => $className) {
+            $this->filetype_scanners[$extension] = $className;
+        }
+        foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
+            $this->filetype_analyzers[$extension] = $className;
+        }
+    }
+
     /**
      * Initialises all the plugins (done once the config is fully loaded)
      */
@@ -1388,45 +1443,29 @@ class Config
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
 
-            try {
-                // Below will attempt to load plugins from the project directory first.
-                // Failing that, it will use registered autoload chain, which will load
-                // plugins from Psalm directory or phar file. If that fails as well, it
-                // will fall back to project autoloader. It may seem that the last step
-                // will always fail, but it's only true if project uses Composer autoloader
-                if ($this->composer_class_loader
-                    && ($plugin_class_path = $this->composer_class_loader->findFile($plugin_class_name))
-                ) {
-                    $project_analyzer->progress->debug(
-                        'Loading plugin ' . $plugin_class_name . ' via require' . PHP_EOL
-                    );
-
-                    self::requirePath($plugin_class_path);
-                } else {
-                    if (!class_exists($plugin_class_name)) {
-                        throw new UnexpectedValueException($plugin_class_name . ' is not a known class');
-                    }
-                }
-
-                /**
-                 * @psalm-suppress InvalidStringClass
-                 *
-                 * @var PluginEntryPointInterface
-                 */
-                $plugin_object = new $plugin_class_name;
-                $plugin_object($socket, $plugin_config);
-            } catch (Throwable $e) {
-                throw new ConfigException('Failed to load plugin ' . $plugin_class_name, 0, $e);
+            $plugin = $this->loadPlugin($project_analyzer, $plugin_class_name);
+            if (!$plugin instanceof PluginEntryPointInterface) {
+                continue;
             }
 
-            $project_analyzer->progress->debug('Loaded plugin ' . $plugin_class_name . ' successfully' . PHP_EOL);
+            try {
+                $plugin($socket, $plugin_config);
+            } catch (Throwable $t) {
+                throw new ConfigException(
+                    'Failed to invoke plugin ' . $plugin_class_name,
+                    1_635_800_582,
+                    $t,
+                );
+            }
+
+            $project_analyzer->progress->debug('Initialized plugin ' . $plugin_class_name . ' successfully' . PHP_EOL);
         }
 
         foreach ($this->filetype_scanner_paths as $extension => $path) {
             $fq_class_name = $this->getPluginClassForPath(
                 $codebase,
                 $path,
-                FileScanner::class
+                FileScanner::class,
             );
 
             self::requirePath($path);
@@ -1438,7 +1477,7 @@ class Config
             $fq_class_name = $this->getPluginClassForPath(
                 $codebase,
                 $path,
-                FileAnalyzer::class
+                FileAnalyzer::class,
             );
 
             self::requirePath($path);
@@ -1448,26 +1487,51 @@ class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
-                $plugin_object = new FileBasedPluginAdapter($path, $this, $codebase);
-                $plugin_object($socket);
+                $plugin = new FileBasedPluginAdapter($path, $this, $codebase);
+                $plugin($socket);
             } catch (Throwable $e) {
                 throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
-        }
-        // populate additional aspects after plugins have been initialized
-        foreach ($socket->getAdditionalFileExtensions() as $fileExtension) {
-            $this->file_extensions[] = $fileExtension;
-        }
-        foreach ($socket->getAdditionalFileTypeScanners() as $extension => $className) {
-            $this->filetype_scanners[$extension] = $className;
-        }
-        foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
-            $this->filetype_analyzers[$extension] = $className;
         }
 
         new HtmlFunctionTainter();
 
         $socket->registerHooksFromClass(HtmlFunctionTainter::class);
+    }
+
+    private function loadPlugin(ProjectAnalyzer $projectAnalyzer, string $pluginClassName): PluginInterface
+    {
+        if (isset($this->plugins[$pluginClassName])) {
+            return $this->plugins[$pluginClassName];
+        }
+        try {
+            // Below will attempt to load plugins from the project directory first.
+            // Failing that, it will use registered autoload chain, which will load
+            // plugins from Psalm directory or phar file. If that fails as well, it
+            // will fall back to project autoloader. It may seem that the last step
+            // will always fail, but it's only true if project uses Composer autoloader
+            if ($this->composer_class_loader
+                && ($pluginclas_class_path = $this->composer_class_loader->findFile($pluginClassName))
+            ) {
+                $projectAnalyzer->progress->debug(
+                    'Loading plugin ' . $pluginClassName . ' via require' . PHP_EOL,
+                );
+
+                self::requirePath($pluginclas_class_path);
+            } else {
+                if (!class_exists($pluginClassName)) {
+                    throw new UnexpectedValueException($pluginClassName . ' is not a known class');
+                }
+            }
+            if (!is_a($pluginClassName, PluginInterface::class, true)) {
+                throw new UnexpectedValueException($pluginClassName . ' is not a PluginInterface implementation');
+            }
+            $this->plugins[$pluginClassName] = new $pluginClassName;
+            $projectAnalyzer->progress->debug('Loaded plugin ' . $pluginClassName . PHP_EOL);
+            return $this->plugins[$pluginClassName];
+        } catch (Throwable $e) {
+            throw new ConfigException('Failed to load plugin ' . $pluginClassName, 0, $e);
+        }
     }
 
     private static function requirePath(string $path): void
@@ -1478,9 +1542,7 @@ class Config
 
     /**
      * @template T
-     *
      * @param  T::class $must_extend
-     *
      * @return class-string<T>
      */
     private function getPluginClassForPath(Codebase $codebase, string $path, string $must_extend): string
@@ -1489,7 +1551,7 @@ class Config
         $file_to_scan = new FileScanner($path, $this->shortenFileName($path), true);
         $file_to_scan->scan(
             $codebase,
-            $file_storage
+            $file_storage,
         );
 
         $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
@@ -1497,7 +1559,7 @@ class Config
         if (!count($declared_classes)) {
             throw new InvalidArgumentException(
                 'Plugins must have at least one class in the file - ' . $path . ' has ' .
-                    count($declared_classes)
+                    count($declared_classes),
             );
         }
 
@@ -1505,11 +1567,11 @@ class Config
 
         if (!$codebase->classlikes->classExtends(
             $fq_class_name,
-            $must_extend
+            $must_extend,
         )
         ) {
             throw new InvalidArgumentException(
-                'This plugin must extend ' . $must_extend . ' - ' . $path . ' does not'
+                'This plugin must extend ' . $must_extend . ' - ' . $path . ' does not',
             );
         }
 
@@ -1650,6 +1712,8 @@ class Config
             $reporting_level = $this->getReportingLevelForFunction($issue_type, $e->function_id);
         } elseif ($e instanceof PropertyIssue) {
             $reporting_level = $this->getReportingLevelForProperty($issue_type, $e->property_id);
+        } elseif ($e instanceof ClassConstantIssue) {
+            $reporting_level = $this->getReportingLevelForClassConstant($issue_type, $e->const_id);
         } elseif ($e instanceof ArgumentIssue && $e->function_id) {
             $reporting_level = $this->getReportingLevelForArgument($issue_type, $e->function_id);
         } elseif ($e instanceof VariableIssue) {
@@ -1872,6 +1936,15 @@ class Config
         return null;
     }
 
+    public function getReportingLevelForClassConstant(string $issue_type, string $constant_id): ?string
+    {
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForClassConstant($constant_id);
+        }
+
+        return null;
+    }
+
     public function getReportingLevelForVariable(string $issue_type, string $var_name): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
@@ -1969,7 +2042,7 @@ class Config
 
         $core_generic_files = [];
 
-        if (PHP_VERSION_ID < 80000 && $codebase->php_major_version >= 8) {
+        if (PHP_VERSION_ID < 8_00_00 && $codebase->analysis_php_version_id >= 8_00_00) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
 
             if (!file_exists($stringable_path)) {
@@ -1979,11 +2052,21 @@ class Config
             $core_generic_files[] = $stringable_path;
         }
 
-        if (PHP_VERSION_ID < 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
+        if (PHP_VERSION_ID < 8_01_00 && $codebase->analysis_php_version_id >= 8_01_00) {
             $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
 
             if (!file_exists($stringable_path)) {
                 throw new UnexpectedValueException('Cannot locate PHP 8.1 classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
+
+        if (PHP_VERSION_ID < 8_02_00 && $codebase->analysis_php_version_id >= 8_02_00) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php82.phpstub';
+
+            if (!file_exists($stringable_path)) {
+                throw new UnexpectedValueException('Cannot locate PHP 8.2 classes');
             }
 
             $core_generic_files[] = $stringable_path;
@@ -2025,65 +2108,43 @@ class Config
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericClasses.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericIterators.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreImmutableClasses.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'DOM.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Reflection.phpstub',
             $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'SPL.phpstub',
         ];
 
-        if (PHP_VERSION_ID >= 80000 && $codebase->php_major_version >= 8) {
+        if ($codebase->analysis_php_version_id >= 8_00_00) {
             $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php80.phpstub';
             $this->internal_stubs[] = $stringable_path;
         }
 
-        if (PHP_VERSION_ID >= 80100 && $codebase->php_major_version >= 8 && $codebase->php_minor_version >= 1) {
+        if ($codebase->analysis_php_version_id >= 8_01_00) {
             $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php81.phpstub';
             $this->internal_stubs[] = $stringable_path;
         }
 
-        if (extension_loaded('PDO')) {
-            $ext_pdo_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'pdo.phpstub';
-            $this->internal_stubs[] = $ext_pdo_path;
+        if ($codebase->analysis_php_version_id >= 8_02_00) {
+            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php82.phpstub';
+            $this->internal_stubs[] = $stringable_path;
         }
 
-        if (extension_loaded('soap')) {
-            $ext_soap_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'soap.phpstub';
-            $this->internal_stubs[] = $ext_soap_path;
+        $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
+        foreach ($this->php_extensions as $ext => $enabled) {
+            if ($enabled) {
+                $this->internal_stubs[] = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
+            }
         }
 
-        if (extension_loaded('ds')) {
-            $ext_ds_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-ds.phpstub';
-            $this->internal_stubs[] = $ext_ds_path;
-        }
-
-        if (extension_loaded('mongodb')) {
-            $ext_mongodb_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mongodb.phpstub';
-            $this->internal_stubs[] = $ext_mongodb_path;
-        }
-
-        if ($this->load_xdebug_stub) {
-            $xdebug_stub_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Xdebug.phpstub';
-            $this->internal_stubs[] = $xdebug_stub_path;
-        }
-
-        if (extension_loaded('mysqli')) {
-            $ext_mysqli_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'mysqli.phpstub';
-            $this->internal_stubs[] = $ext_mysqli_path;
-        }
-
-        if (extension_loaded('decimal')) {
-            $ext_decimal_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'decimal.phpstub';
-            $this->internal_stubs[] = $ext_decimal_path;
-        }
-
-        // phpredis
-        if (extension_loaded('redis')) {
-            $ext_phpredis_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'phpredis.phpstub';
-            $this->internal_stubs[] = $ext_phpredis_path;
-        }
-
-        if (extension_loaded('apcu')) {
-            $ext_apcu_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'ext-apcu.phpstub';
-            $this->internal_stubs[] = $ext_apcu_path;
+        /** @deprecated Will be removed in Psalm 6 */
+        $extensions_to_load_stubs_using_deprecated_way = ['apcu', 'random', 'redis'];
+        foreach ($extensions_to_load_stubs_using_deprecated_way as $ext_name) {
+            $ext_stub_path = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext_name.phpstub";
+            $is_stub_already_loaded = in_array($ext_stub_path, $this->internal_stubs, true);
+            if (! $is_stub_already_loaded && extension_loaded($ext_name)) {
+                $this->internal_stubs[] = $ext_stub_path;
+                $progress->write("Deprecation: Psalm stubs for ext-$ext_name loaded using legacy way."
+                    . " Instead, please declare ext-$ext_name as dependency in composer.json"
+                    . " or use <enableExtensions> directive in Psalm config.\n");
+            }
         }
 
         foreach ($this->internal_stubs as $stub_path) {
@@ -2126,6 +2187,44 @@ class Config
 
     public function getCacheDirectory(): ?string
     {
+        if ($this->cache_directory === null) {
+            return null;
+        }
+
+        if ($this->cache_directory_initialized) {
+            return $this->cache_directory;
+        }
+
+        $cwd = null;
+
+        if ($this->resolve_from_config_file) {
+            $cwd = getcwd();
+            chdir($this->base_dir);
+        }
+
+        try {
+            if (!is_dir($this->cache_directory)) {
+                try {
+                    if (mkdir($this->cache_directory, 0777, true) === false) {
+                        // any other error than directory already exists/permissions issue
+                        throw new RuntimeException('Failed to create Psalm cache directory for unknown reasons');
+                    }
+                } catch (RuntimeException $e) {
+                    if (!is_dir($this->cache_directory)) {
+                        // rethrow the error with default message
+                        // it contains the reason why creation failed
+                        throw $e;
+                    }
+                }
+            }
+        } finally {
+            if ($cwd) {
+                chdir($cwd);
+            }
+        }
+
+        $this->cache_directory_initialized = true;
+
         return $this->cache_directory;
     }
 
@@ -2193,13 +2292,12 @@ class Config
 
         if (file_exists($vendor_autoload_files_path)) {
             $this->include_collector->runAndCollect(
-                function () use ($vendor_autoload_files_path) {
+                static fn(): array =>
                     /**
                      * @psalm-suppress UnresolvableInclude
                      * @var string[]
                      */
-                    return require $vendor_autoload_files_path;
-                }
+                    require $vendor_autoload_files_path,
             );
         }
 
@@ -2213,11 +2311,7 @@ class Config
             $codebase->classlikes->forgetMissingClassLikes();
 
             $this->include_collector->runAndCollect(
-                function (): void {
-                    // do this in a separate method so scope does not leak
-                    /** @psalm-suppress UnresolvableInclude */
-                    require $this->autoloader;
-                }
+                [$this, 'requireAutoloader'],
             );
         }
 
@@ -2320,9 +2414,33 @@ class Config
                 if (filetype($full_path) === 'dir') {
                     self::removeCacheDirectory($full_path);
                 } else {
+                    $fp = fopen($full_path, 'c');
+                    if ($fp === false) {
+                        continue;
+                    }
+
+                    $max_wait_cycles = 5;
+                    $has_lock = false;
+                    while ($max_wait_cycles > 0) {
+                        if (flock($fp, LOCK_EX)) {
+                            $has_lock = true;
+                            break;
+                        }
+                        $max_wait_cycles--;
+                        usleep(50_000);
+                    }
+
                     try {
+                        if (!$has_lock) {
+                            throw new RuntimeException('Could not acquire lock for deletion of ' . $full_path);
+                        }
+
                         unlink($full_path);
+                        fclose($fp);
                     } catch (RuntimeException $e) {
+                        if (is_resource($fp)) {
+                            fclose($fp);
+                        }
                         clearstatcache(true, $full_path);
                         if (file_exists($full_path)) {
                             // rethrow the error with default message
@@ -2343,7 +2461,9 @@ class Config
 
     public function setServerMode(): void
     {
-        $this->cache_directory .= '-s';
+        if ($this->cache_directory !== null) {
+            $this->cache_directory .= '-s';
+        }
     }
 
     public function addStubFile(string $stub_file): void
@@ -2393,7 +2513,13 @@ class Config
         $composer_json_path = Composer::getJsonFilePath($this->base_dir);
 
         if (file_exists($composer_json_path)) {
-            if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+            try {
+                $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                $composer_json = null;
+            }
+
+            if (!$composer_json) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
             $php_version = $composer_json['require']['php'] ?? null;
@@ -2421,7 +2547,7 @@ class Config
         if (!class_exists($class)) {
             throw new UnexpectedValueException($class . ' is not a known class');
         }
-        $this->universal_object_crates[] = $class;
+        $this->universal_object_crates[] = strtolower($class);
     }
 
     /**
@@ -2429,6 +2555,13 @@ class Config
      */
     public function getUniversalObjectCrates(): array
     {
-        return array_map('strtolower', $this->universal_object_crates);
+        return $this->universal_object_crates;
+    }
+
+    /** @internal */
+    public function requireAutoloader(): void
+    {
+        /** @psalm-suppress UnresolvableInclude */
+        require $this->autoloader;
     }
 }

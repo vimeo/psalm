@@ -16,16 +16,14 @@ use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
 
-class FileBasedPluginAdapter implements PluginEntryPointInterface
+/** @internal */
+final class FileBasedPluginAdapter implements PluginEntryPointInterface
 {
-    /** @var string */
-    private $path;
+    private string $path;
 
-    /** @var Codebase */
-    private $codebase;
+    private Codebase $codebase;
 
-    /** @var Config */
-    private $config;
+    private Config $config;
 
     public function __construct(string $path, Config $config, Codebase $codebase)
     {
@@ -60,7 +58,7 @@ class FileBasedPluginAdapter implements PluginEntryPointInterface
         $file_to_scan = new FileScanner($path, $this->config->shortenFileName($path), true);
         $file_to_scan->scan(
             $codebase,
-            $file_storage
+            $file_storage,
         );
 
         $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);

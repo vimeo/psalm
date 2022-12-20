@@ -67,26 +67,26 @@ use const STREAM_SOCK_STREAM;
  *
  * Fork off to n-processes and divide up tasks between
  * each process.
+ *
+ * @internal
  */
 class Pool
 {
     private const EXIT_SUCCESS = 0;
     private const EXIT_FAILURE = 1;
 
-    /** @var Config */
-    private $config;
+    private Config $config;
 
     /** @var int[] */
-    private $child_pid_list = [];
+    private array $child_pid_list = [];
 
     /** @var resource[] */
-    private $read_streams = [];
+    private array $read_streams = [];
 
-    /** @var bool */
-    private $did_have_error = false;
+    private bool $did_have_error = false;
 
     /** @var ?Closure(mixed): void */
-    private $task_done_closure;
+    private ?Closure $task_done_closure = null;
 
     public const MAC_PCRE_MESSAGE = 'Mac users: pcre.jit is set to 1 in your PHP config.' . PHP_EOL
         . 'The pcre jit is known to cause segfaults in PHP 7.3 on Macs, and Psalm' . PHP_EOL
@@ -95,7 +95,6 @@ class Pool
         . 'Relevant info: https://bugs.php.net/bug.php?id=77260';
 
     /**
-     * @param Config $config
      * @param array<int, array<int, mixed>> $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
@@ -108,7 +107,6 @@ class Pool
      * A closure to execute upon shutting down a child
      * @param Closure(mixed $data):void $task_done_closure
      * A closure to execute when a task is done
-     *
      * @psalm-suppress MixedAssignment
      */
     public function __construct(
@@ -125,7 +123,7 @@ class Pool
 
         assert(
             $pool_size > 1,
-            'The pool size must be >= 2 to use the fork pool.'
+            'The pool size must be >= 2 to use the fork pool.',
         );
 
         if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
@@ -244,7 +242,7 @@ class Pool
                 get_class($t) . ' ' . $t->getMessage() . "\n" .
                 "Emitted in " . $t->getFile() . ":" . $t->getLine() . "\n" .
                 "Stack trace in the forked worker:\n" .
-                $t->getTraceAsString()
+                $t->getTraceAsString(),
             );
         }
 
@@ -264,7 +262,7 @@ class Pool
 
             if ($bytes_written < $bytes_to_write) {
                 // wait a bit
-                usleep(500000);
+                usleep(500_000);
             }
         }
 
@@ -279,7 +277,6 @@ class Pool
      * return the stream the parent will use to read results.
      *
      * @param resource[] $sockets the socket pair for IPC
-     *
      * @return resource
      */
     private static function streamForParent(array $sockets)
@@ -305,7 +302,6 @@ class Pool
      * the stream the child will use to write results.
      *
      * @param resource[] $sockets the socket pair for IPC
-     *
      * @return resource
      */
     private static function streamForChild(array $sockets)
@@ -324,9 +320,7 @@ class Pool
      * The results are returned in an array, one for each worker. The order of the results
      * is not maintained.
      *
-     *
      * @psalm-suppress MixedAssignment
-     *
      * @return list<mixed>
      */
     private function readResultsFromChildren(): array
@@ -366,7 +360,7 @@ class Pool
 
             // For each stream that was ready, read the content.
             foreach ($needs_read as $file) {
-                $buffer = fread($file, 1024);
+                $buffer = fread($file, 1_024);
                 if ($buffer !== false) {
                     $content[(int)$file] .= $buffer;
                 }
@@ -393,6 +387,7 @@ class Pool
                             foreach ($this->child_pid_list as $child_pid) {
                                 /**
                                  * SIGTERM does not exist on windows
+                                 *
                                  * @psalm-suppress UnusedPsalmSuppress
                                  * @psalm-suppress UndefinedConstant
                                  * @psalm-suppress MixedArgument
@@ -449,6 +444,7 @@ class Pool
                 if ($process_lookup) {
                     /**
                      * SIGALRM does not exist on windows
+                     *
                      * @psalm-suppress UnusedPsalmSuppress
                      * @psalm-suppress UndefinedConstant
                      * @psalm-suppress MixedArgument
@@ -467,6 +463,7 @@ class Pool
 
                     /**
                      * SIGALRM does not exist on windows
+                     *
                      * @psalm-suppress UnusedPsalmSuppress
                      * @psalm-suppress UndefinedConstant
                      */
@@ -483,7 +480,6 @@ class Pool
 
     /**
      * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
-     *
      */
     public function didHaveError(): bool
     {

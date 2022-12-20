@@ -3,10 +3,10 @@
 namespace Psalm\Internal\Codebase;
 
 use Exception;
+use LibXMLError;
 use LogicException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\ClassConstantStorage;
@@ -39,20 +39,14 @@ use function strtolower;
  */
 class Reflection
 {
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $storage_provider;
+    private ClassLikeStorageProvider $storage_provider;
 
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
     /**
      * @var array<string, FunctionStorage>
      */
-    private static $builtin_functions = [];
+    private static array $builtin_functions = [];
 
     public function __construct(ClassLikeStorageProvider $storage_provider, Codebase $codebase)
     {
@@ -65,7 +59,7 @@ class Reflection
     {
         $class_name = $reflected_class->name;
 
-        if ($class_name === 'LibXMLError') {
+        if ($class_name === LibXMLError::class) {
             $class_name = 'libXMLError';
         }
 
@@ -103,7 +97,7 @@ class Reflection
 
             $storage->parent_classes = array_merge(
                 [$parent_class_name_lc => $parent_class_name],
-                $parent_storage->parent_classes
+                $parent_storage->parent_classes,
             );
 
             $storage->used_traits = $parent_storage->used_traits;
@@ -159,6 +153,7 @@ class Reflection
             $type = Type::parseString($type_string);
 
             if ($property_id === 'DateInterval::$days') {
+                /** @psalm-suppress InaccessibleProperty We just parsed this type */
                 $type->ignore_falsable_issues = true;
             }
 
@@ -171,8 +166,9 @@ class Reflection
         foreach ($class_constants as $name => $value) {
             $storage->constants[$name] = new ClassConstantStorage(
                 ClassLikeAnalyzer::getTypeFromValue($value),
+                new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($value)]),
                 ClassLikeAnalyzer::VISIBILITY_PUBLIC,
-                null
+                null,
             );
         }
 
@@ -185,7 +181,7 @@ class Reflection
         }
 
         $reflection_methods = $reflected_class->getMethods(
-            (ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED)
+            (ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED),
         );
 
         if ($class_name_lower === 'generator') {
@@ -225,14 +221,14 @@ class Reflection
                     $class_name,
                     $reflection_method_name,
                     $reflection_method_class,
-                    $reflection_method_name
+                    $reflection_method_name,
                 );
 
                 $this->codebase->methods->setAppearingMethodId(
                     $class_name,
                     $reflection_method_name,
                     $reflection_method_class,
-                    $reflection_method_name
+                    $reflection_method_name,
                 );
             }
         }
@@ -264,13 +260,13 @@ class Reflection
                 $fq_class_name,
                 '__construct',
                 $fq_class_name,
-                $method_name_lc
+                $method_name_lc,
             );
             $this->codebase->methods->setAppearingMethodId(
                 $fq_class_name,
                 '__construct',
                 $fq_class_name,
-                $method_name_lc
+                $method_name_lc,
             );
         }
 
@@ -283,7 +279,7 @@ class Reflection
 
         $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
             $declaring_class->name,
-            $method_name_lc
+            $method_name_lc,
         );
 
         $class_storage->inheritable_method_ids[$method_name_lc]
@@ -303,6 +299,7 @@ class Reflection
 
             foreach ($callables[0]->params as $param) {
                 if ($param->type) {
+                    /** @psalm-suppress UnusedMethodCall */
                     $param->type->queueClassLikesForScanning($this->codebase);
                 }
             }
@@ -310,6 +307,7 @@ class Reflection
             $storage->setParams($callables[0]->params);
 
             $storage->return_type = $callables[0]->return_type;
+            /** @psalm-suppress UnusedMethodCall */
             $storage->return_type->queueClassLikesForScanning($this->codebase);
         } else {
             $params = $method->getParameters();
@@ -342,11 +340,12 @@ class Reflection
             $param_name,
             $param->isPassedByReference(),
             $param_type,
+            $param_type,
             null,
             null,
             $is_optional,
             $param_type->isNullable(),
-            $param->isVariadic()
+            $param->isVariadic(),
         );
 
         $parameter->signature_type = Type::getMixed();
@@ -356,7 +355,6 @@ class Reflection
 
     /**
      * @param  callable-string $function_id
-     *
      * @return false|null
      */
     public function registerFunction(string $function_id): ?bool
@@ -377,7 +375,7 @@ class Reflection
                     $this->codebase,
                     $function_id,
                     [],
-                    null
+                    null,
                 );
             }
 
@@ -418,6 +416,7 @@ class Reflection
         return null;
     }
 
+    /** @psalm-suppress UnusedPsalmSuppress,UndefinedClass,TypeDoesNotContainType 7.4 has no ReflectionUnionType */
     public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Union
     {
         if (!$reflection_type) {
@@ -431,11 +430,9 @@ class Reflection
             $type = implode(
                 '|',
                 array_map(
-                    function (ReflectionNamedType $reflection) {
-                        return $reflection->getName();
-                    },
-                    $reflection_type->getTypes()
-                )
+                    static fn(ReflectionNamedType $reflection): string => $reflection->getName(),
+                    $reflection_type->getTypes(),
+                ),
             );
         } else {
             throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
@@ -473,7 +470,6 @@ class Reflection
     /**
      * @param lowercase-string $fq_class_name
      * @param lowercase-string $parent_class
-     *
      */
     private function registerInheritedProperties(
         string $fq_class_name,

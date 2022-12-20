@@ -26,7 +26,6 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
@@ -43,6 +42,8 @@ use const PHP_INT_MAX;
 
 /**
  * This class takes a statement and return its type by analyzing each part of the statement if necessary
+ *
+ * @internal
  */
 class SimpleTypeInferer
 {
@@ -67,7 +68,7 @@ class SimpleTypeInferer
                     $aliases,
                     $file_source,
                     $existing_class_constants,
-                    $fq_classlike_name
+                    $fq_classlike_name,
                 );
                 $right = self::infer(
                     $codebase,
@@ -76,7 +77,7 @@ class SimpleTypeInferer
                     $aliases,
                     $file_source,
                     $existing_class_constants,
-                    $fq_classlike_name
+                    $fq_classlike_name,
                 );
 
                 if ($left
@@ -127,8 +128,8 @@ class SimpleTypeInferer
                     [
                         new TLiteralInt(-1),
                         new TLiteralInt(0),
-                        new TLiteralInt(1)
-                    ]
+                        new TLiteralInt(1),
+                    ],
                 );
             }
 
@@ -139,7 +140,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             $stmt_right_type = self::infer(
@@ -149,7 +150,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if (!$stmt_left_type || !$stmt_right_type) {
@@ -158,12 +159,12 @@ class SimpleTypeInferer
 
             $nodes->setType(
                 $stmt->left,
-                $stmt_left_type
+                $stmt_left_type,
             );
 
             $nodes->setType(
                 $stmt->right,
-                $stmt_right_type
+                $stmt_right_type,
             );
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus
@@ -183,7 +184,7 @@ class SimpleTypeInferer
                     $stmt->left,
                     $stmt->right,
                     $stmt,
-                    $result_type
+                    $result_type,
                 );
 
                 if ($result_type) {
@@ -198,6 +199,63 @@ class SimpleTypeInferer
                 && ($stmt_right_type->hasInt() || $stmt_right_type->hasFloat())
             ) {
                 return Type::combineUnionTypes(Type::getFloat(), Type::getInt());
+            }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BitwiseNot) {
+            $stmt_expr_type = self::infer(
+                $codebase,
+                $nodes,
+                $stmt->expr,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name,
+            );
+
+            if ($stmt_expr_type === null) {
+                return null;
+            }
+
+            $invalidTypes = $stmt_expr_type->getBuilder();
+            $invalidTypes->removeType('string');
+            $invalidTypes->removeType('int');
+            $invalidTypes->removeType('float');
+
+            if (!$invalidTypes->isUnionEmpty()) {
+                return null;
+            }
+
+            $types = [];
+            if ($stmt_expr_type->hasString()) {
+                $types[] = Type::getString();
+            }
+            if ($stmt_expr_type->hasInt() || $stmt_expr_type->hasFloat()) {
+                $types[] = Type::getInt();
+            }
+
+            return $types ? Type::combineUnionTypeArray($types, null) : null;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
+            $stmt_expr_type = self::infer(
+                $codebase,
+                $nodes,
+                $stmt->expr,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name,
+            );
+
+            if ($stmt_expr_type === null) {
+                return null;
+            } elseif ($stmt_expr_type->isAlwaysFalsy()) {
+                return Type::getTrue();
+            } elseif ($stmt_expr_type->isAlwaysTruthy()) {
+                return Type::getFalse();
+            } else {
+                return Type::getBool();
             }
         }
 
@@ -255,7 +313,7 @@ class SimpleTypeInferer
                     && $existing_class_constants[$stmt->name->name]->type
                 ) {
                     if ($stmt->class->parts === ['self']) {
-                        return clone $existing_class_constants[$stmt->name->name]->type;
+                        return $existing_class_constants[$stmt->name->name]->type;
                     }
                 }
 
@@ -264,7 +322,7 @@ class SimpleTypeInferer
                 } else {
                     $const_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                         $stmt->class,
-                        $aliases
+                        $aliases,
                     );
                 }
 
@@ -272,7 +330,7 @@ class SimpleTypeInferer
                     && isset($existing_class_constants[$stmt->name->name])
                     && $existing_class_constants[$stmt->name->name]->type
                 ) {
-                    return clone $existing_class_constants[$stmt->name->name]->type;
+                    return $existing_class_constants[$stmt->name->name]->type;
                 }
 
                 if (strtolower($stmt->name->name) === 'class') {
@@ -287,11 +345,11 @@ class SimpleTypeInferer
                             $const_fq_class_name,
                             $stmt->name->name,
                             ReflectionProperty::IS_PRIVATE,
-                            $file_source
+                            $file_source,
                         );
 
                         if ($foreign_class_constant) {
-                            return clone $foreign_class_constant;
+                            return $foreign_class_constant;
                         }
 
                         return null;
@@ -328,7 +386,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
         }
 
@@ -364,26 +422,28 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if (!$type_to_invert) {
                 return null;
             }
 
+            $new_types = [];
             foreach ($type_to_invert->getAtomicTypes() as $type_part) {
                 if ($type_part instanceof TLiteralInt
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $type_part->value = -$type_part->value;
+                    $new_types []= new TLiteralInt(-$type_part->value);
                 } elseif ($type_part instanceof TLiteralFloat
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $type_part->value = -$type_part->value;
+                    $new_types []= new TLiteralFloat(-$type_part->value);
+                } else {
+                    $new_types []= $type_part;
                 }
             }
-
-            return $type_to_invert;
+            return new Union($new_types);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
@@ -397,7 +457,7 @@ class SimpleTypeInferer
                     $aliases,
                     $file_source,
                     $existing_class_constants,
-                    $fq_classlike_name
+                    $fq_classlike_name,
                 );
 
                 $dim_type = self::infer(
@@ -407,7 +467,7 @@ class SimpleTypeInferer
                     $aliases,
                     $file_source,
                     $existing_class_constants,
-                    $fq_classlike_name
+                    $fq_classlike_name,
                 );
 
                 if ($array_type !== null && $dim_type !== null) {
@@ -422,7 +482,7 @@ class SimpleTypeInferer
                     foreach ($array_type->getAtomicTypes() as $array_atomic_type) {
                         if ($array_atomic_type instanceof TKeyedArray) {
                             if (isset($array_atomic_type->properties[$dim_value])) {
-                                return clone $array_atomic_type->properties[$dim_value];
+                                return $array_atomic_type->properties[$dim_value];
                             }
 
                             return null;
@@ -440,7 +500,7 @@ class SimpleTypeInferer
             }
 
             return new Union([
-                new Type\Atomic\TNamedObject($resolved_class_name)
+                new Type\Atomic\TNamedObject($resolved_class_name),
             ]);
         }
 
@@ -478,7 +538,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             )) {
                 return null;
             }
@@ -491,7 +551,7 @@ class SimpleTypeInferer
                 null,
                 false,
                 true,
-                30
+                30,
             );
         }
 
@@ -502,7 +562,7 @@ class SimpleTypeInferer
                 null,
                 false,
                 true,
-                30
+                30,
             );
         }
 
@@ -515,10 +575,10 @@ class SimpleTypeInferer
         ) {
             $objectlike = new TKeyedArray(
                 $array_creation_info->property_types,
-                $array_creation_info->class_strings
+                $array_creation_info->class_strings,
+                null,
+                $array_creation_info->all_list,
             );
-            $objectlike->sealed = true;
-            $objectlike->is_list = $array_creation_info->all_list;
             return new Union([$objectlike]);
         }
 
@@ -527,9 +587,7 @@ class SimpleTypeInferer
         }
 
         if ($array_creation_info->all_list) {
-            return new Union([
-                new TNonEmptyList($item_value_type),
-            ]);
+            return Type::getNonEmptyList($item_value_type);
         }
 
         return new Union([
@@ -561,7 +619,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if (!$unpacked_array_type) {
@@ -583,7 +641,7 @@ class SimpleTypeInferer
                 $aliases,
                 $file_source,
                 $existing_class_constants,
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if ($single_item_key_type) {
@@ -603,7 +661,7 @@ class SimpleTypeInferer
 
                 $array_creation_info->item_key_atomic_types = array_merge(
                     $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes())
+                    array_values($key_type->getAtomicTypes()),
                 );
 
                 if ($key_type->isSingleStringLiteral()) {
@@ -637,7 +695,7 @@ class SimpleTypeInferer
             $aliases,
             $file_source,
             $existing_class_constants,
-            $fq_classlike_name
+            $fq_classlike_name,
         );
 
         if (!$single_item_value_type) {
@@ -690,7 +748,7 @@ class SimpleTypeInferer
 
         $array_creation_info->item_value_atomic_types = array_merge(
             $array_creation_info->item_value_atomic_types,
-            array_values($single_item_value_type->getAtomicTypes())
+            array_values($single_item_value_type->getAtomicTypes()),
         );
 
         return true;
@@ -701,6 +759,9 @@ class SimpleTypeInferer
         Union $unpacked_array_type
     ): bool {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
+            if ($unpacked_atomic_type instanceof TList) {
+                $unpacked_atomic_type = $unpacked_atomic_type->getKeyedArray();
+            }
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (is_string($key)) {
@@ -713,14 +774,33 @@ class SimpleTypeInferer
 
                     $array_creation_info->item_value_atomic_types = array_merge(
                         $array_creation_info->item_value_atomic_types,
-                        array_values($property_value->getAtomicTypes())
+                        array_values($property_value->getAtomicTypes()),
                     );
 
                     $array_creation_info->array_keys[$new_offset] = true;
                     $array_creation_info->property_types[$new_offset] = $property_value;
                 }
+                if ($unpacked_atomic_type->fallback_params !== null) {
+                    // Not sure if this is needed
+                    //$array_creation_info->can_create_objectlike = false;
+
+                    if ($unpacked_atomic_type->fallback_params[0]->hasString()) {
+                        $array_creation_info->item_key_atomic_types[] = new TString();
+                    }
+
+                    if ($unpacked_atomic_type->fallback_params[0]->hasInt()) {
+                        $array_creation_info->item_key_atomic_types[] = new TInt();
+                    }
+
+                    $array_creation_info->item_value_atomic_types = array_merge(
+                        $array_creation_info->item_value_atomic_types,
+                        array_values(
+                            $unpacked_atomic_type->fallback_params[1]->getAtomicTypes(),
+                        ),
+                    );
+                }
             } elseif ($unpacked_atomic_type instanceof TArray) {
-                if ($unpacked_atomic_type->type_params[1]->isEmpty()) {
+                if ($unpacked_atomic_type->isEmptyArray()) {
                     continue;
                 }
                 $array_creation_info->can_create_objectlike = false;
@@ -738,20 +818,8 @@ class SimpleTypeInferer
                     array_values(
                         isset($unpacked_atomic_type->type_params[1])
                             ? $unpacked_atomic_type->type_params[1]->getAtomicTypes()
-                            : [new TMixed()]
-                    )
-                );
-            } elseif ($unpacked_atomic_type instanceof TList) {
-                if ($unpacked_atomic_type->type_param->isEmpty()) {
-                    continue;
-                }
-                $array_creation_info->can_create_objectlike = false;
-
-                $array_creation_info->item_key_atomic_types[] = new TInt();
-
-                $array_creation_info->item_value_atomic_types = array_merge(
-                    $array_creation_info->item_value_atomic_types,
-                    array_values($unpacked_atomic_type->type_param->getAtomicTypes())
+                            : [new TMixed()],
+                    ),
                 );
             }
         }

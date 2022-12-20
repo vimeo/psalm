@@ -18,20 +18,11 @@ use Psalm\Storage\FileStorage;
  */
 class FileScanner implements FileSource
 {
-    /**
-     * @var string
-     */
-    public $file_path;
+    public string $file_path;
 
-    /**
-     * @var string
-     */
-    public $file_name;
+    public string $file_name;
 
-    /**
-     * @var bool
-     */
-    public $will_analyze;
+    public bool $will_analyze;
 
     public function __construct(string $file_path, string $file_name, bool $will_analyze)
     {
@@ -59,8 +50,8 @@ class FileScanner implements FileSource
 
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
-            $codebase->php_major_version . '.' . $codebase->php_minor_version,
-            $progress
+            $codebase->analysis_php_version_id,
+            $progress,
         );
 
         foreach ($stmts as $stmt) {
@@ -82,7 +73,7 @@ class FileScanner implements FileSource
 
         $traverser = new NodeTraverser();
         $traverser->addVisitor(
-            new ReflectorVisitor($codebase, $this, $file_storage)
+            new ReflectorVisitor($codebase, $this, $file_storage),
         );
 
         $traverser->traverse($stmts);
@@ -90,26 +81,31 @@ class FileScanner implements FileSource
         $file_storage->deep_scan = $this->will_analyze;
     }
 
+    /** @psalm-mutation-free */
     public function getFilePath(): string
     {
         return $this->file_path;
     }
 
+    /** @psalm-mutation-free */
     public function getFileName(): string
     {
         return $this->file_name;
     }
 
+    /** @psalm-mutation-free */
     public function getRootFilePath(): string
     {
         return $this->file_path;
     }
 
+    /** @psalm-mutation-free */
     public function getRootFileName(): string
     {
         return $this->file_name;
     }
 
+    /** @psalm-mutation-free */
     public function getAliases(): Aliases
     {
         return new Aliases();

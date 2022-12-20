@@ -10,14 +10,11 @@ class MatchTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'switchTruthy' => [
-                '<?php
+                'code' => '<?php
                     class A {
                        public ?string $a = null;
                        public ?string $b = null;
@@ -30,12 +27,12 @@ class MatchTest extends TestCase
                             default => throw new \InvalidArgumentException("$obj->a or $obj->b must be set"),
                         };
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'defaultAboveCase' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $a) : string {
                         return match ($a) {
                             "a" => "hello",
@@ -43,12 +40,12 @@ class MatchTest extends TestCase
                             "b" => "goodbye",
                         };
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'allMatchedNoRedundantCondition' => [
-                '<?php
+                'code' => '<?php
                     function foo() : string {
                         $a = rand(0, 1) ? "a" : "b";
                         return match ($a) {
@@ -56,12 +53,12 @@ class MatchTest extends TestCase
                             "b" => "goodbye",
                         };
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'getClassWithMethod' => [
-                '<?php
+                'code' => '<?php
                     interface Foo {}
 
                     class Bar implements Foo
@@ -78,21 +75,34 @@ class MatchTest extends TestCase
                             default => "b",
                         };
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'MatchWithCount' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-array
+                     */
+                    function test(array $array): array
+                    {
+                        return match (\count($array)) {
+                            0 => throw new \InvalidArgumentException,
+                            default => $array,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'getClassArgWrongClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     class B {}
@@ -103,12 +113,11 @@ class MatchTest extends TestCase
                         A::class => $a->barBar(),
                     };',
                 'error_message' => 'UndefinedMethod',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'getClassMissingClass' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -118,12 +127,11 @@ class MatchTest extends TestCase
                         C::class => 5,
                     };',
                 'error_message' => 'UndefinedClass',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'allMatchedDefaultImpossible' => [
-                '<?php
+                'code' => '<?php
                     function foo() : string {
                         $a = rand(0, 1) ? "a" : "b";
                         return match ($a) {
@@ -133,12 +141,11 @@ class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'allMatchedAnotherImpossible' => [
-                '<?php
+                'code' => '<?php
                     function foo() : string {
                         $a = rand(0, 1) ? "a" : "b";
                         return match ($a) {
@@ -148,12 +155,11 @@ class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-                [],
-                false,
-                '8.0'
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'notAllEnumsMet' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param "foo"|"bar" $foo
                      */
@@ -163,12 +169,11 @@ class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                [],
-                false,
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'notAllConstEnumsMet' => [
-                '<?php
+                'code' => '<?php
                     class Airport {
                         const JFK = "jfk";
                         const LHR = "lhr";
@@ -185,12 +190,11 @@ class MatchTest extends TestCase
                         }
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                [],
-                false,
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'paradoxWithDuplicateValue' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i) : void {
                         echo match ($i) {
                             1 => 0,
@@ -198,24 +202,22 @@ class MatchTest extends TestCase
                         };
                     };',
                 'error_message' => 'ParadoxicalCondition',
-                [],
-                false,
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'noCrashWithEmptyMatch' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i) {
                         match ($i) {
 
                         };
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                [],
-                false,
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'exitIsLikeThrow' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param 1|2|3 $i
                      */
@@ -227,21 +229,19 @@ class MatchTest extends TestCase
                         $a === "aaa";
                     }',
                 'error_message' => 'DocblockTypeContradiction',
-                [],
-                false,
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'matchTrueImpossible' => [
-                '<?php
+                'code' => '<?php
                     $foo = new \stdClass();
                     $a = match (true) {
                         $foo instanceof \stdClass => 1,
                         $foo instanceof \Exception => 1,
                     };',
                 'error_message' => 'TypeDoesNotContainType',
-                [],
-                false,
-                '8.0',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

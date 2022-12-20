@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Cli;
 
+use AssertionError;
 use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Config;
 use Psalm\Exception\UnsupportedIssueToFixException;
@@ -20,13 +21,13 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
 use function array_filter;
 use function array_key_exists;
 use function array_map;
-use function array_merge;
 use function array_shift;
 use function array_slice;
 use function chdir;
@@ -49,6 +50,7 @@ use function is_numeric;
 use function is_string;
 use function microtime;
 use function pathinfo;
+use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
@@ -72,6 +74,9 @@ require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 
+/**
+ * @internal
+ */
 final class Psalter
 {
     private const SHORT_OPTIONS =  ['f:', 'm', 'h', 'r:', 'c:'];
@@ -82,16 +87,18 @@ final class Psalter
         'find-unused-code', 'threads:', 'codeowner:',
         'allow-backwards-incompatible-changes:',
         'add-newline-between-docblock-annotations:',
-        'no-cache'
+        'no-cache',
+        'no-progress',
     ];
 
     /** @param array<int,string> $argv */
     public static function run(array $argv): void
     {
+        CliUtils::checkRuntimeRequirements();
         gc_collect_cycles();
         gc_disable();
 
-        ErrorHandler::install();
+        ErrorHandler::install($argv);
 
         self::setMemoryLimit();
 
@@ -110,63 +117,66 @@ final class Psalter
 
         if (array_key_exists('h', $options)) {
             echo <<<HELP
-Usage:
-    psalter [options] [file...]
+            Usage:
+                psalter [options] [file...]
 
-Options:
-    -h, --help
-        Display this help message
+            Options:
+                -h, --help
+                    Display this help message
 
-    --debug, --debug-by-line, --debug-emitted-issues
-        Debug information
+                --debug, --debug-by-line, --debug-emitted-issues
+                    Debug information
 
-    -c, --config=psalm.xml
-        Path to a psalm.xml configuration file. Run psalm --init to create one.
+                -c, --config=psalm.xml
+                    Path to a psalm.xml configuration file. Run psalm --init to create one.
 
-    -m, --monochrome
-        Enable monochrome output
+                -m, --monochrome
+                    Enable monochrome output
 
-    -r, --root
-        If running Psalm globally you'll need to specify a project root. Defaults to cwd
+                --no-progress
+                    Disable the progress indicator
 
-    --plugin=PATH
-        Executes a plugin, an alternative to using the Psalm config
+                -r, --root
+                    If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-    --dry-run
-        Shows a diff of all the changes, without making them
+                --plugin=PATH
+                    Executes a plugin, an alternative to using the Psalm config
 
-    --safe-types
-        Only update PHP types when the new type information comes from other PHP types,
-        as opposed to type information that just comes from docblocks
+                --dry-run
+                    Shows a diff of all the changes, without making them
 
-    --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
+                --safe-types
+                    Only update PHP types when the new type information comes from other PHP types,
+                    as opposed to type information that just comes from docblocks
 
-    --issues=IssueType1,IssueType2
-        If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as possible,
-        use --issues=all
+                --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
 
-    --list-supported-issues
-        Display the list of issues that psalter knows how to fix
+                --issues=IssueType1,IssueType2
+                    If any issues can be fixed automatically, Psalm will update the codebase. To fix as many issues as
+                    possible, use --issues=all
 
-    --find-unused-code
-        Include unused code as a candidate for removal
+                --list-supported-issues
+                    Display the list of issues that psalter knows how to fix
 
-    --threads=INT
-        If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+                --find-unused-code
+                    Include unused code as a candidate for removal
 
-    --codeowner=[codeowner]
-        You can specify a GitHub code ownership group, and only that owner's code will be updated.
+                --threads=INT
+                    If greater than one, Psalm will run analysis on multiple threads, speeding things up.
 
-    --allow-backwards-incompatible-changes=BOOL
-        Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
+                --codeowner=[codeowner]
+                    You can specify a GitHub code ownership group, and only that owner's code will be updated.
 
-    --add-newline-between-docblock-annotations=BOOL
-        Whether to add or not add a new line between docblock annotations. Defaults to true.
+                --allow-backwards-incompatible-changes=BOOL
+                    Allow Psalm modify method signatures that could break code outside the project. Defaults to true.
 
-    --no-cache
-        Runs Psalm without using cache
+                --add-newline-between-docblock-annotations=BOOL
+                    Whether to add or not add a new line between docblock annotations. Defaults to true.
 
-HELP;
+                --no-cache
+                    Runs Psalm without using cache
+
+            HELP;
 
             exit;
         }
@@ -179,7 +189,7 @@ HELP;
                 STDERR,
                 'Please specify the issues you want to fix with --issues=IssueOne,IssueTwo or --issues=all, '
                 . 'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php'
-                . PHP_EOL
+                . PHP_EOL,
             );
             exit(1);
         }
@@ -205,9 +215,8 @@ HELP;
         $first_autoloader = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
-                return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
-            }
+            static fn(): ?\Composer\Autoload\ClassLoader =>
+                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
 
 
@@ -222,8 +231,13 @@ HELP;
             $path_to_config,
             $current_dir,
             Report::TYPE_CONSOLE,
-            $first_autoloader
+            $first_autoloader,
         );
+
+        if (isset($options['no-cache'])) {
+            $config->cache_directory = null;
+        }
+
         $config->setIncludeCollector($include_collector);
 
         if ($config->resolve_from_config_file) {
@@ -235,7 +249,7 @@ HELP;
 
         if (isset($options['no-cache'])) {
             $providers = new Providers(
-                new FileProvider()
+                new FileProvider(),
             );
         } else {
             $providers = new Providers(
@@ -244,7 +258,7 @@ HELP;
                 new FileStorageCacheProvider($config),
                 new ClassLikeStorageCacheProvider($config),
                 null,
-                new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+                new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
             );
         }
 
@@ -254,9 +268,13 @@ HELP;
         }
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
-        $progress = $debug
-            ? new DebugProgress()
-            : new DefaultProgress();
+        if ($debug) {
+            $progress = new DebugProgress();
+        } elseif (isset($options['no-progress'])) {
+            $progress = new VoidProgress();
+        } else {
+            $progress = new DefaultProgress();
+        }
 
         $stdout_report_options = new ReportOptions();
         $stdout_report_options->use_color = !array_key_exists('m', $options);
@@ -267,7 +285,7 @@ HELP;
             $stdout_report_options,
             [],
             $threads,
-            $progress
+            $progress,
         );
 
         if (array_key_exists('debug-by-line', $options)) {
@@ -303,7 +321,7 @@ HELP;
 
             $files_for_codeowners = self::loadCodeownersFiles($desired_codeowners, $codeowner_files);
             $paths_to_check = is_array($paths_to_check) ?
-                array_merge($paths_to_check, $files_for_codeowners) :
+                [...$paths_to_check, ...$files_for_codeowners] :
                 $files_for_codeowners;
         }
 
@@ -311,7 +329,7 @@ HELP;
             $allow_backwards_incompatible_changes = filter_var(
                 $options['allow-backwards-incompatible-changes'],
                 FILTER_VALIDATE_BOOLEAN,
-                ['flags' => FILTER_NULL_ON_FAILURE]
+                ['flags' => FILTER_NULL_ON_FAILURE],
             );
 
             if ($allow_backwards_incompatible_changes === null) {
@@ -326,7 +344,7 @@ HELP;
             $doc_block_add_new_line_before_return = filter_var(
                 $options['add-newline-between-docblock-annotations'],
                 FILTER_VALIDATE_BOOLEAN,
-                ['flags' => FILTER_NULL_ON_FAILURE]
+                ['flags' => FILTER_NULL_ON_FAILURE],
             );
 
             if ($doc_block_add_new_line_before_return === null) {
@@ -371,7 +389,7 @@ HELP;
 
         $project_analyzer->alterCodeAfterCompletion(
             array_key_exists('dry-run', $options),
-            array_key_exists('safe-types', $options)
+            array_key_exists('safe-types', $options),
         );
 
         if ($keyed_issues === ['all' => true]) {
@@ -422,8 +440,8 @@ HELP;
     {
         $memLimit = CliUtils::getMemoryLimitInBytes();
         // Magic number is 4096M in bytes
-        if ($memLimit > 0 && $memLimit < 8 * 1024 * 1024 * 1024) {
-            ini_set('memory_limit', (string) (8 * 1024 * 1024 * 1024));
+        if ($memLimit > 0 && $memLimit < 8 * 1_024 * 1_024 * 1_024) {
+            ini_set('memory_limit', (string) (8 * 1_024 * 1_024 * 1_024));
         }
     }
 
@@ -431,7 +449,7 @@ HELP;
     private static function validateCliArguments(array $args): void
     {
         array_map(
-            function (string $arg): void {
+            static function (string $arg): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
@@ -447,13 +465,13 @@ HELP;
                         fwrite(
                             STDERR,
                             'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL
+                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
                         );
                         exit(1);
                     }
                 }
             },
-            $args
+            $args,
         );
     }
 
@@ -496,22 +514,25 @@ HELP;
         $codeowners_file = file_get_contents($codeowners_file_path);
 
         $codeowner_lines = array_map(
-            function (string $line): array {
+            static function (string $line): array {
                 $line_parts = preg_split('/\s+/', $line);
+                if ($line_parts === false) {
+                    throw new AssertionError("An error occurred: ".preg_last_error_msg());
+                }
 
                 $file_selector = substr(array_shift($line_parts), 1);
                 return [$file_selector, $line_parts];
             },
             array_filter(
                 explode("\n", $codeowners_file),
-                function (string $line): bool {
+                static function (string $line): bool {
                     $line = trim($line);
 
                     // currently we don’t match wildcard files or files that could appear anywhere
                     // in the repo
                     return $line && $line[0] === '/' && strpos($line, '*') === false;
-                }
-            )
+                },
+            ),
         );
 
         $codeowner_files = [];

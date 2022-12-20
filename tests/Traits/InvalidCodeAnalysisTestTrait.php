@@ -6,7 +6,6 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
-use function is_int;
 use function preg_quote;
 use function str_replace;
 use function strpos;
@@ -20,32 +19,23 @@ use const PHP_VERSION;
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
+     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
      */
     abstract public function providerInvalidCodeParse(): iterable;
 
     /**
      * @dataProvider providerInvalidCodeParse
      * @small
-     *
-     * @param string $code
-     * @param string $error_message
-     * @param array<int|string, string> $error_levels
-     * @param bool $strict_mode
+     * @param list<string> $error_levels
      */
     public function testInvalidCode(
-        $code,
-        $error_message,
-        $error_levels = [],
-        $strict_mode = false,
+        string $code,
+        string $error_message,
+        array  $error_levels = [],
         string $php_version = '7.3'
     ): void {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP71-') !== false) {
-            if (version_compare(PHP_VERSION, '7.1.0', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.1.');
-            }
-        } elseif (strpos($test_name, 'PHP80-') !== false) {
+        if (strpos($test_name, 'PHP80-') !== false) {
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }
@@ -57,17 +47,9 @@ trait InvalidCodeAnalysisTestTrait
             $code = str_replace("\n", "\r\n", $code);
         }
 
-        if ($strict_mode) {
-            Config::getInstance()->strict_binary_operands = true;
-        }
-
-        foreach ($error_levels as $error_level_key => $error_level) {
-            if (is_int($error_level_key)) {
-                $issue_name = $error_level;
-                $error_level = Config::REPORT_SUPPRESS;
-            } else {
-                $issue_name = $error_level_key;
-            }
+        foreach ($error_levels as $error_level) {
+            $issue_name = $error_level;
+            $error_level = Config::REPORT_SUPPRESS;
 
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }

@@ -7,7 +7,7 @@ namespace Psalm\SourceControl\Git;
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  */
-class RemoteInfo
+final class RemoteInfo
 {
     /**
      * Remote name.
@@ -37,7 +37,6 @@ class RemoteInfo
      * Set remote name.
      *
      * @param string $name remote name
-     *
      * @return $this
      */
     public function setName(string $name): RemoteInfo
@@ -49,7 +48,6 @@ class RemoteInfo
 
     /**
      * Return remote name.
-     *
      */
     public function getName(): ?string
     {
@@ -60,7 +58,6 @@ class RemoteInfo
      * Set remote URL.
      *
      * @param string $url remote URL
-     *
      * @return $this
      */
     public function setUrl(string $url): RemoteInfo
@@ -72,7 +69,6 @@ class RemoteInfo
 
     /**
      * Return remote URL.
-     *
      */
     public function getUrl(): ?string
     {

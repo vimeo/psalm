@@ -15,8 +15,7 @@ use function strpos;
 
 class NamespaceMoveTest extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {
@@ -27,7 +26,6 @@ class NamespaceMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $namespaces_to_move
      */
     public function testValidCode(
@@ -46,8 +44,8 @@ class NamespaceMoveTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $context = new Context();
@@ -56,7 +54,7 @@ class NamespaceMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code
+            $input_code,
         );
 
         $codebase = $this->project_analyzer->getCodebase();
@@ -75,13 +73,13 @@ class NamespaceMoveTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,array<string, string>}>
+     * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'moveClassesIntoNamespace' => [
-                '<?php
+                'input' => '<?php
                     namespace Foo {
                         class A {
                             /** @var ?B */
@@ -117,7 +115,7 @@ class NamespaceMoveTest extends TestCase
                             public $z = null;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Bar\Baz {
                         class A {
                             /** @var B|null */
@@ -153,7 +151,7 @@ class NamespaceMoveTest extends TestCase
                             public $z = null;
                         }
                     }',
-                [
+                'migrations' => [
                     'Foo\*' => 'Bar\Baz\*',
                 ],
             ],

@@ -11,14 +11,11 @@ class AssignmentInConditionalTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'orWithAssignment' => [
-                '<?php
+                'code' => '<?php
                     function maybeString(): ?string {
                         return rand(0, 10) > 4 ? "test" : null;
                     }
@@ -28,10 +25,10 @@ class AssignmentInConditionalTest extends TestCase
                         ($foo !== null) || ($foo = "");
 
                         return $foo;
-                    }'
+                    }',
             ],
             'andWithAssignment' => [
-                '<?php
+                'code' => '<?php
                     function maybeString(): ?string {
                         return rand(0, 10) > 4 ? "test" : null;
                     }
@@ -41,10 +38,10 @@ class AssignmentInConditionalTest extends TestCase
                         ($foo === null) && ($foo = "");
 
                         return $foo;
-                    }'
+                    }',
             ],
             'assertHardConditionalWithString' => [
-                '<?php
+                'code' => '<?php
                     interface Converter {
                         function maybeConvert(string $value): ?SomeObject;
                     }
@@ -59,10 +56,10 @@ class AssignmentInConditionalTest extends TestCase
                         }
 
                         return $value; // $value is SomeObject here and cannot be a string
-                    }'
+                    }',
             ],
             'assertOnRemainderOfArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
@@ -84,7 +81,7 @@ class AssignmentInConditionalTest extends TestCase
                     }',
             ],
             'assertVarRedefinedInIfWithExtraIf' => [
-                '<?php
+                'code' => '<?php
                     class O {}
 
                     /**
@@ -100,10 +97,10 @@ class AssignmentInConditionalTest extends TestCase
                         }
 
                         return $value;
-                    }'
+                    }',
             ],
             'SKIPPED-assertVarRedefinedInOpWithAnd' => [
-                '<?php
+                'code' => '<?php
                     class O {
                         public function foo() : bool { return true; }
                     }
@@ -112,12 +109,12 @@ class AssignmentInConditionalTest extends TestCase
                     $value = $_GET["foo"];
 
                     $a = is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo();',
-                [
+                'assertions' => [
                     '$a' => 'bool',
-                ]
+                ],
             ],
             'assertVarRedefinedInOpWithOr' => [
-                '<?php
+                'code' => '<?php
                     class O {
                         public function foo() : bool { return true; }
                     }
@@ -126,12 +123,12 @@ class AssignmentInConditionalTest extends TestCase
                     $value = $_GET["foo"];
 
                     $a = !is_string($value) || (($value = rand(0, 1) ? new O : null) === null) || $value->foo();',
-                [
+                'assertions' => [
                     '$a' => 'bool',
-                ]
+                ],
             ],
             'assertVarInOrAfterAnd' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends A {}
@@ -140,10 +137,10 @@ class AssignmentInConditionalTest extends TestCase
 
                     function foo(?A $a, ?A $b): void {
                         $c = ($a instanceof B && $b instanceof B) || ($a instanceof C && $b instanceof C);
-                    }'
+                    }',
             ],
             'assertAssertionsWithCreation' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends A {}
@@ -154,10 +151,10 @@ class AssignmentInConditionalTest extends TestCase
 
                     function foo(?A $a, ?A $c): void {
                         $c = $a && ($b = getA($a)) && $c ? 1 : 0;
-                    }'
+                    }',
             ],
             'definedInBothBranchesOfConditional' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -171,10 +168,10 @@ class AssignmentInConditionalTest extends TestCase
                         if (($a = getA()) || ($a = getA())) {
                             $a->foo();
                         }
-                    }'
+                    }',
             ],
             'definedInConditionalAndCheckedInSubbranch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -189,10 +186,10 @@ class AssignmentInConditionalTest extends TestCase
                                 $a->foo();
                             }
                         }
-                    }'
+                    }',
             ],
             'definedInRhsOfConditionalInNegation' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -205,10 +202,10 @@ class AssignmentInConditionalTest extends TestCase
                         if (rand(0, 1) && ($a = getA()) !== null) {
                             $a->foo();
                         }
-                    }'
+                    }',
             ],
             'definedInOrRHS' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
@@ -223,10 +220,10 @@ class AssignmentInConditionalTest extends TestCase
                             return;
                         }
                         $a->foo();
-                    }'
+                    }',
             ],
             'possiblyDefinedVarInAssertion' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function test() : bool { return true; }
                     }
@@ -239,10 +236,10 @@ class AssignmentInConditionalTest extends TestCase
                         }
 
                         echo isset($a);
-                    }'
+                    }',
             ],
             'applyTruthyAssertionsToRightHandSideOfAssignment' => [
-                '<?php
+                'code' => '<?php
                     function takesAString(string $name): void {}
 
                     function randomReturn(): ?string {
@@ -253,10 +250,10 @@ class AssignmentInConditionalTest extends TestCase
 
                     if ($foo = ($name !== null)) {
                         takesAString($name);
-                    }'
+                    }',
             ],
             'maintainTruthinessInsideAssignment' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         public function foo() : void {}
                     }
@@ -272,10 +269,10 @@ class AssignmentInConditionalTest extends TestCase
                             /** @psalm-suppress MixedMethodCall */
                             $a->foo();
                         }
-                    }'
+                    }',
             ],
             'allowBasicOrAssignment' => [
-                '<?php
+                'code' => '<?php
                     function test(): int {
                         if (rand(0, 1) || ($a = rand(0, 10)) === 0) {
                             return 0;
@@ -290,32 +287,26 @@ class AssignmentInConditionalTest extends TestCase
                         }
 
                         return $match[0];
-                    }'
-            ],
-            'assertWithAssignmentInOr' => [
-                'function test(int $x = null): int {
-                    \assert($x || ($x = rand(0, 10)));
-                    return $x;
-                }'
+                    }',
             ],
             'noParadoxicalConditionAfterTwoAssignments' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $str): ?int {
                         if (rand(0, 1) || (!($pos = strpos($str, "a")) && !($pos = strpos($str, "b")))) {
                             return null;
                         }
 
                         return $pos;
-                    }'
+                    }',
             ],
             'assignmentInIf' => [
-                '<?php
+                'code' => '<?php
                     if ($row = (rand(0, 10) ? [5] : null)) {
                         echo $row[0];
                     }',
             ],
             'negatedAssignmentInIf' => [
-                '<?php
+                'code' => '<?php
                     if (!($row = (rand(0, 10) ? [5] : null))) {
                         // do nothing
                     }
@@ -324,7 +315,7 @@ class AssignmentInConditionalTest extends TestCase
                     }',
             ],
             'assignInElseIf' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0, 10) > 5) {
                         echo "hello";
                     } elseif ($row = (rand(0, 10) ? [5] : null)) {
@@ -332,25 +323,25 @@ class AssignmentInConditionalTest extends TestCase
                     }',
             ],
             'ifNotEqualsFalse' => [
-                '<?php
+                'code' => '<?php
                     if (($row = rand(0,10) ? [1] : false) !== false) {
                        echo $row[0];
                     }',
             ],
             'ifNotEqualsNull' => [
-                '<?php
+                'code' => '<?php
                     if (($row = rand(0,10) ? [1] : null) !== null) {
                        echo $row[0];
                     }',
             ],
             'ifNullNotEquals' => [
-                '<?php
+                'code' => '<?php
                     if (null !== ($row = rand(0,10) ? [1] : null)) {
                        echo $row[0];
                     }',
             ],
             'ifNullEquals' => [
-                '<?php
+                'code' => '<?php
                     if (null === ($row = rand(0,10) ? [1] : null)) {
 
                     } else {
@@ -358,27 +349,27 @@ class AssignmentInConditionalTest extends TestCase
                     }',
             ],
             'passedByRefInIf' => [
-                '<?php
+                'code' => '<?php
                     if (preg_match("/bad/", "badger", $matches)) {
                         echo $matches[0];
                     }',
             ],
             'passByRefInIfCheckAfter' => [
-                '<?php
+                'code' => '<?php
                     if (!preg_match("/bad/", "badger", $matches)) {
                         exit();
                     }
                     echo $matches[0];',
             ],
             'passByRefInIfWithBoolean' => [
-                '<?php
+                'code' => '<?php
                     $a = (bool)rand(0, 1);
                     if ($a && preg_match("/bad/", "badger", $matches)) {
                         echo $matches[0];
                     }',
             ],
             'bleedElseifAssignedVarsIntoElseScope' => [
-                '<?php
+                'code' => '<?php
                     if (rand(0, 1) === 0) {
                         $foo = 0;
                     } elseif ($foo = rand(0, 10)) {}
@@ -386,7 +377,7 @@ class AssignmentInConditionalTest extends TestCase
                     echo substr("banana", $foo);',
             ],
             'repeatedSet' => [
-                '<?php
+                'code' => '<?php
                     function foo(): void {
                         if ($a = rand(0, 1) ? "1" : null) {
                             return;
@@ -402,7 +393,7 @@ class AssignmentInConditionalTest extends TestCase
                     }',
             ],
             'repeatedSetInsideWhile' => [
-                '<?php
+                'code' => '<?php
                     function foo(): void {
                         if ($a = rand(0, 1) ? "1" : null) {
                             return;
@@ -418,7 +409,7 @@ class AssignmentInConditionalTest extends TestCase
                     }',
             ],
             'propertyFetchAfterNotNullCheckInElseif' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $foo;
@@ -428,7 +419,7 @@ class AssignmentInConditionalTest extends TestCase
                     } elseif (($a = rand(0, 1) ? new A : null) && $a->foo) {}',
             ],
             'noParadoxAfterConditionalAssignment' => [
-                '<?php
+                'code' => '<?php
                     if ($a = rand(0, 5)) {
                         echo $a;
                     } elseif ($a = rand(0, 5)) {
@@ -436,7 +427,7 @@ class AssignmentInConditionalTest extends TestCase
                     }',
             ],
             'assignmentInBranchWithReference' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     function getAOrFalse(bool $b) : A|false {
@@ -450,28 +441,25 @@ class AssignmentInConditionalTest extends TestCase
                         ) {
                         }
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'assignmentForComparison' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $b): void {
                         if ($a = $b > 1) {}
                         if ($a) {}
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'assignmentInBranchOfAnd' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $str): ?int {
                         $pos = 5;
 
@@ -484,7 +472,7 @@ class AssignmentInConditionalTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'assignmentInBranchOfOr' => [
-                '<?php
+                'code' => '<?php
                     function getPath(): string|object {
                         return rand(0, 1) ? "a" : new stdClass();
                     }
@@ -497,9 +485,11 @@ class AssignmentInConditionalTest extends TestCase
                         return "b";
                     }',
                 'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'assignmentInBranchOfAndReferencedAfterIf' => [
-                '<?php
+                'code' => '<?php
                     function bar(bool $result): bool {
                         if ($result && ($result = rand(0, 1))) {
                             return true;
@@ -510,7 +500,7 @@ class AssignmentInConditionalTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'assignmentInBranchOfAndReferencedInElse' => [
-                '<?php
+                'code' => '<?php
                     function bar(bool $result): bool {
                         if ($result && ($result = rand(0, 1))) {
                             return true;
@@ -521,7 +511,7 @@ class AssignmentInConditionalTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'assignmentInBranchOfAndReferencedInElseIf' => [
-                '<?php
+                'code' => '<?php
                     function bar(bool $result): bool {
                         if ($result && ($result = rand(0, 1))) {
                             return true;

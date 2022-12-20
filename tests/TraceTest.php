@@ -8,41 +8,38 @@ class TraceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'traceVariable' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-trace $a */
                     $a = getmypid();',
                 'error_message' => 'Trace',
             ],
             'traceVariables' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-trace $a $b */
                     $a = getmypid();
                     $b = getmypid();',
                 'error_message' => 'Trace',
             ],
             'traceVariablesComma' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-trace $a, $b */
                     $a = getmypid();
                     $b = getmypid();',
                 'error_message' => 'Trace',
             ],
             'undefinedTraceVariable' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-trace $b */
                     echo 1;',
                 'error_message' => 'UndefinedTrace',
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                 ],
-            ]
+            ],
         ];
     }
 }

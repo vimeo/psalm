@@ -11,7 +11,6 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -20,6 +19,9 @@ use function array_merge;
 use function array_shift;
 use function assert;
 
+/**
+ * @internal
+ */
 class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -62,7 +64,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                     && AtomicTypeComparator::isContainedBy(
                         $codebase,
                         $call_arg_atomic_type,
-                        new TIterable([Type::getMixed(), Type::getMixed()])
+                        new TIterable([Type::getMixed(), Type::getMixed()]),
                     )
                 ) {
                     $has_valid_iterator = true;
@@ -74,7 +76,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                         $context,
                         $key_type,
                         $value_type,
-                        $has_valid_iterator
+                        $has_valid_iterator,
                     );
                 }
             }
@@ -87,9 +89,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                 if ($second_arg_type
                     && ((string) $second_arg_type === 'false')
                 ) {
-                    return new Union([
-                        new TList($value_type),
-                    ]);
+                    return Type::getList($value_type);
                 }
 
                 $key_type = $key_type
@@ -106,7 +106,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                     $template_types = $key_type->getTemplateTypes();
                     $template_type = array_shift($template_types);
                     if ($template_type->as->hasMixed()) {
-                        $template_type->as = Type::getArrayKey();
+                        $template_type = $template_type->replaceAs(Type::getArrayKey());
                         $key_type = new Union([$template_type]);
                     }
                 }

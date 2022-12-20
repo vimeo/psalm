@@ -4,7 +4,10 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
 
-class TTemplateIndexedAccess extends Atomic
+/**
+ * @psalm-immutable
+ */
+final class TTemplateIndexedAccess extends Atomic
 {
     /**
      * @var string
@@ -24,26 +27,18 @@ class TTemplateIndexedAccess extends Atomic
     public function __construct(
         string $array_param_name,
         string $offset_param_name,
-        string $defining_class
+        string $defining_class,
+        bool $from_docblock = false
     ) {
         $this->array_param_name = $array_param_name;
         $this->offset_param_name = $offset_param_name;
         $this->defining_class = $defining_class;
+        $this->from_docblock = $from_docblock;
     }
 
     public function getKey(bool $include_extra = true): string
     {
         return $this->array_param_name . '[' . $this->offset_param_name . ']';
-    }
-
-    public function __toString(): string
-    {
-        return $this->getKey();
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        return $this->getKey();
     }
 
     /**
@@ -53,13 +48,12 @@ class TTemplateIndexedAccess extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         return null;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }

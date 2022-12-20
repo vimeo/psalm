@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\AssignOp\BitwiseXor;
 use Psalm\Node\VirtualNode;
 
-class VirtualBitwiseXor extends BitwiseXor implements VirtualNode
+final class VirtualBitwiseXor extends BitwiseXor implements VirtualNode
 {
 
 }

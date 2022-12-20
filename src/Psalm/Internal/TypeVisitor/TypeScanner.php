@@ -7,18 +7,24 @@ use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\NodeVisitor;
 use Psalm\Type\TypeNode;
+use Psalm\Type\TypeVisitor;
 
 use function strtolower;
 
-class TypeScanner extends NodeVisitor
+/**
+ * @internal
+ */
+class TypeScanner extends TypeVisitor
 {
-    private $scanner;
+    private Scanner $scanner;
 
-    private $file_storage;
+    private ?FileStorage $file_storage = null;
 
-    private $phantom_classes;
+    /**
+     * @var array<string, mixed>
+     */
+    private array $phantom_classes;
 
     /**
      * @param  array<string, mixed> $phantom_classes
@@ -45,7 +51,7 @@ class TypeScanner extends NodeVisitor
                     $type->value,
                     false,
                     !$type->from_docblock,
-                    $this->phantom_classes
+                    $this->phantom_classes,
                 );
 
                 if ($this->file_storage) {
@@ -59,7 +65,7 @@ class TypeScanner extends NodeVisitor
                 $type->fq_classlike_name,
                 false,
                 !$type->from_docblock,
-                $this->phantom_classes
+                $this->phantom_classes,
             );
 
             if ($this->file_storage) {
@@ -74,7 +80,7 @@ class TypeScanner extends NodeVisitor
                 $type->value,
                 false,
                 !$type->from_docblock,
-                $this->phantom_classes
+                $this->phantom_classes,
             );
 
             if ($this->file_storage) {

@@ -4,22 +4,14 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `trait-string` type, used to describe a string representing a valid PHP trait.
+ *
+ * @psalm-immutable
  */
-class TTraitString extends TString
+final class TTraitString extends TString
 {
     public function getKey(bool $include_extra = true): string
     {
         return 'trait-string';
-    }
-
-    public function __toString(): string
-    {
-        return $this->getKey();
-    }
-
-    public function getId(bool $nested = false): string
-    {
-        return $this->getKey();
     }
 
     /**
@@ -29,15 +21,13 @@ class TTraitString extends TString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
         return 'string';
     }
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -48,7 +38,7 @@ class TTraitString extends TString
         return 'trait-string';
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
     }

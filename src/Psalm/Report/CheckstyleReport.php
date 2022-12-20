@@ -6,7 +6,7 @@ use Psalm\Report;
 
 use function sprintf;
 
-class CheckstyleReport extends Report
+final class CheckstyleReport extends Report
 {
     public function create(): string
     {
@@ -18,7 +18,7 @@ class CheckstyleReport extends Report
             $message = sprintf(
                 '%s: %s',
                 $issue_data->type,
-                $issue_data->message
+                $issue_data->message,
             );
 
             $output .= '<file name="' . $this->xmlEncode($issue_data->file_name) . '">' . "\n";

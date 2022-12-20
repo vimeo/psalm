@@ -16,6 +16,9 @@ use UnexpectedValueException;
 use function array_merge;
 use function array_shift;
 
+/**
+ * @internal
+ */
 class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -57,24 +60,16 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 continue;
             }
 
-            $already_cloned = false;
+            if ($atomic_type instanceof TList) {
+                $atomic_type = $atomic_type->getKeyedArray();
+            }
 
             if ($atomic_type instanceof TKeyedArray) {
-                $already_cloned = true;
                 $atomic_type = $atomic_type->getGenericArrayType();
             }
 
             if ($atomic_type instanceof TArray) {
-                if (!$already_cloned) {
-                    $atomic_type = clone $atomic_type;
-                }
-
                 $return_atomic_type = new TArray($atomic_type->type_params);
-                continue;
-            }
-
-            if ($atomic_type instanceof TList) {
-                $return_atomic_type = new TArray([Type::getInt(), clone $atomic_type->type_param]);
                 continue;
             }
 
@@ -90,7 +85,7 @@ class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 && ((string) $third_arg_type === 'false'));
 
         if ($dont_preserve_int_keys && $return_atomic_type->type_params[0]->isInt()) {
-            $return_atomic_type = new TList($return_atomic_type->type_params[1]);
+            $return_atomic_type = Type::getListAtomic($return_atomic_type->type_params[1]);
         }
 
         return new Union([$return_atomic_type]);

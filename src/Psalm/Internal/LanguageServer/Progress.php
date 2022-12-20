@@ -12,10 +12,7 @@ use function str_replace;
 class Progress extends Base
 {
 
-    /**
-     * @var LanguageServer|null
-     */
-    private $server;
+    private ?LanguageServer $server = null;
 
     public function setServer(LanguageServer $server): void
     {

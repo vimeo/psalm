@@ -10,14 +10,11 @@ class DocblockInheritanceTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'inheritParentReturnDocbblock' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @return int[]
@@ -34,12 +31,12 @@ class DocblockInheritanceTest extends TestCase
                     }
 
                     $b = (new Bar)->doFoo();',
-                [
+                'assertions' => [
                     '$b' => 'array<array-key, int>',
                 ],
             ],
             'inheritedSelfAnnotation' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @param self $i
@@ -59,7 +56,7 @@ class DocblockInheritanceTest extends TestCase
                     }',
             ],
             'inheritTwice' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @return string[]
@@ -79,10 +76,10 @@ class DocblockInheritanceTest extends TestCase
                         public function aa() {
                             return [];
                         }
-                    }'
+                    }',
             ],
             'inheritTwiceWithArrayType' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @return string[]
@@ -102,10 +99,10 @@ class DocblockInheritanceTest extends TestCase
                         public function aa() : array {
                             return [];
                         }
-                    }'
+                    }',
             ],
             'inheritCorrectReturnTypeOnInterface' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         /**
                          * @return A
@@ -122,10 +119,10 @@ class DocblockInheritanceTest extends TestCase
 
                     function takesB(B $f) : B {
                         return $f->map();
-                    }'
+                    }',
             ],
             'inheritCorrectReturnTypeOnClass' => [
-                '<?php
+                'code' => '<?php
                     interface A {
                         /**
                          * @return A
@@ -148,19 +145,16 @@ class DocblockInheritanceTest extends TestCase
 
                     function takesF(F $f) : B {
                         return $f->map();
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'automaticInheritDoc' => [
-                '<?php
+                'code' => '<?php
                     class Y {
                         /**
                          * @param string[] $arr
@@ -173,7 +167,7 @@ class DocblockInheritanceTest extends TestCase
                     }
 
                     (new X())->boo([1, 2]);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

@@ -3,21 +3,25 @@
 namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
+ * @internal
  */
 class LinkableTypeAlias implements TypeAlias
 {
-    public $declaring_fq_classlike_name;
+    use ImmutableNonCloneableTrait;
 
-    public $alias_name;
+    public string $declaring_fq_classlike_name;
 
-    public $line_number;
+    public string $alias_name;
 
-    public $start_offset;
+    public int $line_number;
 
-    public $end_offset;
+    public int $start_offset;
+
+    public int $end_offset;
 
     public function __construct(
         string $declaring_fq_classlike_name,

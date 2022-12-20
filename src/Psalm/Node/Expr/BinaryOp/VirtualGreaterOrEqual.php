@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\BinaryOp;
 use PhpParser\Node\Expr\BinaryOp\GreaterOrEqual;
 use Psalm\Node\VirtualNode;
 
-class VirtualGreaterOrEqual extends GreaterOrEqual implements VirtualNode
+final class VirtualGreaterOrEqual extends GreaterOrEqual implements VirtualNode
 {
 
 }

@@ -19,6 +19,9 @@ use function strlen;
 use function strpos;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class TypeTokenizer
 {
     /**
@@ -44,6 +47,7 @@ class TypeTokenizer
         'numeric-string' => true,
         'class-string' => true,
         'interface-string' => true,
+        'enum-string' => true,
         'trait-string' => true,
         'callable-string' => true,
         'callable-array' => true,
@@ -51,8 +55,6 @@ class TypeTokenizer
         'stringable-object' => true,
         'pure-callable' => true,
         'pure-Closure' => true,
-        'mysql-escaped-string' => true, // deprecated
-        'html-escaped-string' => true, // deprecated
         'literal-string' => true,
         'non-empty-literal-string' => true,
         'lowercase-string' => true,
@@ -76,6 +78,10 @@ class TypeTokenizer
         'array-key' => true,
         'key-of' => true,
         'value-of' => true,
+        'properties-of' => true,
+        'public-properties-of' => true,
+        'protected-properties-of' => true,
+        'private-properties-of' => true,
         'non-empty-countable' => true,
         'list' => true,
         'non-empty-list' => true,
@@ -91,14 +97,13 @@ class TypeTokenizer
     /**
      * @var array<string, list<array{0: string, 1: int}>>
      */
-    private static $memoized_tokens = [];
+    private static array $memoized_tokens = [];
 
     /**
      * Tokenises a type string into an array of tuples where the first element
      * contains the string token and the second element contains its offset,
      *
-     * @return list<array{string, int}>
-     *
+     * @return list<array{0: string, 1: int}>
      * @psalm-suppress PossiblyUndefinedIntArrayOffset
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array
@@ -300,14 +305,11 @@ class TypeTokenizer
     }
 
     /**
-     * @param array{int,int}|null   $php_version
-     *
-     *
      * @psalm-pure
      */
     public static function fixScalarTerms(
         string $type_string,
-        ?array $php_version = null
+        ?int $analysis_php_version_id = null
     ): string {
         $type_string_lc = strtolower($type_string);
 
@@ -330,14 +332,14 @@ class TypeTokenizer
 
         switch ($type_string) {
             case 'boolean':
-                return $php_version !== null ? $type_string : 'bool';
+                return $analysis_php_version_id !== null ? $type_string : 'bool';
 
             case 'integer':
-                return $php_version !== null ? $type_string : 'int';
+                return $analysis_php_version_id !== null ? $type_string : 'int';
 
             case 'double':
             case 'real':
-                return $php_version !== null ? $type_string : 'float';
+                return $analysis_php_version_id !== null ? $type_string : 'float';
         }
 
         return $type_string;
@@ -346,7 +348,6 @@ class TypeTokenizer
     /**
      * @param  array<string, mixed>|null       $template_type_map
      * @param  array<string, TypeAlias>|null   $type_aliases
-     *
      * @return list<array{0: string, 1: int, 2?: string}>
      */
     public static function getFullyQualifiedTokens(
@@ -368,7 +369,7 @@ class TypeTokenizer
                 [
                     '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
                 ],
-                true
+                true,
             )) {
                 continue;
             }
@@ -495,7 +496,7 @@ class TypeTokenizer
             } else {
                 $type_tokens[$i][0] = Type::getFQCLNFromString(
                     $string_type_token[0],
-                    $aliases
+                    $aliases,
                 );
             }
         }

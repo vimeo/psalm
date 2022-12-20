@@ -14,7 +14,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
@@ -23,8 +22,10 @@ use function array_values;
 use function count;
 use function is_string;
 use function max;
-use function mb_strcut;
 
+/**
+ * @internal
+ */
 class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
@@ -45,7 +46,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             return Type::getMixed();
         }
 
-        $is_replace = mb_strcut($event->getFunctionId(), 6, 7) === 'replace';
+        $is_replace = $event->getFunctionId() === 'array_replace';
 
         $inner_value_types = [];
         $inner_key_types = [];
@@ -58,6 +59,7 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         $all_int_offsets = true;
         $all_nonempty_lists = true;
         $any_nonempty = false;
+        $all_empty = true;
 
         $max_keyed_array_size = 0;
 
@@ -67,144 +69,176 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             }
 
             foreach ($call_arg_type->getAtomicTypes() as $type_part) {
+                if ($type_part instanceof TList) {
+                    $type_part = $type_part->getKeyedArray();
+                }
+                $unpacking_indefinite_number_of_args = false;
+                $unpacking_possibly_empty = false;
                 if ($call_arg->unpack) {
-                    if (!$type_part instanceof TArray) {
-                        if ($type_part instanceof TKeyedArray) {
-                            $type_part_value_type = $type_part->getGenericValueType();
-                        } elseif ($type_part instanceof TList) {
-                            $type_part_value_type = $type_part->type_param;
+                    if ($type_part instanceof TKeyedArray) {
+                        if (!$type_part->fallback_params
+                            && $type_part->getMinCount() === $type_part->getMaxCount()
+                        ) {
+                            $unpacked_type_parts = [];
+                            foreach ($type_part->properties as $t) {
+                                $unpacked_type_parts = array_merge(
+                                    $unpacked_type_parts,
+                                    $t->getAtomicTypes(),
+                                );
+                            }
                         } else {
-                            return Type::getArray();
+                            $unpacked_type_parts = $type_part
+                                ->getGenericValueType()
+                                ->getAtomicTypes();
+                            $unpacking_indefinite_number_of_args = true;
                         }
+                        $unpacking_possibly_empty = !$type_part->isNonEmpty();
+                    } elseif ($type_part instanceof TArray) {
+                        $unpacked_type_parts = $type_part->type_params[1];
+                        $unpacking_indefinite_number_of_args = true;
+                        $unpacking_possibly_empty = !$type_part instanceof TNonEmptyArray;
+                        $unpacked_type_parts = $unpacked_type_parts->getAtomicTypes();
                     } else {
-                        $type_part_value_type = $type_part->type_params[1];
-                    }
-
-                    $unpacked_type_parts = [];
-
-                    foreach ($type_part_value_type->getAtomicTypes() as $value_type_part) {
-                        $unpacked_type_parts[] = $value_type_part;
+                        return Type::getArray();
                     }
                 } else {
                     $unpacked_type_parts = [$type_part];
                 }
 
                 foreach ($unpacked_type_parts as $unpacked_type_part) {
-                    if (!$unpacked_type_part instanceof TArray) {
-                        if (($unpacked_type_part instanceof TFalse
-                                && $call_arg_type->ignore_falsable_issues)
-                            || ($unpacked_type_part instanceof TNull
-                                && $call_arg_type->ignore_nullable_issues)
-                        ) {
-                            continue;
-                        }
+                    if (($unpacked_type_part instanceof TFalse
+                            && $call_arg_type->ignore_falsable_issues)
+                        || ($unpacked_type_part instanceof TNull
+                            && $call_arg_type->ignore_nullable_issues)
+                    ) {
+                        continue;
+                    }
 
-                        if ($unpacked_type_part instanceof TKeyedArray) {
-                            $max_keyed_array_size = max(
-                                $max_keyed_array_size,
-                                count($unpacked_type_part->properties)
-                            );
+                    if ($unpacked_type_part instanceof TKeyedArray) {
+                        $all_empty = false;
 
-                            foreach ($unpacked_type_part->properties as $key => $type) {
-                                if (!is_string($key)) {
-                                    if ($is_replace) {
-                                        $generic_properties[$key] = $type;
-                                    } else {
-                                        $generic_properties[] = $type;
-                                    }
-                                    continue;
-                                }
+                        $max_keyed_array_size = max(
+                            $max_keyed_array_size,
+                            count($unpacked_type_part->properties),
+                        );
 
-                                if (isset($unpacked_type_part->class_strings[$key])) {
-                                    $class_strings[$key] = true;
-                                }
-
-                                if (!isset($generic_properties[$key]) || !$type->possibly_undefined) {
-                                    $generic_properties[$key] = $type;
-                                } else {
-                                    $was_possibly_undefined = $generic_properties[$key]->possibly_undefined;
-
-                                    $generic_properties[$key] = Type::combineUnionTypes(
-                                        $generic_properties[$key],
-                                        $type,
-                                        $codebase
+                        $added_inner_values = false;
+                        foreach ($unpacked_type_part->properties as $key => $type) {
+                            if (!$type->possibly_undefined && !$unpacking_possibly_empty) {
+                                $any_nonempty = true;
+                            }
+                            if (is_string($key)) {
+                                $all_int_offsets = false;
+                            } elseif (!$is_replace) {
+                                if ($unpacking_indefinite_number_of_args || $type->possibly_undefined) {
+                                    $added_inner_values = true;
+                                    $inner_value_types = array_merge(
+                                        $inner_value_types,
+                                        array_values($type->getAtomicTypes()),
                                     );
-
-                                    $generic_properties[$key]->possibly_undefined = $was_possibly_undefined;
+                                } else {
+                                    $generic_properties[] = $type;
                                 }
+                                continue;
                             }
 
-                            if (!$unpacked_type_part->is_list) {
-                                $all_nonempty_lists = false;
+                            if (isset($unpacked_type_part->class_strings[$key])) {
+                                $class_strings[$key] = true;
                             }
 
-                            if ($unpacked_type_part->sealed) {
-                                $any_nonempty = true;
-                            }
-
-                            continue;
-                        }
-
-                        if ($unpacked_type_part instanceof TList) {
-                            $all_keyed_arrays = false;
-
-                            if (!$unpacked_type_part instanceof TNonEmptyList) {
-                                $all_nonempty_lists = false;
+                            if (!isset($generic_properties[$key]) || (
+                                !$type->possibly_undefined
+                                    && !$unpacking_possibly_empty
+                            )) {
+                                if ($unpacking_possibly_empty) {
+                                    $type = $type->setPossiblyUndefined(true);
+                                }
+                                $generic_properties[$key] = $type;
                             } else {
-                                $any_nonempty = true;
-                            }
-                        } else {
-                            if ($unpacked_type_part instanceof TMixed
-                                && $unpacked_type_part->from_loop_isset
-                            ) {
-                                $unpacked_type_part = new TArray([
-                                    Type::getArrayKey(),
-                                    Type::getMixed(true),
-                                ]);
-                            } else {
-                                return Type::getArray();
-                            }
-                        }
-                    } else {
-                        if (!$unpacked_type_part->type_params[0]->isEmpty()) {
-                            foreach ($generic_properties as $key => $keyed_type) {
+                                $was_possibly_undefined = $generic_properties[$key]->possibly_undefined
+                                    || $unpacking_possibly_empty;
+
                                 $generic_properties[$key] = Type::combineUnionTypes(
-                                    $keyed_type,
-                                    $unpacked_type_part->type_params[1],
-                                    $codebase
+                                    $generic_properties[$key],
+                                    $type,
+                                    $codebase,
+                                    false,
+                                    true,
+                                    500,
+                                    $was_possibly_undefined,
                                 );
                             }
+                        }
 
-                            $all_keyed_arrays = false;
+                        if (!$unpacked_type_part->is_list) {
                             $all_nonempty_lists = false;
                         }
+
+                        if ($added_inner_values) {
+                            $all_keyed_arrays = false;
+                            $inner_key_types []= new TInt;
+                        }
+
+                        if ($unpacked_type_part->fallback_params !== null) {
+                            $all_keyed_arrays = false;
+                            $inner_value_types = array_merge(
+                                $inner_value_types,
+                                array_values($unpacked_type_part->fallback_params[1]->getAtomicTypes()),
+                            );
+                            $inner_key_types = array_merge(
+                                $inner_key_types,
+                                array_values($unpacked_type_part->fallback_params[0]->getAtomicTypes()),
+                            );
+                        }
+
+                        continue;
+                    }
+
+                    if ($unpacked_type_part instanceof TMixed
+                        && $unpacked_type_part->from_loop_isset
+                    ) {
+                        $unpacked_type_part = new TArray([
+                            Type::getArrayKey(),
+                            Type::getMixed(true),
+                        ]);
                     }
 
                     if ($unpacked_type_part instanceof TArray) {
-                        if ($unpacked_type_part->type_params[1]->isEmpty()) {
+                        if ($unpacked_type_part->isEmptyArray()) {
                             continue;
                         }
+
+                        foreach ($generic_properties as $key => $keyed_type) {
+                            $generic_properties[$key] = Type::combineUnionTypes(
+                                $keyed_type,
+                                $unpacked_type_part->type_params[1],
+                                $codebase,
+                            );
+                        }
+
+                        $all_keyed_arrays = false;
+                        $all_nonempty_lists = false;
 
                         if (!$unpacked_type_part->type_params[0]->isInt()) {
                             $all_int_offsets = false;
                         }
 
-                        if ($unpacked_type_part instanceof TNonEmptyArray) {
+                        if ($unpacked_type_part instanceof TNonEmptyArray && !$unpacking_possibly_empty) {
                             $any_nonempty = true;
                         }
+                    } else {
+                        return Type::getArray();
                     }
+
+                    $all_empty = false;
 
                     $inner_key_types = array_merge(
                         $inner_key_types,
-                        $unpacked_type_part instanceof TList
-                            ? [new TInt()]
-                            : array_values($unpacked_type_part->type_params[0]->getAtomicTypes())
+                        array_values($unpacked_type_part->type_params[0]->getAtomicTypes()),
                     );
                     $inner_value_types = array_merge(
                         $inner_value_types,
-                        $unpacked_type_part instanceof TList
-                            ? array_values($unpacked_type_part->type_param->getAtomicTypes())
-                            : array_values($unpacked_type_part->type_params[1]->getAtomicTypes())
+                        array_values($unpacked_type_part->type_params[1]->getAtomicTypes()),
                     );
                 }
             }
@@ -214,10 +248,6 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         $inner_value_type = null;
 
         if ($inner_key_types) {
-            /**
-             * Truthy&array-shape-list doesn't reconcile correctly, will be fixed for 5.x by #8050.
-             * @psalm-suppress InvalidScalarArgument
-             */
             $inner_key_type = TypeCombiner::combine($inner_key_types, $codebase, true);
         }
 
@@ -232,38 +262,34 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             && ($generic_property_count < $max_keyed_array_size * 2
                 || $generic_property_count < 16)
         ) {
-            $objectlike = new TKeyedArray($generic_properties);
-
-            if ($class_strings !== []) {
-                $objectlike->class_strings = $class_strings;
-            }
-
-            if ($all_nonempty_lists || $all_int_offsets) {
-                $objectlike->is_list = true;
-            }
-
-            if (!$all_keyed_arrays) {
-                $objectlike->previous_key_type = $inner_key_type;
-                $objectlike->previous_value_type = $inner_value_type;
-            }
+            $objectlike = new TKeyedArray(
+                $generic_properties,
+                $class_strings ?: null,
+                $all_keyed_arrays || $inner_key_type === null || $inner_value_type === null
+                    ? null
+                    : [$inner_key_type, $inner_value_type],
+                $all_nonempty_lists || $all_int_offsets,
+            );
 
             return new Union([$objectlike]);
+        }
+
+        if ($all_empty) {
+            return Type::getEmptyArray();
         }
 
         if ($inner_value_type) {
             if ($all_int_offsets) {
                 if ($any_nonempty) {
-                    return new Union([
-                        new TNonEmptyList($inner_value_type),
-                    ]);
+                    return Type::getNonEmptyList(
+                        $inner_value_type,
+                    );
                 }
 
-                return new Union([
-                    new TList($inner_value_type),
-                ]);
+                return Type::getList($inner_value_type);
             }
 
-            $inner_key_type = $inner_key_type ?? Type::getArrayKey();
+            $inner_key_type ??= Type::getArrayKey();
 
             if ($any_nonempty) {
                 return new Union([

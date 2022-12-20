@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr;
 use PhpParser\Node\Expr\Instanceof_;
 use Psalm\Node\VirtualNode;
 
-class VirtualInstanceof extends Instanceof_ implements VirtualNode
+final class VirtualInstanceof extends Instanceof_ implements VirtualNode
 {
 
 }

@@ -4,10 +4,12 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `numeric` type that's also empty (which can also result from an `is_numeric` and `empty` check).
+ *
+ * @psalm-immutable
  */
-class TEmptyNumeric extends TNumeric
+final class TEmptyNumeric extends TNumeric
 {
-    public function getId(bool $nested = false): string
+    public function getId(bool $exact = true, bool $nested = false): string
     {
         return 'empty-numeric';
     }

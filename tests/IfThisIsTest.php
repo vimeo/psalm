@@ -10,14 +10,11 @@ class IfThisIsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'worksAfterConvert' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         /**
                          * @return void
@@ -43,10 +40,10 @@ class IfThisIsTest extends TestCase
                     $f = new F();
                     $f->convert();
                     $f->test();
-                '
+                ',
             ],
             'withTemplate' => [
-                '<?php
+                'code' => '<?php
                 class Frozen {}
                 class Unfrozen {}
 
@@ -91,10 +88,10 @@ class IfThisIsTest extends TestCase
 
                 $f = new Foo(new Unfrozen());
                 $f->set("asd", 10);
-                '
+                ',
             ],
             'subclass' => [
-                '<?php
+                'code' => '<?php
                 class G
                 {
                     /**
@@ -110,10 +107,10 @@ class IfThisIsTest extends TestCase
 
                 $f = new F();
                 $f->test();
-                '
+                ',
             ],
             'ifThisIsWithSelfAlias' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of string
                      */
@@ -132,10 +129,10 @@ class IfThisIsTest extends TestCase
                     /** @var App<"idle"> */
                     $app = new App();
                     $app->start();
-                '
+                ',
             ],
             'ifThisIsAndThisOutAtTheSameTime' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of string
                      */
@@ -154,10 +151,10 @@ class IfThisIsTest extends TestCase
                     /** @var App<"idle"> */
                     $app = new App();
                     $app->start();
-                '
+                ',
             ],
             'ifThisIsChangeThisTypeInsideMethod' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -213,13 +210,13 @@ class IfThisIsTest extends TestCase
                     $numbers = $list->compact();
                 ',
                 'assertions' => [
-                    '$numbers' => 'ArrayList<int>'
+                    '$numbers' => 'ArrayList<int>',
                 ],
             ],
             'ifThisIsResolveTemplateParams' => [
-                '<?php
+                'code' => '<?php
                     /**
-                     * @template T
+                     * @template-covariant T
                      */
                     final class Option
                     {
@@ -228,8 +225,8 @@ class IfThisIsTest extends TestCase
                     }
 
                     /**
-                     * @template L
-                     * @template R
+                     * @template-covariant L
+                     * @template-covariant R
                      */
                     final class Either
                     {
@@ -283,20 +280,20 @@ class IfThisIsTest extends TestCase
                     $numbers = $list->compact();
                 ',
                 'assertions' => [
-                    '$numbers' => 'ArrayList<int>'
+                    '$numbers' => 'ArrayList<int>',
                 ],
             ],
         ];
     }
 
     /**
-     * @return array<string, array{0: string, error_message: string}>
+     * @return array<string, array{code: string, error_message: string}>
      */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'failsWithWrongTemplate1' => [
-                '<?php
+                'code' => '<?php
 
                 /**
                  * @template T
@@ -322,10 +319,10 @@ class IfThisIsTest extends TestCase
                 $i = new a("test");
                 $i->test();
                 ',
-                'error_message' => 'IfThisIsMismatch'
+                'error_message' => 'IfThisIsMismatch',
             ],
             'failsWithWrongTemplate2' => [
-                '<?php
+                'code' => '<?php
                 class Frozen {}
                 class Unfrozen {}
 
@@ -371,10 +368,10 @@ class IfThisIsTest extends TestCase
                 $g = $f->freeze();
                 $g->set("asd", 20);  // Fails
                 ',
-                'error_message' => 'IfThisIsMismatch'
+                'error_message' => 'IfThisIsMismatch',
             ],
             'failWithInvalidTemplateConstraint' => [
-                '<?php
+                'code' => '<?php
                     /** @template T */
                     final class Option { }
 
@@ -397,7 +394,7 @@ class IfThisIsTest extends TestCase
                     /** @var ArrayList<int> $list */
                     $list = new ArrayList();
                     $numbers = $list->compact();',
-                'error_message' => 'IfThisIsMismatch'
+                'error_message' => 'IfThisIsMismatch',
             ],
         ];
     }

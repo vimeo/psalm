@@ -13,14 +13,11 @@ class InArrayTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'nullTypeRemovedAfterNegatedAssertionAgainstArrayOfInt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|null $x
                      * @return int
@@ -34,7 +31,7 @@ class InArrayTest extends TestCase
                     }',
             ],
             'nullTypeRemovedAfterAssertionAgainstArrayOfInt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|null $x
                      * @param non-empty-list<int> $y
@@ -50,7 +47,7 @@ class InArrayTest extends TestCase
                 ',
             ],
             'typeNotChangedAfterAssertionAgainstArrayOfMixed' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|null $x
                      * @param list<mixed> $y
@@ -65,7 +62,7 @@ class InArrayTest extends TestCase
                     }',
             ],
             'unionTypeReconciledToUnionTypeOfHaystackValueTypes' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|string|bool $x
                      * @param non-empty-list<int|string> $y
@@ -80,7 +77,7 @@ class InArrayTest extends TestCase
                 ',
             ],
             'unionTypesReducedToIntersectionWithinAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|bool $x
                      * @param non-empty-list<int|string> $y
@@ -95,7 +92,7 @@ class InArrayTest extends TestCase
                     }',
             ],
             'unionTypesReducedToIntersectionOutsideOfNegatedAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|bool $x
                      * @param non-empty-list<int|string> $y
@@ -109,7 +106,7 @@ class InArrayTest extends TestCase
                     }',
             ],
             'assertInArrayOfNotIntersectingTypeReturnsOriginalTypeOutsideOfAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int $x
                      * @param list<string> $y
@@ -123,10 +120,10 @@ class InArrayTest extends TestCase
                         return $x;
                     }',
                 'assertions' => [],
-                'error_level' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
             ],
             'assertNegatedInArrayOfNotIntersectingTypeReturnsOriginalType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int $x
                      * @param list<string> $y
@@ -140,10 +137,10 @@ class InArrayTest extends TestCase
                         throw new \Exception();
                     }',
                 'assertions' => [],
-                'error_level' => ['RedundantConditionGivenDocblockType'],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'assertAgainstListOfLiteralsAndScalarUnion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string|bool $x
                      * @param non-empty-list<"a"|"b"|int> $y
@@ -158,7 +155,7 @@ class InArrayTest extends TestCase
                     }',
             ],
             'assertAgainstListOfLiteralsAndScalarUnionTypeHint' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-list<"a"|"b"|int> $y
                      * @return "a"|"b"
@@ -170,12 +167,12 @@ class InArrayTest extends TestCase
 
                         throw new Exception();
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'in_arrayNullOrString' => [
-                '<?php
+                'code' => '<?php
                     function test(?string $x, string $y): void {
                         if (in_array($x, [null, $y], true)) {
                             if ($x === null) {
@@ -184,24 +181,24 @@ class InArrayTest extends TestCase
                             echo "Saw $x\n";
                         }
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'in_array-mixed-twice' => [
-                '<?php
+                'code' => '<?php
                     function contains(array $list1, array $list2, mixed $element): void
                     {
                         if (in_array($element, $list1, true)) {
                         } elseif (in_array($element, $list2, true)) {
                         }
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'in_array-string-twice' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string[] $list1
                      * @param string[] $list2
@@ -212,33 +209,30 @@ class InArrayTest extends TestCase
                         } elseif (in_array($element, $list2, true)) {
                         }
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'in_array-keyed-array-string-twice' => [
-                '<?php
+                'code' => '<?php
                     function contains(string $a, string $b, mixed $element): void
                     {
                         if (in_array($element, [$a], true)) {
                         } elseif (in_array($element, [$b], true)) {
                         }
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'typeNotChangedAfterNegatedAssertionAgainstUnsealedArrayOfMixed' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|null $x
                      * @param non-empty-list<mixed> $y
@@ -254,7 +248,7 @@ class InArrayTest extends TestCase
                 'error_message' => 'NullableReturnStatement',
             ],
             'typeNotChangedAfterNegatedAssertionAgainstUnsealedArrayOfUnionType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|null $x
                      * @param non-empty-list<int|null> $y
@@ -270,7 +264,7 @@ class InArrayTest extends TestCase
                 'error_message' => 'NullableReturnStatement',
             ],
             'initialTypeRemainsOutsideOfAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|bool $x
                      * @param non-empty-list<int|string> $y
@@ -285,7 +279,7 @@ class InArrayTest extends TestCase
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:32 - The inferred type \'bool|int\' does not match the declared return type \'int\' for assertInArray',
             ],
             'initialTypeRemainsWithinTheNegatedAssertion' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int|bool $x
                      * @param non-empty-list<int|string> $y
@@ -300,7 +294,7 @@ class InArrayTest extends TestCase
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36 - The inferred type \'bool|int\' does not match the declared return type \'int\' for assertInArray',
             ],
             'assertInArrayOfNotIntersectingTypeTriggersTypeContradiction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int $x
                      * @param list<string> $y
@@ -313,10 +307,10 @@ class InArrayTest extends TestCase
 
                         return $x;
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always false',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always falsy',
             ],
             'assertNegatedInArrayOfNotIntersectingTypeTriggersRedundantCondition' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int $x
                      * @param list<string> $y
@@ -329,10 +323,10 @@ class InArrayTest extends TestCase
 
                         throw new \Exception();
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type true is always true',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type true is always truthy',
             ],
             'assertInArrayOfNotIntersectingTypeTriggersDocblockTypeContradiction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int $x
                      * @param list<string> $y
@@ -345,10 +339,10 @@ class InArrayTest extends TestCase
 
                         throw new \Exception();
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always false',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always falsy',
             ],
             'assertInArrayOfNotIntersectingTypeReturnsTriggersDocblockTypeContradiction' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int $x
                      * @param list<string> $y
@@ -361,11 +355,11 @@ class InArrayTest extends TestCase
 
                         throw new \Exception();
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always false',
-                'error_levels' => ['RedundantConditionGivenDocblockType'],
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always falsy',
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'inArrayDetectType' => [
-                '<?php
+                'code' => '<?php
                     function x($foo, string $bar): void {
                         if (!in_array($foo, [$bar], true)) {
                             throw new Exception();
@@ -377,7 +371,7 @@ class InArrayTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'inArrayRemoveInvalid' => [
-                '<?php
+                'code' => '<?php
                     function x(?string $foo, int $bar): void {
                         if (!in_array($foo, [$bar], true)) {
                             throw new Exception();

@@ -6,141 +6,107 @@ namespace Psalm\Internal\LanguageServer;
 
 use LanguageServerProtocol\MessageType;
 
+/**
+ * @internal
+ */
 class ClientConfiguration
 {
 
     /**
-     * Use TCP mode (by default Psalm uses STDIO)
-     *
-     * @var string|null
+     * TCP Server Address
      */
-    public $TCPServerAddress;
+    public ?string $TCPServerAddress = null;
 
     /**
      * Use TCP in server mode (default is client)
-     *
-     * @var bool|null
      */
-    public $TCPServerMode;
+    public ?bool $TCPServerMode = null;
 
     /**
      * Hide Warnings or not
-     *
-     * @var bool|null
      */
-    public $hideWarnings;
+    public ?bool $hideWarnings = null;
 
     /**
      * Provide Completion or not
-     *
-     * @var bool|null
      */
-    public $provideCompletion;
+    public ?bool $provideCompletion = null;
 
     /**
      * Provide GoTo Definitions or not
-     *
-     * @var bool|null
      */
-    public $provideDefinition;
+    public ?bool $provideDefinition = null;
 
     /**
      * Provide Hover Requests or not
-     *
-     * @var bool|null
      */
-    public $provideHover;
+    public ?bool  $provideHover= null;
 
     /**
      * Provide Signature Help or not
-     *
-     * @var bool|null
      */
-    public $provideSignatureHelp;
+    public ?bool $provideSignatureHelp= null;
 
     /**
      * Provide Code Actions or not
-     *
-     * @var bool|null
      */
-    public $provideCodeActions;
+    public ?bool $provideCodeActions = null;
 
     /**
      * Provide Diagnostics or not
-     *
-     * @var bool|null
      */
-    public $provideDiagnostics;
+    public ?bool $provideDiagnostics = null;
 
     /**
      * Provide Completion or not
      *
-     * @var bool|null
      * @psalm-suppress PossiblyUnusedProperty
      */
-    public $findUnusedVariables;
+    public ?bool $findUnusedVariables = null;
 
     /**
      * Look for dead code
      *
      * @var 'always'|'auto'|null
      */
-    public $findUnusedCode;
+    public ?string $findUnusedCode = null;
 
     /**
      * Log Level
      *
-     * @var int|null
-     *
      * @see MessageType
      * @psalm-suppress PossiblyUnusedProperty
      */
-    public $logLevel;
+    public ?int $logLevel = null;
 
     /**
      * If added, the language server will not respond to onChange events.
      * You can also specify a line count over which Psalm will not run on-change events.
-     *
-     * @var int|null
-     *
      */
-    public $onchangeLineLimit;
+    public ?int $onchangeLineLimit = null;
 
     /**
      * Debounce time in milliseconds for onChange events
-     *
-     * @var int|null
-     *
      */
-    public $onChangeDebounceMs;
+    public ?int $onChangeDebounceMs = null;
 
     /**
      * Undocumented function
      *
-     * @param boolean $hideWarnings
-     * @param boolean|null $provideCompletion
-     * @param boolean|null $provideDefinition
-     * @param boolean|null $provideHover
-     * @param boolean|null $provideSignatureHelp
-     * @param boolean|null $provideCodeActions
-     * @param boolean|null $provideDiagnostics
-     * @param boolean|null $findUnusedVariables
      * @param 'always'|'auto'|null $findUnusedCode
-     * @param integer|null $logLevel
-     * @param integer|null $onchangeLineLimit
      */
     public function __construct(
         bool $hideWarnings = true,
-        bool $provideCompletion = null,
-        bool $provideDefinition = null,
-        bool $provideHover = null,
-        bool $provideSignatureHelp = null,
-        bool $provideCodeActions = null,
-        bool $provideDiagnostics = null,
-        bool $findUnusedVariables = null,
-        string $findUnusedCode = null,
-        int $logLevel = null,
-        int $onchangeLineLimit = null
+        ?bool $provideCompletion = null,
+        ?bool $provideDefinition = null,
+        ?bool $provideHover = null,
+        ?bool $provideSignatureHelp = null,
+        ?bool $provideCodeActions = null,
+        ?bool $provideDiagnostics = null,
+        ?bool $findUnusedVariables = null,
+        ?string $findUnusedCode = null,
+        ?int $logLevel = null,
+        ?int $onchangeLineLimit = null
     ) {
         $this->hideWarnings = $hideWarnings;
         $this->provideCompletion = $provideCompletion;

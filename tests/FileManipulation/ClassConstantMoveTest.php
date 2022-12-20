@@ -15,8 +15,7 @@ use function strpos;
 
 class ClassConstantMoveTest extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {
@@ -27,7 +26,6 @@ class ClassConstantMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $constants_to_move
      */
     public function testValidCode(
@@ -46,8 +44,8 @@ class ClassConstantMoveTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $context = new Context();
@@ -56,7 +54,7 @@ class ClassConstantMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code
+            $input_code,
         );
 
         $codebase = $this->project_analyzer->getCodebase();
@@ -75,13 +73,13 @@ class ClassConstantMoveTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,array<string, string>}>
+     * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      */
     public function providerValidCodeParse(): array
     {
         return [
             'moveSimpleClassConstant' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -96,7 +94,7 @@ class ClassConstantMoveTest extends TestCase
                             echo A::FOO;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -113,12 +111,12 @@ class ClassConstantMoveTest extends TestCase
 
                         const FOO_BAR = 15;
                     }',
-                [
+                'migrations' => [
                     'Ns\A::FOO' => 'Ns\B::FOO_BAR',
                 ],
             ],
             'renameSimpleClassConstant' => [
-                '<?php
+                'input' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -133,7 +131,7 @@ class ClassConstantMoveTest extends TestCase
                             echo A::FOO;
                         }
                     }',
-                '<?php
+                'output' => '<?php
                     namespace Ns;
 
                     use ArrayObject;
@@ -148,7 +146,7 @@ class ClassConstantMoveTest extends TestCase
                             echo A::FOO_BAR;
                         }
                     }',
-                [
+                'migrations' => [
                     'Ns\A::FOO' => 'Ns\A::FOO_BAR',
                 ],
             ],

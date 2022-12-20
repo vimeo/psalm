@@ -11,7 +11,6 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use UnexpectedValueException;
 
-use function array_intersect_key;
 use function array_merge;
 use function count;
 use function in_array;
@@ -53,7 +52,7 @@ class ForAnalyzer
 
         $context->assigned_var_ids = array_merge(
             $pre_assigned_var_ids,
-            $assigned_var_ids
+            $assigned_var_ids,
         );
 
         $while_true = !$stmt->cond && !$stmt->init && !$stmt->loop;
@@ -79,7 +78,7 @@ class ForAnalyzer
 
         $loop_scope->protected_var_ids = array_merge(
             $assigned_var_ids,
-            $context->protected_var_ids
+            $context->protected_var_ids,
         );
 
         if (LoopAnalyzer::analyze(
@@ -88,7 +87,7 @@ class ForAnalyzer
             $stmt->cond,
             $stmt->loop,
             $loop_scope,
-            $inner_loop_context
+            $inner_loop_context,
         ) === false) {
             return false;
         }
@@ -107,14 +106,15 @@ class ForAnalyzer
             if (count($stmt->init) === 1
                 && count($stmt->cond) === 1
                 && $cond instanceof PhpParser\Node\Expr\BinaryOp
-                && $cond->right instanceof PhpParser\Node\Scalar\LNumber
+                && ($cond_value = $statements_analyzer->node_data->getType($cond->right))
+                && ($cond_value->isSingleIntLiteral() || $cond_value->isSingleStringLiteral())
                 && $cond->left instanceof PhpParser\Node\Expr\Variable
                 && is_string($cond->left->name)
                 && isset($init_var_types[$cond->left->name])
                 && $init_var_types[$cond->left->name]->isSingleIntLiteral()
             ) {
-                $init_value = $init_var_types[$cond->left->name]->getSingleIntLiteral()->value;
-                $cond_value = $cond->right->value;
+                $init_value = $init_var_types[$cond->left->name]->getSingleLiteral()->value;
+                $cond_value = $cond_value->getSingleLiteral()->value;
 
                 if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller && $init_value < $cond_value) {
                     $always_enters_loop = true;
@@ -156,7 +156,7 @@ class ForAnalyzer
                     if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id],
                         );
                     }
                 } else {
@@ -170,16 +170,11 @@ class ForAnalyzer
         if ($can_leave_loop) {
             $context->vars_possibly_in_scope = array_merge(
                 $context->vars_possibly_in_scope,
-                $for_context->vars_possibly_in_scope
+                $for_context->vars_possibly_in_scope,
             );
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
-
-        $context->referenced_var_ids = array_intersect_key(
-            $for_context->referenced_var_ids,
-            $context->referenced_var_ids
-        );
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($for_context);

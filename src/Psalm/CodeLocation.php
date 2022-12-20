@@ -7,6 +7,7 @@ use LogicException;
 use PhpParser;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 use UnexpectedValueException;
 
 use function explode;
@@ -25,8 +26,13 @@ use function trim;
 
 use const PREG_OFFSET_CAPTURE;
 
+/**
+ * @psalm-immutable
+ */
 class CodeLocation
 {
+    use ImmutableNonCloneableTrait;
+
     /** @var string */
     public $file_path;
 
@@ -36,8 +42,7 @@ class CodeLocation
     /** @var int */
     public $raw_line_number;
 
-    /** @var int */
-    private $end_line_number = -1;
+    private int $end_line_number = -1;
 
     /** @var int */
     public $raw_file_start;
@@ -57,41 +62,31 @@ class CodeLocation
     /** @var int */
     protected $preview_start;
 
-    /** @var int */
-    private $preview_end = -1;
+    private int $preview_end = -1;
 
-    /** @var int */
-    private $selection_start = -1;
+    private int $selection_start = -1;
 
-    /** @var int */
-    private $selection_end = -1;
+    private int $selection_end = -1;
 
-    /** @var int */
-    private $column_from = -1;
+    private int $column_from = -1;
 
-    /** @var int */
-    private $column_to = -1;
+    private int $column_to = -1;
 
-    /** @var string */
-    private $snippet = '';
+    private string $snippet = '';
 
-    /** @var null|string */
-    private $text;
+    private ?string $text = null;
 
     /** @var int|null */
     public $docblock_start;
 
-    /** @var int|null */
-    private $docblock_start_line_number;
+    private ?int $docblock_start_line_number = null;
 
     /** @var int|null */
-    private $docblock_line_number;
+    protected $docblock_line_number;
 
-    /** @var null|int */
-    private $regex_type;
+    private ?int $regex_type = null;
 
-    /** @var bool */
-    private $have_recalculated = false;
+    private bool $have_recalculated = false;
 
     /** @var null|CodeLocation */
     public $previous_location;
@@ -111,9 +106,12 @@ class CodeLocation
         ?CodeLocation $previous_location = null,
         bool $single_line = false,
         ?int $regex_type = null,
-        ?string $selected_text = null
+        ?string $selected_text = null,
+        ?int $comment_line = null
     ) {
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->file_end = (int)$stmt->getAttribute('endFilePos');
         $this->raw_file_start = $this->file_start;
         $this->raw_file_end = $this->file_end;
@@ -124,6 +122,7 @@ class CodeLocation
         $this->previous_location = $previous_location;
         $this->text = $selected_text;
 
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $doc_comment = $stmt->getDocComment();
 
         $this->docblock_start = $doc_comment ? $doc_comment->getStartFilePos() : null;
@@ -131,14 +130,30 @@ class CodeLocation
 
         $this->preview_start = $this->docblock_start ?: $this->file_start;
 
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->raw_line_number = $stmt->getLine();
+
+        $this->docblock_line_number = $comment_line;
     }
 
-    public function setCommentLine(int $line): void
+    /**
+     * @psalm-suppress PossiblyUnusedMethod Part of public API
+     * @return static
+     */
+    public function setCommentLine(?int $line): self
     {
-        $this->docblock_line_number = $line;
+        if ($line === $this->docblock_line_number) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->docblock_line_number = $line;
+        return $cloned;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     * @psalm-suppress InaccessibleProperty Mainly used for caching
+     */
     private function calculateRealLocation(): void
     {
         if ($this->have_recalculated) {
@@ -164,7 +179,7 @@ class CodeLocation
             $preview_end = strpos(
                 $file_contents,
                 "\n",
-                $search_limit
+                $search_limit,
             );
         } else {
             $preview_end = false;
@@ -186,8 +201,8 @@ class CodeLocation
                 mb_strcut(
                     $file_contents,
                     $this->preview_start,
-                    $this->selection_start - $this->preview_start - 1
-                )
+                    $this->selection_start - $this->preview_start - 1,
+                ),
             );
 
             $preview_offset = 0;
@@ -253,7 +268,7 @@ class CodeLocation
             $preview_snippet = mb_strcut(
                 $file_contents,
                 $this->selection_start,
-                $this->selection_end - $this->selection_start
+                $this->selection_end - $this->selection_start,
             );
 
             if ($this->text) {
@@ -264,7 +279,7 @@ class CodeLocation
                 if (!isset($matches[1]) || $matches[1][1] === -1) {
                     throw new LogicException(
                         "Failed to match anything to 1st capturing group, "
-                        . "or regex doesn't contain 1st capturing group, regex type " . $this->regex_type
+                        . "or regex doesn't contain 1st capturing group, regex type " . $this->regex_type,
                     );
                 }
                 $this->selection_start = $this->selection_start + $matches[1][1];
@@ -276,7 +291,7 @@ class CodeLocation
         $this->preview_start = (int)strrpos(
             $file_contents,
             "\n",
-            min($this->preview_start, $this->selection_start) - strlen($file_contents)
+            min($this->preview_start, $this->selection_start) - strlen($file_contents),
         ) + 1;
 
         $this->selection_start = max($this->preview_start, $this->selection_start);
@@ -286,7 +301,7 @@ class CodeLocation
             $this->preview_end = (int)strrpos(
                 $file_contents,
                 "\n",
-                $this->selection_end + 200 - strlen($file_contents)
+                $this->selection_end + 200 - strlen($file_contents),
             );
 
             // if the line is over 200 characters long

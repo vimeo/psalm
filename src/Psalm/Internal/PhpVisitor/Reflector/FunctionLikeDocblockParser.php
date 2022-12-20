@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\DocComment;
@@ -14,12 +15,14 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 
+use function array_keys;
 use function array_shift;
 use function array_unique;
 use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -33,6 +36,9 @@ use function substr;
 use function substr_count;
 use function trim;
 
+/**
+ * @internal
+ */
 class FunctionLikeDocblockParser
 {
     /**
@@ -58,7 +64,7 @@ class FunctionLikeDocblockParser
                 $parsed_docblock->combined_tags['return'],
                 $info,
                 $code_location,
-                $cased_function_id
+                $cased_function_id,
             );
         }
 
@@ -96,7 +102,7 @@ class FunctionLikeDocblockParser
                                 $comment_text,
                                 "\n",
                                 0,
-                                $offset - $comment->getStartFilePos()
+                                $offset - $comment->getStartFilePos(),
                             ),
                             'start' => $offset,
                             'end' => $end,
@@ -109,7 +115,7 @@ class FunctionLikeDocblockParser
                             $info_param['description'] = preg_replace(
                                 '/\\n \\*\\s+/um',
                                 ' ',
-                                $info_param['description']
+                                $info_param['description'],
                             );
                         }
 
@@ -119,8 +125,8 @@ class FunctionLikeDocblockParser
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Badly-formatted @param in docblock for ' . $cased_function_id,
-                            $code_location
-                        )
+                            $code_location,
+                        ),
                     );
                 }
             }
@@ -161,7 +167,7 @@ class FunctionLikeDocblockParser
                                 $comment_text,
                                 "\n",
                                 0,
-                                $offset - $comment->getStartFilePos()
+                                $offset - $comment->getStartFilePos(),
                             ),
                         ];
                     }
@@ -169,8 +175,8 @@ class FunctionLikeDocblockParser
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Badly-formatted @param in docblock for ' . $cased_function_id,
-                            $code_location
-                        )
+                            $code_location,
+                        ),
                     );
                 }
             }
@@ -190,7 +196,7 @@ class FunctionLikeDocblockParser
                                 $comment_text,
                                 "\n",
                                 0,
-                                $offset - $comment->getStartFilePos()
+                                $offset - $comment->getStartFilePos(),
                             ),
                         ];
                     }
@@ -217,7 +223,7 @@ class FunctionLikeDocblockParser
                         $comment->getText(),
                         "\n",
                         0,
-                        $offset - $comment->getStartFilePos()
+                        $offset - $comment->getStartFilePos(),
                     ),
                 ];
             }
@@ -226,6 +232,9 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-taint-sink'])) {
             foreach ($parsed_docblock->tags['psalm-taint-sink'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
+                if ($param_parts === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 if (count($param_parts) >= 2) {
                     $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $param_parts[0]];
@@ -237,6 +246,9 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['param-taint'])) {
             foreach ($parsed_docblock->tags['param-taint'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
+                if ($param_parts === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 if (count($param_parts) === 2) {
                     $taint_type = $param_parts[1];
@@ -261,6 +273,9 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-taint-source'])) {
             foreach ($parsed_docblock->tags['psalm-taint-source'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
+                if ($param_parts === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 if ($param_parts[0]) {
                     $info->taint_source_types[] = $param_parts[0];
@@ -270,6 +285,9 @@ class FunctionLikeDocblockParser
             // support for MediaWiki taint plugin
             foreach ($parsed_docblock->tags['return-taint'] as $param) {
                 $param_parts = preg_split('/\s+/', trim($param));
+                if ($param_parts === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 if ($param_parts[0]) {
                     if ($param_parts[0] === 'tainted') {
@@ -349,7 +367,7 @@ class FunctionLikeDocblockParser
                                 $comment_text,
                                 "\n",
                                 0,
-                                $offset - $comment->getStartFilePos()
+                                $offset - $comment->getStartFilePos(),
                             ),
                         ];
                     }
@@ -357,8 +375,8 @@ class FunctionLikeDocblockParser
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Badly-formatted @param in docblock for ' . $cased_function_id,
-                            $code_location
-                        )
+                            $code_location,
+                        ),
                     );
                 }
             }
@@ -409,8 +427,8 @@ class FunctionLikeDocblockParser
                         $comment->getText(),
                         "\n",
                         0,
-                        $offset - $comment->getStartFilePos()
-                    )
+                        $offset - $comment->getStartFilePos(),
+                    ),
                 ];
             }
         }
@@ -426,6 +444,9 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->combined_tags['template'])) {
             foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
                 $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
+                if ($template_type === false) {
+                    throw new AssertionError(preg_last_error_msg());
+                }
 
                 $template_name = array_shift($template_type);
 
@@ -448,7 +469,7 @@ class FunctionLikeDocblockParser
                         $template_name,
                         $template_modifier,
                         implode(' ', $template_type),
-                        false
+                        false,
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [$template_name, null, null, false];
@@ -540,7 +561,7 @@ class FunctionLikeDocblockParser
     /**
      * @psalm-pure
      * @param list<string> $line_parts
-     * @return array{string, string} $line_parts
+     * @return array{string, string}&array<int<0, max>, string> $line_parts
      */
     private static function sanitizeAssertionLineParts(array $line_parts): array
     {
@@ -607,7 +628,7 @@ class FunctionLikeDocblockParser
                         $comment->getText(),
                         "\n",
                         0,
-                        $offset - $comment->getStartFilePos()
+                        $offset - $comment->getStartFilePos(),
                     );
                 $info->return_type_start = $offset;
                 $info->return_type_end = $end;
@@ -615,8 +636,8 @@ class FunctionLikeDocblockParser
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         'Badly-formatted @param in docblock for ' . $cased_function_id,
-                        $code_location
-                    )
+                        $code_location,
+                    ),
                 );
             }
 
@@ -643,8 +664,6 @@ class FunctionLikeDocblockParser
 
     /**
      * @param array<int, string> $param
-     *
-     *
      * @throws DocblockParseException  if a duplicate is found
      */
     private static function checkDuplicatedParams(array $param): void
@@ -658,9 +677,7 @@ class FunctionLikeDocblockParser
 
     /**
      * @param array<int, string> $lines
-     *
      * @return list<string>
-     *
      * @psalm-pure
      */
     private static function extractAllParamNames(array $lines): array
@@ -684,17 +701,44 @@ class FunctionLikeDocblockParser
         PhpParser\Comment\Doc $comment
     ): void {
         if (isset($parsed_docblock->tags['psalm-import-type'])) {
-            foreach ($parsed_docblock->tags['psalm-import-type'] as $offset => $_) {
-                $info->unexpected_tags['psalm-import-type']['lines'][] = self::docblockLineNumber($comment, $offset);
-            }
+            $info->unexpected_tags['psalm-import-type']['lines'] = self::tagOffsetsToLines(
+                array_keys($parsed_docblock->tags['psalm-import-type']),
+                $comment,
+            );
         }
 
         if (isset($parsed_docblock->combined_tags['var'])) {
-            $info->unexpected_tags['var'] = ['lines' => [], 'suggested_replacement' => 'param'];
-            foreach ($parsed_docblock->combined_tags['var'] as $offset => $_) {
-                $info->unexpected_tags['var']['lines'][] = self::docblockLineNumber($comment, $offset);
-            }
+            $info->unexpected_tags['var'] = [
+                'lines' => self::tagOffsetsToLines(
+                    array_keys($parsed_docblock->combined_tags['var']),
+                    $comment,
+                ),
+                'suggested_replacement' => 'param',
+            ];
         }
+
+        if (isset($parsed_docblock->tags['psalm-consistent-constructor'])) {
+            $info->unexpected_tags['psalm-consistent-constructor'] = [
+                'lines' => self::tagOffsetsToLines(
+                    array_keys($parsed_docblock->tags['psalm-consistent-constructor']),
+                    $comment,
+                ),
+                'suggested_replacement' => 'psalm-consistent-constructor on a class level',
+            ];
+        }
+    }
+
+    /**
+     * @param list<int> $offsets
+     * @return list<int>
+     */
+    private static function tagOffsetsToLines(array $offsets, PhpParser\Comment\Doc $comment): array
+    {
+        $ret = [];
+        foreach ($offsets as $offset) {
+            $ret[] = self::docblockLineNumber($comment, $offset);
+        }
+        return $ret;
     }
 
     private static function docblockLineNumber(PhpParser\Comment\Doc $comment, int $offset): int
@@ -703,7 +747,7 @@ class FunctionLikeDocblockParser
             $comment->getText(),
             "\n",
             0,
-            $offset - $comment->getStartFilePos()
+            $offset - $comment->getStartFilePos(),
         );
     }
 }

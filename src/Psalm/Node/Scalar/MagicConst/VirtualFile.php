@@ -7,7 +7,7 @@ namespace Psalm\Node\Scalar\MagicConst;
 use PhpParser\Node\Scalar\MagicConst\File;
 use Psalm\Node\VirtualNode;
 
-class VirtualFile extends File implements VirtualNode
+final class VirtualFile extends File implements VirtualNode
 {
 
 }

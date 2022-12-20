@@ -12,10 +12,13 @@ use function str_replace;
 use function strpos;
 use function strtotime;
 
+use const JSON_THROW_ON_ERROR;
+
 /**
  * Environment variables collector for CI environment.
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
+ * @internal
  */
 class BuildInfoCollector
 {
@@ -23,17 +26,13 @@ class BuildInfoCollector
      * Environment variables.
      *
      * Overwritten through collection process.
-     *
-     * @var array
      */
-    protected $env;
+    protected array $env;
 
     /**
      * Read environment variables.
-     *
-     * @var array
      */
-    protected $readEnv = [];
+    protected array $readEnv = [];
 
     public function __construct(array $env)
     {
@@ -68,7 +67,6 @@ class BuildInfoCollector
      * "TRAVIS", "TRAVIS_JOB_ID" must be set.
      *
      * @return $this
-     *
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
      */
     protected function fillTravisCi(): self
@@ -145,7 +143,6 @@ class BuildInfoCollector
      * "APPVEYOR", "APPVEYOR_BUILD_NUMBER" must be set.
      *
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
-     *
      * @return $this
      */
     protected function fillAppVeyor(): self
@@ -217,7 +214,6 @@ class BuildInfoCollector
      * "JENKINS_URL", "BUILD_NUMBER" must be set.
      *
      * @psalm-suppress PossiblyUndefinedStringArrayOffset
-     *
      * @return $this
      */
     protected function fillScrutinizer(): self
@@ -282,7 +278,7 @@ class BuildInfoCollector
             if (isset($this->env['GITHUB_EVENT_PATH'])) {
                 $event_json = file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
                 /** @var array */
-                $event_data = json_decode($event_json, true);
+                $event_data = json_decode($event_json, true, 512, JSON_THROW_ON_ERROR);
 
                 if (isset($event_data['head_commit'])) {
                     /**
@@ -305,7 +301,7 @@ class BuildInfoCollector
                             ->setCommitterEmail($head_commit_data['committer']['email'])
                             ->setMessage($head_commit_data['message'])
                             ->setDate(strtotime($head_commit_data['timestamp'])),
-                        []
+                        [],
                     );
 
                     $this->readEnv['git'] = $gitinfo->toArray();

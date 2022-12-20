@@ -30,7 +30,7 @@ class ArrayAccessTest extends TestCase
                 /** @param array<string, string> $arr */
                 function takesArrayIteratorOfString(array $arr): void {
                     echo $arr["hello"];
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -50,7 +50,7 @@ class ArrayAccessTest extends TestCase
                     if (isset($arr["hello"])) {
                         echo $arr["hello"];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -68,7 +68,7 @@ class ArrayAccessTest extends TestCase
                 /** @param array<string, string> $arr */
                 function takesArrayIteratorOfString(array $arr): void {
                     echo $arr["hello"];
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -84,7 +84,7 @@ class ArrayAccessTest extends TestCase
                 /** @param array<string, mixed> $s */
                 function foo(array $s) : void {
                     if (isset($s["a"]) && \is_array($s["a"])) {}
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -102,7 +102,7 @@ class ArrayAccessTest extends TestCase
             '<?php
                     function foo(array $arr) : void {
                         if (isset($arr["a"]) && $arr["b"]) {}
-                    }'
+                    }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -123,7 +123,7 @@ class ArrayAccessTest extends TestCase
                 /** @param array<int, string> $arr */
                 function takesArrayIteratorOfString(array $arr): void {
                     echo $arr[4];
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -139,7 +139,7 @@ class ArrayAccessTest extends TestCase
                 /** @param string[][] $arr */
                 function foo(array $arr) : void {
                     if (count($arr) === 1 && count(array_values($arr)[0]) === 1) {}
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -162,7 +162,7 @@ class ArrayAccessTest extends TestCase
                     ) {
                         return $a[1][2];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -180,7 +180,7 @@ class ArrayAccessTest extends TestCase
                     if ($arr) {
                         echo $arr[0];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -203,7 +203,7 @@ class ArrayAccessTest extends TestCase
                         array_pop($arr);
                         echo $arr[0];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -218,7 +218,7 @@ class ArrayAccessTest extends TestCase
             '<?php
                 $a = [1, 2, 3];
                 array_push($a, 4);
-                echo $a[3];'
+                echo $a[3];',
         );
         $this->analyzeFile('somefile.php', new Context());
     }
@@ -240,7 +240,7 @@ class ArrayAccessTest extends TestCase
                 function test(array $value): int
                 {
                     return isset($value["a"]->foo) ? $value["a"]->foo : 0;
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -290,7 +290,76 @@ class ArrayAccessTest extends TestCase
                         echo $arr[1];
                         echo $arr[2];
                     }
-                }'
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCountOnKeyedArrayInRange(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param non-empty-list<string> $list */
+                function bar(array $list) : void {
+                    if (rand(0, 1)) {
+                        $list = ["a"];
+                    }
+                    if (count($list) > 1) {
+                        echo $list[1];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCountOnKeyedArrayInRangeWithUpdate(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param non-empty-list<string> $list */
+                function bar(array $list) : void {
+                    if (rand(0, 1)) {
+                        $list = ["a"];
+                    }
+                    if (count($list) > 1) {
+                        if ($list[1][0] === "a") {
+                            $list[1] = "foo";
+                        }
+                        echo $list[1];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCountOnKeyedArrayOutOfRange(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param non-empty-list<string> $list */
+                function bar(array $list) : void {
+                    if (rand(0, 1)) {
+                        $list = ["a"];
+                    }
+                    if (count($list) > 1) {
+                        echo $list[2];
+                    }
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -313,7 +382,7 @@ class ArrayAccessTest extends TestCase
                         echo $arr[1];
                         echo $arr[2];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -336,7 +405,7 @@ class ArrayAccessTest extends TestCase
                         echo $arr[1];
                         echo $arr[2];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -355,20 +424,70 @@ class ArrayAccessTest extends TestCase
                  */
                 function foo(array $a, int $b): void {
                     echo $a[$b];
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
+            'testBuildList' => [
+                'code' => '<?php
+                    $a = [];
+
+                    if (random_int(0, 1)) {
+                        $a []= 0;
+                    }
+
+                    if (random_int(0, 1)) {
+                        $a []= 1;
+                    }
+
+                    $pre = $a;
+
+                    $a []= 2;
+
+                ',
+                'assertions' => [
+                    '$pre===' => 'list{0?: 0|1, 1?: 1}',
+                    '$a===' => 'list{0: 0|1|2, 1?: 1|2, 2?: 2}',
+                ],
+            ],
+            'testBuildListOther' => [
+                'code' => '<?php
+                    $list = [];
+                    $entropy = random_int(0, 2);
+                    if ($entropy === 0) {
+                        $list[] = "A";
+                    } elseif ($entropy === 1) {
+                        $list[] = "B";
+                    }
+
+                    $list[] = "C";
+                ',
+                'assertions' => [
+                    '$list===' => "list{0: 'A'|'B'|'C', 1?: 'C'}",
+                ],
+            ],
+            'testBuildList3' => [
+                'code' => '<?php
+                    $a = [0];
+                    if (random_int(0, 1)) {
+                        $a []= 1;
+                    }
+                    if (random_int(0, 1)) {
+                        $a []= 2;
+                    }
+                    $a []= 3;
+                ',
+                'assertions' => [
+                    '$a===' => "list{0: 0, 1: 1|2|3, 2?: 2|3, 3?: 3}",
+                ],
+            ],
             'instanceOfStringOffset' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(): void { }
                     }
@@ -379,7 +498,7 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'instanceOfIntOffset' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function fooFoo(): void { }
                     }
@@ -390,7 +509,7 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'notEmptyStringOffset' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  array<string>  $a
                      */
@@ -403,7 +522,7 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'issetPropertyStringOffset' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var array<string, string> */
                         public $arr = [];
@@ -412,7 +531,7 @@ class ArrayAccessTest extends TestCase
                     if (!isset($a->arr["bat"]) || strlen($a->arr["bat"])) { }',
             ],
             'issetPropertyStringOffsetUndefinedClass' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress UndefinedClass */
                     $a = new A();
                     /**
@@ -420,10 +539,10 @@ class ArrayAccessTest extends TestCase
                      */
                     if (!isset($a->arr["bat"]) || strlen($a->arr["bat"])) { }',
                 'assertions' => [],
-                'error_levels' => ['MixedArgument', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedArgument', 'MixedArrayAccess'],
             ],
             'notEmptyIntOffset' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  array<string>  $a
                      */
@@ -436,24 +555,24 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'ignorePossiblyNullArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     $a = rand(0, 1) ? [1, 2] : null;
                     echo $a[0];',
                 'assertions' => [],
-                'error_levels' => ['PossiblyNullArrayAccess'],
+                'ignored_issues' => ['PossiblyNullArrayAccess'],
             ],
             'ignoreEmptyArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     $arr = [];
                     $x = $arr[0];
                     if (isset($arr[0]) && $arr[0]) { }',
                 'assertions' => [
                     '$x' => 'mixed',
                 ],
-                'error_levels' => ['EmptyArrayAccess', 'MixedAssignment'],
+                'ignored_issues' => ['EmptyArrayAccess', 'MixedAssignment'],
             ],
             'objectLikeWithoutKeys' => [
-                '<?php
+                'code' => '<?php
                     function takesInt(int $i): void {}
                     function takesString(string $s): void {}
                     function takesBool(bool $b): void {}
@@ -468,7 +587,7 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'stringKeysWithInts' => [
-                '<?php
+                'code' => '<?php
                     $array = ["01" => "01", "02" => "02"];
 
                     foreach ($array as $key => $value) {
@@ -476,13 +595,13 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'listAssignmentKeyOffset' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     list($a["foo"]) = explode("+", "a+b");
                     echo $a["foo"];',
             ],
             'objectlikeOptionalNamespacedParam' => [
-                '<?php
+                'code' => '<?php
                     namespace N;
 
                     /**
@@ -494,39 +613,48 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'unsetTKeyedArrayOffset' => [
-                '<?php
-                    function takesInt(int $i) : void {}
-                    $x = ["a" => "value"];
-                    unset($x["a"]);
-                    $x[] = 5;
-                    takesInt($x[0]);',
+                'code' => '<?php
+                    $x1 = ["a" => "value"];
+                    unset($x1["a"]);
+
+                    $x2 = ["a" => "value", "b" => "value"];
+                    unset($x2["a"]);
+
+                    $x3 = ["a" => "value", "b" => "value"];
+                    $k = "a";
+                    unset($x3[$k]);',
+                'assertions' => [
+                    '$x1===' => 'array<never, never>',
+                    '$x2===' => "array{b: 'value'}",
+                    '$x3===' => "array{b: 'value'}",
+                ],
             ],
             'domNodeListAccessible' => [
-                '<?php
+                'code' => '<?php
                     $doc = new DOMDocument();
                     $doc->loadXML("<node key=\"value\"/>");
                     $e = $doc->getElementsByTagName("node")[0];',
-                [
+                'assertions' => [
                     '$e' => 'DOMElement|null',
                 ],
             ],
             'getOnArrayAcccess' => [
-                '<?php
+                'code' => '<?php
                     /** @param ArrayAccess<int, string> $a */
                     function foo(ArrayAccess $a) : string {
                         return $a[0];
                     }',
             ],
             'mixedKeyMixedOffset' => [
-                '<?php
+                'code' => '<?php
                     function example(array $x, $y) : void {
                         echo $x[$y];
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedArgument', 'MixedArrayOffset', 'MissingParamType'],
+                'ignored_issues' => ['MixedArgument', 'MixedArrayOffset', 'MissingParamType'],
             ],
             'suppressPossiblyUndefinedStringArrayOffet' => [
-                '<?php
+                'code' => '<?php
                     /** @var array{a?:string} */
                     $entry = ["a"];
 
@@ -534,10 +662,10 @@ class ArrayAccessTest extends TestCase
                     strlen($elt);
                     strlen($entry["a"]);',
                 'assertions' => [],
-                'error_levels' => ['PossiblyUndefinedArrayOffset'],
+                'ignored_issues' => ['PossiblyUndefinedArrayOffset'],
             ],
             'noRedundantConditionOnMixedArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     /** @var array<int, int> */
                     $b = [];
 
@@ -550,11 +678,11 @@ class ArrayAccessTest extends TestCase
                     if (!empty($d[0]) && !isset($c[$d[0]])) {
                         if (isset($b[$d[0]])) {}
                     }',
-                [],
-                'error_levels' => ['MixedArrayOffset'],
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayOffset'],
             ],
             'noEmptyArrayAccessInLoop' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedOperand
@@ -576,7 +704,7 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'arrayAccessPropertyAssertion' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {
                         /** @var array<int, string> */
@@ -596,7 +724,7 @@ class ArrayAccessTest extends TestCase
                     $b = $as[0]->arr;',
             ],
             'arrayAccessAfterPassByref' => [
-                '<?php
+                'code' => '<?php
                     class Arr {
                         /**
                          * @param mixed $c
@@ -618,7 +746,7 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'arrayKeyChecks' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  string[] $arr
                      */
@@ -646,7 +774,7 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'arrayKeyChecksAfterDefinition' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  string[] $arr
                      */
@@ -665,7 +793,7 @@ class ArrayAccessTest extends TestCase
                     }',
             ],
             'allowMixedTypeCoercionArrayKeyAccess' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<array-key, int> $i
                      * @param array<int, string> $arr
@@ -676,10 +804,10 @@ class ArrayAccessTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedArrayTypeCoercion'],
+                'ignored_issues' => ['MixedArrayTypeCoercion'],
             ],
             'allowNegativeStringOffset' => [
-                '<?php
+                'code' => '<?php
                     $a = "hello";
                     echo $a[-5];
                     echo $a[-4];
@@ -693,7 +821,7 @@ class ArrayAccessTest extends TestCase
                     echo $a[4];',
             ],
             'arrayAccessAfterPossibleGeneralisation' => [
-                '<?php
+                'code' => '<?php
                     function getArray() : array { return []; }
                     $params = array(
                         "a" => 1,
@@ -707,11 +835,11 @@ class ArrayAccessTest extends TestCase
                     }
 
                     echo $params["b"]["c"];',
-                [],
-                ['MixedArrayAccess', 'MixedArgument'],
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedArgument'],
             ],
             'arrayAccessOnObjectWithNullGet' => [
-                '<?php
+                'code' => '<?php
                     $array = new C([]);
                     $array["key"] = [];
                     /** @psalm-suppress PossiblyInvalidArrayAssignment */
@@ -719,6 +847,9 @@ class ArrayAccessTest extends TestCase
 
                     $c = isset($array["foo"]) ? $array["foo"] : null;
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class C implements ArrayAccess
                     {
                         /**
@@ -794,16 +925,16 @@ class ArrayAccessTest extends TestCase
                             $this->__unset($offset);
                         }
                     }',
-                [
+                'assertions' => [
                     '$c' => 'C|null|scalar',
-                ]
+                ],
             ],
             'singleLetterOffset' => [
-                '<?php
+                'code' => '<?php
                     ["s" => "str"]["str"[0]];',
             ],
             'arrayAccessAfterByRefArrayOffsetAssignment' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{param1: array} $params
                      */
@@ -817,24 +948,24 @@ class ArrayAccessTest extends TestCase
                     if (isset($ar[$value])) {
                         echo (string) $ar[$value];
                     }',
-                [],
-                ['MixedArrayAccess'],
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
             ],
             'byRefArrayAccessWithoutKnownVarNoNotice' => [
-                '<?php
+                'code' => '<?php
                     $a = new stdClass();
                     /** @psalm-suppress MixedPropertyFetch */
                     print_r([&$a->foo->bar]);',
             ],
             'accessOffsetOnList' => [
-                '<?php
+                'code' => '<?php
                     /** @param list<int> $arr */
                     function foo(array $arr) : void {
                         echo $arr[3] ?? null;
                     }',
             ],
             'destructureMixed' => [
-                '<?php
+                'code' => '<?php
                     class S {
                         protected array $a = [];
                         protected array $b = [];
@@ -853,28 +984,33 @@ class ArrayAccessTest extends TestCase
                             /** @psalm-suppress MixedArrayAccess */
                             [$this->b, $this->c] = $popped;
                         }
-                    }'
+                    }',
             ],
             'simpleXmlArrayFetch' => [
-                '<?php
+                'code' => '<?php
                     function foo(SimpleXMLElement $s) : SimpleXMLElement {
                         return $s["a"];
                     }',
             ],
             'simpleXmlArrayFetchChildren' => [
-                '<?php
+                'code' => '<?php
                     function iterator(SimpleXMLElement $xml): iterable {
-                        foreach ($xml->children() as $img) {
+                        $children = $xml->children();
+                        assert($children !== null);
+                        foreach ($children as $img) {
                             yield $img["src"] ?? "";
                         }
                     }',
             ],
             'assertOnArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public function foo() : void {}
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class C implements ArrayAccess
                     {
                         /**
@@ -930,10 +1066,10 @@ class ArrayAccessTest extends TestCase
                     $container = new C();
                     if ($container["a"] instanceof A) {
                         $container["a"]->foo();
-                    }'
+                    }',
             ],
             'assignmentListCheckForNull' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array{0: int, 1:string}|null
                      */
@@ -947,10 +1083,10 @@ class ArrayAccessTest extends TestCase
                     /** @psalm-suppress PossiblyNullArrayAccess */
                     [1 => $foo] = bar(0);
 
-                    if ($foo !== null) {}'
+                    if ($foo !== null) {}',
             ],
-            'accessKnownArrayWithPositiveInt' => [
-                '<?php
+            'SKIPPED-accessKnownArrayWithPositiveInt' => [
+                'code' => '<?php
                     /** @param list<int> $arr */
                     function foo(array $arr) : void {
                         $o = [4, 15, 18, 21, 51];
@@ -959,10 +1095,10 @@ class ArrayAccessTest extends TestCase
                             if ($o[$i] === $a) {}
                             $i++;
                         }
-                    }'
+                    }',
             ],
             'arrayAccessOnArraylikeObjectOrArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param arraylike-object<int, string>|array<int, string> $arr
                      */
@@ -971,27 +1107,27 @@ class ArrayAccessTest extends TestCase
                     }
 
                     test(["a", "b"]);
-                    test(new ArrayObject(["a", "b"]));'
+                    test(new ArrayObject(["a", "b"]));',
             ],
             'nullCoalesceArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     /** @param ArrayAccess<int, string> $a */
                     function foo(?ArrayAccess $a) : void {
                         echo $a[0] ?? "default";
-                    }'
+                    }',
             ],
             'allowUnsettingNested' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-immutable */
                     final class test {
                         public function __construct(public int $value) {}
                     }
                     $test = new test(1);
                     $a = [1 => $test];
-                    unset($a[$test->value]);'
+                    unset($a[$test->value]);',
             ],
             'arrayAssertionShouldNotBeNull' => [
-                '<?php
+                'code' => '<?php
                     function foo(?array $arr, string $s) : void {
                         /**
                          * @psalm-suppress PossiblyNullArrayAccess
@@ -1007,10 +1143,10 @@ class ArrayAccessTest extends TestCase
                          * @psalm-suppress PossiblyNullArrayAccess
                          */
                         echo $arr[$s]["c"];
-                    }'
+                    }',
             ],
             'TransformBadOffsetToGoodOnes' => [
-                '<?php
+                'code' => '<?php
                     $index = 1.1;
 
                     /** @psalm-suppress InvalidArrayOffset */
@@ -1019,60 +1155,57 @@ class ArrayAccessTest extends TestCase
                     $_arr2 = [];
                     /** @psalm-suppress InvalidArrayOffset */
                     $_arr2[$index] = 5;',
-                [
+                'assertions' => [
                     '$_arr1===' => 'non-empty-array<1, 5>',
-                    '$_arr2===' => 'non-empty-array<1, 5>',
-                ]
+                    '$_arr2===' => 'array{1: 5}',
+                ],
             ],
             'accessArrayWithSingleStringLiteralOffset' => [
-                '<?php
+                'code' => '<?php
                     /** @param non-empty-array<"name", int> $p */
                     function f($p): int {
                         return $p["name"];
-                    }'
+                    }',
             ],
             'unsetListKeyedArrayDisableListFlag' => [
-                '<?php
+                'code' => '<?php
                 $a = ["a", "b"];
                 unset($a[0]);
                 ',
-                'assertions' => ['$a===' => 'array{1: "b"}']
+                'assertions' => ['$a===' => "array{1: 'b'}"],
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     $a = 5;
                     echo $a[0];',
                 'error_message' => 'InvalidArrayAccess',
             ],
             'invalidArrayOffset' => [
-                '<?php
+                'code' => '<?php
                     $x = ["a"];
                     $y = $x["b"];',
                 'error_message' => 'InvalidArrayOffset',
             ],
             'possiblyInvalidArrayOffsetWithInt' => [
-                '<?php
+                'code' => '<?php
                     $x = rand(0, 5) > 2 ? ["a" => 5] : "hello";
                     $y = $x[0];',
                 'error_message' => 'PossiblyInvalidArrayOffset',
             ],
             'possiblyInvalidArrayOffsetWithString' => [
-                '<?php
+                'code' => '<?php
                     $x = rand(0, 5) > 2 ? ["a" => 5] : "hello";
                     $y = $x["a"];',
                 'error_message' => 'PossiblyInvalidArrayOffset',
             ],
             'possiblyInvalidArrayAccessWithNestedArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array<int,array<string,float>>|string
                      */
@@ -1084,69 +1217,69 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'PossiblyInvalidArrayOffset',
             ],
             'possiblyInvalidArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     $a = rand(0, 10) > 5 ? 5 : ["hello"];
                     echo $a[0];',
                 'error_message' => 'PossiblyInvalidArrayAccess',
             ],
             'mixedArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     /** @var mixed */
                     $a = [];
                     echo $a[0];',
                 'error_message' => 'MixedArrayAccess',
-                'error_level' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'mixedArrayOffset' => [
-                '<?php
+                'code' => '<?php
                     /** @var mixed */
                     $a = 5;
                     echo [1, 2, 3, 4][$a];',
                 'error_message' => 'MixedArrayOffset',
-                'error_level' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'nullArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     $a = null;
                     echo $a[0];',
                 'error_message' => 'NullArrayAccess',
             ],
             'possiblyNullArrayAccess' => [
-                '<?php
+                'code' => '<?php
                     $a = rand(0, 1) ? [1, 2] : null;
                     echo $a[0];',
                 'error_message' => 'PossiblyNullArrayAccess',
             ],
             'specificErrorMessage' => [
-                '<?php
+                'code' => '<?php
                     $params = ["key" => "value"];
                     echo $params["fieldName"];',
                 'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot access '
                     . 'value on variable $params using offset value of',
             ],
             'missingArrayOffsetAfterUnset' => [
-                '<?php
+                'code' => '<?php
                     $x = ["a" => "value", "b" => "value"];
                     unset($x["a"]);
                     echo $x["a"];',
                 'error_message' => 'InvalidArrayOffset',
             ],
             'noImpossibleStringAccess' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : void {
                         echo $s[0][1];
                     }',
                 'error_message' => 'InvalidArrayOffset',
             ],
             'mixedKeyStdClassOffset' => [
-                '<?php
+                'code' => '<?php
                     function example(array $y) : void {
                         echo $y[new stdClass()];
                     }',
                 'error_message' => 'InvalidArrayOffset',
             ],
             'toStringOffset' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         public function __toString() {
                             return "Foo";
@@ -1158,7 +1291,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'InvalidArrayOffset',
             ],
             'possiblyUndefinedIntArrayOffet' => [
-                '<?php
+                'code' => '<?php
                     /** @var array{0?:string} */
                     $entry = ["a"];
 
@@ -1166,7 +1299,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'possiblyUndefinedStringArrayOffet' => [
-                '<?php
+                'code' => '<?php
                     /** @var array{a?:string} */
                     $entry = ["a"];
 
@@ -1174,7 +1307,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'possiblyInvalidMixedArrayOffset' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string|array $key
                      */
@@ -1184,14 +1317,14 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'PossiblyInvalidArrayOffset',
             ],
             'arrayAccessOnIterable' => [
-                '<?php
+                'code' => '<?php
                     function foo(iterable $i) {
                         echo $i[0];
                     }',
                 'error_message' => 'InvalidArrayAccess',
             ],
             'arrayKeyCannotBeBool' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string[] $arr
                      */
@@ -1207,7 +1340,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'arrayKeyCannotBeFloat' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string[] $arr
                      */
@@ -1223,7 +1356,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'arrayKeyCannotBeObject' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string[] $arr
                      */
@@ -1239,19 +1372,19 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'forbidNegativeStringOffsetOutOfRange' => [
-                '<?php
+                'code' => '<?php
                     $a = "hello";
                     echo $a[-6];',
                 'error_message' => 'InvalidArrayOffset',
             ],
             'emptyStringAccess' => [
-                '<?php
+                'code' => '<?php
                     $a = "";
                     echo $a[0];',
                 'error_message' => 'InvalidArrayOffset',
             ],
             'recogniseBadVar' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress MixedAssignment */
                     $array = $_GET["foo"] ?? [];
 
@@ -1259,7 +1392,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'UndefinedGlobalVariable',
             ],
             'unsetListElementShouldChangeToArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<string> $arr
                      * @return list<string>
@@ -1272,7 +1405,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
             'simpleXmlArrayFetchResultCannotEqualString' => [
-                '<?php
+                'code' => '<?php
                     function foo(SimpleXMLElement $s) : void {
                         $b = $s["a"];
 
@@ -1281,7 +1414,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'undefinedTKeyedArrayOffset' => [
-                '<?php
+                'code' => '<?php
                     class Example {
                         /**
                          * @param array{a: string, b: int} $context
@@ -1290,10 +1423,10 @@ class ArrayAccessTest extends TestCase
                             $context["c"];
                         }
                     }',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'destructureNullable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return null|array
                      */
@@ -1305,7 +1438,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'PossiblyNullArrayAccess',
             ],
             'destructureTuple' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array{int, int}
                      */
@@ -1317,7 +1450,7 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'InvalidArrayOffset',
             ],
             'negativeListAccess' => [
-                '<?php
+                'code' => '<?php
                     class HelloWorld
                     {
                         public function sayHello(): void
@@ -1327,8 +1460,29 @@ class ArrayAccessTest extends TestCase
                             echo $x;
                         }
                     }',
-                'error_message' => 'InvalidArrayOffset'
-            ]
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayOpenByDefault' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: float, b: float} $params
+                     */
+                    function avg(array $params): void {
+                      takesArrayOfFloats($params);
+                    }
+
+                    /**
+                     * @param array<array-key, float> $arr
+                     */
+                    function takesArrayOfFloats(array $arr): void {
+                        foreach ($arr as $a) {
+                            echo $a;
+                        }
+                    }
+
+                    avg(["a" => 0.5, "b" => 1.5, "c" => new Exception()]);',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }

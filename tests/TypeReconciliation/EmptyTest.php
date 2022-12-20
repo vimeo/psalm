@@ -11,22 +11,19 @@ class EmptyTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'ifNotUndefinedAndEmpty' => [
-                '<?php
+                'code' => '<?php
                     $a = !empty($b) ? $b : null;',
                 'assertions' => [
                     '$a' => 'mixed|null',
                 ],
-                'error_levels' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'emptyArrayVar' => [
-                '<?php
+                'code' => '<?php
                     function a(array $in): void
                     {
                         $r = [];
@@ -63,10 +60,10 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'removeEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     $arr_or_string = [];
 
                     if (rand(0, 1)) {
@@ -81,7 +78,7 @@ class EmptyTest extends TestCase
                     }',
             ],
             'emptyArrayReconciliationThenIf' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string|string[] $a
                      */
@@ -100,7 +97,7 @@ class EmptyTest extends TestCase
                     }',
             ],
             'emptyStringReconciliationThenIf' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param Exception|string|string[] $a
                      */
@@ -119,7 +116,7 @@ class EmptyTest extends TestCase
                     }',
             ],
             'emptyExceptionReconciliationAfterIf' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param Exception|null $a
                      */
@@ -134,13 +131,13 @@ class EmptyTest extends TestCase
                     }',
             ],
             'noFalsyLeak' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s): void {
                       if (empty($s) || $s === "hello") {}
                     }',
             ],
             'noRedundantConditionOnMixed' => [
-                '<?php
+                'code' => '<?php
                     function testarray(array $data): void {
                         foreach ($data as $item) {
                             if (!empty($item["a"]) && !empty($item["b"]["c"])) {
@@ -149,10 +146,10 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'dontBleedEmptyAfterExtract' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $args): void {
                       extract($args);
                       if ((empty($arr) && empty($a)) || $c === 0) {
@@ -161,10 +158,10 @@ class EmptyTest extends TestCase
                       }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
             ],
             'emptyTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     $arr = [
                         "profile" => [
                             "foo" => "bar",
@@ -180,12 +177,12 @@ class EmptyTest extends TestCase
                     }',
             ],
             'alwaysBoolResult' => [
-                '<?php
+                'code' => '<?php
                     function takesBool(bool $p): void {}
                     takesBool(empty($q));',
             ],
             'noRedundantConditionAfterFalsyIntChecks' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $t) : void {
                         if (!$t) {
                             foreach ([0, 1, 2] as $a) {
@@ -197,7 +194,7 @@ class EmptyTest extends TestCase
                     }',
             ],
             'noRedundantConditionAfterEmptyMixedChecks' => [
-                '<?php
+                'code' => '<?php
                     function foo($t) : void {
                         if (empty($t)) {
                             foreach ($GLOBALS["u"] as $a) {
@@ -208,10 +205,10 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MissingParamType'],
+                'ignored_issues' => ['MixedAssignment', 'MissingParamType'],
             ],
             'canBeNonEmptyArray' => [
-                '<?php
+                'code' => '<?php
                     function _processScopes($scopes) : void {
                         if (!is_array($scopes) && !empty($scopes)) {
                             $scopes = explode(" ", trim($scopes));
@@ -222,24 +219,24 @@ class EmptyTest extends TestCase
                         if (empty($scopes)){}
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MissingParamType', 'MixedArgument'],
+                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument'],
             ],
             'multipleEmptiesInCondition' => [
-                '<?php
+                'code' => '<?php
                     /** @param array<int, int> $o */
                     function foo(array $o) : void {
                         if (empty($o[0]) && empty($o[1])) {}
                     }',
             ],
             'multipleEmptiesInConditionWithMixedOffset' => [
-                '<?php
+                'code' => '<?php
                     /** @param array $o */
                     function foo(array $o) : void {
                         if (empty($o[0]) && empty($o[1])) {}
                     }',
             ],
             'unsetChangesArrayEmptiness' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $n): void {
                         if (empty($n)) {
                             return;
@@ -250,7 +247,7 @@ class EmptyTest extends TestCase
                     }',
             ],
             'unsetChangesComplicatedArrayEmptiness' => [
-                '<?php
+                'code' => '<?php
                     function contains(array $data, array $needle): bool {
                         if (empty($data) || empty($needle)) {
                             return false;
@@ -281,17 +278,17 @@ class EmptyTest extends TestCase
                         return true;
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'MixedArrayOffset', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'MixedArrayOffset', 'MixedArrayAccess'],
             ],
             'possiblyEmptyIterable' => [
-                '<?php
+                'code' => '<?php
                     function foo(iterable $i) : void {
                         if (empty($i)) {}
                         if (!empty($i)) {}
                     }',
             ],
             'allowEmptyClassConstantOffsetCheck' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         const BAR = "bar";
                         const ONE = 1;
@@ -316,13 +313,13 @@ class EmptyTest extends TestCase
                     }',
             ],
             'doubleEmptyCheckTwoArrays' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $a, array $b) : void {
                         if (empty($a) && empty($b)) {}
                     }',
             ],
             'doubleEmptyCheckOnTKeyedArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{a: array, b: array} $arr
                      */
@@ -331,7 +328,7 @@ class EmptyTest extends TestCase
                     }',
             ],
             'doubleEmptyCheckOnTKeyedArrayVariableOffsets' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $i, int $j) : void {
                         $arr = [];
                         $arr[0] = rand(0, 1);
@@ -341,7 +338,7 @@ class EmptyTest extends TestCase
                     }',
             ],
             'checkArrayEmptyUnknownRoot' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $arr) : void {
                         if (empty($arr[rand(0, 1)])) {
                             if ($arr) {}
@@ -349,7 +346,7 @@ class EmptyTest extends TestCase
                     }',
             ],
             'allowEmptyCheckOnPossiblyNullPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         public bool $b = false;
                     }
@@ -359,7 +356,7 @@ class EmptyTest extends TestCase
                     }',
             ],
             'allowNumericEmpty' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param numeric $p
                      */
@@ -368,19 +365,19 @@ class EmptyTest extends TestCase
                             return false;
                         }
                         return true;
-                    }'
+                    }',
             ],
             'possiblyUndefinedArrayOffset' => [
-                '<?php
+                'code' => '<?php
                     $d = [];
                     if (!rand(0,1)) {
                         $d[0] = "a";
                     }
 
-                    if (empty($d[0])) {}'
+                    if (empty($d[0])) {}',
             ],
             'reconcileNonEmptyArrayKey' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array{a?: string, b: string} $arr
                      */
@@ -391,10 +388,10 @@ class EmptyTest extends TestCase
                         }
 
                         echo $arr["a"];
-                    }'
+                    }',
             ],
             'reconcileEmptyTwiceWithoutReturn' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $arr): void {
                         if (!empty($arr["a"])) {
                         } else {
@@ -402,10 +399,10 @@ class EmptyTest extends TestCase
                         }
 
                         if (empty($arr["a"])) {}
-                    }'
+                    }',
             ],
             'reconcileEmptyTwiceWithReturn' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $arr): void {
                         if (!empty($arr["a"])) {
                         } else {
@@ -415,10 +412,10 @@ class EmptyTest extends TestCase
                         }
 
                         if (empty($arr["a"])) {}
-                    }'
+                    }',
             ],
             'SKIPPED-countWithLiteralIntVariable' => [ // #8163
-                '<?php
+                'code' => '<?php
                     $c = 1;
                     /** @var list<int> */
                     $arr = [1];
@@ -427,7 +424,7 @@ class EmptyTest extends TestCase
                 'assertions' => ['$arr===' => 'non-empty-list<int>'],
             ],
             'SKIPPED-countWithIntRange' => [ // #8163
-                '<?php
+                'code' => '<?php
                     /** @var int<1, max> */
                     $c = 1;
                     /** @var list<int> */
@@ -437,7 +434,7 @@ class EmptyTest extends TestCase
                 'assertions' => ['$arr===' => 'non-empty-list<int>'],
             ],
             'SKIPPED-countEmptyWithIntRange' => [ // #8163
-                '<?php
+                'code' => '<?php
                     /** @var int<0, max> */
                     $c = 1;
                     /** @var list<int> */
@@ -449,14 +446,11 @@ class EmptyTest extends TestCase
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'preventImpossibleEmpty' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $arr) : void {
                         if (empty($ar)) {
                             // do something
@@ -465,7 +459,7 @@ class EmptyTest extends TestCase
                 'error_message' => 'UndefinedVariable',
             ],
             'reconciliationForMixed' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $arr) : void {
                         $a = empty($arr["a"]) ? "" : $arr["a"];
 
@@ -474,45 +468,32 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-                'error_levels' => ['MixedAssignment', 'MissingParamType'],
+                'ignored_issues' => ['MixedAssignment', 'MissingParamType'],
             ],
             'preventEmptyOnBool' => [
-                '<?php
+                'code' => '<?php
                     function foo(bool $b) : void {
                         if (!empty($b)) {}
                     }',
                 'error_message' => 'InvalidArgument',
             ],
             'preventEmptyCreatingArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return array{a:mixed} */
                     function foo(array $r) {
                         if (!empty($r["a"])) {}
                         return $r;
                     }',
-                'error_message' => 'MixedReturnTypeCoercion'
+                'error_message' => 'MixedReturnTypeCoercion',
             ],
             'preventEmptyEquivalentCreatingArray' => [
-                '<?php
+                'code' => '<?php
                     /** @return array{a:mixed} */
                     function foo(array $r) {
                         if (isset($r["a"]) && $r["a"]) {}
                         return $r;
                     }',
-                'error_message' => 'MixedReturnTypeCoercion'
-            ],
-            'secondEmptyTwice' => [
-                '<?php
-                    /**
-                     * @param array{a?:int,b?:string} $p
-                     */
-                    function f(array $p) : void {
-                        if (empty($p)) {
-                            throw new RuntimeException("");
-                        }
-                        assert(!empty($p));
-                    }',
-                'error_message' => 'RedundantCondition'
+                'error_message' => 'MixedReturnTypeCoercion',
             ],
         ];
     }

@@ -13,6 +13,8 @@ use const JSON_UNESCAPED_UNICODE;
 
 /**
  * Provides ability of pretty printed JSON output.
+ *
+ * @internal
  */
 class Json
 {
@@ -25,8 +27,6 @@ class Json
 
     /**
      * @param mixed $data
-     *
-     *
      * @psalm-pure
      */
     public static function encode($data, ?int $options = null): string

@@ -19,18 +19,15 @@ use PhpParser\NodeVisitorAbstract;
  */
 class SimpleNameResolver extends NodeVisitorAbstract
 {
-    /** @var NameContext Naming context */
-    private $nameContext;
+    private NameContext $nameContext;
 
-    /** @var int|null */
-    private $start_change;
+    private ?int $start_change = null;
 
-    /** @var int|null */
-    private $end_change;
+    private ?int $end_change = null;
 
     /**
      * @param ErrorHandler $errorHandler Error handler
-     * @param null|array<int, array{int, int, int, int, int, string}> $offset_map
+     * @param null|array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map
      */
     public function __construct(ErrorHandler $errorHandler, ?array $offset_map = null)
     {
@@ -73,6 +70,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             foreach ($node->implements as &$interface) {
                 $interface = $this->resolveClassName($interface);
             }
+            unset($interface);
             $this->resolveAttrGroups($node);
             if (null !== $node->name) {
                 $this->addNamespacedName($node);
@@ -114,6 +112,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             foreach ($node->types as &$type) {
                 $type = $this->resolveClassName($type);
             }
+            unset($type);
         } elseif ($node instanceof Expr\FuncCall) {
             if ($node->name instanceof Name) {
                 $node->name = $this->resolveName($node->name, Stmt\Use_::TYPE_FUNCTION);
@@ -126,6 +125,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             foreach ($node->traits as &$trait) {
                 $trait = $this->resolveClassName($trait);
             }
+            unset($trait);
 
             foreach ($node->adaptations as $adaptation) {
                 if (null !== $adaptation->trait) {
@@ -136,6 +136,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
                     foreach ($adaptation->insteadof as &$insteadof) {
                         $insteadof = $this->resolveClassName($insteadof);
                     }
+                    unset($insteadof);
                 }
             }
         }
@@ -155,7 +156,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             $name,
             (string) $use->getAlias(),
             $type,
-            $use->getAttributes()
+            $use->getAttributes(),
         );
     }
 
@@ -174,7 +175,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
      * @template T of Node|null
      * @param T $node
      * @return ($node is NullableType ? NullableType : ($node is Name ? Name : T))
-     * @psalm-suppress LessSpecificReturnType
      */
     private function resolveType(?Node $node): ?Node
     {
@@ -198,7 +198,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *
      * @param Name $name Function or constant name to resolve
      * @param Stmt\Use_::TYPE_*  $type One of Stmt\Use_::TYPE_*
-     *
      * @return Name Resolved name, or original name with attribute
      */
     protected function resolveName(Name $name, int $type): Name
@@ -210,7 +209,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             $namespaceName = Name\FullyQualified::concat(
                 $this->nameContext->getNamespace(),
                 $name,
-                $name->getAttributes()
+                $name->getAttributes(),
             );
             if ($namespaceName instanceof Name) {
                 $name->setAttribute('namespacedName', $namespaceName->toString());
@@ -228,7 +227,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
     {
         $node->setAttribute('namespacedName', Name::concat(
             $this->nameContext->getNamespace(),
-            (string)$node->name
+            (string)$node->name,
         ));
     }
 

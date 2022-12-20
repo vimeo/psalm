@@ -7,7 +7,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -51,7 +50,11 @@ class IntegerRangeComparator
         Union $container_type
     ): bool {
         $container_atomic_types = $container_type->getAtomicTypes();
-        $reduced_range = clone $input_type_part;
+        $reduced_range = new TIntRange(
+            $input_type_part->min_bound,
+            $input_type_part->max_bound,
+            $input_type_part->from_docblock,
+        );
 
         if (isset($container_atomic_types['int'])) {
             if (get_class($container_atomic_types['int']) === TInt::class) {
@@ -62,17 +65,7 @@ class IntegerRangeComparator
                 return true;
             }
 
-            if (get_class($container_atomic_types['int']) === TPositiveInt::class) {
-                if ($input_type_part->isPositive()) {
-                    return true;
-                }
-
-                //every positive integer is satisfied by the positive-int int container so we reduce the range
-                $reduced_range->max_bound = 0;
-                unset($container_atomic_types['int']);
-            } else {
-                throw new UnexpectedValueException('Should not happen: unknown int key');
-            }
+            throw new UnexpectedValueException('Should not happen: unknown int key');
         }
 
         $new_nb_atomics = count($container_atomic_types);
@@ -95,6 +88,8 @@ class IntegerRangeComparator
      * This method receives an array of atomics from the container and a range.
      * The goal is to use values in atomics in order to reduce the range.
      * Once the range is empty, it means that every value in range was covered by some atomics combination
+     *
+     * @psalm-suppress InaccessibleProperty $reduced_range was just re-created
      * @param array<string, Atomic> $container_atomic_types
      */
     private static function reduceRangeIncrementally(array &$container_atomic_types, TIntRange $reduced_range): ?bool
@@ -111,7 +106,7 @@ class IntegerRangeComparator
                         //X-1 becomes the max of our reduced range if it was higher
                         $reduced_range->max_bound = TIntRange::getNewLowestBound(
                             $container_atomic_type->min_bound - 1,
-                            $reduced_range->max_bound ?? $container_atomic_type->min_bound - 1
+                            $reduced_range->max_bound ?? $container_atomic_type->min_bound - 1,
                         );
                         unset($container_atomic_types[$key]); //we don't need this one anymore
                         continue;
@@ -121,7 +116,7 @@ class IntegerRangeComparator
                         //X+1 becomes the min of our reduced range if it was lower
                         $reduced_range->min_bound = TIntRange::getNewHighestBound(
                             $container_atomic_type->max_bound + 1,
-                            $reduced_range->min_bound ?? $container_atomic_type->max_bound + 1
+                            $reduced_range->min_bound ?? $container_atomic_type->max_bound + 1,
                         );
                         unset($container_atomic_types[$key]); //we don't need this one anymore
                         continue;

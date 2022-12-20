@@ -3,19 +3,23 @@
 namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
+ * @internal
  */
 class InlineTypeAlias implements TypeAlias
 {
-    /**
-     * @var list<array{0: string, 1: int}>
-     */
-    public $replacement_tokens;
+    use ImmutableNonCloneableTrait;
 
     /**
-     * @param list<array{0: string, 1: int}> $replacement_tokens
+     * @var list<array{0: string, 1: int, 2?: string}>
+     */
+    public array $replacement_tokens;
+
+    /**
+     * @param list<array{0: string, 1: int, 2?: string}> $replacement_tokens
      */
     public function __construct(array $replacement_tokens)
     {

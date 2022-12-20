@@ -6,33 +6,16 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
-class PropertyVisibilityProviderEvent
+final class PropertyVisibilityProviderEvent
 {
-    /**
-     * @var StatementsSource
-     */
-    private $source;
-    /**
-     * @var string
-     */
-    private $fq_classlike_name;
-    /**
-     * @var string
-     */
-    private $property_name;
-    /**
-     * @var bool
-     */
-    private $read_mode;
-    /**
-     * @var Context
-     */
-    private $context;
-    /**
-     * @var CodeLocation
-     */
-    private $code_location;
+    private StatementsSource $source;
+    private string $fq_classlike_name;
+    private string $property_name;
+    private bool $read_mode;
+    private Context $context;
+    private CodeLocation $code_location;
 
+    /** @internal */
     public function __construct(
         StatementsSource $source,
         string $fq_classlike_name,

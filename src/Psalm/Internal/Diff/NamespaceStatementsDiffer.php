@@ -4,7 +4,6 @@ namespace Psalm\Internal\Diff;
 
 use PhpParser;
 
-use function array_merge;
 use function end;
 use function get_class;
 use function substr;
@@ -16,9 +15,9 @@ class NamespaceStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
+     *
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
-     *
      * @return array{
      *      0: list<string>,
      *      1: list<string>,
@@ -30,12 +29,11 @@ class NamespaceStatementsDiffer extends AstDiffer
     public static function diff(string $name, array $a, array $b, string $a_code, string $b_code): array
     {
         [$trace, $x, $y, $bc] = self::calculateTrace(
-            function (
+            static function (
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
                 string $a_code,
-                string $b_code,
-                bool &$body_change = false
+                string $b_code
             ): bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;
@@ -74,7 +72,7 @@ class NamespaceStatementsDiffer extends AstDiffer
             $a,
             $b,
             $a_code,
-            $b_code
+            $b_code,
         );
 
         $diff = self::extractDiff($trace, $x, $y, $a, $b, $bc);
@@ -99,14 +97,14 @@ class NamespaceStatementsDiffer extends AstDiffer
                         $diff_elem->old->stmts,
                         $diff_elem->new->stmts,
                         $a_code,
-                        $b_code
+                        $b_code,
                     );
 
-                    $keep = array_merge($keep, $class_keep[0]);
-                    $keep_signature = array_merge($keep_signature, $class_keep[1]);
-                    $add_or_delete = array_merge($add_or_delete, $class_keep[2]);
-                    $diff_map = array_merge($diff_map, $class_keep[3]);
-                    $deletion_ranges = array_merge($deletion_ranges, $class_keep[4]);
+                    $keep = [...$keep, ...$class_keep[0]];
+                    $keep_signature = [...$keep_signature, ...$class_keep[1]];
+                    $add_or_delete = [...$add_or_delete, ...$class_keep[2]];
+                    $diff_map = [...$diff_map, ...$class_keep[3]];
+                    $deletion_ranges = [...$deletion_ranges, ...$class_keep[4]];
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_REMOVE) {
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\Use_

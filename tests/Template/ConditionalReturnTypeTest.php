@@ -9,14 +9,11 @@ class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'conditionalReturnTypeSimple' => [
-                '<?php
+                'code' => '<?php
 
                     class A {
                         /** @var array<string, string> */
@@ -41,14 +38,14 @@ class ConditionalReturnTypeTest extends TestCase
                     $b = (new A)->getAttribute(null); // typed as array<string, string>
                     /** @psalm-suppress MixedArgument */
                     $c = (new A)->getAttribute($GLOBALS["foo"]); // typed as string|array<string, string>',
-                [
+                'assertions' => [
                     '$a' => 'string',
                     '$b' => 'array<string, string>',
-                    '$c' => 'array<string, string>|string'
-                ]
+                    '$c' => 'array<string, string>|string',
+                ],
             ],
             'nestedConditionalOnIntReturnType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as int
                      * @param T $i
@@ -64,10 +61,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return true;
-                    }'
+                    }',
             ],
             'nestedConditionalOnStringsReturnType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as string
                      * @param T $i
@@ -83,10 +80,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return true;
-                    }'
+                    }',
             ],
             'nestedConditionalOnClassStringsReturnType' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -105,10 +102,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return true;
-                    }'
+                    }',
             ],
             'userlandVarExport' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TReturnFlag as bool
                      * @param mixed $expression
@@ -121,10 +118,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         var_export($expression);
-                    }'
+                    }',
             ],
             'userlandAddition' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as int|float
                      * @param T $a
@@ -142,15 +139,15 @@ class ConditionalReturnTypeTest extends TestCase
                     $float3 = add(3, 3.5);
                     /** @psalm-suppress PossiblyNullArgument */
                     $int = add(rand(0, 1) ? null : 1, 1);',
-                [
+                'assertions' => [
                     '$int' => 'int',
                     '$float1' => 'float|int',
                     '$float2' => 'float',
                     '$float3' => 'float|int',
-                ]
+                ],
             ],
             'possiblyNullArgumentStillMatchesType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as int|float
                      * @param T $a
@@ -164,12 +161,12 @@ class ConditionalReturnTypeTest extends TestCase
 
                     /** @psalm-suppress PossiblyNullArgument */
                     $int = add(rand(0, 1) ? null : 1, 4);',
-                [
+                'assertions' => [
                     '$int' => 'int',
-                ]
+                ],
             ],
             'nestedClassConstantConditionalComparison' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const TYPE_STRING = 0;
                         const TYPE_INT = 1;
@@ -202,17 +199,17 @@ class ConditionalReturnTypeTest extends TestCase
                     $string2 = (new A)->getDifferentType(0);
                     $int2 = (new A)->getDifferentType(1);
                     $bool2 = (new A)->getDifferentType(4);',
-                [
+                'assertions' => [
                     '$string' => 'string',
                     '$int' => 'int',
                     '$bool' => 'bool',
                     '$string2' => 'string',
                     '$int2' => 'int',
                     '$bool2' => 'bool',
-                ]
+                ],
             ],
             'variableConditionalSyntax' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return ($i is 0 ? string : ($i is 1 ? int : bool))
                      */
@@ -226,10 +223,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return true;
-                    }'
+                    }',
             ],
             'variableConditionalSyntaxWithNewlines' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return (
                      *      $i is 0
@@ -251,10 +248,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return true;
-                    }'
+                    }',
             ],
             'nullableClassString' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     class A {
@@ -285,10 +282,10 @@ class ConditionalReturnTypeTest extends TestCase
                     }
 
                     app(A::class)->test1();
-                    app()->test2();'
+                    app()->test2();',
             ],
             'refineTypeInConditionalWithString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TInput
                      *
@@ -306,13 +303,13 @@ class ConditionalReturnTypeTest extends TestCase
 
                     $a = foobaz("boop");
                     $b = foobaz(4);',
-                [
+                'assertions' => [
                     '$a' => 'string',
                     '$b' => 'string',
-                ]
+                ],
             ],
             'refineTypeInConditionalWithClassName' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class AChild extends A {}
                     class B {}
@@ -334,13 +331,13 @@ class ConditionalReturnTypeTest extends TestCase
 
                     $a = foobaz(new AChild());
                     $b = foobaz(new B());',
-                [
+                'assertions' => [
                     '$a' => 'AChild',
                     '$b' => 'A',
-                ]
+                ],
             ],
             'isTemplateArrayCheck' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param string|array $pv_var
                      *
@@ -353,10 +350,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return $return;
-                    }'
+                    }',
             ],
             'combineConditionalArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return ($idOnly is true ? array<int> : array<stdClass>)
                      */
@@ -366,10 +363,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return [new stdClass(), new stdClass()];
-                    }'
+                    }',
             ],
             'promiseConditional' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -419,13 +416,13 @@ class ConditionalReturnTypeTest extends TestCase
                     $c2 = call(function (): int {
                         return 42;
                     });',
-                [
+                'assertions' => [
                     '$c1' => 'Promise<int>',
                     '$c2' => 'Promise<int>',
-                ]
+                ],
             ],
             'conditionalReturnShouldMatchInherited' => [
-                '<?php
+                'code' => '<?php
                     interface I {
                         public function test1(bool $idOnly): array;
                     }
@@ -440,10 +437,10 @@ class ConditionalReturnTypeTest extends TestCase
                         public function test1(bool $idOnly): array {
                             return [];
                         }
-                    }'
+                    }',
             ],
             'conditionalOnArgCount' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return (func_num_args() is 0 ? false : string)
                      */
@@ -458,14 +455,14 @@ class ConditionalReturnTypeTest extends TestCase
                     $a = zeroArgsFalseOneArgString();
                     $b = zeroArgsFalseOneArgString("");
                     $c = zeroArgsFalseOneArgString("hello");',
-                [
+                'assertions' => [
                     '$a' => 'false',
                     '$b' => 'string',
                     '$c' => 'string',
-                ]
+                ],
             ],
             'namespaceFuncNumArgs' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     /**
@@ -482,7 +479,7 @@ class ConditionalReturnTypeTest extends TestCase
                     $a = zeroArgsFalseOneArgString("hello");',
             ],
             'nullableReturnType' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return ($name is "foo" ? string : null)
                      */
@@ -491,10 +488,10 @@ class ConditionalReturnTypeTest extends TestCase
                             return "hello";
                         }
                         return null;
-                    }'
+                    }',
             ],
             'conditionalOrDefault' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TKey
                      * @template TValue
@@ -521,10 +518,10 @@ class ConditionalReturnTypeTest extends TestCase
                     /** @param C<string, DateTime> $c */
                     function getNullableDateTime(C $c) : ?DateTime {
                         return $c->get("t", null);
-                    }'
+                    }',
             ],
             'literalStringIsNotAClassString' => [
-                '<?php
+                'code' => '<?php
                     interface SerializerInterface
                     {
                         /**
@@ -550,10 +547,10 @@ class ConditionalReturnTypeTest extends TestCase
 
                     function bar(SerializerInterface $i, string $data): array {
                         return $i->deserialize($data, \'array\');
-                    }'
+                    }',
             ],
             'inheritConditional' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template E
                      */
@@ -591,10 +588,10 @@ class ConditionalReturnTypeTest extends TestCase
                         public static function ofType(string $type) {
                             return new static($type);
                         }
-                    }'
+                    }',
             ],
             'checkNullOrFalse' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T of mixed|false|null
                      * @param T $i
@@ -605,10 +602,10 @@ class ConditionalReturnTypeTest extends TestCase
                             throw new RuntimeException("Example");
                         }
                         return $i;
-                    }'
+                    }',
             ],
             'identicalToTrue' => [
-                '<?php
+                'code' => '<?php
                     class A{
                         /**
                          * @psalm-return ($id_only is true ? int[] : string[])
@@ -620,10 +617,10 @@ class ConditionalReturnTypeTest extends TestCase
 
                             return [""];
                         }
-                    }'
+                    }',
             ],
             'stringOrClassStringT' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /**
@@ -648,15 +645,15 @@ class ConditionalReturnTypeTest extends TestCase
 
                     /** @psalm-suppress MixedAssignment */
                     $expect_mixed_from_literal = get("LiteralDirect");',
-                [
+                'assertions' => [
                     '$expect_mixed' => 'mixed',
                     '$expect_object' => 'object',
                     '$expect_a_object' => 'A',
                     '$expect_mixed_from_literal' => 'mixed',
-                ]
+                ],
             ],
             'isArryCheckOnTemplate' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TResult as string|list<string>
                      * @param TResult $result
@@ -668,10 +665,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return strtoupper($result);
-                    }'
+                    }',
             ],
             'optional' => [
-                '<?php
+                'code' => '<?php
                     class User {
                         public string $name = "Dave";
                     }
@@ -711,10 +708,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return new NullObject();
-                    }'
+                    }',
             ],
             'reconcileCallableFunctionTemplateParam' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      * @template TOptionalClosure as (callable():T)|null
@@ -727,10 +724,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return 1;
-                    }'
+                    }',
             ],
             'reconcileCallableClassTemplateParam' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         /**
                          * @template T
@@ -745,10 +742,10 @@ class ConditionalReturnTypeTest extends TestCase
 
                             return 1;
                         }
-                    }'
+                    }',
             ],
             'classConstantDefault' => [
-                '<?php
+                'code' => '<?php
                     class Request {
                         const SOURCE_GET = "GET";
                         const SOURCE_POST = "POST";
@@ -790,10 +787,10 @@ class ConditionalReturnTypeTest extends TestCase
                     echo (new Request)->getParams()["a"];
 
                     /** @psalm-suppress MixedArgument */
-                    echo (new Request)->getParams(Request::SOURCE_GET)["a"];'
+                    echo (new Request)->getParams(Request::SOURCE_GET)["a"];',
             ],
             'conditionalArrayValues' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      * @template TIterable of ?iterable<TValue>
@@ -810,10 +807,10 @@ class ConditionalReturnTypeTest extends TestCase
                         }
 
                         return iterator_to_array($iterable, false);
-                    }'
+                    }',
             ],
             'dontChokeOnFalsyAssertionsWithTemplatesInLoop' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return ($list_output is true ? list : array)
                      */
@@ -825,10 +822,10 @@ class ConditionalReturnTypeTest extends TestCase
 
                         return [];
                     }
-                    '
+                    ',
             ],
             'dontChokeOnFalsyAssertionsWithTemplatesOutsideLoop' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B {}
 
@@ -840,10 +837,10 @@ class ConditionalReturnTypeTest extends TestCase
                         (!$a ? "a" : "b");
                         return [];
                     }
-                    '
+                    ',
             ],
             'strlenReturnsIntForLowercaseString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return (
                      *     $string is non-empty-string
@@ -858,10 +855,10 @@ class ConditionalReturnTypeTest extends TestCase
                             echo 1;
                         }
                     }
-                    '
+                    ',
             ],
             'returnTypeBasedOnPhpVersionId' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-return (PHP_VERSION_ID is int<70300, max> ? string : int)
                      */
@@ -881,13 +878,13 @@ class ConditionalReturnTypeTest extends TestCase
                     $something = getSomething();
                     $somethingElse = getSomethingElse();
                 ',
-                [
+                'assertions' => [
                     '$something' => 'int',
-                    '$somethingElse' => 'string'
+                    '$somethingElse' => 'string',
                 ],
-                [],
-                '7.2'
-            ]
+                'ignored_issues' => [],
+                'php_version' => '7.2',
+            ],
         ];
     }
 }

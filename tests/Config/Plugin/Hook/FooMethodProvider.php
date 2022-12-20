@@ -43,7 +43,7 @@ class FooMethodProvider implements
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
-            return [new FunctionLikeParameter('first', false, Type::getString())];
+            return [new FunctionLikeParameter('first', false, Type::getString(), Type::getString())];
         }
 
         return null;

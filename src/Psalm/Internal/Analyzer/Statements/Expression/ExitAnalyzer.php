@@ -21,6 +21,9 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ExitAnalyzer
 {
     public static function analyze(
@@ -48,9 +51,9 @@ class ExitAnalyzer
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of ' . $forbidden,
-                    new CodeLocation($statements_analyzer, $stmt)
+                    new CodeLocation($statements_analyzer, $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -69,14 +72,14 @@ class ExitAnalyzer
                     'exit',
                     0,
                     null,
-                    $call_location
+                    $call_location,
                 );
 
                 $echo_param_sink->taints = [
                     TaintKind::INPUT_HTML,
                     TaintKind::INPUT_HAS_QUOTES,
                     TaintKind::USER_SECRET,
-                    TaintKind::SYSTEM_SECRET
+                    TaintKind::SYSTEM_SECRET,
                 ];
 
                 $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
@@ -85,7 +88,7 @@ class ExitAnalyzer
             if ($expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
                 $exit_param = new FunctionLikeParameter(
                     'var',
-                    false
+                    false,
                 );
 
                 if (ArgumentAnalyzer::verifyType(
@@ -104,7 +107,7 @@ class ExitAnalyzer
                     null,
                     true,
                     true,
-                    new CodeLocation($statements_analyzer, $stmt)
+                    new CodeLocation($statements_analyzer, $stmt),
                 ) === false) {
                     return false;
                 }
@@ -124,9 +127,9 @@ class ExitAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
                         'Cannot call ' . $function_name . ' with a non-integer argument from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations
@@ -136,7 +139,7 @@ class ExitAnalyzer
             }
         }
 
-        $statements_analyzer->node_data->setType($stmt, Type::getEmpty());
+        $statements_analyzer->node_data->setType($stmt, Type::getNever());
 
         $context->has_returned = true;
 

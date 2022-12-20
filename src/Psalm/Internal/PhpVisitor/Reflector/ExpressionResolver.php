@@ -37,6 +37,9 @@ use function implode;
 use function interface_exists;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class ExpressionResolver
 {
     public static function getUnresolvedClassConstExpr(
@@ -50,14 +53,14 @@ class ExpressionResolver
                 $stmt->left,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             $right = self::getUnresolvedClassConstExpr(
                 $stmt->right,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if (!$left || !$right) {
@@ -102,7 +105,7 @@ class ExpressionResolver
                 $stmt->cond,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             $if = null;
@@ -112,7 +115,7 @@ class ExpressionResolver
                     $stmt->if,
                     $aliases,
                     $fq_classlike_name,
-                    $parent_fq_class_name
+                    $parent_fq_class_name,
                 );
 
                 if ($if === null) {
@@ -124,7 +127,7 @@ class ExpressionResolver
                 $stmt->else,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if ($cond && $else && $if !== false) {
@@ -152,7 +155,7 @@ class ExpressionResolver
 
             return new Constant(
                 implode('\\', $stmt->name->parts),
-                $stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
             );
         }
 
@@ -165,14 +168,14 @@ class ExpressionResolver
                 $stmt->var,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             $right = self::getUnresolvedClassConstExpr(
                 $stmt->dim,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if ($left && $right) {
@@ -196,7 +199,7 @@ class ExpressionResolver
                     } else {
                         $const_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                             $stmt->class,
-                            $aliases
+                            $aliases,
                         );
                     }
                 }
@@ -219,7 +222,7 @@ class ExpressionResolver
                 $stmt->expr,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if (!$right) {
@@ -228,7 +231,7 @@ class ExpressionResolver
 
             return new UnresolvedAdditionOp(
                 new ScalarValue(0),
-                $right
+                $right,
             );
         }
 
@@ -237,7 +240,7 @@ class ExpressionResolver
                 $stmt->expr,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if (!$right) {
@@ -246,7 +249,7 @@ class ExpressionResolver
 
             return new UnresolvedSubtractionOp(
                 new ScalarValue(0),
-                $right
+                $right,
             );
         }
 
@@ -263,7 +266,7 @@ class ExpressionResolver
                         $item->key,
                         $aliases,
                         $fq_classlike_name,
-                        $parent_fq_class_name
+                        $parent_fq_class_name,
                     );
 
                     if (!$item_key_type) {
@@ -277,7 +280,7 @@ class ExpressionResolver
                     $item->value,
                     $aliases,
                     $fq_classlike_name,
-                    $parent_fq_class_name
+                    $parent_fq_class_name,
                 );
 
                 if (!$item_value_type) {
@@ -340,8 +343,8 @@ class ExpressionResolver
                     )
                 )
             ) {
-                $php_version_id = $codebase->php_major_version * 10000 + $codebase->php_minor_version * 100;
-                $evaluator = new ConstExprEvaluator(function (Expr $expr) use ($php_version_id) {
+                $php_version_id = $codebase->analysis_php_version_id;
+                $evaluator = new ConstExprEvaluator(static function (Expr $expr) use ($php_version_id) {
                     if ($expr instanceof ConstFetch && $expr->name->parts === ['PHP_VERSION_ID']) {
                         return $php_version_id;
                     }
@@ -405,7 +408,7 @@ class ExpressionResolver
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $string_value
+                        $string_value,
                     );
 
                     return true;
@@ -435,7 +438,39 @@ class ExpressionResolver
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $string_value
+                        $string_value,
+                    );
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if ($function->name->parts === ['enum_exists']
+            && isset($function->getArgs()[0])
+        ) {
+            $string_value = null;
+
+            if ($function->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                $string_value = $function->getArgs()[0]->value->value;
+            } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
+                && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
+                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
+            ) {
+                $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
+            }
+
+            // We're using class_exists here because enum_exists doesn't exist on old versions of PHP
+            // Not sure what happens if we try to autoload or reflect on an enum on an old version of PHP though...
+            if ($string_value && class_exists($string_value)) {
+                $reflection_class = new ReflectionClass($string_value);
+
+                if ($reflection_class->getFileName() !== $file_path) {
+                    $codebase->scanner->queueClassLikeForScanning(
+                        $string_value,
                     );
 
                     return true;

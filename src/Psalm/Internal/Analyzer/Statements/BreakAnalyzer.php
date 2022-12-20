@@ -10,6 +10,9 @@ use Psalm\Type;
 
 use function end;
 
+/**
+ * @internal
+ */
 class BreakAnalyzer
 {
     public static function analyze(
@@ -35,15 +38,11 @@ class BreakAnalyzer
 
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
-            if ($loop_scope->possibly_redefined_loop_parent_vars === null) {
-                $loop_scope->possibly_redefined_loop_parent_vars = $redefined_vars;
-            } else {
-                foreach ($redefined_vars as $var => $type) {
-                    $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
-                        $type,
-                        $loop_scope->possibly_redefined_loop_parent_vars[$var] ?? null
-                    );
-                }
+            foreach ($redefined_vars as $var => $type) {
+                $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
+                    $type,
+                    $loop_scope->possibly_redefined_loop_parent_vars[$var] ?? null,
+                );
             }
 
             if ($loop_scope->iteration_count === 0) {
@@ -51,42 +50,40 @@ class BreakAnalyzer
                     if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])) {
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null,
                         );
                     }
                 }
             }
 
             if ($context->finally_scope) {
-                foreach ($context->vars_in_scope as $var_id => $type) {
+                foreach ($context->vars_in_scope as $var_id => &$type) {
                     if (isset($context->finally_scope->vars_in_scope[$var_id])) {
                         $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->finally_scope->vars_in_scope[$var_id],
                             $type,
-                            $statements_analyzer->getCodebase()
+                            $statements_analyzer->getCodebase(),
                         );
                     } else {
+                        $type = $type->setPossiblyUndefined(true, true);
                         $context->finally_scope->vars_in_scope[$var_id] = $type;
-                        $type->possibly_undefined = true;
-                        $type->possibly_undefined_from_try = true;
                     }
                 }
+                unset($type);
             }
         }
 
         $case_scope = $context->case_scope;
         if ($case_scope && $leaving_switch) {
             foreach ($context->vars_in_scope as $var_id => $type) {
-                if ($case_scope->parent_context !== $context) {
-                    if ($case_scope->break_vars === null) {
-                        $case_scope->break_vars = [];
-                    }
-
-                    $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
-                        $type,
-                        $case_scope->break_vars[$var_id] ?? null
-                    );
+                if ($case_scope->break_vars === null) {
+                    $case_scope->break_vars = [];
                 }
+
+                $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
+                    $type,
+                    $case_scope->break_vars[$var_id] ?? null,
+                );
             }
         }
 

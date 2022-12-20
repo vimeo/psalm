@@ -23,6 +23,9 @@ use UnexpectedValueException;
 
 use function is_string;
 
+/**
+ * @internal
+ */
 class StaticAnalyzer
 {
     public static function analyze(
@@ -36,9 +39,9 @@ class StaticAnalyzer
             IssueBuffer::maybeAdd(
                 new ImpureStaticVariable(
                     'Cannot use a static variable in a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt)
+                    new CodeLocation($statements_analyzer, $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -64,21 +67,21 @@ class StaticAnalyzer
                             $parsed_docblock,
                             $statements_analyzer->getSource(),
                             $statements_analyzer->getSource()->getAliases(),
-                            $statements_analyzer->getSource()->getTemplateTypeMap()
+                            $statements_analyzer->getSource()->getTemplateTypeMap(),
                         );
                 } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
                         new MissingDocblockType(
                             $e->getMessage(),
-                            new CodeLocation($statements_analyzer, $var)
-                        )
+                            new CodeLocation($statements_analyzer, $var),
+                        ),
                     );
                 } catch (DocblockParseException $e) {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             $e->getMessage(),
-                            new CodeLocation($statements_analyzer->getSource(), $var)
-                        )
+                            new CodeLocation($statements_analyzer->getSource(), $var),
+                        ),
                     );
                 }
 
@@ -93,15 +96,16 @@ class StaticAnalyzer
                             $var_comment->type,
                             $context->self,
                             $context->self,
-                            $statements_analyzer->getParentFQCLN()
+                            $statements_analyzer->getParentFQCLN(),
                         );
 
-                        $var_comment_type->setFromDocblock();
+                        $var_comment_type = $var_comment_type->setFromDocblock();
 
+                        /** @psalm-suppress UnusedMethodCall */
                         $var_comment_type->check(
                             $statements_analyzer,
                             new CodeLocation($statements_analyzer->getSource(), $var),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
 
                         if ($codebase->alter_code
@@ -113,7 +117,7 @@ class StaticAnalyzer
                                 $statements_analyzer,
                                 $var_comment->type_start,
                                 $var_comment->type_end,
-                                $var_comment->line_number
+                                $var_comment->line_number,
                             );
 
                             $codebase->classlikes->handleDocblockTypeInMigration(
@@ -121,7 +125,7 @@ class StaticAnalyzer
                                 $statements_analyzer,
                                 $var_comment_type,
                                 $type_location,
-                                $context->calling_method_id
+                                $context->calling_method_id,
                             );
                         }
 
@@ -135,8 +139,8 @@ class StaticAnalyzer
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 $e->getMessage(),
-                                new CodeLocation($statements_analyzer, $var)
-                            )
+                                new CodeLocation($statements_analyzer, $var),
+                            ),
                         );
                     }
                 }
@@ -156,21 +160,21 @@ class StaticAnalyzer
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $var_default_type,
-                        $comment_type
+                        $comment_type,
                     )
                 ) {
                     IssueBuffer::maybeAdd(
                         new ReferenceConstraintViolation(
                             $var_id . ' of type ' . $comment_type->getId() . ' cannot be assigned type '
                                 . $var_default_type->getId(),
-                            new CodeLocation($statements_analyzer, $var)
-                        )
+                            new CodeLocation($statements_analyzer, $var),
+                        ),
                     );
                 }
             }
 
             if ($context->check_variables) {
-                $context->vars_in_scope[$var_id] = $comment_type ? clone $comment_type : Type::getMixed();
+                $context->vars_in_scope[$var_id] = $comment_type ? $comment_type : Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
                 $statements_analyzer->byref_uses[$var_id] = true;
@@ -180,7 +184,7 @@ class StaticAnalyzer
                 $statements_analyzer->registerVariable(
                     $var_id,
                     $location,
-                    $context->branch_point
+                    $context->branch_point,
                 );
             }
         }

@@ -21,7 +21,7 @@ class ImplementationRequirementTest extends TestCase
 
                 interface A { }
                 interface B { }
-            '
+            ',
         );
 
         $this->addFile(
@@ -37,7 +37,7 @@ class ImplementationRequirementTest extends TestCase
                  * @psalm-require-implements MyAliasedInterfaceB
                  */
                 trait ImposesImplementationRequirements { }
-            '
+            ',
         );
     }
 
@@ -45,7 +45,7 @@ class ImplementationRequirementTest extends TestCase
     {
         return [
             'implementsAllRequirements' => [
-                '<?php
+                'code' => '<?php
                     use ImplementationRequirements\Base\A;
                     use ImplementationRequirements\Base\B;
                     use ImplementationRequirements\Trait\ImposesImplementationRequirements;
@@ -53,8 +53,8 @@ class ImplementationRequirementTest extends TestCase
                     class Valid implements A, B {
                         use ImposesImplementationRequirements;
                     }
-                '
-            ]
+                ',
+            ],
         ];
     }
 
@@ -62,17 +62,17 @@ class ImplementationRequirementTest extends TestCase
     {
         return [
             'doesNotImplementAnything' => [
-                '<?php
+                'code' => '<?php
                     use ImplementationRequirements\Trait\ImposesImplementationRequirements;
 
                     class Invalid {
                         use ImposesImplementationRequirements;
                     }
                 ',
-                'error_message' => 'requires using class to implement'
+                'error_message' => 'requires using class to implement',
             ],
             'onlyImplementsOneRequirement' => [
-                '<?php
+                'code' => '<?php
                     use ImplementationRequirements\Trait\ImposesImplementationRequirements;
                     use ImplementationRequirements\Base\A;
 
@@ -80,8 +80,8 @@ class ImplementationRequirementTest extends TestCase
                         use ImposesImplementationRequirements;
                     }
                 ',
-                'error_message' => 'requires using class to implement'
-            ]
+                'error_message' => 'requires using class to implement',
+            ],
         ];
     }
 }

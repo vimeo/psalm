@@ -3,6 +3,7 @@
 namespace Psalm\Tests\Config;
 
 use Psalm\Config;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\TestCase;
@@ -20,8 +21,7 @@ use const PHP_EOL;
 /** @group PluginManager */
 class ConfigFileTest extends TestCase
 {
-    /** @var string */
-    private $file_path;
+    private string $file_path;
 
     public function setUp(): void
     {
@@ -60,7 +60,7 @@ class ConfigFileTest extends TestCase
                 name="bar"
             >
                 <plugins></plugins>
-            </psalm>' . PHP_EOL
+            </psalm>' . PHP_EOL,
         );
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
@@ -73,7 +73,7 @@ class ConfigFileTest extends TestCase
             >
                 <plugins><pluginClass xmlns="' . Config::CONFIG_NAMESPACE . '" class="a\b\c"/></plugins>
             </psalm>',
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         ));
     }
 
@@ -85,7 +85,7 @@ class ConfigFileTest extends TestCase
         file_put_contents(
             $this->file_path,
             '<?xml version="1.0"?>
-            <psalm></psalm>' . PHP_EOL
+            <psalm></psalm>' . PHP_EOL,
         );
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
@@ -94,7 +94,7 @@ class ConfigFileTest extends TestCase
         $this->assertTrue(static::compareContentWithTemplateAndTrailingLineEnding(
             '<?xml version="1.0"?>
             <psalm><plugins><pluginClass xmlns="' . Config::CONFIG_NAMESPACE . '" class="a\b\c"/></plugins></psalm>',
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         ));
     }
 
@@ -113,7 +113,7 @@ class ConfigFileTest extends TestCase
 
         $this->assertSame(
             $noPlugins,
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         );
     }
 
@@ -137,7 +137,7 @@ class ConfigFileTest extends TestCase
 
         $this->assertXmlStringEqualsXmlString(
             $noPlugins,
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         );
     }
 
@@ -163,7 +163,7 @@ class ConfigFileTest extends TestCase
 
         $this->assertXmlStringEqualsXmlString(
             $noPlugins,
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         );
     }
 
@@ -198,18 +198,72 @@ class ConfigFileTest extends TestCase
 
         $this->assertXmlStringEqualsXmlString(
             $noPlugins,
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         );
     }
 
+    public function testEnableExtensions(): void
+    {
+        file_put_contents($this->file_path, trim('
+            <?xml version="1.0"?>
+            <psalm>
+                <enableExtensions>
+                    <extension name="mysqli"/>
+                    <extension name="pdo"/>
+                </enableExtensions>
+            </psalm>
+        '));
+
+        $config_file = new ConfigFile((string)getcwd(), $this->file_path);
+        $config = $config_file->getConfig();
+
+        $this->assertTrue($config->php_extensions["mysqli"]);
+        $this->assertTrue($config->php_extensions["pdo"]);
+    }
+
+    public function testDisableExtensions(): void
+    {
+        file_put_contents($this->file_path, trim('
+            <?xml version="1.0"?>
+            <psalm>
+                <enableExtensions>
+                    <extension name="mysqli"/>
+                    <extension name="pdo"/>
+                </enableExtensions>
+                <disableExtensions>
+                    <extension name="mysqli"/>
+                    <extension name="pdo"/>
+                </disableExtensions>
+            </psalm>
+        '));
+
+        $config_file = new ConfigFile((string)getcwd(), $this->file_path);
+        $config = $config_file->getConfig();
+
+        $this->assertFalse($config->php_extensions["mysqli"]);
+        $this->assertFalse($config->php_extensions["pdo"]);
+    }
+
+    public function testInvalidExtension(): void
+    {
+        $this->expectException(ConfigException::class);
+
+        file_put_contents($this->file_path, trim('
+            <?xml version="1.0"?>
+            <psalm>
+                <enableExtensions>
+                    <extension name="NotARealExtension"/>
+                </enableExtensions>
+            </psalm>
+        '));
+
+        (new ConfigFile((string)getcwd(), $this->file_path))->getConfig();
+    }
+
     /**
-     * @param string $expected_template
-     * @param string $contents
-     *
-     *
      * @psalm-pure
      */
-    protected static function compareContentWithTemplateAndTrailingLineEnding($expected_template, $contents): bool
+    protected static function compareContentWithTemplateAndTrailingLineEnding(string $expected_template, string $contents): bool
     {
         $passed = false;
 

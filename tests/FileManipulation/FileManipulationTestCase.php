@@ -15,8 +15,7 @@ use function strpos;
 
 abstract class FileManipulationTestCase extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {
@@ -27,20 +26,14 @@ abstract class FileManipulationTestCase extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
-     * @param string $input_code
-     * @param string $output_code
-     * @param string $php_version
      * @param string[] $issues_to_fix
-     * @param bool $safe_types
-     *
      */
     public function testValidCode(
-        $input_code,
-        $output_code,
-        $php_version,
+        string $input_code,
+        string $output_code,
+        string $php_version,
         array $issues_to_fix,
-        $safe_types,
+        bool $safe_types,
         bool $allow_backwards_incompatible_changes = true
     ): void {
         $test_name = $this->getTestName();
@@ -54,8 +47,8 @@ abstract class FileManipulationTestCase extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         if (empty($issues_to_fix)) {
@@ -69,7 +62,7 @@ abstract class FileManipulationTestCase extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code
+            $input_code,
         );
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
@@ -83,7 +76,7 @@ abstract class FileManipulationTestCase extends TestCase
         $this->project_analyzer->setIssuesToFix($keyed_issues_to_fix);
         $this->project_analyzer->alterCodeAfterCompletion(
             false,
-            $safe_types
+            $safe_types,
         );
         $this->project_analyzer->getCodebase()->allow_backwards_incompatible_changes = $allow_backwards_incompatible_changes;
         $this->project_analyzer->getConfig()->check_for_throws_docblock = true;
@@ -101,7 +94,7 @@ abstract class FileManipulationTestCase extends TestCase
     }
 
     /**
-     * @return array<string,array{string,string,string,string[],bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
      */
     abstract public function providerValidCodeParse(): array;
 }

@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use function substr;
 use function substr_count;
 
+/** @psalm-immutable */
 class Raw extends CodeLocation
 {
     public function __construct(
@@ -27,7 +28,7 @@ class Raw extends CodeLocation
         $this->preview_start = $this->file_start;
         $this->raw_line_number = substr_count(
             substr($file_contents, 0, $this->file_start),
-            "\n"
+            "\n",
         ) + 1;
     }
 }

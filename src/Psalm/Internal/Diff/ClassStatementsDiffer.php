@@ -21,7 +21,6 @@ class ClassStatementsDiffer extends AstDiffer
      *
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
-     *
      * @return array{
      *      0: list<string>,
      *      1: list<string>,
@@ -35,7 +34,7 @@ class ClassStatementsDiffer extends AstDiffer
         $diff_map = [];
 
         [$trace, $x, $y, $bc] = self::calculateTrace(
-            function (
+            static function (
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
                 string $a_code,
@@ -175,7 +174,7 @@ class ClassStatementsDiffer extends AstDiffer
             $a,
             $b,
             $a_code,
-            $b_code
+            $b_code,
         );
 
         $diff = self::extractDiff($trace, $x, $y, $a, $b, $bc);
@@ -239,7 +238,7 @@ class ClassStatementsDiffer extends AstDiffer
 
                     $deletion_ranges[] = [
                         $start,
-                        (int)$affected_elem->getAttribute('endFilePos')
+                        (int)$affected_elem->getAttribute('endFilePos'),
                     ];
                 }
             }

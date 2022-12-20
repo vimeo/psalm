@@ -7,8 +7,13 @@ use PhpParser\Node\Stmt\Class_;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Issue\InvalidReturnStatement;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\BeforeAddIssueInterface;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
@@ -19,8 +24,7 @@ use function get_class;
 
 class CodebaseTest extends TestCase
 {
-    /** @var Codebase */
-    private $codebase;
+    private Codebase $codebase;
 
     public function setUp(): void
     {
@@ -31,7 +35,6 @@ class CodebaseTest extends TestCase
     /**
      * @test
      * @dataProvider typeContainments
-     *
      */
     public function isTypeContainedByType(string $input, string $container, bool $expected): void
     {
@@ -42,7 +45,7 @@ class CodebaseTest extends TestCase
             $expected,
             $this->codebase->isTypeContainedByType($input, $container),
             'Expected ' . $input->getId() . ($expected ? ' ' : ' not ')
-            . 'to be contained in ' . $container->getId()
+            . 'to be contained in ' . $container->getId(),
         );
     }
 
@@ -61,7 +64,6 @@ class CodebaseTest extends TestCase
     /**
      * @test
      * @dataProvider typeIntersections
-     *
      */
     public function canTypeBeContainedByType(string $input, string $container, bool $expected): void
     {
@@ -72,7 +74,7 @@ class CodebaseTest extends TestCase
             $expected,
             $this->codebase->canTypeBeContainedByType($input, $container),
             'Expected ' . $input->getId() . ($expected ? ' ' : ' not ')
-            . 'to be contained in ' . $container->getId()
+            . 'to be contained in ' . $container->getId(),
         );
     }
 
@@ -89,9 +91,7 @@ class CodebaseTest extends TestCase
     /**
      * @test
      * @dataProvider iterableParams
-     *
      * @param array{string,string} $expected
-     *
      */
     public function getKeyValueParamsForTraversableObject(string $input, array $expected): void
     {
@@ -105,13 +105,13 @@ class CodebaseTest extends TestCase
         $this->assertTrue(
             $expected_key_type->equals($actual[0]),
             'Expected ' . $input->getId() . ' to have ' . $expected_key_type
-            . ' but got ' . $actual[0]->getId()
+            . ' but got ' . $actual[0]->getId(),
         );
 
         $this->assertTrue(
             $expected_value_type->equals($actual[1]),
             'Expected ' . $input->getId() . ' to have ' . $expected_value_type
-            . ' but got ' . $actual[1]->getId()
+            . ' but got ' . $actual[1]->getId(),
         );
     }
 
@@ -124,7 +124,6 @@ class CodebaseTest extends TestCase
 
     /**
      * @test
-     *
      */
     public function customMetadataIsPersisted(): void
     {
@@ -142,7 +141,7 @@ class CodebaseTest extends TestCase
                     /** @return void */
                     public function m(int $_i = 1) {}
                 }
-            '
+            ',
         );
         $hook = new class implements AfterClassLikeVisitInterface {
             /**
@@ -160,10 +159,8 @@ class CodebaseTest extends TestCase
                         ? (string)$stmt->extends->getAttribute('resolvedName')
                         : '';
                     $storage->custom_metadata['implements'] = array_map(
-                        function (Name $aspect): string {
-                            return (string)$aspect->getAttribute('resolvedName');
-                        },
-                        $stmt->implements
+                        fn(Name $aspect): string => (string)$aspect->getAttribute('resolvedName'),
+                        $stmt->implements,
                     );
                     $storage->custom_metadata['a'] = 'b';
                     $storage->methods['m']->custom_metadata['c'] = 'd';
@@ -198,7 +195,6 @@ class CodebaseTest extends TestCase
 
     /**
      * @test
-     *
      */
     public function classExtendsRejectsUnpopulatedClasslikes(): void
     {
@@ -208,5 +204,46 @@ class CodebaseTest extends TestCase
         $this->expectException(UnpopulatedClasslikeException::class);
 
         $this->codebase->classExtends('A', 'B');
+    }
+
+    /**
+     * @test
+     */
+    public function addingCodeIssueIsIntercepted(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Psalm\CurrentTest;
+                function invalidReturnType(int $value): string
+                {
+                    return $value;
+                }
+                echo invalidReturnType(123);
+            ',
+        );
+
+        $eventHandler = new class implements BeforeAddIssueInterface
+        {
+            public static function beforeAddIssue(BeforeAddIssueEvent $event): ?bool
+            {
+                $issue = $event->getIssue();
+                if ($issue->code_location->file_path !== 'somefile.php') {
+                    return null;
+                }
+                if ($issue instanceof InvalidReturnStatement && $event->isFixable() === false) {
+                    return false;
+                } elseif ($issue instanceof InvalidReturnType && $event->isFixable() === true) {
+                    return false;
+                }
+                return null;
+            }
+        };
+
+        (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
+            ->registerHooksFromClass(get_class($eventHandler));
+
+        $this->analyzeFile('somefile.php', new Context);
+        self::assertSame(0, IssueBuffer::getErrorCount());
     }
 }

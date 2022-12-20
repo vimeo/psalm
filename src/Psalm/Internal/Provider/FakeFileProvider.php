@@ -5,23 +5,27 @@ namespace Psalm\Internal\Provider;
 use function microtime;
 use function strpos;
 
+/**
+ * @internal
+ */
 class FakeFileProvider extends FileProvider
 {
     /**
      * @var array<string, string>
      */
-    public $fake_files = [];
+    public array $fake_files = [];
 
     /**
      * @var array<string, int>
      */
-    public $fake_file_times = [];
+    public array $fake_file_times = [];
 
     public function fileExists(string $file_path): bool
     {
         return isset($this->fake_files[$file_path]) || parent::fileExists($file_path);
     }
 
+    /** @psalm-external-mutation-free */
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[$file_path])) {
@@ -57,7 +61,6 @@ class FakeFileProvider extends FileProvider
     /**
      * @param array<string> $file_extensions
      * @param null|callable(string):bool $filter
-     *
      * @return list<string>
      */
     public function getFilesInDir(string $dir_path, array $file_extensions, callable $filter = null): array

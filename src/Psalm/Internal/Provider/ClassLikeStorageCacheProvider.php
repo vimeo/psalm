@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
-use Psalm\Internal\Provider\Providers;
 use Psalm\Storage\ClassLikeStorage;
 use RuntimeException;
 use UnexpectedValueException;
@@ -34,15 +33,9 @@ use const PHP_VERSION_ID;
  */
 class ClassLikeStorageCacheProvider
 {
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
-    /**
-     * @var string
-     */
-    private $modified_timestamps = '';
+    private string $modified_timestamps = '';
 
     private const CLASS_CACHE_DIRECTORY = 'class_cache';
 
@@ -122,7 +115,7 @@ class ClassLikeStorageCacheProvider
     private function getCacheHash(?string $_unused_file_path, ?string $file_contents): string
     {
         $data = $file_contents ? $file_contents : $this->modified_timestamps;
-        return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
+        return PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
     /**
@@ -173,7 +166,7 @@ class ClassLikeStorageCacheProvider
                 if (mkdir($parser_cache_directory, 0777, true) === false) {
                     // any other error than directory already exists/permissions issue
                     throw new RuntimeException(
-                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons'
+                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons',
                     );
                 }
             } catch (RuntimeException $e) {
@@ -188,7 +181,7 @@ class ClassLikeStorageCacheProvider
 
         $data = $file_path ? strtolower($file_path) . ' ' : '';
         $data .= $fq_classlike_name_lc;
-        $file_path_sha = PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
+        $file_path_sha = PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
 
         return $parser_cache_directory
             . DIRECTORY_SEPARATOR

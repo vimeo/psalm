@@ -6,14 +6,11 @@ use Psalm\Type\Atomic;
 
 /**
  * Denotes the `void` type, normally just used to annotate a function/method that returns nothing
+ *
+ * @psalm-immutable
  */
-class TVoid extends Atomic
+final class TVoid extends Atomic
 {
-    public function __toString(): string
-    {
-        return 'void';
-    }
-
     public function getKey(bool $include_extra = true): string
     {
         return 'void';
@@ -26,15 +23,12 @@ class TVoid extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $php_major_version,
-        int $php_minor_version
+        int $analysis_php_version_id
     ): ?string {
-        return $php_major_version > 7
-            || ($php_major_version === 7 && $php_minor_version >= 1)
-            ? $this->getKey() : null;
+        return $analysis_php_version_id >= 7_01_00 ? $this->getKey() : null;
     }
 
-    public function canBeFullyExpressedInPhp(int $php_major_version, int $php_minor_version): bool
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return true;
     }

@@ -1,0 +1,158 @@
+<?php
+
+class PDO
+{
+    public const PARAM_NULL = 0;
+    public const PARAM_INT = 1;
+    public const PARAM_STR = 2;
+    public const PARAM_LOB = 3;
+    public const PARAM_STMT = 4;
+    public const PARAM_BOOL = 5;
+    // public const PARAM_STR_NATL = 1073741824; since 7.2
+    // public const PARAM_STR_CHAR = 536870912; since 7.2
+    public const PARAM_INPUT_OUTPUT = 2147483648;
+    // public const FETCH_DEFAULT = 0; since 8.0.7
+    public const FETCH_LAZY = 1;
+    public const FETCH_ASSOC = 2;
+    public const FETCH_NAMED = 11;
+    public const FETCH_NUM = 3;
+    public const FETCH_BOTH = 4;
+    public const FETCH_OBJ = 5;
+    public const FETCH_BOUND = 6;
+    public const FETCH_COLUMN = 7;
+    public const FETCH_CLASS = 8;
+    public const FETCH_INTO = 9;
+    public const FETCH_FUNC = 10;
+    public const FETCH_GROUP = 65536;
+    public const FETCH_UNIQUE = 196608;
+    public const FETCH_KEY_PAIR = 12;
+    public const FETCH_CLASSTYPE = 262144;
+    public const FETCH_SERIALIZE = 524288; // Deprecated 8.1
+    public const FETCH_PROPS_LATE = 1048576;
+    public const ATTR_AUTOCOMMIT = 0;
+    public const ATTR_PREFETCH = 1;
+    public const ATTR_TIMEOUT = 2;
+    public const ATTR_ERRMODE = 3;
+    public const ATTR_SERVER_VERSION = 4;
+    public const ATTR_CLIENT_VERSION = 5;
+    public const ATTR_SERVER_INFO = 6;
+    public const ATTR_CONNECTION_STATUS = 7;
+    public const ATTR_CASE = 8;
+    public const ATTR_CURSOR_NAME = 9;
+    public const ATTR_CURSOR = 10;
+    public const ATTR_DRIVER_NAME = 16;
+    public const ATTR_ORACLE_NULLS = 11;
+    public const ATTR_PERSISTENT = 12;
+    public const ATTR_STATEMENT_CLASS = 13;
+    public const ATTR_FETCH_CATALOG_NAMES = 15;
+    public const ATTR_FETCH_TABLE_NAMES = 14;
+    public const ATTR_STRINGIFY_FETCHES = 17;
+    public const ATTR_MAX_COLUMN_LEN = 18;
+    public const ATTR_DEFAULT_FETCH_MODE = 19;
+    public const ATTR_EMULATE_PREPARES = 20;
+    // public const ATTR_DEFAULT_STR_PARAM = 21; since 7.2
+    public const ERRMODE_SILENT = 0;
+    public const ERRMODE_WARNING = 1;
+    public const ERRMODE_EXCEPTION = 2;
+    public const CASE_NATURAL = 0;
+    public const CASE_LOWER = 2;
+    public const CASE_UPPER = 1;
+    public const NULL_NATURAL = 0;
+    public const NULL_EMPTY_STRING = 1;
+    public const NULL_TO_STRING = 2;
+    public const FETCH_ORI_NEXT = 0;
+    public const FETCH_ORI_PRIOR = 1;
+    public const FETCH_ORI_FIRST = 2;
+    public const FETCH_ORI_LAST = 3;
+    public const FETCH_ORI_ABS = 4;
+    public const FETCH_ORI_REL = 5;
+    public const CURSOR_FWDONLY = 0;
+    public const CURSOR_SCROLL = 1;
+    public const ERR_NONE = 00000;
+    public const PARAM_EVT_ALLOC = 0;
+    public const PARAM_EVT_FREE = 1;
+    public const PARAM_EVT_EXEC_PRE = 2;
+    public const PARAM_EVT_EXEC_POST = 3;
+    public const PARAM_EVT_FETCH_PRE = 4;
+    public const PARAM_EVT_FETCH_POST = 5;
+    public const PARAM_EVT_NORMALIZE = 6;
+    // public const SQLITE_DETERMINISTIC = ???; since 7.1.4 with pdo_sqlite
+
+    public function __construct(
+        string $dsn,
+        ?string $username = null,
+        ?string $password = null,
+        ?array $options = null
+    ) {}
+
+    public function beginTransaction(): bool {}
+
+    public function commit(): bool {}
+
+    public function errorCode(): ?string {}
+
+    public function errorInfo(): array {}
+
+    /**
+     * @psalm-taint-sink sql $statement
+     *
+     * @return int|false
+     */
+    public function exec(string $statement) {}
+
+    /** @return bool|int|string|array|null */
+    public function getAttribute(int $attribute) {}
+
+    public static function getAvailableDrivers(): array {}
+
+    public function inTransaction(): bool {}
+
+    /** @return string|false */
+    public function lastInsertId(?string $name = null) {}
+
+    /**
+     * @psalm-taint-sink sql $query
+     *
+     * @return PDOStatement|false
+     */
+    public function prepare(string $query, array $options = []) {}
+
+    /**
+     * @psalm-taint-sink sql $query
+     *
+     * @return PDOStatement|false
+     */
+    public function query(string $query, ?int $fetchMode = null) {}
+
+    /**
+     * @return string|false
+     */
+    public function quote(string $string, int $type = PDO::PARAM_STR) {}
+
+    public function rollBack(): bool {}
+
+    public function setAttribute(int $attribute, mixed $value): bool {}
+}
+
+/**
+ * @template TValue
+ *
+ * @template-implements Traversable<int, TValue>
+ */
+class PDOStatement implements Traversable
+{
+    /**
+     * @psalm-taint-sink callable $class
+     *
+     * @template T of object
+     * @param class-string<T> $class
+     * @param array $ctorArgs
+     * @return false|T
+     */
+    public function fetchObject($class = \stdclass::class, array $ctorArgs = array()) {}
+}
+
+ class PDOException extends RuntimeException {
+    protected string $code;
+    public ?array $errorInfo = null;
+}

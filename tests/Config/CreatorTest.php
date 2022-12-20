@@ -28,7 +28,7 @@ class CreatorTest extends TestCase
                 . DIRECTORY_SEPARATOR . 'files_in_lib',
             null,
             1,
-            'vendor'
+            'vendor',
         );
 
         $this->assertSame('<?xml version="1.0"?>

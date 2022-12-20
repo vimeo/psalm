@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Codebase;
 
+use InvalidArgumentException;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -25,7 +26,6 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -33,6 +33,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
@@ -40,6 +41,7 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function ctype_digit;
+use function is_array;
 use function is_float;
 use function is_int;
 use function is_string;
@@ -71,13 +73,13 @@ class ConstantTypeResolver
                 $classlikes,
                 $c->left,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
             $right = self::resolve(
                 $classlikes,
                 $c->right,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             if ($left instanceof TMixed || $right instanceof TMixed) {
@@ -137,9 +139,11 @@ class ConstantTypeResolver
                 }
 
                 if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
-                    $keyed_array = new TKeyedArray($left->properties + $right->properties);
-                    $keyed_array->sealed = true;
-                    return $keyed_array;
+                    $type = new TKeyedArray(
+                        $left->properties + $right->properties,
+                        null,
+                    );
+                    return $type;
                 }
 
                 return new TMixed;
@@ -153,19 +157,19 @@ class ConstantTypeResolver
                 $classlikes,
                 $c->cond,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
             $if = $c->if ? self::resolve(
                 $classlikes,
                 $c->if,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             ) : null;
             $else = self::resolve(
                 $classlikes,
                 $c->else,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             if ($cond instanceof TLiteralFloat
@@ -187,7 +191,7 @@ class ConstantTypeResolver
             $auto_key = 0;
 
             if (!$c->entries) {
-                return new TArray([Type::getEmpty(), Type::getEmpty()]);
+                return new TArray([Type::getNever(), Type::getNever()]);
             }
 
             $is_list = true;
@@ -198,10 +202,10 @@ class ConstantTypeResolver
                         $classlikes,
                         $entry->array,
                         $statements_analyzer,
-                        $visited_constant_ids + [$c_id => true]
+                        $visited_constant_ids + [$c_id => true],
                     );
 
-                    if ($spread_array instanceof TArray && $spread_array->type_params[1]->isEmpty()) {
+                    if ($spread_array instanceof TArray && $spread_array->isEmptyArray()) {
                         continue;
                     }
 
@@ -220,7 +224,7 @@ class ConstantTypeResolver
                         $classlikes,
                         $entry->key,
                         $statements_analyzer,
-                        $visited_constant_ids + [$c_id => true]
+                        $visited_constant_ids + [$c_id => true],
                     );
 
                     if (!$key_type instanceof TLiteralInt
@@ -249,7 +253,7 @@ class ConstantTypeResolver
                     $classlikes,
                     $entry->value,
                     $statements_analyzer,
-                    $visited_constant_ids + [$c_id => true]
+                    $visited_constant_ids + [$c_id => true],
                 )]);
 
                 $properties[$key_value] = $value_type;
@@ -257,14 +261,11 @@ class ConstantTypeResolver
 
             if (empty($properties)) {
                 $resolved_type = new TArray([
-                    new Union([new TEmpty()]),
-                    new Union([new TEmpty()]),
+                    new Union([new TNever()]),
+                    new Union([new TNever()]),
                 ]);
             } else {
-                $resolved_type = new TKeyedArray($properties);
-
-                $resolved_type->is_list = $is_list;
-                $resolved_type->sealed = true;
+                $resolved_type = new TKeyedArray($properties, null, null, $is_list);
             }
 
             return $resolved_type;
@@ -280,7 +281,7 @@ class ConstantTypeResolver
                 $c->name,
                 ReflectionProperty::IS_PRIVATE,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             if ($found_type) {
@@ -293,14 +294,14 @@ class ConstantTypeResolver
                 $classlikes,
                 $c->array,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             $offset_type = self::resolve(
                 $classlikes,
                 $c->offset,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true]
+                $visited_constant_ids + [$c_id => true],
             );
 
             if ($var_type instanceof TKeyedArray
@@ -321,7 +322,7 @@ class ConstantTypeResolver
                     $statements_analyzer,
                     $c->name,
                     $c->is_fully_qualified,
-                    null
+                    null,
                 );
 
                 if ($found_type) {
@@ -334,10 +335,25 @@ class ConstantTypeResolver
     }
 
     /**
-     * @param  string|int|float|bool|null $value
+     * Note: This takes an array, but any array should only contain other arrays and scalars.
+     *
+     * @param  array|string|int|float|bool|null $value
      */
-    private static function getLiteralTypeFromScalarValue($value): Atomic
+    public static function getLiteralTypeFromScalarValue($value): Atomic
     {
+        if (is_array($value)) {
+            if (empty($value)) {
+                return Type::getEmptyArray()->getSingleAtomic();
+            }
+
+            $types = [];
+            /** @var array|scalar|null $val */
+            foreach ($value as $key => $val) {
+                $types[$key] = new Union([self::getLiteralTypeFromScalarValue($val)]);
+            }
+            return new TKeyedArray($types, null);
+        }
+
         if (is_string($value)) {
             return new TLiteralString($value);
         }
@@ -351,13 +367,17 @@ class ConstantTypeResolver
         }
 
         if ($value === false) {
-            return new TFalse;
+            return new TFalse();
         }
 
         if ($value === true) {
-            return new TTrue;
+            return new TTrue();
         }
 
-        return new TNull;
+        if ($value === null) {
+            return new TNull();
+        }
+
+        throw new InvalidArgumentException('$value must be a scalar.');
     }
 }

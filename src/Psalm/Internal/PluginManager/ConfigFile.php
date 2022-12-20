@@ -14,19 +14,18 @@ use function sprintf;
 use function strpos;
 use function substr;
 
+/**
+ * @internal
+ */
 class ConfigFile
 {
-    /** @var string */
-    private $path;
+    private string $path;
 
-    /** @var string */
-    private $current_dir;
+    private string $current_dir;
 
-    /** @var string|null */
-    private $psalm_header;
+    private ?string $psalm_header = null;
 
-    /** @var int|null */
-    private $psalm_tag_end_pos;
+    private ?int $psalm_tag_end_pos = null;
 
     public function __construct(string $current_dir, ?string $explicit_path)
     {

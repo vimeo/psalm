@@ -6,7 +6,7 @@ namespace Psalm\Node;
 
 use PhpParser\Node\NullableType;
 
-class VirtualNullableType extends NullableType implements VirtualNode
+final class VirtualNullableType extends NullableType implements VirtualNode
 {
 
 }

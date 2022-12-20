@@ -25,15 +25,21 @@
         <directory name="src"/>
         <directory name="tests"/>
         <directory name="examples"/>
+        <file name="psalm"/>
+        <file name="psalm-language-server"/>
+        <file name="psalm-plugin"/>
+        <file name="psalm-refactor"/>
+        <file name="psalter"/>
         <ignoreFiles>
             <file name="src/Psalm/Internal/PhpTraverser/CustomTraverser.php"/>
             <file name="tests/ErrorBaselineTest.php"/>
+            <file name="tests/Internal/CallMapTest.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
-            <file name="src/spl_object_id.php"/>
             <directory name="tests/fixtures"/>
             <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
             <directory name="vendor/netresearch/jsonmapper" />
             <directory name="vendor/phpunit" />
+            <directory name="vendor/mockery/mockery"/>
             <file name="vendor/nikic/php-parser/lib/PhpParser/Node/UnionType.php" />
         </ignoreFiles>
     </projectFiles>
@@ -47,6 +53,8 @@
     <plugins>
         <plugin filename="examples/plugins/FunctionCasingChecker.php"/>
         <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
+        <plugin filename="examples/plugins/InternalChecker.php"/>
+        <pluginClass class="Psalm\MockeryPlugin\Plugin"/>
     </plugins>
 
     <issueHandlers>
@@ -57,18 +65,12 @@
                 <directory name="tests" />
             </errorLevel>
         </DeprecatedMethod>
+
         <DeprecatedClass>
             <errorLevel type="suppress">
                 <referencedClass name="PackageVersions\Versions"/>
-                <referencedClass name="Psalm\Plugin\Hook\*" />
             </errorLevel>
         </DeprecatedClass>
-
-        <DeprecatedInterface>
-            <errorLevel type="suppress">
-                <referencedClass name="Psalm\Plugin\Hook\*" />
-            </errorLevel>
-        </DeprecatedInterface>
 
         <UnusedParam>
             <errorLevel type="suppress">
@@ -88,7 +90,6 @@
                 <directory name="src/Psalm/Internal/Fork" />
                 <directory name="src/Psalm/Node" />
                 <file name="src/Psalm/Plugin/Shepherd.php" />
-                <file name="src/Psalm/Plugin/Hook/MethodReturnTypeProviderInterface.php"/>
             </errorLevel>
         </UnusedClass>
 
@@ -104,6 +105,12 @@
                 <directory name="tests"/>
             </errorLevel>
         </PossiblyUndefinedIntArrayOffset>
+
+        <ImpureMethodCall>
+            <errorLevel type="suppress">
+                <directory name="src/Psalm/Storage/Assertion"/>
+            </errorLevel>
+        </ImpureMethodCall>
 
         <MissingThrowsDocblock errorLevel="info"/>
 

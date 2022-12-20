@@ -29,11 +29,12 @@ use const CURLOPT_HTTPHEADER;
 use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
 use const CURLOPT_RETURNTRANSFER;
+use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
 use const STDERR;
 
-class Shepherd implements AfterAnalysisInterface
+final class Shepherd implements AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete
@@ -63,9 +64,7 @@ class Shepherd implements AfterAnalysisInterface
         if ($build_info) {
             $normalized_data = $issues === [] ? [] : array_filter(
                 array_merge(...array_values($issues)),
-                static function (IssueData $i): bool {
-                    return $i->severity === 'error';
-                }
+                static fn(IssueData $i): bool => $i->severity === 'error',
             );
 
             $data = [
@@ -73,10 +72,10 @@ class Shepherd implements AfterAnalysisInterface
                 'git' => $source_control_data,
                 'issues' => $normalized_data,
                 'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
-                'level' => Config::getInstance()->level
+                'level' => Config::getInstance()->level,
             ];
 
-            $payload = json_encode($data);
+            $payload = json_encode($data, JSON_THROW_ON_ERROR);
 
             $base_address = $codebase->config->shepherd_host;
 
@@ -98,7 +97,7 @@ class Shepherd implements AfterAnalysisInterface
                 [
                     'Content-Type: application/json',
                     'Content-Length: ' . strlen($payload),
-                ]
+                ],
             );
 
             // Submit the POST request
@@ -131,7 +130,6 @@ class Shepherd implements AfterAnalysisInterface
 
     /**
      * @param mixed $ch
-     *
      * @psalm-pure
      */
     public static function getCurlErrorMessage($ch): string

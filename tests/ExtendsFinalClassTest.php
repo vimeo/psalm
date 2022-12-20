@@ -10,24 +10,21 @@ class ExtendsFinalClassTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'suppressingIssueWhenUsedWithKeyword' => [
-                '<?php
+                'code' => '<?php
 
                 final class A {}
 
                 /**
                 * @psalm-suppress InvalidExtendClass
                 */
-                class B extends A {}'
+                class B extends A {}',
             ],
             'suppressingIssueWhenUsedWithAnnotation' => [
-                '<?php
+                'code' => '<?php
 
                 /**
                 * @final
@@ -37,19 +34,16 @@ class ExtendsFinalClassTest extends TestCase
                 /**
                 * @psalm-suppress InvalidExtendClass
                 */
-                class B extends A {}'
+                class B extends A {}',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidExtendsFinalClass' => [
-                '<?php
+                'code' => '<?php
 
                 final class A {}
 
@@ -59,7 +53,7 @@ class ExtendsFinalClassTest extends TestCase
             ],
 
             'invalidExtendsAnnotatedFinalClass' => [
-                '<?php
+                'code' => '<?php
 
                 /**
                 * @final
@@ -72,7 +66,7 @@ class ExtendsFinalClassTest extends TestCase
             ],
 
             'invalidExtendsFinalClassAndOtherAnnotation' => [
-                '<?php
+                'code' => '<?php
 
                 /**
                 * @something-else-no-final annotation

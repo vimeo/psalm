@@ -6,17 +6,15 @@ namespace Psalm\Internal\LanguageServer;
 
 /**
  * Generates unique, incremental IDs for use as request IDs
+ *
+ * @internal
  */
 class IdGenerator
 {
-    /**
-     * @var int
-     */
-    public $counter = 1;
+    public int $counter = 1;
 
     /**
      * Returns a unique ID
-     *
      */
     public function generate(): int
     {

@@ -32,7 +32,7 @@ class VariadicTest extends TestCase
                  */
                 function f(int ...$a_list) {
                 }
-                f(1, 2, "3");'
+                f(1, 2, "3");',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -54,8 +54,8 @@ class VariadicTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -64,45 +64,45 @@ class VariadicTest extends TestCase
             $file_path,
             '<?php
                 variadic2(16, 30);
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
     }
 
     /**
-     * @return iterable<string,array{string,1?:array<string,string>,2?:string[]}>
+     * @return iterable<string,array{code: string}>
      */
     public function providerValidCodeParse(): iterable
     {
         return [
             'variadic' => [
-                '<?php
-                /**
-                 * @param mixed $req
-                 * @param mixed $opt
-                 * @param mixed ...$params
-                 * @return array<mixed>
-                 */
-                function f($req, $opt = null, ...$params) {
-                    return $params;
-                }
+                'code' => '<?php
+                    /**
+                     * @param mixed $req
+                     * @param mixed $opt
+                     * @param mixed ...$params
+                     * @return array<mixed>
+                     */
+                    function f($req, $opt = null, ...$params) {
+                        return $params;
+                    }
 
-                f(1);
-                f(1, 2);
-                f(1, 2, 3);
-                f(1, 2, 3, 4);
-                f(1, 2, 3, 4, 5);',
+                    f(1);
+                    f(1, 2);
+                    f(1, 2, 3);
+                    f(1, 2, 3, 4);
+                    f(1, 2, 3, 4, 5);',
             ],
             'funcNumArgsVariadic' => [
-                '<?php
+                'code' => '<?php
                     function test(): array {
                         return func_get_args();
                     }
                     var_export(test(2));',
             ],
             'variadicArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param int ...$a_list
                      * @return array<array-key, int>
@@ -139,8 +139,8 @@ class VariadicTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
         $project_analyzer->setPhpVersion('7.3', 'tests');
 

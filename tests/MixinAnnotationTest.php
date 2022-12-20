@@ -10,14 +10,11 @@ class MixinAnnotationTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'validSimpleAnnotations' => [
-                '<?php
+                'code' => '<?php
                     class ParentClass {
                         public function __call(string $name, array $args) {}
                         public static function __callStatic(string $name, array $args) {}
@@ -48,7 +45,7 @@ class MixinAnnotationTest extends TestCase
                 ],
             ],
             'anotherSimpleExample' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @mixin B
                      */
@@ -81,10 +78,10 @@ class MixinAnnotationTest extends TestCase
                     }
 
                     $a = new A();
-                    $a->b();'
+                    $a->b();',
             ],
             'allowConstructor' => [
-                '<?php
+                'code' => '<?php
                     abstract class AParent {
                         protected int $i;
 
@@ -100,10 +97,10 @@ class MixinAnnotationTest extends TestCase
                     /**
                      * @mixin M
                      */
-                    class A extends AParent {}'
+                    class A extends AParent {}',
             ],
             'implicitMixin' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $dir) : void {
                         $iterator = new \RecursiveIteratorIterator(
                             new \RecursiveDirectoryIterator($dir)
@@ -114,10 +111,13 @@ class MixinAnnotationTest extends TestCase
 
                             $iterator->next();
                         }
-                    }'
+                    }',
             ],
             'wrapCustomIterator' => [
-                '<?php
+                'code' => '<?php
+                    /**
+                     * @implements Iterator<1, 2>
+                     */
                     class Subject implements Iterator {
                         /**
                          * the index method exists
@@ -148,12 +148,12 @@ class MixinAnnotationTest extends TestCase
 
                     $iter = new IteratorIterator(new Subject());
                     $b = $iter->index(0);',
-                [
+                'assertions' => [
                     '$b' => 'bool',
-                ]
+                ],
             ],
             'templatedMixin' => [
-                '<?php
+                'code' => '<?php
 
                     /**
                      * @template T
@@ -170,12 +170,12 @@ class MixinAnnotationTest extends TestCase
 
                     $bar = new Bar();
                     $b = $bar->hi();',
-                [
+                'assertions' => [
                     '$b' => 'string',
-                ]
+                ],
             ],
             'templatedMixinSelf' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -207,10 +207,10 @@ class MixinAnnotationTest extends TestCase
 
                     function getDog(): Dog {
                         return (new Dog())->get();
-                    }'
+                    }',
             ],
             'inheritPropertyAnnotations' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @property string $foo
                      */
@@ -228,10 +228,10 @@ class MixinAnnotationTest extends TestCase
 
                     function toArray(B $b) : string {
                         return $b->foo;
-                    }'
+                    }',
             ],
             'inheritTemplatedMixinWithStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -291,10 +291,10 @@ class MixinAnnotationTest extends TestCase
 
                     function test() : FooGrandChild {
                         return (new FooGrandChild)->type();
-                    }'
+                    }',
             ],
             'inheritTemplatedMixinWithStaticAndFinalClass' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -347,20 +347,20 @@ class MixinAnnotationTest extends TestCase
                     */
                     function test() : Mixin {
                         return (new FooGrandChild)->getMixin();
-                    }'
+                    }',
             ],
             'mixinParseWithTextAfter' => [
-                '<?php
+                'code' => '<?php
                     class M {}
 
                     /**
                      * @mixin M
                      * Hello
                      */
-                    class C {}'
+                    class C {}',
             ],
             'templatedMixinWithTemplateWithStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T as object
                      * @mixin T
@@ -400,10 +400,10 @@ class MixinAnnotationTest extends TestCase
                     /** @param Builder<Model> $b */
                     function foo(Builder $b) : Model {
                         return $b->active();
-                    }'
+                    }',
             ],
             'multipleMixins' => [
-                '<?php
+                'code' => '<?php
                     class MixinA {
                         function a(): string { return "foo"; }
                     }
@@ -428,7 +428,7 @@ class MixinAnnotationTest extends TestCase
                 ],
             ],
             'inheritMultipleTemplatedMixinsWithStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -533,10 +533,10 @@ class MixinAnnotationTest extends TestCase
 
                     function otherStatic() : string {
                         return (new FooGrandChild)->other();
-                    }'
+                    }',
             ],
             'multipleMixinsWithSameMethod' => [
-                '<?php
+                'code' => '<?php
 
                     class Mix1
                     {
@@ -565,10 +565,10 @@ class MixinAnnotationTest extends TestCase
 
                     $bar = new Bar();
 
-                    $bar->foo();'
+                    $bar->foo();',
             ],
             'templatedMixinBindStatic' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template-covariant TModel of Model
                      */
@@ -590,51 +590,48 @@ class MixinAnnotationTest extends TestCase
 
                     $f = new FooModel();
                     $g = $f->getInner();',
-                [
+                'assertions' => [
                     '$g' => 'list<FooModel>',
-                ]
+                ],
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedMixinClass' => [
-                '<?php
+                'code' => '<?php
                     /** @mixin B */
                     class A {}',
-                'error_message' => 'UndefinedDocblockClass'
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'undefinedMixinClassWithPropertyFetch' => [
-                '<?php
+                'code' => '<?php
                     /** @mixin B */
                     class A {}
 
                     (new A)->foo;',
-                'error_message' => 'UndefinedPropertyFetch'
+                'error_message' => 'UndefinedPropertyFetch',
             ],
             'undefinedMixinClassWithPropertyAssignment' => [
-                '<?php
+                'code' => '<?php
                     /** @mixin B */
                     class A {}
 
                     (new A)->foo = "bar";',
-                'error_message' => 'UndefinedPropertyAssignment'
+                'error_message' => 'UndefinedPropertyAssignment',
             ],
             'undefinedMixinClassWithMethodCall' => [
-                '<?php
+                'code' => '<?php
                     /** @mixin B */
                     class A {}
 
                     (new A)->foo();',
-                'error_message' => 'UndefinedMethod'
+                'error_message' => 'UndefinedMethod',
             ],
             'inheritTemplatedMixinWithSelf' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -685,10 +682,10 @@ class MixinAnnotationTest extends TestCase
                     function test() : FooGrandChild {
                         return (new FooGrandChild)->type();
                     }',
-                'error_message' => 'LessSpecificReturnStatement'
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'mixinStaticCallShouldNotPolluteContext' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template T
                      */
@@ -709,7 +706,7 @@ class MixinAnnotationTest extends TestCase
                             return $__tmp_mixin_var__;
                         }
                     }',
-                'error_message' => 'UndefinedVariable'
+                'error_message' => 'UndefinedVariable',
             ],
         ];
     }

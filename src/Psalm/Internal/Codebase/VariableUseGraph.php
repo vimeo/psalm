@@ -10,16 +10,19 @@ use function abs;
 use function array_merge;
 use function count;
 
+/**
+ * @internal
+ */
 class VariableUseGraph extends DataFlowGraph
 {
     /** @var array<string, array<string, true>> */
-    protected $backward_edges = [];
+    protected array $backward_edges = [];
 
     /** @var array<string, DataFlowNode> */
-    private $nodes = [];
+    private array $nodes = [];
 
     /** @var array<string, list<CodeLocation>> */
-    private $origin_locations_by_id = [];
+    private array $origin_locations_by_id = [];
 
     public function addNode(DataFlowNode $node): void
     {
@@ -73,7 +76,7 @@ class VariableUseGraph extends DataFlowGraph
 
                 $child_nodes = $this->getChildNodes(
                     $source,
-                    $visited_source_ids
+                    $visited_source_ids,
                 );
 
                 if ($child_nodes === null) {
@@ -82,7 +85,7 @@ class VariableUseGraph extends DataFlowGraph
 
                 $new_child_nodes = array_merge(
                     $new_child_nodes,
-                    $child_nodes
+                    $child_nodes,
                 );
             }
 
@@ -115,7 +118,7 @@ class VariableUseGraph extends DataFlowGraph
 
                 $parent_nodes = $this->getParentNodes(
                     $child_node,
-                    $visited_child_ids
+                    $visited_child_ids,
                 );
 
                 if (!$parent_nodes) {
@@ -126,10 +129,7 @@ class VariableUseGraph extends DataFlowGraph
                     continue;
                 }
 
-                $new_parent_nodes = array_merge(
-                    $new_parent_nodes,
-                    $parent_nodes
-                );
+                $new_parent_nodes = [...$new_parent_nodes, ...$parent_nodes];
             }
 
             $child_nodes = $new_parent_nodes;
@@ -166,6 +166,7 @@ class VariableUseGraph extends DataFlowGraph
                 || $path->type === 'use-inside-conditional'
                 || $path->type === 'use-inside-isset'
                 || $path->type === 'arg'
+                || $path->type === 'comparison'
             ) {
                 return null;
             }
@@ -187,7 +188,7 @@ class VariableUseGraph extends DataFlowGraph
             }
 
             $new_destination = new DataFlowNode($to_id, $to_id, null);
-            $new_destination->path_types = array_merge($generated_source->path_types, [$path_type]);
+            $new_destination->path_types = [...$generated_source->path_types, ...[$path_type]];
 
             $new_child_nodes[$to_id] = $new_destination;
         }

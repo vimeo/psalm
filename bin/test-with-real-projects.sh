@@ -4,6 +4,7 @@ set -e
 set -x
 
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(realpath "$SCRIPT_DIR")"
 PSALM="$(readlink -f "$SCRIPT_DIR/../psalm")"
 PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../build/psalm.phar")"
 
@@ -29,12 +30,16 @@ collections)
 	;;
 
 psl)
+	# For circleCI
+	export PHP_EXTENSION_INTL=1
+	export PHP_EXTENSION_BCMATH=1
+
 	git clone git@github.com:psalm/endtoend-test-psl.git
 	cd endtoend-test-psl
-	git checkout 1.9.x
-	composer require --dev php-standard-library/psalm-plugin --ignore-platform-reqs
-	cd tools/phpbench && composer install --ignore-platform-reqs && cd ../..
-	"$PSALM" --monochrome --config=tools/psalm/psalm.xml
+	git checkout 2.3.x
+	composer install
+	"$PSALM" --monochrome -c config/psalm.xml
+	"$PSALM" --monochrome -c config/psalm.xml tests/static-analysis
 	;;
 
 laravel)
@@ -43,6 +48,7 @@ laravel)
 	composer install
 	"$PSALM" --monochrome
 	;;
+
 *)
 	echo "Usage: test-with-real-projects.sh {phpunit|collections|laravel|psl}"
 	exit 1

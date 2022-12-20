@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
-use Psalm\Internal\Provider\Providers;
 use Psalm\Storage\FileStorage;
 use RuntimeException;
 use UnexpectedValueException;
@@ -33,15 +32,9 @@ use const PHP_VERSION_ID;
  */
 class FileStorageCacheProvider
 {
-    /**
-     * @var string
-     */
-    private $modified_timestamps = '';
+    private string $modified_timestamps = '';
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
     private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
@@ -125,7 +118,7 @@ class FileStorageCacheProvider
         // the timestamp is only needed if we don't have file contents
         // as same contents should give same results, independent of when file was modified
         $data = $file_contents ? $file_contents : $this->modified_timestamps;
-        return PHP_VERSION_ID >= 80100 ? hash('xxh128', $data) : hash('md4', $data);
+        return PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
     /**
@@ -173,7 +166,7 @@ class FileStorageCacheProvider
                 if (mkdir($parser_cache_directory, 0777, true) === false) {
                     // any other error than directory already exists/permissions issue
                     throw new RuntimeException(
-                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons'
+                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons',
                     );
                 }
             } catch (RuntimeException $e) {
@@ -186,7 +179,7 @@ class FileStorageCacheProvider
             }
         }
 
-        if (PHP_VERSION_ID >= 80100) {
+        if (PHP_VERSION_ID >= 8_01_00) {
             $hash = hash('xxh128', $file_path);
         } else {
             $hash = hash('md4', $file_path);

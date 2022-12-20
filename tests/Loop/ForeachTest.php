@@ -13,14 +13,11 @@ class ForeachTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'switchVariableWithContinue' => [
-                '<?php
+                'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {
                         switch ($letter) {
                             case "b":
@@ -37,7 +34,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'switchVariableWithContinueAndIfs' => [
-                '<?php
+                'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {
                         switch ($letter) {
                             case "a":
@@ -60,7 +57,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'switchVariableWithFallthrough' => [
-                '<?php
+                'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {
                         switch ($letter) {
                             case "a":
@@ -80,7 +77,7 @@ class ForeachTest extends TestCase
                 ],
             ],
             'switchVariableWithFallthroughStatement' => [
-                '<?php
+                'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {
                         switch ($letter) {
                             case "a":
@@ -102,7 +99,7 @@ class ForeachTest extends TestCase
                 ],
             ],
             'secondLoopWithNotNullCheck' => [
-                '<?php
+                'code' => '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
 
@@ -114,7 +111,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'secondLoopWithIntCheck' => [
-                '<?php
+                'code' => '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
 
@@ -126,7 +123,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'secondLoopWithIntCheckAndConditionalSet' => [
-                '<?php
+                'code' => '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
 
@@ -141,7 +138,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'secondLoopWithIntCheckAndAssignmentsInIfAndElse' => [
-                '<?php
+                'code' => '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
 
@@ -156,7 +153,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'secondLoopWithIntCheckAndLoopSet' => [
-                '<?php
+                'code' => '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
 
@@ -171,7 +168,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'secondLoopWithReturnInElseif' => [
-                '<?php
+                'code' => '<?php
                     class A {}
                     class B extends A {}
                     class C extends A {}
@@ -193,7 +190,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'thirdLoopWithIntCheckAndLoopSet' => [
-                '<?php
+                'code' => '<?php
                     /** @return void **/
                     function takesInt(int $i) {}
 
@@ -214,7 +211,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'unsetInLoop' => [
-                '<?php
+                'code' => '<?php
                     $a = null;
 
                     foreach ([1, 2, 3] as $i) {
@@ -223,7 +220,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'assignInsideForeach' => [
-                '<?php
+                'code' => '<?php
                     $b = false;
 
                     foreach ([1, 2, 3, 4] as $a) {
@@ -236,7 +233,7 @@ class ForeachTest extends TestCase
                 ],
             ],
             'assignInsideForeachWithBreak' => [
-                '<?php
+                'code' => '<?php
                     $b = false;
 
                     foreach ([1, 2, 3, 4] as $a) {
@@ -250,7 +247,7 @@ class ForeachTest extends TestCase
                 ],
             ],
             'nullCheckInsideForeachWithContinue' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return array<A|null> */
                         public static function loadMultiple()
@@ -273,7 +270,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'loopWithArrayKey' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<array<int, array<string, string>>> $args
                      * @return array[]
@@ -295,7 +292,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'loopWithIfElseNoParadox' => [
-                '<?php
+                'code' => '<?php
                     $a = [];
                     $b = rand(0, 10) > 5;
 
@@ -313,16 +310,16 @@ class ForeachTest extends TestCase
                     if ($a) {}',
             ],
             'bleedVarIntoOuterContextWithEmptyLoop' => [
-                '<?php
+                'code' => '<?php
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'string',
                 ],
             ],
             'bleedVarIntoOuterContextWithRedefinedAsNull' => [
-                '<?php
+                'code' => '<?php
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
                       if ($tag === "a") {
@@ -331,12 +328,12 @@ class ForeachTest extends TestCase
                         $tag = null;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null',
                 ],
             ],
             'bleedVarIntoOuterContextWithRedefinedAsNullAndBreak' => [
-                '<?php
+                'code' => '<?php
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
                       if ($tag === "a") {
@@ -350,12 +347,12 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null',
                 ],
             ],
             'bleedVarIntoOuterContextWithBreakInElse' => [
-                '<?php
+                'code' => '<?php
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
                       if ($tag === "a") {
@@ -364,12 +361,12 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null|string',
                 ],
             ],
             'bleedVarIntoOuterContextWithBreakInIf' => [
-                '<?php
+                'code' => '<?php
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
                       if ($tag === "a") {
@@ -378,12 +375,12 @@ class ForeachTest extends TestCase
                         $tag = null;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null|string',
                 ],
             ],
             'bleedVarIntoOuterContextWithBreakInElseAndIntSet' => [
-                '<?php
+                'code' => '<?php
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
                       if ($tag === "a") {
@@ -392,12 +389,12 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'int|null|string',
                 ],
             ],
             'bleedVarIntoOuterContextWithRedefineAndBreak' => [
-                '<?php
+                'code' => '<?php
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
                       if ($tag === "a") {
@@ -407,12 +404,12 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$tag' => 'null',
                 ],
             ],
             'nullToMixedWithNullCheckNoContinue' => [
-                '<?php
+                'code' => '<?php
                     function getStrings(): array {
                         return ["hello", "world"];
                     }
@@ -424,15 +421,15 @@ class ForeachTest extends TestCase
                         $a = $s;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'mixed',
                 ],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                 ],
             ],
             'noMixedAssigmentWithIfAssertion' => [
-                '<?php
+                'code' => '<?php
                     $object = new stdClass();
                     $reflection = new ReflectionClass($object);
 
@@ -445,7 +442,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'noMixedAssigmentWithAssertion' => [
-                '<?php
+                'code' => '<?php
                     $object = new stdClass();
                     $reflection = new ReflectionClass($object);
 
@@ -455,7 +452,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'nullToMixedWithNullCheckAndContinue' => [
-                '<?php
+                'code' => '<?php
                     $a = null;
 
                     function getStrings(): array {
@@ -470,39 +467,39 @@ class ForeachTest extends TestCase
                         continue;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'mixed',
                 ],
-                'error_levels' => [
+                'ignored_issues' => [
                     'MixedAssignment',
                 ],
             ],
             'falseToBoolExplicitBreak' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
 
                     foreach (["a", "b", "c"] as $tag) {
                       $a = true;
                       break;
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
             'falseToBoolExplicitContinue' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
 
                     foreach (["a", "b", "c"] as $tag) {
                       $a = true;
                       continue;
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
             'falseToBoolInBreak' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
 
                     foreach (["a", "b", "c"] as $tag) {
@@ -514,12 +511,12 @@ class ForeachTest extends TestCase
                         break;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
             'falseToBoolInContinue' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
 
                     foreach (["a", "b", "c"] as $tag) {
@@ -528,12 +525,12 @@ class ForeachTest extends TestCase
                         continue;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
             'falseToBoolInBreakAndContinue' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
 
                     foreach (["a", "b", "c"] as $tag) {
@@ -547,12 +544,12 @@ class ForeachTest extends TestCase
                         continue;
                       }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
             'falseToBoolInNestedForeach' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
 
                     foreach (["d", "e", "f"] as $l) {
@@ -568,12 +565,12 @@ class ForeachTest extends TestCase
                             }
                         }
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
             'falseToBoolAfterContinueAndBreak' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
                     foreach ([1, 2, 3] as $i) {
                       if ($i > 1) {
@@ -583,12 +580,12 @@ class ForeachTest extends TestCase
 
                       break;
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'bool',
                 ],
             ],
             'variableDefinedInForeachAndIf' => [
-                '<?php
+                'code' => '<?php
                     foreach ([1,2,3,4] as $i) {
                         if ($i === 1) {
                             $a = true;
@@ -600,7 +597,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'noRedundantConditionAfterIsNumeric' => [
-                '<?php
+                'code' => '<?php
                     $ids = [];
                     foreach (explode(",", "hello,5,20") as $i) {
                       if (!is_numeric($i)) {
@@ -611,7 +608,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'mixedArrayAccessNoPossiblyUndefinedVar' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $arr): void {
                       $r = [];
                       foreach ($arr as $key => $value) {
@@ -619,27 +616,27 @@ class ForeachTest extends TestCase
                         $r[] = $key;
                       }
                     }',
-                'assignments' => [],
-                'error_levels' => [
+                'assertions' => [],
+                'ignored_issues' => [
                     'MixedAssignment', 'MixedArrayAccess',
                 ],
             ],
             'foreachLoopWithOKManipulation' => [
-                '<?php
+                'code' => '<?php
                     $list = [1, 2, 3];
                     foreach ($list as $i) {
                       $i = 5;
                     }',
             ],
             'foreachLoopDuplicateList' => [
-                '<?php
+                'code' => '<?php
                     $list = [1, 2, 3];
                     foreach ($list as $i) {
                       foreach ($list as $j) {}
                     }',
             ],
             'arrayKeyJustSetInLoop' => [
-                '<?php
+                'code' => '<?php
                     $a = null;
                     $arr = [];
 
@@ -654,7 +651,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'updateExistingValueAfterLoopContinue' => [
-                '<?php
+                'code' => '<?php
                     $i = false;
                     $b = (bool) rand(0, 1);
                     foreach ([$b] as $n) {
@@ -666,7 +663,7 @@ class ForeachTest extends TestCase
                     if ($i) {}',
             ],
             'possiblyUndefinedVariableInForeach' => [
-                '<?php
+                'code' => '<?php
                     foreach ([1, 2, 3, 4] as $b) {
                         $car = "Volvo";
                     }
@@ -674,7 +671,7 @@ class ForeachTest extends TestCase
                     echo $car;',
             ],
             'possiblyUndefinedVariableInForeachDueToBreakAfter' => [
-                '<?php
+                'code' => '<?php
                     foreach ([1, 2, 3, 4] as $b) {
                         $car = "Volvo";
                         if (rand(0, 1)) {
@@ -685,7 +682,10 @@ class ForeachTest extends TestCase
                     echo $car;',
             ],
             'iteratorAggregateIteration' => [
-                '<?php
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class C implements IteratorAggregate
                     {
                         public function getIterator(): Iterator
@@ -706,13 +706,13 @@ class ForeachTest extends TestCase
 
                     loopT(new C);
                     loopI(new C);',
-                'assignments' => [],
-                'error_levels' => [
+                'assertions' => [],
+                'ignored_issues' => [
                     'MixedAssignment', 'UndefinedThisPropertyAssignment',
                 ],
             ],
             'intersectionIterator' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param \Traversable<int, int>&\Countable $object
                      */
@@ -722,7 +722,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'rawIteratorIteration' => [
-                '<?php
+                'code' => '<?php
                     class Item {
                       /**
                        * @var string
@@ -742,7 +742,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'seekableIteratorIteration' => [
-                '<?php
+                'code' => '<?php
                     class Item {
                         /**
                          * @var string
@@ -762,7 +762,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'arrayIteratorIteration' => [
-                '<?php
+                'code' => '<?php
                     class Item {
                         /**
                          * @var string
@@ -782,7 +782,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'templatedIteratorAggregateIteration' => [
-                '<?php
+                'code' => '<?php
                     class Item {
                       /**
                        * @var string
@@ -790,6 +790,9 @@ class ForeachTest extends TestCase
                       public $prop = "var";
                     }
 
+                    /**
+                     * @implements IteratorAggregate<array-key, Item>
+                     */
                     class Collection implements IteratorAggregate {
                       /**
                        * @var Item[]
@@ -817,13 +820,13 @@ class ForeachTest extends TestCase
                     }',
             ],
             'foreachIntersectionTraversable' => [
-                '<?php
+                'code' => '<?php
                     /** @var Countable&Traversable<int> */
                     $c = null;
                     foreach ($c as $i) {}',
             ],
             'iterateOverNonEmptyConstant' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const ARR = [0, 1, 2];
 
@@ -838,7 +841,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'ifSpecificMaybeEmptyValues' => [
-                '<?php
+                'code' => '<?php
                     foreach ([0, 1, 2, 3] as $i) {
                         $a = $i;
                     }
@@ -846,7 +849,7 @@ class ForeachTest extends TestCase
                     if ($a) {}',
             ],
             'ifSpecificMaybeEmptyStringValues' => [
-                '<?php
+                'code' => '<?php
                     foreach (["", "1", "2", "3"] as $i) {
                         $a = $i;
                     }
@@ -854,13 +857,13 @@ class ForeachTest extends TestCase
                     if ($a) {}',
             ],
             'domNodeListIterator' => [
-                '<?php
+                'code' => '<?php
                     function foo(DOMNodeList $list) : void {
                         foreach ($list as $item) {}
                     }',
             ],
             'loopOverArrayChunk' => [
-                '<?php
+                'code' => '<?php
                     /**
                     * @return array<int, array<array-key, int>>
                     */
@@ -875,9 +878,12 @@ class ForeachTest extends TestCase
                     }',
             ],
             'iteratorClassCurrent' => [
-                '<?php
+                'code' => '<?php
                     class Value {}
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class ValueCollection implements \Countable, \IteratorAggregate {
                         /**
                          * @var Value[]
@@ -924,6 +930,9 @@ class ForeachTest extends TestCase
                         }
                     }
 
+                    /**
+                     * @psalm-suppress MissingTemplateParam
+                     */
                     class ValueCollectionIterator implements \Countable, \Iterator
                     {
                         /**
@@ -977,7 +986,7 @@ class ForeachTest extends TestCase
                     }',
             ],
             'possibleRawObjectIterationFromIssetSuppressed' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @psalm-suppress RawObjectIteration
                      * @psalm-suppress MixedAssignment
@@ -989,31 +998,31 @@ class ForeachTest extends TestCase
                     }',
             ],
             'simpleXmlIterator' => [
-                '<?php
+                'code' => '<?php
                     function f(SimpleXMLElement $elt): void {
                         foreach ($elt as $item) {
                             f($item);
                         }
-                    }'
+                    }',
             ],
             'loopOverIteratorWithTooFewParams' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param Iterator<string> $arr
                      */
                     function foo(Iterator $arr) : void {
                         foreach ($arr as $a) {}
-                    }'
+                    }',
             ],
             'foreachLoopInvalidation' => [
-                '<?php
+                'code' => '<?php
                     $list = [1, 2, 3];
                     foreach ($list as $i) {
                         $list = [4, 5, 6];
                     }',
             ],
             'createNestedArrayInLoop' => [
-                '<?php
+                'code' => '<?php
                     function foo() : void {
                         $arr = [];
 
@@ -1024,10 +1033,10 @@ class ForeachTest extends TestCase
 
                             $arr[$i]["a"] += 5;
                         }
-                    }'
+                    }',
             ],
             'iteratorForeach' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @implements Iterator<int, string>
                      */
@@ -1066,10 +1075,10 @@ class ForeachTest extends TestCase
 
                     foreach (new FooIterator() as $key => $value) {
                         echo $key . " " . $value;
-                    }'
+                    }',
             ],
             'loopClosure' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param list<0> $currentIndexes
                      */
@@ -1080,12 +1089,13 @@ class ForeachTest extends TestCase
                                 $currentIndexes
                             );
 
+                            /** @psalm-suppress PossiblyUndefinedArrayOffset */
                             $currentIndexes[0]++;
                         }
-                    }'
+                    }',
             ],
             'loopCanUpdateOuterWithoutBreak' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<int> $mappings
                      */
@@ -1097,10 +1107,10 @@ class ForeachTest extends TestCase
                         }
 
                         if (is_int($id)) {}
-                    }'
+                    }',
             ],
             'loopCanUpdateOuterWithBreak' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<int> $mappings
                      */
@@ -1115,10 +1125,10 @@ class ForeachTest extends TestCase
                         }
 
                         if (is_int($id)) {}
-                    }'
+                    }',
             ],
             'loopCanUpdateOuterWithContinue' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param array<int> $mappings
                      */
@@ -1133,10 +1143,10 @@ class ForeachTest extends TestCase
                         }
 
                         if (is_int($id)) {}
-                    }'
+                    }',
             ],
             'loopVarRedefinedAtLoopStart' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-array<string, string> $files
                      */
@@ -1147,19 +1157,16 @@ class ForeachTest extends TestCase
                             strlen($file);
                             $file = 0;
                         }
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'switchVariableWithContinueOnce' => [
-                '<?php
+                'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {
                         switch ($letter) {
                             case "b":
@@ -1177,7 +1184,7 @@ class ForeachTest extends TestCase
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'possiblyUndefinedArrayInForeach' => [
-                '<?php
+                'code' => '<?php
                     foreach ([1, 2, 3, 4] as $b) {
                         $array[] = "hello";
                     }
@@ -1187,7 +1194,7 @@ class ForeachTest extends TestCase
                     'global variable $array, first seen on line 3',
             ],
             'possibleUndefinedVariableInForeachAndIfWithBreak' => [
-                '<?php
+                'code' => '<?php
                     foreach ([1,2,3,4] as $i) {
                         if ($i === 1) {
                             $a = true;
@@ -1200,7 +1207,7 @@ class ForeachTest extends TestCase
                     'global variable $a, first seen on line 4',
             ],
             'possibleUndefinedVariableInForeachAndIf' => [
-                '<?php
+                'code' => '<?php
                     foreach ([1,2,3,4] as $i) {
                         if ($i === 1) {
                             $a = true;
@@ -1212,7 +1219,7 @@ class ForeachTest extends TestCase
                     'global variable $a, first seen on line 4',
             ],
             'implicitFourthLoopWithBadReturnType' => [
-                '<?php
+                'code' => '<?php
                     function test(): int {
                       $x = 0;
                       $y = 1;
@@ -1227,7 +1234,7 @@ class ForeachTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'possiblyNullCheckInsideForeachWithNoLeaveStatement' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @return array<A|null> */
                         public static function loadMultiple()
@@ -1251,7 +1258,7 @@ class ForeachTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
             ],
             'redundantConditionInForeachIf' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
 
                     foreach (["a", "b", "c"] as $tag) {
@@ -1263,7 +1270,7 @@ class ForeachTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'redundantConditionInForeachWithIfElse' => [
-                '<?php
+                'code' => '<?php
                     $a = false;
 
                     foreach (["a", "b", "c"] as $tag) {
@@ -1280,7 +1287,7 @@ class ForeachTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'possiblyUndefinedVariableInForeachDueToBreakBefore' => [
-                '<?php
+                'code' => '<?php
                     foreach ([1, 2, 3, 4] as $b) {
                         if (rand(0, 1)) {
                             break;
@@ -1292,19 +1299,19 @@ class ForeachTest extends TestCase
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'continueOutsideLoop' => [
-                '<?php
+                'code' => '<?php
                     continue;',
                 'error_message' => 'ContinueOutsideLoop',
             ],
             'invalidIterator' => [
-                '<?php
+                'code' => '<?php
                     foreach (5 as $a) {
 
                     }',
                 'error_message' => 'InvalidIterator',
             ],
             'rawObjectIteration' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $foo;
@@ -1316,7 +1323,7 @@ class ForeachTest extends TestCase
                 'error_message' => 'RawObjectIteration',
             ],
             'possibleRawObjectIteration' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $foo;
@@ -1340,7 +1347,7 @@ class ForeachTest extends TestCase
                 'error_message' => 'PossibleRawObjectIteration',
             ],
             'possibleRawObjectIterationFromIsset' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $a) : void {
                         if (isset($a["a"]["b"])) {
                             foreach ($a["a"] as $c) {}
@@ -1349,7 +1356,7 @@ class ForeachTest extends TestCase
                 'error_message' => 'PossibleRawObjectIteration',
             ],
             'ifSpecificNonEmptyValues' => [
-                '<?php
+                'code' => '<?php
                     foreach ([1, 2, 3] as $i) {
                         $a = $i;
                     }
@@ -1358,7 +1365,7 @@ class ForeachTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'ifSpecificNonEmptyStringValues' => [
-                '<?php
+                'code' => '<?php
                     foreach (["1", "2", "3"] as $i) {
                         $a = $i;
                     }

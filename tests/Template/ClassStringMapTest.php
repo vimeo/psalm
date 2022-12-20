@@ -11,14 +11,11 @@ class ClassStringMapTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'basicClassStringMap' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /**
@@ -46,7 +43,7 @@ class ClassStringMapTest extends TestCase
                     }',
             ],
             'basicClassStringMapDifferentTemplateName' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     /**
@@ -74,7 +71,7 @@ class ClassStringMapTest extends TestCase
                     }',
             ],
             'noCrashWithSplatMap' => [
-                '<?php
+                'code' => '<?php
                     class A {}
 
                     /** @param array<array-key, mixed> $args */
@@ -84,19 +81,16 @@ class ClassStringMapTest extends TestCase
                     /** @param class-string-map<A, A> $arr */
                     function foo(array $arr) : void {
                         takesVariadic(...$arr);
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'assignInvalidClass' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -111,10 +105,10 @@ class ClassStringMapTest extends TestCase
                             self::$map[$class] = 5;
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue'
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'assignInvalidClassDifferentTemplateName' => [
-                '<?php
+                'code' => '<?php
                     namespace Bar;
 
                     class A {
@@ -129,7 +123,7 @@ class ClassStringMapTest extends TestCase
                             self::$map[$class] = 5;
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue'
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }

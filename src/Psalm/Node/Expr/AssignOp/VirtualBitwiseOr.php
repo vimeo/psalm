@@ -7,7 +7,7 @@ namespace Psalm\Node\Expr\AssignOp;
 use PhpParser\Node\Expr\AssignOp\BitwiseOr;
 use Psalm\Node\VirtualNode;
 
-class VirtualBitwiseOr extends BitwiseOr implements VirtualNode
+final class VirtualBitwiseOr extends BitwiseOr implements VirtualNode
 {
 
 }

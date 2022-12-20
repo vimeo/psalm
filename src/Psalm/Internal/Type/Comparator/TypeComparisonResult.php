@@ -5,22 +5,24 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class TypeComparisonResult
 {
-    /** @var ?bool */
-    public $scalar_type_match_found;
+    /**
+     * This is used to trigger `InvalidScalarArgument` in situations where we know PHP
+     * will try to coerce one scalar type to another.
+     */
+    public ?bool $scalar_type_match_found = null;
 
-    /** @var ?bool */
-    public $type_coerced;
+    public ?bool $type_coerced = null;
 
-    /** @var ?bool */
-    public $type_coerced_from_mixed;
+    public ?bool $type_coerced_from_mixed = null;
 
-    /** @var ?bool */
-    public $type_coerced_from_as_mixed;
+    public ?bool $type_coerced_from_as_mixed = null;
 
-    /** @var ?bool */
-    public $to_string_cast;
+    public ?bool $to_string_cast = null;
 
     /**
      * This is primarily used for array access.
@@ -30,14 +32,13 @@ class TypeComparisonResult
      * function takesAnInt(int $i): string {
      *     return ["foo", "bar"][$i];
      * }
-     *
-     * @var ?bool
      */
-    public $type_coerced_from_scalar;
+    public ?bool $type_coerced_from_scalar = null;
 
-    /** @var ?Union */
-    public $replacement_union_type;
+    public ?Union $replacement_union_type = null;
 
-    /** @var ?Atomic */
-    public $replacement_atomic_type;
+    public ?Atomic $replacement_atomic_type = null;
+
+    /** @var ?non-empty-list<int|string> */
+    public ?array $missing_shape_fields = null;
 }

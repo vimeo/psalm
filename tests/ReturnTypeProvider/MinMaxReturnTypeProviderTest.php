@@ -12,27 +12,27 @@ class MinMaxReturnTypeProviderTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         yield 'literalInt' => [
-            '<?php
+            'code' => '<?php
                 $min = min(1, 2);
                 $max = max(3, 4);
             ',
-            [
+            'assertions' => [
                 '$min' => 'int',
                 '$max' => 'int',
             ],
         ];
         yield 'nonInt' => [
-            '<?php
+            'code' => '<?php
                 $min = min("a", "b");
                 $max = max("x", "y");
             ',
-            [
+            'assertions' => [
                 '$min' => 'string',
                 '$max' => 'string',
             ],
         ];
         yield 'maxIntRange' => [
-            '<?php
+            'code' => '<?php
                 $headers = fgetcsv(fopen("test.txt", "r"));
                 $h0 = $h1 = null;
                 foreach($headers as $i => $v) {
@@ -44,7 +44,7 @@ class MinMaxReturnTypeProviderTest extends TestCase
                 $min = min($h0, $h1);
                 $max = max($h0, $h1);
             ',
-            [
+            'assertions' => [
                 '$min' => 'int<0, max>',
                 '$max' => 'int<0, max>',
             ],

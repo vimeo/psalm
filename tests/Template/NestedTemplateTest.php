@@ -11,14 +11,11 @@ class NestedTemplateTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'nestedTemplateExtends' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     interface IBaseViewData {}
@@ -47,10 +44,10 @@ class NestedTemplateTest extends TestCase
                     class StudentRepository extends BaseRepository {}
 
                     /** @extends BaseRepository<TeacherViewData, TeacherModel> */
-                    class TeacherRepository extends BaseRepository {}'
+                    class TeacherRepository extends BaseRepository {}',
             ],
             'unwrapIndirectGenericTemplated' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TInner
                      */
@@ -77,10 +74,10 @@ class NestedTemplateTest extends TestCase
                      */
                     function unwrapGeneric(Wrapper $wrapper) {
                         return $wrapper->unwrap();
-                    }'
+                    }',
             ],
             'unwrapFromTemplatedClassString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TInner
                      */
@@ -110,10 +107,10 @@ class NestedTemplateTest extends TestCase
                         return $package->unwrap();
                     }
 
-                    $result = load(StringWrapper::class);'
+                    $result = load(StringWrapper::class);',
             ],
             'unwrapNestedTemplateWithReset' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @template TValue
                      * @template TArray of non-empty-array<TValue>
@@ -122,19 +119,16 @@ class NestedTemplateTest extends TestCase
                      */
                     function toList(array $arr): array {
                         return reset($arr);
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'nestedTemplateExtendsInvalid' => [
-                '<?php
+                'code' => '<?php
                     namespace Foo;
 
                     interface IBaseViewData {}
@@ -161,7 +155,7 @@ class NestedTemplateTest extends TestCase
 
                     /** @extends BaseRepository<StudentViewData, TeacherModel> */
                     class StudentRepository extends BaseRepository {}',
-                'error_message' => 'InvalidTemplateParam'
+                'error_message' => 'InvalidTemplateParam',
             ],
         ];
     }

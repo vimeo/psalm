@@ -9,6 +9,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 
+use function array_keys;
 use function is_string;
 
 /**
@@ -27,10 +28,32 @@ class KeyedArrayComparator
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
+        $container_sealed = $container_type_part instanceof TKeyedArray
+            && $container_type_part->fallback_params === null;
+
+        if ($container_sealed
+            && $input_type_part instanceof TKeyedArray
+            && $input_type_part->fallback_params !== null
+        ) {
+            return false;
+        }
+
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_list
+            && $input_type_part instanceof TKeyedArray
+            && !$input_type_part->is_list
+        ) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+            return false;
+        }
+
         $all_types_contain = true;
 
+        $input_properties = $input_type_part->properties;
         foreach ($container_type_part->properties as $key => $container_property_type) {
-            if (!isset($input_type_part->properties[$key])) {
+            if (!isset($input_properties[$key])) {
                 if (!$container_property_type->possibly_undefined) {
                     $all_types_contain = false;
                 }
@@ -38,11 +61,20 @@ class KeyedArrayComparator
                 continue;
             }
 
-            $input_property_type = $input_type_part->properties[$key];
+            if ($input_properties[$key]->possibly_undefined
+                && !$container_property_type->possibly_undefined
+            ) {
+                $all_types_contain = false;
+
+                continue;
+            }
+
+            $input_property_type = $input_properties[$key];
+            unset($input_properties[$key]);
 
             $property_type_comparison = new TypeComparisonResult();
 
-            if (!$input_property_type->isEmpty()) {
+            if (!$input_property_type->isNever()) {
                 if (!UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_property_type,
@@ -50,7 +82,7 @@ class KeyedArrayComparator
                     $input_property_type->ignore_nullable_issues,
                     $input_property_type->ignore_falsable_issues,
                     $property_type_comparison,
-                    $allow_interface_equality
+                    $allow_interface_equality,
                 )
                     && !$property_type_comparison->type_coerced_from_scalar
                 ) {
@@ -64,11 +96,16 @@ class KeyedArrayComparator
                             false,
                             false,
                             $inverse_property_type_comparison,
-                            $allow_interface_equality
+                            $allow_interface_equality,
                         )
                         || $inverse_property_type_comparison->type_coerced_from_scalar
                         ) {
                             $atomic_comparison_result->type_coerced = true;
+                        }
+
+                        if ($property_type_comparison->missing_shape_fields) {
+                            $atomic_comparison_result->missing_shape_fields
+                                = $property_type_comparison->missing_shape_fields;
                         }
                     }
 
@@ -81,6 +118,12 @@ class KeyedArrayComparator
                     }
                 }
             }
+        }
+        if ($container_sealed && $input_properties) {
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->missing_shape_fields = array_keys($input_properties);
+            }
+            return false;
         }
         return $all_types_contain;
     }
@@ -107,7 +150,7 @@ class KeyedArrayComparator
 
             if (!$codebase->properties->propertyExists(
                 $input_type_part->value . '::$' . $property_name,
-                true
+                true,
             )) {
                 $all_types_contain = false;
 
@@ -116,7 +159,7 @@ class KeyedArrayComparator
 
             $property_declaring_class = (string) $codebase->properties->getDeclaringClassForProperty(
                 $input_type_part . '::$' . $property_name,
-                true
+                true,
             );
 
             $class_storage = $codebase->classlike_storage_provider->get($property_declaring_class);
@@ -127,7 +170,7 @@ class KeyedArrayComparator
 
             $property_type_comparison = new TypeComparisonResult();
 
-            if (!$input_property_type->isEmpty()
+            if (!$input_property_type->isNever()
                 && !UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_property_type,
@@ -135,7 +178,7 @@ class KeyedArrayComparator
                     false,
                     false,
                     $property_type_comparison,
-                    $allow_interface_equality
+                    $allow_interface_equality,
                 )
                 && !$property_type_comparison->type_coerced_from_scalar
             ) {
@@ -148,7 +191,7 @@ class KeyedArrayComparator
                     false,
                     false,
                     $inverse_property_type_comparison,
-                    $allow_interface_equality
+                    $allow_interface_equality,
                 )
                 || $inverse_property_type_comparison->type_coerced_from_scalar
                 ) {

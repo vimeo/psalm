@@ -27,21 +27,18 @@ class ValueTest extends TestCase
             new TestConfig(),
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'whileCountUpdate' => [
-                '<?php
+                'code' => '<?php
                     $array = [1, 2, 3];
                     while (rand(1, 10) === 1) {
                         $array[] = 4;
@@ -52,7 +49,7 @@ class ValueTest extends TestCase
                     if (count($array) === 7) {}',
             ],
             'tryCountCatch' => [
-                '<?php
+                'code' => '<?php
                     $errors = [];
 
                     try {
@@ -68,7 +65,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'ternaryDifferentString' => [
-                '<?php
+                'code' => '<?php
                     $foo = rand(0, 1) ? "bar" : "bat";
 
                     if ($foo === "bar") {}
@@ -84,7 +81,7 @@ class ValueTest extends TestCase
                     if ($foo !== "bat") {}',
             ],
             'ifDifferentString' => [
-                '<?php
+                'code' => '<?php
                     $foo = "bar";
 
                     if (rand(0, 1)) {
@@ -104,7 +101,7 @@ class ValueTest extends TestCase
                     if ($foo === $baz) {}',
             ],
             'ifThisOrThat' => [
-                '<?php
+                'code' => '<?php
                     $foo = "bar";
 
                     if (rand(0, 1)) {
@@ -116,7 +113,7 @@ class ValueTest extends TestCase
                     if ($foo === "baz" || $foo === "bar") {}',
             ],
             'ifDifferentNullableString' => [
-                '<?php
+                'code' => '<?php
                     $foo = null;
 
                     if (rand(0, 1)) {
@@ -129,7 +126,7 @@ class ValueTest extends TestCase
                     if ($foo !== "bar") {}',
             ],
             'whileIncremented' => [
-                '<?php
+                'code' => '<?php
                     $i = 1;
                     $j = 2;
                     while (rand(0, 1)) {
@@ -138,7 +135,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'checkStringKeyValue' => [
-                '<?php
+                'code' => '<?php
                     $foo = [
                         "0" => 3,
                         "1" => 4,
@@ -152,7 +149,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'getValidIntStringOffset' => [
-                '<?php
+                'code' => '<?php
                     $foo = [
                         "0" => 3,
                         "1" => 4,
@@ -165,7 +162,7 @@ class ValueTest extends TestCase
                     echo $foo[$a];',
             ],
             'checkStringKeyValueAfterKnownIntStringOffset' => [
-                '<?php
+                'code' => '<?php
                     $foo = [
                         "0" => 3,
                         "1" => 4,
@@ -182,7 +179,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'regularComparison1' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s1, string $s2, ?int $i) : string {
                         if ($s1 !== $s2) {
                             return $s1;
@@ -192,7 +189,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'regularComparison2' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s1, string $s2) : string {
                         if ($s1 !== "hello") {
                             if ($s1 !== "goodbye") {
@@ -204,7 +201,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'regularComparison3' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const B = 1;
                         const C = 2;
@@ -217,7 +214,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'regularComparisonOnPossiblyNull' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-ignore-nullable-return */
                     function generate() : ?string {
                         return rand(0, 1000) ? "hello" : null;
@@ -234,13 +231,13 @@ class ValueTest extends TestCase
                     }',
             ],
             'incrementAndCheck' => [
-                '<?php
+                'code' => '<?php
                     $i = 0;
                     if (rand(0, 1)) $i++;
                     if ($i === 1) {}',
             ],
             'incrementInClosureAndCheck' => [
-                '<?php
+                'code' => '<?php
                     $i = 0;
                     $a = function() use (&$i) : void {
                         if (rand(0, 1)) {
@@ -250,10 +247,10 @@ class ValueTest extends TestCase
                     $a();
                     if ($i === 0) {}',
                 'assertions' => [],
-                'error_levels' => ['MixedOperand', 'MixedAssignment'],
+                'ignored_issues' => ['MixedOperand', 'MixedAssignment'],
             ],
             'incrementMixedCall' => [
-                '<?php
+                'code' => '<?php
                     function foo($f) : void {
                         $i = 0;
                         $f->add(function() use (&$i) : void {
@@ -262,10 +259,10 @@ class ValueTest extends TestCase
                         if ($i === 0) {}
                     }',
                 'assertions' => [],
-                'error_levels' => ['MissingParamType', 'MixedMethodCall', 'MixedOperand', 'MixedAssignment'],
+                'ignored_issues' => ['MissingParamType', 'MixedMethodCall', 'MixedOperand', 'MixedAssignment'],
             ],
             'regularValueReconciliation' => [
-                '<?php
+                'code' => '<?php
                     $s = rand(0, 1) ? "a" : "b";
                     if (rand(0, 1)) {
                         $s = "c";
@@ -276,7 +273,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'moreValueReconciliation' => [
-                '<?php
+                'code' => '<?php
                     $a = rand(0, 1) ? "a" : "b";
                     $b = rand(0, 1) ? "a" : "b";
 
@@ -287,7 +284,7 @@ class ValueTest extends TestCase
                     } elseif ($s === $b) {}',
             ],
             'negativeInts' => [
-                '<?php
+                'code' => '<?php
                     class C {
                         const A = 1;
                         const B = -1;
@@ -320,12 +317,12 @@ class ValueTest extends TestCase
                     }',
             ],
             'falsyReconciliation' => [
-                '<?php
+                'code' => '<?php
                     $s = rand(0, 1) ? 200 : null;
                     if (!$s) {}',
             ],
             'redefinedIntInIfAndPossibleComparison' => [
-                '<?php
+                'code' => '<?php
                     $s = rand(0, 1) ? 0 : 1;
 
                     if ($s && rand(0, 1)) {
@@ -337,7 +334,7 @@ class ValueTest extends TestCase
                     if ($s == 2) {}',
             ],
             'noEmpties' => [
-                '<?php
+                'code' => '<?php
                     $context = \'a\';
                     while ( true ) {
                         if (rand(0, 1)) {
@@ -356,7 +353,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'ifOrAssertionWithSwitch' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : void {
                         switch ($s) {
                             case "a":
@@ -370,7 +367,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'inArrayAssertionProperty' => [
-                '<?php
+                'code' => '<?php
                     class Foo
                     {
                         /**
@@ -388,7 +385,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'inArrayAssertionWithSwitch' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : void {
                         switch ($s) {
                             case "a":
@@ -402,7 +399,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'removeLiteralStringForNotIsString' => [
-                '<?php
+                'code' => '<?php
                     function takesInt(int $i) : void {}
 
                     $f = ["a", "b", "c"];
@@ -414,7 +411,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'removeLiteralIntForNotIsInt' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $i) : void {}
 
                     $f = [0, 1, 2];
@@ -426,7 +423,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'removeLiteralFloatForNotIsFloat' => [
-                '<?php
+                'code' => '<?php
                     function takesString(string $i) : void {}
 
                     $f = [1.1, 1.2, 1.3];
@@ -438,7 +435,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'coerceFromMixed' => [
-                '<?php
+                'code' => '<?php
                     function type(int $b): void {}
 
                     /**
@@ -455,7 +452,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'coerceFromString' => [
-                '<?php
+                'code' => '<?php
                     /** @param "a"|"b" $b */
                     function type(string $b): void {}
 
@@ -466,7 +463,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'coercePossibleOffset' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const FOO = "foo";
                         const BAR = "bar";
@@ -488,7 +485,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'noRedundantConditionWithMixed' => [
-                '<?php
+                'code' => '<?php
                     function foo($a) : void {
                         if ($a == "a") {
                         } else {
@@ -496,10 +493,10 @@ class ValueTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MissingParamType', 'MixedAssignment'],
+                'ignored_issues' => ['MissingParamType', 'MixedAssignment'],
             ],
             'numericToStringComparison' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress MissingParamType */
                     function foo($s) : void {
                         if (is_numeric($s)) {
@@ -508,7 +505,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'newlineIssue' => [
-                '<?php
+                'code' => '<?php
                     $a = "foo";
                     $b = "
 
@@ -523,7 +520,7 @@ class ValueTest extends TestCase
                     if ($c === $b) {}',
             ],
             'don’tChangeType' => [
-                '<?php
+                'code' => '<?php
                     $x = 0;
                     $y = rand(0, 1);
                     $x++;
@@ -532,7 +529,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'don’tChangeTypeInElse' => [
-                '<?php
+                'code' => '<?php
                     /** @var 0|string */
                     $x = 0;
                     $y = rand(0, 1) ? 0 : 1;
@@ -553,7 +550,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'convertNullArrayKeyToEmptyString' => [
-                '<?php
+                'code' => '<?php
                     $a = [
                         1 => 1,
                         2 => 2,
@@ -566,7 +563,7 @@ class ValueTest extends TestCase
                 ],
             ],
             'yodaConditionalsShouldHaveSameOutput1' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @var array{from:bool, to:bool}
@@ -586,7 +583,7 @@ class ValueTest extends TestCase
                 ',
             ],
             'yodaConditionalsShouldHaveSameOutput2' => [
-                '<?php
+                'code' => '<?php
                     class Foo {
                         /**
                          * @var array{from:bool, to:bool}
@@ -606,26 +603,26 @@ class ValueTest extends TestCase
                 ',
             ],
             'supportSingleLiteralType' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var string
                          * @psalm-var "easy"
                          */
                         private $type = "easy";
-                    }'
+                    }',
             ],
             'supportMultipleValues' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /**
                          * @var 0|-1|1
                          */
                         private $type = -1;
-                    }'
+                    }',
             ],
             'typecastTrueToInt' => [
-                '<?php
+                'code' => '<?php
                 /**
                 * @param 0|1 $int
                 */
@@ -636,7 +633,7 @@ class ValueTest extends TestCase
                 foo((int) true);',
             ],
             'typecastFalseToInt' => [
-                '<?php
+                'code' => '<?php
                 /**
                 * @param 0|1 $int
                 */
@@ -647,7 +644,7 @@ class ValueTest extends TestCase
                 foo((int) false);',
             ],
             'typecastedBoolToInt' => [
-                '<?php
+                'code' => '<?php
                 /**
                 * @param 0|1 $int
                 */
@@ -658,17 +655,17 @@ class ValueTest extends TestCase
                 foo((int) ((bool) 2));',
             ],
             'notEqualToEachOther' => [
-                '<?php
+                'code' => '<?php
                     function example(object $a, object $b): bool {
                         if ($a !== $b && \get_class($a) === \get_class($b)) {
                             return true;
                         }
 
                         return false;
-                    }'
+                    }',
             ],
             'numericStringValue' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-return numeric-string */
                     function makeNumeric() : string {
                       return "12.34";
@@ -679,10 +676,10 @@ class ValueTest extends TestCase
                       \error_log($string);
                     }
 
-                    consumeNumeric("12.34");'
+                    consumeNumeric("12.34");',
             ],
             'resolveScalarClassConstant' => [
-                '<?php
+                'code' => '<?php
                     class PaymentFailure {
                         const NO_CLIENT = "no_client";
                         const NO_CARD = "no_card";
@@ -702,10 +699,10 @@ class ValueTest extends TestCase
                     function blah(): void {
                         $test = something();
                         if ($test === PaymentFailure::NO_CLIENT) {}
-                    }'
+                    }',
             ],
             'removeNullAfterLessThanZero' => [
-                '<?php
+                'code' => '<?php
                     function fcn(?int $val): int {
                         if ($val < 0) {
                             return $val;
@@ -715,7 +712,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'numericStringCastFromInt' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return numeric-string
                      */
@@ -724,16 +721,16 @@ class ValueTest extends TestCase
                     }',
             ],
             'numericStringCastFromFloat' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return numeric-string
                      */
                     function makeNumStringFromFloat(float $v) {
                         return (string) $v;
-                    }'
+                    }',
             ],
             'compareNegatedValue' => [
-                '<?php
+                'code' => '<?php
                     $i = rand(-1, 5);
 
                     if (!($i > 0)) {
@@ -741,20 +738,20 @@ class ValueTest extends TestCase
                     }',
             ],
             'refinePositiveInt' => [
-                '<?php
+                'code' => '<?php
                     $f = rand(0, 1) ? -1 : 1;
-                    if ($f > 0) {}'
+                    if ($f > 0) {}',
             ],
             'assignOpThenCheck' => [
-                '<?php
+                'code' => '<?php
                     $data = ["e" => 0];
                     if (rand(0, 1)) {
                         $data["e"]++;
                     }
-                    if ($data["e"] > 0) {}'
+                    if ($data["e"] > 0) {}',
             ],
             'compareToNullImplicitly' => [
-                '<?php
+                'code' => '<?php
                     final class Foo {
                         public const VALUE_ANY = null;
                         public const VALUE_ONE = "one";
@@ -771,20 +768,20 @@ class ValueTest extends TestCase
                         $data = "default";
                     }
 
-                    echo strlen($data);'
+                    echo strlen($data);',
             ],
             'negateValueInUnion' => [
-                '<?php
+                'code' => '<?php
                     function f(): int {
                         $ret = 0;
                         for ($i = 20; $i >= 0; $i--) {
                             $ret = ($ret === 10) ? 1 : $ret + 1;
                         }
                         return $ret;
-                    }'
+                    }',
             ],
             'inArrayPreserveNull' => [
-                '<?php
+                'code' => '<?php
                     function x(?string $foo): void {
                         if (!in_array($foo, ["foo", "bar", null], true)) {
                             throw new Exception();
@@ -794,13 +791,13 @@ class ValueTest extends TestCase
                     }',
             ],
             'allowCheckOnPositiveNumericInverse' => [
-                '<?php
+                'code' => '<?php
                     function foo(int $a): void {
                         if (false === ($a > 1)){}
-                    }'
+                    }',
             ],
             'returnFromUnionLiteral' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array{"a1", "a2"}
                      */
@@ -815,12 +812,12 @@ class ValueTest extends TestCase
 
                         return "";
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'returnFromUnionLiteralNegated' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return array{"a1", "a2"}
                      */
@@ -835,12 +832,12 @@ class ValueTest extends TestCase
 
                         return $file;
                     }',
-                [],
-                [],
-                '8.0'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'inArrayInsideLoop' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         const ACTION_ONE = "one";
                         const ACTION_TWO = "two";
@@ -852,10 +849,10 @@ class ValueTest extends TestCase
                         $case_actions = [];
 
                         if (!in_array(A::ACTION_ONE, $case_actions, true)) {}
-                    }'
+                    }',
             ],
             'checkIdenticalArray' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress MixedAssignment */
                     $array = json_decode(file_get_contents(\'php://stdin\'));
 
@@ -868,12 +865,12 @@ class ValueTest extends TestCase
                             }
                         }
                     }',
-                [],
-                [],
-                '7.4'
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'zeroIsNonEmptyString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-string $s
                      */
@@ -882,7 +879,7 @@ class ValueTest extends TestCase
                     foo("0");',
             ],
             'notLiteralEmptyCanBeNotEmptyString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-string $s
                      */
@@ -895,7 +892,7 @@ class ValueTest extends TestCase
                     }',
             ],
             'nonEmptyStringCanBeStringZero' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-string $s
                      */
@@ -905,12 +902,12 @@ class ValueTest extends TestCase
                     }',
             ],
             'falseDateInterval' => [
-                '<?php
+                'code' => '<?php
                     $interval = \DateInterval::createFromDateString("30 дней");
                     if ($interval === false) {}',
             ],
             'literalInt' => [
-                '<?php
+                'code' => '<?php
                     $a = (int)"5";
                 ',
                 'assertions' => [
@@ -920,14 +917,11 @@ class ValueTest extends TestCase
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'neverEqualsType' => [
-                '<?php
+                'code' => '<?php
                     $a = 4;
                     if ($a === 5) {
                         // do something
@@ -935,7 +929,7 @@ class ValueTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'alwaysIdenticalType' => [
-                '<?php
+                'code' => '<?php
                     $a = 4;
                     if ($a === 4) {
                         // do something
@@ -943,7 +937,7 @@ class ValueTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'alwaysNotIdenticalType' => [
-                '<?php
+                'code' => '<?php
                     $a = 4;
                     if ($a !== 5) {
                         // do something
@@ -951,7 +945,7 @@ class ValueTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'neverNotIdenticalType' => [
-                '<?php
+                'code' => '<?php
                     $a = 4;
                     if ($a !== 4) {
                         // do something
@@ -959,7 +953,7 @@ class ValueTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'neverEqualsFloatType' => [
-                '<?php
+                'code' => '<?php
                     $a = 4.0;
                     if ($a === 4.1) {
                         // do something
@@ -967,7 +961,7 @@ class ValueTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'alwaysIdenticalFloatType' => [
-                '<?php
+                'code' => '<?php
                     $a = 4.1;
                     if ($a === 4.1) {
                         // do something
@@ -975,7 +969,7 @@ class ValueTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'alwaysNotIdenticalFloatType' => [
-                '<?php
+                'code' => '<?php
                     $a = 4.0;
                     if ($a !== 4.1) {
                         // do something
@@ -983,7 +977,7 @@ class ValueTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'inArrayRemoveNull' => [
-                '<?php
+                'code' => '<?php
                     function x(?string $foo, string $bar): void {
                         if (!in_array($foo, [$bar], true)) {
                             throw new Exception();
@@ -994,7 +988,7 @@ class ValueTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'neverNotIdenticalFloatType' => [
-                '<?php
+                'code' => '<?php
                     $a = 4.1;
                     if ($a !== 4.1) {
                         // do something
@@ -1002,14 +996,14 @@ class ValueTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'ifImpossibleString' => [
-                '<?php
+                'code' => '<?php
                     $foo = rand(0, 1) ? "bar" : "bat";
 
                     if ($foo === "baz") {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'arrayOffsetImpossibleValue' => [
-                '<?php
+                'code' => '<?php
                     $foo = [
                         "a" => 1,
                         "b" => 2,
@@ -1019,7 +1013,7 @@ class ValueTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'impossibleKeyInForeach' => [
-                '<?php
+                'code' => '<?php
                     $foo = [
                         "0" => 3,
                         "1" => 4,
@@ -1034,7 +1028,7 @@ class ValueTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'impossibleValueInForeach' => [
-                '<?php
+                'code' => '<?php
                     $foo = [
                         "0" => 3,
                         "1" => 4,
@@ -1049,7 +1043,7 @@ class ValueTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'invalidIntStringOffset' => [
-                '<?php
+                'code' => '<?php
                     $foo = [
                         "0" => 3,
                         "1" => 4,
@@ -1062,7 +1056,7 @@ class ValueTest extends TestCase
                 'error_message' => 'InvalidArrayOffset',
             ],
             'noChangeToVariable' => [
-                '<?php
+                'code' => '<?php
                     $i = 0;
 
                     $a = function() use ($i) : void {
@@ -1075,7 +1069,7 @@ class ValueTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'redefinedIntInIfAndImpossbleComparison' => [
-                '<?php
+                'code' => '<?php
                     $s = rand(0, 1) ? 0 : 1;
 
                     if ($s && rand(0, 1)) {
@@ -1088,7 +1082,7 @@ class ValueTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'badIfOrAssertionWithSwitch' => [
-                '<?php
+                'code' => '<?php
                     function foo(string $s) : void {
                         switch ($s) {
                             case "a":
@@ -1104,19 +1098,19 @@ class ValueTest extends TestCase
                 'error_message' => 'RedundantCondition',
             ],
             'casedComparison' => [
-                '<?php
+                'code' => '<?php
                     if ("C" === "c") {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'compareValueTwice' => [
-                '<?php
+                'code' => '<?php
                     $i = rand(-1, 5);
 
                     if ($i > 0 && $i > 0) {}',
                 'error_message' => 'RedundantCondition',
             ],
             'numericStringCoerceToLiteral' => [
-                '<?php
+                'code' => '<?php
                     /** @param "0"|"1" $s */
                     function foo(string $s) : void {}
 
@@ -1125,10 +1119,10 @@ class ValueTest extends TestCase
                             foo($s);
                         }
                     }',
-                'error_message' => 'ArgumentTypeCoercion'
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'stringCoercedToNonEmptyString' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param non-empty-string $name
                      */

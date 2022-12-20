@@ -2,6 +2,7 @@
 
 namespace Psalm\Config;
 
-class TaintAnalysisFileFilter extends FileFilter
+/** @internal */
+final class TaintAnalysisFileFilter extends FileFilter
 {
 }

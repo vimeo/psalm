@@ -13,10 +13,7 @@ use function assert;
  */
 class TraitAnalyzer extends ClassLikeAnalyzer
 {
-    /**
-     * @var Aliases
-     */
-    private $aliases;
+    private Aliases $aliases;
 
     public function __construct(
         Trait_ $class,
@@ -34,17 +31,20 @@ class TraitAnalyzer extends ClassLikeAnalyzer
         $this->aliases = $aliases;
     }
 
+    /** @psalm-mutation-free */
     public function getNamespace(): ?string
     {
         return $this->aliases->namespace;
     }
 
+    /** @psalm-mutation-free */
     public function getAliases(): Aliases
     {
         return $this->aliases;
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<lowercase-string, string>
      */
     public function getAliasedClassesFlipped(): array
@@ -53,6 +53,7 @@ class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
      * @return array<string, string>
      */
     public function getAliasedClassesFlippedReplaceable(): array
@@ -63,14 +64,21 @@ class TraitAnalyzer extends ClassLikeAnalyzer
     public static function analyze(StatementsAnalyzer $statements_analyzer, Trait_ $stmt, Context $context): void
     {
         assert($stmt->name !== null);
-        $storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get($stmt->name->name);
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!$codebase->classlike_storage_provider->has($stmt->name->name)) {
+            return;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($stmt->name->name);
+
         AttributesAnalyzer::analyze(
             $statements_analyzer,
             $context,
             $storage,
             $stmt->attrGroups,
             AttributesAnalyzer::TARGET_CLASS,
-            $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues()
+            $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
     }
 }

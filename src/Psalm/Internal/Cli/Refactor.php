@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Cli;
 
+use AssertionError;
 use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
@@ -39,6 +40,7 @@ use function is_numeric;
 use function is_string;
 use function max;
 use function microtime;
+use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
@@ -57,17 +59,21 @@ require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 
+/**
+ * @internal
+ */
 final class Refactor
 {
     /** @param array<int,string> $argv */
     public static function run(array $argv): void
     {
+        CliUtils::checkRuntimeRequirements();
         ini_set('memory_limit', '8192M');
 
         gc_collect_cycles();
         gc_disable();
 
-        ErrorHandler::install();
+        ErrorHandler::install($argv);
 
         $args = array_slice($argv, 1);
 
@@ -81,7 +87,7 @@ final class Refactor
         $options = getopt(implode('', $valid_short_options), $valid_long_options);
 
         array_map(
-            function (string $arg) use ($valid_long_options): void {
+            static function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
@@ -97,13 +103,13 @@ final class Refactor
                         fwrite(
                             STDERR,
                             'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL
+                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
                         );
                         exit(1);
                     }
                 }
             },
-            $args
+            $args,
         );
 
         if (array_key_exists('help', $options)) {
@@ -120,37 +126,37 @@ final class Refactor
 
         if (array_key_exists('h', $options)) {
             echo <<<HELP
-Usage:
-    psalm-refactor [options] [symbol1] into [symbol2]
+            Usage:
+                psalm-refactor [options] [symbol1] into [symbol2]
 
-Options:
-    -h, --help
-        Display this help message
+            Options:
+                -h, --help
+                    Display this help message
 
-    --debug, --debug-by-line, --debug-emitted-issues
-        Debug information
+                --debug, --debug-by-line, --debug-emitted-issues
+                    Debug information
 
-    -c, --config=psalm.xml
-        Path to a psalm.xml configuration file. Run psalm --init to create one.
+                -c, --config=psalm.xml
+                    Path to a psalm.xml configuration file. Run psalm --init to create one.
 
-    -r, --root
-        If running Psalm globally you'll need to specify a project root. Defaults to cwd
+                -r, --root
+                    If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-    --threads=auto
-        If greater than one, Psalm will run analysis on multiple threads, speeding things up.
-        By default
+                --threads=auto
+                    If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+                    By default
 
-    --move "[Identifier]" --into "[Class]"
-        Moves the specified item into the class. More than one item can be moved into a class
-        by passing a comma-separated list of values e.g.
+                --move "[Identifier]" --into "[Class]"
+                    Moves the specified item into the class. More than one item can be moved into a class
+                    by passing a comma-separated list of values e.g.
 
-        --move "Ns\Foo::bar,Ns\Foo::baz" --into "Biz\Bang\DestinationClass"
+                    --move "Ns\Foo::bar,Ns\Foo::baz" --into "Biz\Bang\DestinationClass"
 
-    --rename "[Identifier]" --to "[NewIdentifier]"
-        Renames a specified item (e.g. method) and updates all references to it that Psalm can
-        identify.
+                --rename "[Identifier]" --to "[NewIdentifier]"
+                    Renames a specified item (e.g. method) and updates all references to it that Psalm can
+                    identify.
 
-HELP;
+            HELP;
 
             exit;
         }
@@ -180,9 +186,8 @@ HELP;
         $first_autoloader = $include_collector->runAndCollect(
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            function () use ($current_dir, $options, $vendor_dir): ?\Composer\Autoload\ClassLoader {
-                return CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
-            }
+            static fn(): ?\Composer\Autoload\ClassLoader =>
+                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
 
         // If Xdebug is enabled, restart without it
@@ -239,6 +244,9 @@ HELP;
 
                 if ($operation === 'move_into') {
                     $last_arg_parts = preg_split('/, ?/', $last_arg);
+                    if ($last_arg_parts === false) {
+                        throw new AssertionError(preg_last_error_msg());
+                    }
 
                     foreach ($last_arg_parts as $last_arg_part) {
                         if (strpos($last_arg_part, '::')) {
@@ -276,7 +284,7 @@ HELP;
             $path_to_config,
             $current_dir,
             Report::TYPE_CONSOLE,
-            $first_autoloader
+            $first_autoloader,
         );
         $config->setIncludeCollector($include_collector);
 
@@ -295,7 +303,7 @@ HELP;
             new FileStorageCacheProvider($config),
             new ClassLikeStorageCacheProvider($config),
             null,
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+            new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
         );
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
@@ -313,7 +321,7 @@ HELP;
             new ReportOptions(),
             [],
             $threads,
-            $progress
+            $progress,
         );
 
         if (array_key_exists('debug-by-line', $options)) {

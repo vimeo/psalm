@@ -39,8 +39,8 @@ To register a stub file manually use `Psalm\Plugin\RegistrationInterface::addStu
 In addition to XML configuration node `<fileExtensions>` plugins can register their own custom scanner
 and analyzer implementations for particular file extensions, e.g.
 
-* `Psalm\Plugin\RegistrationInterface::addFileTypeScanner('html', CustomFileScanner::class)`
-* `Psalm\Plugin\RegistrationInterface::addFileTypeAnalyzer('html', CustomFileAnalyzer::class)`
+* `Psalm\Plugin\FileExtensionsInterface::addFileTypeScanner('html', CustomFileScanner::class)`
+* `Psalm\Plugin\FileExtensionsInterface::addFileTypeAnalyzer('html', CustomFileAnalyzer::class)`
 
 ## Publishing your plugin on Packagist
 
@@ -80,7 +80,9 @@ class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInt
 - `AfterFunctionCallAnalysisInterface` - called after Psalm evaluates a function call to any function defined within the project itself. Can alter the return type or perform modifications of the call.
 - `AfterFunctionLikeAnalysisInterface` - called after Psalm has completed its analysis of a given function-like.
 - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
-- `AfterStatementAnalysisInterface` - called after Psalm evaluates a statement.
+- `BeforeStatementAnalysisInterface` - called before Psalm evaluates an statement.
+- `AfterStatementAnalysisInterface` - called after Psalm evaluates an statement.
+- `BeforeAddIssueInterface` - called before Psalm adds an item to it's internal `IssueBuffer`, allows handling code issues individually
 - `BeforeFileAnalysisInterface` - called before Psalm analyzes a file.
 - `FunctionExistenceProviderInterface` - can be used to override Psalm's builtin function existence checks for one or more functions.
 - `FunctionParamsProviderInterface.php` - can be used to override Psalm's builtin function parameter lookup for one or more functions.
@@ -92,6 +94,7 @@ class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInt
 - `PropertyExistenceProviderInterface` - can be used to override Psalm's builtin property existence checks for one or more classes.
 - `PropertyTypeProviderInterface` - can be used to override Psalm's builtin property type lookup for one or more classes.
 - `PropertyVisibilityProviderInterface` - can be used to override Psalm's builtin property visibility checks for one or more classes.
+- `DynamicFunctionStorageProviderInterface` - can be used to override signature for one or more functions. It means you can define variadic param list. Infer return type by input args. Define function templates. Also check out `Psalm\Plugin\DynamicFunctionStorage` to find out what api it brings for you to change function's definition.
 
 Here are a couple of example plugins:
  - [StringChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/StringChecker.php) - checks class references in strings

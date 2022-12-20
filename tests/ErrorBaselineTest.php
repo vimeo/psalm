@@ -3,9 +3,9 @@
 namespace Psalm\Tests;
 
 use DOMDocument;
-use Prophecy\Argument;
-use Prophecy\PhpUnit\ProphecyTrait;
-use Prophecy\Prophecy\ObjectProphecy;
+use Mockery;
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\MockInterface;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
@@ -16,23 +16,23 @@ use const LIBXML_NOBLANKS;
 
 class ErrorBaselineTest extends TestCase
 {
-    use ProphecyTrait;
+    use MockeryPHPUnitIntegration;
 
-    /** @var ObjectProphecy */
+    /** @var FileProvider&MockInterface */
     private $fileProvider;
 
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
-        $this->fileProvider = $this->prophesize(FileProvider::class);
+        $this->fileProvider = Mockery::mock(FileProvider::class);
     }
 
     public function testLoadShouldParseXmlBaselineToPhpArray(): void
     {
         $baselineFilePath = 'baseline.xml';
 
-        $this->fileProvider->fileExists($baselineFilePath)->willReturn(true);
-        $this->fileProvider->getContents($baselineFilePath)->willReturn(
+        $this->fileProvider->allows()->fileExists($baselineFilePath)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFilePath)->andReturns(
             '<?xml version="1.0" encoding="UTF-8"?>
             <files>
               <file src="sample/sample-file.php">
@@ -48,7 +48,7 @@ class ErrorBaselineTest extends TestCase
                   <code>bar</code>
                 </PossiblyUnusedMethod>
               </file>
-            </files>'
+            </files>',
         );
 
         $expectedParsedBaseline = [
@@ -63,7 +63,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame(
             $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider->reveal(), $baselineFilePath)
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath),
         );
     }
 
@@ -71,8 +71,8 @@ class ErrorBaselineTest extends TestCase
     {
         $baselineFilePath = 'baseline.xml';
 
-        $this->fileProvider->fileExists($baselineFilePath)->willReturn(true);
-        $this->fileProvider->getContents($baselineFilePath)->willReturn(
+        $this->fileProvider->allows()->fileExists($baselineFilePath)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFilePath)->andReturns(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
             <files>
               <file src=\"sample/sample-file.php\">
@@ -80,7 +80,7 @@ class ErrorBaselineTest extends TestCase
                   <code>foo\r</code>
                 </MixedAssignment>
               </file>
-            </files>"
+            </files>",
         );
 
         $expectedParsedBaseline = [
@@ -91,7 +91,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame(
             $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider->reveal(), $baselineFilePath)
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath),
         );
     }
 
@@ -101,15 +101,15 @@ class ErrorBaselineTest extends TestCase
 
         $baselineFile = 'baseline.xml';
 
-        $this->fileProvider->fileExists($baselineFile)->willReturn(true);
-        $this->fileProvider->getContents($baselineFile)->willReturn(
+        $this->fileProvider->allows()->fileExists($baselineFile)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFile)->andReturns(
             '<?xml version="1.0" encoding="UTF-8"?>
              <other>
              </other>
-            '
+            ',
         );
 
-        ErrorBaseline::read($this->fileProvider->reveal(), $baselineFile);
+        ErrorBaseline::read($this->fileProvider, $baselineFile);
     }
 
     public function testLoadShouldThrowExceptionWhenBaselineFileDoesNotExist(): void
@@ -118,9 +118,9 @@ class ErrorBaselineTest extends TestCase
 
         $baselineFile = 'baseline.xml';
 
-        $this->fileProvider->fileExists($baselineFile)->willReturn(false);
+        $this->fileProvider->expects()->fileExists($baselineFile)->andReturns(false);
 
-        ErrorBaseline::read($this->fileProvider->reveal(), $baselineFile);
+        ErrorBaseline::read($this->fileProvider, $baselineFile);
     }
 
     public function testCountTotalIssuesShouldReturnCorrectNumber(): void
@@ -144,19 +144,11 @@ class ErrorBaselineTest extends TestCase
     {
         $baselineFile = 'baseline.xml';
 
-        $documentContent = null;
+        $this->fileProvider = Mockery::spy(FileProvider::class);
 
-        $this->fileProvider->setContents(
-            $baselineFile,
-            Argument::that(function (string $document) use (&$documentContent): bool {
-                $documentContent = $document;
-
-                return true;
-            })
-        );
 
         ErrorBaseline::create(
-            $this->fileProvider->reveal(),
+            $this->fileProvider,
             $baselineFile,
             [
                 'sample/sample-file.php' => [
@@ -175,7 +167,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -192,7 +184,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -209,7 +201,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -226,7 +218,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'info',
@@ -243,7 +235,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                 ],
                 'sample/sample-file2.php' => [
@@ -262,7 +254,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -279,7 +271,7 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                     new IssueData(
                         'error',
@@ -296,46 +288,70 @@ class ErrorBaselineTest extends TestCase
                         0,
                         0,
                         0,
-                        0
+                        0,
                     ),
                 ],
             ],
-            false
+            false,
         );
 
-        $baselineDocument = new DOMDocument();
-        $baselineDocument->loadXML($documentContent, LIBXML_NOBLANKS);
+        $this->fileProvider->shouldHaveReceived()
+            ->setContents(
+                $baselineFile,
+                Mockery::on(function (string $document): bool {
+                    $baselineDocument = new DOMDocument();
+                    $baselineDocument->loadXML($document, LIBXML_NOBLANKS);
 
-        /** @var DOMElement[] $files */
-        $files = $baselineDocument->getElementsByTagName('files')[0]->childNodes;
+                    /** @var DOMElement[] $files */
+                    $files = $baselineDocument->getElementsByTagName('files')[0]->childNodes;
 
-        [$file1, $file2] = $files;
+                    [$file1, $file2] = $files;
 
-        $this->assertSame('sample/sample-file.php', $file1->getAttribute('src'));
-        $this->assertSame('sample/sample-file2.php', $file2->getAttribute('src'));
+                    $this->assertSame('sample/sample-file.php', $file1->getAttribute('src'));
+                    $this->assertSame('sample/sample-file2.php', $file2->getAttribute('src'));
 
-        /** @var DOMElement[] $file1Issues */
-        $file1Issues = $file1->childNodes;
-        /** @var DOMElement[] $file2Issues */
-        $file2Issues = $file2->childNodes;
+                    /** @var DOMElement[] $file1Issues */
+                    $file1Issues = $file1->childNodes;
+                    /** @var DOMElement[] $file2Issues */
+                    $file2Issues = $file2->childNodes;
 
-        $this->assertSame('MixedAssignment', $file1Issues[0]->tagName);
-        $this->assertSame('3', $file1Issues[0]->getAttribute('occurrences'));
-        $this->assertSame('MixedOperand', $file1Issues[1]->tagName);
-        $this->assertSame('1', $file1Issues[1]->getAttribute('occurrences'));
+                    $this->assertSame('MixedAssignment', $file1Issues[0]->tagName);
+                    $this->assertSame(
+                        '3',
+                        $file1Issues[0]->getAttribute('occurrences'),
+                        'MixedAssignment should have occured 3 times',
+                    );
+                    $this->assertSame('MixedOperand', $file1Issues[1]->tagName);
+                    $this->assertSame(
+                        '1',
+                        $file1Issues[1]->getAttribute('occurrences'),
+                        'MixedOperand should have occured 1 time',
+                    );
 
-        $this->assertSame('MixedAssignment', $file2Issues[0]->tagName);
-        $this->assertSame('2', $file2Issues[0]->getAttribute('occurrences'));
-        $this->assertSame('TypeCoercion', $file2Issues[1]->tagName);
-        $this->assertSame('1', $file2Issues[1]->getAttribute('occurrences'));
+                    $this->assertSame('MixedAssignment', $file2Issues[0]->tagName);
+                    $this->assertSame(
+                        '2',
+                        $file2Issues[0]->getAttribute('occurrences'),
+                        'MixedAssignment should have occured 2 times',
+                    );
+                    $this->assertSame('TypeCoercion', $file2Issues[1]->tagName);
+                    $this->assertSame(
+                        '1',
+                        $file2Issues[1]->getAttribute('occurrences'),
+                        'TypeCoercion should have occured 1 time',
+                    );
+
+                    return true;
+                }),
+            );
     }
 
     public function testUpdateShouldRemoveExistingIssuesWithoutAddingNewOnes(): void
     {
         $baselineFile = 'baseline.xml';
 
-        $this->fileProvider->fileExists($baselineFile)->willReturn(true);
-        $this->fileProvider->getContents($baselineFile)->willReturn(
+        $this->fileProvider->allows()->fileExists($baselineFile)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFile)->andReturns(
             '<?xml version="1.0" encoding="UTF-8"?>
             <files>
               <file src="sample/sample-file.php">
@@ -352,9 +368,10 @@ class ErrorBaselineTest extends TestCase
               <file src="sample/sample-file3.php">
                 <MixedAssignment occurrences="1"/>
               </file>
-            </files>'
+            </files>',
         );
-        $this->fileProvider->setContents(Argument::cetera());
+
+        $this->fileProvider->allows()->setContents(Mockery::andAnyOtherArgs());
 
         $newIssues = [
             'sample/sample-file.php' => [
@@ -373,7 +390,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
                 new IssueData(
                     'error',
@@ -390,7 +407,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
                 new IssueData(
                     'error',
@@ -407,7 +424,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
                 new IssueData(
                     'error',
@@ -424,7 +441,7 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
             ],
             'sample/sample-file2.php' => [
@@ -443,16 +460,16 @@ class ErrorBaselineTest extends TestCase
                     0,
                     0,
                     0,
-                    0
+                    0,
                 ),
             ],
         ];
 
         $remainingBaseline = ErrorBaseline::update(
-            $this->fileProvider->reveal(),
+            $this->fileProvider,
             $baselineFile,
             $newIssues,
-            false
+            false,
         );
 
         $this->assertSame([
@@ -470,8 +487,8 @@ class ErrorBaselineTest extends TestCase
     {
         $baselineFilePath = 'baseline.xml';
 
-        $this->fileProvider->fileExists($baselineFilePath)->willReturn(true);
-        $this->fileProvider->getContents($baselineFilePath)->willReturn(
+        $this->fileProvider->allows()->fileExists($baselineFilePath)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFilePath)->andReturns(
             '<?xml version="1.0" encoding="UTF-8"?>
             <files>
               <file src="sample/sample-file.php">
@@ -489,7 +506,7 @@ class ErrorBaselineTest extends TestCase
                   <code>bar</code>
                 </PossiblyUnusedMethod>
               </file>
-            </files>'
+            </files>',
         );
 
         $expectedParsedBaseline = [
@@ -504,7 +521,7 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertSame(
             $expectedParsedBaseline,
-            ErrorBaseline::read($this->fileProvider->reveal(), $baselineFilePath)
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath),
         );
     }
 }

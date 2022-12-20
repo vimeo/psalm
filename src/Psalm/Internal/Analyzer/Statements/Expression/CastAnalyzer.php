@@ -36,7 +36,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
@@ -56,6 +55,9 @@ use function array_values;
 use function get_class;
 use function strtolower;
 
+/**
+ * @internal
+ */
 class CastAnalyzer
 {
     /** @var string[] */
@@ -89,7 +91,7 @@ class CastAnalyzer
                     $statements_analyzer,
                     $maybe_type,
                     $stmt->expr,
-                    true
+                    true,
                 );
             } else {
                 $type = Type::getInt();
@@ -116,7 +118,7 @@ class CastAnalyzer
                     $statements_analyzer,
                     $maybe_type,
                     $stmt->expr,
-                    true
+                    true,
                 );
             } else {
                 $type = Type::getFloat();
@@ -140,11 +142,13 @@ class CastAnalyzer
                 }
             }
 
-            $type = Type::getBool();
-
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
-                $type->parent_nodes = $maybe_type->parent_nodes ?? [];
+                $type = new Union([new TBool()], [
+                    'parent_nodes' => $maybe_type->parent_nodes ?? [],
+                ]);
+            } else {
+                $type = Type::getBool();
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -169,7 +173,7 @@ class CastAnalyzer
                     $context,
                     $stmt_expr_type,
                     $stmt->expr,
-                    true
+                    true,
                 );
             } else {
                 $stmt_type = Type::getString();
@@ -196,6 +200,9 @@ class CastAnalyzer
                 $all_permissible = true;
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
+                    if ($type instanceof TList) {
+                        $type = $type->getKeyedArray();
+                    }
                     if ($type instanceof Scalar) {
                         $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])]);
                         $permissible_atomic_types[] = $objWithProps;
@@ -216,7 +223,7 @@ class CastAnalyzer
 
             if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
             ) {
-                $type->parent_nodes = $stmt_expr_type->parent_nodes ?? [];
+                $type = $type->setParentNodes($stmt_expr_type->parent_nodes ?? []);
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -240,18 +247,27 @@ class CastAnalyzer
                 $all_permissible = true;
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
+                    if ($type instanceof TList) {
+                        $type = $type->getKeyedArray();
+                    }
                     if ($type instanceof Scalar) {
-                        $keyed_array = new TKeyedArray([new Union([$type])]);
-                        $keyed_array->is_list = true;
-                        $keyed_array->sealed = true;
+                        $keyed_array = new TKeyedArray([new Union([$type])], null, null, true);
                         $permissible_atomic_types[] = $keyed_array;
                     } elseif ($type instanceof TNull) {
-                        $permissible_atomic_types[] = new TArray([Type::getEmpty(), Type::getEmpty()]);
+                        $permissible_atomic_types[] = new TArray([Type::getNever(), Type::getNever()]);
                     } elseif ($type instanceof TArray
-                        || $type instanceof TList
                         || $type instanceof TKeyedArray
                     ) {
-                        $permissible_atomic_types[] = clone $type;
+                        $permissible_atomic_types[] = $type;
+                    } elseif ($type instanceof TObjectWithProperties) {
+                        $array_type = $type->properties === []
+                            ? new TArray([Type::getArrayKey(), Type::getMixed()])
+                            : new TKeyedArray(
+                                $type->properties,
+                                null,
+                                [Type::getArrayKey(), Type::getMixed()],
+                            );
+                        $permissible_atomic_types[] = $array_type;
                     } else {
                         $all_permissible = false;
                         break;
@@ -266,7 +282,7 @@ class CastAnalyzer
             }
 
             if ($statements_analyzer->data_flow_graph) {
-                $type->parent_nodes = $stmt_expr_type->parent_nodes ?? [];
+                $type = $type->setParentNodes($stmt_expr_type->parent_nodes ?? []);
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -275,7 +291,7 @@ class CastAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Unset_
-            && $statements_analyzer->getCodebase()->php_major_version < 8
+            && $statements_analyzer->getCodebase()->analysis_php_version_id <= 7_04_00
         ) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -289,9 +305,9 @@ class CastAnalyzer
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
                 'Psalm does not understand the cast ' . get_class($stmt),
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
-            $statements_analyzer->getSuppressedIssues()
+            $statements_analyzer->getSuppressedIssues(),
         );
 
         return false;
@@ -320,6 +336,10 @@ class CastAnalyzer
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TList) {
+                $atomic_type = $atomic_type->getKeyedArray();
+            }
 
             if ($atomic_type instanceof TInt) {
                 $valid_ints[] = $atomic_type;
@@ -400,7 +420,7 @@ class CastAnalyzer
                         if (strtolower($intersection_type->value) === strtolower($pseudo_castable_class)
                             || $codebase->classExtends(
                                 $intersection_type->value,
-                                $pseudo_castable_class
+                                $pseudo_castable_class,
                             )
                         ) {
                             $castable_types[] = new TInt();
@@ -411,7 +431,7 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNonEmptyArray
-                || $atomic_type instanceof TNonEmptyList
+                || ($atomic_type instanceof TKeyedArray && $atomic_type->isNonEmpty())
             ) {
                 $risky_cast[] = $atomic_type->getId();
 
@@ -421,7 +441,6 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TArray
-                || $atomic_type instanceof TList
                 || $atomic_type instanceof TKeyedArray
             ) {
                 // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not
@@ -450,17 +469,17 @@ class CastAnalyzer
             IssueBuffer::maybeAdd(
                 new InvalidCast(
                     $invalid_casts[0] . ' cannot be cast to int',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         } elseif ($risky_cast) {
             IssueBuffer::maybeAdd(
                 new RiskyCast(
                     'Casting ' . $risky_cast[0] . ' to int has possibly unintended value of 0/1',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         } elseif ($explicit_cast && !$castable_types) {
             // todo: emit error here
@@ -473,12 +492,12 @@ class CastAnalyzer
         } else {
             $int_type = TypeCombiner::combine(
                 $valid_types,
-                $codebase
+                $codebase,
             );
         }
 
         if ($statements_analyzer->data_flow_graph) {
-            $int_type->parent_nodes = $parent_nodes;
+            $int_type = $int_type->setParentNodes($parent_nodes);
         }
 
         return $int_type;
@@ -507,6 +526,10 @@ class CastAnalyzer
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TList) {
+                $atomic_type = $atomic_type->getKeyedArray();
+            }
 
             if ($atomic_type instanceof TFloat) {
                 $valid_floats[] = $atomic_type;
@@ -586,7 +609,7 @@ class CastAnalyzer
                         if (strtolower($intersection_type->value) === strtolower($pseudo_castable_class)
                             || $codebase->classExtends(
                                 $intersection_type->value,
-                                $pseudo_castable_class
+                                $pseudo_castable_class,
                             )
                         ) {
                             $castable_types[] = new TFloat();
@@ -597,7 +620,7 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNonEmptyArray
-                || $atomic_type instanceof TNonEmptyList
+                || ($atomic_type instanceof TKeyedArray && $atomic_type->isNonEmpty())
             ) {
                 $risky_cast[] = $atomic_type->getId();
 
@@ -607,7 +630,6 @@ class CastAnalyzer
             }
 
             if ($atomic_type instanceof TArray
-                || $atomic_type instanceof TList
                 || $atomic_type instanceof TKeyedArray
             ) {
                 // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not
@@ -636,17 +658,17 @@ class CastAnalyzer
             IssueBuffer::maybeAdd(
                 new InvalidCast(
                     $invalid_casts[0] . ' cannot be cast to float',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         } elseif ($risky_cast) {
             IssueBuffer::maybeAdd(
                 new RiskyCast(
                     'Casting ' . $risky_cast[0] . ' to float has possibly unintended value of 0.0/1.0',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         } elseif ($explicit_cast && !$castable_types) {
             // todo: emit error here
@@ -659,12 +681,12 @@ class CastAnalyzer
         } else {
             $float_type = TypeCombiner::combine(
                 $valid_types,
-                $codebase
+                $codebase,
             );
         }
 
         if ($statements_analyzer->data_flow_graph) {
-            $float_type->parent_nodes = $parent_nodes;
+            $float_type = $float_type->setParentNodes($parent_nodes);
         }
 
         return $float_type;
@@ -764,17 +786,17 @@ class CastAnalyzer
                     if ($intersection_type instanceof TNamedObject) {
                         $intersection_method_id = new MethodIdentifier(
                             $intersection_type->value,
-                            '__tostring'
+                            '__tostring',
                         );
 
                         if ($codebase->methods->methodExists(
                             $intersection_method_id,
                             $context->calling_method_id,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         )) {
                             $return_type = $codebase->methods->getMethodReturnType(
                                 $intersection_method_id,
-                                $self_class
+                                $self_class,
                             ) ?? Type::getString();
 
                             $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
@@ -788,7 +810,7 @@ class CastAnalyzer
                                 $intersection_method_id,
                                 $declaring_method_id,
                                 $intersection_type->value . '::__toString',
-                                $context
+                                $context,
                             );
 
                             if ($statements_analyzer->data_flow_graph) {
@@ -797,7 +819,7 @@ class CastAnalyzer
 
                             $castable_types = array_merge(
                                 $castable_types,
-                                array_values($return_type->getAtomicTypes())
+                                array_values($return_type->getAtomicTypes()),
                             );
 
                             continue 2;
@@ -805,7 +827,7 @@ class CastAnalyzer
                     }
 
                     if ($intersection_type instanceof TObjectWithProperties
-                        && isset($intersection_type->methods['__toString'])
+                        && isset($intersection_type->methods['__tostring'])
                     ) {
                         $castable_types[] = new TString();
 
@@ -828,36 +850,36 @@ class CastAnalyzer
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidCast(
                         $invalid_casts[0] . ' cannot be cast to string',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidCast(
                         $invalid_casts[0] . ' cannot be cast to string',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         } elseif ($explicit_cast && !$castable_types) {
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_strings, $castable_types);
+        $valid_types = [...$valid_strings, ...$castable_types];
 
         if (!$valid_types) {
             $str_type = Type::getString();
         } else {
             $str_type = TypeCombiner::combine(
                 $valid_types,
-                $codebase
+                $codebase,
             );
         }
 
         if ($statements_analyzer->data_flow_graph) {
-            $str_type->parent_nodes = $parent_nodes;
+            $str_type = $str_type->setParentNodes($parent_nodes);
         }
 
         return $str_type;
@@ -887,7 +909,7 @@ class CastAnalyzer
         if ($maybe_type->from_docblock) {
             $issue = new RedundantCastGivenDocblockType(
                 'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 
             if ($codebase->alter_code
@@ -896,13 +918,13 @@ class CastAnalyzer
                 $file_manipulation = new FileManipulation(
                     (int) $stmt->getAttribute('startFilePos'),
                     (int) $stmt->expr->getAttribute('startFilePos'),
-                    ''
+                    '',
                 );
             }
         } else {
             $issue = new RedundantCast(
                 'Redundant cast to ' . $maybe_type->getKey(),
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 
             if ($codebase->alter_code
@@ -911,7 +933,7 @@ class CastAnalyzer
                 $file_manipulation = new FileManipulation(
                     (int) $stmt->getAttribute('startFilePos'),
                     (int) $stmt->expr->getAttribute('startFilePos'),
-                    ''
+                    '',
                 );
             }
         }
@@ -921,8 +943,6 @@ class CastAnalyzer
         }
 
 
-        if (IssueBuffer::accepts($issue, $statements_analyzer->getSuppressedIssues())) {
-            // fall through
-        }
+        IssueBuffer::maybeAdd($issue, $statements_analyzer->getSuppressedIssues());
     }
 }

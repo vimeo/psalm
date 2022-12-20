@@ -40,7 +40,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
-use Psalm\Type\Atomic\TPositiveInt;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -48,6 +47,7 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
+use function get_class;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -75,22 +75,22 @@ class ArithmeticOpAnalyzer
         $right_type = $nodes->getType($right);
         $config = Config::getInstance();
 
-        if ($left_type && $left_type->isEmpty()) {
+        if ($left_type && $left_type->isNever()) {
             $left_type = $right_type;
-        } elseif ($right_type && $right_type->isEmpty()) {
+        } elseif ($right_type && $right_type->isNever()) {
             $right_type = $left_type;
         }
 
         if ($left_type && $right_type) {
             if ($left_type->isNull()) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new NullOperand(
-                        'Left operand cannot be null',
-                        new CodeLocation($statements_source, $left)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new NullOperand(
+                            'Left operand cannot be null',
+                            new CodeLocation($statements_source, $left),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
                 $result_type = Type::getMixed();
 
@@ -98,26 +98,26 @@ class ArithmeticOpAnalyzer
             }
 
             if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new PossiblyNullOperand(
-                        'Left operand cannot be nullable, got ' . $left_type,
-                        new CodeLocation($statements_source, $left)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyNullOperand(
+                            'Left operand cannot be nullable, got ' . $left_type,
+                            new CodeLocation($statements_source, $left),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
             }
 
             if ($right_type->isNull()) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new NullOperand(
-                        'Right operand cannot be null',
-                        new CodeLocation($statements_source, $right)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new NullOperand(
+                            'Right operand cannot be null',
+                            new CodeLocation($statements_source, $right),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
                 $result_type = Type::getMixed();
 
@@ -125,66 +125,66 @@ class ArithmeticOpAnalyzer
             }
 
             if ($right_type->isNullable() && !$right_type->ignore_nullable_issues) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new PossiblyNullOperand(
-                        'Right operand cannot be nullable, got ' . $right_type,
-                        new CodeLocation($statements_source, $right)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyNullOperand(
+                            'Right operand cannot be nullable, got ' . $right_type,
+                            new CodeLocation($statements_source, $right),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
             }
 
             if ($left_type->isFalse()) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new FalseOperand(
-                        'Left operand cannot be false',
-                        new CodeLocation($statements_source, $left)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new FalseOperand(
+                            'Left operand cannot be false',
+                            new CodeLocation($statements_source, $left),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
 
                 return;
             }
 
             if ($left_type->isFalsable() && !$left_type->ignore_falsable_issues) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new PossiblyFalseOperand(
-                        'Left operand cannot be falsable, got ' . $left_type,
-                        new CodeLocation($statements_source, $left)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyFalseOperand(
+                            'Left operand cannot be falsable, got ' . $left_type,
+                            new CodeLocation($statements_source, $left),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
             }
 
             if ($right_type->isFalse()) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new FalseOperand(
-                        'Right operand cannot be false',
-                        new CodeLocation($statements_source, $right)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new FalseOperand(
+                            'Right operand cannot be false',
+                            new CodeLocation($statements_source, $right),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
 
                 return;
             }
 
             if ($right_type->isFalsable() && !$right_type->ignore_falsable_issues) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new PossiblyFalseOperand(
-                        'Right operand cannot be falsable, got ' . $right_type,
-                        new CodeLocation($statements_source, $right)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyFalseOperand(
+                            'Right operand cannot be falsable, got ' . $right_type,
+                            new CodeLocation($statements_source, $right),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
             }
 
@@ -211,7 +211,7 @@ class ArithmeticOpAnalyzer
                         $has_valid_left_operand,
                         $has_valid_right_operand,
                         $has_string_increment,
-                        $result_type
+                        $result_type,
                     );
 
                     if ($candidate_result_type) {
@@ -228,17 +228,17 @@ class ArithmeticOpAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidOperand(
                             $first_left_message,
-                            new CodeLocation($statements_source, $left)
+                            new CodeLocation($statements_source, $left),
                         ),
-                        $statements_source->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidOperand(
                             $first_left_message,
-                            new CodeLocation($statements_source, $left)
+                            new CodeLocation($statements_source, $left),
                         ),
-                        $statements_source->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues(),
                     );
                 }
             }
@@ -250,17 +250,17 @@ class ArithmeticOpAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidOperand(
                             $first_right_message,
-                            new CodeLocation($statements_source, $right)
+                            new CodeLocation($statements_source, $right),
                         ),
-                        $statements_source->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidOperand(
                             $first_right_message,
-                            new CodeLocation($statements_source, $right)
+                            new CodeLocation($statements_source, $right),
                         ),
-                        $statements_source->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues(),
                     );
                 }
             }
@@ -269,9 +269,9 @@ class ArithmeticOpAnalyzer
                 IssueBuffer::maybeAdd(
                     new StringIncrement(
                         'Possibly unintended string increment',
-                        new CodeLocation($statements_source, $left)
+                        new CodeLocation($statements_source, $left),
                     ),
-                    $statements_source->getSuppressedIssues()
+                    $statements_source->getSuppressedIssues(),
                 );
             }
         }
@@ -292,6 +292,7 @@ class ArithmeticOpAnalyzer
     /**
      * @param string[] $invalid_left_messages
      * @param string[] $invalid_right_messages
+     * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     private static function analyzeOperands(
         ?StatementsSource $statements_source,
@@ -310,8 +311,8 @@ class ArithmeticOpAnalyzer
         bool &$has_string_increment,
         Union &$result_type = null
     ): ?Union {
-        if ($left_type_part instanceof TLiteralInt
-            && $right_type_part instanceof TLiteralInt
+        if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
+            && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (
                 //we don't try to do arithmetics on variables in loops
                 $context === null
@@ -319,18 +320,33 @@ class ArithmeticOpAnalyzer
                 || (!$left instanceof PhpParser\Node\Expr\Variable && !$right instanceof PhpParser\Node\Expr\Variable)
             )
         ) {
+            // get_class is fine here because both classes are final.
+            if ($statements_source !== null
+                && $config->strict_binary_operands
+                && get_class($left_type_part) !== get_class($right_type_part)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidOperand(
+                        'Cannot process numeric types together in strict operands mode, '.
+                        'please cast explicitly',
+                        new CodeLocation($statements_source, $parent),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+            }
+
             // time for some arithmetic!
             $calculated_type = self::arithmeticOperation(
                 $parent,
                 $left_type_part->value,
                 $right_type_part->value,
-                true
+                true,
             );
 
             if ($calculated_type) {
                 $result_type = Type::combineUnionTypes(
                     $calculated_type,
-                    $result_type
+                    $result_type,
                 );
 
                 $has_valid_left_operand = true;
@@ -360,8 +376,10 @@ class ArithmeticOpAnalyzer
             if ($left_type_part instanceof TNumericString ||
                 ($left_type_part instanceof TLiteralString && is_numeric($left_type_part->value))
             ) {
-                $new_result_type = new Union([new TFloat(), new TInt()]);
-                $new_result_type->from_calculation = true;
+                $new_result_type = new Union(
+                    [new TFloat(), new TInt()],
+                    ['from_calculation' => true],
+                );
             } else {
                 $new_result_type = Type::getNonEmptyString();
                 $has_string_increment = true;
@@ -380,7 +398,7 @@ class ArithmeticOpAnalyzer
         ) {
             $combined_type = Type::combineUnionTypes(
                 $left_type_part->as,
-                $right_type_part->as
+                $right_type_part->as,
             );
 
             $combined_atomic_types = array_values($combined_type->getAtomicTypes());
@@ -405,24 +423,24 @@ class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part instanceof TMixed) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new MixedOperand(
-                        'Left operand cannot be mixed',
-                        new CodeLocation($statements_source, $left)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new MixedOperand(
+                            'Left operand cannot be mixed',
+                            new CodeLocation($statements_source, $left),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
             } else {
-                if ($statements_source && IssueBuffer::accepts(
-                    new MixedOperand(
-                        'Right operand cannot be mixed',
-                        new CodeLocation($statements_source, $right)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new MixedOperand(
+                            'Right operand cannot be mixed',
+                            new CodeLocation($statements_source, $right),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
             }
 
@@ -449,27 +467,27 @@ class ArithmeticOpAnalyzer
                 && !$left_type_part->as->isInt()
                 && !$left_type_part->as->isFloat()
             ) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new MixedOperand(
-                        'Left operand cannot be a non-numeric template',
-                        new CodeLocation($statements_source, $left)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new MixedOperand(
+                            'Left operand cannot be a non-numeric template',
+                            new CodeLocation($statements_source, $left),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
             } elseif ($right_type_part instanceof TTemplateParam
                 && !$right_type_part->as->isInt()
                 && !$right_type_part->as->isFloat()
             ) {
-                if ($statements_source && IssueBuffer::accepts(
-                    new MixedOperand(
-                        'Right operand cannot be a non-numeric template',
-                        new CodeLocation($statements_source, $right)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new MixedOperand(
+                            'Right operand cannot be a non-numeric template',
+                            new CodeLocation($statements_source, $right),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
             }
 
@@ -495,16 +513,19 @@ class ArithmeticOpAnalyzer
             || $left_type_part instanceof TList
             || $right_type_part instanceof TList
         ) {
+            if ($left_type_part instanceof TList) {
+                $left_type_part = $left_type_part->getKeyedArray();
+            }
+            if ($right_type_part instanceof TList) {
+                $right_type_part = $right_type_part->getKeyedArray();
+            }
             if ((!$right_type_part instanceof TArray
-                    && !$right_type_part instanceof TKeyedArray
-                    && !$right_type_part instanceof TList)
+                    && !$right_type_part instanceof TKeyedArray)
                 || (!$left_type_part instanceof TArray
-                    && !$left_type_part instanceof TKeyedArray
-                    && !$left_type_part instanceof TList)
+                    && !$left_type_part instanceof TKeyedArray)
             ) {
                 if (!$left_type_part instanceof TArray
                     && !$left_type_part instanceof TKeyedArray
-                    && !$left_type_part instanceof TList
                 ) {
                     $invalid_left_messages[] = 'Cannot add an array to a non-array ' . $left_type_part;
                 } else {
@@ -513,12 +534,10 @@ class ArithmeticOpAnalyzer
 
                 if ($left_type_part instanceof TArray
                     || $left_type_part instanceof TKeyedArray
-                    || $left_type_part instanceof TList
                 ) {
                     $has_valid_left_operand = true;
                 } elseif ($right_type_part instanceof TArray
                     || $right_type_part instanceof TKeyedArray
-                    || $right_type_part instanceof TList
                 ) {
                     $has_valid_right_operand = true;
                 }
@@ -536,7 +555,7 @@ class ArithmeticOpAnalyzer
             ) {
                 $definitely_existing_mixed_right_properties = array_diff_key(
                     $right_type_part->properties,
-                    $left_type_part->properties
+                    $left_type_part->properties,
                 );
 
                 $properties = $left_type_part->properties;
@@ -548,27 +567,53 @@ class ArithmeticOpAnalyzer
                         $properties[$key] = Type::combineUnionTypes(
                             $properties[$key],
                             $type,
-                            $codebase
+                            $codebase,
+                            false,
+                            true,
+                            500,
+                            $type->possibly_undefined,
                         );
-
-                        $properties[$key]->possibly_undefined = $type->possibly_undefined;
                     }
                 }
 
-                if (!$left_type_part->sealed) {
+                if ($left_type_part->fallback_params !== null) {
                     foreach ($definitely_existing_mixed_right_properties as $key => $type) {
                         $properties[$key] = Type::combineUnionTypes(Type::getMixed(), $type);
                     }
                 }
 
-                $new_keyed_array = new TKeyedArray($properties);
-                $new_keyed_array->sealed = $left_type_part->sealed && $right_type_part->sealed;
+                if ($left_type_part->fallback_params === null
+                    && $right_type_part->fallback_params === null
+                ) {
+                    $fallback_params = null;
+                } elseif ($left_type_part->fallback_params !== null
+                    && $right_type_part->fallback_params !== null
+                ) {
+                    $fallback_params = [
+                        Type::combineUnionTypes(
+                            $left_type_part->fallback_params[0],
+                            $right_type_part->fallback_params[0],
+                        ),
+                        Type::combineUnionTypes(
+                            $left_type_part->fallback_params[1],
+                            $right_type_part->fallback_params[1],
+                        ),
+                    ];
+                } else {
+                    $fallback_params = $left_type_part->fallback_params ?: $right_type_part->fallback_params;
+                }
+
+                $new_keyed_array = new TKeyedArray(
+                    $properties,
+                    null,
+                    $fallback_params,
+                );
                 $result_type_member = new Union([$new_keyed_array]);
             } else {
                 $result_type_member = TypeCombiner::combine(
                     [$left_type_part, $right_type_part],
                     $codebase,
-                    true
+                    true,
                 );
             }
 
@@ -583,7 +628,7 @@ class ArithmeticOpAnalyzer
                     $left,
                     $right,
                     $result_type,
-                    $context
+                    $context,
                 );
             }
 
@@ -606,17 +651,17 @@ class ArithmeticOpAnalyzer
             ) {
                 $result_type = Type::combineUnionTypes(
                     new Union([new TNamedObject('GMP')]),
-                    $result_type
+                    $result_type,
                 );
             } else {
-                if ($statements_source && IssueBuffer::accepts(
-                    new InvalidOperand(
-                        'Cannot add GMP to non-numeric type',
-                        new CodeLocation($statements_source, $parent)
-                    ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($statements_source) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidOperand(
+                            'Cannot add GMP to non-numeric type',
+                            new CodeLocation($statements_source, $parent),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
                 }
             }
 
@@ -648,16 +693,16 @@ class ArithmeticOpAnalyzer
                 ) {
                     $result_type = Type::combineUnionTypes(
                         new Union([new TNamedObject("Decimal\\Decimal")]),
-                        $result_type
+                        $result_type,
                     );
                 } else {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
                                 "Cannot add Decimal\\Decimal to {$non_decimal_type->getId()}",
-                                new CodeLocation($statements_source, $parent)
+                                new CodeLocation($statements_source, $parent),
                             ),
-                            $statements_source->getSuppressedIssues()
+                            $statements_source->getSuppressedIssues(),
                         );
                     }
                 }
@@ -687,15 +732,15 @@ class ArithmeticOpAnalyzer
                 && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
             ) {
                 if ($config->strict_binary_operands) {
-                    if ($statements_source && IssueBuffer::accepts(
-                        new InvalidOperand(
-                            'Cannot process different numeric types together in strict binary operands mode, '.
-                            'please cast explicitly',
-                            new CodeLocation($statements_source, $parent)
-                        ),
-                        $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if ($statements_source) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidOperand(
+                                'Cannot process different numeric types together in strict binary operands mode, '.
+                                'please cast explicitly',
+                                new CodeLocation($statements_source, $parent),
+                            ),
+                            $statements_source->getSuppressedIssues(),
+                        );
                     }
                 }
 
@@ -725,7 +770,7 @@ class ArithmeticOpAnalyzer
                     $parent,
                     $result_type,
                     $left_type_part,
-                    $right_type_part
+                    $right_type_part,
                 );
                 return null;
             }
@@ -734,11 +779,11 @@ class ArithmeticOpAnalyzer
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     $result_type = new Union([new TInt(), new TFloat()]);
                 } else {
-                    $left_is_positive = $left_type_part instanceof TPositiveInt
-                        || ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0);
+                    $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
+                        || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
 
-                    $right_is_positive = $right_type_part instanceof TPositiveInt
-                        || ($right_type_part instanceof TLiteralInt && $right_type_part->value > 0);
+                    $right_is_positive = ($right_type_part instanceof TLiteralInt && $right_type_part->value > 0)
+                        || ($right_type_part instanceof TIntRange && $right_type_part->isPositive());
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
                         $always_positive = false;
@@ -773,23 +818,20 @@ class ArithmeticOpAnalyzer
                                 $result_type = new Union([new TIntRange(0, $literal_value_max)]);
                             } else {
                                 $result_type = new Union(
-                                    [new TIntRange(-$literal_value_max, $literal_value_max)]
+                                    [new TIntRange(-$literal_value_max, $literal_value_max)],
                                 );
                             }
                         } else {
                             if ($always_positive) {
-                                $result_type = new Union([
-                                    new TPositiveInt(),
-                                    new TLiteralInt(0)
-                                ]);
+                                $result_type = Type::getListKey();
                             } else {
                                 $result_type = Type::getInt();
                             }
                         }
                     } else {
                         $result_type = Type::combineUnionTypes(
-                            $always_positive ? Type::getPositiveInt(true) : Type::getInt(true),
-                            $result_type
+                            $always_positive ? new Union([new TIntRange(1, null)]) : Type::getInt(true),
+                            $result_type,
                         );
                     }
                 }
@@ -817,15 +859,15 @@ class ArithmeticOpAnalyzer
                 || ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
             ) {
                 if ($config->strict_binary_operands) {
-                    if ($statements_source && IssueBuffer::accepts(
-                        new InvalidOperand(
-                            'Cannot process ints and floats in strict binary operands mode, '.
-                            'please cast explicitly',
-                            new CodeLocation($statements_source, $parent)
-                        ),
-                        $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if ($statements_source) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidOperand(
+                                'Cannot process ints and floats in strict binary operands mode, '.
+                                'please cast explicitly',
+                                new CodeLocation($statements_source, $parent),
+                            ),
+                            $statements_source->getSuppressedIssues(),
+                        );
                     }
                 }
 
@@ -843,15 +885,15 @@ class ArithmeticOpAnalyzer
 
             if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
                 if ($config->strict_binary_operands) {
-                    if ($statements_source && IssueBuffer::accepts(
-                        new InvalidOperand(
-                            'Cannot process numeric types together in strict operands mode, '.
-                            'please cast explicitly',
-                            new CodeLocation($statements_source, $parent)
-                        ),
-                        $statements_source->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if ($statements_source) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidOperand(
+                                'Cannot process numeric types together in strict operands mode, '.
+                                'please cast explicitly',
+                                new CodeLocation($statements_source, $parent),
+                            ),
+                            $statements_source->getSuppressedIssues(),
+                        );
                     }
                 }
 
@@ -886,7 +928,6 @@ class ArithmeticOpAnalyzer
     }
 
     /**
-     * @param PhpParser\Node $operation
      * @param float|int      $operand1
      * @param float|int      $operand2
      */
@@ -902,7 +943,7 @@ class ArithmeticOpAnalyzer
             $result = $operand1 - $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
             if ($operand2 === 0) {
-                return Type::getEmpty();
+                return Type::getNever();
             }
 
             $result = $operand1 % $operand2;
@@ -922,7 +963,7 @@ class ArithmeticOpAnalyzer
             $result = $operand1 >> $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0) {
-                return Type::getEmpty();
+                return Type::getNever();
             }
 
             $result = $operand1 / $operand2;
@@ -948,7 +989,7 @@ class ArithmeticOpAnalyzer
             //can't assume an int range will stay int after division
             $result_type = Type::combineUnionTypes(
                 new Union([new TInt(), new TFloat()]),
-                $result_type
+                $result_type,
             );
             return;
         }
@@ -965,7 +1006,7 @@ class ArithmeticOpAnalyzer
             //really complex to calculate
             $result_type = Type::combineUnionTypes(
                 Type::getInt(),
-                $result_type
+                $result_type,
             );
             return;
         }
@@ -976,7 +1017,7 @@ class ArithmeticOpAnalyzer
             //really complex to calculate
             $result_type = Type::combineUnionTypes(
                 new Union([new TInt()]),
-                $result_type
+                $result_type,
             );
             return;
         }
@@ -1013,7 +1054,7 @@ class ArithmeticOpAnalyzer
                 $parent,
                 $min_operand1,
                 $min_operand2,
-                false
+                false,
             );
         }
 
@@ -1024,7 +1065,7 @@ class ArithmeticOpAnalyzer
                 $parent,
                 $max_operand1,
                 $max_operand2,
-                false
+                false,
             );
         }
 
@@ -1097,7 +1138,7 @@ class ArithmeticOpAnalyzer
                     $parent,
                     $min_operand1,
                     $min_operand2,
-                    false
+                    false,
                 );
             }
 
@@ -1108,7 +1149,7 @@ class ArithmeticOpAnalyzer
                     $parent,
                     $max_operand1,
                     $max_operand2,
-                    false
+                    false,
                 );
             }
 
@@ -1131,7 +1172,7 @@ class ArithmeticOpAnalyzer
                     $parent,
                     $min_operand1,
                     $min_operand2,
-                    false
+                    false,
                 );
             }
 
@@ -1142,7 +1183,7 @@ class ArithmeticOpAnalyzer
                     $parent,
                     $max_operand1,
                     $max_operand2,
-                    false
+                    false,
                 );
             }
 
@@ -1169,7 +1210,7 @@ class ArithmeticOpAnalyzer
                     $parent,
                     $min_operand1,
                     $min_operand2,
-                    false
+                    false,
                 );
             }
 
@@ -1180,7 +1221,7 @@ class ArithmeticOpAnalyzer
                     $parent,
                     $max_operand1,
                     $max_operand2,
-                    false
+                    false,
                 );
             }
 
@@ -1207,7 +1248,7 @@ class ArithmeticOpAnalyzer
                     $parent,
                     $min_operand1,
                     $min_operand2,
-                    false
+                    false,
                 );
             }
 
@@ -1218,7 +1259,7 @@ class ArithmeticOpAnalyzer
                     $parent,
                     $max_operand1,
                     $max_operand2,
-                    false
+                    false,
                 );
             }
 
@@ -1275,9 +1316,13 @@ class ArithmeticOpAnalyzer
                 $new_result_type = Type::getInt(true, 0);
             } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
                 $new_result_type = Type::getInt(true, 1);
+            } elseif ($right_type_part->isNegative()) {
+                $new_result_type = Type::getFloat();
             } else {
-                //technically could be a float(INF)...
-                $new_result_type = Type::getEmpty();
+                $new_result_type = new Union(
+                    [new TFloat(), new TLiteralInt(0), new TLiteralInt(1)],
+                    ['from_calculation' => true],
+                );
             }
         } else {
             //$left_type_part may be a mix of positive, negative and 0
@@ -1311,7 +1356,7 @@ class ArithmeticOpAnalyzer
         if ($right_type_part->min_bound !== null && $right_type_part->min_bound === $right_type_part->max_bound) {
             //if the second operand is a literal, we can be pretty detailed
             if ($right_type_part->max_bound === 0) {
-                $new_result_type = Type::getEmpty();
+                $new_result_type = Type::getNever();
             } else {
                 if ($left_type_part->isPositiveOrZero()) {
                     if ($right_type_part->isPositive()) {
@@ -1343,10 +1388,10 @@ class ArithmeticOpAnalyzer
                 if ($right_type_part->max_bound !== null) {
                     //we now that the result will be a range between 0 and $right->max - 1
                     $new_result_type = new Union(
-                        [new TIntRange(0, $right_type_part->max_bound - 1)]
+                        [new TIntRange(0, $right_type_part->max_bound - 1)],
                     );
                 } else {
-                    $new_result_type = new Union([new TIntRange(0, null)]);
+                    $new_result_type = Type::getListKey();
                 }
             } elseif ($left_type_part->isNegativeOrZero()) {
                 $new_result_type = new Union([new TIntRange(null, 0)]);
@@ -1367,7 +1412,7 @@ class ArithmeticOpAnalyzer
 
         $result_type = Type::combineUnionTypes(
             $new_result_type,
-            $result_type
+            $result_type,
         );
     }
 }

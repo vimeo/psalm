@@ -10,14 +10,11 @@ class GeneratorTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
             'generator' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param  int  $start
                      * @param  int  $limit
@@ -44,7 +41,7 @@ class GeneratorTest extends TestCase
                 ],
             ],
             'generatorReturnType' => [
-                '<?php
+                'code' => '<?php
                     /** @return Generator<int, stdClass> */
                     function g():Generator { yield new stdClass; }
 
@@ -53,22 +50,8 @@ class GeneratorTest extends TestCase
                     '$g' => 'Generator<int, stdClass, mixed, mixed>',
                 ],
             ],
-            'generatorWithReturn' => [
-                '<?php
-                    /**
-                     * @return Generator<int,int>
-                     * @psalm-generator-return string
-                     */
-                    function fooFoo(int $i): Generator {
-                        if ($i === 1) {
-                            return "bash";
-                        }
-
-                        yield 1;
-                    }',
-            ],
             'generatorSend' => [
-                '<?php
+                'code' => '<?php
                     /** @return Generator<int, string, DateTimeInterface, void> */
                     function g(): Generator {
                         $date = yield 1 => "string";
@@ -78,7 +61,7 @@ class GeneratorTest extends TestCase
                 ',
             ],
             'generatorSendInvalidArgument' => [
-                '<?php
+                'code' => '<?php
                     /** @return Generator<int, string, DateTimeInterface, void> */
                     function g(): Generator {
                         yield 1 => "string";
@@ -86,10 +69,10 @@ class GeneratorTest extends TestCase
                     g()->send(1);
                 ',
                 'assertions' => [],
-                'error_levels' => ['InvalidArgument'],
+                'ignored_issues' => ['InvalidArgument'],
             ],
             'generatorDelegation' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return Generator<int, int, mixed, int>
                      */
@@ -134,10 +117,10 @@ class GeneratorTest extends TestCase
                     '$gen' => 'Generator<int, int, mixed, int>',
                     '$gen2' => 'int',
                 ],
-                'error_levels' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'yieldFromArray' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return Generator<int, int, mixed, void>
                      */
@@ -146,7 +129,7 @@ class GeneratorTest extends TestCase
                     }',
             ],
             'generatorWithNestedYield' => [
-                '<?php
+                'code' => '<?php
                     function other_generator(): Generator {
                       yield "traffic";
                       return 1;
@@ -158,7 +141,7 @@ class GeneratorTest extends TestCase
                     }',
             ],
             'generatorVoidReturn' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return Generator
                      */
@@ -170,7 +153,7 @@ class GeneratorTest extends TestCase
                     }',
             ],
             'returnType' => [
-                '<?php
+                'code' => '<?php
                     function takesInt(int $i) : void {
                         echo $i;
                     }
@@ -200,14 +183,14 @@ class GeneratorTest extends TestCase
                     }',
             ],
             'expectNonNullableTypeWithYield' => [
-                '<?php
+                'code' => '<?php
                     function example() : Generator {
                         yield from [2];
                         return null;
                     }',
             ],
             'yieldFromIterable' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @param iterable<int, string> $s
                      * @return Generator<int, string>
@@ -217,7 +200,7 @@ class GeneratorTest extends TestCase
                     }',
             ],
             'yieldWithReturn' => [
-                '<?php
+                'code' => '<?php
                     /** @return Generator<int, string, int, int> */
                     function gen(): Generator {
                         yield 3 => "abc";
@@ -225,17 +208,17 @@ class GeneratorTest extends TestCase
                         $foo = 4;
 
                         return $foo;
-                    }'
+                    }',
             ],
             'echoYield' => [
-                '<?php
+                'code' => '<?php
                     /** @return Generator<void, void, string, void> */
                     function gen(): Generator {
                         echo yield;
-                    }'
+                    }',
             ],
             'yieldFromTwiceWithVoidSend' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return \Generator<int, string, void, string>
                      */
@@ -246,18 +229,18 @@ class GeneratorTest extends TestCase
                     function load(string $rsa_key): \Generator {
                         echo (yield from test()) . (yield from test());
                         return 5;
-                    }'
+                    }',
             ],
             'iteratorUnion' => [
-                '<?php
+                'code' => '<?php
                     /** @return Iterator|IteratorAggregate */
                     function getIteratorOrAggregate() {
                         yield 2;
                     }
-                    echo json_encode(iterator_to_array(getIteratorOrAggregate()));'
+                    echo json_encode(iterator_to_array(getIteratorOrAggregate()));',
             ],
             'yieldNonExistentClass' => [
-                '<?php
+                'code' => '<?php
                     class T {
                         private const FACTORIES = [
                             ClassNotExisting::class,
@@ -271,11 +254,11 @@ class GeneratorTest extends TestCase
                             }
                         }
                     }',
-                [],
-                ['UndefinedClass']
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass'],
             ],
             'fillTemplatesForIteratorFromGenerator' => [
-                '<?php
+                'code' => '<?php
                     /**
                      * @return Generator<int, string>
                      */
@@ -287,38 +270,35 @@ class GeneratorTest extends TestCase
                     $iterator = new NoRewindIterator(generator());
                     ',
                 'assertions' => [
-                    '$iterator' => 'NoRewindIterator<int, string>',
-                ]
+                    '$iterator' => 'NoRewindIterator<int, string, Generator<int, string, mixed, mixed>>',
+                ],
             ],
             'detectYieldInNew' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress MissingClosureReturnType */
                     $_a = function() { return new RuntimeException(yield "a"); };
                     ',
                 'assertions' => [
-                    '$_a' => 'pure-Closure():Generator<int, "a", mixed, RuntimeException>',
-                ]
+                    '$_a' => 'pure-Closure():Generator<int, string, mixed, RuntimeException>',
+                ],
             ],
             'detectYieldInArray' => [
-                '<?php
+                'code' => '<?php
                     /** @psalm-suppress MissingClosureReturnType */
                     $_a = function() { return [yield "a"]; };
                     ',
                 'assertions' => [
-                    '$_a' => 'pure-Closure():Generator<int, "a", mixed, array{"a"}>',
-                ]
+                    '$_a' => 'pure-Closure():Generator<int, string, mixed, list{string}>',
+                ],
             ],
         ];
     }
 
-    /**
-     * @return iterable<string,array{string,error_message:string,1?:string[],2?:bool,3?:string}>
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
             'shouldWarnAboutNoGeneratorReturn' => [
-                '<?php
+                'code' => '<?php
                     function generator2() : Generator {
                         if (rand(0,1)) {
                             return;
@@ -338,7 +318,7 @@ class GeneratorTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
             ],
             'expectNonNullableTypeWithNullReturn' => [
-                '<?php
+                'code' => '<?php
                     function example() : Generator {
                         yield from [2];
                         return null;
@@ -353,7 +333,7 @@ class GeneratorTest extends TestCase
                 'error_message' => 'NullableReturnStatement',
             ],
             'invalidIterator' => [
-                '<?php
+                'code' => '<?php
                     function example() : int {
                         return 0;
                     }
@@ -364,7 +344,7 @@ class GeneratorTest extends TestCase
                 'error_message' => 'InvalidIterator',
             ],
             'rawObjectIteration' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $foo;
@@ -377,7 +357,7 @@ class GeneratorTest extends TestCase
                 'error_message' => 'RawObjectIteration',
             ],
             'possibleRawObjectIteration' => [
-                '<?php
+                'code' => '<?php
                     class A {
                         /** @var ?string */
                         public $foo;
@@ -401,7 +381,7 @@ class GeneratorTest extends TestCase
                 'error_message' => 'PossibleRawObjectIteration',
             ],
             'possibleRawObjectIterationFromIsset' => [
-                '<?php
+                'code' => '<?php
                     function foo(array $a) : Generator {
                         if (isset($a["a"]["b"])) {
                             yield from $a["a"];
