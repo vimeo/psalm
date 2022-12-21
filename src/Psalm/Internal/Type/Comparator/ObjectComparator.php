@@ -46,7 +46,7 @@ class ObjectComparator
                     $inputAs,
                     $containerAs,
                     $allow_interface_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 );
             } elseif ($containerAs instanceof TMixed && $inputAs instanceof TMixed) {
                 return true;

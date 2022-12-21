@@ -156,7 +156,7 @@ class NestedTemplateTest extends TestCase
                      * @template V of B<T, U>
                      * @implements J<V>
                      */
-                    class K1 implements J {}'
+                    class K1 implements J {}',
             ],
             '4levelNestedTemplatesOfObjects' => [
                 'code' => '<?php
@@ -242,8 +242,8 @@ class NestedTemplateTest extends TestCase
                      * @extends DbRepositoryWrapper<O, E, R>
                      */
                     abstract class AnObjectDbRepositoryWrapper
-                    extends DbRepositoryWrapper {}'
-            ]
+                    extends DbRepositoryWrapper {}',
+            ],
         ];
     }
 
