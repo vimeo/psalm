@@ -711,14 +711,18 @@
 
     <xs:simpleType name="ExtensionType">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="apcu"/>
             <xs:enumeration value="decimal"/>
             <xs:enumeration value="dom"/>
             <xs:enumeration value="ds"/>
+            <xs:enumeration value="ffi"/>
             <xs:enumeration value="geos"/>
             <xs:enumeration value="gmp"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="pdo"/>
+            <xs:enumeration value="random"/>
+            <xs:enumeration value="redis"/>
             <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>
             <xs:enumeration value="xdebug"/>
