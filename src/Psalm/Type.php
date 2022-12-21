@@ -4,6 +4,7 @@ namespace Psalm;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
@@ -256,7 +257,7 @@ abstract class Type
         if ($value !== null) {
             $config = Config::getInstance();
 
-            $event = new StringInterpreterEvent($value);
+            $event = new StringInterpreterEvent($value, ProjectAnalyzer::getInstance()->getCodebase());
 
             $type = $config->eventDispatcher->dispatchStringInterpreter($event);
 
