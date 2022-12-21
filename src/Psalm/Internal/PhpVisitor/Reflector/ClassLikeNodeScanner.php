@@ -73,6 +73,8 @@ use function assert;
 use function count;
 use function get_class;
 use function implode;
+use function is_int;
+use function is_string;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -286,6 +288,7 @@ class ClassLikeNodeScanner
             $this->codebase->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
         } elseif ($node instanceof PhpParser\Node\Stmt\Enum_) {
             $storage->is_enum = true;
+            $storage->final = true;
 
             if ($node->scalarType) {
                 if ($node->scalarType->name === 'string' || $node->scalarType->name === 'int') {
@@ -691,6 +694,33 @@ class ClassLikeNodeScanner
                     $storage,
                     $fq_classlike_name,
                 );
+            }
+        }
+
+        if ($storage->is_enum) {
+            $name_types = [];
+            $values_types = [];
+            foreach ($storage->enum_cases as $name => $enumCaseStorage) {
+                $name_types[] = new Type\Atomic\TLiteralString($name);
+                if ($storage->enum_type !== null) {
+                    if (is_string($enumCaseStorage->value)) {
+                        $values_types[] = new Type\Atomic\TLiteralString($enumCaseStorage->value);
+                    } elseif (is_int($enumCaseStorage->value)) {
+                        $values_types[] = new Type\Atomic\TLiteralInt($enumCaseStorage->value);
+                    }
+                }
+            }
+            if ($name_types !== []) {
+                $storage->declaring_property_ids['name'] = $storage->name;
+                $storage->appearing_property_ids['name'] = "{$storage->name}::\$name";
+                $storage->properties['name'] = new PropertyStorage();
+                $storage->properties['name']->type = new Union($name_types);
+            }
+            if ($values_types !== []) {
+                $storage->declaring_property_ids['value'] = $storage->name;
+                $storage->appearing_property_ids['value'] = "{$storage->name}::\$value";
+                $storage->properties['value'] = new PropertyStorage();
+                $storage->properties['value']->type = new Union($values_types);
             }
         }
 
@@ -1580,9 +1610,7 @@ class ClassLikeNodeScanner
                 }
 
                 if ($doc_var_group_type) {
-                    $property_storage->type = count($stmt->props) === 1
-                        ? $doc_var_group_type
-                        : $doc_var_group_type;
+                    $property_storage->type = $doc_var_group_type;
                 }
             }
 

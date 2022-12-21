@@ -13,6 +13,8 @@ namespace {
 
     interface BackedEnum extends UnitEnum
     {
+        /** @var non-empty-string $name */
+        public readonly string $name;
         public readonly int|string $value;
 
         /**

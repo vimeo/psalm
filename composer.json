@@ -109,8 +109,14 @@
         "cs": "phpcs -ps",
         "cs-fix": "phpcbf -ps",
         "lint": "parallel-lint ./src ./tests",
-        "phpunit": "paratest --runner=WrapperRunner",
-        "phpunit-std": "phpunit",
+        "phpunit": [
+            "Composer\\Config::disableProcessTimeout",
+            "paratest --runner=WrapperRunner"
+        ],
+        "phpunit-std": [
+            "Composer\\Config::disableProcessTimeout",
+            "phpunit"
+        ],
         "verify-callmap": "phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm --find-dead-code",
         "tests": [
