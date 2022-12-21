@@ -3,6 +3,7 @@
 namespace Psalm\Tests;
 
 use DOMDocument;
+use DOMElement;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
@@ -11,6 +12,8 @@ use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\RuntimeCaches;
+
+use function count;
 
 use const LIBXML_NOBLANKS;
 
@@ -36,14 +39,14 @@ class ErrorBaselineTest extends TestCase
             '<?xml version="1.0" encoding="UTF-8"?>
             <files>
               <file src="sample/sample-file.php">
-                <MixedAssignment occurrences="2">
+                <MixedAssignment>
                   <code>foo</code>
                   <code>bar</code>
                 </MixedAssignment>
                 <InvalidReturnStatement occurrences="1"/>
               </file>
               <file src="sample\sample-file2.php">
-                <PossiblyUnusedMethod occurrences="2">
+                <PossiblyUnusedMethod>
                   <code>foo</code>
                   <code>bar</code>
                 </PossiblyUnusedMethod>
@@ -76,7 +79,7 @@ class ErrorBaselineTest extends TestCase
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
             <files>
               <file src=\"sample/sample-file.php\">
-                <MixedAssignment occurrences=\"1\">
+                <MixedAssignment>
                   <code>foo\r</code>
                 </MixedAssignment>
               </file>
@@ -317,27 +320,27 @@ class ErrorBaselineTest extends TestCase
 
                     $this->assertSame('MixedAssignment', $file1Issues[0]->tagName);
                     $this->assertSame(
-                        '3',
-                        $file1Issues[0]->getAttribute('occurrences'),
+                        3,
+                        count($file1Issues[0]->getElementsByTagName('code')),
                         'MixedAssignment should have occured 3 times',
                     );
                     $this->assertSame('MixedOperand', $file1Issues[1]->tagName);
                     $this->assertSame(
-                        '1',
-                        $file1Issues[1]->getAttribute('occurrences'),
+                        1,
+                        count($file1Issues[1]->getElementsByTagName('code')),
                         'MixedOperand should have occured 1 time',
                     );
 
                     $this->assertSame('MixedAssignment', $file2Issues[0]->tagName);
                     $this->assertSame(
-                        '2',
-                        $file2Issues[0]->getAttribute('occurrences'),
+                        2,
+                        count($file2Issues[0]->getElementsByTagName('code')),
                         'MixedAssignment should have occured 2 times',
                     );
                     $this->assertSame('TypeCoercion', $file2Issues[1]->tagName);
                     $this->assertSame(
-                        '1',
-                        $file2Issues[1]->getAttribute('occurrences'),
+                        1,
+                        count($file2Issues[1]->getElementsByTagName('code')),
                         'TypeCoercion should have occured 1 time',
                     );
 
@@ -493,7 +496,7 @@ class ErrorBaselineTest extends TestCase
             <files>
               <file src="sample/sample-file.php">
                 <!-- here is a comment ! //-->
-                <MixedAssignment occurrences="2">
+                <MixedAssignment>
                   <code>foo</code>
                   <code>bar</code>
                 </MixedAssignment>
@@ -501,7 +504,7 @@ class ErrorBaselineTest extends TestCase
               </file>
               <!-- And another one ! //-->
               <file src="sample\sample-file2.php">
-                <PossiblyUnusedMethod occurrences="2">
+                <PossiblyUnusedMethod>
                   <code>foo</code>
                   <code>bar</code>
                 </PossiblyUnusedMethod>
