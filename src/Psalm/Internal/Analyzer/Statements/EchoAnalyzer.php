@@ -30,7 +30,7 @@ class EchoAnalyzer
     ): bool {
         $echo_param = new FunctionLikeParameter(
             'var',
-            false
+            false,
         );
 
         $codebase = $statements_analyzer->getCodebase();
@@ -49,7 +49,7 @@ class EchoAnalyzer
                         $context,
                         $expr_type,
                         $expr,
-                        false
+                        false,
                     );
                 }
 
@@ -60,14 +60,14 @@ class EchoAnalyzer
                     'echo',
                     (int) $i,
                     null,
-                    $call_location
+                    $call_location,
                 );
 
                 $echo_param_sink->taints = [
                     TaintKind::INPUT_HTML,
                     TaintKind::INPUT_HAS_QUOTES,
                     TaintKind::USER_SECRET,
-                    TaintKind::SYSTEM_SECRET
+                    TaintKind::SYSTEM_SECRET,
                 ];
 
                 $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
@@ -89,7 +89,7 @@ class EchoAnalyzer
                 null,
                 true,
                 true,
-                new CodeLocation($statements_analyzer, $stmt)
+                new CodeLocation($statements_analyzer, $stmt),
             ) === false) {
                 return false;
             }
@@ -99,9 +99,9 @@ class EchoAnalyzer
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'Use of echo',
-                    new CodeLocation($statements_analyzer, $stmt)
+                    new CodeLocation($statements_analyzer, $stmt),
                 ),
-                $statements_analyzer->getSource()->getSuppressedIssues()
+                $statements_analyzer->getSource()->getSuppressedIssues(),
             );
         }
 
@@ -110,9 +110,9 @@ class EchoAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
                         'Cannot call echo from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations

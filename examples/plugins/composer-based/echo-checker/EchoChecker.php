@@ -31,9 +31,9 @@ class EchoChecker implements AfterStatementAnalysisInterface
                         new ArgumentTypeCoercion(
                             'Echo requires an unescaped string, ' . $expr_type . ' provided',
                             new CodeLocation($statements_source, $expr),
-                            'echo'
+                            'echo',
                         ),
-                        $statements_source->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues(),
                     );
                     continue;
                 }
@@ -48,9 +48,9 @@ class EchoChecker implements AfterStatementAnalysisInterface
                             new ArgumentTypeCoercion(
                                 'Echo requires an unescaped string, ' . $expr_type . ' provided',
                                 new CodeLocation($statements_source, $expr),
-                                'echo'
+                                'echo',
                             ),
-                            $statements_source->getSuppressedIssues()
+                            $statements_source->getSuppressedIssues(),
                         );
                     }
                 }

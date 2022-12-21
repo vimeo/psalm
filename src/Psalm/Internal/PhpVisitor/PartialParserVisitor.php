@@ -149,7 +149,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         $method_contents = substr(
                             $this->b_file_contents,
                             $stmt_start_pos,
-                            $stmt_end_pos - $stmt_start_pos + 1
+                            $stmt_end_pos - $stmt_start_pos + 1,
                         );
 
                         if (!$method_contents) {
@@ -189,7 +189,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             '/(->|::)(\n\s*(if|list)\s*\()/',
                             $fake_class,
                             $matches,
-                            PREG_OFFSET_CAPTURE | PREG_SET_ORDER
+                            PREG_OFFSET_CAPTURE | PREG_SET_ORDER,
                         );
 
                         foreach ($matches as $match) {
@@ -197,7 +197,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                                 $fake_class,
                                 $match[1][0] . ';' . $match[2][0],
                                 $match[0][1],
-                                strlen($match[0][0])
+                                strlen($match[0][0]),
                             );
 
                             $extra_characters[] = $match[2][1];
@@ -205,7 +205,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
                         $replacement_stmts = $this->parser->parse(
                             $fake_class,
-                            $error_handler
+                            $error_handler,
                         ) ?: [];
 
                         if (!$replacement_stmts
@@ -229,7 +229,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             if ($hacky_class_fix !== $fake_class) {
                                 $replacement_stmts = $this->parser->parse(
                                     $hacky_class_fix,
-                                    $error_handler
+                                    $error_handler,
                                 ) ?: [];
                             }
 
@@ -263,7 +263,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         $position_shifter = new OffsetShifterVisitor(
                             $stmt_start_pos - 15,
                             $current_line,
-                            $extra_offsets
+                            $extra_offsets,
                         );
                         $renumbering_traverser->addVisitor($position_shifter);
                         $replacement_stmts = $renumbering_traverser->traverse($replacement_stmts);
@@ -279,7 +279,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                                             'startFilePos' => $stmt_start_pos + $error_attrs['startFilePos'] - 15,
                                             'endFilePos' => $stmt_start_pos + $error_attrs['endFilePos'] - 15,
                                             'startLine' => $error->getStartLine() + $current_line + $line_offset,
-                                        ]
+                                        ],
                                     );
                                 }
 
@@ -311,7 +311,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         $stmt_inner_start_pos = strrpos(
                             $this->a_file_contents,
                             '{',
-                            $stmt_inner_start_pos - $this->a_file_contents_length
+                            $stmt_inner_start_pos - $this->a_file_contents_length,
                         ) + 1;
 
                         if ($stmt_inner_end_pos < $this->a_file_contents_length) {
@@ -340,13 +340,13 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             $new_comments[] = new PhpParser\Comment\Doc(
                                 $c->getText(),
                                 $c->getStartLine() + $line_offset,
-                                $c->getStartFilePos() + $start_offset
+                                $c->getStartFilePos() + $start_offset,
                             );
                         } else {
                             $new_comments[] = new PhpParser\Comment(
                                 $c->getText(),
                                 $c->getStartLine() + $line_offset,
-                                $c->getStartFilePos() + $start_offset
+                                $c->getStartFilePos() + $start_offset,
                             );
                         }
                     }

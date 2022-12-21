@@ -83,7 +83,7 @@ class NegatedAssertionReconciler extends Reconciler
                 $key,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
@@ -100,7 +100,7 @@ class NegatedAssertionReconciler extends Reconciler
             $suppressed_issues,
             $failed_reconciliation,
             $is_equality,
-            $inside_loop
+            $inside_loop,
         );
 
         if ($simple_negated_type) {
@@ -174,7 +174,7 @@ class NegatedAssertionReconciler extends Reconciler
                         ? Type::getArrayKey()
                         : $iterable->type_params[0],
                     $iterable->type_params[1],
-                ]
+                ],
             ));
         } elseif ($assertion_type !== null && get_class($assertion_type) === TInt::class
             && isset($existing_var_type->getAtomicTypes()['array-key'])
@@ -224,7 +224,7 @@ class NegatedAssertionReconciler extends Reconciler
                                 $existing_var_type_part,
                                 $assertion_type,
                                 false,
-                                false
+                                false,
                             )) {
                             $existing_var_type->removeType($part_name);
                         } elseif (AtomicTypeComparator::isContainedBy(
@@ -232,7 +232,7 @@ class NegatedAssertionReconciler extends Reconciler
                             $assertion_type,
                             $existing_var_type_part,
                             false,
-                            false
+                            false,
                         )) {
                             $existing_var_type->different = true;
                         }
@@ -254,7 +254,7 @@ class NegatedAssertionReconciler extends Reconciler
                 && !UnionTypeComparator::canExpressionTypesBeIdentical(
                     $statements_analyzer->getCodebase(),
                     $existing_var_type,
-                    $assertion_type
+                    $assertion_type,
                 )
             ) {
                 self::triggerIssueForImpossible(
@@ -265,7 +265,7 @@ class NegatedAssertionReconciler extends Reconciler
                     true,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -283,7 +283,7 @@ class NegatedAssertionReconciler extends Reconciler
                         false,
                         $negated,
                         $code_location,
-                        $suppressed_issues
+                        $suppressed_issues,
                     );
                 }
             }
@@ -343,7 +343,7 @@ class NegatedAssertionReconciler extends Reconciler
                             ) {
                                 $existing_var_type->addType(new Type\Atomic\TIntRange(
                                     $literal_type->min_bound,
-                                    $assertion_type->value - 1
+                                    $assertion_type->value - 1,
                                 ));
                             }
                             if ($literal_type->max_bound === null
@@ -351,7 +351,7 @@ class NegatedAssertionReconciler extends Reconciler
                             ) {
                                 $existing_var_type->addType(new Type\Atomic\TIntRange(
                                     $assertion_type->value + 1,
-                                    $literal_type->max_bound
+                                    $literal_type->max_bound,
                                 ));
                             }
                         }
@@ -449,7 +449,7 @@ class NegatedAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             } elseif ($scalar_var_type
                 && $assertion instanceof IsNotIdentical
@@ -459,7 +459,7 @@ class NegatedAssertionReconciler extends Reconciler
                 if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                     $statements_analyzer->getCodebase(),
                     $existing_var_type,
-                    new Union([$scalar_var_type])
+                    new Union([$scalar_var_type]),
                 )) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
@@ -469,7 +469,7 @@ class NegatedAssertionReconciler extends Reconciler
                         true,
                         $negated,
                         $code_location,
-                        $suppressed_issues
+                        $suppressed_issues,
                     );
                 }
             }

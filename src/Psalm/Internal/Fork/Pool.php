@@ -123,7 +123,7 @@ class Pool
 
         assert(
             $pool_size > 1,
-            'The pool size must be >= 2 to use the fork pool.'
+            'The pool size must be >= 2 to use the fork pool.',
         );
 
         if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
@@ -242,7 +242,7 @@ class Pool
                 get_class($t) . ' ' . $t->getMessage() . "\n" .
                 "Emitted in " . $t->getFile() . ":" . $t->getLine() . "\n" .
                 "Stack trace in the forked worker:\n" .
-                $t->getTraceAsString()
+                $t->getTraceAsString(),
             );
         }
 

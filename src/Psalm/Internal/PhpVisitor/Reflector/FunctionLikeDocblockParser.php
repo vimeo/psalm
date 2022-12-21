@@ -64,7 +64,7 @@ class FunctionLikeDocblockParser
                 $parsed_docblock->combined_tags['return'],
                 $info,
                 $code_location,
-                $cased_function_id
+                $cased_function_id,
             );
         }
 
@@ -102,7 +102,7 @@ class FunctionLikeDocblockParser
                                 $comment_text,
                                 "\n",
                                 0,
-                                $offset - $comment->getStartFilePos()
+                                $offset - $comment->getStartFilePos(),
                             ),
                             'start' => $offset,
                             'end' => $end,
@@ -115,7 +115,7 @@ class FunctionLikeDocblockParser
                             $info_param['description'] = preg_replace(
                                 '/\\n \\*\\s+/um',
                                 ' ',
-                                $info_param['description']
+                                $info_param['description'],
                             );
                         }
 
@@ -125,8 +125,8 @@ class FunctionLikeDocblockParser
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Badly-formatted @param in docblock for ' . $cased_function_id,
-                            $code_location
-                        )
+                            $code_location,
+                        ),
                     );
                 }
             }
@@ -167,7 +167,7 @@ class FunctionLikeDocblockParser
                                 $comment_text,
                                 "\n",
                                 0,
-                                $offset - $comment->getStartFilePos()
+                                $offset - $comment->getStartFilePos(),
                             ),
                         ];
                     }
@@ -175,8 +175,8 @@ class FunctionLikeDocblockParser
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Badly-formatted @param in docblock for ' . $cased_function_id,
-                            $code_location
-                        )
+                            $code_location,
+                        ),
                     );
                 }
             }
@@ -196,7 +196,7 @@ class FunctionLikeDocblockParser
                                 $comment_text,
                                 "\n",
                                 0,
-                                $offset - $comment->getStartFilePos()
+                                $offset - $comment->getStartFilePos(),
                             ),
                         ];
                     }
@@ -223,7 +223,7 @@ class FunctionLikeDocblockParser
                         $comment->getText(),
                         "\n",
                         0,
-                        $offset - $comment->getStartFilePos()
+                        $offset - $comment->getStartFilePos(),
                     ),
                 ];
             }
@@ -367,7 +367,7 @@ class FunctionLikeDocblockParser
                                 $comment_text,
                                 "\n",
                                 0,
-                                $offset - $comment->getStartFilePos()
+                                $offset - $comment->getStartFilePos(),
                             ),
                         ];
                     }
@@ -375,8 +375,8 @@ class FunctionLikeDocblockParser
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
                             'Badly-formatted @param in docblock for ' . $cased_function_id,
-                            $code_location
-                        )
+                            $code_location,
+                        ),
                     );
                 }
             }
@@ -427,8 +427,8 @@ class FunctionLikeDocblockParser
                         $comment->getText(),
                         "\n",
                         0,
-                        $offset - $comment->getStartFilePos()
-                    )
+                        $offset - $comment->getStartFilePos(),
+                    ),
                 ];
             }
         }
@@ -469,7 +469,7 @@ class FunctionLikeDocblockParser
                         $template_name,
                         $template_modifier,
                         implode(' ', $template_type),
-                        false
+                        false,
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [$template_name, null, null, false];
@@ -628,7 +628,7 @@ class FunctionLikeDocblockParser
                         $comment->getText(),
                         "\n",
                         0,
-                        $offset - $comment->getStartFilePos()
+                        $offset - $comment->getStartFilePos(),
                     );
                 $info->return_type_start = $offset;
                 $info->return_type_end = $end;
@@ -636,8 +636,8 @@ class FunctionLikeDocblockParser
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         'Badly-formatted @param in docblock for ' . $cased_function_id,
-                        $code_location
-                    )
+                        $code_location,
+                    ),
                 );
             }
 
@@ -703,7 +703,7 @@ class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-import-type'])) {
             $info->unexpected_tags['psalm-import-type']['lines'] = self::tagOffsetsToLines(
                 array_keys($parsed_docblock->tags['psalm-import-type']),
-                $comment
+                $comment,
             );
         }
 
@@ -711,9 +711,9 @@ class FunctionLikeDocblockParser
             $info->unexpected_tags['var'] = [
                 'lines' => self::tagOffsetsToLines(
                     array_keys($parsed_docblock->combined_tags['var']),
-                    $comment
+                    $comment,
                 ),
-                'suggested_replacement' => 'param'
+                'suggested_replacement' => 'param',
             ];
         }
 
@@ -721,7 +721,7 @@ class FunctionLikeDocblockParser
             $info->unexpected_tags['psalm-consistent-constructor'] = [
                 'lines' => self::tagOffsetsToLines(
                     array_keys($parsed_docblock->tags['psalm-consistent-constructor']),
-                    $comment
+                    $comment,
                 ),
                 'suggested_replacement' => 'psalm-consistent-constructor on a class level',
             ];
@@ -747,7 +747,7 @@ class FunctionLikeDocblockParser
             $comment->getText(),
             "\n",
             0,
-            $offset - $comment->getStartFilePos()
+            $offset - $comment->getStartFilePos(),
         );
     }
 }

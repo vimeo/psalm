@@ -1,14 +1,16 @@
 <?php
+
 namespace Psalm\Example\Plugin;
 
 use Psalm\FileManipulation;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Plugin\EventHandler\AfterClassLikeExistenceCheckInterface;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
+
+use function array_map;
+use function implode;
 use function strpos;
 use function strtolower;
-use function implode;
-use function array_map;
 
 class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
@@ -43,8 +45,8 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
                 '',
                 array_map(
                     fn($f) => $f[0],
-                    $type_tokens
-                )
+                    $type_tokens,
+                ),
             );
 
             if ($new_candidate_type !== $candidate_type) {

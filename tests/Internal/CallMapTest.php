@@ -76,11 +76,11 @@ class CallMapTest extends TestCase
         $deltaFileIterator = new RegexIterator(
             new FilesystemIterator(
                 self::DICTIONARY_PATH,
-                FilesystemIterator::CURRENT_AS_PATHNAME | FilesystemIterator::KEY_AS_FILENAME | FilesystemIterator::SKIP_DOTS
+                FilesystemIterator::CURRENT_AS_PATHNAME | FilesystemIterator::KEY_AS_FILENAME | FilesystemIterator::SKIP_DOTS,
             ),
             '/^CallMap_[\d]{2,}_delta\.php$/i',
             RegexIterator::MATCH,
-            RegexIterator::USE_KEY
+            RegexIterator::USE_KEY,
         );
 
         $deltaFiles = [];
@@ -109,7 +109,7 @@ class CallMapTest extends TestCase
                 'added' => include 'dictionaries/CallMap_historical.php',
                 'changed' => [],
                 'removed' => [],
-            ]
+            ],
         ] + $deltaFiles;
 
         foreach ($deltaFiles as $name => $deltaFile) {
@@ -192,11 +192,11 @@ class CallMapTest extends TestCase
                 foreach (['old', 'new'] as $section) {
                     self::assertArrayKeysAreZeroOrString(
                         $diff[$section],
-                        "'" . $section . "' function " . $function . " in 'changed' of delta file " . $name . " has invalid keys"
+                        "'" . $section . "' function " . $function . " in 'changed' of delta file " . $name . " has invalid keys",
                     );
                     self::assertArrayValuesAreStrings(
                         $diff[$section],
-                        "'" . $section . "' function " . $function . " in 'changed' of delta file " . $name . " has non-string values"
+                        "'" . $section . "' function " . $function . " in 'changed' of delta file " . $name . " has non-string values",
                     );
                 }
             }
@@ -231,7 +231,7 @@ class CallMapTest extends TestCase
                     foreach ($signature as $type) {
                         self::assertStringIsParsableType(
                             $type,
-                            "Function " . $function . " in '" . $section . "' of delta file " . $name . " contains invalid type declaration " . $type
+                            "Function " . $function . " in '" . $section . "' of delta file " . $name . " contains invalid type declaration " . $type,
                         );
                     }
                 }
@@ -241,7 +241,7 @@ class CallMapTest extends TestCase
                     foreach ($diff[$section] as $type) {
                         self::assertStringIsParsableType(
                             $type,
-                            "'" . $section . "' function " . $function . " in 'changed' of delta file " . $name . " contains invalid type declaration " . $type
+                            "'" . $section . "' function " . $function . " in 'changed' of delta file " . $name . " contains invalid type declaration " . $type,
                         );
                     }
                 }
@@ -275,13 +275,13 @@ class CallMapTest extends TestCase
             self::assertEquals(
                 array_values($nonExistingChangedFunctions),
                 [],    // Compare against empty array to get handy diff in output
-                "Deltafile " . $name . " tries to change non-existing functions"
+                "Deltafile " . $name . " tries to change non-existing functions",
             );
 
             self::assertEquals(
                 array_values($nonExistingRemovedFunctions),
                 [],    // Compare against empty array to get handy diff in output
-                "Deltafile " . $name . " tries to remove non-existing functions"
+                "Deltafile " . $name . " tries to remove non-existing functions",
             );
 
             $newFunctions = array_diff($newFunctions, $removedFunctions);
@@ -315,7 +315,7 @@ class CallMapTest extends TestCase
             self::assertEquals(
                 array_values($alreadyExistingFunctions),
                 [],    // Compare against empty array to get handy diff in output
-                "Deltafile " . $name . " adds already existing functions"
+                "Deltafile " . $name . " adds already existing functions",
             );
 
             $newFunctions = array_diff_key($newFunctions, $deltaFile['removed']);
@@ -351,17 +351,17 @@ class CallMapTest extends TestCase
             self::assertEquals(
                 array_values($overlapAddedChanged),
                 [],    // Compare against empty array to get handy diff in output
-                "Deltafile " . $name . " adds and changes the same functions"
+                "Deltafile " . $name . " adds and changes the same functions",
             );
             self::assertEquals(
                 array_values($overlapAddedRemoved),
                 [],    // Compare against empty array to get handy diff in output
-                "Deltafile " . $name . " adds and removes the same functions. Move them to the 'changed' section"
+                "Deltafile " . $name . " adds and removes the same functions. Move them to the 'changed' section",
             );
             self::assertEquals(
                 array_values($overlapChangedRemoved),
                 [],    // Compare against empty array to get handy diff in output
-                "Deltafile " . $name . " changes and removes the same function"
+                "Deltafile " . $name . " changes and removes the same function",
             );
         }
     }
@@ -380,7 +380,7 @@ class CallMapTest extends TestCase
         self::assertEquals(
             array_values($missingNewFunctions),
             [],    // Compare against empty array to get handy diff in output
-            "Not all functions added in delta files are present in main CallMap file"
+            "Not all functions added in delta files are present in main CallMap file",
         );
 
         return $newFunctions;
@@ -400,7 +400,7 @@ class CallMapTest extends TestCase
         self::assertEquals(
             [],    // Compare against empty array to get handy diff in output
             array_values($strayNewFunctions),
-            "Not all functions present in main CallMap file are added in delta files"
+            "Not all functions present in main CallMap file are added in delta files",
         );
     }
 
@@ -418,7 +418,7 @@ class CallMapTest extends TestCase
         self::assertEquals(
             [],    // Compare against empty array to get handy diff in output
             array_values($stillPresentRemovedFunctions),
-            "Not all functions removed in delta files are absent in main CallMap file"
+            "Not all functions removed in delta files are absent in main CallMap file",
         );
     }
 
@@ -438,7 +438,7 @@ class CallMapTest extends TestCase
         self::assertEquals(
             $newFunctions,
             $existingFunctions,
-            "Signatures in CallMap file don't match most recent signatures in delta files"
+            "Signatures in CallMap file don't match most recent signatures in delta files",
         );
     }
 
@@ -476,7 +476,7 @@ class CallMapTest extends TestCase
                     self::assertEquals(
                         $overlapOutgoing,
                         $overlapIncoming,
-                        "Outgoing signatures in " . $deltaFileNames[$i] . " don't match corresponding incoming signatures in " . $deltaFileNames[$j]
+                        "Outgoing signatures in " . $deltaFileNames[$i] . " don't match corresponding incoming signatures in " . $deltaFileNames[$j],
                     );
 
                     // Don't check what has already been matched

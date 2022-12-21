@@ -56,7 +56,7 @@ class TernaryAnalyzer
                 $context,
                 $codebase,
                 $if_scope,
-                $context->branch_point ?: (int) $stmt->getAttribute('startFilePos')
+                $context->branch_point ?: (int) $stmt->getAttribute('startFilePos'),
             );
 
             // this is the context for stuff that happens within the first operand of the ternary
@@ -76,7 +76,7 @@ class TernaryAnalyzer
             $stmt->cond,
             $context->self,
             $statements_analyzer,
-            $codebase
+            $codebase,
         );
 
         if (count($if_clauses) > 200) {
@@ -113,7 +113,7 @@ class TernaryAnalyzer
 
                 return $c;
             },
-            $if_clauses
+            $if_clauses,
         );
 
         $entry_clauses = $context->clauses;
@@ -124,7 +124,7 @@ class TernaryAnalyzer
             $if_clauses,
             $statements_analyzer,
             $stmt->cond,
-            $assigned_in_conditional_var_ids
+            $assigned_in_conditional_var_ids,
         );
 
         $if_clauses = Algebra::simplifyCNF($if_clauses);
@@ -140,7 +140,7 @@ class TernaryAnalyzer
                 array_filter(
                     $ternary_context_clauses,
                     static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
-                )
+                ),
             );
 
             if (count($if_context->clauses) === 1
@@ -163,7 +163,7 @@ class TernaryAnalyzer
                     $context->self,
                     $statements_analyzer,
                     $codebase,
-                    false
+                    false,
                 );
             } catch (ComplicatedExpressionException $e) {
                 $if_scope->negated_clauses = [];
@@ -172,8 +172,8 @@ class TernaryAnalyzer
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
-                [...$context->clauses, ...$if_scope->negated_clauses]
-            )
+                [...$context->clauses, ...$if_scope->negated_clauses],
+            ),
         );
 
         $active_if_types = [];
@@ -182,7 +182,7 @@ class TernaryAnalyzer
             $ternary_context_clauses,
             $cond_object_id,
             $cond_referenced_var_ids,
-            $active_if_types
+            $active_if_types,
         );
 
         $changed_var_ids = [];
@@ -198,7 +198,7 @@ class TernaryAnalyzer
                 $statements_analyzer,
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $if_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
+                new CodeLocation($statements_analyzer->getSource(), $stmt->cond),
             );
         }
 
@@ -211,12 +211,12 @@ class TernaryAnalyzer
 
             $context->cond_referenced_var_ids = array_merge(
                 $context->cond_referenced_var_ids,
-                $if_context->cond_referenced_var_ids
+                $if_context->cond_referenced_var_ids,
             );
         }
 
         $t_else_context->clauses = Algebra::simplifyCNF(
-            [...$t_else_context->clauses, ...$if_scope->negated_clauses]
+            [...$t_else_context->clauses, ...$if_scope->negated_clauses],
         );
 
         $changed_var_ids = [];
@@ -232,7 +232,7 @@ class TernaryAnalyzer
                 $statements_analyzer,
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $t_else_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->else)
+                new CodeLocation($statements_analyzer->getSource(), $stmt->else),
             );
 
             $t_else_context->clauses = Context::removeReconciledClauses($t_else_context->clauses, $changed_var_ids)[0];
@@ -251,7 +251,7 @@ class TernaryAnalyzer
             if (isset($if_context->vars_in_scope[$var_id]) && isset($t_else_context->vars_in_scope[$var_id])) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $if_context->vars_in_scope[$var_id],
-                    $t_else_context->vars_in_scope[$var_id]
+                    $t_else_context->vars_in_scope[$var_id],
                 );
             }
         }
@@ -264,7 +264,7 @@ class TernaryAnalyzer
         foreach ($redef_all as $redef_var_id) {
             $context->vars_in_scope[$redef_var_id] = Type::combineUnionTypes(
                 $if_context->vars_in_scope[$redef_var_id],
-                $t_else_context->vars_in_scope[$redef_var_id]
+                $t_else_context->vars_in_scope[$redef_var_id],
             );
         }
 
@@ -273,7 +273,7 @@ class TernaryAnalyzer
             if (isset($context->vars_in_scope[$redef_var_ifs_id])) {
                 $context->vars_in_scope[$redef_var_ifs_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_ifs_id],
-                    $if_context->vars_in_scope[$redef_var_ifs_id]
+                    $if_context->vars_in_scope[$redef_var_ifs_id],
                 );
             }
         }
@@ -283,7 +283,7 @@ class TernaryAnalyzer
             if (isset($context->vars_in_scope[$redef_var_else_id])) {
                 $context->vars_in_scope[$redef_var_else_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_else_id],
-                    $t_else_context->vars_in_scope[$redef_var_else_id]
+                    $t_else_context->vars_in_scope[$redef_var_else_id],
                 );
             }
         }
@@ -291,12 +291,12 @@ class TernaryAnalyzer
         $context->vars_possibly_in_scope = array_merge(
             $context->vars_possibly_in_scope,
             $if_context->vars_possibly_in_scope,
-            $t_else_context->vars_possibly_in_scope
+            $t_else_context->vars_possibly_in_scope,
         );
 
         $context->cond_referenced_var_ids = array_merge(
             $context->cond_referenced_var_ids,
-            $t_else_context->cond_referenced_var_ids
+            $t_else_context->cond_referenced_var_ids,
         );
 
         $lhs_type = null;
@@ -314,7 +314,7 @@ class TernaryAnalyzer
                 $context->inside_loop,
                 [],
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             $lhs_type = $if_return_type_reconciled;

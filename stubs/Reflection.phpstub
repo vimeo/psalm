@@ -23,7 +23,7 @@ class ReflectionClass implements Reflector {
      * @psalm-pure
      */
     public function getName(): string {}
-    
+
     /** @psalm-pure */
     public function isInternal(): bool {}
 
@@ -95,7 +95,7 @@ class ReflectionClass implements Reflector {
      * @psalm-pure
      * @throws ReflectionException
      */
-    public function getProperty(): ReflectionProperty {}
+    public function getProperty(string $name): ReflectionProperty {}
 
     /**
      * @param int-mask-of<ReflectionProperty::IS_*>|null $filter
@@ -147,15 +147,13 @@ class ReflectionClass implements Reflector {
     public function getReflectionConstants(?int $filter = null): array {}
 
     /**
-     * @return array<class-string, self>
-     *
+     * @return array<interface-string, self>
      * @psalm-pure
      */
     public function getInterfaces(): array {}
 
     /**
-     * @return list<class-string>
-     *
+     * @return list<interface-string>
      * @psalm-pure
      */
     public function getInterfaceNames(): array {}
@@ -192,7 +190,12 @@ class ReflectionClass implements Reflector {
      */
     public function getModifiers(): bool {}
 
-    /** @psalm-pure */
+    /**
+     * @template J as object
+     * @param J $object
+     * @psalm-assert-if-true T&J $object
+     * @psalm-pure
+     */
     public function isInstance(object $object): bool {}
 
     /**
@@ -214,12 +217,17 @@ class ReflectionClass implements Reflector {
      */
     public function newInstanceWithoutConstructor(): object {}
 
-    /** @psalm-pure */
-    public function getParentClass(): ?ReflectionClass {}
+    /**
+     * @psalm-pure
+     *
+     * @return ReflectionClass|false
+     */
+    public function getParentClass() {}
 
     /**
-     * @param ReflectionClass|class-string $class
-     *
+     * @template J as object
+     * @param self<J>|class-string<J> $class
+     * @psalm-assert-if-true self<T&J> $this
      * @psalm-pure
      */
     public function isSubclassOf($class): bool {}
@@ -241,8 +249,9 @@ class ReflectionClass implements Reflector {
     public function isIterable(): bool {}
 
     /**
-     * @param self|class-string $interface
-     *
+     * @template J as object
+     * @param self<J>|interface-string<J> $interface
+     * @psalm-assert-if-true self<T&J> $this
      * @psalm-pure
      */
     public function implementsInterface($interface): bool {}
@@ -271,7 +280,7 @@ class ReflectionClass implements Reflector {
     public function getShortName(): string {}
 
     /**
-     * @return ?array<string>
+     * @return ?list<trait-string>
      * @psalm-ignore-nullable-return
      * @psalm-pure
      */
@@ -621,7 +630,7 @@ class ReflectionParameter implements Reflector {
      * @readonly
      */
     public $name;
-    
+
     /** @return non-empty-string */
     public function getName(): string {}
 

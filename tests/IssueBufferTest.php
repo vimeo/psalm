@@ -38,8 +38,8 @@ class IssueBufferTest extends TestCase
                     0,
                     0,
                     0,
-                    0
-                )
+                    0,
+                ),
             ],
             '/path/two.php' => [
                 new IssueData(
@@ -57,8 +57,8 @@ class IssueBufferTest extends TestCase
                     0,
                     0,
                     0,
-                    0
-                )
+                    0,
+                ),
             ],
             '/path/three.php' => [
                 new IssueData(
@@ -76,8 +76,8 @@ class IssueBufferTest extends TestCase
                     0,
                     0,
                     0,
-                    0
-                )
+                    0,
+                ),
             ],
         ]);
         $baseline = [

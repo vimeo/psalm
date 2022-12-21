@@ -77,8 +77,6 @@ class FileDiffer
     {
         $result = [];
         for ($d = count($trace) - 1; $d >= 0; --$d) {
-            // Todo: fix integer ranges in fors
-            /** @var int<0, max> $d */
             $v = $trace[$d];
             $k = $x - $y;
 
@@ -95,7 +93,7 @@ class FileDiffer
                 $result[] = new DiffElem(
                     DiffElem::TYPE_KEEP,
                     $a[$x - 1],
-                    $b[$y - 1]
+                    $b[$y - 1],
                 );
                 --$x;
                 --$y;
@@ -298,7 +296,7 @@ class FileDiffer
                     $newDiff[] = new DiffElem(
                         DiffElem::TYPE_REPLACE,
                         $diff[$i + $n]->old,
-                        $diff[$j + $n]->new
+                        $diff[$j + $n]->new,
                     );
                 }
             } else {

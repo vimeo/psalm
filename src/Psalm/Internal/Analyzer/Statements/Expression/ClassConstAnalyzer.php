@@ -77,9 +77,9 @@ class ClassConstAnalyzer
                     return !IssueBuffer::accepts(
                         new NonStaticSelfCall(
                             'Cannot use ' . $first_part_lc . ' outside class context',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -91,15 +91,15 @@ class ClassConstAnalyzer
                     return !IssueBuffer::accepts(
                         new ParentNotFound(
                             'Cannot check property fetch on parent as this class does not extend another',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             } else {
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_analyzer->getAliases()
+                    $statements_analyzer->getAliases(),
                 );
 
                 if ($stmt->name instanceof PhpParser\Node\Identifier) {
@@ -113,7 +113,7 @@ class ClassConstAnalyzer
                             $context->self,
                             $context->calling_method_id,
                             $statements_analyzer->getSuppressedIssues(),
-                            new ClassLikeNameOptions(false, true)
+                            new ClassLikeNameOptions(false, true),
                         ) === false) {
                             return true;
                         }
@@ -135,7 +135,7 @@ class ClassConstAnalyzer
                     $fq_class_name,
                     $context->calling_method_id,
                     false,
-                    $stmt->class->parts[0] === 'self'
+                    $stmt->class->parts[0] === 'self',
                 );
             }
 
@@ -153,9 +153,9 @@ class ClassConstAnalyzer
                             new DeprecatedClass(
                                 'Class ' . $fq_class_name . ' is deprecated',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $fq_class_name
+                                $fq_class_name,
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     }
                 }
@@ -166,8 +166,8 @@ class ClassConstAnalyzer
                     $statements_analyzer->node_data->setType(
                         $stmt,
                         new Union([
-                            new TClassString($fq_class_name, $static_named_object)
-                        ])
+                            new TClassString($fq_class_name, $static_named_object),
+                        ]),
                     );
                 } else {
                     $statements_analyzer->node_data->setType($stmt, Type::getLiteralClassString($fq_class_name, true));
@@ -180,7 +180,7 @@ class ClassConstAnalyzer
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
                         $stmt->class,
-                        $fq_class_name
+                        $fq_class_name,
                     );
                 }
 
@@ -199,7 +199,7 @@ class ClassConstAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $fq_class_name
+                    $fq_class_name,
                 );
             }
 
@@ -216,7 +216,7 @@ class ClassConstAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    $const_id
+                    $const_id,
                 );
             }
 
@@ -227,9 +227,9 @@ class ClassConstAnalyzer
                     IssueBuffer::maybeAdd(
                         new DeprecatedConstant(
                             "Enum Case $const_id is marked as deprecated",
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -257,7 +257,7 @@ class ClassConstAnalyzer
                     $class_visibility,
                     $statements_analyzer,
                     [],
-                    $stmt->class->parts[0] === "static"
+                    $stmt->class->parts[0] === "static",
                 );
             } catch (InvalidArgumentException $_) {
                 return true;
@@ -265,9 +265,9 @@ class ClassConstAnalyzer
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 return true;
@@ -279,7 +279,7 @@ class ClassConstAnalyzer
                         $fq_class_name,
                         $stmt->name->name,
                         ReflectionProperty::IS_PRIVATE,
-                        $statements_analyzer
+                        $statements_analyzer,
                     );
                 }
 
@@ -287,17 +287,17 @@ class ClassConstAnalyzer
                     IssueBuffer::maybeAdd(
                         new InaccessibleClassConstant(
                             'Constant ' . $const_id . ' is not visible in this context',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
                             'Constant ' . $const_id . ' is not defined',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -308,7 +308,7 @@ class ClassConstAnalyzer
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
                     $fq_class_name_lc . '::' . $stmt->name->name,
-                    false
+                    false,
                 );
             }
 
@@ -329,15 +329,15 @@ class ClassConstAnalyzer
                                     $new_fq_class_name,
                                     $statements_analyzer->getNamespace(),
                                     $statements_analyzer->getAliasedClassesFlipped(),
-                                    null
-                                )
+                                    null,
+                                ),
                             );
                         }
 
                         $file_manipulations[] = new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
-                            $new_const_name
+                            $new_const_name,
                         );
 
                         FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
@@ -356,9 +356,9 @@ class ClassConstAnalyzer
                             . InternalClass::listToPhrase($const_class_storage->internal)
                             . ' but called from ' . $context->self,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $fq_class_name
+                        $fq_class_name,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -367,9 +367,9 @@ class ClassConstAnalyzer
                     new DeprecatedClass(
                         'Class ' . $fq_class_name . ' is deprecated',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $fq_class_name
+                        $fq_class_name,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif (isset($const_class_storage->constants[$stmt->name->name])
                 && $const_class_storage->constants[$stmt->name->name]->deprecated
@@ -377,9 +377,9 @@ class ClassConstAnalyzer
                 IssueBuffer::maybeAdd(
                     new DeprecatedConstant(
                         'Constant ' . $const_id . ' is deprecated',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -419,7 +419,7 @@ class ClassConstAnalyzer
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_string_types[] = new TClassString(
                         $lhs_atomic_type->value,
-                        $lhs_atomic_type
+                        $lhs_atomic_type,
                     );
                 } elseif ($lhs_atomic_type instanceof TTemplateParam
                     && $lhs_atomic_type->as->isSingle()) {
@@ -430,14 +430,14 @@ class ClassConstAnalyzer
                             $lhs_atomic_type->param_name,
                             'object',
                             null,
-                            $lhs_atomic_type->defining_class
+                            $lhs_atomic_type->defining_class,
                         );
                     } elseif ($as_atomic_type instanceof TNamedObject) {
                         $class_string_types[] = new TTemplateParamClass(
                             $lhs_atomic_type->param_name,
                             $as_atomic_type->value,
                             $as_atomic_type,
-                            $lhs_atomic_type->defining_class
+                            $lhs_atomic_type->defining_class,
                         );
                     }
                 } elseif ($lhs_atomic_type instanceof TObject
@@ -486,7 +486,7 @@ class ClassConstAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id
+                    $context->calling_method_id,
                 );
             }
 
@@ -502,7 +502,7 @@ class ClassConstAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $fq_class_name
+                    $fq_class_name,
                 );
             }
 
@@ -519,7 +519,7 @@ class ClassConstAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    $const_id
+                    $const_id,
                 );
             }
 
@@ -546,7 +546,7 @@ class ClassConstAnalyzer
                     $fq_class_name,
                     $stmt->name->name,
                     $class_visibility,
-                    $statements_analyzer
+                    $statements_analyzer,
                 );
             } catch (InvalidArgumentException $_) {
                 return true;
@@ -554,9 +554,9 @@ class ClassConstAnalyzer
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 return true;
@@ -568,7 +568,7 @@ class ClassConstAnalyzer
                         $fq_class_name,
                         $stmt->name->name,
                         ReflectionProperty::IS_PRIVATE,
-                        $statements_analyzer
+                        $statements_analyzer,
                     );
                 }
 
@@ -576,17 +576,17 @@ class ClassConstAnalyzer
                     IssueBuffer::maybeAdd(
                         new InaccessibleClassConstant(
                             'Constant ' . $const_id . ' is not visible in this context',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
                             'Constant ' . $const_id . ' is not defined',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -597,7 +597,7 @@ class ClassConstAnalyzer
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
                     strtolower($fq_class_name) . '::' . $stmt->name->name,
-                    false
+                    false,
                 );
             }
 
@@ -613,7 +613,7 @@ class ClassConstAnalyzer
                         $file_manipulations[] = new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
-                            $new_const_name
+                            $new_const_name,
                         );
 
                         FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
@@ -632,9 +632,9 @@ class ClassConstAnalyzer
                             . InternalClass::listToPhrase($const_class_storage->internal)
                             . ' but called from ' . $context->self,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $fq_class_name
+                        $fq_class_name,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -643,9 +643,9 @@ class ClassConstAnalyzer
                     new DeprecatedClass(
                         'Class ' . $fq_class_name . ' is deprecated',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $fq_class_name
+                        $fq_class_name,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif (isset($const_class_storage->constants[$stmt->name->name])
                 && $const_class_storage->constants[$stmt->name->name]->deprecated
@@ -653,9 +653,9 @@ class ClassConstAnalyzer
                 IssueBuffer::maybeAdd(
                     new DeprecatedConstant(
                         'Constant ' . $const_id . ' is deprecated',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -692,7 +692,7 @@ class ClassConstAnalyzer
                     && !UnionTypeComparator::isContainedBy(
                         $statements_analyzer->getCodebase(),
                         $assigned_type,
-                        $const_storage->type
+                        $const_storage->type,
                     )
                 ) {
                     IssueBuffer::maybeAdd(
@@ -700,7 +700,7 @@ class ClassConstAnalyzer
                             "{$class_storage->name}::{$const->name->name} with declared type "
                             . "{$const_storage->type->getId()} cannot be assigned type {$assigned_type->getId()}",
                             $const_storage->stmt_location,
-                            "{$class_storage->name}::{$const->name->name}"
+                            "{$class_storage->name}::{$const->name->name}",
                         ),
                         $const_storage->suppressed_issues,
                     );
@@ -718,7 +718,7 @@ class ClassConstAnalyzer
                 $class_storage,
                 $const_storage,
                 $const_name,
-                $codebase
+                $codebase,
             );
 
             $type_location = $const_storage->location ?? $const_storage->stmt_location;
@@ -735,7 +735,7 @@ class ClassConstAnalyzer
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $const_storage->type,
-                        $parent_const_storage->type
+                        $parent_const_storage->type,
                     )
                 ) {
                     if (UnionTypeComparator::isContainedBy(
@@ -751,9 +751,9 @@ class ClassConstAnalyzer
                                     . "\"{$parent_const_storage->type->getId()}\" inherited from "
                                     . "{$parent_classlike_storage->name}::{$const_name}",
                                 $type_location,
-                                "{$class_storage->name}::{$const_name}"
+                                "{$class_storage->name}::{$const_name}",
                             ),
-                            $const_storage->suppressed_issues
+                            $const_storage->suppressed_issues,
                         );
                     } else {
                         // Completely different
@@ -764,9 +764,9 @@ class ClassConstAnalyzer
                                     . "\"{$parent_const_storage->type->getId()}\" inherited from "
                                     . "{$parent_classlike_storage->name}::{$const_name}",
                                 $type_location,
-                                "{$class_storage->name}::{$const_name}"
+                                "{$class_storage->name}::{$const_name}",
                             ),
-                            $const_storage->suppressed_issues
+                            $const_storage->suppressed_issues,
                         );
                     }
                 }
@@ -778,9 +778,9 @@ class ClassConstAnalyzer
                             "{$const_name} cannot be overridden because it is marked as final in "
                                 . $parent_classlike_storage->name,
                             $type_location,
-                            "{$class_storage->name}::{$const_name}"
+                            "{$class_storage->name}::{$const_name}",
                         ),
-                        $const_storage->suppressed_issues
+                        $const_storage->suppressed_issues,
                     );
                 }
             }
@@ -793,7 +793,7 @@ class ClassConstAnalyzer
                             "Class constants cannot be marked final before PHP 8.1",
                             $const_storage->stmt_location,
                         ),
-                        $const_storage->suppressed_issues
+                        $const_storage->suppressed_issues,
                     );
                 }
             }
@@ -824,7 +824,7 @@ class ClassConstAnalyzer
                     $interface_overrides[strtolower($interface)] = new OverriddenInterfaceConstant(
                         "{$class_storage->name}::{$const_name} cannot override constant from $interface",
                         $const_storage->location,
-                        "{$class_storage->name}::{$const_name}"
+                        "{$class_storage->name}::{$const_name}",
                     );
                 }
                 if ($interface_const_storage !== null && $const_storage->location !== null) {
@@ -837,9 +837,9 @@ class ClassConstAnalyzer
                                 "Ambiguous inheritance of {$class_storage->name}::{$const_name} from $interface and "
                                     . $parent_classlike_storage->name,
                                 $const_storage->location,
-                                "{$class_storage->name}::{$const_name}"
+                                "{$class_storage->name}::{$const_name}",
                             ),
-                            $const_storage->suppressed_issues
+                            $const_storage->suppressed_issues,
                         );
                     }
                 }
@@ -860,9 +860,9 @@ class ClassConstAnalyzer
                                 "Ambiguous inheritance of {$class_storage->name}::{$const_name} from "
                                     . "$parent_classlike_storage->name and $parent_class",
                                 $const_storage->location,
-                                "{$class_storage->name}::{$const_name}"
+                                "{$class_storage->name}::{$const_name}",
                             ),
-                            $const_storage->suppressed_issues
+                            $const_storage->suppressed_issues,
                         );
                     }
                 }
@@ -888,7 +888,7 @@ class ClassConstAnalyzer
         foreach ($interface_overrides as $_ => $issue) {
             IssueBuffer::maybeAdd(
                 $issue,
-                $const_storage->suppressed_issues
+                $const_storage->suppressed_issues,
             );
         }
 

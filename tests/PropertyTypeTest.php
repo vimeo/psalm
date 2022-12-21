@@ -46,7 +46,7 @@ class PropertyTypeTest extends TestCase
 
                         return $this->x;
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -78,7 +78,7 @@ class PropertyTypeTest extends TestCase
 
                         return $this->x;
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -114,7 +114,7 @@ class PropertyTypeTest extends TestCase
                     }
 
                     if ($x->x === null) {}
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -146,7 +146,7 @@ class PropertyTypeTest extends TestCase
                         private function foo() : void {
                             $this->bar = 5;
                         }
-                    }'
+                    }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -187,7 +187,7 @@ class PropertyTypeTest extends TestCase
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -225,7 +225,7 @@ class PropertyTypeTest extends TestCase
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -259,7 +259,7 @@ class PropertyTypeTest extends TestCase
                         XCollector::modify();
                         if ($x->x === null) {}
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -284,7 +284,7 @@ class PropertyTypeTest extends TestCase
                             maybeMutates();
                         }
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -326,7 +326,7 @@ class PropertyTypeTest extends TestCase
                             array_pop($this->c);
                         }
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -363,7 +363,7 @@ class PropertyTypeTest extends TestCase
                             array_pop($this->b);
                         }
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -405,7 +405,7 @@ class PropertyTypeTest extends TestCase
                             array_pop($this->c);
                         }
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -447,7 +447,7 @@ class PropertyTypeTest extends TestCase
                             array_pop($this->c);
                         }
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -489,7 +489,7 @@ class PropertyTypeTest extends TestCase
                             array_pop($this->c);
                         }
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -508,7 +508,7 @@ class PropertyTypeTest extends TestCase
 
                 // sets are fine
                 $f->buzz = false;
-        '
+        ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -544,7 +544,7 @@ class PropertyTypeTest extends TestCase
 
                         return $this->x;
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -729,7 +729,7 @@ class PropertyTypeTest extends TestCase
                 'code' => '<?php
                     function foo(DOMElement $e) : ?DOMAttr {
                         return $e->attributes->item(0);
-                    }'
+                    }',
             ],
             'goodArrayProperties' => [
                 'code' => '<?php
@@ -2040,7 +2040,7 @@ class PropertyTypeTest extends TestCase
 
                         /** @var array<int, static> */
                         private $t2 = [];
-                    }'
+                    }',
             ],
             'propagateIgnoreNullableOnPropertyFetch' => [
                 'code' => '<?php
@@ -2096,7 +2096,7 @@ class PropertyTypeTest extends TestCase
                                 $this->foo = true;
                             }
                         }
-                    }'
+                    }',
             ],
             'testRemoveClauseAfterReassignment' => [
                 'code' => '<?php
@@ -2134,7 +2134,7 @@ class PropertyTypeTest extends TestCase
 
                             $this->a = "bar";
                         }
-                    }'
+                    }',
             ],
             'allowGoodArrayPushOnArrayValue' => [
                 'code' => '<?php
@@ -2173,7 +2173,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct() {
                             parent::__construct();
                         }
-                    }'
+                    }',
             ],
             'noConditionalCallToParentConstructor' => [
                 'code' => '<?php
@@ -2194,7 +2194,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct() {
                             parent::__construct();
                         }
-                    }'
+                    }',
             ],
             'allowByReferenceAssignmentToUninitializedNullableProperty' => [
                 'code' => '<?php
@@ -2212,7 +2212,7 @@ class PropertyTypeTest extends TestCase
                         public function foo(&$onCancel) : void {
                             $onCancel = function (): void {};
                         }
-                    }'
+                    }',
             ],
             'dontCarryAssertionsOver' => [
                 'code' => '<?php
@@ -2240,7 +2240,7 @@ class PropertyTypeTest extends TestCase
                                 return;
                             }
                         }
-                    }'
+                    }',
             ],
             'useVariableAccessInStatic' => [
                 'code' => '<?php
@@ -2252,7 +2252,7 @@ class PropertyTypeTest extends TestCase
                     $model = new A2();
                     $message = $model::$title;
                     $message .= $model::$label;
-                    echo $message;'
+                    echo $message;',
             ],
             'staticPropertyInFinalMethod' => [
                 'code' => '<?php
@@ -2269,7 +2269,7 @@ class PropertyTypeTest extends TestCase
                         public function baz(): Bar {
                             return $this->foo;
                         }
-                    }'
+                    }',
             ],
             'aliasedFinalMethod' => [
                 'code' => '<?php
@@ -2288,7 +2288,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct() {
                             $this->setPropFinal(1);
                         }
-                    }'
+                    }',
             ],
             'aliasedAsFinalMethod' => [
                 'code' => '<?php
@@ -2307,7 +2307,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct() {
                             $this->setPropFinal(1);
                         }
-                    }'
+                    }',
             ],
             'staticPropertyAssertion' => [
                 'code' => '<?php
@@ -2325,7 +2325,7 @@ class PropertyTypeTest extends TestCase
                                 }
                             }
                         }
-                    }'
+                    }',
             ],
             'dontMemoizePropertyTypeAfterRootVarAssertion' => [
                 'code' => '<?php
@@ -2343,7 +2343,7 @@ class PropertyTypeTest extends TestCase
                         if ($o instanceof A) {
                             echo strlen($o->i);
                         }
-                    }'
+                    }',
             ],
             'unionPropertyType' => [
                 'code' => '<?php
@@ -2373,7 +2373,7 @@ class PropertyTypeTest extends TestCase
                             $class = get_called_class();
                             $class::$stack[] = 1;
                         }
-                    }'
+                    }',
             ],
             'promotedPublicPropertyWithDefault' => [
                 'code' => '<?php
@@ -2381,7 +2381,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct(public int $foo = 5) {}
                     }
 
-                    echo (new A)->foo;'
+                    echo (new A)->foo;',
             ],
             'promotedPublicPropertyWitoutDefault' => [
                 'code' => '<?php
@@ -2389,7 +2389,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct(public int $foo) {}
                     }
 
-                    echo (new A(5))->foo;'
+                    echo (new A(5))->foo;',
             ],
             'promotedProtectedProperty' => [
                 'code' => '<?php
@@ -2401,7 +2401,7 @@ class PropertyTypeTest extends TestCase
                         public function bar() : int {
                             return $this->foo;
                         }
-                    }'
+                    }',
             ],
             'skipConstructor' => [
                 'code' => '<?php
@@ -2422,7 +2422,7 @@ class PropertyTypeTest extends TestCase
 
                             echo $this->s;
                         }
-                    }'
+                    }',
             ],
             'getPropertyThatMayNotBeSet' => [
                 'code' => '<?php
@@ -2459,7 +2459,7 @@ class PropertyTypeTest extends TestCase
                             $this->b = "c";
                             echo strlen($this->b);
                         }
-                    }'
+                    }',
             ],
             'noErrorForSplatArgs' => [
                 'code' => '<?php
@@ -2471,7 +2471,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }
 
-                    class Bar extends Foo {}'
+                    class Bar extends Foo {}',
             ],
             'noUndefinedPropertyIssueAfterSuppressingOnInterface' => [
                 'code' => '<?php
@@ -2483,7 +2483,7 @@ class PropertyTypeTest extends TestCase
                          * @psalm-suppress MixedArgument
                          */
                         echo $i->foo;
-                    }'
+                    }',
             ],
             'noRedundantCastWhenCheckingProperties' => [
                 'code' => '<?php
@@ -2505,7 +2505,7 @@ class PropertyTypeTest extends TestCase
                             $key = reset($keys);
                             echo (string) $key;
                         }
-                    }'
+                    }',
             ],
             'ignoreUndefinedMethodOnUnion' => [
                 'code' => '<?php
@@ -2531,7 +2531,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'dynamicPropertyFetch' => [
                 'code' => '<?php
@@ -2542,7 +2542,7 @@ class PropertyTypeTest extends TestCase
                     function takesFoo(?Foo $foo, string $b) : void {
                         /** @psalm-suppress MixedArgument */
                         echo $foo->{$b} ?? null;
-                    }'
+                    }',
             ],
             'nullCoalesceWithNullablePropertyAccess' => [
                 'code' => '<?php
@@ -2555,7 +2555,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'possiblyNullOnFunctionCallCoalesced' => [
                 'code' => '<?php
@@ -2590,7 +2590,7 @@ class PropertyTypeTest extends TestCase
                                 $this->a = new A();
                             }
                         }
-                    }'
+                    }',
             ],
             'allowDefaultForTemplatedProperty' => [
                 'code' => '<?php
@@ -2607,14 +2607,14 @@ class PropertyTypeTest extends TestCase
                      */
                     class AChild extends A {
                         public $foo = ["hello"];
-                    }'
+                    }',
             ],
             'allowBuiltinPropertyDocblock' => [
                 'code' => '<?php
                     class FooException extends LogicException {
                         /** @var int */
                         protected $code = 404;
-                    }'
+                    }',
             ],
             'dontMemoizeFinalMutationFreeInferredMethod' => [
                 'code' => '<?php
@@ -2643,7 +2643,7 @@ class PropertyTypeTest extends TestCase
                     assert($mode->isAutoCommitEnabled() === false);
 
                     $mode->enableAutoCommit();
-                    assert($mode->isAutoCommitEnabled() === true);'
+                    assert($mode->isAutoCommitEnabled() === true);',
             ],
             'promotedInheritedPropertyWithDocblock' => [
                 'code' => '<?php
@@ -2655,7 +2655,7 @@ class PropertyTypeTest extends TestCase
                     final class B extends A {
                         /** @param array $arr */
                         protected function __construct(public array $arr){}
-                    }'
+                    }',
             ],
             'nullsafeShortCircuit' => [
                 'code' => '<?php
@@ -2671,7 +2671,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'impossibleIntersection' => [
                 'code' => '<?php
@@ -2685,7 +2685,7 @@ class PropertyTypeTest extends TestCase
                     ',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
         ];
     }
@@ -3455,7 +3455,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
-                'ignored_issues' => ['MixedArgument', 'MissingPropertyType']
+                'ignored_issues' => ['MixedArgument', 'MissingPropertyType'],
             ],
             'unitializedObjectProperty' => [
                 'code' => '<?php
@@ -3601,7 +3601,7 @@ class PropertyTypeTest extends TestCase
                          */
                         public static $test = ["string-key" => 1];
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue'
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'addNullToMixedAfterNullablePropertyFetch' => [
                 'code' => '<?php
@@ -3639,7 +3639,7 @@ class PropertyTypeTest extends TestCase
                             $this->map[$class] = 5;
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue'
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'preventArrayPushOnArrayValue' => [
                 'code' => '<?php
@@ -3656,7 +3656,7 @@ class PropertyTypeTest extends TestCase
                             array_push($this->prop, "bad");
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue'
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'overriddenConstructorCalledMethod' => [
                 'code' => '<?php
@@ -3675,7 +3675,7 @@ class PropertyTypeTest extends TestCase
                     class ChildClass extends ParentClass {
                         public function init(): void {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor'
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'propertyWithSameNameUndefined' => [
                 'code' => '<?php
@@ -3789,7 +3789,7 @@ class PropertyTypeTest extends TestCase
                     (new A)->prop = 42;
                 ',
                 'error_message' => 'UndefinedPropertyAssignment',
-            ]
+            ],
         ];
     }
 }

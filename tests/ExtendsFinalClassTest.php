@@ -21,7 +21,7 @@ class ExtendsFinalClassTest extends TestCase
                 /**
                 * @psalm-suppress InvalidExtendClass
                 */
-                class B extends A {}'
+                class B extends A {}',
             ],
             'suppressingIssueWhenUsedWithAnnotation' => [
                 'code' => '<?php
@@ -34,7 +34,7 @@ class ExtendsFinalClassTest extends TestCase
                 /**
                 * @psalm-suppress InvalidExtendClass
                 */
-                class B extends A {}'
+                class B extends A {}',
             ],
         ];
     }

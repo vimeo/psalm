@@ -51,7 +51,7 @@ class FileScanner implements FileSource
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
             $codebase->analysis_php_version_id,
-            $progress
+            $progress,
         );
 
         foreach ($stmts as $stmt) {
@@ -73,7 +73,7 @@ class FileScanner implements FileSource
 
         $traverser = new NodeTraverser();
         $traverser->addVisitor(
-            new ReflectorVisitor($codebase, $this, $file_storage)
+            new ReflectorVisitor($codebase, $this, $file_storage),
         );
 
         $traverser->traverse($stmts);

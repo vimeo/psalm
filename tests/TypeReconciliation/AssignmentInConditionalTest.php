@@ -25,7 +25,7 @@ class AssignmentInConditionalTest extends TestCase
                         ($foo !== null) || ($foo = "");
 
                         return $foo;
-                    }'
+                    }',
             ],
             'andWithAssignment' => [
                 'code' => '<?php
@@ -38,7 +38,7 @@ class AssignmentInConditionalTest extends TestCase
                         ($foo === null) && ($foo = "");
 
                         return $foo;
-                    }'
+                    }',
             ],
             'assertHardConditionalWithString' => [
                 'code' => '<?php
@@ -56,7 +56,7 @@ class AssignmentInConditionalTest extends TestCase
                         }
 
                         return $value; // $value is SomeObject here and cannot be a string
-                    }'
+                    }',
             ],
             'assertOnRemainderOfArray' => [
                 'code' => '<?php
@@ -97,7 +97,7 @@ class AssignmentInConditionalTest extends TestCase
                         }
 
                         return $value;
-                    }'
+                    }',
             ],
             'SKIPPED-assertVarRedefinedInOpWithAnd' => [
                 'code' => '<?php
@@ -111,7 +111,7 @@ class AssignmentInConditionalTest extends TestCase
                     $a = is_string($value) && (($value = rand(0, 1) ? new O : null) !== null) && $value->foo();',
                 'assertions' => [
                     '$a' => 'bool',
-                ]
+                ],
             ],
             'assertVarRedefinedInOpWithOr' => [
                 'code' => '<?php
@@ -125,7 +125,7 @@ class AssignmentInConditionalTest extends TestCase
                     $a = !is_string($value) || (($value = rand(0, 1) ? new O : null) === null) || $value->foo();',
                 'assertions' => [
                     '$a' => 'bool',
-                ]
+                ],
             ],
             'assertVarInOrAfterAnd' => [
                 'code' => '<?php
@@ -137,7 +137,7 @@ class AssignmentInConditionalTest extends TestCase
 
                     function foo(?A $a, ?A $b): void {
                         $c = ($a instanceof B && $b instanceof B) || ($a instanceof C && $b instanceof C);
-                    }'
+                    }',
             ],
             'assertAssertionsWithCreation' => [
                 'code' => '<?php
@@ -151,7 +151,7 @@ class AssignmentInConditionalTest extends TestCase
 
                     function foo(?A $a, ?A $c): void {
                         $c = $a && ($b = getA($a)) && $c ? 1 : 0;
-                    }'
+                    }',
             ],
             'definedInBothBranchesOfConditional' => [
                 'code' => '<?php
@@ -168,7 +168,7 @@ class AssignmentInConditionalTest extends TestCase
                         if (($a = getA()) || ($a = getA())) {
                             $a->foo();
                         }
-                    }'
+                    }',
             ],
             'definedInConditionalAndCheckedInSubbranch' => [
                 'code' => '<?php
@@ -186,7 +186,7 @@ class AssignmentInConditionalTest extends TestCase
                                 $a->foo();
                             }
                         }
-                    }'
+                    }',
             ],
             'definedInRhsOfConditionalInNegation' => [
                 'code' => '<?php
@@ -202,7 +202,7 @@ class AssignmentInConditionalTest extends TestCase
                         if (rand(0, 1) && ($a = getA()) !== null) {
                             $a->foo();
                         }
-                    }'
+                    }',
             ],
             'definedInOrRHS' => [
                 'code' => '<?php
@@ -220,7 +220,7 @@ class AssignmentInConditionalTest extends TestCase
                             return;
                         }
                         $a->foo();
-                    }'
+                    }',
             ],
             'possiblyDefinedVarInAssertion' => [
                 'code' => '<?php
@@ -236,7 +236,7 @@ class AssignmentInConditionalTest extends TestCase
                         }
 
                         echo isset($a);
-                    }'
+                    }',
             ],
             'applyTruthyAssertionsToRightHandSideOfAssignment' => [
                 'code' => '<?php
@@ -250,7 +250,7 @@ class AssignmentInConditionalTest extends TestCase
 
                     if ($foo = ($name !== null)) {
                         takesAString($name);
-                    }'
+                    }',
             ],
             'maintainTruthinessInsideAssignment' => [
                 'code' => '<?php
@@ -269,7 +269,7 @@ class AssignmentInConditionalTest extends TestCase
                             /** @psalm-suppress MixedMethodCall */
                             $a->foo();
                         }
-                    }'
+                    }',
             ],
             'allowBasicOrAssignment' => [
                 'code' => '<?php
@@ -287,7 +287,7 @@ class AssignmentInConditionalTest extends TestCase
                         }
 
                         return $match[0];
-                    }'
+                    }',
             ],
             'noParadoxicalConditionAfterTwoAssignments' => [
                 'code' => '<?php
@@ -297,7 +297,7 @@ class AssignmentInConditionalTest extends TestCase
                         }
 
                         return $pos;
-                    }'
+                    }',
             ],
             'assignmentInIf' => [
                 'code' => '<?php
@@ -443,14 +443,14 @@ class AssignmentInConditionalTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'assignmentForComparison' => [
                 'code' => '<?php
                     function foo(int $b): void {
                         if ($a = $b > 1) {}
                         if ($a) {}
-                    }'
+                    }',
             ],
         ];
     }

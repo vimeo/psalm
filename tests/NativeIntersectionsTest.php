@@ -29,7 +29,7 @@ class NativeIntersectionsTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'nativeTypeIntersectionAsArgument' => [
                 'code' => '<?php
@@ -49,7 +49,7 @@ class NativeIntersectionsTest extends TestCase
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
         ];
     }
@@ -75,7 +75,7 @@ class NativeIntersectionsTest extends TestCase
                 ',
                 'error_message' => 'InvalidArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'mismatchDocblockNativeIntersectionArgument' => [
                 'code' => '<?php
@@ -95,7 +95,7 @@ class NativeIntersectionsTest extends TestCase
                 ',
                 'error_message' => 'MismatchingDocblockParamType',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'intersectionsNotAllowedWithUnions' => [
                 'code' => '<?php
@@ -110,7 +110,7 @@ class NativeIntersectionsTest extends TestCase
                     }',
                 'error_message' => 'ParseError',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'intersectionsNotAllowedWithNonClasses' => [
                 'code' => '<?php
@@ -121,7 +121,7 @@ class NativeIntersectionsTest extends TestCase
                     }',
                 'error_message' => 'ParseError',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'intersectionsNotAllowedInPHP80' => [
                 'code' => '<?php
@@ -134,7 +134,7 @@ class NativeIntersectionsTest extends TestCase
                     }',
                 'error_message' => 'ParseError',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
         ];
     }

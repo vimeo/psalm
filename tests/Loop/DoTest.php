@@ -16,6 +16,14 @@ class DoTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileTrue' => [
+                'code' => '<?php
+                    function ret(): int {
+                        do {
+                            return 1;
+                        } while (true);
+                    }',
+            ],
             'doWhileVar' => [
                 'code' => '<?php
                     $worked = false;
@@ -331,8 +339,8 @@ class DoTest extends TestCase
                         }
                     } while (!$b);',
                 'assertions' => [
-                    '$b' => 'true'
-                ]
+                    '$b' => 'true',
+                ],
             ],
             'doConditionInWhileAndIfWithTwoVars' => [
                 'code' => '<?php
@@ -343,21 +351,21 @@ class DoTest extends TestCase
                         if (!$b && $s) {}
                     } while (!$b && $s);
 
-                    if ($b) {}'
+                    if ($b) {}',
             ],
             'regularAssignmentInsideDo' => [
                 'code' => '<?php
                     do {
                         $code = rand(0, 1);
                         echo "here";
-                    } while ($code === 1);'
+                    } while ($code === 1);',
             ],
             'destructuringAssignmentInsideDo' => [
                 'code' => '<?php
                     do {
                         [$code] = [rand(0, 1)];
                         echo "here";
-                    } while ($code === 1);'
+                    } while ($code === 1);',
             ],
         ];
     }

@@ -40,7 +40,7 @@ class ThrowAnalyzer
                     $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $context->finally_scope->vars_in_scope[$var_id],
                         $type,
-                        $statements_analyzer->getCodebase()
+                        $statements_analyzer->getCodebase(),
                     );
                 } else {
                     $type = $type->setPossiblyUndefined(true, true);
@@ -67,9 +67,9 @@ class ThrowAnalyzer
                             'Cannot throw ' . $throw_type_part
                                 . ' as it does not extend Exception or implement Throwable',
                             new CodeLocation($file_analyzer, $stmt),
-                            (string) $throw_type_part
+                            (string) $throw_type_part,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
                         return false;
                     }

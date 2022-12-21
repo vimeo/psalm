@@ -87,7 +87,7 @@ final class TKeyOf extends TArrayKey
                 } else {
                     $array_key_atomics = static::getArrayKeyType(
                         $atomic_type->as,
-                        $keep_template_params
+                        $keep_template_params,
                     );
                     if ($array_key_atomics === null) {
                         continue;
@@ -99,7 +99,7 @@ final class TKeyOf extends TArrayKey
 
             $key_types = array_merge(
                 $key_types,
-                array_values($array_key_atomics->getAtomicTypes())
+                array_values($array_key_atomics->getAtomicTypes()),
             );
         }
 

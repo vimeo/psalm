@@ -106,12 +106,12 @@ class NamespaceAnalyzer extends SourceAnalyzer
         if ($stmt instanceof PhpParser\Node\Stmt\Class_ || $stmt instanceof PhpParser\Node\Stmt\Enum_) {
             $this->source->addNamespacedClassAnalyzer(
                 $fq_class_name,
-                new ClassAnalyzer($stmt, $this, $fq_class_name)
+                new ClassAnalyzer($stmt, $this, $fq_class_name),
             );
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
             $this->source->addNamespacedInterfaceAnalyzer(
                 $fq_class_name,
-                new InterfaceAnalyzer($stmt, $this, $fq_class_name)
+                new InterfaceAnalyzer($stmt, $this, $fq_class_name),
             );
         }
     }

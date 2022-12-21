@@ -19,7 +19,7 @@ class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws Foo
                  */
-                function bar() : void {}'
+                function bar() : void {}',
         );
 
         $context = new Context();
@@ -40,7 +40,7 @@ class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws Foo
                  */
-                function bar() : void {}'
+                function bar() : void {}',
         );
 
         $context = new Context();
@@ -60,7 +60,7 @@ class ThrowsAnnotationTest extends TestCase
                      * @throws MyException|Throwable
                      */
                     public function bar() : void {}
-                }'
+                }',
         );
 
         $context = new Context();
@@ -87,7 +87,7 @@ class ThrowsAnnotationTest extends TestCase
                     }
 
                     return intdiv($x, $y);
-                }'
+                }',
         );
 
         $context = new Context();
@@ -116,7 +116,7 @@ class ThrowsAnnotationTest extends TestCase
                     }
 
                     return intdiv($x, $y);
-                }'
+                }',
         );
 
         $context = new Context();
@@ -144,7 +144,7 @@ class ThrowsAnnotationTest extends TestCase
                     }
 
                     return intdiv($x, $y);
-                }'
+                }',
         );
 
         $context = new Context();
@@ -168,7 +168,7 @@ class ThrowsAnnotationTest extends TestCase
                     }
 
                     return intdiv($x, $y);
-                }'
+                }',
         );
 
         $context = new Context();
@@ -203,7 +203,7 @@ class ThrowsAnnotationTest extends TestCase
 
                 function bar(int $x, int $y) : void {
                     foo($x, $y);
-                }'
+                }',
         );
 
         $context = new Context();
@@ -240,7 +240,7 @@ class ThrowsAnnotationTest extends TestCase
                  */
                 function bar(int $x, int $y) : void {
                     foo($x, $y);
-                }'
+                }',
         );
 
         $context = new Context();
@@ -277,7 +277,7 @@ class ThrowsAnnotationTest extends TestCase
                             return "";
                         }
                     }
-                }'
+                }',
         );
 
         $context = new Context();
@@ -314,7 +314,7 @@ class ThrowsAnnotationTest extends TestCase
                     } catch (RangeException $e) {
 
                     } catch (InvalidArgumentException $e) {}
-                }'
+                }',
         );
 
         $context = new Context();
@@ -353,7 +353,7 @@ class ThrowsAnnotationTest extends TestCase
                     } catch (\RangeException $e) {
 
                     }
-                }'
+                }',
         );
 
         $context = new Context();
@@ -373,7 +373,7 @@ class ThrowsAnnotationTest extends TestCase
                 /**
                  * @throws
                  */
-                function foo(int $x, int $y) : int {}'
+                function foo(int $x, int $y) : int {}',
         );
 
         $context = new Context();
@@ -408,7 +408,7 @@ class ThrowsAnnotationTest extends TestCase
                     try {
                         foo($x, $y);
                     } catch (Exception $e) {}
-                }'
+                }',
         );
 
         $context = new Context();
@@ -441,7 +441,7 @@ class ThrowsAnnotationTest extends TestCase
                         throw new \InvalidArgumentException();
                     }
                 }
-                '
+                ',
         );
 
         $context = new Context();
@@ -471,7 +471,7 @@ class ThrowsAnnotationTest extends TestCase
                         throw new \InvalidArgumentException();
                     }
                 }
-                '
+                ',
         );
 
         $context = new Context();
@@ -505,7 +505,7 @@ class ThrowsAnnotationTest extends TestCase
                         throw new \OutOfBoundsException();
                     }
                 }
-                '
+                ',
         );
 
         $context = new Context();
@@ -539,7 +539,7 @@ class ThrowsAnnotationTest extends TestCase
                         throw new \InvalidArgumentException();
                     }
                 }
-                '
+                ',
         );
 
         $context = new Context();
@@ -574,7 +574,7 @@ class ThrowsAnnotationTest extends TestCase
                         throw new \InvalidArgumentException();
                     }
                 }
-                '
+                ',
         );
 
         $context = new Context();
@@ -600,7 +600,7 @@ class ThrowsAnnotationTest extends TestCase
                     } catch (Exception $e) {
                         throw new RuntimeException("bar");
                     }
-                }'
+                }',
         );
 
         $context = new Context();
@@ -627,7 +627,7 @@ class ThrowsAnnotationTest extends TestCase
                     } catch (\Exception $e) {
                         throw new \RuntimeException();
                     }
-                }'
+                }',
         );
 
         $context = new Context();

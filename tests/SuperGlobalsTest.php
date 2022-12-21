@@ -17,7 +17,7 @@ class SuperGlobalsTest extends TestCase
                     return $http_response_header;
                 }
             ',
-            'assertions' => []
+            'assertions' => [],
         ];
 
         yield 'ENV has scalar entries only' => [
@@ -26,7 +26,7 @@ class SuperGlobalsTest extends TestCase
                 function f(): array {
                     return $_ENV;
                 }
-            '
+            ',
         ];
     }
 }

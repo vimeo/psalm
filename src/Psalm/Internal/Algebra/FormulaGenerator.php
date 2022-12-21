@@ -47,7 +47,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
             $right_assertions = self::getFormula(
@@ -58,7 +58,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
             return [...$left_assertions, ...$right_assertions];
@@ -75,7 +75,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
             $right_clauses = self::getFormula(
@@ -86,7 +86,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
             return Algebra::combineOredClauses($left_clauses, $right_clauses, $conditional_object_id);
@@ -97,13 +97,13 @@ class FormulaGenerator
                 $and_expr = new VirtualBooleanAnd(
                     new VirtualBooleanNot(
                         $conditional->expr->left,
-                        $conditional->getAttributes()
+                        $conditional->getAttributes(),
                     ),
                     new VirtualBooleanNot(
                         $conditional->expr->right,
-                        $conditional->getAttributes()
+                        $conditional->getAttributes(),
                     ),
-                    $conditional->expr->getAttributes()
+                    $conditional->expr->getAttributes(),
                 );
 
                 return self::getFormula(
@@ -114,7 +114,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    false
+                    false,
                 );
             }
 
@@ -134,7 +134,7 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         $inside_negation,
-                        $cache
+                        $cache,
                     );
 
                     if ($cache && $source instanceof StatementsAnalyzer) {
@@ -166,7 +166,7 @@ class FormulaGenerator
                                 false,
                                 true,
                                 $orred_types[0]->hasEquality(),
-                                $redefined ? [$var => true] : []
+                                $redefined ? [$var => true] : [],
                             );
                         }
                     }
@@ -179,13 +179,13 @@ class FormulaGenerator
                 $and_expr = new VirtualBooleanOr(
                     new VirtualBooleanNot(
                         $conditional->expr->left,
-                        $conditional->getAttributes()
+                        $conditional->getAttributes(),
                     ),
                     new VirtualBooleanNot(
                         $conditional->expr->right,
-                        $conditional->getAttributes()
+                        $conditional->getAttributes(),
                     ),
-                    $conditional->expr->getAttributes()
+                    $conditional->expr->getAttributes(),
                 );
 
                 return self::getFormula(
@@ -196,7 +196,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    false
+                    false,
                 );
             }
 
@@ -208,8 +208,8 @@ class FormulaGenerator
                     $this_class_name,
                     $source,
                     $codebase,
-                    !$inside_negation
-                )
+                    !$inside_negation,
+                ),
             );
         }
 
@@ -234,8 +234,8 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         !$inside_negation,
-                        $cache
-                    )
+                        $cache,
+                    ),
                 );
             }
 
@@ -254,8 +254,8 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         !$inside_negation,
-                        $cache
-                    )
+                        $cache,
+                    ),
                 );
             }
 
@@ -273,7 +273,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    $cache
+                    $cache,
                 );
             }
 
@@ -291,7 +291,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    $cache
+                    $cache,
                 );
             }
         }
@@ -317,8 +317,8 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         !$inside_negation,
-                        $cache
-                    )
+                        $cache,
+                    ),
                 );
             }
 
@@ -337,8 +337,8 @@ class FormulaGenerator
                         $source,
                         $codebase,
                         !$inside_negation,
-                        $cache
-                    )
+                        $cache,
+                    ),
                 );
             }
 
@@ -356,7 +356,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    $cache
+                    $cache,
                 );
             }
 
@@ -374,7 +374,7 @@ class FormulaGenerator
                     $source,
                     $codebase,
                     $inside_negation,
-                    $cache
+                    $cache,
                 );
             }
         }
@@ -388,7 +388,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
         }
 
@@ -405,7 +405,7 @@ class FormulaGenerator
                 $source,
                 $codebase,
                 $inside_negation,
-                $cache
+                $cache,
             );
 
             if ($cache && $source instanceof StatementsAnalyzer) {
@@ -437,7 +437,7 @@ class FormulaGenerator
                         false,
                         true,
                         $orred_types[0]->hasEquality(),
-                        $redefined ? [$var => true] : []
+                        $redefined ? [$var => true] : [],
                     );
                 }
             }
@@ -455,8 +455,8 @@ class FormulaGenerator
             new Clause(
                 [$conditional_ref => ['truthy' => new Truthy()]],
                 $conditional_object_id,
-                $creating_object_id
-            )
+                $creating_object_id,
+            ),
         ];
     }
 }

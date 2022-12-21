@@ -44,8 +44,8 @@ class ClassConstantMoveTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $context = new Context();
@@ -54,7 +54,7 @@ class ClassConstantMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code
+            $input_code,
         );
 
         $codebase = $this->project_analyzer->getCodebase();

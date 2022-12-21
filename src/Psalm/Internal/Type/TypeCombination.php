@@ -3,14 +3,21 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+
+use function is_int;
+use function is_string;
 
 /**
  * @internal
@@ -88,4 +95,34 @@ class TypeCombination
 
     /** @var array<string, ?TNamedObject> */
     public array $class_string_map_as_types = [];
+
+    /**
+     * @psalm-assert-if-true !null $this->objectlike_key_type
+     * @psalm-assert-if-true !null $this->objectlike_value_type
+     * @param array-key $k
+     */
+    public function fallbackKeyContains($k): bool
+    {
+        if (!$this->objectlike_key_type) {
+            return false;
+        }
+        foreach ($this->objectlike_key_type->getAtomicTypes() as $t) {
+            if ($t instanceof TArrayKey) {
+                return true;
+            } elseif ($t instanceof TLiteralInt || $t instanceof TLiteralString) {
+                if ($t->value === $k) {
+                    return true;
+                }
+            } elseif ($t instanceof TIntRange) {
+                if (is_int($k) && $t->contains($k)) {
+                    return true;
+                }
+            } elseif ($t instanceof TString && is_string($k)) {
+                return true;
+            } elseif ($t instanceof TInt && is_int($k)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

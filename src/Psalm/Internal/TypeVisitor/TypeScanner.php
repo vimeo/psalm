@@ -51,7 +51,7 @@ class TypeScanner extends TypeVisitor
                     $type->value,
                     false,
                     !$type->from_docblock,
-                    $this->phantom_classes
+                    $this->phantom_classes,
                 );
 
                 if ($this->file_storage) {
@@ -65,7 +65,7 @@ class TypeScanner extends TypeVisitor
                 $type->fq_classlike_name,
                 false,
                 !$type->from_docblock,
-                $this->phantom_classes
+                $this->phantom_classes,
             );
 
             if ($this->file_storage) {
@@ -80,7 +80,7 @@ class TypeScanner extends TypeVisitor
                 $type->value,
                 false,
                 !$type->from_docblock,
-                $this->phantom_classes
+                $this->phantom_classes,
             );
 
             if ($this->file_storage) {

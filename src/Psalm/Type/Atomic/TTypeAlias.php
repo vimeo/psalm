@@ -43,7 +43,7 @@ final class TTypeAlias extends Atomic
         return new self(
             $this->declaring_fq_classlike_name,
             $this->alias_name,
-            $extra_types
+            $extra_types,
         );
     }
 
@@ -59,8 +59,8 @@ final class TTypeAlias extends Atomic
                 '&',
                 array_map(
                     static fn(Atomic $type): string => $type->getId($exact, true),
-                    $this->extra_types
-                )
+                    $this->extra_types,
+                ),
             );
         }
 

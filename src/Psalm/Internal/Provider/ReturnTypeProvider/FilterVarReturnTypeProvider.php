@@ -101,7 +101,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         ) {
                             $filter_type = Type::combineUnionTypes(
                                 $filter_type,
-                                $options_array->properties['default']
+                                $options_array->properties['default'],
                             );
                         } else {
                             $filter_type = $filter_type->getBuilder()->addType(new TFalse)->freeze();
@@ -144,7 +144,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $function_id,
                 $function_id,
                 null,
-                $code_location
+                $code_location,
             );
 
             $statements_source->data_flow_graph->addNode($function_return_sink);
@@ -154,7 +154,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $function_id,
                 0,
                 null,
-                $code_location
+                $code_location,
             );
 
             $statements_source->data_flow_graph->addNode($function_param_sink);
@@ -162,7 +162,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $statements_source->data_flow_graph->addPath(
                 $function_param_sink,
                 $function_return_sink,
-                'arg'
+                'arg',
             );
 
             return $filter_type->setParentNodes([$function_return_sink->id => $function_return_sink]);

@@ -89,7 +89,7 @@ class AssignmentTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                     '$B' => 'int',
-                ]
+                ],
             ],
         ];
     }

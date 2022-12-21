@@ -45,7 +45,7 @@ class CodebaseTest extends TestCase
             $expected,
             $this->codebase->isTypeContainedByType($input, $container),
             'Expected ' . $input->getId() . ($expected ? ' ' : ' not ')
-            . 'to be contained in ' . $container->getId()
+            . 'to be contained in ' . $container->getId(),
         );
     }
 
@@ -74,7 +74,7 @@ class CodebaseTest extends TestCase
             $expected,
             $this->codebase->canTypeBeContainedByType($input, $container),
             'Expected ' . $input->getId() . ($expected ? ' ' : ' not ')
-            . 'to be contained in ' . $container->getId()
+            . 'to be contained in ' . $container->getId(),
         );
     }
 
@@ -105,13 +105,13 @@ class CodebaseTest extends TestCase
         $this->assertTrue(
             $expected_key_type->equals($actual[0]),
             'Expected ' . $input->getId() . ' to have ' . $expected_key_type
-            . ' but got ' . $actual[0]->getId()
+            . ' but got ' . $actual[0]->getId(),
         );
 
         $this->assertTrue(
             $expected_value_type->equals($actual[1]),
             'Expected ' . $input->getId() . ' to have ' . $expected_value_type
-            . ' but got ' . $actual[1]->getId()
+            . ' but got ' . $actual[1]->getId(),
         );
     }
 
@@ -141,7 +141,7 @@ class CodebaseTest extends TestCase
                     /** @return void */
                     public function m(int $_i = 1) {}
                 }
-            '
+            ',
         );
         $hook = new class implements AfterClassLikeVisitInterface {
             /**
@@ -160,7 +160,7 @@ class CodebaseTest extends TestCase
                         : '';
                     $storage->custom_metadata['implements'] = array_map(
                         fn(Name $aspect): string => (string)$aspect->getAttribute('resolvedName'),
-                        $stmt->implements
+                        $stmt->implements,
                     );
                     $storage->custom_metadata['a'] = 'b';
                     $storage->methods['m']->custom_metadata['c'] = 'd';
@@ -220,7 +220,7 @@ class CodebaseTest extends TestCase
                     return $value;
                 }
                 echo invalidReturnType(123);
-            '
+            ',
         );
 
         $eventHandler = new class implements BeforeAddIssueInterface

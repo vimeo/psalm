@@ -130,9 +130,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                             'Method ' . $codebase_methods->getCasedMethodId($method_id) .
                                 ' is not static, but is called ' .
                                 'using self::',
-                            $code_location
+                            $code_location,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     )) {
                         return;
                     }
@@ -145,9 +145,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         'Method ' . $codebase_methods->getCasedMethodId($method_id) .
                             ' is not static, but is called ' .
                             'statically',
-                        $code_location
+                        $code_location,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 )) {
                     return;
                 }
@@ -174,14 +174,14 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 ? $code_location
                 : null,
             null,
-            $code_location->file_path
+            $code_location->file_path,
         )) {
             return true;
         }
 
         if (IssueBuffer::accepts(
             new UndefinedMethod('Method ' . $method_id . ' does not exist', $code_location, (string) $method_id),
-            $suppressed_issues
+            $suppressed_issues,
         )) {
             return false;
         }
@@ -205,7 +205,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $fq_classlike_name,
                 $method_name,
                 $context,
-                null
+                null,
             );
 
             if ($method_visible !== null) {
@@ -294,8 +294,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             IssueBuffer::maybeAdd(
                 new MethodSignatureMustOmitReturnType(
                     'Method ' . $method_storage->cased_name . ' must not declare a return type',
-                    $code_location
-                )
+                    $code_location,
+                ),
             );
         }
     }
@@ -306,7 +306,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         return new MethodIdentifier(
             $context_self ?: (string) $this->source->getFQCLN(),
-            strtolower($function_name)
+            strtolower($function_name),
         );
     }
 
@@ -321,7 +321,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             IssueBuffer::maybeAdd(new InvalidEnumMethod(
                 'Enums cannot define ' . $method_storage->cased_name,
                 $method_storage->location,
-                $method_storage->defining_fqcln . '::' . $method_storage->cased_name
+                $method_storage->defining_fqcln . '::' . $method_storage->cased_name,
             ));
         }
     }

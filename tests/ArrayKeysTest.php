@@ -55,7 +55,7 @@ class ArrayKeysTest extends TestCase
                     function getKeys(array $array) {
                         return array_keys($array);
                     }
-                '
+                ',
             ],
             'arrayKeysOfKeyedArrayConformsToCorrectLiteralStringList' => [
                 'code' => '<?php
@@ -65,7 +65,7 @@ class ArrayKeysTest extends TestCase
                     function getKeys() {
                         return array_keys(["foo" => 42, "bar" => 42]);
                     }
-                '
+                ',
             ],
             'arrayKeysOfLiteralListConformsToCorrectLiteralOffsets' => [
                 'code' => '<?php
@@ -75,7 +75,7 @@ class ArrayKeysTest extends TestCase
                     function getKeys() {
                         return array_keys(["foo", "bar"]);
                     }
-                '
+                ',
             ],
             'arrayKeyFirstOfLiteralListConformsToCorrectLiteralOffsets' => [
                 'code' => '<?php
@@ -85,7 +85,7 @@ class ArrayKeysTest extends TestCase
                     function getKey() {
                         return array_key_first(["foo", "bar"]);
                     }
-                '
+                ',
             ],
             'arrayKeyLastOfLiteralListConformsToCorrectLiteralOffsets' => [
                 'code' => '<?php
@@ -95,7 +95,7 @@ class ArrayKeysTest extends TestCase
                     function getKey() {
                         return array_key_last(["foo", "bar"]);
                     }
-                '
+                ',
             ],
         ];
     }
@@ -113,7 +113,7 @@ class ArrayKeysTest extends TestCase
                         return array_keys($array);
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'arrayKeysOfStringKeyedArrayDoesntConformToIntList' => [
                 'code' => '<?php
@@ -124,8 +124,8 @@ class ArrayKeysTest extends TestCase
                         return array_keys(["foo" => 42, "bar" => 42]);
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
-            ]
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

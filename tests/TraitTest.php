@@ -885,7 +885,7 @@ class TraitTest extends TestCase
                         public function bar() {
                             return $this;
                         }
-                    }'
+                    }',
             ],
             'classAliasedTrait' => [
                 'code' => '<?php
@@ -936,7 +936,7 @@ class TraitTest extends TestCase
 
                     class A {
                         use T;
-                    }'
+                    }',
             ],
             'propertyNotDefinedInTrait' => [
                 'code' => '<?php
@@ -956,7 +956,7 @@ class TraitTest extends TestCase
                                         : static::$titlefield;
                             return $sortfield;
                         }
-                    }'
+                    }',
             ],
             'staticNotBoundInFinal' => [
                 'code' => '<?php
@@ -972,7 +972,7 @@ class TraitTest extends TestCase
 
                     class A {
                         use Foo;
-                    }'
+                    }',
             ],
             'staticReturnWithFinal' => [
                 'code' => '<?php
@@ -985,7 +985,7 @@ class TraitTest extends TestCase
 
                     final class A {
                         use T;
-                    }'
+                    }',
             ],
             'suppressIssueOnTrait' => [
                 'code' => '<?php
@@ -999,7 +999,7 @@ class TraitTest extends TestCase
                     if (rand(0, 1)) {
                         trait T {}
                     }
-                '
+                ',
             ],
         ];
     }

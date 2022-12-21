@@ -43,7 +43,7 @@ class NonComparisonOpAnalyzer
                 $stmt,
                 $stmt->left,
                 $stmt->right,
-                'nondivop'
+                'nondivop',
             );
 
             return;
@@ -67,7 +67,7 @@ class NonComparisonOpAnalyzer
                 $stmt->right,
                 $stmt,
                 $result_type,
-                $context
+                $context,
             );
 
             if (!$result_type) {
@@ -81,7 +81,7 @@ class NonComparisonOpAnalyzer
                 $stmt,
                 $stmt->left,
                 $stmt->right,
-                'nondivop'
+                'nondivop',
             );
 
             return;
@@ -97,7 +97,7 @@ class NonComparisonOpAnalyzer
                 $stmt,
                 $stmt->left,
                 $stmt->right,
-                'xor'
+                'xor',
             );
 
             return;
@@ -111,7 +111,7 @@ class NonComparisonOpAnalyzer
                 $stmt->right,
                 $stmt,
                 $result_type,
-                $context
+                $context,
             );
 
             if (!$result_type) {
@@ -125,7 +125,7 @@ class NonComparisonOpAnalyzer
                 $stmt,
                 $stmt->left,
                 $stmt->right,
-                'div'
+                'div',
             );
 
             return;

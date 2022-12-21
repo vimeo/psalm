@@ -41,13 +41,13 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
                     $new_comments[] = new PhpParser\Comment\Doc(
                         $c->getText(),
                         $c->getStartLine() + $this->line_offset,
-                        $c->getStartFilePos() + $this->file_offset + ($this->extra_offsets[$c->getStartFilePos()] ?? 0)
+                        $c->getStartFilePos() + $this->file_offset + ($this->extra_offsets[$c->getStartFilePos()] ?? 0),
                     );
                 } else {
                     $new_comments[] = new PhpParser\Comment(
                         $c->getText(),
                         $c->getStartLine() + $this->line_offset,
-                        $c->getStartFilePos() + $this->file_offset + ($this->extra_offsets[$c->getStartFilePos()] ?? 0)
+                        $c->getStartFilePos() + $this->file_offset + ($this->extra_offsets[$c->getStartFilePos()] ?? 0),
                     );
                 }
             }
@@ -57,11 +57,11 @@ class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
 
         $node->setAttribute(
             'startFilePos',
-            $attrs['startFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['startFilePos']] ?? 0)
+            $attrs['startFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['startFilePos']] ?? 0),
         );
         $node->setAttribute(
             'endFilePos',
-            $attrs['endFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['endFilePos']] ?? 0)
+            $attrs['endFilePos'] + $this->file_offset + ($this->extra_offsets[$attrs['endFilePos']] ?? 0),
         );
         $node->setAttribute('startLine', $attrs['startLine'] + $this->line_offset);
 

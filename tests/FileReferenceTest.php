@@ -27,8 +27,8 @@ class FileReferenceTest extends TestCase
             new TestConfig(),
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $this->project_analyzer->getCodebase()->collectLocations();
@@ -68,7 +68,7 @@ class FileReferenceTest extends TestCase
             $this->assertSame(
                 $expected_location,
                 $actual_location->getLineNumber() . ':' . $actual_location->getColumn()
-                    . ':' . $actual_location->getSelectedText()
+                    . ':' . $actual_location->getSelectedText(),
             );
         }
     }
@@ -398,7 +398,7 @@ class FileReferenceTest extends TestCase
                     }',
                 [
                     'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'ns\c::bar' => true
+                        'ns\c::bar' => true,
                     ],
                     'ns\a::foo' => [
                         'ns\c::bar' => true,

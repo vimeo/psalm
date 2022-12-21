@@ -26,7 +26,7 @@ class KeyOfArrayTest extends TestCase
                             return 0;
                         }
                     }
-                '
+                ',
             ],
             'keyOfAssociativeArrayClassConstant' => [
                 'code' => '<?php
@@ -39,7 +39,7 @@ class KeyOfArrayTest extends TestCase
                             return "bar";
                         }
                     }
-                '
+                ',
             ],
             'allKeysOfAssociativeArrayPossible' => [
                 'code' => '<?php
@@ -56,7 +56,7 @@ class KeyOfArrayTest extends TestCase
                             return "bar";
                         }
                     }
-                '
+                ',
             ],
             'keyOfAsArray' => [
                 'code' => '<?php
@@ -71,7 +71,7 @@ class KeyOfArrayTest extends TestCase
                             return array_keys(self::FOO);
                         }
                     }
-                '
+                ',
             ],
             'keyOfArrayLiteral' => [
                 'code' => '<?php
@@ -81,7 +81,7 @@ class KeyOfArrayTest extends TestCase
                     function getKey() {
                         return 32;
                     }
-                '
+                ',
             ],
             'keyOfUnionArrayLiteral' => [
                 'code' => '<?php
@@ -94,7 +94,7 @@ class KeyOfArrayTest extends TestCase
                         }
                         return 42;
                     }
-                '
+                ',
             ],
             'keyOfUnionListAndKeyedArray' => [
                 'code' => '<?php
@@ -117,7 +117,7 @@ class KeyOfArrayTest extends TestCase
                     function getKey() {
                         return 42;
                     }
-                '
+                ',
             ],
             'keyOfStringArrayConformsToString' => [
                 'code' => '<?php
@@ -129,7 +129,7 @@ class KeyOfArrayTest extends TestCase
                         $keys2 = ["foo"];
                         return $keys2[0];
                     }
-                '
+                ',
             ],
             'keyOfExpandsPropertiesOf' => [
                 'code' => '<?php
@@ -166,7 +166,7 @@ class KeyOfArrayTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'keyOfArrayLiteral' => [
                 'code' => '<?php
@@ -179,7 +179,7 @@ class KeyOfArrayTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'onlyIntAllowedForKeyOfList' => [
                 'code' => '<?php
@@ -192,7 +192,7 @@ class KeyOfArrayTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'noStringAllowedInKeyOfIntFloatArray' => [
                 'code' => '<?php
@@ -206,7 +206,7 @@ class KeyOfArrayTest extends TestCase
                         return "42";
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'noLiteralCAllowedInKeyOfUnionListAndKeyedArray' => [
                 'code' => '<?php
@@ -217,7 +217,7 @@ class KeyOfArrayTest extends TestCase
                         return "c";
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

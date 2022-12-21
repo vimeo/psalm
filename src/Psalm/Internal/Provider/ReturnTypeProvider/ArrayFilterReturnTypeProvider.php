@@ -96,12 +96,12 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                                 $context->inside_loop,
                                 [],
                                 null,
-                                $statements_source->getSuppressedIssues()
+                                $statements_source->getSuppressedIssues(),
                             );
 
                             return $keyed_type->setPossiblyUndefined(!$prev_keyed_type->isAlwaysTruthy());
                         },
-                        $first_arg_array->properties
+                        $first_arg_array->properties,
                     ),
                     static fn($keyed_type) => !$keyed_type->isNever()
                 );
@@ -114,7 +114,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     $new_properties,
                     null,
                     $first_arg_array->fallback_params,
-                    $first_arg_array->is_list && $had_one
+                    $first_arg_array->is_list && $had_one,
                 )]);
             }
         }
@@ -128,7 +128,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 $context->inside_loop,
                 [],
                 null,
-                $statements_source->getSuppressedIssues()
+                $statements_source->getSuppressedIssues(),
             );
 
             if ($first_arg_array instanceof TKeyedArray
@@ -137,7 +137,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                 && $key_type->getSingleIntLiteral()->value === 0
             ) {
                 return Type::getList(
-                    $inner_type
+                    $inner_type,
                 );
             }
 
@@ -170,7 +170,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             ) {
                 $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
                     $statements_source,
-                    $function_call_arg->value
+                    $function_call_arg->value,
                 );
 
                 if ($array_arg && $mapping_function_ids) {
@@ -184,13 +184,13 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         $function_call_arg,
                         array_slice($call_args, 0, 1),
                         $assertions,
-                        $fake_var_discriminator
+                        $fake_var_discriminator,
                     );
 
                     $extended_var_id = ExpressionIdentifier::getExtendedVarId(
                         $array_arg,
                         null,
-                        $statements_source
+                        $statements_source,
                     );
 
                     $assertion_id = $extended_var_id . "[\$__fake_{$fake_var_discriminator}_offset_var__]";
@@ -212,7 +212,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                             $statements_source,
                             $statements_source->getTemplateTypeMap() ?: [],
                             false,
-                            new CodeLocation($statements_source, $function_call_arg->value)
+                            new CodeLocation($statements_source, $function_call_arg->value),
                         );
 
                         if (isset($reconciled_types['$inner_type'])) {
@@ -234,9 +234,9 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     IssueBuffer::maybeAdd(
                         new InvalidReturnType(
                             'No return type could be found in the closure passed to array_filter',
-                            $code_location
+                            $code_location,
                         ),
-                        $statements_source->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues(),
                     );
 
                     return Type::getArray();
@@ -266,7 +266,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                                 $stmt->expr,
                                 $context->self,
                                 $statements_source,
-                                $codebase
+                                $codebase,
                             );
                         } catch (ComplicatedExpressionException $e) {
                             $filter_clauses = [];
@@ -274,7 +274,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                         $assertions = Algebra::getTruthsFromFormula(
                             $filter_clauses,
-                            $cond_object_id
+                            $cond_object_id,
                         );
 
                         if (isset($assertions['$' . $first_param->var->name])) {
@@ -292,7 +292,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                                 $statements_source,
                                 $statements_source->getTemplateTypeMap() ?: [],
                                 false,
-                                new CodeLocation($statements_source, $stmt)
+                                new CodeLocation($statements_source, $stmt),
                             );
 
                             if (isset($reconciled_types['$inner_type'])) {

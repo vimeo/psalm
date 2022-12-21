@@ -185,9 +185,9 @@ class TextDocument
                 LanguageServer::pathToUri($code_location->file_path),
                 new Range(
                     new Position($code_location->getLineNumber() - 1, $code_location->getColumn() - 1),
-                    new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1)
-                )
-            )
+                    new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1),
+                ),
+            ),
         );
     }
 
@@ -230,7 +230,7 @@ class TextDocument
         }
         $contents = new MarkupContent(
             MarkupKind::MARKDOWN,
-            $content
+            $content,
         );
 
         return new Success(new Hover($contents, $range));
@@ -290,7 +290,7 @@ class TextDocument
                 $completion_items = $this->codebase->getCompletionItemsForPartialSymbol(
                     $recent_type,
                     $offset,
-                    $file_path
+                    $file_path,
                 );
             }
         } else {
@@ -360,7 +360,7 @@ class TextDocument
             if ($offsetStart === $issue->from && $offsetEnd === $issue->to) {
                 $snippetRange = new Range(
                     new Position($issue->line_from-1),
-                    new Position($issue->line_to)
+                    new Position($issue->line_to),
                 );
 
                 $indentation = '';
@@ -384,16 +384,16 @@ class TextDocument
                             "{$indentation}/**\n".
                             "{$indentation} * @psalm-suppress {$issue->type}\n".
                             "{$indentation} */\n".
-                            "{$issue->snippet}\n"
-                        )
-                    ]
+                            "{$issue->snippet}\n",
+                        ),
+                    ],
                 ]);
 
                 //Suppress Ability
                 $fixers["suppress.{$issue->type}"] = [
                     'title' => "Suppress {$issue->type} for this line",
                     'kind' => 'quickfix',
-                    'edit' => $edit
+                    'edit' => $edit,
                 ];
             }
         }
@@ -403,7 +403,7 @@ class TextDocument
         }
 
         return new Success(
-            array_values($fixers)
+            array_values($fixers),
         );
     }
 }

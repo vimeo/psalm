@@ -53,7 +53,7 @@ class IntegerRangeComparator
         $reduced_range = new TIntRange(
             $input_type_part->min_bound,
             $input_type_part->max_bound,
-            $input_type_part->from_docblock
+            $input_type_part->from_docblock,
         );
 
         if (isset($container_atomic_types['int'])) {
@@ -106,7 +106,7 @@ class IntegerRangeComparator
                         //X-1 becomes the max of our reduced range if it was higher
                         $reduced_range->max_bound = TIntRange::getNewLowestBound(
                             $container_atomic_type->min_bound - 1,
-                            $reduced_range->max_bound ?? $container_atomic_type->min_bound - 1
+                            $reduced_range->max_bound ?? $container_atomic_type->min_bound - 1,
                         );
                         unset($container_atomic_types[$key]); //we don't need this one anymore
                         continue;
@@ -116,7 +116,7 @@ class IntegerRangeComparator
                         //X+1 becomes the min of our reduced range if it was lower
                         $reduced_range->min_bound = TIntRange::getNewHighestBound(
                             $container_atomic_type->max_bound + 1,
-                            $reduced_range->min_bound ?? $container_atomic_type->max_bound + 1
+                            $reduced_range->min_bound ?? $container_atomic_type->max_bound + 1,
                         );
                         unset($container_atomic_types[$key]); //we don't need this one anymore
                         continue;

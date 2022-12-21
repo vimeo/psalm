@@ -58,7 +58,7 @@ final class FileBasedPluginAdapter implements PluginEntryPointInterface
         $file_to_scan = new FileScanner($path, $this->config->shortenFileName($path), true);
         $file_to_scan->scan(
             $codebase,
-            $file_storage
+            $file_storage,
         );
 
         $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);

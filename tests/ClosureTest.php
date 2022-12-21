@@ -61,7 +61,7 @@ class ClosureTest extends TestCase
                     );',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'varReturnType' => [
                 'code' => '<?php
@@ -83,7 +83,7 @@ class ClosureTest extends TestCase
                     '$a' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'correctParamType' => [
                 'code' => '<?php
@@ -175,7 +175,7 @@ class ClosureTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'returnsTypedClosureWithClasses' => [
                 'code' => '<?php
@@ -416,7 +416,7 @@ class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$closure' => 'pure-Closure(string):int<0, max>',
-                ]
+                ],
             ],
             'allowClosureWithNarrowerReturn' => [
                 'code' => '<?php
@@ -476,7 +476,7 @@ class ClosureTest extends TestCase
                             },
                             $arr
                         );
-                    }'
+                    }',
             ],
             'refineCallableTypeWithoutTypehint' => [
                 'code' => '<?php
@@ -488,7 +488,7 @@ class ClosureTest extends TestCase
                             },
                             $arr
                         );
-                    }'
+                    }',
             ],
             'inferGeneratorReturnType' => [
                 'code' => '<?php
@@ -499,7 +499,7 @@ class ClosureTest extends TestCase
                             yield;
                             return 42;
                         })()
-                    );'
+                    );',
             ],
             'callingInvokeOnClosureIsSameAsCallingDirectly' => [
                 'code' => '<?php
@@ -517,7 +517,7 @@ class ClosureTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'annotateShortClosureReturn' => [
                 'code' => '<?php
@@ -526,7 +526,7 @@ class ClosureTest extends TestCase
                     $a = fn() : bool => /** @var bool */ returnsBool();',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'rememberParentAssertions' => [
                 'code' => '<?php
@@ -541,7 +541,7 @@ class ClosureTest extends TestCase
                                 $a->a->foo();
                             };
                         }
-                    }'
+                    }',
             ],
             'CallableWithArrayMap' => [
                 'code' => '<?php
@@ -559,7 +559,7 @@ class ClosureTest extends TestCase
                     $maker = maker(stdClass::class);
                     $result = array_map($maker, ["abc"]);',
                 'assertions' => [
-                    '$result' => 'list{stdClass}'
+                    '$result' => 'list{stdClass}',
                 ],
             ],
             'CallableWithArrayReduce' => [
@@ -575,7 +575,7 @@ class ClosureTest extends TestCase
                     $maker = maker();
                     $result = array_reduce([1, 2, 3], $maker, 0);',
                 'assertions' => [
-                    '$result' => 'int'
+                    '$result' => 'int',
                 ],
             ],
             'FirstClassCallable:NamedFunction:is_int' => [
@@ -588,7 +588,7 @@ class ClosureTest extends TestCase
                     '$result' => 'bool',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:NamedFunction:strlen' => [
                 'code' => '<?php
@@ -600,7 +600,7 @@ class ClosureTest extends TestCase
                     '$result' => 'int<0, max>',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:UserDefined' => [
                 'code' => '<?php
@@ -620,7 +620,7 @@ class ClosureTest extends TestCase
                     '$length' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:Expr' => [
                 'code' => '<?php
@@ -641,7 +641,7 @@ class ClosureTest extends TestCase
                     '$length' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:BuiltIn' => [
                 'code' => '<?php
@@ -653,7 +653,7 @@ class ClosureTest extends TestCase
                     '$count' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:StaticMethod' => [
                 'code' => '<?php
@@ -669,7 +669,7 @@ class ClosureTest extends TestCase
                     '$length' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:StaticMethod:Expr' => [
                 'code' => '<?php
@@ -686,7 +686,7 @@ class ClosureTest extends TestCase
                     '$length' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:InvokableObject' => [
                 'code' => '<?php
@@ -703,7 +703,7 @@ class ClosureTest extends TestCase
                     '$length' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:FromClosure' => [
                 'code' => '<?php
@@ -714,7 +714,7 @@ class ClosureTest extends TestCase
                     '$closure' => 'pure-Closure(string):int<0, max>',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:MagicInstanceMethod' => [
                 'code' => '<?php
@@ -740,7 +740,7 @@ class ClosureTest extends TestCase
                     '$length' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:MagicStaticMethod' => [
                 'code' => '<?php
@@ -762,7 +762,7 @@ class ClosureTest extends TestCase
                     '$length' => 'int',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:InheritedStaticMethod' => [
                 'code' => '<?php
@@ -811,7 +811,7 @@ class ClosureTest extends TestCase
                     /** @param \Closure(int):Holder<C> $_ */
                     function takesIntToHolder(\Closure $_): void {}
 
-                    takesIntToHolder(C::create(...));'
+                    takesIntToHolder(C::create(...));',
             ],
             'FirstClassCallable:WithArrayMap' => [
                 'code' => '<?php
@@ -827,7 +827,7 @@ class ClosureTest extends TestCase
                     '$result3' => 'list{int, int, int}',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:array_map' => [
                 'code' => '<?php call_user_func(array_map(...), intval(...), ["1"]);',
@@ -894,7 +894,7 @@ class ClosureTest extends TestCase
                     );',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'arrowFunctionReturnsNeverExplictly' => [
                 'code' => '<?php
@@ -907,7 +907,7 @@ class ClosureTest extends TestCase
                     );',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'unknownFirstClassCallable' => [
                 'code' => '<?php
@@ -1236,7 +1236,7 @@ class ClosureTest extends TestCase
 
                         return $int;
                     }',
-                'error_message' => 'MixedReturnStatement'
+                'error_message' => 'MixedReturnStatement',
             ],
             'noCrashWhenComparingIllegitimateCallable' => [
                 'code' => '<?php
@@ -1263,7 +1263,7 @@ class ClosureTest extends TestCase
                             echo "hello";
                         }
                     );',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'undefinedVariableInEncapsedString' => [
                 'code' => '<?php
@@ -1271,7 +1271,7 @@ class ClosureTest extends TestCase
                 ',
                 'error_message' => 'UndefinedVariable',
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'undefinedVariableInStringCast' => [
                 'code' => '<?php
@@ -1279,7 +1279,7 @@ class ClosureTest extends TestCase
                 ',
                 'error_message' => 'UndefinedVariable',
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'forbidTemplateAnnotationOnClosure' => [
                 'code' => '<?php
@@ -1295,7 +1295,7 @@ class ClosureTest extends TestCase
                 ',
                 'error_message' => 'InvalidDocblock',
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'closureInvalidArg' => [
                 'code' => '<?php
@@ -1313,7 +1313,7 @@ class ClosureTest extends TestCase
                 ',
                 'error_message' => 'UndefinedMethod',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:UndefinedMagicInstanceMethod' => [
                 'code' => '<?php
@@ -1330,7 +1330,7 @@ class ClosureTest extends TestCase
                 ',
                 'error_message' => 'UndefinedMagicMethod',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'FirstClassCallable:UndefinedMagicStaticMethod' => [
                 'code' => '<?php

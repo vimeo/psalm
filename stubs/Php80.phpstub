@@ -89,15 +89,17 @@ class ReflectionClass implements Reflector {
     public function getDocComment(): string|false {}
 
     /**
-     * @param ReflectionClass|class-string $class
-     *
+     * @template J as object
+     * @param self<J>|class-string<J> $class
+     * @psalm-assert-if-true self<T&J> $this
      * @psalm-pure
      */
     public function isSubclassOf(self|string $class): bool {}
 
     /**
-     * @param self|class-string $interface
-     *
+     * @template J as object
+     * @param self<J>|interface-string<J> $interface
+     * @psalm-assert-if-true self<T&J> $this
      * @psalm-pure
      */
     public function implementsInterface(self|string $interface): bool {}

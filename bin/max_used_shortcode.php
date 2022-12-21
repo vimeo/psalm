@@ -13,7 +13,7 @@ $shortcodes = array_map(
         /** @var int */
         return $issue_class::SHORTCODE;
     },
-    $issue_types
+    $issue_types,
 );
 
 echo 'Max used shortcode: ' . max($shortcodes) . PHP_EOL;

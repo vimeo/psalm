@@ -23,7 +23,7 @@ final class TCallableList extends TNonEmptyList
                 null,
                 [Type::getListKey(), $this->type_param],
                 true,
-                $this->from_docblock
+                $this->from_docblock,
             );
         }
         if ($this->count) {
@@ -32,7 +32,7 @@ final class TCallableList extends TNonEmptyList
                 null,
                 null,
                 true,
-                $this->from_docblock
+                $this->from_docblock,
             );
         }
         return new TCallableKeyedArray(
@@ -40,7 +40,7 @@ final class TCallableList extends TNonEmptyList
             null,
             [Type::getListKey(), $this->type_param],
             true,
-            $this->from_docblock
+            $this->from_docblock,
         );
     }
 }

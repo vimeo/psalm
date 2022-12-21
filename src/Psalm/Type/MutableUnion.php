@@ -322,7 +322,7 @@ final class MutableUnion implements TypeNode, Stringable
                 unset(
                     $this->literal_string_types[$type_string],
                     $this->literal_int_types[$type_string],
-                    $this->literal_float_types[$type_string]
+                    $this->literal_float_types[$type_string],
                 );
             }
 

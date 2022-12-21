@@ -49,7 +49,7 @@ class PsalmPluginTest extends TestCase
         ]);
 
         $this->app->getDefinition()->addOption(
-            new InputOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file')
+            new InputOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file'),
         );
 
         $this->app->setDefaultCommand('show');

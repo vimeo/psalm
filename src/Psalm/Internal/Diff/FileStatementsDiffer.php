@@ -71,7 +71,7 @@ class FileStatementsDiffer extends AstDiffer
             $a,
             $b,
             $a_code,
-            $b_code
+            $b_code,
         );
 
         $diff = self::extractDiff($trace, $x, $y, $a, $b, $bc);
@@ -92,7 +92,7 @@ class FileStatementsDiffer extends AstDiffer
                         $diff_elem->old->stmts,
                         $diff_elem->new->stmts,
                         $a_code,
-                        $b_code
+                        $b_code,
                     );
 
                     $keep = [...$keep, ...$namespace_keep[0]];
@@ -112,7 +112,7 @@ class FileStatementsDiffer extends AstDiffer
                         $diff_elem->old->stmts,
                         $diff_elem->new->stmts,
                         $a_code,
-                        $b_code
+                        $b_code,
                     );
 
                     $keep = [...$keep, ...$class_keep[0]];
@@ -145,7 +145,7 @@ class FileStatementsDiffer extends AstDiffer
 
                     $deletion_ranges[] = [
                         $start,
-                        (int)$diff_elem->old->getAttribute('endFilePos')
+                        (int)$diff_elem->old->getAttribute('endFilePos'),
                     ];
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_ADD) {

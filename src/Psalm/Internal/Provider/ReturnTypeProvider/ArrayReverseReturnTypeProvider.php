@@ -74,7 +74,7 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
                 $first_arg_array->properties,
                 null,
                 $first_arg_array->fallback_params,
-                false
+                false,
             )]);
         }
 

@@ -106,7 +106,7 @@ class Methods
                 $fq_class_name,
                 $method_name,
                 $source,
-                $code_location
+                $code_location,
             );
 
             if ($method_exists !== null) {
@@ -157,12 +157,12 @@ class Methods
                 if ($calling_method_id) {
                     $this->file_reference_provider->addMethodReferenceToClass(
                         $calling_method_id,
-                        $declaring_fq_class_name
+                        $declaring_fq_class_name,
                     );
                 } elseif ($source_file_path) {
                     $this->file_reference_provider->addNonMethodReferenceToClass(
                         $source_file_path,
-                        $declaring_fq_class_name
+                        $declaring_fq_class_name,
                     );
                 }
             }
@@ -176,13 +176,13 @@ class Methods
                         $this->file_reference_provider->addMethodReferenceToClassMember(
                             $calling_method_id,
                             $potential_id,
-                            $is_used
+                            $is_used,
                         );
                     } elseif ($source_file_path) {
                         $this->file_reference_provider->addFileReferenceToClassMember(
                             $source_file_path,
                             $potential_id,
-                            $is_used
+                            $is_used,
                         );
                     }
                 }
@@ -191,13 +191,13 @@ class Methods
                     $this->file_reference_provider->addMethodReferenceToClassMember(
                         $calling_method_id,
                         strtolower((string) $declaring_method_id),
-                        $is_used
+                        $is_used,
                     );
                 } elseif ($source_file_path) {
                     $this->file_reference_provider->addFileReferenceToClassMember(
                         $source_file_path,
                         strtolower((string) $declaring_method_id),
-                        $is_used
+                        $is_used,
                     );
                 }
             }
@@ -205,7 +205,7 @@ class Methods
             if ($this->collect_locations && $code_location) {
                 $this->file_reference_provider->addCallingLocationForClassMethod(
                     $code_location,
-                    strtolower((string) $declaring_method_id)
+                    strtolower((string) $declaring_method_id),
                 );
             }
 
@@ -215,7 +215,7 @@ class Methods
                 if ($this->collect_locations && $code_location) {
                     $this->file_reference_provider->addCallingLocationForClassMethod(
                         $code_location,
-                        $interface_method_id_lc
+                        $interface_method_id_lc,
                     );
                 }
 
@@ -223,13 +223,13 @@ class Methods
                     $this->file_reference_provider->addMethodReferenceToClassMember(
                         $calling_method_id,
                         $interface_method_id_lc,
-                        $is_used
+                        $is_used,
                     );
                 } elseif ($source_file_path) {
                     $this->file_reference_provider->addFileReferenceToClassMember(
                         $source_file_path,
                         $interface_method_id_lc,
-                        $is_used
+                        $is_used,
                     );
                 }
             }
@@ -246,7 +246,7 @@ class Methods
                     if ($this->collect_locations && $code_location) {
                         $this->file_reference_provider->addCallingLocationForClassMethod(
                             $code_location,
-                            strtolower((string) $overridden_method_id)
+                            strtolower((string) $overridden_method_id),
                         );
                     }
 
@@ -255,13 +255,13 @@ class Methods
                         $this->file_reference_provider->addMethodReferenceToClassMember(
                             $calling_method_id,
                             strtolower((string) $overridden_method_id),
-                            $is_used
+                            $is_used,
                         );
                     } elseif ($source_file_path) {
                         $this->file_reference_provider->addFileReferenceToClassMember(
                             $source_file_path,
                             strtolower((string) $overridden_method_id),
-                            $is_used
+                            $is_used,
                         );
                     }
                 }
@@ -274,12 +274,12 @@ class Methods
             if ($calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClass(
                     $calling_method_id,
-                    $fq_class_name
+                    $fq_class_name,
                 );
             } else {
                 $this->file_reference_provider->addNonMethodReferenceToClass(
                     $source_file_path,
-                    $fq_class_name
+                    $fq_class_name,
                 );
             }
         }
@@ -309,12 +309,12 @@ class Methods
                 // also store failures in case the method is added later
                 $this->file_reference_provider->addMethodReferenceToMissingClassMember(
                     $calling_method_id,
-                    $potential_id
+                    $potential_id,
                 );
             } elseif ($source_file_path) {
                 $this->file_reference_provider->addFileReferenceToMissingClassMember(
                     $source_file_path,
-                    $potential_id
+                    $potential_id,
                 );
             }
         }
@@ -323,12 +323,12 @@ class Methods
             // also store failures in case the method is added later
             $this->file_reference_provider->addMethodReferenceToMissingClassMember(
                 $calling_method_id,
-                strtolower((string) $method_id)
+                strtolower((string) $method_id),
             );
         } elseif ($source_file_path) {
             $this->file_reference_provider->addFileReferenceToMissingClassMember(
                 $source_file_path,
-                strtolower((string) $method_id)
+                strtolower((string) $method_id),
             );
         }
 
@@ -354,7 +354,7 @@ class Methods
                 $method_name,
                 $args,
                 $source,
-                $context
+                $context,
             );
 
             if ($method_params !== null) {
@@ -377,7 +377,7 @@ class Methods
 
                 if ($function_callables === null) {
                     throw new UnexpectedValueException(
-                        'Not expecting $function_callables to be null for ' . $callmap_id
+                        'Not expecting $function_callables to be null for ' . $callmap_id,
                     );
                 }
 
@@ -396,7 +396,7 @@ class Methods
                         ExpressionAnalyzer::analyze(
                             $source,
                             $arg->value,
-                            $context
+                            $context,
                         );
                     }
 
@@ -408,7 +408,7 @@ class Methods
                     $function_callables,
                     $args,
                     $source->getNodeTypeProvider(),
-                    (string) $callmap_id
+                    (string) $callmap_id,
                 );
 
                 assert($matching_callable->params !== null);
@@ -465,7 +465,7 @@ class Methods
                             $source->getCodebase(),
                             $params[$i]->type,
                             $appearing_fq_class_name,
-                            $overridden_class_storage->name
+                            $overridden_class_storage->name,
                         );
                     }
 
@@ -500,7 +500,7 @@ class Methods
 
         (new TypeLocalizer(
             $extends,
-            $base_fq_class_name
+            $base_fq_class_name,
         ))->traverse($type);
 
         return $type;
@@ -523,7 +523,7 @@ class Methods
                 if ($extended_atomic_type instanceof TTemplateParam) {
                     $extra_added_types = [...$extra_added_types, ...self::getExtendedTemplatedTypes(
                         $extended_atomic_type,
-                        $extends
+                        $extends,
                     )];
                 } else {
                     $extra_added_types[] = $extended_atomic_type;
@@ -629,7 +629,7 @@ class Methods
                         is_int($case_storage->value) ?
                             Type::getInt(false, $case_storage->value) :
                             Type::getString($case_storage->value),
-                        $first_arg_type
+                        $first_arg_type,
                     )) {
                         $types[] = new TEnumCase($original_fq_class_name, $case_name);
                     }
@@ -663,23 +663,23 @@ class Methods
                         return new Union([new TClosure(
                             'Closure',
                             $callable_type->params,
-                            $callable_type->return_type
+                            $callable_type->return_type,
                         )]);
                     }
 
                     if ($atomic_type instanceof TNamedObject
                         && $this->methodExists(
-                            new MethodIdentifier($atomic_type->value, '__invoke')
+                            new MethodIdentifier($atomic_type->value, '__invoke'),
                         )
                     ) {
                         $invokable_storage = $this->getStorage(
-                            new MethodIdentifier($atomic_type->value, '__invoke')
+                            new MethodIdentifier($atomic_type->value, '__invoke'),
                         );
 
                         return new Union([new TClosure(
                             'Closure',
                             $invokable_storage->params,
-                            $invokable_storage->return_type
+                            $invokable_storage->return_type,
                         )]);
                     }
                 }
@@ -695,7 +695,7 @@ class Methods
 
             if ($return_type_candidate->isFalsable()) {
                 return $return_type_candidate->setProperties([
-                    'ignore_falsable_issues' => true
+                    'ignore_falsable_issues' => true,
                 ]);
             }
 
@@ -753,40 +753,42 @@ class Methods
                     $overridden_class_storage->parent_class,
                     true,
                     false,
-                    $storage->final
+                    $storage->final,
                 );
 
                 $old_contained_by_new = UnionTypeComparator::isContainedBy(
                     $source_analyzer->getCodebase(),
                     $candidate_type,
-                    $overridden_storage_return_type
+                    $overridden_storage_return_type,
                 );
 
                 $new_contained_by_old = UnionTypeComparator::isContainedBy(
                     $source_analyzer->getCodebase(),
                     $overridden_storage_return_type,
-                    $candidate_type
+                    $candidate_type,
                 );
 
-                if ((!$old_contained_by_new && !$new_contained_by_old)
-                    || ($old_contained_by_new && $new_contained_by_old)
+                if (((!$old_contained_by_new && !$new_contained_by_old)
+                    || ($old_contained_by_new && $new_contained_by_old))
+                    && !$candidate_type->hasTemplate()
+                    && !$overridden_storage_return_type->hasTemplate()
                 ) {
                     $attempted_intersection = null;
                     if ($old_contained_by_new) { //implicitly $new_contained_by_old as well
                         try {
                             $attempted_intersection = Type::intersectUnionTypes(
                                 $candidate_type,
-                                $overridden_storage->return_type,
-                                $source_analyzer->getCodebase()
+                                $overridden_storage_return_type,
+                                $source_analyzer->getCodebase(),
                             );
                         } catch (InvalidArgumentException $e) {
                             // TODO: fix
                         }
                     } else {
                         $attempted_intersection = Type::intersectUnionTypes(
-                            $overridden_storage->return_type,
+                            $overridden_storage_return_type,
                             $candidate_type,
-                            $source_analyzer->getCodebase()
+                            $source_analyzer->getCodebase(),
                         );
                     }
 
@@ -801,7 +803,7 @@ class Methods
                     return $candidate_type;
                 }
 
-                if ($old_contained_by_new) {
+                if ($old_contained_by_new || $overridden_storage_return_type->hasTemplate()) {
                     $self_class = $appearing_fq_class_storage->name;
 
                     return $candidate_type;
@@ -809,7 +811,7 @@ class Methods
 
                 $self_class = $overridden_method_id->fq_class_name;
 
-                return $overridden_storage->return_type;
+                return $overridden_storage_return_type;
             }
         }
 
@@ -851,13 +853,13 @@ class Methods
                     $old_contained_by_new = UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
                         $candidate_type,
-                        $overridden_return_type
+                        $overridden_return_type,
                     );
 
                     $new_contained_by_old = UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
                         $overridden_return_type,
-                        $candidate_type
+                        $candidate_type,
                     );
 
                     if ((!$old_contained_by_new && !$new_contained_by_old)
@@ -866,7 +868,7 @@ class Methods
                         $attempted_intersection = Type::intersectUnionTypes(
                             $candidate_type,
                             $overridden_return_type,
-                            $source_analyzer->getCodebase()
+                            $source_analyzer->getCodebase(),
                         );
 
                         if ($attempted_intersection) {
@@ -948,7 +950,7 @@ class Methods
 
         $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
             $declaring_fq_class_name,
-            $declaring_method_name_lc
+            $declaring_method_name_lc,
         );
     }
 
@@ -966,7 +968,7 @@ class Methods
 
         $class_storage->appearing_method_ids[$method_name_lc] = new MethodIdentifier(
             $appearing_fq_class_name,
-            $appearing_method_name_lc
+            $appearing_method_name_lc,
         );
     }
 
@@ -1073,7 +1075,7 @@ class Methods
                 $fq_class_name,
                 $method_name,
                 null,
-                null
+                null,
             )) {
                 return $this->classlike_storage_provider->get($fq_class_name);
             }
@@ -1107,7 +1109,7 @@ class Methods
 
         if (!isset($class_storage->methods[$method_name])) {
             throw new UnexpectedValueException(
-                '$storage should not be null for ' . $method_id
+                '$storage should not be null for ' . $method_id,
             );
         }
 

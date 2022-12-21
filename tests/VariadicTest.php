@@ -32,7 +32,7 @@ class VariadicTest extends TestCase
                  */
                 function f(int ...$a_list) {
                 }
-                f(1, 2, "3");'
+                f(1, 2, "3");',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -54,8 +54,8 @@ class VariadicTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $file_path = getcwd() . '/src/somefile.php';
@@ -64,7 +64,7 @@ class VariadicTest extends TestCase
             $file_path,
             '<?php
                 variadic2(16, 30);
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -139,8 +139,8 @@ class VariadicTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
         $project_analyzer->setPhpVersion('7.3', 'tests');
 

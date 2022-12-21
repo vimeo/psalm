@@ -62,14 +62,14 @@ class TextDocument
                 /** @var Promise<object> */
                 $promise = $this->handler->request(
                     'textDocument/xcontent',
-                    ['textDocument' => $textDocument]
+                    ['textDocument' => $textDocument],
                 );
 
                 $result = yield $promise;
 
                 /** @var TextDocumentItem */
                 return $this->mapper->map($result, new TextDocumentItem);
-            }
+            },
         );
     }
 }

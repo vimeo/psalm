@@ -30,9 +30,9 @@ class GlobalAnalyzer
             IssueBuffer::maybeAdd(
                 new InvalidGlobal(
                     'Cannot use global scope here (unless this file is included from a non-global scope)',
-                    new CodeLocation($statements_analyzer, $stmt)
+                    new CodeLocation($statements_analyzer, $stmt),
                 ),
-                $statements_analyzer->getSource()->getSuppressedIssues()
+                $statements_analyzer->getSource()->getSuppressedIssues(),
             );
         }
 
@@ -66,7 +66,7 @@ class GlobalAnalyzer
 
                     $assignment_node = DataFlowNode::getForAssignment(
                         $var_id,
-                        new CodeLocation($statements_analyzer, $var)
+                        new CodeLocation($statements_analyzer, $var),
                     );
                     $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setParentNodes([
                         $assignment_node->id => $assignment_node,
@@ -81,12 +81,12 @@ class GlobalAnalyzer
                     $statements_analyzer->registerVariable(
                         $var_id,
                         new CodeLocation($statements_analyzer, $var),
-                        $context->branch_point
+                        $context->branch_point,
                     );
                     $statements_analyzer->getCodebase()->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
                         $var,
-                        $var_id
+                        $var_id,
                     );
 
                     if ($global_context !== null && $global_context->hasVariable($var_id)) {

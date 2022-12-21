@@ -152,7 +152,7 @@ final class TGenericObject extends TNamedObject
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
             $template_result,
@@ -164,7 +164,7 @@ final class TGenericObject extends TNamedObject
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         if (!$types && !$intersection) {
             return $this;
@@ -174,7 +174,7 @@ final class TGenericObject extends TNamedObject
             $types ?? $this->type_params,
             $this->remapped_params,
             $this->is_static,
-            $intersection ?? $this->extra_types
+            $intersection ?? $this->extra_types,
         );
     }
 
@@ -185,11 +185,11 @@ final class TGenericObject extends TNamedObject
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
             $template_result,
-            $codebase
+            $codebase,
         );
         $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes(
             $template_result,
-            $codebase
+            $codebase,
         );
         if (!$type_params && !$intersection) {
             return $this;
@@ -199,7 +199,7 @@ final class TGenericObject extends TNamedObject
             $type_params ?? $this->type_params,
             true,
             $this->is_static,
-            $intersection ?? $this->extra_types
+            $intersection ?? $this->extra_types,
         );
     }
 }

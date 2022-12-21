@@ -604,7 +604,7 @@ class InternalAnnotationTest extends TestCase
                             }
                         }
                     }
-                '
+                ',
             ],
         ];
     }

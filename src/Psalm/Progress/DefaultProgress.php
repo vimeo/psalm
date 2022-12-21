@@ -41,7 +41,7 @@ class DefaultProgress extends LongProgress
 
             $inner_progress = self::renderInnerProgressBar(
                 self::NUMBER_OF_COLUMNS,
-                $this->progress / $this->number_of_tasks
+                $this->progress / $this->number_of_tasks,
             );
 
             $this->write($inner_progress . ' ' . $this->getOverview() . "\r");

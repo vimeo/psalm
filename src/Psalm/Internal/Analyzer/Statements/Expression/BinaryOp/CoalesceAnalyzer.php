@@ -65,18 +65,18 @@ class CoalesceAnalyzer
 
             $left_expr = new VirtualVariable(
                 substr($left_var_id, 1),
-                $left_expr->getAttributes()
+                $left_expr->getAttributes(),
             );
         }
 
         $ternary = new VirtualTernary(
             new VirtualIsset(
                 [$left_expr],
-                $stmt->left->getAttributes()
+                $stmt->left->getAttributes(),
             ),
             $left_expr,
             $stmt->right,
-            $stmt->getAttributes()
+            $stmt->getAttributes(),
         );
 
         $old_node_data = $statements_analyzer->node_data;

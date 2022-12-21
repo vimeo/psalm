@@ -89,7 +89,7 @@ final class TLiteralClassString extends TLiteralString
             return preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
-                $this->value
+                $this->value,
             ) . '::class';
         }
 

@@ -957,7 +957,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
                 'allow_backwards_incompatible_changes' => true,
-            ]
+            ],
         ];
     }
 }

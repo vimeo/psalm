@@ -2,7 +2,6 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -54,15 +53,21 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $key_type = $first_arg_array->getGenericKeyType();
         }
 
-        if (!$second_arg
-            || ($second_arg instanceof PhpParser\Node\Scalar\LNumber && $second_arg->value === 1)
+        if (!$second_arg) {
+            return $key_type;
+        }
+
+        $second_arg_type = $statements_source->node_data->getType($second_arg);
+        if ($second_arg_type
+            && $second_arg_type->isSingleIntLiteral()
+            && $second_arg_type->getSingleIntLiteral()->value === 1
         ) {
             return $key_type;
         }
 
         $arr_type = Type::getList($key_type);
 
-        if ($second_arg instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($second_arg_type && $second_arg_type->isSingleIntLiteral()) {
             return $arr_type;
         }
 

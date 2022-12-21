@@ -5,18 +5,18 @@ namespace Psalm\Example\Plugin;
 use Exception;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\PluginIssue;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\MethodIdentifier;
 
+use function end;
 use function explode;
 use function strtolower;
-use function end;
 
 /**
  * Checks that functions and methods are correctly-cased
@@ -50,9 +50,9 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                 IssueBuffer::maybeAdd(
                     new IncorrectFunctionCasing(
                         'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
-                        new CodeLocation($statements_source, $expr->name)
+                        new CodeLocation($statements_source, $expr->name),
                     ),
-                    $statements_source->getSuppressedIssues()
+                    $statements_source->getSuppressedIssues(),
                 );
             }
         } catch (Exception $e) {
@@ -75,7 +75,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                 $statements_source instanceof StatementsAnalyzer
                     ? $statements_source
                     : null,
-                strtolower($function_id)
+                strtolower($function_id),
             );
 
             if (!$function_storage->cased_name) {
@@ -88,9 +88,9 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                 IssueBuffer::maybeAdd(
                     new IncorrectFunctionCasing(
                         'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
-                        new CodeLocation($statements_source, $expr->name)
+                        new CodeLocation($statements_source, $expr->name),
                     ),
-                    $statements_source->getSuppressedIssues()
+                    $statements_source->getSuppressedIssues(),
                 );
             }
         } catch (Exception $e) {

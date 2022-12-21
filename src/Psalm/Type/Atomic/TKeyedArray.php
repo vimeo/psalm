@@ -25,6 +25,7 @@ use function get_class;
 use function implode;
 use function is_int;
 use function is_string;
+use function ksort;
 use function preg_match;
 use function sort;
 use function str_replace;
@@ -85,6 +86,21 @@ class TKeyedArray extends Atomic
         $this->fallback_params = $fallback_params;
         $this->is_list = $is_list;
         $this->from_docblock = $from_docblock;
+        if ($this->is_list) {
+            $last_k = -1;
+            $had_possibly_undefined = false;
+            ksort($this->properties);
+            foreach ($this->properties as $k => $v) {
+                if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
+                    $this->is_list = false;
+                    break;
+                }
+                if ($v->possibly_undefined) {
+                    $had_possibly_undefined = true;
+                }
+                $last_k = $k;
+            }
+        }
     }
 
     /**
@@ -98,6 +114,21 @@ class TKeyedArray extends Atomic
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
+        if ($cloned->is_list) {
+            $last_k = -1;
+            $had_possibly_undefined = false;
+            ksort($cloned->properties);
+            foreach ($cloned->properties as $k => $v) {
+                if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
+                    $cloned->is_list = false;
+                    break;
+                }
+                if ($v->possibly_undefined) {
+                    $had_possibly_undefined = true;
+                }
+                $last_k = $k;
+            }
+        }
         return $cloned;
     }
 
@@ -183,7 +214,7 @@ class TKeyedArray extends Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                true
+                true,
             );
         }
 
@@ -214,7 +245,7 @@ class TKeyedArray extends Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    false
+                    false,
                 );
                 continue;
             }
@@ -231,7 +262,7 @@ class TKeyedArray extends Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    false
+                    false,
                 );
         }
 
@@ -309,7 +340,7 @@ class TKeyedArray extends Atomic
             false,
             true,
             500,
-            $possibly_undefined
+            $possibly_undefined,
         );
     }
 
@@ -489,7 +520,7 @@ class TKeyedArray extends Atomic
                 $replace,
                 $add_lower_bound,
                 null,
-                $depth
+                $depth,
             );
         }
 
@@ -516,7 +547,7 @@ class TKeyedArray extends Atomic
                 $replace,
                 $add_lower_bound,
                 null,
-                $depth
+                $depth,
             );
         }
 
@@ -543,7 +574,7 @@ class TKeyedArray extends Atomic
             $properties[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
-                $codebase
+                $codebase,
             );
         }
         $fallback_params = $this->fallback_params;
@@ -551,7 +582,7 @@ class TKeyedArray extends Atomic
             $fallback_params[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
-                $codebase
+                $codebase,
             );
         }
         if ($properties !== $this->properties || $fallback_params !== $this->fallback_params) {

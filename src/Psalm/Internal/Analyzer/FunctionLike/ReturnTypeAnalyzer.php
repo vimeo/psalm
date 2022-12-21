@@ -111,9 +111,9 @@ class ReturnTypeAnalyzer
                 IssueBuffer::maybeAdd(
                     new MissingReturnType(
                         'Method ' . $cased_method_id . ' does not have a return type',
-                        new CodeLocation($function_like_analyzer, $function->name, null, true)
+                        new CodeLocation($function_like_analyzer, $function->name, null, true),
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
 
@@ -134,7 +134,7 @@ class ReturnTypeAnalyzer
         if (!$return_type_location) {
             $return_type_location = new CodeLocation(
                 $function_like_analyzer,
-                $function instanceof Closure || $function instanceof ArrowFunction ? $function : $function->name
+                $function instanceof Closure || $function instanceof ArrowFunction ? $function : $function->name,
             );
         }
 
@@ -145,7 +145,7 @@ class ReturnTypeAnalyzer
             $type_provider,
             $function_stmts,
             $inferred_yield_types,
-            true
+            true,
         );
 
         if (!$inferred_return_type_parts) {
@@ -156,7 +156,7 @@ class ReturnTypeAnalyzer
             && ScopeAnalyzer::getControlActions(
                 $function_stmts,
                 $type_provider,
-                []
+                [],
             ) !== [ScopeAnalyzer::ACTION_END]
             && !$inferred_yield_types
             && count($inferred_return_type_parts)
@@ -176,14 +176,14 @@ class ReturnTypeAnalyzer
             $function_stmts,
             $type_provider,
             [],
-            false
+            false,
         );
 
         $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];
 
         $function_returns_implicitly = (bool) array_diff(
             $control_actions,
-            [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]
+            [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN],
         );
 
         /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
@@ -203,9 +203,9 @@ class ReturnTypeAnalyzer
                 new InvalidReturnType(
                     'Not all code paths of ' . $cased_method_id . ' end in a return statement, return type '
                         . $return_type . ' expected',
-                    $return_type_location
+                    $return_type_location,
                 ),
-                $suppressed_issues
+                $suppressed_issues,
             )) {
                 return false;
             }
@@ -223,9 +223,9 @@ class ReturnTypeAnalyzer
                 new InvalidReturnType(
                     $cased_method_id . ' is not expected to return any values but it does, '
                         . 'either implicitly or explicitly',
-                    $return_type_location
+                    $return_type_location,
                 ),
-                $suppressed_issues
+                $suppressed_issues,
             )) {
                 return false;
             }
@@ -269,7 +269,7 @@ class ReturnTypeAnalyzer
             $inferred_return_type,
             $source->getFQCLN(),
             $source->getFQCLN(),
-            $source->getParentFQCLN()
+            $source->getParentFQCLN(),
         );
 
         // hack until we have proper yield type collection
@@ -290,15 +290,15 @@ class ReturnTypeAnalyzer
                     Type::getString(),
                     $inferred_return_type->ignore_nullable_issues,
                     $inferred_return_type->ignore_falsable_issues,
-                    $union_comparison_results
+                    $union_comparison_results,
                 )
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidToString(
                         '__toString methods must return a string, ' . $inferred_return_type . ' returned',
-                        $return_type_location
+                        $return_type_location,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 )) {
                     return false;
                 }
@@ -309,9 +309,9 @@ class ReturnTypeAnalyzer
                     new ImplicitToStringCast(
                         'The declared return type for ' . $cased_method_id . ' expects string, ' .
                         '\'' . $inferred_return_type . '\' provided with a __toString method',
-                        $return_type_location
+                        $return_type_location,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
 
@@ -337,7 +337,7 @@ class ReturnTypeAnalyzer
                             ($project_analyzer->only_replace_php_types_with_non_docblock_types
                                     || $unsafe_return_type)
                                 && $inferred_return_type->from_docblock,
-                            $function_like_storage
+                            $function_like_storage,
                         );
 
                         return null;
@@ -346,10 +346,10 @@ class ReturnTypeAnalyzer
                     IssueBuffer::maybeAdd(
                         new MissingClosureReturnType(
                             'Closure does not have a return type, expecting ' . $inferred_return_type->getId(),
-                            new CodeLocation($function_like_analyzer, $function, null, true)
+                            new CodeLocation($function_like_analyzer, $function, null, true),
                         ),
                         $suppressed_issues,
-                        !$inferred_return_type->hasMixed() && !$inferred_return_type->isNull()
+                        !$inferred_return_type->hasMixed() && !$inferred_return_type->isNull(),
                     );
                 }
 
@@ -374,7 +374,7 @@ class ReturnTypeAnalyzer
                         || (($project_analyzer->only_replace_php_types_with_non_docblock_types
                                 || $unsafe_return_type)
                             && $inferred_return_type->from_docblock),
-                    $function_like_storage
+                    $function_like_storage,
                 );
 
                 return null;
@@ -384,10 +384,10 @@ class ReturnTypeAnalyzer
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type' .
                       (!$inferred_return_type->hasMixed() ? ', expecting ' . $inferred_return_type->getId() : ''),
-                    new CodeLocation($function_like_analyzer, $function->name, null, true)
+                    new CodeLocation($function_like_analyzer, $function->name, null, true),
                 ),
                 $suppressed_issues,
-                !$inferred_return_type->hasMixed() && !$inferred_return_type->isNull()
+                !$inferred_return_type->hasMixed() && !$inferred_return_type->isNull(),
             );
 
             return null;
@@ -414,7 +414,7 @@ class ReturnTypeAnalyzer
             true,
             true,
             ($function_like_storage instanceof MethodStorage && $function_like_storage->final)
-                || ($classlike_storage && $classlike_storage->final)
+                || ($classlike_storage && $classlike_storage->final),
         );
 
         if (!$inferred_return_type_parts
@@ -444,7 +444,7 @@ class ReturnTypeAnalyzer
                     $compatible_method_ids
                         || (($project_analyzer->only_replace_php_types_with_non_docblock_types
                                 || $unsafe_return_type)
-                            && $inferred_return_type->from_docblock)
+                            && $inferred_return_type->from_docblock),
                 );
 
                 return null;
@@ -455,10 +455,10 @@ class ReturnTypeAnalyzer
                     new InvalidReturnType(
                         'No return statements were found for method ' . $cased_method_id .
                             ' but return type \'' . $declared_return_type . '\' was expected',
-                        $return_type_location
+                        $return_type_location,
                     ),
                     $suppressed_issues,
-                    true
+                    true,
                 )) {
                     return false;
                 }
@@ -479,9 +479,9 @@ class ReturnTypeAnalyzer
                     new MixedInferredReturnType(
                         'Could not verify return type \'' . $declared_return_type . '\' for ' .
                             $cased_method_id,
-                        $return_type_location
+                        $return_type_location,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 )) {
                     return false;
                 }
@@ -497,9 +497,9 @@ class ReturnTypeAnalyzer
                         'The declared return type \'' . $declared_return_type->getId() . '|never\' for '
                         . $cased_method_id . ' is more specific than the inferred return type '
                         . '\'' . $inferred_return_type->getId() . '\'',
-                        $return_type_location
+                        $return_type_location,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 )) {
                     return false;
                 }
@@ -525,7 +525,7 @@ class ReturnTypeAnalyzer
                         ($project_analyzer->only_replace_php_types_with_non_docblock_types
                          || $unsafe_return_type)
                         && $inferred_return_type->from_docblock,
-                        $function_like_storage
+                        $function_like_storage,
                     );
 
                     return null;
@@ -537,10 +537,10 @@ class ReturnTypeAnalyzer
                         . $declared_return_type->getId()
                         . '\' for ' . $cased_method_id
                         . ' is incorrect, got \'never\'',
-                        $return_type_location
+                        $return_type_location,
                     ),
                     $suppressed_issues,
-                    true
+                    true,
                 )) {
                     return false;
                 }
@@ -552,7 +552,7 @@ class ReturnTypeAnalyzer
                 $declared_return_type,
                 true,
                 true,
-                $union_comparison_results
+                $union_comparison_results,
             )) {
                 // is the declared return type more specific than the inferred one?
                 if ($union_comparison_results->type_coerced) {
@@ -563,9 +563,9 @@ class ReturnTypeAnalyzer
                                     'The declared return type \'' . $declared_return_type->getId() . '\' for '
                                         . $cased_method_id . ' is more specific than the inferred return type '
                                         . '\'' . $inferred_return_type->getId() . '\'',
-                                    $return_type_location
+                                    $return_type_location,
                                 ),
-                                $suppressed_issues
+                                $suppressed_issues,
                             )) {
                                 return false;
                             }
@@ -576,9 +576,9 @@ class ReturnTypeAnalyzer
                                 'The declared return type \'' . $declared_return_type->getId() . '\' for '
                                     . $cased_method_id . ' is more specific than the inferred return type '
                                     . '\'' . $inferred_return_type->getId() . '\'',
-                                $return_type_location
+                                $return_type_location,
                             ),
-                            $suppressed_issues
+                            $suppressed_issues,
                         )) {
                             return false;
                         }
@@ -596,7 +596,7 @@ class ReturnTypeAnalyzer
                             ($project_analyzer->only_replace_php_types_with_non_docblock_types
                                     || $unsafe_return_type)
                                 && $inferred_return_type->from_docblock,
-                            $function_like_storage
+                            $function_like_storage,
                         );
 
                         return null;
@@ -615,10 +615,10 @@ class ReturnTypeAnalyzer
                                         . implode(', ', $union_comparison_results->missing_shape_fields)
                                         . ')'
                                     : ''),
-                            $return_type_location
+                            $return_type_location,
                         ),
                         $suppressed_issues,
-                        true
+                        true,
                     )) {
                         return false;
                     }
@@ -628,7 +628,7 @@ class ReturnTypeAnalyzer
                 $declared_return_type,
                 $inferred_return_type,
                 false,
-                false
+                false,
             )) {
                 if ($codebase->alter_code) {
                     if (isset($project_analyzer->getIssuesToFix()['LessSpecificReturnType'])
@@ -644,7 +644,7 @@ class ReturnTypeAnalyzer
                                 || (($project_analyzer->only_replace_php_types_with_non_docblock_types
                                         || $unsafe_return_type)
                                     && $inferred_return_type->from_docblock),
-                            $function_like_storage
+                            $function_like_storage,
                         );
                     }
                 } else {
@@ -676,10 +676,10 @@ class ReturnTypeAnalyzer
                                     . '\' for ' . $cased_method_id
                                     . ' is more specific than the declared return type \''
                                     . $declared_return_type->getId() . '\'',
-                                $return_type_location
+                                $return_type_location,
                             ),
                             $suppressed_issues,
-                            !($function_like_storage instanceof MethodStorage && $function_like_storage->inheritdoc)
+                            !($function_like_storage instanceof MethodStorage && $function_like_storage->inheritdoc),
                         )) {
                             return false;
                         }
@@ -693,9 +693,9 @@ class ReturnTypeAnalyzer
                         'The declared return type for ' . $cased_method_id . ' expects \'' .
                         $declared_return_type . '\', ' . '\'' . $inferred_return_type .
                         '\' provided with a __toString method',
-                        $return_type_location
+                        $return_type_location,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
 
@@ -718,7 +718,7 @@ class ReturnTypeAnalyzer
                         ($project_analyzer->only_replace_php_types_with_non_docblock_types
                                 || $unsafe_return_type)
                             && $inferred_return_type->from_docblock,
-                        $function_like_storage
+                        $function_like_storage,
                     );
 
                     return null;
@@ -728,10 +728,10 @@ class ReturnTypeAnalyzer
                     new InvalidNullableReturnType(
                         'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                             ' is not nullable, but \'' . $inferred_return_type . '\' contains null',
-                        $return_type_location
+                        $return_type_location,
                     ),
                     $suppressed_issues,
-                    !$inferred_return_type->isNull()
+                    !$inferred_return_type->isNull(),
                 )) {
                     return false;
                 }
@@ -754,7 +754,7 @@ class ReturnTypeAnalyzer
                         ($project_analyzer->only_replace_php_types_with_non_docblock_types
                                 || $unsafe_return_type)
                             && $inferred_return_type->from_docblock,
-                        $function_like_storage
+                        $function_like_storage,
                     );
 
                     return null;
@@ -764,10 +764,10 @@ class ReturnTypeAnalyzer
                     new InvalidFalsableReturnType(
                         'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                             ' does not allow false, but \'' . $inferred_return_type . '\' contains false',
-                        $return_type_location
+                        $return_type_location,
                     ),
                     $suppressed_issues,
-                    true
+                    true,
                 )) {
                     return false;
                 }
@@ -812,9 +812,9 @@ class ReturnTypeAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidParent(
                             'Cannot use parent as a return type when class has no parent',
-                            $storage->return_type_location
+                            $storage->return_type_location,
                         ),
-                        $storage->suppressed_issues
+                        $storage->suppressed_issues,
                     )) {
                         return false;
                     }
@@ -827,7 +827,7 @@ class ReturnTypeAnalyzer
                 $storage->return_type,
                 $classlike_storage->name ?? null,
                 $classlike_storage->name ?? null,
-                $parent_class
+                $parent_class,
             );
 
             /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
@@ -839,7 +839,7 @@ class ReturnTypeAnalyzer
                 false,
                 false,
                 false,
-                $context->calling_method_id
+                $context->calling_method_id,
             );
 
             return null;
@@ -850,7 +850,7 @@ class ReturnTypeAnalyzer
             $storage->signature_return_type,
             $classlike_storage->name ?? null,
             $classlike_storage->name ?? null,
-            $parent_class
+            $parent_class,
         );
 
         if ($fleshed_out_signature_type->check(
@@ -858,7 +858,7 @@ class ReturnTypeAnalyzer
             $storage->signature_return_type_location ?: $storage->return_type_location,
             $storage->suppressed_issues,
             [],
-            false
+            false,
         ) === false) {
             return false;
         }
@@ -885,10 +885,10 @@ class ReturnTypeAnalyzer
             IssueBuffer::maybeAdd(
                 new UnresolvableConstant(
                     "Could not resolve constant {$e->class_name}::{$e->const_name}",
-                    $storage->return_type_location
+                    $storage->return_type_location,
                 ),
                 $storage->suppressed_issues,
-                true
+                true,
             );
             $fleshed_out_return_type = $storage->return_type;
         }
@@ -899,7 +899,7 @@ class ReturnTypeAnalyzer
             $storage->suppressed_issues,
             [],
             false,
-            $storage instanceof MethodStorage && $storage->inherited_return_type
+            $storage instanceof MethodStorage && $storage->inherited_return_type,
         ) === false) {
             return false;
         }
@@ -911,7 +911,7 @@ class ReturnTypeAnalyzer
                 $codebase->classlike_storage_provider->get($context->self),
                 strtolower($function->name->name),
                 new TNamedObject($context->self),
-                true
+                true,
             );
 
             $class_template_params = $class_template_params ?: [];
@@ -919,7 +919,7 @@ class ReturnTypeAnalyzer
             if ($class_template_params) {
                 $template_result = new TemplateResult(
                     $class_template_params,
-                    []
+                    [],
                 );
 
                 $fleshed_out_return_type = TemplateStandinTypeReplacer::replace(
@@ -928,7 +928,7 @@ class ReturnTypeAnalyzer
                     $codebase,
                     null,
                     null,
-                    null
+                    null,
                 );
             }
         }
@@ -941,7 +941,7 @@ class ReturnTypeAnalyzer
             $fleshed_out_signature_type,
             false,
             false,
-            $union_comparison_result
+            $union_comparison_result,
         ) && !$union_comparison_result->type_coerced_from_mixed
         ) {
             if ($codebase->alter_code
@@ -951,7 +951,7 @@ class ReturnTypeAnalyzer
                     $function,
                     $project_analyzer,
                     $storage->signature_return_type,
-                    $function_like_analyzer->getSource()
+                    $function_like_analyzer->getSource(),
                 );
 
                 return null;
@@ -961,10 +961,10 @@ class ReturnTypeAnalyzer
                 new MismatchingDocblockReturnType(
                     'Docblock has incorrect return type \'' . $storage->return_type->getId() .
                         '\', should be \'' . $storage->signature_return_type->getId() . '\'',
-                    $storage->return_type_location
+                    $storage->return_type_location,
                 ),
                 $storage->suppressed_issues,
-                true
+                true,
             )) {
                 return false;
             }
@@ -987,7 +987,7 @@ class ReturnTypeAnalyzer
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
             $source->getFilePath(),
-            $function
+            $function,
         );
 
         $codebase = $project_analyzer->getCodebase();
@@ -1013,22 +1013,22 @@ class ReturnTypeAnalyzer
                     $source->getNamespace(),
                     $source->getAliasedClassesFlipped(),
                     $source->getFQCLN(),
-                    $codebase->analysis_php_version_id
+                    $codebase->analysis_php_version_id,
                 ) : null,
             $inferred_return_type->toNamespacedString(
                 $source->getNamespace(),
                 $source->getAliasedClassesFlipped(),
                 $source->getFQCLN(),
-                false
+                false,
             ),
             $inferred_return_type->toNamespacedString(
                 $source->getNamespace(),
                 $source->getAliasedClassesFlipped(),
                 $source->getFQCLN(),
-                true
+                true,
             ),
             $inferred_return_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id),
-            $function_like_storage->return_type_description ?? null
+            $function_like_storage->return_type_description ?? null,
         );
     }
 }

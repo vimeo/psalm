@@ -696,7 +696,7 @@ class RedundantConditionTest extends TestCase
                         } else {
                             if ($impl instanceof One) {}
                         }
-                    }'
+                    }',
             ],
             'invalidateAfterPostIncrement' => [
                 'code' => '<?php
@@ -710,7 +710,7 @@ class RedundantConditionTest extends TestCase
                         $i++;
                         if ($tokens[$i] !== 2) {}
                         return false;
-                    }'
+                    }',
             ],
             'invalidateAfterAssignOp' => [
                 'code' => '<?php
@@ -724,7 +724,7 @@ class RedundantConditionTest extends TestCase
                         $i += 1;
                         if ($tokens[$i] !== 2) {}
                         return false;
-                    }'
+                    }',
             ],
             'invalidateAfterAssign' => [
                 'code' => '<?php
@@ -738,7 +738,7 @@ class RedundantConditionTest extends TestCase
                         $i = $i + 1;
                         if ($tokens[$i] !== 2) {}
                         return false;
-                    }'
+                    }',
             ],
             'numericNotString' => [
                 'code' => '<?php
@@ -748,7 +748,7 @@ class RedundantConditionTest extends TestCase
                             throw new Exception("Invalid $value");
                         }
                         if (!is_string($value)) {}
-                    }'
+                    }',
             ],
             'checkClosedResource' => [
                 'code' => '<?php
@@ -765,7 +765,7 @@ class RedundantConditionTest extends TestCase
                     fclose($fp);',
                 'assertions' => [
                     '$fp' => 'closed-resource',
-                ]
+                ],
             ],
             'allowCheckOnReturnTypeUnion' => [
                 'code' => '<?php
@@ -791,7 +791,7 @@ class RedundantConditionTest extends TestCase
 
                             return function() : void {};
                         }
-                    }'
+                    }',
             ],
             'noRedundantCastAfterCalculation' => [
                 'code' => '<?php
@@ -805,7 +805,7 @@ class RedundantConditionTest extends TestCase
                         $filter = rand(0, 1) ? explode(",", $f) : [$f];
                         unset($filter[rand(0, 1)]);
                         if ($filter) {}
-                    }'
+                    }',
             ],
             'stringInScalar' => [
                 'code' => '<?php
@@ -848,7 +848,7 @@ class RedundantConditionTest extends TestCase
                         if (is_numeric($a)) {
                             assert(!is_int($a));
                         }
-                    }'
+                    }',
             ],
             'alwaysTrueAssignAllowedInsideAND' => [
                 'code' => '<?php
@@ -861,7 +861,7 @@ class RedundantConditionTest extends TestCase
 
 
                     }
-                    '
+                    ',
             ],
             'alwaysTrueAssignAllowedInsideOr' => [
                 'code' => '<?php
@@ -874,7 +874,7 @@ class RedundantConditionTest extends TestCase
 
 
                     }
-                    '
+                    ',
             ],
             'countWithNeverValuesInKeyedArray' => [
                 'code' => '<?php
@@ -886,7 +886,7 @@ class RedundantConditionTest extends TestCase
 
                         if ( count( $report_data ) === 1 ) {
                         }
-                    }'
+                    }',
             ],
             'countWithNeverValuesInKeyedList' => [
                 'code' => '<?php
@@ -898,7 +898,7 @@ class RedundantConditionTest extends TestCase
 
                         if ( count( $report_data ) === 1 ) {
                         }
-                    }'
+                    }',
             ],
             'secondFalsyTwiceWithChange' => [
                 'code' => '<?php
@@ -1531,7 +1531,7 @@ class RedundantConditionTest extends TestCase
                         }
                         assert(!!$p);
                     }',
-                'error_message' => 'RedundantCondition'
+                'error_message' => 'RedundantCondition',
             ],
             'secondFalsyTwiceWithoutChangeWithElse' => [
                 'code' => '<?php
@@ -1544,7 +1544,7 @@ class RedundantConditionTest extends TestCase
                         } else {}
                         assert(!!$p);
                     }',
-                'error_message' => 'RedundantCondition'
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

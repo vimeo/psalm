@@ -73,7 +73,7 @@ class PropertyExistenceProvider
                 $read_mode,
                 $source,
                 $context,
-                $code_location
+                $code_location,
             );
             $property_exists = $property_handler($event);
 

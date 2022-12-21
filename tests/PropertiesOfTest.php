@@ -49,7 +49,7 @@ class PropertiesOfTest extends TestCase
                     '$result1===' => 'array{a: int, ...<string, mixed>}',
                     '$result2===' => 'array{a: int, ...<string, mixed>}',
                     '$result3===' => 'array{a: int, ...<string, mixed>}',
-                ]
+                ],
             ],
             'publicPropertiesOf' => [
                 'code' => '<?php
@@ -274,7 +274,7 @@ class PropertiesOfTest extends TestCase
                         return ["foo" => true];
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'publicPropertiesOfPicksNoPrivate' => [
                 'code' => '<?php
@@ -292,7 +292,7 @@ class PropertiesOfTest extends TestCase
                         return ["bar" => true];
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'publicPropertiesOfPicksNoProtected' => [
                 'code' => '<?php
@@ -310,7 +310,7 @@ class PropertiesOfTest extends TestCase
                         return ["adams" => true];
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'protectedPropertiesOfPicksNoPublic' => [
                 'code' => '<?php
@@ -328,7 +328,7 @@ class PropertiesOfTest extends TestCase
                         return ["foo" => true];
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'protectedPropertiesOfPicksNoPrivate' => [
                 'code' => '<?php
@@ -346,7 +346,7 @@ class PropertiesOfTest extends TestCase
                         return ["bar" => true];
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'privatePropertiesOfPicksNoPublic' => [
                 'code' => '<?php
@@ -364,7 +364,7 @@ class PropertiesOfTest extends TestCase
                         return ["foo" => true];
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'privatePropertiesOfPicksNoProtected' => [
                 'code' => '<?php
@@ -382,7 +382,7 @@ class PropertiesOfTest extends TestCase
                         return ["adams" => true];
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'finalPropertiesOfInexact' => [
                 'code' => '<?php
@@ -400,7 +400,7 @@ class PropertiesOfTest extends TestCase
                         return ["foo" => true];
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

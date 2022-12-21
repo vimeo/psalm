@@ -4,6 +4,7 @@ namespace Psalm;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
@@ -79,10 +80,10 @@ abstract class Type
     ): Union {
         return TypeParser::parseTokens(
             TypeTokenizer::tokenize(
-                $type_string
+                $type_string,
             ),
             $analysis_php_version_id,
-            $template_type_map
+            $template_type_map,
         );
     }
 
@@ -143,7 +144,7 @@ abstract class Type
             $candidate = preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
-                $value
+                $value,
             );
 
             $candidate_parts = explode('\\', $candidate);
@@ -181,11 +182,11 @@ abstract class Type
     {
         if ($value !== null) {
             return new Union([new TLiteralInt($value)], [
-                'from_calculation' => $from_calculation
+                'from_calculation' => $from_calculation,
             ]);
         }
         return new Union([new TInt()], [
-            'from_calculation' => $from_calculation
+            'from_calculation' => $from_calculation,
         ]);
     }
 
@@ -256,7 +257,7 @@ abstract class Type
         if ($value !== null) {
             $config = Config::getInstance();
 
-            $event = new StringInterpreterEvent($value);
+            $event = new StringInterpreterEvent($value, ProjectAnalyzer::getInstance()->getCodebase());
 
             $type = $config->eventDispatcher->dispatchStringInterpreter($event);
 
@@ -296,7 +297,7 @@ abstract class Type
                 $extends,
                 $extends === 'object'
                     ? null
-                    : new TNamedObject($extends)
+                    : new TNamedObject($extends),
             ),
         ]);
     }
@@ -413,7 +414,7 @@ abstract class Type
             [
                 new Union([new TArrayKey]),
                 new Union([new TMixed]),
-            ]
+            ],
         );
 
         return new Union([$type]);
@@ -436,7 +437,7 @@ abstract class Type
             [
                 new Union([new TNever()]),
                 new Union([new TNever()]),
-            ]
+            ],
         );
     }
 
@@ -466,7 +467,7 @@ abstract class Type
             null,
             [self::getListKey(), $of],
             true,
-            $from_docblock
+            $from_docblock,
         );
     }
 
@@ -480,7 +481,7 @@ abstract class Type
             null,
             [self::getListKey(), $of],
             true,
-            $from_docblock
+            $from_docblock,
         );
     }
 
@@ -601,25 +602,25 @@ abstract class Type
                 } else {
                     return $type_2->setProperties([
                         'parent_nodes' => array_merge($type_2->parent_nodes, $type_1->parent_nodes),
-                        'possibly_undefined' => $possibly_undefined ?? $type_2->possibly_undefined
+                        'possibly_undefined' => $possibly_undefined ?? $type_2->possibly_undefined,
                     ]);
                 }
             } elseif ($type_2->failed_reconciliation) {
                 return $type_1->setProperties([
                     'parent_nodes' => array_merge($type_1->parent_nodes, $type_2->parent_nodes),
-                    'possibly_undefined' => $possibly_undefined ?? $type_1->possibly_undefined
+                    'possibly_undefined' => $possibly_undefined ?? $type_1->possibly_undefined,
                 ]);
             }
 
             $combined_type = TypeCombiner::combine(
                 array_merge(
                     array_values($type_1->getAtomicTypes()),
-                    array_values($type_2->getAtomicTypes())
+                    array_values($type_2->getAtomicTypes()),
                 ),
                 $codebase,
                 $overwrite_empty_array,
                 $allow_mixed_union,
-                $literal_limit
+                $literal_limit,
             );
 
             if (!$type_1->initialized || !$type_2->initialized) {
@@ -739,7 +740,7 @@ abstract class Type
                             $type_1_atomic,
                             $type_2_atomic,
                             $codebase,
-                            $intersection_performed
+                            $intersection_performed,
                         );
 
                         if (null !== $intersection_atomic) {
@@ -838,7 +839,7 @@ abstract class Type
         if ($type_1_atomic instanceof TInt && $type_2_atomic instanceof TInt) {
             $int_intersection = TIntRange::intersectIntRanges(
                 TIntRange::convertToIntRange($type_1_atomic),
-                TIntRange::convertToIntRange($type_2_atomic)
+                TIntRange::convertToIntRange($type_2_atomic),
             );
             if ($int_intersection
                 && ($int_intersection->min_bound !== null || $int_intersection->max_bound !== null)
@@ -857,7 +858,7 @@ abstract class Type
             if (AtomicTypeComparator::isContainedBy(
                 $codebase,
                 $type_2_atomic,
-                $type_1_atomic
+                $type_1_atomic,
             )) {
                 $intersection_atomic = $type_2_atomic;
                 $wider_type = $type_1_atomic;
@@ -865,7 +866,7 @@ abstract class Type
             } elseif (AtomicTypeComparator::isContainedBy(
                 $codebase,
                 $type_1_atomic,
-                $type_2_atomic
+                $type_2_atomic,
             )) {
                 $intersection_atomic = $type_1_atomic;
                 $wider_type = $type_2_atomic;
@@ -905,7 +906,7 @@ abstract class Type
                 throw new LogicException(
                     '$intersection_atomic and $wider_type should be both set or null.'
                     .' Check the preceding code for errors.'
-                    .' Did you forget to assign one of the variables?'
+                    .' Did you forget to assign one of the variables?',
                 );
             }
             if (!self::mayHaveIntersection($intersection_atomic, $codebase)
@@ -913,7 +914,7 @@ abstract class Type
             ) {
                 throw new LogicException(
                     '$intersection_atomic and $wider_type should be both support intersection.'
-                    .' Check the preceding code for errors.'
+                    .' Check the preceding code for errors.',
                 );
             }
 
@@ -923,7 +924,7 @@ abstract class Type
 
             $final_intersection = array_merge(
                 [$wider_type_clone->getKey() => $wider_type_clone],
-                $intersection_atomic->getIntersectionTypes()
+                $intersection_atomic->getIntersectionTypes(),
             );
 
             $wider_type_intersection_types = $wider_type->getIntersectionTypes();

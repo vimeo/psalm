@@ -69,7 +69,7 @@ final class TClosure extends TNamedObject
             $replaced[1] ?? $this->return_type,
             $this->is_pure,
             $this->byref_uses,
-            $intersection ?? $this->extra_types
+            $intersection ?? $this->extra_types,
         );
     }
 
@@ -98,7 +98,7 @@ final class TClosure extends TNamedObject
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
             $template_result,
@@ -110,7 +110,7 @@ final class TClosure extends TNamedObject
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         if (!$replaced && !$intersection) {
             return $this;
@@ -121,7 +121,7 @@ final class TClosure extends TNamedObject
             $replaced[1] ?? $this->return_type,
             $this->is_pure,
             $this->byref_uses,
-            $intersection ?? $this->extra_types
+            $intersection ?? $this->extra_types,
         );
     }
 

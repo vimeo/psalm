@@ -29,14 +29,14 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
 
         $providers = new Providers(
             $file_provider,
-            new FakeParserCacheProvider()
+            new FakeParserCacheProvider(),
         );
 
         $test_config = new TestConfig();
 
         $project_analyzer = new ProjectAnalyzer(
             $test_config,
-            $providers
+            $providers,
         );
 
         $file_analyzer = new FileAnalyzer($project_analyzer, 'none/none.php', 'none.php');
@@ -62,7 +62,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
         $function_docblock = FunctionLikeDocblockParser::parse(
             $php_parser_doc,
             $this->test_code_location,
-            $this->test_cased_function_id
+            $this->test_cased_function_id,
         );
 
         $this->assertSame('Some Description', $function_docblock->description);
@@ -86,7 +86,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
         $function_docblock = FunctionLikeDocblockParser::parse(
             $php_parser_doc,
             $this->test_code_location,
-            $this->test_cased_function_id
+            $this->test_cased_function_id,
         );
 
         $this->assertTrue(isset($function_docblock->params[0]['description']));
@@ -108,7 +108,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
         FunctionLikeDocblockParser::parse(
             $php_parser_doc,
             $this->test_code_location,
-            $this->test_cased_function_id
+            $this->test_cased_function_id,
         );
     }
 
@@ -123,7 +123,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
         $function_docblock = FunctionLikeDocblockParser::parse(
             $php_parser_doc,
             $this->test_code_location,
-            $this->test_cased_function_id
+            $this->test_cased_function_id,
         );
         $this->assertSame([['T', 'of', 'string', false]], $function_docblock->templates);
     }
@@ -140,7 +140,7 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
         $function_docblock = FunctionLikeDocblockParser::parse(
             $php_parser_doc,
             $this->test_code_location,
-            $this->test_cased_function_id
+            $this->test_cased_function_id,
         );
         $this->assertEquals(
             [
@@ -148,10 +148,10 @@ class FunctionLikeDocblockParserTest extends BaseTestCase
                 'var' => ['lines' => [2], 'suggested_replacement' => 'param'],
                 'psalm-consistent-constructor' => [
                     'lines' => [3],
-                    'suggested_replacement' => 'psalm-consistent-constructor on a class level'
-                ]
+                    'suggested_replacement' => 'psalm-consistent-constructor on a class level',
+                ],
             ],
-            $function_docblock->unexpected_tags
+            $function_docblock->unexpected_tags,
         );
     }
 }

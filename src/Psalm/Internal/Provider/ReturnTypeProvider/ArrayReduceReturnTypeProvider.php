@@ -122,9 +122,9 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     IssueBuffer::maybeAdd(
                         new InvalidArgument(
                             'The closure passed to array_reduce at least one parameter',
-                            new CodeLocation($statements_source, $function_call_arg)
+                            new CodeLocation($statements_source, $function_call_arg),
                         ),
-                        $statements_source->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues(),
                     );
 
                     return Type::getMixed();
@@ -138,14 +138,14 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                         !UnionTypeComparator::isContainedBy(
                             $codebase,
                             $initial_type,
-                            $carry_param->type
+                            $carry_param->type,
                         )
                         || (
                             !$reduce_return_type->hasMixed()
                                 && !UnionTypeComparator::isContainedBy(
                                     $codebase,
                                     $reduce_return_type,
-                                    $carry_param->type
+                                    $carry_param->type,
                                 )
                             )
                         )
@@ -155,9 +155,9 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                             'The first param of the closure passed to array_reduce must take '
                                 . $reduce_return_type . ' but only accepts ' . $carry_param->type,
                             $carry_param->type_location
-                                ?: new CodeLocation($statements_source, $function_call_arg)
+                                ?: new CodeLocation($statements_source, $function_call_arg),
                         ),
-                        $statements_source->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues(),
                     );
 
                     return Type::getMixed();
@@ -170,7 +170,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $array_arg_atomic_type->type_params[1],
-                        $item_param->type
+                        $item_param->type,
                     )
                 ) {
                     IssueBuffer::maybeAdd(
@@ -178,9 +178,9 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                             'The second param of the closure passed to array_reduce must take '
                                 . $array_arg_atomic_type->type_params[1] . ' but only accepts ' . $item_param->type,
                             $item_param->type_location
-                                ?: new CodeLocation($statements_source, $function_call_arg)
+                                ?: new CodeLocation($statements_source, $function_call_arg),
                         ),
-                        $statements_source->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues(),
                     );
 
                     return Type::getMixed();
@@ -196,7 +196,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         ) {
             $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
                 $statements_source,
-                $function_call_arg
+                $function_call_arg,
             );
 
             $call_map = InternalCallMapHandler::getCallMap();
@@ -214,7 +214,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                             $reduce_return_type = Type::combineUnionTypes(
                                 $reduce_return_type,
-                                $mapped_function_return
+                                $mapped_function_return,
                             );
 
                             $part_match_found = true;
@@ -240,7 +240,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                             $method_id = new MethodIdentifier(
                                 $callable_fq_class_name,
-                                strtolower($method_name)
+                                strtolower($method_name),
                             );
 
                             if (!$codebase->methods->methodExists(
@@ -252,10 +252,10 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                                 $codebase->collect_locations
                                     ? new CodeLocation(
                                         $statements_source,
-                                        $function_call_arg
+                                        $function_call_arg,
                                     ) : null,
                                 null,
-                                $statements_source->getFilePath()
+                                $statements_source->getFilePath(),
                             )) {
                                 continue;
                             }
@@ -266,12 +266,12 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                             $return_type = $codebase->methods->getMethodReturnType(
                                 $method_id,
-                                $self_class
+                                $self_class,
                             ) ?? Type::getMixed();
                         } else {
                             if (!$codebase->functions->functionExists(
                                 $statements_source,
-                                strtolower($mapping_function_id_part)
+                                strtolower($mapping_function_id_part),
                             )
                             ) {
                                 return Type::getMixed();
@@ -281,7 +281,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
                             $function_storage = $codebase->functions->getStorage(
                                 $statements_source,
-                                strtolower($mapping_function_id_part)
+                                strtolower($mapping_function_id_part),
                             );
 
                             $return_type = $function_storage->return_type ?: Type::getMixed();

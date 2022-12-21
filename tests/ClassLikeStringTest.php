@@ -26,7 +26,7 @@ class ClassLikeStringTest extends TestCase
 
                 $a = "A";
 
-                new $a();'
+                new $a();',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -47,7 +47,7 @@ class ClassLikeStringTest extends TestCase
 
                 $a = "A";
 
-                $a::foo();'
+                $a::foo();',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -474,7 +474,7 @@ class ClassLikeStringTest extends TestCase
                         }
                         return null;
                     }
-                }'
+                }',
             ],
             'returnTemplatedClassString' => [
                 'code' => '<?php
@@ -654,7 +654,7 @@ class ClassLikeStringTest extends TestCase
 
 
                     /** @param class-string<Example> $className */
-                    function takesExampleClassString(string $className): void {}'
+                    function takesExampleClassString(string $className): void {}',
             ],
             'noCrashOnPolyfill' => [
                 'code' => '<?php
@@ -689,7 +689,7 @@ class ClassLikeStringTest extends TestCase
                         {
                             return self::$c;
                         }
-                    }'
+                    }',
             ],
             'traitClassStringClone' => [
                 'code' => '<?php
@@ -728,7 +728,7 @@ class ClassLikeStringTest extends TestCase
                             $class = static::getFactoryClass();
                             return new $class;
                         }
-                    }'
+                    }',
             ],
             'staticClassReturn' => [
                 'code' => '<?php
@@ -741,7 +741,7 @@ class ClassLikeStringTest extends TestCase
                             $class = static::class;
                             return new $class();
                         }
-                    }'
+                    }',
             ],
             'getCalledClassIsStaticClass' => [
                 'code' => '<?php
@@ -754,7 +754,7 @@ class ClassLikeStringTest extends TestCase
                             $c = get_called_class();
                             return new $c();
                         }
-                    }'
+                    }',
             ],
             'accessConstantOnClassStringVariable' => [
                 'code' => '<?php
@@ -877,8 +877,8 @@ class ClassLikeStringTest extends TestCase
                     $foo->bar = TypeOne::class;
                     $foo->bar = TypeOne::class;
                     $foo->baz = TypeTwo::class;
-                    $foo->baz = TypeTwo::class;'
-            ]
+                    $foo->baz = TypeTwo::class;',
+            ],
         ];
     }
 

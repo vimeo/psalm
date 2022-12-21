@@ -103,13 +103,13 @@ final class Refactor
                         fwrite(
                             STDERR,
                             'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL
+                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
                         );
                         exit(1);
                     }
                 }
             },
-            $args
+            $args,
         );
 
         if (array_key_exists('help', $options)) {
@@ -284,7 +284,7 @@ final class Refactor
             $path_to_config,
             $current_dir,
             Report::TYPE_CONSOLE,
-            $first_autoloader
+            $first_autoloader,
         );
         $config->setIncludeCollector($include_collector);
 
@@ -303,7 +303,7 @@ final class Refactor
             new FileStorageCacheProvider($config),
             new ClassLikeStorageCacheProvider($config),
             null,
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+            new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
         );
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
@@ -321,7 +321,7 @@ final class Refactor
             new ReportOptions(),
             [],
             $threads,
-            $progress
+            $progress,
         );
 
         if (array_key_exists('debug-by-line', $options)) {

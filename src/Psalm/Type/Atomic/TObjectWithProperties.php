@@ -111,8 +111,8 @@ final class TObjectWithProperties extends TObject
                 static fn($name, Union $type): string => $name . ($type->possibly_undefined ? '?' : '') . ':'
                     . $type->getId($exact),
                 array_keys($this->properties),
-                $this->properties
-            )
+                $this->properties,
+            ),
         );
 
         $methods_string = implode(
@@ -122,8 +122,8 @@ final class TObjectWithProperties extends TObject
                  * @psalm-pure
                  */
                 static fn(string $name): string => $name . '()',
-                array_keys($this->methods)
-            )
+                array_keys($this->methods),
+            ),
         );
 
         return 'object{'
@@ -161,11 +161,11 @@ final class TObjectWithProperties extends TObject
                                 $namespace,
                                 $aliased_classes,
                                 $this_class,
-                                false
+                                false,
                             ),
                         array_keys($this->properties),
-                        $this->properties
-                    )
+                        $this->properties,
+                    ),
                 ) .
                 '}';
     }
@@ -252,7 +252,7 @@ final class TObjectWithProperties extends TObject
                 $replace,
                 $add_lower_bound,
                 null,
-                $depth
+                $depth,
             );
         }
 
@@ -266,7 +266,7 @@ final class TObjectWithProperties extends TObject
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         if ($properties === $this->properties && !$intersection) {
             return $this;
@@ -286,12 +286,12 @@ final class TObjectWithProperties extends TObject
             $properties[$offset] = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
-                $codebase
+                $codebase,
             );
         }
         $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes(
             $template_result,
-            $codebase
+            $codebase,
         );
         if ($properties === $this->properties && !$intersection) {
             return $this;
@@ -299,7 +299,7 @@ final class TObjectWithProperties extends TObject
         return new static(
             $properties,
             $this->methods,
-            $intersection ?? $this->extra_types
+            $intersection ?? $this->extra_types,
         );
     }
 

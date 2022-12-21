@@ -34,9 +34,9 @@ class ArrayTypeComparator
         $is_empty_array = $input_type_part->equals(
             new TArray([
                 new Union([new TNever()]),
-                new Union([new TNever()])
+                new Union([new TNever()]),
             ]),
-            false
+            false,
         );
 
         if ($is_empty_array
@@ -74,7 +74,7 @@ class ArrayTypeComparator
                     $input_type_part,
                     $container_type_part,
                     $allow_interface_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 );
             }
         }
@@ -111,22 +111,18 @@ class ArrayTypeComparator
         if ($input_type_part instanceof TClassStringMap) {
             $input_type_part = new TArray([
                 $input_type_part->getStandinKeyParam(),
-                $input_type_part->value_param
+                $input_type_part->value_param,
             ]);
         }
 
         if ($container_type_part instanceof TClassStringMap) {
             $container_type_part = new TArray([
                 $container_type_part->getStandinKeyParam(),
-                $container_type_part->value_param
+                $container_type_part->value_param,
             ]);
         }
 
         foreach ($input_type_part->type_params as $i => $input_param) {
-            if ($i > 1) {
-                break;
-            }
-
             $container_param = $container_type_part->type_params[$i];
 
             if ($i === 0
@@ -153,7 +149,7 @@ class ArrayTypeComparator
                     $input_param->ignore_nullable_issues,
                     $input_param->ignore_falsable_issues,
                     $param_comparison_result,
-                    $allow_interface_equality
+                    $allow_interface_equality,
                 )) {
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->type_coerced

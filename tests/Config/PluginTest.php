@@ -67,9 +67,9 @@ class PluginTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
+                new FakeParserCacheProvider(),
             ),
-            new ReportOptions()
+            new ReportOptions(),
         );
     }
 
@@ -90,8 +90,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <plugin filename="examples/plugins/StringChecker.php" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -101,7 +101,7 @@ class PluginTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                $a = "Psalm\Internal\Analyzer\ProjectAnalyzer";'
+                $a = "Psalm\Internal\Analyzer\ProjectAnalyzer";',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -124,8 +124,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <plugin filename="examples/plugins/StringChecker.php" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -139,7 +139,7 @@ class PluginTest extends TestCase
                     const C = [
                         "foo" => "Psalm\Internal\Analyzer\ProjectAnalyzer",
                     ];
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -162,8 +162,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <plugin filename="examples/plugins/StringChecker.php" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -179,7 +179,7 @@ class PluginTest extends TestCase
                     const C = [
                         "foo" => \Psalm\Internal\Analyzer\ProjectAnalyzer::class . "::foo",
                     ];
-                }'
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -200,8 +200,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <plugin filename="examples/plugins/composer-based/echo-checker/EchoChecker.php" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -210,7 +210,7 @@ class PluginTest extends TestCase
 
         $this->addFile(
             $file_path,
-            '<h3>This is a header</h3>'
+            '<h3>This is a header</h3>',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -238,8 +238,8 @@ class PluginTest extends TestCase
                         <MixedArgument errorLevel="suppress" />
                         <MixedOperand errorLevel="suppress" />
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -248,7 +248,7 @@ class PluginTest extends TestCase
 
         $this->addFile(
             $file_path,
-            '<?= $unsafe . "safeString" ?>'
+            '<?= $unsafe . "safeString" ?>',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -275,8 +275,8 @@ class PluginTest extends TestCase
                         <UndefinedGlobalVariable errorLevel="suppress" />
                         <MixedArgument errorLevel="suppress" />
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -285,7 +285,7 @@ class PluginTest extends TestCase
 
         $this->addFile(
             $file_path,
-            '<?= $unsafe ?>'
+            '<?= $unsafe ?>',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -308,8 +308,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="Psalm\\Test\\Config\\Plugin\\FilePlugin" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $codebase = $this->project_analyzer->getCodebase();
@@ -325,7 +325,7 @@ class PluginTest extends TestCase
             $file_path,
             '<?php
             $a = 0;
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -335,7 +335,7 @@ class PluginTest extends TestCase
                 'before-analysis' => true,
                 'after-analysis' => true,
             ],
-            $file_storage->custom_metadata
+            $file_storage->custom_metadata,
         );
     }
 
@@ -356,8 +356,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <plugin filename="examples/plugins/PreventFloatAssignmentChecker.php" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -368,7 +368,7 @@ class PluginTest extends TestCase
             $file_path,
             '<?php
 
-            $a = 5.0;'
+            $a = 5.0;',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -394,8 +394,8 @@ class PluginTest extends TestCase
                         <PluginIssue name="NoFloatAssignment" errorLevel="suppress" />
                         <PluginIssue name="SomeOtherCustomIssue" errorLevel="suppress" />
                     </issueHandlers>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -406,7 +406,7 @@ class PluginTest extends TestCase
             $file_path,
             '<?php
 
-            $a = 5.0;'
+            $a = 5.0;',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -427,8 +427,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <plugin filename="examples/plugins/PreventFloatAssignmentChecker.php" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -440,7 +440,7 @@ class PluginTest extends TestCase
             '<?php
 
             /** @psalm-suppress NoFloatAssignment */
-            $a = 5.0;'
+            $a = 5.0;',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -463,14 +463,14 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="ExtendingPluginRegistration" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
         $this->assertContains(
             'ExtendingPlugin',
-            $this->project_analyzer->getCodebase()->config->eventDispatcher->after_function_checks
+            $this->project_analyzer->getCodebase()->config->eventDispatcher->after_function_checks,
         );
     }
 
@@ -486,8 +486,8 @@ class PluginTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $hook = new class implements AfterCodebasePopulatedInterface {
@@ -508,7 +508,7 @@ class PluginTest extends TestCase
 
         $this->assertContains(
             get_class($hook),
-            $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated
+            $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated,
         );
     }
 
@@ -529,8 +529,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -545,7 +545,7 @@ class PluginTest extends TestCase
                 class Foo {}
 
                 $foo = new Foo();
-                echo $foo->magic_property;'
+                echo $foo->magic_property;',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -568,8 +568,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -606,7 +606,7 @@ class PluginTest extends TestCase
                 $foo2 = $foo->magicMethod2("test");
                 $foo2->id();
                 i($foo2);
-                echo $foo2->id();'
+                echo $foo2->id();',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -629,8 +629,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -640,7 +640,7 @@ class PluginTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                magicFunction("hello");'
+                magicFunction("hello");',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -665,8 +665,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -681,7 +681,7 @@ class PluginTest extends TestCase
                 class Foo {}
 
                 $foo = new Foo();
-                $foo->magic_property = 5;'
+                $foo->magic_property = 5;',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -706,8 +706,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -724,7 +724,7 @@ class PluginTest extends TestCase
                 }
 
                 $foo = new Foo();
-                echo strlen($foo->magicMethod(5));'
+                echo strlen($foo->magicMethod(5));',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -749,8 +749,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -760,7 +760,7 @@ class PluginTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                magicFunction(5);'
+                magicFunction(5);',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -783,8 +783,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="Psalm\\Test\\Config\\Plugin\\AfterAnalysisPlugin" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -813,10 +813,10 @@ class PluginTest extends TestCase
                     <plugin filename="%s/examples/plugins/StringChecker.php" />
                 </plugins>
             </psalm>',
-            __DIR__ . '/../..'
+            __DIR__ . '/../..',
         );
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR, $xml)
+            TestConfig::loadFromXML(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR, $xml),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -839,10 +839,10 @@ class PluginTest extends TestCase
                     <plugin filename="%s/does-not-exist/plugins/StringChecker.php" />
                 </plugins>
             </psalm>',
-            __DIR__ . '/..'
+            __DIR__ . '/..',
         );
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR, $xml)
+            TestConfig::loadFromXML(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR, $xml),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -856,8 +856,8 @@ class PluginTest extends TestCase
                 '<?xml version="1.0"?>
                 <psalm
                     errorLevel="1"
-                ></psalm>'
-            )
+                ></psalm>',
+            ),
         );
 
         $mock = $this->getMockBuilder(stdClass::class)->setMethods(['check'])->getMock();
@@ -867,7 +867,7 @@ class PluginTest extends TestCase
                 [$this->equalTo('b')],
                 [$this->equalTo('array_map')],
                 [$this->equalTo('fopen')],
-                [$this->equalTo('a')]
+                [$this->equalTo('a')],
             );
         $plugin = new class($mock) implements AfterEveryFunctionCallAnalysisInterface {
             private static MockObject $m;
@@ -900,7 +900,7 @@ class PluginTest extends TestCase
             array_map("b", [1,3,3]);
             fopen("/tmp/foo.dat", "r");
             a();
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -922,8 +922,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <plugin filename="examples/plugins/SafeArrayKeyChecker.php" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -944,7 +944,7 @@ class PluginTest extends TestCase
                     "safe_key" => $_GET["input"],
                 ],
             ];
-            output($build);'
+            output($build);',
         );
 
         $this->project_analyzer->trackTaintedInputs();
@@ -966,7 +966,7 @@ class PluginTest extends TestCase
                     "a" => $_GET["input"],
                 ],
             ];
-            output($build);'
+            output($build);',
         );
 
         $this->project_analyzer->trackTaintedInputs();
@@ -994,8 +994,8 @@ class PluginTest extends TestCase
                     <plugins>
                         <pluginClass class="Psalm\\Tests\\Config\\Plugin\\StoragePlugin" />
                     </plugins>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
@@ -1025,7 +1025,7 @@ class PluginTest extends TestCase
                     $list
                 );
 
-                acceptsList($tuples);'
+                acceptsList($tuples);',
         );
 
         $this->analyzeFile($file_path, new Context());

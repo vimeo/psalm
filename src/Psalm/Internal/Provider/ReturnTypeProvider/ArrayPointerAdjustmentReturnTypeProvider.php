@@ -113,7 +113,7 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
             $first_arg,
             null,
             $value_type,
-            $temp
+            $temp,
         );
 
         return $value_type;

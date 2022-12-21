@@ -24,7 +24,7 @@ final class XmlReport extends Report
                         if (null !== $issue_data['taint_trace']) {
                             $issue_data['taint_trace'] = array_map(
                                 static fn($trace): array => (array) $trace,
-                                $issue_data['taint_trace']
+                                $issue_data['taint_trace'],
                             );
                         }
 
@@ -34,7 +34,7 @@ final class XmlReport extends Report
                         if (null !== $issue_data['other_references']) {
                             $issue_data['other_references'] = array_map(
                                 static fn(DataFlowNodeData $reference): array => (array) $reference,
-                                $issue_data['other_references']
+                                $issue_data['other_references'],
                             );
                         }
 
@@ -43,14 +43,14 @@ final class XmlReport extends Report
 
                         return $issue_data;
                     },
-                    $this->issues_data
-                )
+                    $this->issues_data,
+                ),
             ],
             'report',
             true,
             'UTF-8',
             '1.0',
-            ['preserveWhiteSpace' => false, 'formatOutput' => true]
+            ['preserveWhiteSpace' => false, 'formatOutput' => true],
         );
 
         return $xml;

@@ -208,14 +208,14 @@ class GeneratorTest extends TestCase
                         $foo = 4;
 
                         return $foo;
-                    }'
+                    }',
             ],
             'echoYield' => [
                 'code' => '<?php
                     /** @return Generator<void, void, string, void> */
                     function gen(): Generator {
                         echo yield;
-                    }'
+                    }',
             ],
             'yieldFromTwiceWithVoidSend' => [
                 'code' => '<?php
@@ -229,7 +229,7 @@ class GeneratorTest extends TestCase
                     function load(string $rsa_key): \Generator {
                         echo (yield from test()) . (yield from test());
                         return 5;
-                    }'
+                    }',
             ],
             'iteratorUnion' => [
                 'code' => '<?php
@@ -237,7 +237,7 @@ class GeneratorTest extends TestCase
                     function getIteratorOrAggregate() {
                         yield 2;
                     }
-                    echo json_encode(iterator_to_array(getIteratorOrAggregate()));'
+                    echo json_encode(iterator_to_array(getIteratorOrAggregate()));',
             ],
             'yieldNonExistentClass' => [
                 'code' => '<?php
@@ -255,7 +255,7 @@ class GeneratorTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['UndefinedClass']
+                'ignored_issues' => ['UndefinedClass'],
             ],
             'fillTemplatesForIteratorFromGenerator' => [
                 'code' => '<?php
@@ -271,7 +271,7 @@ class GeneratorTest extends TestCase
                     ',
                 'assertions' => [
                     '$iterator' => 'NoRewindIterator<int, string, Generator<int, string, mixed, mixed>>',
-                ]
+                ],
             ],
             'detectYieldInNew' => [
                 'code' => '<?php
@@ -280,7 +280,7 @@ class GeneratorTest extends TestCase
                     ',
                 'assertions' => [
                     '$_a' => 'pure-Closure():Generator<int, string, mixed, RuntimeException>',
-                ]
+                ],
             ],
             'detectYieldInArray' => [
                 'code' => '<?php
@@ -289,7 +289,7 @@ class GeneratorTest extends TestCase
                     ',
                 'assertions' => [
                     '$_a' => 'pure-Closure():Generator<int, string, mixed, list{string}>',
-                ]
+                ],
             ],
         ];
     }

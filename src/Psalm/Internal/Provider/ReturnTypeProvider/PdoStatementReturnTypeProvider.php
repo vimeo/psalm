@@ -45,8 +45,8 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                             Type::getString(),
                             new Union([
                                 new TScalar(),
-                                new TNull()
-                            ])
+                                new TNull(),
+                            ]),
                         ]),
                         new TFalse(),
                     ]);
@@ -57,8 +57,8 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                             Type::getArrayKey(),
                             new Union([
                                 new TScalar(),
-                                new TNull()
-                            ])
+                                new TNull(),
+                            ]),
                         ]),
                         new TFalse(),
                     ]);
@@ -86,8 +86,8 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                             Type::getString(),
                             new Union([
                                 new TScalar(),
-                                Type::getListAtomic(Type::getScalar())
-                            ])
+                                Type::getListAtomic(Type::getScalar()),
+                            ]),
                         ]),
                         new TFalse(),
                     ]);
@@ -97,8 +97,8 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                         Type::getListAtomic(
                             new Union([
                                 new TScalar(),
-                                new TNull()
-                            ])
+                                new TNull(),
+                            ]),
                         ),
                         new TFalse(),
                     ]);

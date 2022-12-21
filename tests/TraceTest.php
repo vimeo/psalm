@@ -39,7 +39,7 @@ class TraceTest extends TestCase
                 'ignored_issues' => [
                     'MixedAssignment',
                 ],
-            ]
+            ],
         ];
     }
 }
