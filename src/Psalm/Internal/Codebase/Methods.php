@@ -803,7 +803,7 @@ class Methods
                     return $candidate_type;
                 }
 
-                if ($old_contained_by_new || $overridden_storage_return_type->hasTemplate()) {
+                if ($old_contained_by_new) {
                     $self_class = $appearing_fq_class_storage->name;
 
                     return $candidate_type;
