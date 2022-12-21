@@ -68,7 +68,7 @@ use function preg_replace;
 use function realpath;
 use function setlocale;
 use function str_repeat;
-use function strpos;
+use function str_starts_with;
 use function substr;
 use function version_compare;
 
@@ -437,7 +437,7 @@ final class Psalm
     {
         array_map(
             static function (string $arg): void {
-                if (strpos($arg, '--') === 0 && $arg !== '--') {
+                if (str_starts_with($arg, '--') && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if (!in_array($arg_name, self::LONG_OPTIONS)
@@ -451,7 +451,7 @@ final class Psalm
                         );
                         exit(1);
                     }
-                } elseif (strpos($arg, '-') === 0 && $arg !== '-' && $arg !== '--') {
+                } elseif (str_starts_with($arg, '-') && $arg !== '-' && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
 
                     if (!in_array($arg_name, self::SHORT_OPTIONS)
@@ -511,9 +511,9 @@ final class Psalm
                 && $arg !== '--debug'
                 && $arg !== '--debug-by-line'
                 && $arg !== '--debug-emitted-issues'
-                && strpos($arg, '--disable-extension=') !== 0
-                && strpos($arg, '--root=') !== 0
-                && strpos($arg, '--r=') !== 0
+                && !str_starts_with($arg, '--disable-extension=')
+                && !str_starts_with($arg, '--root=')
+                && !str_starts_with($arg, '--r=')
         ));
 
         $init_level = null;

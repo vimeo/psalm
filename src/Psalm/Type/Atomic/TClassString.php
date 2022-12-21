@@ -13,8 +13,8 @@ use function array_values;
 use function count;
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function stripos;
-use function strpos;
 use function strtolower;
 
 /**
@@ -133,7 +133,7 @@ class TClassString extends TString
             ) . '>';
         }
 
-        if (!$namespace && strpos($this->as, '\\') === false) {
+        if (!$namespace && !str_contains($this->as, '\\')) {
             return 'class-string<' . $this->as . '>';
         }
 

@@ -39,12 +39,12 @@ use function posix_get_last_error;
 use function posix_kill;
 use function posix_strerror;
 use function serialize;
+use function str_contains;
 use function stream_select;
 use function stream_set_blocking;
 use function stream_socket_pair;
 use function stripos;
 use function strlen;
-use function strpos;
 use function substr;
 use function unserialize;
 use function usleep;
@@ -365,7 +365,7 @@ class Pool
                     $content[(int)$file] .= $buffer;
                 }
 
-                if (strpos($buffer, "\n") !== false) {
+                if (str_contains($buffer, "\n")) {
                     $serialized_messages = explode("\n", $content[(int)$file]);
                     $content[(int)$file] = array_pop($serialized_messages);
 

@@ -21,9 +21,10 @@ use function realpath;
 use function restore_error_handler;
 use function rtrim;
 use function set_error_handler;
+use function str_contains;
 use function str_replace;
+use function str_starts_with;
 use function stripos;
-use function strpos;
 use function strtolower;
 
 use const DIRECTORY_SEPARATOR;
@@ -127,7 +128,7 @@ class FileFilter
                     $prospective_directory_path = $base_dir . DIRECTORY_SEPARATOR . $directory_path;
                 }
 
-                if (strpos($prospective_directory_path, '*') !== false) {
+                if (str_contains($prospective_directory_path, '*')) {
                     $globs = array_map(
                         'realpath',
                         glob($prospective_directory_path, GLOB_ONLYDIR),
@@ -243,7 +244,7 @@ class FileFilter
                     $prospective_file_path = $base_dir . DIRECTORY_SEPARATOR . $file_path;
                 }
 
-                if (strpos($prospective_file_path, '*') !== false) {
+                if (str_contains($prospective_file_path, '*')) {
                     $globs = array_map(
                         'realpath',
                         array_filter(
@@ -292,7 +293,7 @@ class FileFilter
             foreach ($config['referencedClass'] as $referenced_class) {
                 $class_name = strtolower((string) ($referenced_class['name'] ?? ''));
 
-                if (strpos($class_name, '*') !== false) {
+                if (str_contains($class_name, '*')) {
                     $regex = '/' . str_replace('*', '.*', str_replace('\\', '\\\\', $class_name)) . '/i';
                     $filter->fq_classlike_patterns[] = $regex;
                 } else {
@@ -456,7 +457,7 @@ class FileFilter
         if ($this->inclusive) {
             foreach ($this->directories as $include_dir) {
                 if ($case_sensitive) {
-                    if (strpos($file_name, $include_dir) === 0) {
+                    if (str_starts_with($file_name, $include_dir)) {
                         return true;
                     }
                 } else {
@@ -482,7 +483,7 @@ class FileFilter
         // exclusive
         foreach ($this->directories as $exclude_dir) {
             if ($case_sensitive) {
-                if (strpos($file_name, $exclude_dir) === 0) {
+                if (str_starts_with($file_name, $exclude_dir)) {
                     return false;
                 }
             } else {

@@ -98,7 +98,9 @@ use function rtrim;
 use function scandir;
 use function sha1;
 use function simplexml_import_dom;
+use function str_contains;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -1022,7 +1024,7 @@ class Config
         }
         $required_extensions = [];
         foreach (($composer_json["require"] ?? []) as $required => $_) {
-            if (strpos($required, "ext-") === 0) {
+            if (str_starts_with($required, "ext-")) {
                 $required_extensions[strtolower(substr($required, 4))] = true;
             }
         }
@@ -1764,17 +1766,17 @@ class Config
             return null;
         }
 
-        if (strpos($issue_type, 'Possibly') === 0) {
+        if (str_starts_with($issue_type, 'Possibly')) {
             $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
 
-            if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
+            if (!str_contains($stripped_issue_type, 'Invalid') && !str_starts_with($stripped_issue_type, 'Un')) {
                 $stripped_issue_type = 'Invalid' . $stripped_issue_type;
             }
 
             return $stripped_issue_type;
         }
 
-        if (strpos($issue_type, 'Tainted') === 0) {
+        if (str_starts_with($issue_type, 'Tainted')) {
             return 'TaintedInput';
         }
 

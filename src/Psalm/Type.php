@@ -59,6 +59,7 @@ use function get_class;
 use function implode;
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function stripos;
 use function strlen;
 use function strpos;
@@ -101,7 +102,7 @@ abstract class Type
 
         $imported_namespaces = $aliases->uses;
 
-        if (strpos($class, '\\') !== false) {
+        if (str_contains($class, '\\')) {
             $class_parts = explode('\\', $class);
             $first_namespace = array_shift($class_parts);
 
@@ -152,7 +153,7 @@ abstract class Type
             if (!isset($aliased_classes[strtolower($candidate_parts[0])])) {
                 return $candidate;
             }
-        } elseif (!$namespace && strpos($value, '\\') === false) {
+        } elseif (!$namespace && !str_contains($value, '\\')) {
             return $value;
         }
 

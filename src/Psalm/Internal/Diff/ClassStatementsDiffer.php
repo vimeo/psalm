@@ -6,7 +6,7 @@ use PhpParser;
 
 use function count;
 use function get_class;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function substr;
 use function trim;
@@ -142,8 +142,8 @@ class ClassStatementsDiffer extends AstDiffer
                             $a_signature = trim($a_signature);
                             $b_signature = trim($b_signature);
 
-                            if (strpos($a_signature, $b_signature) === false
-                                && strpos($b_signature, $a_signature) === false
+                            if (!str_contains($a_signature, $b_signature)
+                                && !str_contains($b_signature, $a_signature)
                             ) {
                                 $signature_change = true;
                             }

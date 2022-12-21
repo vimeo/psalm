@@ -8,8 +8,8 @@ use Psalm\SourceControl\Git\GitInfo;
 use function explode;
 use function file_get_contents;
 use function json_decode;
+use function str_contains;
 use function str_replace;
-use function strpos;
 use function strtotime;
 
 use const JSON_THROW_ON_ERROR;
@@ -257,9 +257,9 @@ class BuildInfoCollector
             $this->env['CI_JOB_ID'] = $this->env['GITHUB_ACTIONS'];
 
             $githubRef = (string) $this->env['GITHUB_REF'];
-            if (strpos($githubRef, 'refs/heads/') !== false) {
+            if (str_contains($githubRef, 'refs/heads/')) {
                 $githubRef = str_replace('refs/heads/', '', $githubRef);
-            } elseif (strpos($githubRef, 'refs/tags/') !== false) {
+            } elseif (str_contains($githubRef, 'refs/tags/')) {
                 $githubRef = str_replace('refs/tags/', '', $githubRef);
             }
 

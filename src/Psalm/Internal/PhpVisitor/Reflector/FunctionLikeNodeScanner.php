@@ -60,7 +60,8 @@ use function implode;
 use function in_array;
 use function is_string;
 use function spl_object_id;
-use function strpos;
+use function str_contains;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -267,7 +268,7 @@ class FunctionLikeNodeScanner
 
                     $classlike_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
                 }
-            } elseif (strpos($stmt->name->name, 'assert') === 0
+            } elseif (str_starts_with($stmt->name->name, 'assert')
                 && $stmt->stmts
             ) {
                 $var_assertions = [];
@@ -325,7 +326,7 @@ class FunctionLikeNodeScanner
                                         $param_offset,
                                         $rule_part,
                                     );
-                                } elseif (strpos($var_id, '$this->') === 0) {
+                                } elseif (str_starts_with($var_id, '$this->')) {
                                     $var_assertions[] = new Possibilities(
                                         $var_id,
                                         $rule_part,
@@ -1071,7 +1072,7 @@ class FunctionLikeNodeScanner
 
             if ($method_name_lc === strtolower($class_name)
                 && !isset($classlike_storage->methods['__construct'])
-                && strpos($fq_classlike_name, '\\') === false
+                && !str_contains($fq_classlike_name, '\\')
                 && $this->codebase->analysis_php_version_id <= 7_04_00
             ) {
                 $this->codebase->methods->setDeclaringMethodId(

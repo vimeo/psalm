@@ -12,7 +12,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function in_array;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -135,11 +135,11 @@ class ObjectComparator
             && $intersection_input_type instanceof TTemplateParam
         ) {
             if (!$allow_interface_equality) {
-                if (strpos($intersection_container_type->defining_class, 'fn-') === 0
-                    || strpos($intersection_input_type->defining_class, 'fn-') === 0
+                if (str_starts_with($intersection_container_type->defining_class, 'fn-')
+                    || str_starts_with($intersection_input_type->defining_class, 'fn-')
                 ) {
-                    if (strpos($intersection_input_type->defining_class, 'fn-') === 0
-                        && strpos($intersection_container_type->defining_class, 'fn-') === 0
+                    if (str_starts_with($intersection_input_type->defining_class, 'fn-')
+                        && str_starts_with($intersection_container_type->defining_class, 'fn-')
                         && $intersection_input_type->defining_class
                             !== $intersection_container_type->defining_class
                     ) {
@@ -163,11 +163,11 @@ class ObjectComparator
             if ($intersection_container_type->param_name !== $intersection_input_type->param_name
                 || ($intersection_container_type->defining_class
                     !== $intersection_input_type->defining_class
-                    && strpos($intersection_input_type->defining_class, 'fn-') !== 0
-                    && strpos($intersection_container_type->defining_class, 'fn-') !== 0)
+                    && !str_starts_with($intersection_input_type->defining_class, 'fn-')
+                    && !str_starts_with($intersection_container_type->defining_class, 'fn-'))
             ) {
-                if (strpos($intersection_input_type->defining_class, 'fn-') === 0
-                    || strpos($intersection_container_type->defining_class, 'fn-') === 0
+                if (str_starts_with($intersection_input_type->defining_class, 'fn-')
+                    || str_starts_with($intersection_container_type->defining_class, 'fn-')
                 ) {
                     return false;
                 }

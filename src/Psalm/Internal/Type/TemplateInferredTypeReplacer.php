@@ -33,7 +33,7 @@ use UnexpectedValueException;
 use function array_merge;
 use function array_shift;
 use function array_values;
-use function strpos;
+use function str_starts_with;
 
 /**
  * @internal
@@ -294,7 +294,7 @@ class TemplateInferredTypeReplacer
         } elseif ($codebase) {
             foreach ($inferred_lower_bounds as $template_type_map) {
                 foreach ($template_type_map as $template_class => $_) {
-                    if (strpos($template_class, 'fn-') === 0) {
+                    if (str_starts_with($template_class, 'fn-')) {
                         continue;
                     }
 

@@ -8,7 +8,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 use function explode;
 use function is_string;
 use function ltrim;
-use function strpos;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -49,7 +49,7 @@ class MethodIdentifier
      */
     public static function isValidMethodIdReference(string $method_id): bool
     {
-        return strpos($method_id, '::') !== false;
+        return str_contains($method_id, '::');
     }
 
     /**

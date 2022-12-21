@@ -28,7 +28,8 @@ use function implode;
 use function in_array;
 use function is_bool;
 use function rtrim;
-use function strpos;
+use function str_contains;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 
@@ -249,7 +250,7 @@ class Functions
         $imported_function_namespaces = $aliases->functions;
         $imported_namespaces = $aliases->uses;
 
-        if (strpos($function_name, '\\') !== false) {
+        if (str_contains($function_name, '\\')) {
             $function_name_parts = explode('\\', $function_name);
             $first_namespace = array_shift($function_name_parts);
             $first_namespace_lcase = strtolower($first_namespace);
@@ -322,7 +323,7 @@ class Functions
 
         if ($current_namespace_aliases) {
             foreach ($current_namespace_aliases->functions as $alias_name => $function_name) {
-                if (strpos($alias_name, $stub) === 0) {
+                if (str_starts_with($alias_name, $stub)) {
                     try {
                         $match_function_patterns[] = $function_name;
                     } catch (Exception $e) {
@@ -347,7 +348,7 @@ class Functions
                 $pattern_lc = strtolower($pattern);
 
                 if (substr($pattern, -1, 1) === '*') {
-                    if (strpos($function_name, rtrim($pattern_lc, '*')) !== 0) {
+                    if (!str_starts_with($function_name, rtrim($pattern_lc, '*'))) {
                         continue;
                     }
                 } elseif ($function_name !== $pattern) {
@@ -534,11 +535,11 @@ class Functions
             }
         }
 
-        if (strpos($function_id, 'image') === 0) {
+        if (str_starts_with($function_id, 'image')) {
             return false;
         }
 
-        if (strpos($function_id, 'readline') === 0) {
+        if (str_starts_with($function_id, 'readline')) {
             return false;
         }
 

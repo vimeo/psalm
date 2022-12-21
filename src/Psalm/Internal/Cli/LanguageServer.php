@@ -37,7 +37,7 @@ use function is_string;
 use function preg_replace;
 use function realpath;
 use function setlocale;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 
@@ -97,7 +97,7 @@ final class LanguageServer
 
         array_map(
             static function (string $arg) use ($valid_long_options): void {
-                if (strpos($arg, '--') === 0 && $arg !== '--') {
+                if (str_starts_with($arg, '--') && $arg !== '--') {
                     $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if (!in_array($arg_name, $valid_long_options, true)

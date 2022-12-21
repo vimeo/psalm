@@ -47,7 +47,7 @@ use function array_unshift;
 use function assert;
 use function count;
 use function explode;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function substr;
 
@@ -629,7 +629,7 @@ class ArrayFunctionArgumentsAnalyzer
             foreach ($function_ids as $function_id) {
                 $function_id = strtolower($function_id);
 
-                if (strpos($function_id, '::') !== false) {
+                if (str_contains($function_id, '::')) {
                     if ($function_id[0] === '$') {
                         $function_id = substr($function_id, 1);
                     }

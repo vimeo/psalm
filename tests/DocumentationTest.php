@@ -36,6 +36,7 @@ use function preg_match;
 use function preg_quote;
 use function scandir;
 use function sort;
+use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
@@ -202,7 +203,7 @@ class DocumentationTest extends TestCase
      */
     public function testInvalidCode(string $code, string $error_message, array $ignored_issues = [], bool $check_references = false, string $php_version = '8.0'): void
     {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (str_contains($this->getTestName(), 'SKIPPED-')) {
             $this->markTestSkipped();
         }
 
@@ -213,9 +214,9 @@ class DocumentationTest extends TestCase
             $this->project_analyzer->trackUnusedSuppressions();
         }
 
-        $is_taint_test = strpos($error_message, 'Tainted') !== false;
+        $is_taint_test = str_contains($error_message, 'Tainted');
 
-        $is_array_offset_test = strpos($error_message, 'ArrayOffset') && strpos($error_message, 'PossiblyUndefined') !== false;
+        $is_array_offset_test = strpos($error_message, 'ArrayOffset') && str_contains($error_message, 'PossiblyUndefined');
 
         $this->project_analyzer->getConfig()->ensure_array_string_offsets_exist = $is_array_offset_test;
         $this->project_analyzer->getConfig()->ensure_array_int_offsets_exist = $is_array_offset_test;
@@ -314,9 +315,9 @@ class DocumentationTest extends TestCase
                 $blocks[0],
                 $issue_name,
                 $ignored_issues,
-                strpos($issue_name, 'Unused') !== false
-                    || strpos($issue_name, 'Unevaluated') !== false
-                    || strpos($issue_name, 'Unnecessary') !== false,
+                str_contains($issue_name, 'Unused')
+                    || str_contains($issue_name, 'Unevaluated')
+                    || str_contains($issue_name, 'Unnecessary'),
                 $php_version,
             ];
         }

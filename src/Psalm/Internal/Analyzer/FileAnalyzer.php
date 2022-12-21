@@ -33,7 +33,7 @@ use function array_diff_key;
 use function array_keys;
 use function count;
 use function implode;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -394,13 +394,13 @@ class FileAnalyzer extends SourceAnalyzer
         $call_context->calling_method_id = $this_context->calling_method_id;
 
         foreach ($this_context->vars_possibly_in_scope as $var => $_) {
-            if (strpos($var, '$this->') === 0) {
+            if (str_starts_with($var, '$this->')) {
                 $call_context->vars_possibly_in_scope[$var] = true;
             }
         }
 
         foreach ($this_context->vars_in_scope as $var => $type) {
-            if (strpos($var, '$this->') === 0) {
+            if (str_starts_with($var, '$this->')) {
                 $call_context->vars_in_scope[$var] = $type;
             }
         }

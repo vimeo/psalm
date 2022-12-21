@@ -9,7 +9,7 @@ use Psalm\IssueBuffer;
 
 use function array_map;
 use function preg_quote;
-use function strpos;
+use function str_contains;
 use function trim;
 
 use const DIRECTORY_SEPARATOR;
@@ -22,7 +22,7 @@ class TaintTest extends TestCase
     public function testValidCode(string $code): void
     {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'SKIPPED-') !== false) {
+        if (str_contains($test_name, 'SKIPPED-')) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -45,7 +45,7 @@ class TaintTest extends TestCase
      */
     public function testInvalidCode(string $code, string $error_message): void
     {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (str_contains($this->getTestName(), 'SKIPPED-')) {
             $this->markTestSkipped();
         }
 
@@ -2399,7 +2399,7 @@ class TaintTest extends TestCase
      */
     public function multipleTaintIssuesAreDetected(string $code, array $expectedIssuesTypes): void
     {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (str_contains($this->getTestName(), 'SKIPPED-')) {
             $this->markTestSkipped();
         }
 

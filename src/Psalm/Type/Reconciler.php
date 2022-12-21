@@ -68,6 +68,7 @@ use function key;
 use function ksort;
 use function preg_match;
 use function preg_quote;
+use function str_contains;
 use function str_replace;
 use function str_split;
 use function strlen;
@@ -454,7 +455,7 @@ class Reconciler
 
                             $new_base_key = $base_key . '[' . $array_key . ']';
 
-                            if (strpos($array_key, '\'') !== false) {
+                            if (str_contains($array_key, '\'')) {
                                 $new_types[$base_key][] = [new HasStringArrayAccess()];
                             } else {
                                 $new_types[$base_key][] = [new HasIntOrStringArrayAccess()];

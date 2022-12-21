@@ -74,6 +74,7 @@ use function count;
 use function get_class;
 use function is_array;
 use function is_numeric;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
@@ -380,7 +381,7 @@ abstract class Atomic implements TypeNode
                 return new TNonEmptyMixed();
         }
 
-        if (strpos($value, '-') && strpos($value, 'OCI-') !== 0) {
+        if (strpos($value, '-') && !str_starts_with($value, 'OCI-')) {
             throw new TypeParseTreeException('Unrecognized type ' . $value);
         }
 

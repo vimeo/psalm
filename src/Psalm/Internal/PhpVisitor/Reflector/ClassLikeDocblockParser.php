@@ -35,6 +35,7 @@ use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function reset;
+use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
@@ -556,7 +557,7 @@ class ClassLikeDocblockParser
         $method_offset = 0;
 
         foreach ($lines as $i => $line) {
-            if (strpos($line, $method_entry) !== false) {
+            if (str_contains($line, $method_entry)) {
                 $method_offset = $i;
                 break;
             }

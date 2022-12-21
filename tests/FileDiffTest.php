@@ -11,7 +11,7 @@ use Psalm\Internal\Provider\StatementsProvider;
 use function array_map;
 use function count;
 use function get_class;
-use function strpos;
+use function str_contains;
 use function var_export;
 
 class FileDiffTest extends TestCase
@@ -29,7 +29,7 @@ class FileDiffTest extends TestCase
         array $diff_map_offsets,
         array $deletion_ranges
     ): void {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (str_contains($this->getTestName(), 'SKIPPED-')) {
             $this->markTestSkipped();
         }
 
@@ -86,7 +86,7 @@ class FileDiffTest extends TestCase
         array $changed_methods,
         array $diff_map_offsets
     ): void {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (str_contains($this->getTestName(), 'SKIPPED-')) {
             $this->markTestSkipped();
         }
 

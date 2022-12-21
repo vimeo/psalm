@@ -82,6 +82,8 @@ use function krsort;
 use function ksort;
 use function preg_match;
 use function preg_replace;
+use function str_contains;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -569,11 +571,11 @@ final class Codebase
             throw new UnexpectedValueException('Should not be checking references');
         }
 
-        if (strpos($symbol, '::$') !== false) {
+        if (str_contains($symbol, '::$')) {
             return $this->findReferencesToProperty($symbol);
         }
 
-        if (strpos($symbol, '::') !== false) {
+        if (str_contains($symbol, '::')) {
             return $this->findReferencesToMethod($symbol);
         }
 
@@ -1002,7 +1004,7 @@ final class Codebase
 
                 [, $symbol_name] = explode('::', $symbol);
 
-                if (strpos($symbol, '$') !== false) {
+                if (str_contains($symbol, '$')) {
                     $storage = $this->properties->getStorage($symbol);
 
                     return [
@@ -1052,7 +1054,7 @@ final class Codebase
                 ];
             }
 
-            if (strpos($symbol, '$') === 0) {
+            if (str_starts_with($symbol, '$')) {
                 $type = VariableFetchAnalyzer::getGlobalType($symbol, $this->analysis_php_version_id);
                 if (!$type->isMixed()) {
                     return ['type' => '<?php ' . $type];
@@ -1136,7 +1138,7 @@ final class Codebase
                     return $storage->location;
                 }
 
-                if (strpos($symbol, '$') !== false) {
+                if (str_contains($symbol, '$')) {
                     $storage = $this->properties->getStorage($symbol);
 
                     return $storage->location;
@@ -1298,7 +1300,7 @@ final class Codebase
     ): ?SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
-        if (strpos($function_symbol, '::') !== false) {
+        if (str_contains($function_symbol, '::')) {
             /** @psalm-suppress ArgumentTypeCoercion */
             $method_id = new MethodIdentifier(...explode('::', $function_symbol));
 
@@ -1702,14 +1704,14 @@ final class Codebase
             }
             $in_namespace_map = false;
             foreach ($namespace_map as $namespace_name => $namespace_alias) {
-                if (strpos($function_lowercase, $namespace_name . '\\') === 0) {
+                if (str_starts_with($function_lowercase, $namespace_name . '\\')) {
                     $function_name = $namespace_alias . '\\' . substr($function_name, strlen($namespace_name) + 1);
                     $in_namespace_map = true;
                 }
             }
             // If the function is not use'd, and it's not a global function
             // prepend it with a backslash.
-            if (!$in_namespace_map && strpos($function_name, '\\') !== false) {
+            if (!$in_namespace_map && str_contains($function_name, '\\')) {
                 $function_name = '\\' . $function_name;
             }
             $completion_items[] = new CompletionItem(

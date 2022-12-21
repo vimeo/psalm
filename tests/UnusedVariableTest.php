@@ -12,7 +12,7 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function preg_quote;
-use function strpos;
+use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -44,7 +44,7 @@ class UnusedVariableTest extends TestCase
     public function testValidCode(string $code, array $ignored_issues = [], string $php_version = '7.4'): void
     {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'SKIPPED-') !== false) {
+        if (str_contains($test_name, 'SKIPPED-')) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -70,7 +70,7 @@ class UnusedVariableTest extends TestCase
      */
     public function testInvalidCode(string $code, string $error_message, array $ignored_issues = []): void
     {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (str_contains($this->getTestName(), 'SKIPPED-')) {
             $this->markTestSkipped();
         }
 

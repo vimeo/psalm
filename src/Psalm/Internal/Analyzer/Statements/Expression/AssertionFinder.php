@@ -109,6 +109,7 @@ use function is_numeric;
 use function is_string;
 use function sprintf;
 use function str_replace;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -1072,7 +1073,7 @@ class AssertionFinder
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $assertion_var_id = $assertion->var_id;
 
-                        if (strpos($assertion_var_id, 'self::') === 0) {
+                        if (str_starts_with($assertion_var_id, 'self::')) {
                             $assertion_var_id = $this_class_name.'::'.substr($assertion_var_id, 6);
                         }
                     } else {
@@ -1203,7 +1204,7 @@ class AssertionFinder
                         $if_types[$assertion_var_id] = [[$rule]];
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $var_id = $assertion->var_id;
-                        if (strpos($var_id, 'self::') === 0) {
+                        if (str_starts_with($var_id, 'self::')) {
                             $var_id = $this_class_name.'::'.substr($var_id, 6);
                         }
                         $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
@@ -2509,7 +2510,7 @@ class AssertionFinder
                     $if_types[$var_name] = [[new IsNotIdentical(new TObject())]];
                 } elseif ($var_type === 'resource (closed)') {
                     $if_types[$var_name] = [[new IsNotType(new TClosedResource())]];
-                } elseif (strpos($var_type, 'resource (') === 0) {
+                } elseif (str_starts_with($var_type, 'resource (')) {
                     $if_types[$var_name] = [[new IsNotIdentical(new TResource())]];
                 } else {
                     $if_types[$var_name] = [[new IsNotType(Atomic::create($var_type))]];
@@ -2567,7 +2568,7 @@ class AssertionFinder
                 $if_types[$var_name] = [[new IsNotIdentical(new TObject())]];
             } elseif ($var_type === 'resource (closed)') {
                 $if_types[$var_name] = [[new IsNotType(new TClosedResource())]];
-            } elseif (strpos($var_type, 'resource (') === 0) {
+            } elseif (str_starts_with($var_type, 'resource (')) {
                 $if_types[$var_name] = [[new IsNotIdentical(new TResource())]];
             } else {
                 $if_types[$var_name] = [[new IsNotType(Atomic::create($var_type))]];
@@ -3187,7 +3188,7 @@ class AssertionFinder
                     $if_types[$var_name] = [[new IsIdentical(new TObject())]];
                 } elseif ($var_type === 'resource (closed)') {
                     $if_types[$var_name] = [[new IsType(new TClosedResource())]];
-                } elseif (strpos($var_type, 'resource (') === 0) {
+                } elseif (str_starts_with($var_type, 'resource (')) {
                     $if_types[$var_name] = [[new IsIdentical(new TResource())]];
                 } elseif ($var_type === 'integer') {
                     $if_types[$var_name] = [[new IsType(new Atomic\TInt())]];
@@ -3251,7 +3252,7 @@ class AssertionFinder
                 $if_types[$var_name] = [[new IsIdentical(new TObject())]];
             } elseif ($var_type === 'resource (closed)') {
                 $if_types[$var_name] = [[new IsType(new TClosedResource())]];
-            } elseif (strpos($var_type, 'resource (') === 0) {
+            } elseif (str_starts_with($var_type, 'resource (')) {
                 $if_types[$var_name] = [[new IsIdentical(new TResource())]];
             } elseif ($var_type === 'integer') {
                 $if_types[$var_name] = [[new IsType(new Atomic\TInt())]];

@@ -34,6 +34,7 @@ use function is_int;
 use function json_encode;
 use function preg_match;
 use function print_r;
+use function str_contains;
 use function strcmp;
 use function strncmp;
 use function strpos;
@@ -1506,7 +1507,7 @@ class InternalCallMapHandlerTest extends TestCase
     private function getReflectionFunction(string $functionName): ?ReflectionFunctionAbstract
     {
         try {
-            if (strpos($functionName, '::') !== false) {
+            if (str_contains($functionName, '::')) {
                 return new ReflectionMethod($functionName);
             }
 

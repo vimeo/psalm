@@ -47,7 +47,7 @@ use function count;
 use function in_array;
 use function is_string;
 use function spl_object_id;
-use function strpos;
+use function str_starts_with;
 use function substr;
 
 /**
@@ -90,7 +90,7 @@ class SwitchCaseAnalyzer
 
         $fake_switch_condition = false;
 
-        if ($switch_var_id && strpos($switch_var_id, '$__tmp_switch__') === 0) {
+        if ($switch_var_id && str_starts_with($switch_var_id, '$__tmp_switch__')) {
             $switch_condition = new VirtualVariable(
                 substr($switch_var_id, 1),
                 $stmt->cond->getAttributes(),

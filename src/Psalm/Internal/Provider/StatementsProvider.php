@@ -31,6 +31,7 @@ use function count;
 use function filemtime;
 use function hash;
 use function md5;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 
@@ -224,7 +225,7 @@ class StatementsProvider
 
                 $changed_members = array_map(
                     static function (string $key) use ($file_path_hash): string {
-                        if (strpos($key, 'use:') === 0) {
+                        if (str_starts_with($key, 'use:')) {
                             return $key . ':' . $file_path_hash;
                         }
 

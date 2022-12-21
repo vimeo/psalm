@@ -24,7 +24,7 @@ use function count;
 use function explode;
 use function in_array;
 use function reset;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function substr;
 
@@ -220,7 +220,7 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                             $part_match_found = true;
                         }
                     } elseif ($mapping_function_id_part) {
-                        if (strpos($mapping_function_id_part, '::') !== false) {
+                        if (str_contains($mapping_function_id_part, '::')) {
                             if ($mapping_function_id_part[0] === '$') {
                                 $mapping_function_id_part = substr($mapping_function_id_part, 1);
                             }

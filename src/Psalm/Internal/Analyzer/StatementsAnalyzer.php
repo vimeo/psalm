@@ -79,8 +79,8 @@ use function is_string;
 use function preg_split;
 use function reset;
 use function round;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strrpos;
 use function strtolower;
 use function substr;
@@ -864,7 +864,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
-            if (strpos($var_id, '$_') === 0) {
+            if (str_starts_with($var_id, '$_')) {
                 continue;
             }
 

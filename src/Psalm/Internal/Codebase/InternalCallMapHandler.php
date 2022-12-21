@@ -22,8 +22,8 @@ use function assert;
 use function count;
 use function dirname;
 use function file_exists;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 use function version_compare;
@@ -274,7 +274,7 @@ class InternalCallMapHandler
                     $optional = true;
                 }
 
-                if (strpos($arg_name, '...') === 0) {
+                if (str_starts_with($arg_name, '...')) {
                     $arg_name = substr($arg_name, 3);
                     $variadic = true;
                 }

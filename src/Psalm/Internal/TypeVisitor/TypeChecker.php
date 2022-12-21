@@ -36,7 +36,8 @@ use function array_keys;
 use function array_search;
 use function count;
 use function md5;
-use function strpos;
+use function str_contains;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -310,7 +311,7 @@ class TypeChecker extends TypeVisitor
         }
 
         $const_name = $atomic->const_name;
-        if (strpos($const_name, '*') !== false) {
+        if (str_contains($const_name, '*')) {
             TypeExpander::expandAtomic(
                 $this->source->getCodebase(),
                 $atomic,
@@ -347,7 +348,7 @@ class TypeChecker extends TypeVisitor
     public function checkTemplateParam(TTemplateParam $atomic): void
     {
         if ($this->prevent_template_covariance
-            && strpos($atomic->defining_class, 'fn-') !== 0
+            && !str_starts_with($atomic->defining_class, 'fn-')
         ) {
             $codebase = $this->source->getCodebase();
 

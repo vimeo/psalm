@@ -17,6 +17,7 @@ use function preg_match;
 use function preg_replace;
 use function rtrim;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strspn;
@@ -41,7 +42,7 @@ class DocblockParser
         // Strip off comments.
         $docblock = trim($docblock);
 
-        if (strpos($docblock, '/**') === 0) {
+        if (str_starts_with($docblock, '/**')) {
             $docblock = substr($docblock, 3);
         }
 

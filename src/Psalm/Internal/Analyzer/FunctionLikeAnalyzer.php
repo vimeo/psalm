@@ -75,6 +75,7 @@ use function mb_strpos;
 use function md5;
 use function microtime;
 use function reset;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -788,13 +789,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             foreach ($context->vars_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if (!str_starts_with($var, '$this->') && $var !== '$this') {
                     $context->removePossibleReference($var);
                 }
             }
 
             foreach ($context->vars_possibly_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if (!str_starts_with($var, '$this->') && $var !== '$this') {
                     unset($context->vars_possibly_in_scope[$var]);
                 }
             }
@@ -862,7 +863,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 continue;
             }
 
-            if (strpos($var_name, '$_') === 0 || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused')) {
+            if (str_starts_with($var_name, '$_')
+                || (str_starts_with($var_name, '$unused') && $var_name !== '$unused')
+            ) {
                 continue;
             }
 

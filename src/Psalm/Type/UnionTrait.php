@@ -50,6 +50,7 @@ use function implode;
 use function ksort;
 use function reset;
 use function sort;
+use function str_contains;
 use function strpos;
 
 /**
@@ -216,7 +217,7 @@ trait UnionTrait
 
         if (count($types) > 1) {
             foreach ($types as $i => $type) {
-                if (strpos($type, ' as ') && strpos($type, '(') === false) {
+                if (strpos($type, ' as ') && !str_contains($type, '(')) {
                     $types[$i] = '(' . $type . ')';
                 }
             }

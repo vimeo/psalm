@@ -63,7 +63,7 @@ use Psalm\Type\Union;
 use function assert;
 use function get_class;
 use function max;
-use function strpos;
+use function str_contains;
 
 /**
  * @internal
@@ -95,7 +95,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
             if (!$existing_var_type->isNullable()
                 && $key
-                && strpos($key, '[') === false
+                && !str_contains($key, '[')
                 && (!$existing_var_type->hasMixed() || $existing_var_type->isAlwaysTruthy())
             ) {
                 if ($code_location) {

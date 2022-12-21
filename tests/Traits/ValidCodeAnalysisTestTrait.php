@@ -5,6 +5,7 @@ namespace Psalm\Tests\Traits;
 use Psalm\Config;
 use Psalm\Context;
 
+use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
@@ -43,15 +44,15 @@ trait ValidCodeAnalysisTestTrait
         string $php_version = '7.3'
     ): void {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP80-') !== false) {
+        if (str_contains($test_name, 'PHP80-')) {
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }
-        } elseif (strpos($test_name, 'PHP81-') !== false) {
+        } elseif (str_contains($test_name, 'PHP81-')) {
             if (version_compare(PHP_VERSION, '8.1.0', '<')) {
                 $this->markTestSkipped('Test case requires PHP 8.1.');
             }
-        } elseif (strpos($test_name, 'SKIPPED-') !== false) {
+        } elseif (str_contains($test_name, 'SKIPPED-')) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

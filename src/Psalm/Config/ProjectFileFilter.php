@@ -5,8 +5,8 @@ namespace Psalm\Config;
 use Psalm\Exception\ConfigException;
 use SimpleXMLElement;
 
+use function str_starts_with;
 use function stripos;
-use function strpos;
 
 /** @internal */
 final class ProjectFileFilter extends FileFilter
@@ -61,7 +61,7 @@ final class ProjectFileFilter extends FileFilter
     {
         foreach ($this->ignore_type_stats as $exclude_dir => $_) {
             if ($case_sensitive) {
-                if (strpos($file_name, $exclude_dir) === 0) {
+                if (str_starts_with($file_name, $exclude_dir)) {
                     return false;
                 }
             } else {
@@ -78,7 +78,7 @@ final class ProjectFileFilter extends FileFilter
     {
         foreach ($this->declare_strict_types as $exclude_dir => $_) {
             if ($case_sensitive) {
-                if (strpos($file_name, $exclude_dir) === 0) {
+                if (str_starts_with($file_name, $exclude_dir)) {
                     return true;
                 }
             } else {

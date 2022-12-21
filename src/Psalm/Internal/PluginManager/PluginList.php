@@ -9,7 +9,7 @@ use function array_diff_key;
 use function array_flip;
 use function array_key_exists;
 use function array_search;
-use function strpos;
+use function str_contains;
 
 /**
  * @internal
@@ -72,7 +72,7 @@ class PluginList
 
     public function resolvePluginClass(string $class_or_package): string
     {
-        if (false === strpos($class_or_package, '/')) {
+        if (!str_contains($class_or_package, '/')) {
             return $class_or_package; // must be a class then
         }
 

@@ -14,7 +14,7 @@ use Psalm\Tests\TestConfig;
 
 use function array_keys;
 use function getcwd;
-use function strpos;
+use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -58,7 +58,7 @@ class AnalyzedMethodTest extends TestCase
         array $ignored_issues = []
     ): void {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'SKIPPED-') !== false) {
+        if (str_contains($test_name, 'SKIPPED-')) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

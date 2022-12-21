@@ -49,8 +49,8 @@ use function max;
 use function parse_url;
 use function rawurlencode;
 use function realpath;
+use function str_contains;
 use function str_replace;
-use function strpos;
 use function substr;
 use function trim;
 use function urldecode;
@@ -534,7 +534,7 @@ class LanguageServer extends Dispatcher
 
         $filepath = urldecode($fragments['path']);
 
-        if (strpos($filepath, ':') !== false) {
+        if (str_contains($filepath, ':')) {
             if ($filepath[0] === '/') {
                 $filepath = substr($filepath, 1);
             }

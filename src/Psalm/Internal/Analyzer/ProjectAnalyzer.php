@@ -85,6 +85,7 @@ use function number_format;
 use function pcntl_fork;
 use function preg_match;
 use function rename;
+use function str_starts_with;
 use function stream_set_blocking;
 use function stream_socket_accept;
 use function stream_socket_client;
@@ -693,7 +694,7 @@ class ProjectAnalyzer
                 && $destination_pos === (strlen($destination) - 1)
             ) {
                 foreach ($this->codebase->classlike_storage_provider->getAll() as $class_storage) {
-                    if (strpos($source, substr($class_storage->name, 0, $source_pos)) === 0) {
+                    if (str_starts_with($source, substr($class_storage->name, 0, $source_pos))) {
                         $this->to_refactor[$class_storage->name]
                             = substr($destination, 0, -1) . substr($class_storage->name, $source_pos);
                     }

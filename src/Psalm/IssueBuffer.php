@@ -70,8 +70,8 @@ use function sha1;
 use function sprintf;
 use function str_repeat;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function trim;
 use function usort;
 
@@ -154,7 +154,7 @@ final class IssueBuffer
      */
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type): void
     {
-        if (strpos($issue_type, 'Tainted') === 0) {
+        if (str_starts_with($issue_type, 'Tainted')) {
             return;
         }
 
@@ -269,7 +269,7 @@ final class IssueBuffer
             return false;
         }
 
-        $is_tainted = strpos($issue_type, 'Tainted') === 0;
+        $is_tainted = str_starts_with($issue_type, 'Tainted');
 
         if ($codebase->taint_flow_graph && !$is_tainted) {
             return false;

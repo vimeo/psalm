@@ -4,8 +4,8 @@ namespace Psalm\Type\Atomic;
 
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function stripos;
-use function strpos;
 use function strtolower;
 
 /**
@@ -93,7 +93,7 @@ final class TLiteralClassString extends TLiteralString
             ) . '::class';
         }
 
-        if (!$namespace && strpos($this->value, '\\') === false) {
+        if (!$namespace && !str_contains($this->value, '\\')) {
             return $this->value . '::class';
         }
 

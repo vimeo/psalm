@@ -27,6 +27,7 @@ use function json_encode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function strpos;
 use function strtolower;
 
@@ -786,7 +787,7 @@ final class Context
 
         foreach ($this->vars_in_scope as $var_id => $type) {
             if ($type->has_mutations
-                && (strpos($var_id, '->') !== false || strpos($var_id, '::') !== false)
+                && (str_contains($var_id, '->') || str_contains($var_id, '::'))
                 && (!$methods_only || strpos($var_id, '()'))
             ) {
                 $vars_to_remove[] = $var_id;
@@ -807,7 +808,7 @@ final class Context
             $abandon_clause = false;
 
             foreach (array_keys($clause->possibilities) as $key) {
-                if ((strpos($key, '->') !== false || strpos($key, '::') !== false)
+                if ((str_contains($key, '->') || str_contains($key, '::'))
                     && (!$methods_only || strpos($key, '()'))
                 ) {
                     $abandon_clause = true;

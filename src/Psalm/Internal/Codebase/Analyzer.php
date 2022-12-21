@@ -39,6 +39,7 @@ use function ksort;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -600,7 +601,7 @@ class Analyzer
                 [$base_class, $trait] = explode('&', $changed_member);
 
                 foreach ($all_referencing_methods as $member_id => $_) {
-                    if (strpos($member_id, $base_class . '::') !== 0) {
+                    if (!str_starts_with($member_id, $base_class . '::')) {
                         continue;
                     }
 

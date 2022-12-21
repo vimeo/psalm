@@ -49,8 +49,8 @@ use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
+use function str_contains;
 use function strlen;
-use function strpos;
 
 /**
  * @internal
@@ -515,7 +515,7 @@ class ArrayAssignmentAnalyzer
                 && $parent_var_id
                 && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)
             ) {
-                if ($parent_type->hasList() && strpos($parent_var_id, '[') === false) {
+                if ($parent_type->hasList() && !str_contains($parent_var_id, '[')) {
                     $array_atomic_type_list = $value_type;
                 } elseif ($parent_type->hasClassStringMap()
                     && $key_type

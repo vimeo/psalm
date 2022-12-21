@@ -42,7 +42,7 @@ use function explode;
 use function in_array;
 use function mt_rand;
 use function reset;
-use function strpos;
+use function str_contains;
 use function substr;
 
 /**
@@ -416,7 +416,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     );
                 }
 
-                if (strpos($mapping_function_id_part, '::') !== false) {
+                if (str_contains($mapping_function_id_part, '::')) {
                     $is_instance = false;
 
                     if ($mapping_function_id_part[0] === '$') {
@@ -526,7 +526,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
     public static function cleanContext(Context $context, int $fake_var_discriminator): void
     {
         foreach ($context->vars_in_scope as $var_in_scope => $_) {
-            if (strpos($var_in_scope, "__fake_{$fake_var_discriminator}_") !== false) {
+            if (str_contains($var_in_scope, "__fake_{$fake_var_discriminator}_")) {
                 unset($context->vars_in_scope[$var_in_scope]);
             }
         }

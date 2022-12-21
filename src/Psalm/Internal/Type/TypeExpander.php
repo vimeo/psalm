@@ -49,7 +49,8 @@ use function count;
 use function get_class;
 use function is_string;
 use function reset;
-use function strpos;
+use function str_contains;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 
@@ -262,7 +263,7 @@ class TypeExpander
 
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->fq_classlike_name);
 
-                if (strpos($return_type->const_name, '*') !== false) {
+                if (str_contains($return_type->const_name, '*')) {
                     $matching_constants = [
                         ...array_keys($class_storage->constants),
                         ...array_keys($class_storage->enum_cases),
@@ -274,7 +275,7 @@ class TypeExpander
                         $matching_constants = array_filter(
                             $matching_constants,
                             static fn($constant_name): bool => $constant_name !== $const_name_part
-                                && strpos($constant_name, $const_name_part) === 0
+                                && str_starts_with($constant_name, $const_name_part)
                         );
                     }
                 } else {
