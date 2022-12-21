@@ -1803,6 +1803,8 @@ return [
 'DateTimeInterface::getOffset' => ['int'],
 'DateTimeInterface::getTimestamp' => ['int'],
 'DateTimeInterface::getTimezone' => ['DateTimeZone|false'],
+'DateTimeInterface::__serialize' => ['array'],
+'DateTimeInterface::__unserialize' => ['void', 'data'=>'array'],
 'DateTimeZone::__construct' => ['void', 'timezone'=>'string'],
 'DateTimeZone::__set_state' => ['DateTimeZone', 'array'=>'array'],
 'DateTimeZone::__wakeup' => ['void'],
