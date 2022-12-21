@@ -34,8 +34,6 @@ final class ErrorBaseline
 {
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
-     *
-     *
      * @psalm-pure
      */
     public static function countTotalIssues(array $existingIssues): int
@@ -49,7 +47,7 @@ final class ErrorBaseline
                  * @param array{o:int, s:array<int, string>} $existingIssue
                  */
                 static fn(int $carry, array $existingIssue): int => $carry + $existingIssue['o'],
-                0
+                0,
             );
         }
 
@@ -58,7 +56,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      */
     public static function create(
         FileProvider $fileProvider,
@@ -73,7 +70,6 @@ final class ErrorBaseline
 
     /**
      * @return array<string,array<string,array{o:int, s: list<string>}>>
-     *
      * @throws ConfigException
      */
     public static function read(FileProvider $fileProvider, string $baselineFile): array
@@ -133,9 +129,7 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      * @return array<string, array<string, array{o: int, s: list<string>}>>
-     *
      * @throws ConfigException
      */
     public static function update(
@@ -163,11 +157,11 @@ final class ErrorBaseline
 
                 $existingIssuesCount[$issueType]['o'] = min(
                     $existingIssueType['o'],
-                    $newIssues[$file][$issueType]['o']
+                    $newIssues[$file][$issueType]['o'],
                 );
                 $existingIssuesCount[$issueType]['s'] = array_intersect(
                     $existingIssueType['s'],
-                    $newIssues[$file][$issueType]['s']
+                    $newIssues[$file][$issueType]['s'],
                 );
             }
         }
@@ -181,7 +175,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     private static function countIssueTypesByFile(array $issues): array
@@ -193,7 +186,6 @@ final class ErrorBaseline
             array_merge(...array_values($issues)),
             /**
              * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
-             *
              * @return array<string,array<string,array{o:int, s:array<int, string>}>>
              */
             static function (array $carry, IssueData $issue): array {
@@ -221,7 +213,7 @@ final class ErrorBaseline
 
                 return $carry;
             },
-            []
+            [],
         );
 
         // Sort files first
@@ -237,7 +229,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
-     *
      */
     private static function writeToFile(
         FileProvider $fileProvider,
@@ -258,7 +249,7 @@ final class ErrorBaseline
                 ('php:' . PHP_VERSION),
             ], ...array_map(
                 static fn(string $extension): string => $extension . ':' . phpversion($extension),
-                $extensions
+                $extensions,
             )]));
         }
 
@@ -305,7 +296,7 @@ final class ErrorBaseline
             "\n" .
             $matches[3] .
             "\n",
-            $baselineDoc->saveXML()
+            $baselineDoc->saveXML(),
         );
 
         if ($xml === null) {

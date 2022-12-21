@@ -53,14 +53,14 @@ class ExpressionResolver
                 $stmt->left,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             $right = self::getUnresolvedClassConstExpr(
                 $stmt->right,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if (!$left || !$right) {
@@ -105,7 +105,7 @@ class ExpressionResolver
                 $stmt->cond,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             $if = null;
@@ -115,7 +115,7 @@ class ExpressionResolver
                     $stmt->if,
                     $aliases,
                     $fq_classlike_name,
-                    $parent_fq_class_name
+                    $parent_fq_class_name,
                 );
 
                 if ($if === null) {
@@ -127,7 +127,7 @@ class ExpressionResolver
                 $stmt->else,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if ($cond && $else && $if !== false) {
@@ -155,7 +155,7 @@ class ExpressionResolver
 
             return new Constant(
                 implode('\\', $stmt->name->parts),
-                $stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
             );
         }
 
@@ -168,14 +168,14 @@ class ExpressionResolver
                 $stmt->var,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             $right = self::getUnresolvedClassConstExpr(
                 $stmt->dim,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if ($left && $right) {
@@ -199,7 +199,7 @@ class ExpressionResolver
                     } else {
                         $const_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                             $stmt->class,
-                            $aliases
+                            $aliases,
                         );
                     }
                 }
@@ -222,7 +222,7 @@ class ExpressionResolver
                 $stmt->expr,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if (!$right) {
@@ -231,7 +231,7 @@ class ExpressionResolver
 
             return new UnresolvedAdditionOp(
                 new ScalarValue(0),
-                $right
+                $right,
             );
         }
 
@@ -240,7 +240,7 @@ class ExpressionResolver
                 $stmt->expr,
                 $aliases,
                 $fq_classlike_name,
-                $parent_fq_class_name
+                $parent_fq_class_name,
             );
 
             if (!$right) {
@@ -249,7 +249,7 @@ class ExpressionResolver
 
             return new UnresolvedSubtractionOp(
                 new ScalarValue(0),
-                $right
+                $right,
             );
         }
 
@@ -266,7 +266,7 @@ class ExpressionResolver
                         $item->key,
                         $aliases,
                         $fq_classlike_name,
-                        $parent_fq_class_name
+                        $parent_fq_class_name,
                     );
 
                     if (!$item_key_type) {
@@ -280,7 +280,7 @@ class ExpressionResolver
                     $item->value,
                     $aliases,
                     $fq_classlike_name,
-                    $parent_fq_class_name
+                    $parent_fq_class_name,
                 );
 
                 if (!$item_value_type) {
@@ -408,7 +408,7 @@ class ExpressionResolver
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $string_value
+                        $string_value,
                     );
 
                     return true;
@@ -438,7 +438,7 @@ class ExpressionResolver
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $string_value
+                        $string_value,
                     );
 
                     return true;
@@ -470,7 +470,7 @@ class ExpressionResolver
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $string_value
+                        $string_value,
                     );
 
                     return true;

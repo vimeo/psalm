@@ -51,8 +51,8 @@ return [
       'new' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'resource'],
     ],
     'getopt' => [
-      'old' => ['array<string,string>|array<string,false>|array<string,list<mixed>>|false', 'short_options'=>'string', 'long_options='=>'array'],
-      'new' => ['array<string,string>|array<string,false>|array<string,list<mixed>>|false', 'short_options'=>'string', 'long_options='=>'array', '&w_rest_index='=>'int'],
+      'old' => ['array<string,string|false|list<string|false>>|false', 'short_options'=>'string', 'long_options='=>'array'],
+      'new' => ['array<string,string|false|list<string|false>>|false', 'short_options'=>'string', 'long_options='=>'array', '&w_rest_index='=>'int'],
     ],
     'pg_fetch_all' => [
       'old' => ['array<array>', 'result'=>'resource'],

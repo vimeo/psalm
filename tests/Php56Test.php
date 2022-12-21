@@ -8,9 +8,6 @@ class Php56Test extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [

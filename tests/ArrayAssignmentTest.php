@@ -19,7 +19,7 @@ class ArrayAssignmentTest extends TestCase
             '<?php
                 if ($b) {
                     $foo["a"] = "hello";
-                }'
+                }',
         );
 
         $context = new Context();
@@ -31,9 +31,6 @@ class ArrayAssignmentTest extends TestCase
         $this->assertFalse(isset($context->vars_in_scope['$foo[\'a\']']));
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -43,7 +40,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $out[] = 4;',
                 'assertions' => [
-                    '$out' => 'non-empty-list<int>',
+                    '$out' => 'list{int}',
                 ],
             ],
             'genericArrayCreationWithInt' => [
@@ -98,7 +95,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = new B();
                     }',
                 'assertions' => [
-                    '$out' => 'list<B>',
+                    '$out' => 'list{0?: B}',
                 ],
             ],
             'genericArrayCreationWithElementAddedInSwitch' => [
@@ -114,7 +111,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'list<int>',
+                    '$out' => 'list{0?: int}',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitch' => [
@@ -131,7 +128,7 @@ class ArrayAssignmentTest extends TestCase
                             break;
                     }',
                 'assertions' => [
-                    '$out' => 'list<int|string>',
+                    '$out' => 'list{0?: int|string}',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitchWithNothing' => [
@@ -151,7 +148,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'list<int|string>',
+                    '$out' => 'list{0?: int|string}',
                 ],
             ],
             'implicit2dIntArrayCreation' => [
@@ -847,7 +844,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$a' => 'list{string, int}',
                     '$a_values' => 'non-empty-list<int|string>',
-                    '$a_keys' => 'non-empty-list<int>',
+                    '$a_keys' => 'non-empty-list<int<0, 1>>',
                 ],
             ],
             'changeIntOffsetKeyValuesWithDirectAssignment' => [
@@ -904,7 +901,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>|null',
+                    '$a===' => 'list{4}|null',
                 ],
             ],
             'assignArrayOrSetNullInElseIf' => [
@@ -920,7 +917,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'list<int>|null',
+                    '$a' => 'list{0?: int}|null',
                 ],
             ],
             'assignArrayOrSetNullInElse' => [
@@ -936,7 +933,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>|null',
+                    '$a' => 'list{int}|null',
                 ],
             ],
             'mixedMethodCallArrayAccess' => [
@@ -1070,7 +1067,7 @@ class ArrayAssignmentTest extends TestCase
 
                             if (!$this->arr) {}
                         }
-                    }'
+                    }',
             ],
             'arrayAssignmentAddsTypePossibilities' => [
                 'code' => '<?php
@@ -1078,7 +1075,7 @@ class ArrayAssignmentTest extends TestCase
                         $value["b"] = "hello";
                         $value = $value + ["a" => 0];
                         if (is_int($value["a"])) {}
-                    }'
+                    }',
             ],
             'coercePossiblyNullKeyToEmptyString' => [
                 'code' => '<?php
@@ -1094,7 +1091,7 @@ class ArrayAssignmentTest extends TestCase
                         /** @psalm-suppress PossiblyNullArrayOffset */
                         $array[string_or_null()] = null;
                         return $array;
-                    }'
+                    }',
             ],
             'coerceNullKeyToEmptyString' => [
                 'code' => '<?php
@@ -1106,7 +1103,7 @@ class ArrayAssignmentTest extends TestCase
                         /** @psalm-suppress NullArrayOffset */
                         $array[null] = null;
                         return $array;
-                    }'
+                    }',
             ],
             'listUsedAsArray' => [
                 'code' => '<?php
@@ -1118,7 +1115,7 @@ class ArrayAssignmentTest extends TestCase
 
                     takesArray($a);',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>'
+                    '$a' => 'list{int, int}',
                 ],
             ],
             'listTakesEmptyArray' => [
@@ -1130,7 +1127,7 @@ class ArrayAssignmentTest extends TestCase
 
                     takesList($a);',
                 'assertions' => [
-                    '$a' => 'array<never, never>'
+                    '$a' => 'array<never, never>',
                 ],
             ],
             'listCreatedInSingleStatementUsedAsArray' => [
@@ -1220,7 +1217,7 @@ class ArrayAssignmentTest extends TestCase
                         public function set(int ...$ints): void {
                             $this->ints = $ints;
                         }
-                    }'
+                    }',
             ],
             'assignStringFirstChar' => [
                 'code' => '<?php
@@ -1228,7 +1225,7 @@ class ArrayAssignmentTest extends TestCase
                     function foo(array $arr) : string {
                         $arr[0][0] = "a";
                         return $arr[0];
-                    }'
+                    }',
             ],
             'arraySpread' => [
                 'code' => '<?php
@@ -1243,7 +1240,7 @@ class ArrayAssignmentTest extends TestCase
                     '$result' => 'list{int, int, int, int, int, int, int, int}',
                     '$arr2' => 'list{int, int, int}',
                     '$arr3' => 'array{1: int, 2: int, 3: int, 4: int}',
-                ]
+                ],
             ],
             'arraySpreadWithString' => [
                 'code' => '<?php
@@ -1256,7 +1253,7 @@ class ArrayAssignmentTest extends TestCase
                     '$x===' => 'array{a: 1, b: 2}',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'listPropertyAssignmentAfterIsset' => [
                 'code' => '<?php
@@ -1280,7 +1277,7 @@ class ArrayAssignmentTest extends TestCase
                         public function append(string $str) : void {
                             $this->baz[rand(0, 1) ? 0 : 1] = $str;
                         }
-                    }'
+                    }',
             ],
             'propertyAssignmentToTKeyedArrayStringKeys' => [
                 'code' => '<?php
@@ -1342,7 +1339,7 @@ class ArrayAssignmentTest extends TestCase
                         }
 
                         return $response["s"];
-                    }'
+                    }',
             ],
             'assignArrayUnion' => [
                 'code' => '<?php
@@ -1359,7 +1356,7 @@ class ArrayAssignmentTest extends TestCase
 
                         $out[$key] = 5;
                         return $out;
-                    }'
+                    }',
             ],
             'mergeWithNestedMixed' => [
                 'code' => '<?php
@@ -1375,7 +1372,7 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'assertions' => [
                     '$arr' => 'array<array-key, mixed>',
-                ]
+                ],
             ],
             'dontUpdateMixedArrayWithStringKey' => [
                 'code' => '<?php
@@ -1402,8 +1399,8 @@ class ArrayAssignmentTest extends TestCase
                     /** @psalm-suppress MixedArrayAssignment */
                     $options[\'b\'][\'c\'] = 2;',
                 'assertions' => [
-                    '$options[\'b\']' => 'mixed'
-                ]
+                    '$options[\'b\']' => 'mixed',
+                ],
             ],
             'assignWithLiteralStringKey' => [
                 'code' => '<?php
@@ -1414,7 +1411,7 @@ class ArrayAssignmentTest extends TestCase
                     function addOneEntry(array $i, int $id): array {
                         $i[$id][rand(0, 1) ? "internal" : "ported"] = true;
                         return $i;
-                    }'
+                    }',
             ],
             'binaryOperation' => [
                 'code' => '<?php
@@ -1428,7 +1425,7 @@ class ArrayAssignmentTest extends TestCase
                     $a += ["e" => new RuntimeException()];',
                 'assertions' => [
                     '$a' => 'array{c: RuntimeException, e: RuntimeException}',
-                ]
+                ],
             ],
             'mergeArrayKeysProperly' => [
                 'code' => '<?php
@@ -1445,7 +1442,7 @@ class ArrayAssignmentTest extends TestCase
                         $arr[SomeEntity::class] = true;
 
                         return $arr;
-                    }'
+                    }',
             ],
             'lowercaseStringMergeWithLiteral' => [
                 'code' => '<?php
@@ -1456,7 +1453,7 @@ class ArrayAssignmentTest extends TestCase
                     function foo(array $foo) : array {
                         $foo["hello"] = true;
                         return $foo;
-                    }'
+                    }',
             ],
             'updateListValueAndMaintainListnessAfterGreaterThanOrEqual' => [
                 'code' => '<?php
@@ -1472,7 +1469,7 @@ class ArrayAssignmentTest extends TestCase
                         $l[1] = $l[1] + 1;
 
                         return $l;
-                    }'
+                    }',
             ],
             'updateListValueAndMaintainListnessAfterNotIdentical' => [
                 'code' => '<?php
@@ -1488,7 +1485,7 @@ class ArrayAssignmentTest extends TestCase
                         $l[1] = $l[1] + 1;
 
                         return $l;
-                    }'
+                    }',
             ],
             'unpackTypedIterableIntoArray' => [
                 'code' => '<?php
@@ -1500,7 +1497,7 @@ class ArrayAssignmentTest extends TestCase
                 function unpackIterable(iterable $data): array
                 {
                     return [...$data];
-                }'
+                }',
             ],
             'unpackTypedTraversableIntoArray' => [
                 'code' => '<?php
@@ -1512,7 +1509,7 @@ class ArrayAssignmentTest extends TestCase
                 function unpackIterable(Traversable $data): array
                 {
                     return [...$data];
-                }'
+                }',
             ],
             'unpackEmptyArrayIsEmpty' => [
                 'code' => '<?php
@@ -1543,7 +1540,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $x = [...$x, ...$y];
                 ',
-                'assertions' => ['$x===' => 'non-empty-list<int>'],
+                'assertions' => ['$x===' => 'list{int, int, ...<int<0, max>, int>}'],
             ],
             'unpackEmptyKeepsCorrectKeys' => [
                 'code' => '<?php
@@ -1788,7 +1785,7 @@ class ArrayAssignmentTest extends TestCase
                         }
 
                         return $list;
-                    }'
+                    }',
             ],
             'ArrayCreateTemplateArrayKey' => [
                 'code' => '<?php
@@ -1814,7 +1811,7 @@ class ArrayAssignmentTest extends TestCase
                             $array["b"] = 1;
                         }
                         return $array;
-                    }'
+                    }',
             ],
             'castPossiblyArray'  => [
                 'code' => '<?php
@@ -1875,7 +1872,7 @@ class ArrayAssignmentTest extends TestCase
                     }
                     $_a = Token::ONE + Token::TWO + Token::THREE;
                     ',
-                'assertions' => ['$_a===' => 'array{16: 16, 17: 17, 18: 18}']
+                'assertions' => ['$_a===' => 'array{16: 16, 17: 17, 18: 18}'],
             ],
             'unpackTypedIterableWithStringKeysIntoArray' => [
                 'code' => '<?php
@@ -1890,7 +1887,7 @@ class ArrayAssignmentTest extends TestCase
                 }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'unpackTypedTraversableWithStringKeysIntoArray' => [
                 'code' => '<?php
@@ -1905,7 +1902,7 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'unpackArrayWithArrayKeyIntoArray' => [
                 'code' => '<?php
@@ -1920,7 +1917,7 @@ class ArrayAssignmentTest extends TestCase
                 }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'unpackArrayWithTwoTypesNotObjectLike' => [
                 'code' => '<?php
@@ -1958,7 +1955,7 @@ class ArrayAssignmentTest extends TestCase
                     '$_bar' => 'null|string',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'allowsArrayAccessNullOffset' => [
                 'code' => '<?php
@@ -1976,7 +1973,7 @@ class ArrayAssignmentTest extends TestCase
                     }
 
                     $c = new C();
-                    $c[] = "hello";'
+                    $c[] = "hello";',
             ],
             'conditionalRestrictedDocblockKeyAssignment' => [
                 'code' => '<?php
@@ -2010,14 +2007,26 @@ class ArrayAssignmentTest extends TestCase
                 $currentAction = "";
                 if (\array_key_exists($currentAction, $items)) {
                     $items[$currentAction]["active"] = true;
-                }'
-            ]
+                }',
+            ],
+            'listAppendShape' => [
+                'code' => '<?php
+                    $a = [];
+                    $a[]= 0;
+                    $a[]= 1;
+                    $a[]= 2;
+
+                    $b = [0];
+                    $b[]= 1;
+                    $b[]= 2;',
+                'assertions' => [
+                    '$a===' => 'list{0, 1, 2}',
+                    '$b===' => 'list{0, 1, 2}',
+                ],
+            ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -2248,40 +2257,40 @@ class ArrayAssignmentTest extends TestCase
                 'code' => '<?php
                     $_a = [new stdClass => "a"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'ArrayDimOffsetObject' => [
                 'code' => '<?php
                     $_a = [];
                     $_a[new stdClass] = "a";
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'ArrayCreateOffsetResource' => [
                 'code' => '<?php
                     $_a = [fopen("", "") => "a"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'ArrayDimOffsetResource' => [
                 'code' => '<?php
                     $_a = [];
                     $_a[fopen("", "")] = "a";
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'ArrayCreateOffsetBool' => [
                 'code' => '<?php
                     $_a = [true => "a"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'ArrayDimOffsetBool' => [
                 'code' => '<?php
                     $_a = [];
                     $_a[true] = "a";
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'ArrayCreateOffsetStringable' => [
                 'code' => '<?php
@@ -2337,7 +2346,8 @@ class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
-            'assignToListWithAlteredForeachKeyVar' => [
+            // Skipped because the ref-type of array_pop was fixed (list->list)
+            'SKIPPED-assignToListWithAlteredForeachKeyVar' => [
                 'code' => '<?php
                     /**
                      * @param list<string> $list
@@ -2354,7 +2364,7 @@ class ArrayAssignmentTest extends TestCase
 
                         return $list;
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'createArrayWithMixedOffset' => [
                 'code' => '<?php
@@ -2365,7 +2375,7 @@ class ArrayAssignmentTest extends TestCase
                         $arr = [$index => 5];
                         return $arr;
                     }',
-                'error_message' => 'MixedArrayOffset'
+                'error_message' => 'MixedArrayOffset',
             ],
             'falseArrayAssignment' => [
                 'code' => '<?php
@@ -2375,7 +2385,7 @@ class ArrayAssignmentTest extends TestCase
                         echo $array[0];
                         return $array;
                     }',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'TemplateAsKey' => [
                 'code' => '<?php
@@ -2391,7 +2401,7 @@ class ArrayAssignmentTest extends TestCase
                         return $weird_array[$offset];
                     }
                 }',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'unpackTypedIterableWithStringKeysIntoArray' => [
                 'code' => '<?php

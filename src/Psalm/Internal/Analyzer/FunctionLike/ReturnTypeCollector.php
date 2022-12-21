@@ -31,9 +31,7 @@ class ReturnTypeCollector
      *
      * @param  array<PhpParser\Node>     $stmts
      * @param  list<Union>               $yield_types
-     *
      * @return list<Union>               a list of return types
-     *
      * @psalm-suppress ComplexMethod to be refactored
      */
     public static function getReturnTypes(
@@ -79,20 +77,26 @@ class ReturnTypeCollector
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
-                if ($collapse_types) {
-                    $return_types[] = Type::getNever();
-                }
+                $return_types[] = Type::getNever();
 
                 break;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
                 if ($stmt->expr instanceof PhpParser\Node\Expr\Exit_) {
-                    if ($collapse_types) {
-                        $return_types[] = Type::getNever();
-                    }
+                    $return_types[] = Type::getNever();
 
                     break;
+                }
+
+                if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                    || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall) {
+                    $stmt_type = $nodes->getType($stmt->expr);
+                    if ($stmt_type && ($stmt_type->isNever() || $stmt_type->explicit_never)) {
+                        $return_types[] = Type::getNever();
+
+                        break;
+                    }
                 }
 
                 if ($stmt->expr instanceof PhpParser\Node\Expr\Assign) {
@@ -102,8 +106,8 @@ class ReturnTypeCollector
                             $codebase,
                             $nodes,
                             [$stmt->expr->expr],
-                            $yield_types
-                        )
+                            $yield_types,
+                        ),
                     ];
                 }
 
@@ -115,8 +119,8 @@ class ReturnTypeCollector
                         $codebase,
                         $nodes,
                         $stmt->stmts,
-                        $yield_types
-                    )
+                        $yield_types,
+                    ),
                 ];
 
                 foreach ($stmt->elseifs as $elseif) {
@@ -126,8 +130,8 @@ class ReturnTypeCollector
                             $codebase,
                             $nodes,
                             $elseif->stmts,
-                            $yield_types
-                        )
+                            $yield_types,
+                        ),
                     ];
                 }
 
@@ -138,8 +142,8 @@ class ReturnTypeCollector
                             $codebase,
                             $nodes,
                             $stmt->else->stmts,
-                            $yield_types
-                        )
+                            $yield_types,
+                        ),
                     ];
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
@@ -149,8 +153,8 @@ class ReturnTypeCollector
                         $codebase,
                         $nodes,
                         $stmt->stmts,
-                        $yield_types
-                    )
+                        $yield_types,
+                    ),
                 ];
 
                 foreach ($stmt->catches as $catch) {
@@ -160,8 +164,8 @@ class ReturnTypeCollector
                             $codebase,
                             $nodes,
                             $catch->stmts,
-                            $yield_types
-                        )
+                            $yield_types,
+                        ),
                     ];
                 }
 
@@ -172,8 +176,8 @@ class ReturnTypeCollector
                             $codebase,
                             $nodes,
                             $stmt->finally->stmts,
-                            $yield_types
-                        )
+                            $yield_types,
+                        ),
                     ];
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
@@ -183,8 +187,8 @@ class ReturnTypeCollector
                         $codebase,
                         $nodes,
                         $stmt->stmts,
-                        $yield_types
-                    )
+                        $yield_types,
+                    ),
                 ];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
                 $return_types = [
@@ -193,8 +197,8 @@ class ReturnTypeCollector
                         $codebase,
                         $nodes,
                         $stmt->stmts,
-                        $yield_types
-                    )
+                        $yield_types,
+                    ),
                 ];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->cond, $nodes));
@@ -204,8 +208,8 @@ class ReturnTypeCollector
                         $codebase,
                         $nodes,
                         $stmt->stmts,
-                        $yield_types
-                    )
+                        $yield_types,
+                    ),
                 ];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
                 $return_types = [
@@ -214,8 +218,8 @@ class ReturnTypeCollector
                         $codebase,
                         $nodes,
                         $stmt->stmts,
-                        $yield_types
-                    )
+                        $yield_types,
+                    ),
                 ];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 foreach ($stmt->cases as $case) {
@@ -225,8 +229,8 @@ class ReturnTypeCollector
                             $codebase,
                             $nodes,
                             $case->stmts,
-                            $yield_types
-                        )
+                            $yield_types,
+                        ),
                     ];
                 }
             }
@@ -259,12 +263,12 @@ class ReturnTypeCollector
         $yield_type = Type::combineUnionTypeArray($yield_types, null);
 
         foreach ($yield_type->getAtomicTypes() as $type) {
-            if ($type instanceof TKeyedArray) {
-                $type = $type->getGenericArrayType();
+            if ($type instanceof TList) {
+                $type = $type->getKeyedArray();
             }
 
-            if ($type instanceof TList) {
-                $type = new TArray([Type::getInt(), $type->type_param]);
+            if ($type instanceof TKeyedArray) {
+                $type = $type->getGenericArrayType();
             }
 
             if ($type instanceof TArray) {
@@ -279,7 +283,7 @@ class ReturnTypeCollector
                     $type,
                     $codebase,
                     $key_type,
-                    $value_type
+                    $value_type,
                 );
             }
         }
@@ -292,10 +296,10 @@ class ReturnTypeCollector
                         $key_type ?? Type::getMixed(),
                         $value_type ?? Type::getMixed(),
                         Type::getMixed(),
-                        $return_types ? Type::combineUnionTypeArray($return_types, null) : Type::getVoid()
-                    ]
+                        $return_types ? Type::combineUnionTypeArray($return_types, null) : Type::getVoid(),
+                    ],
                 ),
-            ])
+            ]),
         ];
     }
 
@@ -309,7 +313,7 @@ class ReturnTypeCollector
         $collector = new YieldTypeCollector($nodes);
         $traverser = new NodeTraverser();
         $traverser->addVisitor(
-            $collector
+            $collector,
         );
         $traverser->traverse([$stmt]);
 

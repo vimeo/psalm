@@ -23,21 +23,20 @@ use SplObjectStorage;
 class NodeDataProvider implements NodeTypeProvider
 {
     /** @var SplObjectStorage<Node, Union> */
-    private $node_types;
+    private SplObjectStorage $node_types;
 
     /**
      * @var SplObjectStorage<Node,list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>|null>
      */
-    private $node_assertions;
+    private SplObjectStorage $node_assertions;
 
     /** @var SplObjectStorage<Node, array<int, Possibilities>> */
-    private $node_if_true_assertions;
+    private SplObjectStorage $node_if_true_assertions;
 
     /** @var SplObjectStorage<Node, array<int, Possibilities>> */
-    private $node_if_false_assertions;
+    private SplObjectStorage $node_if_false_assertions;
 
-    /** @var bool */
-    public $cache_assertions = true;
+    public bool $cache_assertions = true;
 
     public function __construct()
     {

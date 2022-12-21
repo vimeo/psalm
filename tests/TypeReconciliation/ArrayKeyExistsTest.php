@@ -13,9 +13,6 @@ class ArrayKeyExistsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -31,7 +28,7 @@ class ArrayKeyExistsTest extends TestCase
                         }
 
                         throw new \Exception("bad");
-                    }'
+                    }',
             ],
              'arrayKeyExistsThrice' => [
                 'code' => '<?php
@@ -48,7 +45,7 @@ class ArrayKeyExistsTest extends TestCase
 
                         echo $a["a"];
                         echo $a["b"];
-                    }'
+                    }',
             ],
             'arrayKeyExistsTwice' => [
                 'code' => '<?php
@@ -61,7 +58,7 @@ class ArrayKeyExistsTest extends TestCase
 
                         echo $a["a"];
                         echo $a["b"];
-                    }'
+                    }',
             ],
             'assertConstantOffsetsInMethod' => [
                 'code' => '<?php
@@ -152,7 +149,7 @@ class ArrayKeyExistsTest extends TestCase
                         }
 
                         return "";
-                    }'
+                    }',
             ],
             'arrayKeyExistsWithClassConst' => [
                 'code' => '<?php
@@ -170,7 +167,7 @@ class ArrayKeyExistsTest extends TestCase
                                 echo self::FLAGS[$i][C::class];
                             }
                         }
-                    }'
+                    }',
             ],
             'constantArrayKeyExistsWithClassConstant' => [
                 'code' => '<?php
@@ -183,7 +180,7 @@ class ArrayKeyExistsTest extends TestCase
                         if (array_key_exists(Foo::F, $a)) {
                             echo $a[Foo::F];
                         }
-                    }'
+                    }',
             ],
             'assertTypeNarrowedByNestedIsset' => [
                 'code' => '<?php
@@ -226,7 +223,7 @@ class ArrayKeyExistsTest extends TestCase
                             }
                             return self::doGetDayName($dayNum);
                         }
-                    }'
+                    }',
             ],
             'arrayKeyExistsInferString' => [
                 'code' => '<?php
@@ -240,7 +237,7 @@ class ArrayKeyExistsTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'arrayKeyExistsComplex' => [
                 'code' => '<?php
@@ -262,7 +259,7 @@ class ArrayKeyExistsTest extends TestCase
                         public function doWork(string $a): void {
                             if (!array_key_exists($a, self::MAP)) {}
                         }
-                    }'
+                    }',
             ],
             'arrayKeyExistsAccess' => [
                 'code' => '<?php
@@ -289,7 +286,7 @@ class ArrayKeyExistsTest extends TestCase
                                 return $params[$key];
                             }
                         }
-                    }'
+                    }',
             ],
             'noCrashOnArrayKeyExistsBracket' => [
                 'code' => '<?php
@@ -334,7 +331,7 @@ class ArrayKeyExistsTest extends TestCase
                         }
 
                         return false;
-                    }'
+                    }',
             ],
             'allowIntKeysToo' => [
                 'code' => '<?php
@@ -349,7 +346,7 @@ class ArrayKeyExistsTest extends TestCase
                         }
 
                         return 1;
-                    }'
+                    }',
             ],
             'comparesStringAndAllIntKeysCorrectly' => [
                 'code' => '<?php
@@ -363,7 +360,7 @@ class ArrayKeyExistsTest extends TestCase
                             return true;
                         }
                         return false;
-                    }'
+                    }',
             ],
             'comparesStringAndAllIntKeysCorrectlyNegated' => [
                 'code' => '<?php
@@ -377,7 +374,7 @@ class ArrayKeyExistsTest extends TestCase
                             return false;
                         }
                         return true;
-                    }'
+                    }',
             ],
             'arrayKeyExistsAssertBothWays' => [
                 'code' => '<?php
@@ -406,7 +403,7 @@ class ArrayKeyExistsTest extends TestCase
                             }
                             return "";
                         }
-                    }'
+                    }',
             ],
             'arrayKeyExistsComplex2' => [
                 'code' => '<?php
@@ -455,7 +452,7 @@ class ArrayKeyExistsTest extends TestCase
                             }
                             if ($cmp["administrative_area_level_1"] === "test") {
                                 $cmp["administrative_area_level_1"] = "";
-                            }'
+                            }',
             ],
             'arrayKeyExistsPoorPerformance' => [
                 'code' => '<?php
@@ -491,9 +488,6 @@ class ArrayKeyExistsTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -562,7 +556,7 @@ class ArrayKeyExistsTest extends TestCase
 
             if (array_key_exists($foo->status, $bar)) {
                 echo $bar[$foo->status];
-            }'
+            }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -587,7 +581,7 @@ class ArrayKeyExistsTest extends TestCase
 
             if (array_key_exists(Foo::$status, $bar)) {
                 echo $bar[Foo::$status];
-            }'
+            }',
         );
 
         $this->analyzeFile('somefile.php', new Context());

@@ -27,7 +27,6 @@ class CustomTraverser extends NodeTraverser
      * Recursively traverse a node.
      *
      * @param Node $node node to traverse
-     *
      * @return Node Result of traversal (may be original node or new one)
      */
     protected function traverseNode(Node $node): Node
@@ -54,7 +53,7 @@ class CustomTraverser extends NodeTraverser
                             break 2;
                         } else {
                             throw new LogicException(
-                                'enterNode() returned invalid value of type ' . gettype($return)
+                                'enterNode() returned invalid value of type ' . gettype($return),
                             );
                         }
                     }
@@ -78,11 +77,11 @@ class CustomTraverser extends NodeTraverser
                         } elseif (is_array($return)) {
                             throw new LogicException(
                                 'leaveNode() may only return an array ' .
-                                'if the parent structure is an array'
+                                'if the parent structure is an array',
                             );
                         } else {
                             throw new LogicException(
-                                'leaveNode() returned invalid value of type ' . gettype($return)
+                                'leaveNode() returned invalid value of type ' . gettype($return),
                             );
                         }
                     }
@@ -97,7 +96,6 @@ class CustomTraverser extends NodeTraverser
      * Recursively traverse array (usually of nodes).
      *
      * @param array $nodes Array to traverse
-     *
      * @return array Result of traversal (may be original array or changed one)
      */
     protected function traverseArray(array $nodes): array
@@ -119,7 +117,7 @@ class CustomTraverser extends NodeTraverser
                             break 2;
                         } else {
                             throw new LogicException(
-                                'enterNode() returned invalid value of type ' . gettype($return)
+                                'enterNode() returned invalid value of type ' . gettype($return),
                             );
                         }
                     }
@@ -149,11 +147,11 @@ class CustomTraverser extends NodeTraverser
                         } elseif (false === $return) {
                             throw new LogicException(
                                 'bool(false) return from leaveNode() no longer supported. ' .
-                                'Return NodeTraverser::REMOVE_NODE instead'
+                                'Return NodeTraverser::REMOVE_NODE instead',
                             );
                         } else {
                             throw new LogicException(
-                                'leaveNode() returned invalid value of type ' . gettype($return)
+                                'leaveNode() returned invalid value of type ' . gettype($return),
                             );
                         }
                     }

@@ -64,7 +64,7 @@ final class Shepherd implements AfterAnalysisInterface
         if ($build_info) {
             $normalized_data = $issues === [] ? [] : array_filter(
                 array_merge(...array_values($issues)),
-                static fn(IssueData $i): bool => $i->severity === 'error'
+                static fn(IssueData $i): bool => $i->severity === 'error',
             );
 
             $data = [
@@ -72,7 +72,7 @@ final class Shepherd implements AfterAnalysisInterface
                 'git' => $source_control_data,
                 'issues' => $normalized_data,
                 'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
-                'level' => Config::getInstance()->level
+                'level' => Config::getInstance()->level,
             ];
 
             $payload = json_encode($data, JSON_THROW_ON_ERROR);
@@ -97,7 +97,7 @@ final class Shepherd implements AfterAnalysisInterface
                 [
                     'Content-Type: application/json',
                     'Content-Length: ' . strlen($payload),
-                ]
+                ],
             );
 
             // Submit the POST request
@@ -130,7 +130,6 @@ final class Shepherd implements AfterAnalysisInterface
 
     /**
      * @param mixed $ch
-     *
      * @psalm-pure
      */
     public static function getCurlErrorMessage($ch): string

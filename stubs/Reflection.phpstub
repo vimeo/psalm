@@ -14,13 +14,189 @@ class ReflectionClass implements Reflector {
 
     /**
      * @param T|class-string<T>|interface-string<T>|trait-string|enum-string<T> $argument
+     * @psalm-pure
      */
     public function __construct($argument) {}
 
     /**
      * @return class-string<T>
+     * @psalm-pure
      */
     public function getName(): string {}
+
+    /** @psalm-pure */
+    public function isInternal(): bool {}
+
+    /** @psalm-pure */
+    public function isUserDefined(): bool {}
+
+    /** @psalm-pure */
+    public function isInstantiable(): bool {}
+
+    /** @psalm-pure */
+    public function isCloneable(): bool {}
+
+    /**
+     * @return non-empty-string|false
+     * @psalm-pure
+     */
+    public function getFileName() {}
+
+    /**
+     * @return positive-int|false
+     * @psalm-pure
+     */
+    public function getStartLine() {}
+
+    /**
+     * @return positive-int|false
+     * @psalm-pure
+     */
+    public function getEndLine() {}
+
+    /**
+     * @return non-empty-string|false
+     * @psalm-pure
+     */
+    public function getDocComment() {}
+
+    /** @psalm-pure */
+    public function getConstructor(): ?ReflectionMethod {}
+
+    /** @psalm-pure */
+    public function hasMethod(string $name): bool {}
+
+    /**
+     * @param non-empty-string $name
+     *
+     * @psalm-pure
+     * @throws ReflectionException
+     */
+    public function getMethod(string $name): ReflectionMethod {}
+
+    /**
+     * @param int-mask-of<ReflectionMethod::IS_*>|null $filter
+     * @return list<ReflectionMethod>
+     * @psalm-pure
+     */
+    public function getMethods(?int $filter = null): array {}
+
+    /**
+     * @param non-empty-string $name
+     *
+     * @psalm-pure
+     * @throws ReflectionException
+     */
+    public function hasProperty(string $name): bool {}
+
+    /**
+     * @param non-empty-string $name
+     *
+     * @psalm-pure
+     * @throws ReflectionException
+     */
+    public function getProperty(string $name): ReflectionProperty {}
+
+    /**
+     * @param int-mask-of<ReflectionProperty::IS_*>|null $filter
+     * @return list<ReflectionProperty>
+     *
+     * @psalm-pure
+     */
+    public function getProperties(?int $filter = null): array {}
+
+    /**
+     * @param non-empty-string $name
+     *
+     * @psalm-pure
+     */
+    public function hasConstant(string $name): bool {}
+
+    /**
+     * @param non-empty-string $name
+     * @return mixed
+     *
+     * @psalm-pure
+     * @throws ReflectionException
+     */
+    public function getConstant(string $name) {}
+
+    /**
+     * @param non-empty-string $name
+     * @return ReflectionClassConstant|false
+     *
+     * @psalm-pure
+     * @throws ReflectionException
+     */
+    public function getReflectionConstant(string $name) {}
+
+    /**
+     * @param int-mask-of<ReflectionClassConstant::IS_*>|null $filter
+     * @return array<non-empty-string, mixed>
+     *
+     * @psalm-pure
+     */
+    public function getConstants(?int $filter = null): array {}
+
+    /**
+     * @param int-mask-of<ReflectionClassConstant::IS_*>|null $filter
+     * @return array<non-empty-string, mixed>
+     *
+     * @psalm-pure
+     */
+    public function getReflectionConstants(?int $filter = null): array {}
+
+    /**
+     * @return array<interface-string, self>
+     * @psalm-pure
+     */
+    public function getInterfaces(): array {}
+
+    /**
+     * @return list<interface-string>
+     * @psalm-pure
+     */
+    public function getInterfaceNames(): array {}
+
+    /** @psalm-pure */
+    public function isInterface(): bool {}
+
+    /**
+     * @return array<trait-string, self>
+     *
+     * @psalm-pure
+     */
+    public function getTraits(): array {}
+
+    /**
+     * @return list<non-empty-string, non-empty-string>
+     *
+     * @psalm-pure
+     */
+    public function getTraitAliases(): array {}
+
+    /** @psalm-pure */
+    public function isTrait(): bool {}
+
+    /** @psalm-pure */
+    public function isAbstract(): bool {}
+
+    /** @psalm-pure */
+    public function isFinal(): bool {}
+
+    /**
+     * @return int-mask-of<ReflectionClass::IS_*>
+     * @psalm-pure
+     */
+    public function getModifiers(): bool {}
+
+    /**
+     * @template J as object
+     * @param J $object
+     * @psalm-assert-if-true T&J $object
+     * @psalm-pure
+     */
+    public function isInstance(object $object): bool {}
 
     /**
      * @param mixed ...$args
@@ -42,10 +218,209 @@ class ReflectionClass implements Reflector {
     public function newInstanceWithoutConstructor(): object {}
 
     /**
-     * @return ?array<string>
+     * @psalm-pure
+     *
+     * @return ReflectionClass|false
+     */
+    public function getParentClass() {}
+
+    /**
+     * @template J as object
+     * @param self<J>|class-string<J> $class
+     * @psalm-assert-if-true self<T&J> $this
+     * @psalm-pure
+     */
+    public function isSubclassOf($class): bool {}
+
+    /** @return array<non-empty-string, mixed> */
+    public function getStaticProperties(): array {}
+
+    /**
+     * @return array<non-empty-string, mixed>
+     *
+     * @psalm-pure
+     */
+    public function getDefaultProperties(): array {}
+
+    /** @psalm-pure */
+    public function isIterateable(): bool {}
+
+    /** @psalm-pure */
+    public function isIterable(): bool {}
+
+    /**
+     * @template J as object
+     * @param self<J>|interface-string<J> $interface
+     * @psalm-assert-if-true self<T&J> $this
+     * @psalm-pure
+     */
+    public function implementsInterface($interface): bool {}
+
+    /** @psalm-pure */
+    public function getExtension(): ?ReflectionExtension {}
+
+    /**
+     * @return non-empty-string|false
+     *
+     * @psalm-pure
+     */
+    public function getExtensionName() {}
+
+    /** @psalm-pure */
+    public function inNamespace(): bool {}
+
+    /** @psalm-pure */
+    public function getNamespaceName(): string {}
+
+    /**
+     * @return non-empty-string
+     *
+     * @psalm-pure
+     */
+    public function getShortName(): string {}
+
+    /**
+     * @return ?list<trait-string>
      * @psalm-ignore-nullable-return
+     * @psalm-pure
      */
     public function getTraitNames(): array {}
+
+    /**
+     * @since 8.0
+     * @template TClass as object
+     * @param class-string<TClass>|null $name
+     * @return ($name is null ? list<ReflectionAttribute<object>> : list<ReflectionAttribute<TClass>>)
+     * @psalm-pure
+     */
+    public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+abstract class ReflectionFunctionAbstract implements Reflector
+{
+    /** @psalm-pure */
+    public function inNamespace(): bool {}
+
+    /** @psalm-pure */
+    public function isClosure(): bool {}
+
+    /** @psalm-pure */
+    public function isDeprecated(): bool {}
+
+    /** @psalm-pure */
+    public function isInternal(): bool {}
+
+    /** @psalm-pure */
+    public function isUserDefined(): bool {}
+
+    public function getClosureThis(): ?object {}
+
+    /** @psalm-pure */
+    public function getClosureScopeClass(): ?ReflectionClass {}
+
+    /** @psalm-pure */
+    public function getClosureCalledClass(): ?ReflectionClass {}
+
+    /**
+     * @return non-empty-string|false
+     *
+     * @psalm-pure
+     */
+    public function getDocComment() {}
+
+    /**
+     * @return positive-int|false
+     *
+     * @psalm-pure
+     */
+    public function getStartLine() {}
+
+    /**
+     * @return positive-int|false
+     *
+     * @psalm-pure
+     */
+    public function getEndLine() {}
+
+    /** @psalm-pure */
+    public function getExtension(): ?ReflectionExtension {}
+
+    /**
+     * @return non-empty-string
+     *
+     * @psalm-pure
+     */
+    public function getExtensionName(): string {}
+
+    /**
+     * @return non-empty-string|false
+     *
+     * @psalm-pure
+     */
+    public function getFileName() {}
+
+    /**
+     * @return non-empty-string
+     *
+     * @psalm-pure
+     */
+    public function getName(): string {}
+
+    /** @psalm-pure */
+    public function getNamespaceName(): string {}
+
+    /**
+     * @return positive-int|0
+     *
+     * @psalm-pure
+     */
+    public function getNumberOfParameters(): int {}
+
+    /**
+     * @return positive-int|0
+     *
+     * @psalm-pure
+     */
+    public function getNumberOfRequiredParameters(): int {}
+
+    /**
+     * @return list<ReflectionParameter>
+     *
+     * @psalm-pure
+     */
+    public function getParameters(): array {}
+
+    /**
+     * @psalm-assert-if-true ReflectionType $this->getReturnType()
+     *
+     * @psalm-pure
+     */
+    public function hasReturnType(): bool {}
+
+    /** @psalm-pure */
+    public function getReturnType(): ?ReflectionType {}
+
+    /**
+     * @return non-empty-string
+     *
+     * @psalm-pure
+     */
+    public function getShortName(): string {}
+
+    /** @psalm-pure */
+    public function returnsReference(): bool {}
+
+    /** @psalm-pure */
+    public function isGenerator(): bool {}
+
+    /** @psalm-pure */
+    public function isVariadic(): bool {}
+
+    /** @psalm-pure */
+    public function isDisabled(): bool {}
+
+    /** @psalm-pure */
+    public function getClosure(): Closure {}
 
     /**
      * @since 8.0
@@ -56,15 +431,21 @@ class ReflectionClass implements Reflector {
     public function getAttributes(?string $name = null, int $flags = 0): array {}
 }
 
-class ReflectionFunction implements Reflector
+class ReflectionFunction extends ReflectionFunctionAbstract
 {
     /**
-     * @since 8.0
-     * @template TClass as object
-     * @param class-string<TClass>|null $name
-     * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
+     * @param callable-string|Closure $function
+     *
+     * @psalm-pure
      */
-    public function getAttributes(?string $name = null, int $flags = 0): array {}
+    public function __construct(callable $function) {}
+
+    /**
+     * @return non-empty-string
+     *
+     * @psalm-pure
+     */
+    public function __toString(): string {}
 }
 
 class ReflectionProperty implements Reflector
@@ -82,6 +463,13 @@ class ReflectionProperty implements Reflector
     public $class;
 
     /**
+     * @return non-empty-string
+     *
+     * @psalm-pure
+     */
+    public function getName(): string {}
+
+    /**
      * @since 8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
@@ -92,32 +480,74 @@ class ReflectionProperty implements Reflector
     /**
      * @since 7.4
      * @psalm-assert-if-true ReflectionType $this->getType()
+     * @psalm-pure
      */
     public function hasType() : bool {}
 
     /**
      * @since 7.4
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public function getType() : ?ReflectionType {}
 
+    /** @psalm-pure */
+    public function isPublic(): bool {}
+
+    /** @psalm-pure */
+    public function isPrivate(): bool {}
+
+    /** @psalm-pure */
+    public function isProtected(): bool {}
+
+    /** @psalm-pure */
+    public function isStatic(): bool {}
+
+    /** @psalm-pure */
+    public function isDefault(): bool {}
+
     /**
-    * @since 8.0
-    */
+     * @return int-mask-of<self::IS_>
+     * @psalm-pure
+     */
+    public function getModifiers(): int {}
+
+    /** @psalm-pure */
+    public function getDeclaringClass(): ReflectionClass {}
+
+    /**
+     * @return non-empty-string|false
+     *
+     * @psalm-pure
+     */
+    public function getDocComment() {}
+
+    /**
+     * @since 8.0
+     * @psalm-pure
+     */
     public function hasDefaultValue(): bool {}
 
     /**
-    * @since 8.0
-    */
+     * @return mixed
+     *
+     * @psalm-pure
+     */
+    public function getDefaultValue() {}
+
+    /**
+     * @since 8.0
+     * @psalm-pure
+     */
     public function isPromoted(): bool {}
 
     /**
-    * @since 8.1
-    */
+     * @since 8.1
+     * @psalm-pure
+     */
     public function isReadOnly(): bool {}
 }
 
-class ReflectionMethod implements Reflector
+class ReflectionMethod extends ReflectionFunctionAbstract
 {
     /**
      * @var string
@@ -131,21 +561,33 @@ class ReflectionMethod implements Reflector
      */
     public $class;
 
-    /**
-     * @since 8.0
-     * @template TClass as object
-     * @param class-string<TClass>|null $name
-     * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
-     */
-    public function getAttributes(?string $name = null, int $flags = 0): array {}
-
+    /** @psalm-pure */
     public function isStatic(): bool {}
+
+    /** @psalm-pure */
+    public function isConstructor(): bool {}
+
+    /** @psalm-pure */
+    public function isDestructor(): bool {}
+
+    /**
+     * @return int-mask-of<ReflectionMethod::IS_*>
+     * @psalm-pure
+     */
+    public function getModifiers(): bool {}
+
+    /** @psalm-pure */
+    public function getDeclaringClass(): ReflectionClass {}
+
+    /** @psalm-pure */
+    public function getPrototype(): ReflectionMethod {}
 }
 
+/** @psalm-immutable */
 class ReflectionClassConstant implements Reflector
 {
     /**
-     * @var string
+     * @var non-empty-string
      * @readonly
      */
     public $name;
@@ -170,17 +612,27 @@ class ReflectionClassConstant implements Reflector
      * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
+
+    /** @return non-empty-string */
+    public function getName(): string {}
+
+    /** @return int-mask-of<self::IS_*> */
+    public function getModifiers(): int {}
+
+    /** @return non-empty-string|false */
+    public function getDocComment() {}
 }
 
-/**
- * @psalm-immutable
- */
+/** @psalm-immutable */
 class ReflectionParameter implements Reflector {
     /**
-     * @var string
+     * @var non-empty-string
      * @readonly
      */
     public $name;
+
+    /** @return non-empty-string */
+    public function getName(): string {}
 
     /**
      * @psalm-assert-if-true ReflectionType $this->getType()
@@ -203,15 +655,22 @@ class ReflectionParameter implements Reflector {
     public function isPromoted(): bool {}
 }
 
-/**
- * @psalm-immutable
- */
+/** @psalm-immutable */
+abstract class ReflectionType
+{
+}
+
+/** @psalm-immutable */
 class ReflectionNamedType extends ReflectionType
 {
+    /** @return non-empty-string */
     public function getName(): string {}
 
     /**
      * @psalm-assert-if-false class-string|'self'|'static' $this->getName()
      */
     public function isBuiltin(): bool {}
+
+    /** @return non-empty-string */
+    public function __toString(): string {}
 }

@@ -20,7 +20,7 @@ class ExtensionRequirementTest extends TestCase
                 namespace ExtensionRequirements\Base;
 
                 class MyBaseClass { }
-            '
+            ',
         );
 
         $this->addFile(
@@ -32,7 +32,7 @@ class ExtensionRequirementTest extends TestCase
 
                 /** @psalm-require-extends MyAliasedBaseClass */
                 trait ImposesExtensionRequirements { }
-            '
+            ',
         );
     }
 
@@ -47,8 +47,8 @@ class ExtensionRequirementTest extends TestCase
                     class Valid extends MyBaseClass {
                         use ImposesExtensionRequirements;
                     }
-                '
-            ]
+                ',
+            ],
         ];
     }
 
@@ -63,8 +63,8 @@ class ExtensionRequirementTest extends TestCase
                         use ImposesExtensionRequirements;
                     }
                 ',
-                'error_message' => 'requires using class to extend'
-            ]
+                'error_message' => 'requires using class to extend',
+            ],
         ];
     }
 }

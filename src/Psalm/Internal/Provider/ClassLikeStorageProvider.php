@@ -19,17 +19,14 @@ class ClassLikeStorageProvider
      *
      * @var array<string, ClassLikeStorage>
      */
-    private static $storage = [];
+    private static array $storage = [];
 
     /**
      * @var array<string, ClassLikeStorage>
      */
-    private static $new_storage = [];
+    private static array $new_storage = [];
 
-    /**
-     * @var ?ClassLikeStorageCacheProvider
-     */
-    public $cache;
+    public ?ClassLikeStorageCacheProvider $cache = null;
 
     public function __construct(?ClassLikeStorageCacheProvider $cache = null)
     {
@@ -97,7 +94,6 @@ class ClassLikeStorageProvider
 
     /**
      * @param array<string, ClassLikeStorage> $more
-     *
      */
     public function addMore(array $more): void
     {

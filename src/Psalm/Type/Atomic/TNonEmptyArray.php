@@ -7,6 +7,7 @@ use Psalm\Type\Union;
 /**
  * Denotes array known to be non-empty of the form `non-empty-array<TKey, TValue>`.
  * It expects an array with two elements, both union types.
+ *
  * @psalm-immutable
  */
 class TNonEmptyArray extends TArray
@@ -47,7 +48,6 @@ class TNonEmptyArray extends TArray
 
     /**
      * @param positive-int|null $count
-     *
      * @return static
      */
     public function setCount(?int $count): self

@@ -35,13 +35,10 @@ class ClassTest extends TestCase
                     {
                         return "escaped";
                     }
-                }'
+                }',
         );
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -439,7 +436,7 @@ class ClassTest extends TestCase
                             return;
                         }
                         new ReflectionClass($className);
-                    }'
+                    }',
             ],
             'classExistsWithFalseArgInside' => [
                 'code' => '<?php
@@ -482,14 +479,14 @@ class ClassTest extends TestCase
                     class A { }
                     class_alias("A", "A_A");
 
-                    echo A_A::class;'
+                    echo A_A::class;',
             ],
             'classAliasTrait' => [
                 'code' => '<?php
                     trait FeatureV1 {}
                     class_alias(FeatureV1::class, Feature::class);
                     class App { use Feature; }
-                '
+                ',
             ],
             'classAliasParent' => [
                 'code' => '<?php
@@ -499,7 +496,7 @@ class ClassTest extends TestCase
 
                     class OldAChild extends OldA {}
                     action(new OldA());
-                    action(new OldAChild());'
+                    action(new OldAChild());',
             ],
             'classAliasStaticProperty' => [
                 'code' => '<?php
@@ -508,7 +505,7 @@ class ClassTest extends TestCase
                         public static $prop = 1;
                     }
                     class_alias(A::class, B::class);
-                    B::$prop = 123;'
+                    B::$prop = 123;',
             ],
             'resourceAndNumericSoftlyReserved' => [
                 'code' => '<?php
@@ -537,7 +534,7 @@ class ClassTest extends TestCase
                          * @return void
                          */
                         function foo(Resource $r, Numeric $n) : void {}
-                    }'
+                    }',
             ],
             'inheritInterfaceFromParent' => [
                 'code' => '<?php
@@ -572,7 +569,7 @@ class ClassTest extends TestCase
                         echo A::class;
                         /** @psalm-suppress MixedArgument */
                         echo A::SOME_CONST;
-                    }'
+                    }',
             ],
             'noCrashOnClassExists' => [
                 'code' => '<?php
@@ -635,7 +632,7 @@ class ClassTest extends TestCase
                         $b = $a->mock();
 
                         return $b;
-                    }'
+                    }',
             ],
             'preventDoubleStaticResolution1' => [
                 'code' => '<?php
@@ -670,8 +667,8 @@ class ClassTest extends TestCase
                     $a = $a->ret();
                     $a = $a->stabilize();',
                 'assertions' => [
-                    '$a===' => 'iter<int, b&static>'
-                ]
+                    '$a===' => 'iter<int, b&static>',
+                ],
             ],
             'preventDoubleStaticResolution2' => [
                 'code' => '<?php
@@ -707,8 +704,8 @@ class ClassTest extends TestCase
                     $a = $a->ret();
                     $a = $a->stabilize();',
                 'assertions' => [
-                    '$a===' => 'iter<int, a&static>'
-                ]
+                    '$a===' => 'iter<int, a&static>',
+                ],
             ],
             'preventDoubleStaticResolution3' => [
                 'code' => '<?php
@@ -744,8 +741,8 @@ class ClassTest extends TestCase
                     $a = $a->ret();
                     $a = $a->stabilize();',
                 'assertions' => [
-                    '$a===' => 'iter<int, a&static>'
-                ]
+                    '$a===' => 'iter<int, a&static>',
+                ],
             ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
@@ -840,14 +837,11 @@ class ClassTest extends TestCase
 
                     $test = new class extends \Exception { };
                     throw new $test();
-                '
-            ]
+                ',
+            ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

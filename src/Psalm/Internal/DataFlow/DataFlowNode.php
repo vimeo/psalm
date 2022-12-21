@@ -8,39 +8,33 @@ use function strtolower;
 
 /**
  * @psalm-consistent-constructor
- *
  * @internal
  */
 class DataFlowNode
 {
-    /** @var string */
-    public $id;
+    public string $id;
 
-    /** @var ?string */
-    public $unspecialized_id;
+    public ?string $unspecialized_id = null;
 
-    /** @var string */
-    public $label;
+    public string $label;
 
-    /** @var ?CodeLocation */
-    public $code_location;
+    public ?CodeLocation $code_location = null;
 
-    /** @var ?string */
-    public $specialization_key;
+    public ?string $specialization_key = null;
 
     /** @var array<string> */
-    public $taints;
+    public array $taints;
 
     /** @var ?self */
-    public $previous;
+    public ?DataFlowNode $previous = null;
 
     /** @var list<string> */
-    public $path_types = [];
+    public array $path_types = [];
 
     /**
      * @var array<string, array<string, true>>
      */
-    public $specialized_calls = [];
+    public array $specialized_calls = [];
 
     /**
      * @param array<string> $taints
@@ -89,7 +83,7 @@ class DataFlowNode
             $arg_id,
             $label,
             $arg_location,
-            $specialization_key
+            $specialization_key,
         );
     }
 
@@ -128,7 +122,7 @@ class DataFlowNode
             strtolower($method_id),
             $cased_method_id,
             $code_location,
-            $specialization_key
+            $specialization_key,
         );
     }
 

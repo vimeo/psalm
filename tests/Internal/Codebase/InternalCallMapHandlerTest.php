@@ -16,7 +16,10 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
+use ReflectionException;
 use ReflectionFunction;
+use ReflectionFunctionAbstract;
+use ReflectionMethod;
 use ReflectionParameter;
 use ReflectionType;
 
@@ -46,20 +49,138 @@ class InternalCallMapHandlerTest extends TestCase
     /**
      * Specify a function name as value, or a function name as key and
      * an array containing the PHP versions in which to ignore this function as values.
+     *
      * @var array<int|string, string|list<string>>
      */
-    private static $ignoredFunctions = [
+    private static array $ignoredFunctions = [
         'apcu_entry',
+        'argumentcounterror::__construct',
+        'arithmeticerror::__construct',
         'array_multisort',
+        'arrayiterator::asort',
+        'arrayiterator::ksort',
+        'arrayiterator::offsetexists',
+        'arrayiterator::offsetget',
+        'arrayiterator::offsetset',
+        'arrayiterator::offsetunset',
+        'arrayiterator::seek',
+        'arrayiterator::setflags',
+        'arrayiterator::uasort',
+        'arrayiterator::uksort',
+        'arrayiterator::unserialize',
+        'arrayobject::__construct',
+        'arrayobject::asort',
+        'arrayobject::exchangearray',
+        'arrayobject::ksort',
+        'arrayobject::offsetexists',
+        'arrayobject::offsetget',
+        'arrayobject::offsetset',
+        'arrayobject::offsetunset',
+        'arrayobject::setiteratorclass',
+        'arrayobject::uasort',
+        'arrayobject::uksort',
+        'arrayobject::unserialize',
+        'badfunctioncallexception::__construct',
+        'badmethodcallexception::__construct',
         'bcdiv',
         'bcmod',
         'bcpowmod',
         'bzdecompress',
+        'cachingiterator::offsetexists',
+        'cachingiterator::offsetget',
+        'cachingiterator::offsetset',
+        'cachingiterator::offsetunset',
+        'callbackfilteriterator::__construct',
+        'closure::bind',
+        'closure::bindto',
+        'closure::call',
+        'closure::fromcallable',
+        'collator::asort',
+        'collator::getattribute',
+        'collator::setattribute',
+        'collator::sort',
+        'collator::sortwithsortkeys',
         'crypt',
+        'curlfile::__construct',
+        'curlfile::setmimetype',
+        'curlfile::setpostfilename',
         'date_isodate_set',
+        'datefmt_create' => ['8.0'],
+        'dateinterval::__construct',
+        'dateinterval::createfromdatestring',
+        'datetime::createfromformat',
+        'datetime::diff',
+        'datetime::modify',
+        'datetime::setisodate',
+        'datetime::settime',
+        'datetime::settimestamp',
+        'datetimezone::gettransitions',
         'debug_zval_dump',
         'deflate_add',
+        'directoryiterator::__construct',
+        'directoryiterator::getfileinfo',
+        'directoryiterator::getpathinfo',
+        'directoryiterator::openfile',
+        'directoryiterator::seek',
+        'directoryiterator::setfileclass',
+        'directoryiterator::setinfoclass',
         'dns_get_mx',
+        'domainexception::__construct',
+        'domattr::insertbefore',
+        'domattr::isdefaultnamespace',
+        'domattr::issamenode',
+        'domattr::lookupprefix',
+        'domattr::removechild',
+        'domattr::replacechild',
+        'domcdatasection::__construct',
+        'domcomment::__construct',
+        'domdocument::createattribute',
+        'domdocument::createattributens',
+        'domdocument::createelement',
+        'domdocument::createelementns',
+        'domdocument::createtextnode',
+        'domdocument::getelementbyid',
+        'domdocument::getelementsbytagname',
+        'domdocument::getelementsbytagnamens',
+        'domdocument::importnode',
+        'domdocument::registernodeclass',
+        'domelement::__construct',
+        'domelement::getattribute',
+        'domelement::getattributenode',
+        'domelement::getattributenodens',
+        'domelement::getattributens',
+        'domelement::getelementsbytagname',
+        'domelement::getelementsbytagnamens',
+        'domelement::hasattribute',
+        'domelement::hasattributens',
+        'domelement::removeattribute',
+        'domelement::removeattributenode',
+        'domelement::removeattributens',
+        'domelement::setattribute',
+        'domelement::setattributens',
+        'domelement::setidattribute',
+        'domelement::setidattributenode',
+        'domelement::setidattributens',
+        'domimplementation::createdocument',
+        'domimplementation::createdocumenttype',
+        'domnamednodemap::getnameditem',
+        'domnamednodemap::getnameditemns',
+        'domnode::appendchild',
+        'domnode::c14n',
+        'domnode::c14nfile',
+        'domnode::insertbefore',
+        'domnode::isdefaultnamespace',
+        'domnode::issamenode',
+        'domnode::lookupprefix',
+        'domnode::removechild',
+        'domnode::replacechild',
+        'domprocessinginstruction::__construct',
+        'domtext::__construct',
+        'domxpath::__construct',
+        'domxpath::evaluate',
+        'domxpath::query',
+        'domxpath::registernamespace',
+        'domxpath::registerphpfunctions',
         'easter_date',
         'enchant_broker_describe',
         'enchant_broker_dict_exists',
@@ -81,10 +202,48 @@ class InternalCallMapHandlerTest extends TestCase
         'enchant_dict_quick_check',
         'enchant_dict_store_replacement',
         'enchant_dict_suggest',
+        'error::__construct',
+        'errorexception::__construct',
+        'exception::__construct',
+        'fiber::start',
+        'filesystemiterator::__construct',
+        'filesystemiterator::getfileinfo',
+        'filesystemiterator::getpathinfo',
+        'filesystemiterator::openfile',
+        'filesystemiterator::seek',
+        'filesystemiterator::setfileclass',
+        'filesystemiterator::setflags',
+        'filesystemiterator::setinfoclass',
+        'finfo::__construct',
+        'finfo::buffer',
+        'finfo::file',
+        'finfo::set_flags',
+        'generator::throw',
         'get_headers',
+        'globiterator::__construct',
+        'globiterator::getfileinfo',
+        'globiterator::getpathinfo',
+        'globiterator::openfile',
+        'globiterator::seek',
+        'globiterator::setfileclass',
+        'globiterator::setflags',
+        'globiterator::setinfoclass',
         'gmp_clrbit',
         'gmp_div',
         'gmp_setbit',
+        'gnupg::adddecryptkey',
+        'gnupg::addencryptkey',
+        'gnupg::addsignkey',
+        'gnupg::decrypt',
+        'gnupg::decryptverify',
+        'gnupg::encrypt',
+        'gnupg::encryptsign',
+        'gnupg::export',
+        'gnupg::import',
+        'gnupg::keyinfo',
+        'gnupg::seterrormode',
+        'gnupg::sign',
+        'gnupg::verify',
         'gnupg_adddecryptkey',
         'gnupg_addencryptkey',
         'gnupg_addsignkey',
@@ -126,13 +285,152 @@ class InternalCallMapHandlerTest extends TestCase
         'inflate_get_read_len',
         'inflate_get_status',
         'inotify_rm_watch',
+        'intlbreakiterator::getlocale',
+        'intlbreakiterator::getpartsiterator',
         'intlcal_from_date_time',
         'intlcal_get_weekend_transition',
+        'intlcalendar::add',
+        'intlcalendar::createinstance',
+        'intlcalendar::fielddifference',
+        'intlcalendar::fromdatetime',
+        'intlcalendar::getkeywordvaluesforlocale',
+        'intlcalendar::getlocale',
+        'intlcalendar::getweekendtransition',
+        'intlcalendar::isweekend',
+        'intlcalendar::roll',
+        'intlcalendar::setlenient',
+        'intlcalendar::setminimaldaysinfirstweek',
+        'intlcalendar::setrepeatedwalltimeoption',
+        'intlcalendar::setskippedwalltimeoption',
+        'intlcalendar::settime',
+        'intlcalendar::settimezone',
+        'intlchar::charage',
+        'intlchar::chardigitvalue',
+        'intlchar::chardirection',
+        'intlchar::charfromname',
+        'intlchar::charmirror',
+        'intlchar::charname',
+        'intlchar::chartype',
+        'intlchar::chr',
+        'intlchar::digit',
+        'intlchar::enumcharnames',
+        'intlchar::enumchartypes',
+        'intlchar::foldcase',
+        'intlchar::fordigit',
+        'intlchar::getbidipairedbracket',
+        'intlchar::getblockcode',
+        'intlchar::getcombiningclass',
+        'intlchar::getfc_nfkc_closure',
+        'intlchar::getintpropertyvalue',
+        'intlchar::getnumericvalue',
+        'intlchar::getpropertyname',
+        'intlchar::getpropertyvaluename',
+        'intlchar::hasbinaryproperty',
+        'intlchar::isalnum',
+        'intlchar::isalpha',
+        'intlchar::isbase',
+        'intlchar::isblank',
+        'intlchar::iscntrl',
+        'intlchar::isdefined',
+        'intlchar::isdigit',
+        'intlchar::isgraph',
+        'intlchar::isidignorable',
+        'intlchar::isidpart',
+        'intlchar::isidstart',
+        'intlchar::isisocontrol',
+        'intlchar::isjavaidpart',
+        'intlchar::isjavaidstart',
+        'intlchar::isjavaspacechar',
+        'intlchar::islower',
+        'intlchar::ismirrored',
+        'intlchar::isprint',
+        'intlchar::ispunct',
+        'intlchar::isspace',
+        'intlchar::istitle',
+        'intlchar::isualphabetic',
+        'intlchar::isulowercase',
+        'intlchar::isupper',
+        'intlchar::isuuppercase',
+        'intlchar::isuwhitespace',
+        'intlchar::iswhitespace',
+        'intlchar::isxdigit',
+        'intlchar::ord',
+        'intlchar::tolower',
+        'intlchar::totitle',
+        'intlchar::toupper',
+        'intlcodepointbreakiterator::following',
+        'intlcodepointbreakiterator::getlocale',
+        'intlcodepointbreakiterator::getpartsiterator',
+        'intlcodepointbreakiterator::isboundary',
+        'intlcodepointbreakiterator::next',
+        'intlcodepointbreakiterator::preceding',
+        'intlexception::__construct',
         'intlgregcal_create_instance',
         'intlgregcal_is_leap_year',
+        'intlgregoriancalendar::__construct',
+        'intlgregoriancalendar::add',
+        'intlgregoriancalendar::createinstance',
+        'intlgregoriancalendar::fielddifference',
+        'intlgregoriancalendar::fromdatetime',
+        'intlgregoriancalendar::getkeywordvaluesforlocale',
+        'intlgregoriancalendar::getlocale',
+        'intlgregoriancalendar::getweekendtransition',
+        'intlgregoriancalendar::isweekend',
+        'intlgregoriancalendar::roll',
+        'intlgregoriancalendar::setgregorianchange',
+        'intlgregoriancalendar::setlenient',
+        'intlgregoriancalendar::setminimaldaysinfirstweek',
+        'intlgregoriancalendar::setrepeatedwalltimeoption',
+        'intlgregoriancalendar::setskippedwalltimeoption',
+        'intlgregoriancalendar::settime',
+        'intlgregoriancalendar::settimezone',
+        'intlrulebasedbreakiterator::__construct',
+        'intlrulebasedbreakiterator::getlocale',
+        'intlrulebasedbreakiterator::getpartsiterator',
+        'intltimezone::countequivalentids',
+        'intltimezone::createtimezone',
+        'intltimezone::createtimezoneidenumeration',
+        'intltimezone::fromdatetimezone',
+        'intltimezone::getcanonicalid',
+        'intltimezone::getdisplayname',
+        'intltimezone::getequivalentid',
+        'intltimezone::getidforwindowsid',
+        'intltimezone::getoffset',
+        'intltimezone::getregion',
+        'intltimezone::getwindowsid',
+        'intltimezone::hassamerules',
         'intltz_create_enumeration',
         'intltz_get_canonical_id',
         'intltz_get_display_name',
+        'invalidargumentexception::__construct',
+        'iteratoriterator::__construct',
+        'jsonexception::__construct',
+        'ldap_compare' => ['8.0'],
+        'ldap_delete' => ['8.0'],
+        'ldap_exop' => ['8.0'],
+        'ldap_get_option' => ['8.0'],
+        'ldap_list' => ['8.0'],
+        'ldap_mod_add' => ['8.0'],
+        'ldap_mod_del' => ['8.0'],
+        'ldap_mod_replace' => ['8.0'],
+        'ldap_modify' => ['8.0'],
+        'ldap_modify_batch' => ['8.0'],
+        'ldap_next_entry' => ['8.0'],
+        'ldap_parse_reference' => ['8.0'],
+        'ldap_read' => ['8.0'],
+        'ldap_rename' => ['8.0'],
+        'ldap_search' => ['8.0'],
+        'lengthexception::__construct',
+        'limititerator::__construct',
+        'limititerator::seek',
+        'locale::filtermatches',
+        'locale::getdisplaylanguage',
+        'locale::getdisplayname',
+        'locale::getdisplayregion',
+        'locale::getdisplayscript',
+        'locale::getdisplayvariant',
+        'locale::lookup',
+        'logicexception::__construct',
         'long2ip',
         'lzf_compress',
         'lzf_decompress',
@@ -146,6 +444,23 @@ class InternalCallMapHandlerTest extends TestCase
         'mailparse_msg_get_structure',
         'mailparse_msg_parse',
         'mailparse_stream_encode',
+        'memcache::add',
+        'memcache::addserver',
+        'memcache::append',
+        'memcache::cas',
+        'memcache::connect',
+        'memcache::decrement',
+        'memcache::delete',
+        'memcache::findserver',
+        'memcache::flush',
+        'memcache::getserverstatus',
+        'memcache::increment',
+        'memcache::pconnect',
+        'memcache::prepend',
+        'memcache::replace',
+        'memcache::set',
+        'memcache::setfailurecallback',
+        'memcache::setserverparams',
         'memcache_add',
         'memcache_add_server',
         'memcache_append',
@@ -167,17 +482,64 @@ class InternalCallMapHandlerTest extends TestCase
         'memcache_set_compress_threshold',
         'memcache_set_failure_callback',
         'memcache_set_server_params',
-        'mongodb\bson\tophp',
+        'memcachepool::add',
+        'memcachepool::addserver',
+        'memcachepool::append',
+        'memcachepool::cas',
+        'memcachepool::connect',
+        'memcachepool::decrement',
+        'memcachepool::delete',
+        'memcachepool::findserver',
+        'memcachepool::flush',
+        'memcachepool::get',
+        'memcachepool::getserverstatus',
+        'memcachepool::increment',
+        'memcachepool::prepend',
+        'memcachepool::replace',
+        'memcachepool::set',
+        'memcachepool::setcompressthreshold',
+        'memcachepool::setfailurecallback',
+        'memcachepool::setserverparams',
+        'messageformatter::format',
+        'messageformatter::formatmessage',
+        'messageformatter::parse',
+        'messageformatter::parsemessage',
+        'mongodb\bson\binary::__construct',
         'msg_receive',
         'msg_remove_queue',
         'msg_send',
         'msg_set_queue',
         'msg_stat_queue',
+        'multipleiterator::attachiterator',
+        'mysqli::poll',
         'mysqli_poll',
         'mysqli_real_connect',
+        'mysqli_stmt::__construct',
+        'mysqli_stmt::bind_param',
         'mysqli_stmt_bind_param',
+        'normalizer::getrawdecomposition',
+        'normalizer::isnormalized',
+        'normalizer::normalize',
         'normalizer_get_raw_decomposition',
+        'numberformatter::formatcurrency',
+        'numberformatter::getattribute',
+        'numberformatter::getsymbol',
+        'numberformatter::gettextattribute',
+        'numberformatter::parse',
+        'numberformatter::parsecurrency',
+        'numberformatter::setattribute',
+        'numberformatter::setsymbol',
+        'numberformatter::settextattribute',
+        'oauth::fetch',
+        'oauth::getaccesstoken',
+        'oauth::setcapath',
+        'oauth::settimeout',
+        'oauth::settimestamp',
         'oauth_get_sbs',
+        'oauthprovider::consumerhandler',
+        'oauthprovider::isrequesttokenendpoint',
+        'oauthprovider::timestampnoncehandler',
+        'oauthprovider::tokenhandler',
         'oci_collection_append',
         'oci_collection_assign',
         'oci_collection_element_assign',
@@ -218,6 +580,18 @@ class InternalCallMapHandlerTest extends TestCase
         'odbc_procedures',
         'odbc_result',
         'openssl_pkcs7_read',
+        'outofboundsexception::__construct',
+        'outofrangeexception::__construct',
+        'overflowexception::__construct',
+        'parseerror::__construct',
+        'pdo::__construct',
+        'pdo::exec',
+        'pdo::prepare',
+        'pdo::quote',
+        'pdostatement::bindcolumn',
+        'pdostatement::bindparam',
+        'pdostatement::fetchobject',
+        'pdostatement::getattribute',
         'pg_exec',
         'pg_fetch_all',
         'pg_get_notify',
@@ -225,13 +599,115 @@ class InternalCallMapHandlerTest extends TestCase
         'pg_pconnect',
         'pg_select',
         'pg_send_execute',
+        'phar::__construct',
+        'phar::addemptydir',
+        'phar::addfile',
+        'phar::addfromstring',
+        'phar::buildfromdirectory',
+        'phar::buildfromiterator',
+        'phar::cancompress',
+        'phar::copy',
+        'phar::count',
+        'phar::createdefaultstub',
+        'phar::delete',
+        'phar::extractto',
+        'phar::mapphar',
+        'phar::mount',
+        'phar::mungserver',
+        'phar::offsetexists',
+        'phar::offsetget',
+        'phar::offsetset',
+        'phar::offsetunset',
+        'phar::running',
+        'phar::setdefaultstub',
+        'phar::setsignaturealgorithm',
+        'phar::unlinkarchive',
+        'phar::webphar',
+        'phardata::__construct',
+        'phardata::addemptydir',
+        'phardata::addfile',
+        'phardata::addfromstring',
+        'phardata::buildfromdirectory',
+        'phardata::buildfromiterator',
+        'phardata::copy',
+        'phardata::delete',
+        'phardata::extractto',
+        'phardata::offsetexists',
+        'phardata::offsetget',
+        'phardata::offsetset',
+        'phardata::offsetunset',
+        'phardata::setdefaultstub',
+        'phardata::setsignaturealgorithm',
+        'pharfileinfo::__construct',
+        'pharfileinfo::chmod',
+        'pharfileinfo::iscompressed',
         'preg_filter',
         'preg_replace_callback_array',
+        'rangeexception::__construct',
+        'recursivearrayiterator::asort',
+        'recursivearrayiterator::ksort',
+        'recursivearrayiterator::offsetexists',
+        'recursivearrayiterator::offsetget',
+        'recursivearrayiterator::offsetset',
+        'recursivearrayiterator::offsetunset',
+        'recursivearrayiterator::seek',
+        'recursivearrayiterator::setflags',
+        'recursivearrayiterator::uasort',
+        'recursivearrayiterator::uksort',
+        'recursivearrayiterator::unserialize',
+        'recursivecachingiterator::__construct',
+        'recursivecachingiterator::offsetexists',
+        'recursivecachingiterator::offsetget',
+        'recursivecachingiterator::offsetset',
+        'recursivecachingiterator::offsetunset',
+        'recursivecallbackfilteriterator::__construct',
+        'recursivedirectoryiterator::__construct',
+        'recursivedirectoryiterator::getfileinfo',
+        'recursivedirectoryiterator::getpathinfo',
+        'recursivedirectoryiterator::haschildren',
+        'recursivedirectoryiterator::openfile',
+        'recursivedirectoryiterator::seek',
+        'recursivedirectoryiterator::setfileclass',
+        'recursivedirectoryiterator::setflags',
+        'recursivedirectoryiterator::setinfoclass',
+        'recursiveiteratoriterator::__construct',
+        'recursiveiteratoriterator::setmaxdepth',
+        'recursiveregexiterator::__construct',
+        'recursiveregexiterator::setflags',
+        'recursiveregexiterator::setmode',
+        'recursiveregexiterator::setpregflags',
+        'recursivetreeiterator::__construct',
+        'recursivetreeiterator::setmaxdepth',
+        'recursivetreeiterator::setpostfix',
+        'recursivetreeiterator::setprefixpart',
+        'reflectionclass::__construct',
+        'reflectionclass::implementsinterface',
+        'reflectionclassconstant::__construct',
+        'reflectionfunction::__construct',
+        'reflectiongenerator::__construct',
+        'reflectionmethod::setaccessible',
+        'reflectionobject::__construct',
+        'reflectionobject::getconstants',
+        'reflectionobject::getreflectionconstants',
+        'reflectionobject::implementsinterface',
+        'reflectionparameter::__construct',
+        'reflectionproperty::__construct',
+        'reflectionproperty::setaccessible',
+        'regexiterator::__construct',
+        'regexiterator::setflags',
+        'regexiterator::setmode',
+        'regexiterator::setpregflags',
+        'resourcebundle::__construct',
+        'resourcebundle::create',
+        'resourcebundle::getlocales',
+        'runtimeexception::__construct',
         'sapi_windows_cp_get',
         'sem_acquire',
         'sem_get',
         'sem_release',
         'sem_remove',
+        'sessionhandler::gc',
+        'sessionhandler::open',
         'shm_detach',
         'shm_get_var',
         'shm_has_var',
@@ -243,6 +719,15 @@ class InternalCallMapHandlerTest extends TestCase
         'shmop_read',
         'shmop_size',
         'shmop_write',
+        'simplexmlelement::__construct',
+        'simplexmlelement::addattribute',
+        'simplexmlelement::addchild',
+        'simplexmlelement::attributes',
+        'simplexmlelement::children',
+        'simplexmlelement::getdocnamespaces',
+        'simplexmlelement::registerxpathnamespace',
+        'simplexmlelement::xpath',
+        'snmp::set',
         'snmp_set_enum_print',
         'snmp_set_valueretrieval',
         'snmpset',
@@ -274,6 +759,69 @@ class InternalCallMapHandlerTest extends TestCase
         'sodium_crypto_generichash_update',
         'sodium_crypto_kx_client_session_keys',
         'sodium_crypto_secretstream_xchacha20poly1305_rekey',
+        'spldoublylinkedlist::add',
+        'spldoublylinkedlist::offsetset',
+        'spldoublylinkedlist::setiteratormode',
+        'spldoublylinkedlist::unserialize',
+        'splfileinfo::__construct',
+        'splfileinfo::getfileinfo',
+        'splfileinfo::getpathinfo',
+        'splfileinfo::openfile',
+        'splfileinfo::setfileclass',
+        'splfileinfo::setinfoclass',
+        'splfileobject::__construct',
+        'splfileobject::fgetcsv',
+        'splfileobject::flock',
+        'splfileobject::fputcsv',
+        'splfileobject::fseek',
+        'splfileobject::fwrite',
+        'splfileobject::getfileinfo',
+        'splfileobject::getpathinfo',
+        'splfileobject::openfile',
+        'splfileobject::seek',
+        'splfileobject::setcsvcontrol',
+        'splfileobject::setfileclass',
+        'splfileobject::setinfoclass',
+        'splfileobject::setmaxlinelen',
+        'splfixedarray::fromarray',
+        'splfixedarray::offsetset',
+        'splmaxheap::compare',
+        'splminheap::compare',
+        'splobjectstorage::addall',
+        'splobjectstorage::attach',
+        'splobjectstorage::count',
+        'splobjectstorage::offsetset',
+        'splobjectstorage::removeall',
+        'splobjectstorage::removeallexcept',
+        'splobjectstorage::setinfo',
+        'splobjectstorage::unserialize',
+        'splpriorityqueue::compare',
+        'splqueue::offsetset',
+        'splqueue::unserialize',
+        'splstack::add',
+        'splstack::offsetset',
+        'splstack::unserialize',
+        'spltempfileobject::__construct',
+        'spltempfileobject::fgetcsv',
+        'spltempfileobject::flock',
+        'spltempfileobject::fputcsv',
+        'spltempfileobject::fseek',
+        'spltempfileobject::fwrite',
+        'spltempfileobject::getfileinfo',
+        'spltempfileobject::getpathinfo',
+        'spltempfileobject::openfile',
+        'spltempfileobject::seek',
+        'spltempfileobject::setcsvcontrol',
+        'spltempfileobject::setfileclass',
+        'spltempfileobject::setinfoclass',
+        'spltempfileobject::setmaxlinelen',
+        'spoofchecker::areconfusable',
+        'spoofchecker::issuspicious',
+        'spoofchecker::setallowedlocales',
+        'spoofchecker::setchecks',
+        'spoofchecker::setrestrictionlevel',
+        'sqlite3::__construct',
+        'sqlite3::open',
         'sqlsrv_connect',
         'sqlsrv_errors',
         'sqlsrv_fetch_array',
@@ -295,6 +843,14 @@ class InternalCallMapHandlerTest extends TestCase
         'stream_select' => ['8.0'],
         'substr_replace',
         'tidy_getopt',
+        'transliterator::transliterate',
+        'typeerror::__construct',
+        'uconverter::convert',
+        'uconverter::fromucallback',
+        'uconverter::reasontext',
+        'uconverter::transcode',
+        'underflowexception::__construct',
+        'unexpectedvalueexception::__construct',
         'uopz_allow_exit',
         'uopz_get_mock',
         'uopz_get_property',
@@ -319,48 +875,109 @@ class InternalCallMapHandlerTest extends TestCase
         'xdiff_string_patch',
         'xdiff_string_patch_binary',
         'xdiff_string_rabdiff',
+        'xmlreader::getattributens',
+        'xmlreader::movetoattributens',
+        'xmlreader::next',
+        'xmlreader::open',
+        'xmlreader::xml',
         'xmlrpc_server_add_introspection_data',
         'xmlrpc_server_call_method',
         'xmlrpc_server_destroy',
         'xmlrpc_server_register_introspection_callback',
         'xmlrpc_server_register_method',
+        'xsltprocessor::registerphpfunctions',
+        'xsltprocessor::transformtodoc',
         'yaml_emit',
         'yaml_emit_file',
         'zip_entry_close',
+        'ziparchive::iscompressionmethodsupported',
+        'ziparchive::isencryptionmethodsupported',
+        'ziparchive::setcompressionindex',
+        'ziparchive::setcompressionname',
+        'ziparchive::setencryptionindex',
         'zlib_encode',
     ];
 
     /**
      * List of function names to ignore only for return type checks.
      *
-     * @var list<string>
+     * @var array<int|string, string|list<string>>
      */
-    private static $ignoredReturnTypeOnlyFunctions = [
+    private static array $ignoredReturnTypeOnlyFunctions = [
+        'appenditerator::getinneriterator' => ['8.1', '8.2'],
+        'appenditerator::getiteratorindex' => ['8.1', '8.2'],
+        'arrayiterator::key' => ['8.1', '8.2'],
+        'arrayiterator::natcasesort' => ['8.1', '8.2'],
+        'arrayiterator::natsort' => ['8.1', '8.2'],
+        'arrayobject::getiterator' => ['8.1', '8.2'],
+        'arrayobject::natcasesort' => ['8.1', '8.2'],
+        'arrayobject::natsort' => ['8.1', '8.2'],
+        'badfunctioncallexception::getprevious',
+        'badmethodcallexception::getprevious',
         'bcsqrt',
-        'cal_from_jd',
-        'collator_get_strength',
+        'cachingiterator::getinneriterator' => ['8.1', '8.2'],
+        'callbackfilteriterator::getinneriterator' => ['8.1', '8.2'],
+        'closedgeneratorexception::getprevious',
+        'curl_multi_getcontent',
         'curl_multi_init',
         'curl_multi_getcontent', // issue #8351
-        'date_add',
-        'date_date_set',
-        'date_diff',
-        'date_offset_get',
-        'date_parse',
-        'date_sub',
-        'date_sun_info',
-        'date_sunrise',
-        'date_sunset',
-        'date_time_set',
-        'date_timestamp_set',
-        'date_timezone_set',
         'datefmt_set_lenient',
+        'datetime::__set_state' => ['8.1', '8.2'],
+        'datetime::add' => ['8.1', '8.2'],
+        'datetime::createfromimmutable' => ['8.1', '8.2'],
+        'datetime::createfrominterface',
+        'datetime::setdate' => ['8.1', '8.2'],
+        'datetime::settimezone' => ['8.1', '8.2'],
+        'datetime::sub' => ['8.1', '8.2'],
+        'datetimeimmutable::__set_state' => ['8.1', '8.2'],
+        'datetimeimmutable::createfrominterface',
         'deflate_init',
+        'domainexception::getprevious',
+        'domcharacterdata::appenddata' => ['8.1', '8.2'],
+        'domcharacterdata::deletedata' => ['8.1', '8.2'],
+        'domcharacterdata::insertdata' => ['8.1', '8.2'],
+        'domcharacterdata::replacedata' => ['8.1', '8.2'],
+        'domdocument::createcomment' => ['8.1', '8.2'],
+        'domdocument::createdocumentfragment' => ['8.1', '8.2'],
+        'emptyiterator::current' => ['8.1', '8.2'],
+        'emptyiterator::key' => ['8.1', '8.2'],
         'enchant_broker_init',
+        'error::getprevious',
+        'errorexception::getprevious',
+        'exception::getprevious',
         'fgetcsv',
+        'fiber::getcurrent',
+        'filesystemiterator::_bad_state_ex',
+        'filesystemiterator::current' => ['8.1', '8.2'],
         'filter_input_array',
+        'filteriterator::getinneriterator' => ['8.1', '8.2'],
         'fpassthru',
         'ftp_get_option',
         'get_declared_traits',
+        'globiterator::getatime',
+        'globiterator::getbasename',
+        'globiterator::getctime',
+        'globiterator::getextension',
+        'globiterator::getfilename',
+        'globiterator::getgroup',
+        'globiterator::getinode',
+        'globiterator::getlinktarget',
+        'globiterator::getmtime',
+        'globiterator::getowner',
+        'globiterator::getpath',
+        'globiterator::getpathname',
+        'globiterator::getperms',
+        'globiterator::getrealpath',
+        'globiterator::getsize',
+        'globiterator::gettype',
+        'globiterator::isdir',
+        'globiterator::isdot',
+        'globiterator::isexecutable',
+        'globiterator::isfile',
+        'globiterator::islink',
+        'globiterator::isreadable',
+        'globiterator::iswritable',
+        'globiterator::valid',
         'gmp_export',
         'gmp_hamdist',
         'gmp_import',
@@ -374,51 +991,156 @@ class InternalCallMapHandlerTest extends TestCase
         'imagecolorexactalpha',
         'imagecolorresolve',
         'imagecolorresolvealpha',
-        'imagecolorset',
         'imagecolorsforindex',
         'imagecolorstotal',
         'imagecolortransparent',
-        'imageloadfont',
+        'imageinterlace' => ['8.0'],
+        'imageloadfont' => ['8.1', '8.2'],
         'imagesx',
         'imagesy',
         'imap_mailboxmsginfo',
         'imap_msgno',
         'imap_num_recent',
+        'infiniteiterator::getinneriterator' => ['8.1', '8.2'],
         'inflate_init',
+        'intlbreakiterator::createcharacterinstance' => ['8.1', '8.2'],
+        'intlbreakiterator::createlineinstance' => ['8.1', '8.2'],
+        'intlbreakiterator::createsentenceinstance' => ['8.1', '8.2'],
+        'intlbreakiterator::createtitleinstance' => ['8.1', '8.2'],
+        'intlbreakiterator::createwordinstance' => ['8.1', '8.2'],
+        'intlbreakiterator::gettext' => ['8.1', '8.2'],
+        'intlbreakiterator::settext' => ['8.1', '8.2'],
         'intlcal_get',
         'intlcal_get_keyword_values_for_locale',
+        'intlcodepointbreakiterator::createcharacterinstance' => ['8.1', '8.2'],
+        'intlcodepointbreakiterator::createlineinstance' => ['8.1', '8.2'],
+        'intlcodepointbreakiterator::createsentenceinstance' => ['8.1', '8.2'],
+        'intlcodepointbreakiterator::createtitleinstance' => ['8.1', '8.2'],
+        'intlcodepointbreakiterator::createwordinstance' => ['8.1', '8.2'],
+        'intlcodepointbreakiterator::gettext' => ['8.1', '8.2'],
+        'intlcodepointbreakiterator::settext' => ['8.1', '8.2'],
         'intlgregcal_set_gregorian_change',
+        'intlrulebasedbreakiterator::createcharacterinstance' => ['8.1', '8.2'],
+        'intlrulebasedbreakiterator::createlineinstance' => ['8.1', '8.2'],
+        'intlrulebasedbreakiterator::createsentenceinstance' => ['8.1', '8.2'],
+        'intlrulebasedbreakiterator::createtitleinstance' => ['8.1', '8.2'],
+        'intlrulebasedbreakiterator::createwordinstance' => ['8.1', '8.2'],
+        'intlrulebasedbreakiterator::gettext' => ['8.1', '8.2'],
+        'intlrulebasedbreakiterator::settext' => ['8.1', '8.2'],
         'intltz_get_offset',
+        'invalidargumentexception::getprevious',
+        'iteratoriterator::getinneriterator' => ['8.1', '8.2'],
         'jddayofweek',
         'jdtounix',
         'ldap_count_entries',
-        'ldap_exop',
+        'ldap_exop' => ['8.1', '8.2'],
         'ldap_get_attributes',
+        'lengthexception::getprevious',
+        'limititerator::getinneriterator' => ['8.1', '8.2'],
+        'locale::canonicalize' => ['8.1', '8.2'],
+        'locale::getallvariants' => ['8.1', '8.2'],
+        'locale::getkeywords' => ['8.1', '8.2'],
+        'locale::getprimarylanguage' => ['8.1', '8.2'],
+        'locale::getregion' => ['8.1', '8.2'],
+        'locale::getscript' => ['8.1', '8.2'],
+        'locale::parselocale' => ['8.1', '8.2'],
+        'logicexception::getprevious',
         'mb_encoding_aliases',
+        'messageformatter::create' => ['8.1', '8.2'],
         'metaphone',
         'msg_get_queue',
+        'multipleiterator::current' => ['8.1', '8.2'],
+        'multipleiterator::setflags' => ['8.1', '8.2'],
+        'mysqli::get_charset' => ['8.1', '8.2'],
+        'mysqli_stmt::get_warnings' => ['8.1', '8.2'],
         'mysqli_stmt_get_warnings',
         'mysqli_stmt_insert_id',
+        'norewinditerator::getinneriterator' => ['8.1', '8.2'],
+        'numberformatter::create' => ['8.1', '8.2'],
         'numfmt_create',
         'ob_list_handlers',
         'openssl_random_pseudo_bytes',
         'openssl_spki_export',
         'openssl_spki_export_challenge',
+        'outofboundsexception::getprevious',
+        'outofrangeexception::getprevious',
+        'overflowexception::getprevious',
         'pack',
+        'parentiterator::getchildren' => ['8.1', '8.2'],
+        'parentiterator::valid',
         'parse_url',
+        'parseerror::getprevious',
         'passthru',
         'pcntl_exec',
         'pcntl_strerror',
+        'pdo::getattribute',
         'pg_port',
+        'phar::compress' => ['8.1', '8.2'],
+        'phar::converttodata' => ['8.1', '8.2'],
+        'phar::converttoexecutable' => ['8.1', '8.2'],
+        'phar::decompress' => ['8.1', '8.2'],
+        'phar::getalias' => ['8.1', '8.2'],
+        'phar::iscompressed' => ['8.1', '8.2'],
+        'phardata::compress' => ['8.1', '8.2'],
+        'phardata::compressfiles' => ['8.1', '8.2'],
+        'phardata::converttodata' => ['8.1', '8.2'],
+        'phardata::converttoexecutable' => ['8.1', '8.2'],
+        'phardata::decompress' => ['8.1', '8.2'],
+        'phptoken::gettokenname',
         'pspell_config_create',
-        'pspell_new',
-        'pspell_new_config',
-        'pspell_new_personal',
+        'pspell_new' => ['8.1', '8.2'],
+        'pspell_new_config' => ['8.1', '8.2'],
+        'pspell_new_personal' => ['8.1', '8.2'],
+        'rangeexception::getprevious',
+        'recursivearrayiterator::getchildren' => ['8.1', '8.2'],
+        'recursivearrayiterator::getflags' => ['8.1', '8.2'],
+        'recursivearrayiterator::key' => ['8.1', '8.2'],
+        'recursivearrayiterator::natcasesort' => ['8.1', '8.2'],
+        'recursivearrayiterator::natsort' => ['8.1', '8.2'],
+        'recursivecachingiterator::getchildren' => ['8.1', '8.2'],
+        'recursivecachingiterator::getinneriterator' => ['8.1', '8.2'],
+        'recursivecallbackfilteriterator::getinneriterator' => ['8.1', '8.2'],
+        'recursivedirectoryiterator::_bad_state_ex',
+        'recursivefilteriterator::getchildren' => ['8.1', '8.2'],
+        'recursivefilteriterator::getinneriterator' => ['8.1', '8.2'],
+        'recursiveiteratoriterator::beginiteration' => ['8.1', '8.2'],
+        'recursiveiteratoriterator::callgetchildren' => ['8.1', '8.2'],
+        'recursiveiteratoriterator::enditeration' => ['8.1', '8.2'],
+        'recursiveiteratoriterator::getsubiterator' => ['8.1', '8.2'],
+        'recursiveregexiterator::current',
+        'recursiveregexiterator::getinneriterator' => ['8.1', '8.2'],
+        'recursiveregexiterator::key',
+        'recursiveregexiterator::next',
+        'recursiveregexiterator::rewind',
+        'recursiveregexiterator::valid',
+        'recursivetreeiterator::beginiteration' => ['8.1', '8.2'],
+        'recursivetreeiterator::callgetchildren' => ['8.1', '8.2'],
+        'recursivetreeiterator::getsubiterator' => ['8.1', '8.2'],
+        'reflectionclass::getstaticproperties' => ['8.1', '8.2'],
+        'reflectionclass::gettraitaliases' => ['8.1', '8.2'],
+        'reflectionclass::gettraitnames' => ['8.1', '8.2'],
+        'reflectionclass::newinstanceargs' => ['8.1', '8.2'],
+        'reflectionfunction::getclosure' => ['8.1', '8.2'],
+        'reflectionfunction::getclosurescopeclass' => ['8.1', '8.2'],
+        'reflectionfunction::getclosurethis' => ['8.1', '8.2'],
+        'reflectionfunctionabstract::getextension' => ['8.1', '8.2'],
+        'reflectionmethod::getclosure' => ['8.1', '8.2'],
+        'reflectionmethod::getclosurescopeclass' => ['8.1', '8.2'],
+        'reflectionmethod::getclosurethis' => ['8.1', '8.2'],
+        'reflectionmethod::getextension' => ['8.1', '8.2'],
+        'reflectionobject::getstaticproperties' => ['8.1', '8.2'],
+        'reflectionobject::newinstanceargs' => ['8.1', '8.2'],
+        'reflectionparameter::iscallable' => ['8.1', '8.2'],
+        'regexiterator::getinneriterator' => ['8.1', '8.2'],
         'register_shutdown_function',
+        'resourcebundle::get',
         'rewinddir',
+        'runtimeexception::getprevious',
+        'sessionhandler::create_sid' => ['8.1', '8.2'],
         'shm_attach',
         'shmop_open',
         'simplexml_import_dom',
+        'simplexmlelement::savexml' => ['8.1', '8.2'],
         'sleep',
         'snmp_set_oid_numeric_print',
         'socket_import_stream',
@@ -426,23 +1148,142 @@ class InternalCallMapHandlerTest extends TestCase
         'sodium_crypto_aead_chacha20poly1305_ietf_encrypt',
         'sodium_crypto_aead_xchacha20poly1305_ietf_encrypt',
         'spl_autoload_functions',
+        'spldoublylinkedlist::key' => ['8.1', '8.2'],
+        'spldoublylinkedlist::unshift' => ['8.1', '8.2'],
+        'splfileobject::fgets' => ['8.1', '8.2'],
+        'splfileobject::fpassthru' => ['8.1', '8.2'],
+        'splfileobject::fscanf' => ['8.1', '8.2'],
+        'splfileobject::getcurrentline' => ['8.1', '8.2'],
+        'splheap::recoverfromcorruption' => ['8.1', '8.2'],
+        'splminheap::insert' => ['8.1', '8.2'],
+        'splminheap::iscorrupted' => ['8.1', '8.2'],
+        'splminheap::key' => ['8.1', '8.2'],
+        'splminheap::recoverfromcorruption' => ['8.1', '8.2'],
+        'splobjectstorage::offsetunset' => ['8.1', '8.2'],
+        'splpriorityqueue::key' => ['8.1', '8.2'],
+        'splpriorityqueue::setextractflags' => ['8.1', '8.2'],
+        'splqueue::key' => ['8.1', '8.2'],
+        'splqueue::setiteratormode' => ['8.1', '8.2'],
+        'splqueue::unshift' => ['8.1', '8.2'],
+        'splstack::key' => ['8.1', '8.2'],
+        'splstack::setiteratormode' => ['8.1', '8.2'],
+        'splstack::unshift' => ['8.1', '8.2'],
+        'spltempfileobject::_bad_state_ex',
+        'spltempfileobject::fpassthru' => ['8.1', '8.2'],
+        'spltempfileobject::fscanf' => ['8.1', '8.2'],
+        'stomp::setreadtimeout',
         'stream_bucket_new',
         'stream_set_chunk_size',
         'substr',
         'substr_compare',
+        'tidy::body' => ['8.1', '8.2'],
+        'tidy::getopt' => ['8.1', '8.2'],
+        'tidy::head' => ['8.1', '8.2'],
+        'tidy::html' => ['8.1', '8.2'],
+        'tidy::root' => ['8.1', '8.2'],
+        'tidynode::getparent',
+        'transliterator::createinverse' => ['8.1', '8.2'],
+        'typeerror::getprevious',
+        'uconverter::getaliases' => ['8.1', '8.2'],
+        'uconverter::getdestinationencoding' => ['8.1', '8.2'],
+        'uconverter::getdestinationtype' => ['8.1', '8.2'],
+        'uconverter::geterrormessage' => ['8.1', '8.2'],
+        'uconverter::getsourceencoding' => ['8.1', '8.2'],
+        'uconverter::getsourcetype' => ['8.1', '8.2'],
+        'uconverter::getstandards' => ['8.1', '8.2'],
+        'uconverter::getsubstchars' => ['8.1', '8.2'],
+        'uconverter::toucallback' => ['8.1', '8.2'],
+        'underflowexception::getprevious',
+        'unexpectedvalueexception::getprevious',
         'user_error',
         'xml_get_current_byte_index',
         'xml_get_current_column_number',
         'xml_get_current_line_number',
         'xml_get_error_code',
         'xml_parser_get_option',
+        'xmlrpc_encode',
+        'xmlrpc_encode_request',
+        'xmlrpc_server_create',
+        'xsltprocessor::transformtoxml' => ['8.1', '8.2'],
+        'ziparchive::addglob' => ['8.1', '8.2'],
+        'ziparchive::addpattern' => ['8.1', '8.2'],
+        'ziparchive::getstatusstring' => ['8.1', '8.2'],
     ];
 
     /**
+     * List of function names to ignore because they cannot be reflected.
      *
-     * @var Codebase
+     * These could be truly inaccessible, or they could be functions removed in newer PHP versions.
+     * Removed functions should be removed from CallMap and added to the appropriate delta.
+     *
+     * @var array<int|string, string|list<string>>
      */
-    private static $codebase;
+    private static array $ignoredUnreflectableFunctions = [
+        'closure::__invoke',
+        'curlfile::__wakeup',
+        'domimplementation::__construct',
+        'generator::__wakeup',
+        'gmp::__construct',
+        'gmp::__tostring',
+        'intliterator::__construct',
+        'mysqli::disable_reads_from_master',
+        'mysqli::rpl_query_type',
+        'mysqli::send_query',
+        'mysqli::set_local_infile_default',
+        'mysqli::set_local_infile_handler',
+        'mysqli_driver::embedded_server_end',
+        'mysqli_driver::embedded_server_start',
+        'pdo::__sleep',
+        'pdo::__wakeup',
+        'pdo::cubrid_schema',
+        'pdo::pgsqlcopyfromarray',
+        'pdo::pgsqlcopyfromfile',
+        'pdo::pgsqlcopytoarray',
+        'pdo::pgsqlcopytofile',
+        'pdo::pgsqlgetnotify',
+        'pdo::pgsqlgetpid',
+        'pdo::pgsqllobcreate',
+        'pdo::pgsqllobopen',
+        'pdo::pgsqllobunlink',
+        'pdo::sqlitecreateaggregate',
+        'pdo::sqlitecreatecollation',
+        'pdo::sqlitecreatefunction',
+        'pdostatement::__sleep',
+        'pdostatement::__wakeup',
+        'phar::compressallfilesbzip2',
+        'phar::compressallfilesgz',
+        'phar::uncompressallfiles',
+        'pharfileinfo::iscompressedbzip2',
+        'pharfileinfo::iscompressedgz',
+        'pharfileinfo::setcompressedbzip2',
+        'pharfileinfo::setcompressedgz',
+        'pharfileinfo::setuncompressed',
+        'simplexmlelement::__get',
+        'simplexmlelement::offsetexists',
+        'simplexmlelement::offsetget',
+        'simplexmlelement::offsetset',
+        'simplexmlelement::offsetunset',
+        'spldoublylinkedlist::__construct',
+        'splfileinfo::__wakeup',
+        'splfixedarray::current',
+        'splfixedarray::key',
+        'splfixedarray::next',
+        'splfixedarray::rewind',
+        'splfixedarray::valid',
+        'splheap::__construct',
+        'splmaxheap::__construct',
+        'splobjectstorage::__construct',
+        'splpriorityqueue::__construct',
+        'splstack::__construct',
+        'weakmap::__construct',
+        'weakmap::current',
+        'weakmap::key',
+        'weakmap::next',
+        'weakmap::rewind',
+        'weakmap::valid',
+    ];
+
+    private static Codebase $codebase;
 
     public static function setUpBeforeClass(): void
     {
@@ -450,12 +1291,11 @@ class InternalCallMapHandlerTest extends TestCase
             new TestConfig(),
             new Providers(
                 new FakeFileProvider(),
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
         self::$codebase = $project_analyzer->getCodebase();
     }
-
 
     public function testIgnoresAreSortedAndUnique(): void
     {
@@ -465,19 +1305,10 @@ class InternalCallMapHandlerTest extends TestCase
             $function = is_int($key) ? $value : $key;
 
             $diff = strcmp($function, $previousFunction);
-            if ($diff <= 0) {
-                // faster debugging errors in tests
-                echo "\n" . $previousFunction . "\n" . $function . "\n";
-            }
+            $this->assertGreaterThan(0, $diff, "'{$function}' should come before '{$previousFunction}' in InternalCallMapHandlerTest::\$ignoredFunctions");
 
-            $this->assertGreaterThan(0, $diff);
             $previousFunction = $function;
         }
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        self::$codebase = null;
     }
 
     /**
@@ -498,7 +1329,6 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
      * @return iterable<string, array{0: callable-string, 1: array<int|string, string>}>
      */
     public function callMapEntryProvider(): iterable
@@ -510,15 +1340,21 @@ class InternalCallMapHandlerTest extends TestCase
             new TestConfig(),
             new Providers(
                 new FakeFileProvider(),
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
         $callMap = InternalCallMapHandler::getCallMap();
         foreach ($callMap as $function => $entry) {
-            // Skip class methods
-            if (strpos($function, '::') !== false || !function_exists($function)) {
+            $classNameEnd = strpos($function, '::');
+            if ($classNameEnd !== false) {
+                $className = substr($function, 0, $classNameEnd);
+                if (!class_exists($className, false)) {
+                    continue;
+                }
+            } elseif (!function_exists($function)) {
                 continue;
             }
+
             // Skip functions with alternate signatures
             if (isset($callMap["$function'1"]) || preg_match("/\'\d$/", $function)) {
                 continue;
@@ -528,8 +1364,6 @@ class InternalCallMapHandlerTest extends TestCase
         }
     }
 
-    /**
-     */
     private function isIgnored(string $functionName): bool
     {
         if (in_array($functionName, self::$ignoredFunctions)) {
@@ -545,11 +1379,34 @@ class InternalCallMapHandlerTest extends TestCase
         return false;
     }
 
-    /**
-     */
     private function isReturnTypeOnlyIgnored(string $functionName): bool
     {
-        return in_array($functionName, static::$ignoredReturnTypeOnlyFunctions, true);
+        if (in_array($functionName, static::$ignoredReturnTypeOnlyFunctions, true)) {
+            return true;
+        }
+
+        if (isset(self::$ignoredReturnTypeOnlyFunctions[$functionName])
+            && is_array(self::$ignoredReturnTypeOnlyFunctions[$functionName])
+            && in_array(PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, self::$ignoredReturnTypeOnlyFunctions[$functionName])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function isUnreflectableIgnored(string $functionName): bool
+    {
+        if (in_array($functionName, static::$ignoredUnreflectableFunctions, true)) {
+            return true;
+        }
+
+        if (isset(self::$ignoredUnreflectableFunctions[$functionName])
+            && is_array(self::$ignoredUnreflectableFunctions[$functionName])
+            && in_array(PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, self::$ignoredUnreflectableFunctions[$functionName])) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -563,13 +1420,21 @@ class InternalCallMapHandlerTest extends TestCase
     public function testIgnoredFunctionsStillFail(string $functionName, array $callMapEntry): void
     {
         $functionIgnored = $this->isIgnored($functionName);
-        if (!$functionIgnored && !$this->isReturnTypeOnlyIgnored($functionName)) {
+        $unreflectableIgnored = $this->isUnreflectableIgnored($functionName);
+        if (!$functionIgnored && !$this->isReturnTypeOnlyIgnored($functionName) && !$unreflectableIgnored) {
             // Dummy assertion to mark it as passed
             $this->assertTrue(true);
             return;
         }
 
-        $function = new ReflectionFunction($functionName);
+        $function = $this->getReflectionFunction($functionName);
+        if ($unreflectableIgnored && $function !== null) {
+            $this->fail("Remove '{$functionName}' from InternalCallMapHandlerTest::\$ignoredUnreflectableFunctions");
+        } elseif ($function === null) {
+            $this->assertTrue(true);
+            return;
+        }
+
         /** @var string $entryReturnType */
         $entryReturnType = array_shift($callMapEntry);
 
@@ -602,6 +1467,7 @@ class InternalCallMapHandlerTest extends TestCase
 
     /**
      * This function will test functions that are in the callmap AND currently defined
+     *
      * @coversNothing
      * @depends testGetcallmapReturnsAValidCallmap
      * @depends testIgnoresAreSortedAndUnique
@@ -615,7 +1481,14 @@ class InternalCallMapHandlerTest extends TestCase
             $this->markTestSkipped("Function $functionName is ignored in config");
         }
 
-        $function = new ReflectionFunction($functionName);
+        $function = $this->getReflectionFunction($functionName);
+        if ($function === null) {
+            if (!$this->isUnreflectableIgnored($functionName)) {
+                $this->fail('Unable to reflect method. Add name to $ignoredUnreflectableFunctions if exists in latest PHP version.');
+            }
+            return;
+        }
+
         /** @var string $entryReturnType */
         $entryReturnType = array_shift($callMapEntry);
 
@@ -628,13 +1501,30 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
+     * Returns the correct reflection type for function or method name.
+     */
+    private function getReflectionFunction(string $functionName): ?ReflectionFunctionAbstract
+    {
+        try {
+            if (strpos($functionName, '::') !== false) {
+                return new ReflectionMethod($functionName);
+            }
+
+            /** @var callable-string $functionName */
+            return new ReflectionFunction($functionName);
+        } catch (ReflectionException $e) {
+            return null;
+        }
+    }
+
+    /**
      * @param array<string, string> $entryParameters
      */
-    private function assertEntryParameters(ReflectionFunction $function, array $entryParameters): void
+    private function assertEntryParameters(ReflectionFunctionAbstract $function, array $entryParameters): void
     {
         /**
          * Parse the parameter names from the map.
+         *
          * @var array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
          */
         $normalizedEntries = [];
@@ -690,7 +1580,6 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     *
      * @param array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
      */
     private function assertParameter(array $normalizedEntry, ReflectionParameter $param): void
@@ -708,7 +1597,7 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /** @psalm-suppress UndefinedMethod */
-    public function assertEntryReturnType(ReflectionFunction $function, string $entryReturnType): void
+    public function assertEntryReturnType(ReflectionFunctionAbstract $function, string $entryReturnType): void
     {
         if (version_compare(PHP_VERSION, '8.1.0', '>=')) {
             /** @var ReflectionType|null $expectedType */
@@ -717,10 +1606,9 @@ class InternalCallMapHandlerTest extends TestCase
             $expectedType = $function->getReturnType();
         }
 
+        $this->assertNotEmpty($entryReturnType, 'CallMap entry has empty return type');
         if ($expectedType !== null) {
-            $this->assertTypeValidity($expectedType, $entryReturnType, true, 'CallMap entry has incorrect return type');
-        } else {
-            $this->assertNotEmpty($entryReturnType);
+            $this->assertTypeValidity($expectedType, $entryReturnType, true, 'CallMap entry has incorrect return type, reflection returned: ' . $expectedType);
         }
     }
 

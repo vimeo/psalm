@@ -8,6 +8,8 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayChunkReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayColumnReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayCombineReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFillKeysReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFillReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFilterReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
@@ -60,7 +62,7 @@ class FunctionReturnTypeProvider
      *   array<Closure(FunctionReturnTypeProviderEvent): ?Union>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {
@@ -68,6 +70,7 @@ class FunctionReturnTypeProvider
 
         $this->registerClass(ArrayChunkReturnTypeProvider::class);
         $this->registerClass(ArrayColumnReturnTypeProvider::class);
+        $this->registerClass(ArrayCombineReturnTypeProvider::class);
         $this->registerClass(ArrayFilterReturnTypeProvider::class);
         $this->registerClass(ArrayMapReturnTypeProvider::class);
         $this->registerClass(ArrayMergeReturnTypeProvider::class);
@@ -81,6 +84,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ArrayReverseReturnTypeProvider::class);
         $this->registerClass(ArrayUniqueReturnTypeProvider::class);
         $this->registerClass(ArrayFillReturnTypeProvider::class);
+        $this->registerClass(ArrayFillKeysReturnTypeProvider::class);
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ParseUrlReturnTypeProvider::class);
@@ -147,7 +151,7 @@ class FunctionReturnTypeProvider
                 $function_id,
                 $stmt,
                 $context,
-                $code_location
+                $code_location,
             );
             $return_type = $function_handler($event);
 

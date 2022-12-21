@@ -30,10 +30,11 @@
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.1",
         "felixfbecker/language-server-protocol": "^1.5.2",
+        "fidry/cpu-core-counter": "^0.4.0",
         "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
         "nikic/php-parser": "^4.13",
-        "openlss/lib-array2xml": "^1.0",
         "sebastian/diff": "^4.0",
+        "spatie/array-to-xml": "^2.17.0",
         "symfony/console": "^4.1.6 || ^5.0 || ^6.0",
         "symfony/filesystem": "^5.4 || ^6.0",
         "symfony/polyfill-php80": "^1.25"
@@ -105,8 +106,8 @@
         "psalter"
     ],
     "scripts": {
-        "cs": "phpcs -p",
-        "cs-fix": "phpcbf -p",
+        "cs": "phpcs -ps",
+        "cs-fix": "phpcbf -ps",
         "lint": "parallel-lint ./src ./tests",
         "phpunit": "paratest --runner=WrapperRunner",
         "phpunit-std": "phpunit",

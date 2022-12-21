@@ -41,7 +41,7 @@ class BinaryOperationTest extends TestCase
                 $q = $a * 6;
                 $r = $a / 6;
                 $s = $a ** 6;
-                $t = $a % 6;'
+                $t = $a % 6;',
         );
 
         $assertions = [
@@ -106,7 +106,7 @@ class BinaryOperationTest extends TestCase
                 $q = $a * 6;
                 $r = $a / 6;
                 $s = $a ** 6;
-                $t = $a % 6;'
+                $t = $a % 6;',
         );
 
         $assertions = [
@@ -166,7 +166,7 @@ class BinaryOperationTest extends TestCase
                     $obj instanceof a => 123,
                     $obj instanceof b => 321,
                 };
-            '
+            ',
         );
 
         $assertions = [
@@ -204,7 +204,7 @@ class BinaryOperationTest extends TestCase
 
                 if (returnsABool() === true) {
                     echo "hi!";
-                }'
+                }',
         );
 
         $this->expectException(CodeException::class);
@@ -227,7 +227,7 @@ class BinaryOperationTest extends TestCase
 
                 if (returnsABool() !== false) {
                     echo "hi!";
-                }'
+                }',
         );
 
         $this->expectException(CodeException::class);
@@ -244,7 +244,7 @@ class BinaryOperationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                    $a = 5 + 4.1;'
+                    $a = 5 + 4.1;',
         );
 
         $this->expectException(CodeException::class);
@@ -263,7 +263,7 @@ class BinaryOperationTest extends TestCase
             '<?php
                 /** @var float */
                 $b = 4.1;
-                $a = 5 + $b;'
+                $a = 5 + $b;',
         );
 
         $this->expectException(CodeException::class);
@@ -280,7 +280,7 @@ class BinaryOperationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                    $a = "hi" . 5;'
+                    $a = "hi" . 5;',
         );
 
         $this->expectException(CodeException::class);
@@ -304,7 +304,7 @@ class BinaryOperationTest extends TestCase
                     function takesI(I $i): void
                     {
                         $a = $i . "hello";
-                    }'
+                    }',
         );
 
         $this->expectException(CodeException::class);
@@ -366,7 +366,7 @@ class BinaryOperationTest extends TestCase
                     $a = 7 . 5;',
                 'assertions' => [
                     '$a' => 'string',//will contain "75"
-                ]
+                ],
             ],
             'concatenationWithTwoInt' => [
                 'code' => '<?php
@@ -632,7 +632,7 @@ class BinaryOperationTest extends TestCase
                      */
                     function a(array $opts): array {
                         return $opts + ["host" => 5];
-                    }'
+                    }',
             ],
             'addIntToZero' => [
                 'code' => '<?php
@@ -647,7 +647,7 @@ class BinaryOperationTest extends TestCase
                     /**
                      * @psalm-param positive-int $tickedTimes
                      */
-                    function test(int $tickedTimes): void {}'
+                    function test(int $tickedTimes): void {}',
             ],
             'numericPlusIntegerIsIntOrFloat' => [
                 'code' => '<?php
@@ -655,7 +655,7 @@ class BinaryOperationTest extends TestCase
                     function foo(string $s) : void {
                         $s = $s + 1;
                         if (is_int($s)) {}
-                    }'
+                    }',
             ],
             'interpolatedStringNotEmpty' => [
                 'code' => '<?php
@@ -669,7 +669,7 @@ class BinaryOperationTest extends TestCase
 
                     function foo(string $a) : void {
                         func("asdasdasd $a");
-                    }'
+                    }',
             ],
             'spaceshipOpIsLiteralUnionType' => [
                 'code' => '<?php
@@ -686,7 +686,7 @@ class BinaryOperationTest extends TestCase
                       */
                      function foo($a, $b): void {
                          onlyZeroOrPlusMinusOne($a <=> $b);
-                     }'
+                     }',
             ],
             'notAlwaysPositiveBitOperations' => [
                 'code' => '<?php
@@ -713,20 +713,20 @@ class BinaryOperationTest extends TestCase
                         if (0 === ($a << $d)) {
                             echo "Actually, zero\n";
                         }
-                    }'
+                    }',
             ],
             'IntOverflowMul' => [
                 'code' => '<?php
                     $a = (1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024);',
                 'assertions' => [
-                    '$a' => 'float'
+                    '$a' => 'float',
                 ],
             ],
             'IntOverflowPow' => [
                 'code' => '<?php
                     $a = 2 ** 80;',
                 'assertions' => [
-                    '$a' => 'float'
+                    '$a' => 'float',
                 ],
             ],
             'IntOverflowPlus' => [
@@ -742,14 +742,14 @@ class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = 2 ** 63;',
                 'assertions' => [
-                    '$a' => 'float'
+                    '$a' => 'float',
                 ],
             ],
             'IntOverflowSub' => [
                 'code' => '<?php
                     $a = (1 << 63) - (1 << 20);',
                 'assertions' => [
-                    '$a' => 'float'
+                    '$a' => 'float',
                 ],
             ],
             'literalConcatCreatesLiteral' => [
@@ -992,9 +992,6 @@ class BinaryOperationTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

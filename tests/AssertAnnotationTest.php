@@ -46,7 +46,7 @@ class AssertAnnotationTest extends TestCase
                 }
 
                 function requiresString(string $str): void {}
-            '
+            ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -84,15 +84,12 @@ class AssertAnnotationTest extends TestCase
                 }
 
                 function requiresString(string $_str): void {}
-            '
+            ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -174,7 +171,7 @@ class AssertAnnotationTest extends TestCase
                     {
                         abort_if(is_null($foo));
                         return $foo;
-                    }'
+                    }',
             ],
             'sortOfReplacementForAssert' => [
                 'code' => '<?php
@@ -540,7 +537,7 @@ class AssertAnnotationTest extends TestCase
                     function takesType(Type $t) : void {
                         $t->isFoo();
                         $t->bar();
-                    }'
+                    }',
             ],
             'assertThisTypeIfTrue' => [
                 'code' => '<?php
@@ -561,7 +558,7 @@ class AssertAnnotationTest extends TestCase
                         if ($t->isFoo()) {
                             $t->bar();
                         }
-                    }'
+                    }',
             ],
             'assertThisTypeCombined' => [
                 'code' => '<?php
@@ -598,7 +595,7 @@ class AssertAnnotationTest extends TestCase
                         $t->assertBar();
                         $t->foo();
                         $t->bar();
-                    }'
+                    }',
             ],
             'assertThisTypeCombinedInsideMethod' => [
                 'code' => '<?php
@@ -636,7 +633,7 @@ class AssertAnnotationTest extends TestCase
                     interface BarType {
                         public function bar(): void;
                     }
-'
+',
             ],
             'assertThisTypeSimpleCombined' => [
                 'code' => '<?php
@@ -675,7 +672,7 @@ class AssertAnnotationTest extends TestCase
                         $t->assertBar();
                         $t->foo();
                         $t->bar();
-                    }'
+                    }',
             ],
             'assertThisTypeIfTrueCombined' => [
                 'code' => '<?php
@@ -708,7 +705,7 @@ class AssertAnnotationTest extends TestCase
                             $t->foo();
                             $t->bar();
                         }
-                    }'
+                    }',
             ],
             'assertThisTypeSimpleAndIfTrueCombined' => [
                 'code' => '<?php
@@ -738,7 +735,7 @@ class AssertAnnotationTest extends TestCase
                             $t->foo();
                         }
                         $t->bar();
-                    }'
+                    }',
             ],
             'assertThisTypeSwitchTrue' => [
                 'code' => '<?php
@@ -760,7 +757,7 @@ class AssertAnnotationTest extends TestCase
                             case $t->isFoo():
                                 $t->bar();
                         }
-                    }'
+                    }',
             ],
             'assertNotArray' => [
                 'code' => '<?php
@@ -790,7 +787,7 @@ class AssertAnnotationTest extends TestCase
                     function takesIntOrIterable($v) : int {
                         myAssertNotIterable($v);
                         return $v;
-                    }'
+                    }',
             ],
             'assertIfTrueOnProperty' => [
                 'code' => '<?php
@@ -813,7 +810,7 @@ class AssertAnnotationTest extends TestCase
                         public function assertProperty() : bool {
                             return $this->a !== null;
                         }
-                    }'
+                    }',
             ],
             'assertIfFalseOnProperty' => [
                 'code' => '<?php
@@ -836,7 +833,7 @@ class AssertAnnotationTest extends TestCase
                         public function assertProperty() : bool {
                             return $this->a !== null;
                         }
-                    }'
+                    }',
             ],
             'assertIfTrueOnPropertyNegated' => [
                 'code' => '<?php
@@ -859,7 +856,7 @@ class AssertAnnotationTest extends TestCase
                         public function assertProperty() : bool {
                             return $this->a !== null;
                         }
-                    }'
+                    }',
             ],
             'assertIfFalseOnPropertyNegated' => [
                 'code' => '<?php
@@ -882,7 +879,7 @@ class AssertAnnotationTest extends TestCase
                         public function assertProperty() : bool {
                             return $this->a !== null;
                         }
-                    }'
+                    }',
             ],
             'assertPropertyVisibleOutside' => [
                 'code' => '<?php
@@ -925,7 +922,7 @@ class AssertAnnotationTest extends TestCase
                                 echo $b;
                             }
                         }
-                    }'
+                    }',
             ],
             'noExceptionOnShortArrayAssertion' => [
                 'code' => '<?php
@@ -957,7 +954,7 @@ class AssertAnnotationTest extends TestCase
                     function foo(iterable $arr) : array {
                         isArray($arr);
                         return $arr;
-                    }'
+                    }',
             ],
             'listAssertion' => [
                 'code' => '<?php
@@ -974,7 +971,7 @@ class AssertAnnotationTest extends TestCase
                     function foo(array $arr) : array {
                         isList($arr);
                         return $arr;
-                    }'
+                    }',
             ],
             'scanAssertionTypes' => [
                 'code' => '<?php
@@ -990,12 +987,12 @@ class AssertAnnotationTest extends TestCase
 
                     $q = null;
                     if (rand(0, 1) && f($q)) {}
-                    if (!f($q)) {}'
+                    if (!f($q)) {}',
             ],
             'assertDifferentTypeOfArray' => [
                 'code' => '<?php
                     /**
-                     * @psalm-assert array{0: string, 1: string} $value
+                     * @psalm-assert list{string, string} $value
                      * @param mixed $value
                      */
                     function isStringTuple($value): void {
@@ -1016,7 +1013,7 @@ class AssertAnnotationTest extends TestCase
                     isStringTuple($parts);
 
                     echo $parts[0];
-                    echo $parts[1];'
+                    echo $parts[1];',
             ],
             'assertStringOrIntOnString' => [
                 'code' => '<?php
@@ -1054,7 +1051,7 @@ class AssertAnnotationTest extends TestCase
                         }
 
                         throw new \Exception();
-                    }'
+                    }',
             ],
             'assertOnNestedProperty' => [
                 'code' => '<?php
@@ -1084,7 +1081,7 @@ class AssertAnnotationTest extends TestCase
                         if ($a->hasArray()) {
                             echo count($a->b->arr);
                         }
-                    }'
+                    }',
             ],
             'assertOnNestedMethod' => [
                 'code' => '<?php
@@ -1118,7 +1115,7 @@ class AssertAnnotationTest extends TestCase
                         if ($a->hasArray()) {
                             echo count($a->b->getArray());
                         }
-                    }'
+                    }',
             ],
             'assertOnThisMethod' => [
                 'code' => '<?php
@@ -1146,14 +1143,14 @@ class AssertAnnotationTest extends TestCase
                         }
 
                         echo count($a->getArray());
-                    }'
+                    }',
             ],
             'preventErrorWhenAssertingOnArrayUnion' => [
                 'code' => '<?php
                     /**
                      * @psalm-assert array<string,string|object> $data
                      */
-                    function validate(array $data): void {}'
+                    function validate(array $data): void {}',
             ],
             'nonEmptyList' => [
                 'code' => '<?php
@@ -1181,7 +1178,7 @@ class AssertAnnotationTest extends TestCase
                         isNonEmptyList($values);
                         foreach ($values as $str) {}
                         echo $str;
-                    }'
+                    }',
             ],
             'nonEmptyListOfStrings' => [
                 'code' => '<?php
@@ -1199,7 +1196,7 @@ class AssertAnnotationTest extends TestCase
                         isNonEmptyListOfStrings($values);
                         foreach ($values as $str) {}
                         echo $str;
-                    }'
+                    }',
             ],
             'assertResource' => [
                 'code' => '<?php
@@ -1222,7 +1219,7 @@ class AssertAnnotationTest extends TestCase
                         assertResource($value);
 
                         return $value;
-                    }'
+                    }',
             ],
             'parseLongAssertion' => [
                 'code' => '<?php
@@ -1242,7 +1239,7 @@ class AssertAnnotationTest extends TestCase
                      *
                      * @param mixed $data
                      */
-                    function assertStructure($data): void {}'
+                    function assertStructure($data): void {}',
             ],
             'intersectArraysAfterAssertion' => [
                 'code' => '<?php
@@ -1261,7 +1258,7 @@ class AssertAnnotationTest extends TestCase
                         hasBar($data);
 
                         echo sprintf("%s %d", $data["foo"], $data["bar"]);
-                    }'
+                    }',
             ],
             'assertListIsIterableOfStrings' => [
                 'code' => '<?php
@@ -1320,7 +1317,7 @@ class AssertAnnotationTest extends TestCase
                         }
 
                         return substr($a, 0, 1) . substr($b, 0, 1);
-                    }'
+                    }',
             ],
             'convertConstStringType' => [
                 'code' => '<?php
@@ -1345,7 +1342,7 @@ class AssertAnnotationTest extends TestCase
                         if (A::isValid($a)) {
                             A::bar($a);
                         }
-                    }'
+                    }',
             ],
             'multipleAssertIfTrueOnSameVariable' => [
                 'code' => '<?php
@@ -1368,7 +1365,7 @@ class AssertAnnotationTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'assertStaticSelf' => [
                 'code' => '<?php
@@ -1386,7 +1383,7 @@ class AssertAnnotationTest extends TestCase
                             return self::$q;
                         }
                     }
-                ?>'
+                ?>',
             ],
             'assertIfTrueStaticSelf' => [
                 'code' => '<?php
@@ -1410,7 +1407,7 @@ class AssertAnnotationTest extends TestCase
                             return -1;
                         }
                     }
-                ?>'
+                ?>',
             ],
             'assertIfFalseStaticSelf' => [
                 'code' => '<?php
@@ -1434,7 +1431,7 @@ class AssertAnnotationTest extends TestCase
                             return self::$q;
                         }
                     }
-                ?>'
+                ?>',
             ],
             'assertStaticByInheritedMethod' => [
                 'code' => '<?php
@@ -1454,7 +1451,7 @@ class AssertAnnotationTest extends TestCase
                             return self::$q;
                         }
                     }
-                ?>'
+                ?>',
             ],
             'assertInheritedStatic' => [
                 'code' => '<?php
@@ -1473,7 +1470,7 @@ class AssertAnnotationTest extends TestCase
                             return self::$q;
                         }
                     }
-                ?>'
+                ?>',
             ],
             'assertStaticOnUnrelatedClass' => [
                 'code' => '<?php
@@ -1492,7 +1489,7 @@ class AssertAnnotationTest extends TestCase
                             return A::$q;
                         }
                     }
-                ?>'
+                ?>',
             ],
             'implicitComplexAssertionNoCrash' => [
                 'code' => '<?php
@@ -1510,7 +1507,7 @@ class AssertAnnotationTest extends TestCase
                                 throw new \LogicException();
                             }
                         }
-                    }'
+                    }',
             ],
             'assertArrayIteratorIsIterableOfStrings' => [
                 'code' => '<?php
@@ -1532,7 +1529,7 @@ class AssertAnnotationTest extends TestCase
                     function preserveContainerAllArrayIterator($value) {
                         assertAllString($value);
                         return $value;
-                    }'
+                    }',
             ],
             'implicitReflectionParameterAssertion' => [
                 'code' => '<?php
@@ -1599,7 +1596,7 @@ class AssertAnnotationTest extends TestCase
                      * @param class-string<ExpectedType> $class
                      * @psalm-assert iterable<ExpectedType> $value
                      */
-                    function allIsInstanceOf($value, $class): void {}'
+                    function allIsInstanceOf($value, $class): void {}',
             ],
             'implicitReflectionPropertyAssertion' => [
                 'code' => '<?php
@@ -1612,7 +1609,7 @@ class AssertAnnotationTest extends TestCase
                     }',
                     'assertions' => [],
                     'ignored_issues' => [],
-                    'php_version' => '7.4'
+                    'php_version' => '7.4',
             ],
             'onPropertyOfImmutableArgument' => [
                 'code' => '<?php
@@ -2111,14 +2108,11 @@ class AssertAnnotationTest extends TestCase
                     function consumeAOrB(string $aOrB): void {}
                     assertOneOf($abc, ["a", "b"]);
                     consumeAOrB($abc);
-                '
+                ',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

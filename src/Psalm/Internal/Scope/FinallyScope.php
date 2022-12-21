@@ -12,7 +12,7 @@ class FinallyScope
     /**
      * @var array<string, Union>
      */
-    public $vars_in_scope = [];
+    public array $vars_in_scope = [];
 
     /**
      * @param array<string, Union> $vars_in_scope

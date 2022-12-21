@@ -165,8 +165,6 @@ if (true === $first) {
 
 `TArray` - denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
 
-`TList` - Represents an array that has some particularities: its keys are integers, they start at 0, they are consecutive and go upwards (no negative int)
-
 `TNonEmptyArray` - as above, but denotes an array known to be non-empty.
 
 `TKeyedArray` represents an 'object-like array' - an array with known keys.
@@ -176,6 +174,8 @@ $x = ["a" => 1, "b" => 2]; // is TKeyedArray, array{a: int, b: int}
 $y = rand(0, 1) ? ["a" => null] : ["a" => 1, "b" => "b"]; // is TKeyedArray with optional keys/values, array{a: ?int, b?: string}
 ```
 
+This type is also used to represent lists (instead of the now-deprecated `TList` type).  
+
 Note that not all associative arrays are considered object-like. If the keys are not known, the array is treated as a mapping between two types.
 
 ``` php
@@ -184,8 +184,6 @@ foreach (range(1,1) as $_) $a[(string)rand(0,1)] = rand(0,1); // array<string,in
 ```
 
 `TCallableArray` - denotes an array that is _also_ `callable`.
-
-`TCallableList` - denotes a list that is _also_ `callable`.
 
 `TCallableKeyedArray` - denotes an object-like array that is _also_ `callable`.
 

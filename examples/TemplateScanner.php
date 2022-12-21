@@ -1,32 +1,33 @@
 <?php
+
 namespace Psalm\Examples\Template;
 
 use InvalidArgumentException;
 use PhpParser;
 use Psalm;
-use Psalm\Checker\CommentChecker;
 use Psalm\Codebase;
 use Psalm\DocComment;
 use Psalm\Progress\Progress;
 use Psalm\Storage\FileStorage;
 
+use function explode;
+use function preg_match;
+use function trim;
+
 class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 {
     const VIEW_CLASS = 'Your\\View\\Class';
 
-    /**
-     * @param bool $storage_from_cache
-     */
     public function scan(
         Codebase $codebase,
         FileStorage $file_storage,
-        $storage_from_cache = false,
+        bool $storage_from_cache = false,
         ?Progress $progress = null
     ): void {
         $stmts = $codebase->statements_provider->getStatementsForFile(
             $file_storage->file_path,
             7_04_00,
-            $progress
+            $progress,
         );
 
         if ($stmts === []) {
@@ -53,7 +54,7 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 
                 $codebase->scanner->queueClassLikeForScanning(
                     $fq_class_name,
-                    true
+                    true,
                 );
             }
         }

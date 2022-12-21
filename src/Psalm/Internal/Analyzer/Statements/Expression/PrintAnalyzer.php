@@ -42,14 +42,14 @@ class PrintAnalyzer
                 'print',
                 0,
                 null,
-                $call_location
+                $call_location,
             );
 
             $print_param_sink->taints = [
                 TaintKind::INPUT_HTML,
                 TaintKind::INPUT_HAS_QUOTES,
                 TaintKind::USER_SECRET,
-                TaintKind::SYSTEM_SECRET
+                TaintKind::SYSTEM_SECRET,
             ];
 
             $statements_analyzer->data_flow_graph->addSink($print_param_sink);
@@ -72,7 +72,7 @@ class PrintAnalyzer
                 null,
                 true,
                 true,
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
             ) === false) {
                 return false;
             }
@@ -82,9 +82,9 @@ class PrintAnalyzer
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of print',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -93,9 +93,9 @@ class PrintAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
                         'Cannot call print from a mutation-free context',
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 && $statements_analyzer->getSource()->track_mutations

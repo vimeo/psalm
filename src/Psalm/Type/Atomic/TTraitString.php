@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `trait-string` type, used to describe a string representing a valid PHP trait.
+ *
  * @psalm-immutable
  */
 final class TTraitString extends TString
@@ -27,7 +28,6 @@ final class TTraitString extends TString
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

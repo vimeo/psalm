@@ -35,8 +35,7 @@ class PsalmEndToEndTest extends TestCase
 {
     use PsalmRunnerTrait;
 
-    /** @var string */
-    private static $tmpDir;
+    private static string $tmpDir;
 
     public static function setUpBeforeClass(): void
     {
@@ -68,7 +67,7 @@ class PsalmEndToEndTest extends TestCase
         @unlink(self::$tmpDir . '/psalm.xml');
         copy(
             __DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php',
-            self::$tmpDir . '/src/FileWithErrors.php'
+            self::$tmpDir . '/src/FileWithErrors.php',
         );
         parent::setUp();
     }
@@ -90,7 +89,7 @@ class PsalmEndToEndTest extends TestCase
     {
         $this->assertStringStartsWith(
             'Calculating best config level based on project files',
-            $this->runPsalmInit()['STDOUT']
+            $this->runPsalmInit()['STDOUT'],
         );
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
     }
@@ -101,7 +100,7 @@ class PsalmEndToEndTest extends TestCase
 
         $this->assertStringContainsString(
             'No errors found!',
-            $this->runPsalm(['--alter', '--issues=all'], self::$tmpDir, false, true)['STDOUT']
+            $this->runPsalm(['--alter', '--issues=all'], self::$tmpDir, false, true)['STDOUT'],
         );
 
         $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
@@ -120,7 +119,7 @@ class PsalmEndToEndTest extends TestCase
         $result = $this->runPsalm([], self::$tmpDir, true);
         $this->assertStringContainsString(
             'Target PHP version: 7.1 (inferred from composer.json)',
-            $result['STDERR']
+            $result['STDERR'],
         );
         $this->assertStringContainsString('UnusedParam', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
@@ -135,7 +134,7 @@ class PsalmEndToEndTest extends TestCase
         $result = $this->runPsalm(['--php-version=8.0'], self::$tmpDir, true);
         $this->assertStringContainsString(
             'Target PHP version: 8.0 (set by CLI argument)',
-            $result['STDERR']
+            $result['STDERR'],
         );
     }
 
@@ -145,7 +144,7 @@ class PsalmEndToEndTest extends TestCase
         $result = $this->runPsalm([], self::$tmpDir, true);
         $this->assertStringContainsString(
             'Target PHP version: 7.4 (set by config file)',
-            $result['STDERR']
+            $result['STDERR'],
         );
     }
 
@@ -206,13 +205,13 @@ class PsalmEndToEndTest extends TestCase
                 '--dump-taint-graph='.self::$tmpDir.'/taints.dot',
             ],
             self::$tmpDir,
-            true
+            true,
         );
 
         $this->assertSame(2, $result['CODE']);
         $this->assertFileEquals(
             __DIR__ . '/../fixtures/expected_taint_graph.dot',
-            self::$tmpDir.'/taints.dot'
+            self::$tmpDir.'/taints.dot',
         );
     }
 
@@ -252,7 +251,7 @@ class PsalmEndToEndTest extends TestCase
             'errorLevel="1" '
             . 'cacheDirectory="' . self::$tmpDir . '/cache" '
             . ($php_version ? ('phpVersion="' . $php_version . '"') : ''),
-            $psalm_config_contents
+            $psalm_config_contents,
         );
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalm_config_contents);
 

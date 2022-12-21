@@ -76,17 +76,17 @@ class BitwiseNotAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidOperand(
                             $message,
-                            new CodeLocation($statements_analyzer, $stmt)
+                            new CodeLocation($statements_analyzer, $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidOperand(
                             $message,
-                            new CodeLocation($statements_analyzer, $stmt)
+                            new CodeLocation($statements_analyzer, $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 

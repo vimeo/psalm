@@ -13,9 +13,6 @@ class InArrayTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -172,7 +169,7 @@ class InArrayTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'in_arrayNullOrString' => [
                 'code' => '<?php
@@ -186,7 +183,7 @@ class InArrayTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'in_array-mixed-twice' => [
                 'code' => '<?php
@@ -198,7 +195,7 @@ class InArrayTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'in_array-string-twice' => [
                 'code' => '<?php
@@ -214,7 +211,7 @@ class InArrayTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'in_array-keyed-array-string-twice' => [
                 'code' => '<?php
@@ -226,14 +223,11 @@ class InArrayTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

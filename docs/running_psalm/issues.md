@@ -69,6 +69,7 @@
  - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
  - [InvalidEnumBackingType](issues/InvalidEnumBackingType.md)
  - [InvalidEnumCaseValue](issues/InvalidEnumCaseValue.md)
+ - [InvalidEnumMethod](issues/InvalidEnumMethod.md)
  - [InvalidExtendClass](issues/InvalidExtendClass.md)
  - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
  - [InvalidFunctionCall](issues/InvalidFunctionCall.md)

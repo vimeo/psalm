@@ -22,14 +22,13 @@ use function substr_replace;
 class FileManipulationBuffer
 {
     /** @var array<string, FileManipulation[]> */
-    private static $file_manipulations = [];
+    private static array $file_manipulations = [];
 
     /** @var CodeMigration[] */
-    private static $code_migrations = [];
+    private static array $code_migrations = [];
 
     /**
      * @param FileManipulation[] $file_manipulations
-     *
      */
     public static function add(string $file_path, array $file_manipulations): void
     {
@@ -106,9 +105,9 @@ class FileManipulationBuffer
                 new FileManipulation(
                     $bounds[0],
                     $bounds[1],
-                    $replacement_text
+                    $replacement_text,
                 ),
-            ]
+            ],
         );
     }
 
@@ -162,9 +161,9 @@ class FileManipulationBuffer
                     $comment_end,
                     $comment_text,
                     false,
-                    $comment_text === ''
+                    $comment_text === '',
                 ),
-            ]
+            ],
         );
     }
 
@@ -187,7 +186,7 @@ class FileManipulationBuffer
             [$start_offset, $middle_offset] = self::getCodeOffsets(
                 $code_migration->source_file_path,
                 $code_migration->source_start,
-                $code_migration->source_end
+                $code_migration->source_end,
             );
 
             if (!isset($code_migration_manipulations[$code_migration->source_file_path])) {
@@ -201,7 +200,7 @@ class FileManipulationBuffer
             $delete_file_manipulation = new FileManipulation(
                 $code_migration->source_start + $start_offset,
                 $code_migration->source_end + $middle_offset,
-                ''
+                '',
             );
 
             $code_migration_manipulations[$code_migration->source_file_path][] = $delete_file_manipulation;
@@ -209,7 +208,7 @@ class FileManipulationBuffer
             [$destination_start_offset] = self::getCodeOffsets(
                 $code_migration->destination_file_path,
                 $code_migration->destination_start,
-                $code_migration->destination_start
+                $code_migration->destination_start,
             );
 
             $manipulation = new FileManipulation(
@@ -218,8 +217,8 @@ class FileManipulationBuffer
                 "\n" . substr(
                     $file_provider->getContents($code_migration->source_file_path),
                     $delete_file_manipulation->start,
-                    $delete_file_manipulation->end - $delete_file_manipulation->start
-                ) . "\n"
+                    $delete_file_manipulation->end - $delete_file_manipulation->start,
+                ) . "\n",
             );
 
             $code_migration_manipulations[$code_migration->destination_file_path][$manipulation->getKey()]

@@ -51,7 +51,7 @@ class ExpressionScanner
                 $codebase,
                 $file_storage,
                 $node,
-                $file_scanner->will_analyze
+                $file_scanner->will_analyze,
             );
         } elseif ($node instanceof PhpParser\Node\Expr\Yield_ || $node instanceof PhpParser\Node\Expr\YieldFrom) {
             if ($functionlike_storage) {
@@ -75,7 +75,7 @@ class ExpressionScanner
                     false,
                     !($node instanceof PhpParser\Node\Expr\ClassConstFetch)
                         || !($node->name instanceof PhpParser\Node\Identifier)
-                        || strtolower($node->name->name) !== 'class'
+                        || strtolower($node->name->name) !== 'class',
                 );
                 $file_storage->referenced_classlikes[strtolower($fq_classlike_name)] = $fq_classlike_name;
             }
@@ -91,7 +91,7 @@ class ExpressionScanner
                     $function_id,
                     $node,
                     $functionlike_storage,
-                    $skip_if_descendants
+                    $skip_if_descendants,
                 );
             }
         }
@@ -118,7 +118,7 @@ class ExpressionScanner
                         /** @psalm-suppress UnusedMethodCall */
                         $function_param->type->queueClassLikesForScanning(
                             $codebase,
-                            $file_storage
+                            $file_storage,
                         );
                     }
                 }
@@ -143,7 +143,7 @@ class ExpressionScanner
                     $first_arg_value,
                     $type_provider,
                     $codebase,
-                    $aliases
+                    $aliases,
                 );
 
                 if ($const_name !== null) {
@@ -151,7 +151,7 @@ class ExpressionScanner
                         $codebase,
                         $type_provider,
                         $second_arg_value,
-                        $aliases
+                        $aliases,
                     ) ?? Type::getMixed();
 
                     $config = Config::getInstance();
@@ -185,7 +185,7 @@ class ExpressionScanner
             ) {
                 $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
                     $file_scanner,
-                    $node_arg_value
+                    $node_arg_value,
                 );
             }
 
@@ -198,7 +198,7 @@ class ExpressionScanner
 
                 if (!in_array(strtolower($callable_fqcln), ['self', 'parent', 'static'], true)) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $callable_fqcln
+                        $callable_fqcln,
                     );
                 }
             }
@@ -218,7 +218,7 @@ class ExpressionScanner
 
             if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
                 $codebase->scanner->queueClassLikeForScanning(
-                    $second_arg->value
+                    $second_arg->value,
                 );
             }
         }
@@ -264,7 +264,7 @@ class ExpressionScanner
 
                 $codebase->classlikes->addClassAlias(
                     $first_arg_value,
-                    $second_arg_value
+                    $second_arg_value,
                 );
 
                 $file_storage->classlike_aliases[$second_arg_value] = $first_arg_value;
@@ -282,7 +282,7 @@ class ExpressionScanner
 
         if (!$config->allow_includes) {
             throw new FileIncludeException(
-                'File includes are not allowed per your Psalm config - check the allowFileIncludes flag.'
+                'File includes are not allowed per your Psalm config - check the allowFileIncludes flag.',
             );
         }
 
@@ -308,7 +308,7 @@ class ExpressionScanner
                 null,
                 null,
                 $file_storage->file_path,
-                $config
+                $config,
             );
         }
 

@@ -49,19 +49,19 @@ use const JSON_THROW_ON_ERROR;
 class TaintFlowGraph extends DataFlowGraph
 {
     /** @var array<string, TaintSource> */
-    private $sources = [];
+    private array $sources = [];
 
     /** @var array<string, DataFlowNode> */
-    private $nodes = [];
+    private array $nodes = [];
 
     /** @var array<string, TaintSink> */
-    private $sinks = [];
+    private array $sinks = [];
 
     /** @var array<string, array<string, true>> */
-    private $specialized_calls = [];
+    private array $specialized_calls = [];
 
     /** @var array<string, array<string, true>> */
-    private $specializations = [];
+    private array $specializations = [];
 
     public function addNode(DataFlowNode $node): void
     {
@@ -181,7 +181,7 @@ class TaintFlowGraph extends DataFlowGraph
         $node = [
             'location' => $source->code_location,
             'label' => $source->label,
-            'entry_path_type' => end($source->path_types) ?: ''
+            'entry_path_type' => end($source->path_types) ?: '',
         ];
 
         if ($previous_source) {
@@ -226,8 +226,8 @@ class TaintFlowGraph extends DataFlowGraph
                             $generated_source,
                             $source_taints,
                             $sinks,
-                            $visited_source_ids
-                        )
+                            $visited_source_ids,
+                        ),
                     );
                 }
             }
@@ -267,8 +267,8 @@ class TaintFlowGraph extends DataFlowGraph
             $new_taints = array_unique(
                 array_diff(
                     array_merge($source_taints, $added_taints),
-                    $removed_taints
-                )
+                    $removed_taints,
+                ),
             );
 
             sort($new_taints);
@@ -319,7 +319,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted text',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -328,7 +328,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted code passed to unserialize or similar',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -337,7 +337,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted code passed to include or similar',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -346,7 +346,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted code passed to eval or similar',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -355,7 +355,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted SQL',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -364,7 +364,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted HTML',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -373,7 +373,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted text with possible quotes',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -382,7 +382,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted shell code',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -391,7 +391,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted user secret leaking',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -400,7 +400,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted system secret leaking',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -409,7 +409,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted network request',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -418,7 +418,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted LDAP request',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -427,7 +427,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted cookie',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -436,7 +436,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted file handling',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -445,7 +445,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted header',
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                                 break;
 
@@ -454,7 +454,7 @@ class TaintFlowGraph extends DataFlowGraph
                                     'Detected tainted ' . $matching_taint,
                                     $issue_location,
                                     $issue_trace,
-                                    $path
+                                    $path,
                                 );
                         }
 
@@ -521,7 +521,7 @@ class TaintFlowGraph extends DataFlowGraph
 
         return array_filter(
             $generated_sources,
-            [$this, 'doesForwardEdgeExist']
+            [$this, 'doesForwardEdgeExist'],
         );
     }
 

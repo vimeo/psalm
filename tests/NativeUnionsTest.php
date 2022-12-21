@@ -29,7 +29,7 @@ class NativeUnionsTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'nativeTypeUnionAsArgument' => [
                 'code' => '<?php
@@ -50,7 +50,7 @@ class NativeUnionsTest extends TestCase
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'unionAndNullableEquivalent' => [
                 'code' => '<?php
@@ -60,14 +60,11 @@ class NativeUnionsTest extends TestCase
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -80,7 +77,7 @@ class NativeUnionsTest extends TestCase
                 ',
                 'error_message' => 'InvalidScalarArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'mismatchDocblockNativeUnionArgument' => [
                 'code' => '<?php
@@ -93,7 +90,7 @@ class NativeUnionsTest extends TestCase
                 ',
                 'error_message' => 'MismatchingDocblockParamType',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'unionsNotAllowedInPHP74' => [
                 'code' => '<?php
@@ -106,7 +103,7 @@ class NativeUnionsTest extends TestCase
                     }',
                 'error_message' => 'ParseError',
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
         ];
     }

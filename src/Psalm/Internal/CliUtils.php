@@ -132,7 +132,6 @@ final class CliUtils
         foreach ($autoload_files as $file) {
             /**
              * @psalm-suppress UnresolvableInclude
-             *
              * @var mixed
              */
             $autoloader = require_once $file;
@@ -150,13 +149,13 @@ final class CliUtils
             } else {
                 fwrite(
                     STDERR,
-                    'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n"
+                    'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n",
                 );
             }
 
             fwrite(
                 STDERR,
-                'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n"
+                'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n",
             );
             exit(1);
         }
@@ -182,7 +181,7 @@ final class CliUtils
         } catch (JsonException $e) {
             fwrite(
                 STDERR,
-                'Invalid composer.json at ' . $composer_json_path . "\n" . $e->getMessage() . "\n"
+                'Invalid composer.json at ' . $composer_json_path . "\n" . $e->getMessage() . "\n",
             );
             exit(1);
         }
@@ -190,7 +189,7 @@ final class CliUtils
         if (!$composer_json) {
             fwrite(
                 STDERR,
-                'Invalid composer.json at ' . $composer_json_path . "\n"
+                'Invalid composer.json at ' . $composer_json_path . "\n",
             );
             exit(1);
         }
@@ -255,7 +254,6 @@ final class CliUtils
 
     /**
      * @param  string|array|null|false $f_paths
-     *
      * @return list<string>|null
      */
     public static function getPathsToCheck($f_paths): ?array
@@ -359,7 +357,7 @@ final class CliUtils
                             fwrite(
                                 STDERR,
                                 'Could not locate a config XML file in path ' . $current_dir
-                                    . '. Have you run \'psalm --init\' ?' . PHP_EOL
+                                    . '. Have you run \'psalm --init\' ?' . PHP_EOL,
                             );
                             exit(1);
                         }
@@ -370,14 +368,14 @@ final class CliUtils
                     $config = Creator::createBareConfig(
                         $current_dir,
                         null,
-                        self::getVendorDir($current_dir)
+                        self::getVendorDir($current_dir),
                     );
                 }
             }
         } catch (ConfigException $e) {
             fwrite(
                 STDERR,
-                $e->getMessage() . PHP_EOL
+                $e->getMessage() . PHP_EOL,
             );
             exit(1);
         }
@@ -411,7 +409,7 @@ final class CliUtils
             $amended_config_file_contents = preg_replace(
                 '/errorBaseline=".*?"/',
                 "errorBaseline=\"{$baseline_path}\"",
-                $config_file_contents
+                $config_file_contents,
             );
         } else {
             $end_psalm_open_tag = strpos($config_file_contents, '>', (int)strpos($config_file_contents, '<psalm'));
@@ -426,14 +424,14 @@ final class CliUtils
                     $config_file_contents,
                     "    errorBaseline=\"{$baseline_path}\"\n>",
                     $end_psalm_open_tag,
-                    1
+                    1,
                 );
             } else {
                 $amended_config_file_contents = substr_replace(
                     $config_file_contents,
                     " errorBaseline=\"{$baseline_path}\">",
                     $end_psalm_open_tag,
-                    1
+                    1,
                 );
             }
         }
@@ -564,7 +562,7 @@ final class CliUtils
                 STDERR,
                 'Psalm has detected issues in your platform:' . PHP_EOL . PHP_EOL
                 . implode(PHP_EOL, $issues)
-                . PHP_EOL . PHP_EOL
+                . PHP_EOL . PHP_EOL,
             );
             exit(1);
         }

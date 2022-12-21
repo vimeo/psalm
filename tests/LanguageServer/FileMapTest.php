@@ -30,12 +30,12 @@ class FileMapTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
         $this->project_analyzer->getCodebase()->store_node_types = true;
@@ -54,7 +54,7 @@ class FileMapTest extends TestCase
                     function __construct( string $var ) {
                     }
                 }
-                $a = new A( "foo" );'
+                $a = new A( "foo" );',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -84,7 +84,7 @@ class FileMapTest extends TestCase
                     function __construct( string $var ) {
                     }
                 }
-                $a = new A( "foo" );'
+                $a = new A( "foo" );',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -103,7 +103,7 @@ class FileMapTest extends TestCase
                     '146-147:A',
                 ],
             ],
-            $type_map
+            $type_map,
         );
     }
 
@@ -128,7 +128,7 @@ class FileMapTest extends TestCase
                     public function second(\DateTimeImmutable $d) : void {
                         echo $d->format("Y");
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -152,7 +152,7 @@ class FileMapTest extends TestCase
                     public function second(\DateTimeImmutable $d) : void {
                         echo $d->format("Y");
                     }
-                }'
+                }',
         );
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
@@ -183,7 +183,7 @@ class FileMapTest extends TestCase
                         new \DateTimeImmutable("2010-01-01");
                         echo $d->format("Y");
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -202,7 +202,7 @@ class FileMapTest extends TestCase
                         new \DateTimeImmutable("2010-01-01");
                         echo $d->format("Y");
                     }
-                }'
+                }',
         );
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
@@ -230,7 +230,7 @@ class FileMapTest extends TestCase
                     public function second(\DateTimeImmutable $d) : void {
                        echo $d->format("Y");
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -248,7 +248,7 @@ class FileMapTest extends TestCase
                     public function second(\DateTimeImmutable $d) : void {
                         echo $d->format("Y");
                     }
-                }'
+                }',
         );
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
@@ -276,7 +276,7 @@ class FileMapTest extends TestCase
                     public function second(\DateTimeImmutable $d) : void {
                         echo $d->format("Y");
                     }
-                }'
+                }',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -303,7 +303,7 @@ class FileMapTest extends TestCase
                     public function second(\DateTimeImmutable $d) : void {
                         echo $d->format("Y");
                     }
-                }'
+                }',
         );
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);

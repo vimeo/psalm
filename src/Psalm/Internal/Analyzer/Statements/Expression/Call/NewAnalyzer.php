@@ -94,13 +94,13 @@ class NewAnalyzer extends CallAnalyzer
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
                         $context->calling_method_id,
                         'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
-                        false
+                        false,
                     );
                 }
 
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
-                    $aliases
+                    $aliases,
                 );
 
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
@@ -143,7 +143,7 @@ class NewAnalyzer extends CallAnalyzer
                             . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
                                 ? '\\'
                                 : $statements_analyzer->getNamespace() . '-')
-                            . implode('\\', $stmt->class->parts)
+                            . implode('\\', $stmt->class->parts),
                 );
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
@@ -158,7 +158,7 @@ class NewAnalyzer extends CallAnalyzer
                 $stmt->class,
                 $config,
                 $fq_class_name,
-                $can_extend
+                $can_extend,
             );
         }
 
@@ -172,7 +172,7 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id
+                    $context->calling_method_id,
                 );
             }
 
@@ -184,7 +184,7 @@ class NewAnalyzer extends CallAnalyzer
                         null,
                         null,
                         true,
-                        $context
+                        $context,
                     );
 
                     return true;
@@ -196,7 +196,7 @@ class NewAnalyzer extends CallAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context->self,
                     $context->calling_method_id,
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 ) === false) {
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
@@ -204,22 +204,20 @@ class NewAnalyzer extends CallAnalyzer
                         null,
                         null,
                         true,
-                        $context
+                        $context,
                     );
 
                     return true;
                 }
 
                 if ($codebase->interfaceExists($fq_class_name)) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new InterfaceInstantiation(
                             'Interface ' . $fq_class_name . ' cannot be instantiated',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->class)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                    }
-
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
                     return true;
                 }
             }
@@ -235,7 +233,7 @@ class NewAnalyzer extends CallAnalyzer
 
             $statements_analyzer->node_data->setType(
                 $stmt,
-                new Union([$result_atomic_type])
+                new Union([$result_atomic_type]),
             );
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
@@ -248,7 +246,7 @@ class NewAnalyzer extends CallAnalyzer
                     $context,
                     $fq_class_name,
                     $from_static,
-                    $can_extend
+                    $can_extend,
                 );
             } else {
                 ArgumentsAnalyzer::analyze(
@@ -257,17 +255,15 @@ class NewAnalyzer extends CallAnalyzer
                     null,
                     null,
                     true,
-                    $context
+                    $context,
                 );
 
                 if ($codebase->classlikes->enumExists($fq_class_name)) {
-                    if (IssueBuffer::accepts(new UndefinedClass(
+                    IssueBuffer::maybeAdd(new UndefinedClass(
                         'Enums cannot be instantiated',
                         new CodeLocation($statements_analyzer, $stmt),
-                        $fq_class_name
-                    ))) {
-                        // fall through
-                    }
+                        $fq_class_name,
+                    ));
                 }
             }
         }
@@ -296,9 +292,9 @@ class NewAnalyzer extends CallAnalyzer
                     new UnsafeInstantiation(
                         'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as'
                         . ' its constructor might change in child classes',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif ($storage->template_types
                 && !$storage->enforce_template_inheritance
@@ -316,9 +312,9 @@ class NewAnalyzer extends CallAnalyzer
                                 'Cannot safely instantiate generic class ' . $fq_class_name
                                     . ' with "new static" as'
                                     . ' its generic parameters may be constrained in child classes.',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     }
                 }
@@ -330,9 +326,9 @@ class NewAnalyzer extends CallAnalyzer
             if (IssueBuffer::accepts(
                 new AbstractInstantiation(
                     'Unable to instantiate a abstract class ' . $fq_class_name,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             )) {
                 return;
             }
@@ -343,9 +339,9 @@ class NewAnalyzer extends CallAnalyzer
                 new DeprecatedClass(
                     $fq_class_name . ' is marked deprecated',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name
+                    $fq_class_name,
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -360,9 +356,9 @@ class NewAnalyzer extends CallAnalyzer
                     $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
                         . ' but called from ' . $context->self,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name
+                    $fq_class_name,
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -373,7 +369,7 @@ class NewAnalyzer extends CallAnalyzer
             $context->calling_method_id,
             $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
             $statements_analyzer,
-            $statements_analyzer->getFilePath()
+            $statements_analyzer->getFilePath(),
         )) {
             if ($codebase->store_node_types
                 && !$context->collect_initializations
@@ -383,7 +379,7 @@ class NewAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $stmt,
                     $codebase,
-                    (string)$method_id
+                    (string)$method_id,
                 );
             }
 
@@ -395,7 +391,7 @@ class NewAnalyzer extends CallAnalyzer
                 $template_result,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer
+                $statements_analyzer,
             ) === false) {
                 return;
             }
@@ -405,7 +401,7 @@ class NewAnalyzer extends CallAnalyzer
                 $context,
                 $statements_analyzer->getSource(),
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             ) === false) {
                 return;
             }
@@ -423,9 +419,9 @@ class NewAnalyzer extends CallAnalyzer
                                 . ' is internal to ' . InternalClass::listToPhrase($method_storage->internal)
                                 . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                             new CodeLocation($statements_analyzer, $stmt),
-                            (string) $method_id
+                            (string) $method_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -434,9 +430,9 @@ class NewAnalyzer extends CallAnalyzer
                         IssueBuffer::maybeAdd(
                             new ImpureMethodCall(
                                 'Cannot call an impure constructor from a pure context',
-                                new CodeLocation($statements_analyzer, $stmt)
+                                new CodeLocation($statements_analyzer, $stmt),
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     } elseif ($statements_analyzer->getSource()
                         instanceof FunctionLikeAnalyzer
@@ -455,7 +451,7 @@ class NewAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         $template_result,
                         $context,
-                        $statements_analyzer
+                        $statements_analyzer,
                     );
                 }
 
@@ -465,8 +461,8 @@ class NewAnalyzer extends CallAnalyzer
                         array_map(
                             static fn(Possibilities $assertion): Possibilities
                                 => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            $method_storage->if_true_assertions
-                        )
+                            $method_storage->if_true_assertions,
+                        ),
                     );
                 }
 
@@ -476,8 +472,8 @@ class NewAnalyzer extends CallAnalyzer
                         array_map(
                             static fn(Possibilities $assertion): Possibilities
                                 => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            $method_storage->if_false_assertions
-                        )
+                            $method_storage->if_false_assertions,
+                        ),
                     );
                 }
             }
@@ -489,7 +485,7 @@ class NewAnalyzer extends CallAnalyzer
                     if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
                         $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             $template_result->lower_bounds[$template_name][$fq_class_name],
-                            $codebase
+                            $codebase,
                         );
                     } elseif ($storage->template_extended_params && $template_result->lower_bounds) {
                         $generic_param_type = self::getGenericParamForOffset(
@@ -501,12 +497,12 @@ class NewAnalyzer extends CallAnalyzer
                                     static fn(array $bounds): Union
                                         => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                                             $bounds,
-                                            $codebase
+                                            $codebase,
                                         ),
-                                    $type_map
+                                    $type_map,
                                 ),
-                                $template_result->lower_bounds
-                            )
+                                $template_result->lower_bounds,
+                            ),
                         );
                     } else {
                         if ($fq_class_name === 'SplObjectStorage') {
@@ -517,7 +513,7 @@ class NewAnalyzer extends CallAnalyzer
                     }
 
                     $generic_param_types[] = $generic_param_type->setProperties([
-                        'had_template' => true
+                        'had_template' => true,
                     ]);
                 }
             }
@@ -527,12 +523,12 @@ class NewAnalyzer extends CallAnalyzer
                     $fq_class_name,
                     $generic_param_types,
                     false,
-                    $from_static
+                    $from_static,
                 );
 
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    new Union([$result_atomic_type])
+                    new Union([$result_atomic_type]),
                 );
             }
         } elseif ($stmt->getArgs()) {
@@ -540,9 +536,9 @@ class NewAnalyzer extends CallAnalyzer
                 new TooManyArguments(
                     'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name . '::__construct'
+                    $fq_class_name . '::__construct',
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         } elseif ($storage->template_types) {
             $result_atomic_type = new TGenericObject(
@@ -550,16 +546,16 @@ class NewAnalyzer extends CallAnalyzer
                 array_values(
                     array_map(
                         static fn($map) => reset($map),
-                        $storage->template_types
-                    )
+                        $storage->template_types,
+                    ),
                 ),
                 false,
-                $from_static
+                $from_static,
             );
 
             $statements_analyzer->node_data->setType(
                 $stmt,
-                new Union([$result_atomic_type])
+                new Union([$result_atomic_type]),
             );
         }
 
@@ -569,7 +565,7 @@ class NewAnalyzer extends CallAnalyzer
 
             if ($stmt_type) {
                 $stmt_type = $stmt_type->setProperties([
-                    'reference_free' => true
+                    'reference_free' => true,
                 ]);
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
             }
@@ -596,13 +592,13 @@ class NewAnalyzer extends CallAnalyzer
                     (string)$method_id,
                     $fq_class_name . '::__construct',
                     $storage->location,
-                    $code_location
+                    $code_location,
                 );
             } else {
                 $method_source = DataFlowNode::getForMethodReturn(
                     (string)$method_id,
                     $fq_class_name . '::__construct',
-                    $storage->location
+                    $storage->location,
                 );
             }
 
@@ -637,7 +633,7 @@ class NewAnalyzer extends CallAnalyzer
                 null,
                 null,
                 true,
-                $context
+                $context,
             );
 
             return;
@@ -659,7 +655,7 @@ class NewAnalyzer extends CallAnalyzer
                     'variable-call',
                     0,
                     $arg_location,
-                    $arg_location
+                    $arg_location,
                 );
 
                 $custom_call_sink->taints = [TaintKind::INPUT_CALLABLE];
@@ -677,7 +673,7 @@ class NewAnalyzer extends CallAnalyzer
                         $custom_call_sink,
                         'call',
                         $added_taints,
-                        $removed_taints
+                        $removed_taints,
                     );
                 }
             }
@@ -688,7 +684,7 @@ class NewAnalyzer extends CallAnalyzer
                 new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer
+                $statements_analyzer,
             ) === false) {
                 return;
             }
@@ -713,16 +709,16 @@ class NewAnalyzer extends CallAnalyzer
                         $lhs_type_part->as_type
                             ? new Union([$lhs_type_part->as_type])
                             : Type::getObject(),
-                        $lhs_type_part->defining_class
+                        $lhs_type_part->defining_class,
                     );
 
                     if (!$lhs_type_part->as_type) {
                         IssueBuffer::maybeAdd(
                             new MixedMethodCall(
                                 'Cannot call constructor on an unknown class',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     }
 
@@ -732,7 +728,7 @@ class NewAnalyzer extends CallAnalyzer
                         && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
                     ) {
                         $as_storage = $codebase->classlike_storage_provider->get(
-                            $lhs_type_part->as_type->value
+                            $lhs_type_part->as_type->value,
                         );
 
                         if (!$as_storage->preserve_constructor_signature) {
@@ -741,9 +737,9 @@ class NewAnalyzer extends CallAnalyzer
                                     'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
                                     . ' with "new $class_name" as'
                                     . ' its constructor might change in child classes',
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         }
                     }
@@ -753,13 +749,13 @@ class NewAnalyzer extends CallAnalyzer
                     $codebase->methods->methodExists(
                         new MethodIdentifier(
                             $lhs_type_part->as_type->value,
-                            '__construct'
+                            '__construct',
                         ),
                         $context->calling_method_id,
                         $codebase->collect_locations
                             ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
                         $statements_analyzer,
-                        $statements_analyzer->getFilePath()
+                        $statements_analyzer->getFilePath(),
                     );
                 }
 
@@ -780,7 +776,7 @@ class NewAnalyzer extends CallAnalyzer
                             && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
                         ) {
                             $as_storage = $codebase->classlike_storage_provider->get(
-                                $lhs_type_part->as_type->value
+                                $lhs_type_part->as_type->value,
                             );
 
                             if (!$as_storage->preserve_constructor_signature) {
@@ -789,9 +785,9 @@ class NewAnalyzer extends CallAnalyzer
                                         'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
                                         . ' with "new $class_name" as'
                                         . ' its constructor might change in child classes',
-                                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     ),
-                                    $statements_analyzer->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues(),
                                 );
                             }
                         }
@@ -804,14 +800,14 @@ class NewAnalyzer extends CallAnalyzer
                             foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
                                 if ($typeof_type_atomic instanceof TNamedObject) {
                                     $generated_type = new TNamedObject(
-                                        $typeof_type_atomic->value
+                                        $typeof_type_atomic->value,
                                     );
                                 }
                             }
                         }
                     } else {
                         $generated_type = new TNamedObject(
-                            $lhs_type_part->value
+                            $lhs_type_part->value,
                         );
                     }
 
@@ -823,9 +819,9 @@ class NewAnalyzer extends CallAnalyzer
                         IssueBuffer::maybeAdd(
                             new MixedMethodCall(
                                 'Cannot call constructor on an unknown class',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     }
 
@@ -836,18 +832,16 @@ class NewAnalyzer extends CallAnalyzer
             }
 
             if ($lhs_type_part instanceof TString) {
-                if ($config->allow_string_standin_for_class
-                    && !$lhs_type_part instanceof TNumericString
+                if (!$config->allow_string_standin_for_class
+                    || $lhs_type_part instanceof TNumericString
                 ) {
-                    // do nothing
-                } elseif (IssueBuffer::accepts(
-                    new InvalidStringClass(
-                        'String cannot be used as a class',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
+                    IssueBuffer::maybeAdd(
+                        new InvalidStringClass(
+                            'String cannot be used as a class',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
                 }
             } elseif ($lhs_type_part instanceof TMixed
                 || $lhs_type_part instanceof TObject
@@ -855,9 +849,9 @@ class NewAnalyzer extends CallAnalyzer
                 IssueBuffer::maybeAdd(
                     new MixedMethodCall(
                         'Cannot call constructor on an unknown class',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } elseif ($lhs_type_part instanceof TFalse
                 && $stmt_class_type->ignore_falsable_issues
@@ -870,15 +864,15 @@ class NewAnalyzer extends CallAnalyzer
             } elseif ($lhs_type_part instanceof TNamedObject) {
                 $new_type = Type::combineUnionTypes($new_type, new Union([$lhs_type_part]));
                 continue;
-            } elseif (IssueBuffer::accepts(
-                new UndefinedClass(
-                    'Type ' . $lhs_type_part . ' cannot be called as a class',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    (string)$lhs_type_part
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+            } else {
+                IssueBuffer::maybeAdd(
+                    new UndefinedClass(
+                        'Type ' . $lhs_type_part . ' cannot be called as a class',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        (string)$lhs_type_part,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
 
             $new_type = Type::combineUnionTypes($new_type, Type::getObject());
@@ -895,7 +889,7 @@ class NewAnalyzer extends CallAnalyzer
                 null,
                 null,
                 true,
-                $context
+                $context,
             );
 
             return;

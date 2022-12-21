@@ -15,6 +15,7 @@ use function substr;
 
 /**
  * Denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`
+ *
  * @psalm-immutable
  */
 class TNamedObject extends Atomic
@@ -38,6 +39,7 @@ class TNamedObject extends Atomic
 
     /**
      * Whether or not this type can represent a child of the class named in $value
+     *
      * @var bool
      */
     public $definite_class = false;
@@ -131,8 +133,8 @@ class TNamedObject extends Atomic
                 '&',
                 array_map(
                     static fn(Atomic $type): string => $type->getId($exact, true),
-                    $this->extra_types
-                )
+                    $this->extra_types,
+                ),
             );
         }
 
@@ -141,7 +143,6 @@ class TNamedObject extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -157,7 +158,7 @@ class TNamedObject extends Atomic
             $namespace,
             $aliased_classes,
             $this_class,
-            $use_phpdoc_format
+            $use_phpdoc_format,
         );
 
         return Type::getStringFromFQCLN(
@@ -166,7 +167,7 @@ class TNamedObject extends Atomic
             $aliased_classes,
             $this_class,
             true,
-            $this->is_static
+            $this->is_static,
         ) . $intersection_types;
     }
 
@@ -241,7 +242,7 @@ class TNamedObject extends Atomic
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         if ($intersection) {
             $cloned = clone $this;

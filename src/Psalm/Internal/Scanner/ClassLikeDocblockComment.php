@@ -11,137 +11,94 @@ class ClassLikeDocblockComment
 {
     /**
      * Whether or not the class is deprecated
-     *
-     * @var bool
      */
-    public $deprecated = false;
+    public bool $deprecated = false;
 
     /**
      * Whether or not the class is internal
-     *
-     * @var bool
      */
-    public $internal = false;
+    public bool $internal = false;
 
     /**
      * Whether or not the class is final
-     *
-     * @var bool
      */
-    public $final = false;
+    public bool $final = false;
 
     /**
      * If set, the class is internal to the given namespace.
      *
      * @var list<non-empty-string>
      */
-    public $psalm_internal = [];
+    public array $psalm_internal = [];
 
     /**
      * @var string[]
      */
-    public $mixins = [];
+    public array $mixins = [];
 
     /**
      * @var array<int, array{string, ?string, ?string, bool, int}>
      */
-    public $templates = [];
+    public array $templates = [];
 
     /**
      * @var array<int, string>
      */
-    public $template_extends = [];
+    public array $template_extends = [];
 
     /**
      * @var array<int, string>
      */
-    public $template_implements = [];
+    public array $template_implements = [];
 
-    /**
-     * @var ?string
-     */
-    public $yield;
+    public ?string $yield = null;
 
     /**
      * @var array<int, array{end?: int, line_number: int, name: string, start?: int, tag: string, type: string}>
      */
-    public $properties = [];
+    public array $properties = [];
 
     /**
      * @var array<int, ClassMethod>
      */
-    public $methods = [];
+    public array $methods = [];
 
-    /**
-     * @var bool
-     */
-    public $sealed_properties = false;
+    public bool $sealed_properties = false;
 
-    /**
-     * @var bool
-     */
-    public $sealed_methods = false;
+    public bool $sealed_methods = false;
 
-    /**
-     * @var bool
-     */
-    public $override_property_visibility = false;
+    public bool $override_property_visibility = false;
 
-    /**
-     * @var bool
-     */
-    public $override_method_visibility = false;
+    public bool $override_method_visibility = false;
 
-    /**
-     * @var bool
-     */
-    public $mutation_free = false;
+    public bool $mutation_free = false;
 
-    /**
-     * @var bool
-     */
-    public $external_mutation_free = false;
+    public bool $external_mutation_free = false;
 
-    /**
-     * @var bool
-     */
-    public $taint_specialize = false;
+    public bool $taint_specialize = false;
 
     /**
      * @var array<int, string>
      */
-    public $suppressed_issues = [];
+    public array $suppressed_issues = [];
 
     /**
      * @var list<array{line_number:int,start_offset:int,end_offset:int,parts:list<string>}>
      */
-    public $imported_types = [];
+    public array $imported_types = [];
 
-    /**
-     * @var bool
-     */
-    public $consistent_constructor = false;
+    public bool $consistent_constructor = false;
 
-    /**
-     * @var bool
-     */
-    public $consistent_templates = false;
+    public bool $consistent_templates = false;
 
-    /** @var bool */
-    public $stub_override = false;
+    public bool $stub_override = false;
 
-    /**
-     * @var null|string
-     */
-    public $extension_requirement;
+    public ?string $extension_requirement = null;
 
     /**
      * @var array<int, string>
      */
-    public $implementation_requirements = [];
+    public array $implementation_requirements = [];
 
-    /**
-     * @var ?string
-     */
-    public $description;
+    public ?string $description = null;
 }

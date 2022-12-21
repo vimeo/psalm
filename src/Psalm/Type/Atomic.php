@@ -46,7 +46,6 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
@@ -71,6 +70,7 @@ use Psalm\Type\Atomic\TVoid;
 
 use function array_filter;
 use function array_keys;
+use function count;
 use function get_class;
 use function is_array;
 use function is_numeric;
@@ -141,14 +141,13 @@ abstract class Atomic implements TypeNode
         /** @psalm-suppress ImpureMethodCall ClasslikeReplacer will always clone */
         (new ClasslikeReplacer(
             $old,
-            $new
+            $new,
         ))->traverse($type);
         return $type;
     }
 
     /**
      * @psalm-suppress InaccessibleProperty Allowed during construction
-     *
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
@@ -172,7 +171,6 @@ abstract class Atomic implements TypeNode
     }
     /**
      * @psalm-suppress InaccessibleProperty Allowed during construction
-     *
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
@@ -246,26 +244,26 @@ abstract class Atomic implements TypeNode
             case 'associative-array':
                 return new TArray([
                     new Union([new TArrayKey($from_docblock)]),
-                    new Union([new TMixed(false, $from_docblock)])
+                    new Union([new TMixed(false, $from_docblock)]),
                 ]);
 
             case 'non-empty-array':
                 return new TNonEmptyArray([
                     new Union([new TArrayKey($from_docblock)]),
-                    new Union([new TMixed(false, $from_docblock)])
+                    new Union([new TMixed(false, $from_docblock)]),
                 ]);
 
             case 'callable-array':
                 return new TCallableArray([
                     new Union([new TArrayKey($from_docblock)]),
-                    new Union([new TMixed(false, $from_docblock)])
+                    new Union([new TMixed(false, $from_docblock)]),
                 ]);
 
             case 'list':
-                return new TList(Type::getMixed(false, $from_docblock));
+                return Type::getListAtomic(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-list':
-                return new TNonEmptyList(Type::getMixed(false, $from_docblock));
+                return Type::getNonEmptyListAtomic(Type::getMixed(false, $from_docblock));
 
             case 'non-empty-string':
                 return new TNonEmptyString();
@@ -303,7 +301,10 @@ abstract class Atomic implements TypeNode
                 return $analysis_php_version_id !== null ? new TNamedObject($value) : new TNumeric();
 
             case 'true':
-                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TTrue();
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_02_00) {
+                    return new TTrue();
+                }
+                return new TNamedObject($value);
 
             case 'false':
                 if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_00_00) {
@@ -393,7 +394,7 @@ abstract class Atomic implements TypeNode
             return new TTemplateParam(
                 $value,
                 $template_type_map[$value][$first_class],
-                $first_class
+                $first_class,
             );
         }
 
@@ -462,8 +463,8 @@ abstract class Atomic implements TypeNode
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof TKeyedArray
-            || $this instanceof TList;
+            || $this instanceof TList
+            || $this instanceof TKeyedArray;
     }
 
     /**
@@ -477,15 +478,15 @@ abstract class Atomic implements TypeNode
         if ($this instanceof TArray) {
             return new TIterable($this->type_params);
         }
-        if ($this instanceof TList) {
-            return new TIterable([new Union([new TIntRange(0, null)]), $this->type_param]);
-        }
         if ($this instanceof TKeyedArray) {
             return new TIterable([$this->getGenericKeyType(), $this->getGenericValueType()]);
         }
         if ($this->hasTraversableInterface($codebase)) {
             if (strtolower($this->value) === "traversable") {
                 if ($this instanceof TGenericObject) {
+                    if (count($this->type_params) > 2) {
+                        throw new InvalidArgumentException('Too many templates!');
+                    }
                     return new TIterable($this->type_params);
                 }
                 return new TIterable([Type::getMixed(), Type::getMixed()]);
@@ -496,6 +497,9 @@ abstract class Atomic implements TypeNode
                 $this,
                 new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
             );
+            if (count($implemented_traversable_templates) > 2) {
+                throw new InvalidArgumentException('Too many templates!');
+            }
             return new TIterable($implemented_traversable_templates);
         }
         throw new InvalidArgumentException("{$this->getId()} is not an iterable");
@@ -520,10 +524,10 @@ abstract class Atomic implements TypeNode
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
-                        'Traversable'
+                        'Traversable',
                     ) || $codebase->interfaceExtends(
                         $this->value,
-                        'Traversable'
+                        'Traversable',
                     )))
                 || (
                     $this->extra_types
@@ -543,10 +547,10 @@ abstract class Atomic implements TypeNode
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
-                        'Countable'
+                        'Countable',
                     ) || $codebase->interfaceExtends(
                         $this->value,
-                        'Countable'
+                        'Countable',
                     )))
                 || (
                     $this->extra_types
@@ -562,7 +566,6 @@ abstract class Atomic implements TypeNode
     {
         return $this instanceof TArray
             || $this instanceof TKeyedArray
-            || $this instanceof TList
             || $this instanceof TClassStringMap
             || $this->hasArrayAccessInterface($codebase)
             || ($this instanceof TNamedObject && $this->value === 'SimpleXMLElement');
@@ -582,10 +585,10 @@ abstract class Atomic implements TypeNode
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
-                        'ArrayAccess'
+                        'ArrayAccess',
                     ) || $codebase->interfaceExtends(
                         $this->value,
-                        'ArrayAccess'
+                        'ArrayAccess',
                     )))
                 || (
                     $this->extra_types
@@ -622,6 +625,9 @@ abstract class Atomic implements TypeNode
         return true;
     }
 
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingAnyTypeHint
+     */
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         foreach ($node->getChildNodeKeys() as $key) {
@@ -795,10 +801,6 @@ abstract class Atomic implements TypeNode
             return true;
         }
 
-        if ($this instanceof TNonEmptyList) {
-            return true;
-        }
-
         if ($this instanceof TNonEmptyMixed) {
             return true;
         }
@@ -838,11 +840,7 @@ abstract class Atomic implements TypeNode
         }
 
         if ($this instanceof TKeyedArray) {
-            foreach ($this->properties as $property) {
-                if ($property->possibly_undefined === false) {
-                    return true;
-                }
-            }
+            return $this->isNonEmpty();
         }
 
         if ($this instanceof TTemplateParam && $this->as->isAlwaysTruthy()) {

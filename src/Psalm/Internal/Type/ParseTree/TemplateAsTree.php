@@ -9,15 +9,9 @@ use Psalm\Internal\Type\ParseTree;
  */
 class TemplateAsTree extends ParseTree
 {
-    /**
-     * @var string
-     */
-    public $param_name;
+    public string $param_name;
 
-    /**
-     * @var string
-     */
-    public $as;
+    public string $as;
 
     public function __construct(string $param_name, string $as, ?ParseTree $parent = null)
     {

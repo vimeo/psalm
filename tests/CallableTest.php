@@ -1104,7 +1104,7 @@ class CallableTest extends TestCase
                     function f($p): array {
                       return [];
                     }
-                    f("#b::a");'
+                    f("#b::a");',
             ],
             'removeCallableAssertionAfterReassignment' => [
                 'code' => '<?php
@@ -1115,7 +1115,7 @@ class CallableTest extends TestCase
                         }
                         $setter = "b" . $key;
                         if (is_callable($setter)) {}
-                    }'
+                    }',
             ],
             'noExceptionOnSelfString' => [
                 'code' => '<?php
@@ -1194,7 +1194,7 @@ class CallableTest extends TestCase
                         {
                             return new self(array_map([CriterionId::class, "fromString"], $ids));
                         }
-                    }'
+                    }',
             ],
             'offsetOnCallable' => [
                 'code' => '<?php
@@ -1202,7 +1202,7 @@ class CallableTest extends TestCase
                         if (is_array($c)) {
                             new ReflectionClass($c[0]);
                         }
-                    }'
+                    }',
             ],
             'destructureCallableArray' => [
                 'code' => '<?php
@@ -1219,8 +1219,8 @@ class CallableTest extends TestCase
                     [$classOrObject, $method] = $callable;',
                 'assertions' => [
                     '$classOrObject' => 'class-string|object',
-                    '$method' => 'string'
-                ]
+                    '$method' => 'string',
+                ],
             ],
             'callableInterface' => [
                 'code' => '<?php
@@ -1234,7 +1234,7 @@ class CallableTest extends TestCase
 
                     function takesCallable(callable $c): void {
                         $c();
-                    }'
+                    }',
             ],
             'notCallableArrayNoUndefinedClass' => [
                 'code' => '<?php
@@ -1243,7 +1243,7 @@ class CallableTest extends TestCase
                      */
                     function f($_fields): void {}
 
-                    f(["instance_date" => "ASC", "start_time" => "ASC"]);'
+                    f(["instance_date" => "ASC", "start_time" => "ASC"]);',
             ],
             'callOnInvokableOrCallable' => [
                 'code' => '<?php
@@ -1254,7 +1254,7 @@ class CallableTest extends TestCase
                     /** @var Callback|callable */
                     $test = function (): void {};
 
-                    $test();'
+                    $test();',
             ],
             'resolveTraitClosureReturn' => [
                 'code' => '<?php
@@ -1267,7 +1267,7 @@ class CallableTest extends TestCase
                         public function call() : void {
                             $this->takesACall(function() {return $this;});
                         }
-                    }'
+                    }',
             ],
             'returnClosureReturningStatic' => [
                 'code' => '<?php
@@ -1300,7 +1300,7 @@ class CallableTest extends TestCase
                     $isCalled = false;
                     $callback();
 
-                    if ($isCalled === true) {}'
+                    if ($isCalled === true) {}',
             ],
             'notCallableListNoUndefinedClass' => [
                 'code' => '<?php
@@ -1309,7 +1309,7 @@ class CallableTest extends TestCase
                      */
                     function foo($arg): void {}
 
-                    foo(["a", "b"]);'
+                    foo(["a", "b"]);',
             ],
             'abstractInvokeInTrait' => [
                 'code' => '<?php
@@ -1325,14 +1325,11 @@ class CallableTest extends TestCase
 
                     abstract class TestClass {
                         use TestTrait;
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -1550,7 +1547,7 @@ class CallableTest extends TestCase
                     }
 
                     new Func("f", ["\Foo", "bar"]);',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'noFatalErrorOnMissingClassWithoutSlash' => [
                 'code' => '<?php
@@ -1559,7 +1556,7 @@ class CallableTest extends TestCase
                     }
 
                     new Func("f", ["Foo", "bar"]);',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'preventStringDocblockType' => [
                 'code' => '<?php
@@ -1581,7 +1578,7 @@ class CallableTest extends TestCase
                     function takesCallable(callable $c) : void {
                         takesSpecificCallable($c);
                     }',
-                'error_message' => 'MixedArgumentTypeCoercion'
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'undefinedVarInBareCallable' => [
                 'code' => '<?php
@@ -1729,7 +1726,7 @@ class CallableTest extends TestCase
                         );
                     }',
                 'error_message' => 'InvalidArgument',
-            ]
+            ],
         ];
     }
 }

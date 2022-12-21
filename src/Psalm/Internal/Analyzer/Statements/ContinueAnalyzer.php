@@ -40,9 +40,9 @@ class ContinueAnalyzer
                 if (IssueBuffer::accepts(
                     new ContinueOutsideLoop(
                         'Continue call outside loop context',
-                        new CodeLocation($statements_analyzer, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt),
                     ),
-                    $statements_analyzer->getSource()->getSuppressedIssues()
+                    $statements_analyzer->getSource()->getSuppressedIssues(),
                 )) {
                     return;
                 }
@@ -65,7 +65,7 @@ class ContinueAnalyzer
                 } else {
                     $loop_scope->redefined_loop_vars[$redefined_var] = Type::combineUnionTypes(
                         $redefined_vars[$redefined_var],
-                        $type
+                        $type,
                     );
                 }
             }
@@ -73,7 +73,7 @@ class ContinueAnalyzer
             foreach ($redefined_vars as $var => $type) {
                 $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
                     $type,
-                    $loop_scope->possibly_redefined_loop_vars[$var] ?? null
+                    $loop_scope->possibly_redefined_loop_vars[$var] ?? null,
                 );
             }
 
@@ -83,7 +83,7 @@ class ContinueAnalyzer
                         $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->finally_scope->vars_in_scope[$var_id],
                             $type,
-                            $statements_analyzer->getCodebase()
+                            $statements_analyzer->getCodebase(),
                         );
                     } else {
                         $type = $type->setPossiblyUndefined(true, true);

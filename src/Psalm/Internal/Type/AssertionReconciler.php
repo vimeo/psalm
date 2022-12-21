@@ -41,7 +41,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -117,7 +116,7 @@ class AssertionReconciler extends Reconciler
         if ($existing_var_type === null) {
             return self::getMissingType(
                 $assertion,
-                $inside_loop
+                $inside_loop,
             );
         }
 
@@ -134,7 +133,7 @@ class AssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $inside_loop
+                $inside_loop,
             );
         }
 
@@ -154,7 +153,7 @@ class AssertionReconciler extends Reconciler
                 $key,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
@@ -168,7 +167,7 @@ class AssertionReconciler extends Reconciler
                 $code_location,
                 $key,
                 $suppressed_issues,
-                $should_return
+                $should_return,
             );
 
             if ($should_return) {
@@ -186,7 +185,7 @@ class AssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
                 $failed_reconciliation,
-                $inside_loop
+                $inside_loop,
             );
 
             if ($simply_reconciled_type) {
@@ -221,7 +220,7 @@ class AssertionReconciler extends Reconciler
             $negated,
             $code_location,
             $suppressed_issues,
-            $failed_reconciliation
+            $failed_reconciliation,
         );
 
         return TypeExpander::expandUnion(
@@ -233,13 +232,10 @@ class AssertionReconciler extends Reconciler
             true,
             false,
             false,
-            true
+            true,
         );
     }
 
-    /**
-     * @param array<string, array<string, Union>> $template_type_map
-     */
     private static function getMissingType(
         Assertion $assertion,
         bool $inside_loop
@@ -275,7 +271,6 @@ class AssertionReconciler extends Reconciler
      *
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      * @param   string[]    $suppressed_issues
-     * @param   array<string, array<string, Union>> $template_type_map
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function refine(
@@ -336,7 +331,7 @@ class AssertionReconciler extends Reconciler
                     if (AtomicTypeComparator::isContainedBy(
                         $codebase,
                         $existing_var_type_part,
-                        $new_as_atomic
+                        $new_as_atomic,
                     )) {
                         $acceptable_atomic_types[] = $existing_var_type_part;
                     }
@@ -359,11 +354,11 @@ class AssertionReconciler extends Reconciler
                 if ($existing_var_type_part instanceof TKeyedArray) {
                     if (!array_intersect_key(
                         $existing_var_type_part->properties,
-                        $new_type_part->properties
+                        $new_type_part->properties,
                     )) {
                         $acceptable_atomic_types[] = $existing_var_type_part->setProperties(array_merge(
                             $existing_var_type_part->properties,
-                            $new_type_part->properties
+                            $new_type_part->properties,
                         ));
                     }
                 }
@@ -382,7 +377,7 @@ class AssertionReconciler extends Reconciler
                 $codebase,
                 new Union([$new_type_part]),
                 $existing_var_type,
-                false
+                false,
             )
         ) {
             $acceptable_atomic_types = [];
@@ -391,7 +386,7 @@ class AssertionReconciler extends Reconciler
                 if (AtomicTypeComparator::isContainedBy(
                     $codebase,
                     $existing_var_type_part,
-                    $new_type_part
+                    $new_type_part,
                 )) {
                     $acceptable_atomic_types[] = $existing_var_type_part;
                     continue;
@@ -432,7 +427,7 @@ class AssertionReconciler extends Reconciler
                     false,
                     null,
                     false,
-                    false
+                    false,
                 )
             ) {
                 self::triggerIssueForImpossible(
@@ -443,7 +438,7 @@ class AssertionReconciler extends Reconciler
                     true,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
 
@@ -451,7 +446,7 @@ class AssertionReconciler extends Reconciler
                 $codebase,
                 $existing_var_type,
                 new Union([$new_type_part]),
-                $any_scalar_type_match_found
+                $any_scalar_type_match_found,
             );
 
             if ($code_location
@@ -465,9 +460,9 @@ class AssertionReconciler extends Reconciler
                                 'Cannot resolve types for ' . $key . ' - docblock-defined type '
                                     . $existing_var_type . ' does not contain null',
                                 $code_location,
-                                $existing_var_type->getId() . ' null'
+                                $existing_var_type->getId() . ' null',
                             ),
-                            $suppressed_issues
+                            $suppressed_issues,
                         );
                     } else {
                         IssueBuffer::maybeAdd(
@@ -475,9 +470,9 @@ class AssertionReconciler extends Reconciler
                                 'Cannot resolve types for ' . $key . ' - ' . $existing_var_type
                                     . ' does not contain null',
                                 $code_location,
-                                $existing_var_type->getId()
+                                $existing_var_type->getId(),
                             ),
-                            $suppressed_issues
+                            $suppressed_issues,
                         );
                     }
                 } elseif (!($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
@@ -491,9 +486,9 @@ class AssertionReconciler extends Reconciler
                                 'Cannot resolve types for ' . $key . ' - docblock-defined type '
                                     . $existing_var_type->getId() . ' does not contain ' . $new_type_part->getId(),
                                 $code_location,
-                                $existing_var_type->getId() . ' ' . $new_type_part->getId()
+                                $existing_var_type->getId() . ' ' . $new_type_part->getId(),
                             ),
-                            $suppressed_issues
+                            $suppressed_issues,
                         );
                     } else {
                         IssueBuffer::maybeAdd(
@@ -501,9 +496,9 @@ class AssertionReconciler extends Reconciler
                                 'Cannot resolve types for ' . $key . ' - ' . $existing_var_type->getId()
                                     . ' does not contain ' . $new_type_part->getId(),
                                 $code_location,
-                                $existing_var_type->getId() . ' ' . $new_type_part->getId()
+                                $existing_var_type->getId() . ' ' . $new_type_part->getId(),
                             ),
-                            $suppressed_issues
+                            $suppressed_issues,
                         );
                     }
                 }
@@ -522,8 +517,6 @@ class AssertionReconciler extends Reconciler
     /**
      * This method receives two types. The goal is to use datas in the new type to reduce the existing_type to a more
      * precise version. For example: new is `array<int>` old is `list<mixed>` so the result is `list<int>`
-     *
-     * @param array<string, array<string, Union>> $template_type_map
      */
     private static function filterTypeWithAnother(
         Codebase $codebase,
@@ -540,7 +533,7 @@ class AssertionReconciler extends Reconciler
                     $existing_type_part,
                     $new_type_part,
                     $codebase,
-                    $any_scalar_type_match_found
+                    $any_scalar_type_match_found,
                 );
 
                 if ($matching_atomic_type) {
@@ -583,7 +576,7 @@ class AssertionReconciler extends Reconciler
             $type_1_atomic,
             !($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject),
             false,
-            $atomic_comparison_results
+            $atomic_comparison_results,
         );
 
         if ($atomic_contained_by) {
@@ -591,7 +584,7 @@ class AssertionReconciler extends Reconciler
                 $type_1_atomic,
                 $type_2_atomic,
                 $codebase,
-                $atomic_comparison_results->type_coerced ?? false
+                $atomic_comparison_results->type_coerced ?? false,
             );
         }
 
@@ -603,7 +596,7 @@ class AssertionReconciler extends Reconciler
             $type_2_atomic,
             $type_1_atomic instanceof TClassString && $type_2_atomic instanceof TClassString,
             false,
-            $atomic_comparison_results
+            $atomic_comparison_results,
         );
 
         if ($atomic_contained_by) {
@@ -611,7 +604,7 @@ class AssertionReconciler extends Reconciler
                 $type_2_atomic,
                 $type_1_atomic,
                 $codebase,
-                $atomic_comparison_results->type_coerced ?? false
+                $atomic_comparison_results->type_coerced ?? false,
             );
         }
 
@@ -625,8 +618,8 @@ class AssertionReconciler extends Reconciler
             return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
-        if ($type_2_atomic instanceof TKeyedArray
-            && $type_1_atomic instanceof TList
+        /*if ($type_2_atomic instanceof TKeyedArray
+            && $type_1_atomic instanceof \Psalm\Type\Atomic\TList
         ) {
             $type_2_key = $type_2_atomic->getGenericKeyType();
             $type_2_value = $type_2_atomic->getGenericValueType();
@@ -653,7 +646,7 @@ class AssertionReconciler extends Reconciler
                 );
             }
         } elseif ($type_1_atomic instanceof TKeyedArray
-            && $type_2_atomic instanceof TList
+            && $type_2_atomic instanceof \Psalm\Type\Atomic\TList
         ) {
             $type_1_key = $type_1_atomic->getGenericKeyType();
             $type_1_value = $type_1_atomic->getGenericValueType();
@@ -678,7 +671,7 @@ class AssertionReconciler extends Reconciler
                     true
                 );
             }
-        }
+        }*/
 
         if ($type_2_atomic instanceof TTemplateParam
             && $type_1_atomic instanceof TTemplateParam
@@ -708,7 +701,7 @@ class AssertionReconciler extends Reconciler
                     $codebase,
                     $type_1_param,
                     $type_2_param,
-                    $any_scalar_type_match_found
+                    $any_scalar_type_match_found,
                 );
 
                 if ($type_2_param === null) {
@@ -720,9 +713,9 @@ class AssertionReconciler extends Reconciler
                 }
             }
 
-            /** @psalm-suppress ArgumentTypeCoercion */
+            /** @psalm-suppress InvalidArgument */
             $type_1_atomic = $type_1_atomic->setTypeParams(
-                $type_1_params
+                $type_1_params,
             );
 
             $matching_atomic_type = $type_1_atomic;
@@ -730,9 +723,9 @@ class AssertionReconciler extends Reconciler
         }
 
         //we filter the second part of a list with the second part of standard iterables
-        if (($type_2_atomic instanceof TArray
+        /*if (($type_2_atomic instanceof TArray
                 || $type_2_atomic instanceof TIterable)
-            && $type_1_atomic instanceof TList
+            && $type_1_atomic instanceof \Psalm\Type\Atomic\TList
         ) {
             $type_2_param = $type_2_atomic->type_params[1];
             $type_1_param = $type_1_atomic->type_param;
@@ -756,7 +749,7 @@ class AssertionReconciler extends Reconciler
 
             $matching_atomic_type = $type_1_atomic;
             $atomic_comparison_results->type_coerced = true;
-        }
+        }*/
 
         //we filter each property of a Keyed Array with the second part of standard iterables
         if (($type_2_atomic instanceof TArray
@@ -770,7 +763,7 @@ class AssertionReconciler extends Reconciler
                     $codebase,
                     $type_1_param,
                     $type_2_param,
-                    $any_scalar_type_match_found
+                    $any_scalar_type_match_found,
                 );
 
                 if ($type_2_param === null) {
@@ -794,7 +787,7 @@ class AssertionReconciler extends Reconciler
         ) {
             $new_range = TIntRange::intersectIntRanges(
                 $type_1_atomic,
-                $type_2_atomic
+                $type_2_atomic,
             );
         }
 
@@ -829,7 +822,7 @@ class AssertionReconciler extends Reconciler
             // this is a hack - it's not actually rigorous, as the params may be different
             return new TGenericObject(
                 $type_2_atomic->value,
-                $type_1_atomic->type_params
+                $type_1_atomic->type_params,
             );
         } elseif ($type_2_atomic instanceof TNamedObject
             && $type_1_atomic instanceof TTemplateParam
@@ -839,7 +832,7 @@ class AssertionReconciler extends Reconciler
             $type_1_as = self::filterTypeWithAnother(
                 $codebase,
                 $type_1_as_init,
-                new Union([$type_2_atomic])
+                new Union([$type_2_atomic]),
             );
 
             if ($type_1_as === null) {
@@ -878,7 +871,7 @@ class AssertionReconciler extends Reconciler
                     $existing_var_atomic_type->fq_classlike_name,
                     null,
                     true,
-                    true
+                    true,
                 );
 
                 foreach ($expanded as $atomic_type) {
@@ -900,7 +893,7 @@ class AssertionReconciler extends Reconciler
                 $var_id,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         } elseif ($assertion_type instanceof TLiteralString) {
             return self::handleLiteralEqualityWithString(
@@ -913,7 +906,7 @@ class AssertionReconciler extends Reconciler
                 $var_id,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         } elseif ($assertion_type instanceof TLiteralFloat) {
             return self::handleLiteralEqualityWithFloat(
@@ -926,7 +919,7 @@ class AssertionReconciler extends Reconciler
                 $var_id,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         } else {
             $fq_enum_name = $assertion_type->value;
@@ -973,7 +966,7 @@ class AssertionReconciler extends Reconciler
                     $can_be_equal,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -1001,13 +994,13 @@ class AssertionReconciler extends Reconciler
 
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
         $literal_asserted_type = new Union([new TLiteralInt($value)], [
-            'from_docblock' => $existing_var_type->from_docblock
+            'from_docblock' => $existing_var_type->from_docblock,
         ]);
         $compatible_int_type = self::getCompatibleIntType(
             $existing_var_type,
             $existing_var_atomic_types,
             $assertion_type,
-            $assertion instanceof IsLooselyEqual
+            $assertion instanceof IsLooselyEqual,
         );
 
         if ($compatible_int_type !== null) {
@@ -1032,7 +1025,7 @@ class AssertionReconciler extends Reconciler
                             true,
                             $negated,
                             $code_location,
-                            $suppressed_issues
+                            $suppressed_issues,
                         );
                     }
                     return $existing_var_type;
@@ -1049,7 +1042,7 @@ class AssertionReconciler extends Reconciler
                     $existing_var_type,
                     $existing_var_atomic_type->as->getAtomicTypes(),
                     $assertion_type,
-                    $assertion instanceof IsLooselyEqual
+                    $assertion instanceof IsLooselyEqual,
                 );
                 if ($compatible_int_type !== null) {
                     return $compatible_int_type;
@@ -1065,8 +1058,8 @@ class AssertionReconciler extends Reconciler
                         $var_id,
                         $negated,
                         $code_location,
-                        $suppressed_issues
-                    )
+                        $suppressed_issues,
+                    ),
                 );
 
                 return new Union([$existing_var_atomic_type]);
@@ -1115,7 +1108,7 @@ class AssertionReconciler extends Reconciler
                 false,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
@@ -1142,14 +1135,14 @@ class AssertionReconciler extends Reconciler
 
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
         $literal_asserted_type_string = new Union([$assertion_type], [
-            'from_docblock' => $existing_var_type->from_docblock
+            'from_docblock' => $existing_var_type->from_docblock,
         ]);
 
         $compatible_string_type = self::getCompatibleStringType(
             $existing_var_type,
             $existing_var_atomic_types,
             $assertion_type,
-            $assertion instanceof IsLooselyEqual
+            $assertion instanceof IsLooselyEqual,
         );
 
         if ($compatible_string_type !== null) {
@@ -1170,7 +1163,7 @@ class AssertionReconciler extends Reconciler
                             true,
                             $negated,
                             $code_location,
-                            $suppressed_issues
+                            $suppressed_issues,
                         );
                     }
                     return $existing_var_type;
@@ -1188,7 +1181,7 @@ class AssertionReconciler extends Reconciler
                     $existing_var_type,
                     $existing_var_atomic_type->as->getAtomicTypes(),
                     $assertion_type,
-                    $assertion instanceof IsLooselyEqual
+                    $assertion instanceof IsLooselyEqual,
                 );
                 if ($compatible_string_type !== null) {
                     return $compatible_string_type;
@@ -1208,8 +1201,8 @@ class AssertionReconciler extends Reconciler
                         $var_id,
                         $negated,
                         $code_location,
-                        $suppressed_issues
-                    )
+                        $suppressed_issues,
+                    ),
                 );
 
                 return new Union([$existing_var_atomic_type]);
@@ -1258,7 +1251,7 @@ class AssertionReconciler extends Reconciler
                 false,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
@@ -1285,14 +1278,14 @@ class AssertionReconciler extends Reconciler
 
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
         $literal_asserted_type = new Union([new TLiteralFloat($value)], [
-            'from_docblock' => $existing_var_type->from_docblock
+            'from_docblock' => $existing_var_type->from_docblock,
         ]);
 
         $compatible_float_type = self::getCompatibleFloatType(
             $existing_var_type,
             $existing_var_atomic_types,
             $assertion_type,
-            $assertion instanceof IsLooselyEqual
+            $assertion instanceof IsLooselyEqual,
         );
 
         if ($compatible_float_type !== null) {
@@ -1313,7 +1306,7 @@ class AssertionReconciler extends Reconciler
                             true,
                             $negated,
                             $code_location,
-                            $suppressed_issues
+                            $suppressed_issues,
                         );
                     }
                     return $existing_var_type;
@@ -1331,7 +1324,7 @@ class AssertionReconciler extends Reconciler
                     $existing_var_type,
                     $existing_var_atomic_type->as->getAtomicTypes(),
                     $assertion_type,
-                    $assertion instanceof IsLooselyEqual
+                    $assertion instanceof IsLooselyEqual,
                 );
                 if ($compatible_float_type !== null) {
                     return $compatible_float_type;
@@ -1351,8 +1344,8 @@ class AssertionReconciler extends Reconciler
                         $var_id,
                         $negated,
                         $code_location,
-                        $suppressed_issues
-                    )
+                        $suppressed_issues,
+                    ),
                 );
 
                 return new Union([$existing_var_atomic_type]);
@@ -1400,7 +1393,7 @@ class AssertionReconciler extends Reconciler
                 false,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
@@ -1427,7 +1420,7 @@ class AssertionReconciler extends Reconciler
                 }
 
                 return new Union([$assertion_type], [
-                    'from_docblock' => $existing_var_type->from_docblock
+                    'from_docblock' => $existing_var_type->from_docblock,
                 ]);
             }
         }
@@ -1454,7 +1447,7 @@ class AssertionReconciler extends Reconciler
                 }
 
                 return new Union([$assertion_type], [
-                    'from_docblock' => $existing_var_type->from_docblock
+                    'from_docblock' => $existing_var_type->from_docblock,
                 ]);
             }
         }
@@ -1481,7 +1474,7 @@ class AssertionReconciler extends Reconciler
                 }
 
                 return new Union([$assertion_type], [
-                    'from_docblock' => $existing_var_type->from_docblock
+                    'from_docblock' => $existing_var_type->from_docblock,
                 ]);
             }
         }
@@ -1516,7 +1509,7 @@ class AssertionReconciler extends Reconciler
             if ($allow_string_comparison) {
                 $types[] = new TClassString(
                     $assertion_type->value,
-                    $assertion_type
+                    $assertion_type,
                 );
             }
 
@@ -1532,7 +1525,7 @@ class AssertionReconciler extends Reconciler
                 return [new TTemplateParam(
                     $assertion_type->param_name,
                     new Union([$assertion_type->as_type ? $assertion_type->as_type : new TObject()]),
-                    $assertion_type->defining_class
+                    $assertion_type->defining_class,
                 )];
             }
             return [$assertion_type];
@@ -1544,9 +1537,9 @@ class AssertionReconciler extends Reconciler
                     new TypeDoesNotContainType(
                         'Cannot allow string comparison to object for ' . $key,
                         $code_location,
-                        "no string comparison to $key"
+                        "no string comparison to $key",
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
 
                 return [new TMixed()];
@@ -1576,7 +1569,7 @@ class AssertionReconciler extends Reconciler
                         && !UnionTypeComparator::isContainedBy(
                             $codebase,
                             $existing_var_type,
-                            $new_type
+                            $new_type,
                         )
                     )
                     || (
@@ -1584,7 +1577,7 @@ class AssertionReconciler extends Reconciler
                         && !UnionTypeComparator::isContainedBy(
                             $codebase,
                             $new_type,
-                            $existing_var_type
+                            $existing_var_type,
                         )
                     )
                 ) {
@@ -1610,7 +1603,7 @@ class AssertionReconciler extends Reconciler
                         if (AtomicTypeComparator::isContainedBy(
                             $codebase,
                             $existing_var_type_part,
-                            $new_type_part
+                            $new_type_part,
                         )) {
                             $acceptable_atomic_types[] = $existing_var_type_part;
                             continue;

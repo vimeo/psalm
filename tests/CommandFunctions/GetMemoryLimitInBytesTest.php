@@ -38,7 +38,6 @@ class GetMemoryLimitInBytesTest extends TestCase
 
     /**
      * @dataProvider memoryLimitSettingProvider
-     *
      * @param int|string $setting
      * @param int|string $expectedBytes
      */
@@ -49,7 +48,7 @@ class GetMemoryLimitInBytesTest extends TestCase
         $this->assertSame(
             $expectedBytes,
             CliUtils::convertMemoryLimitToBytes((string)$setting),
-            'Memory limit in bytes does not fit setting'
+            'Memory limit in bytes does not fit setting',
         );
     }
 }

@@ -20,6 +20,7 @@ use function strtolower;
 /**
  * Denotes the `class-string` type, used to describe a string representing a valid PHP class.
  * The parent type from which the classes descend may or may not be specified in the constructor.
+ *
  * @psalm-immutable
  */
 class TClassString extends TString
@@ -128,7 +129,7 @@ class TClassString extends TString
             return 'class-string<' . preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
-                $this->as
+                $this->as,
             ) . '>';
         }
 
@@ -192,7 +193,7 @@ class TClassString extends TString
             $replace,
             $add_lower_bound,
             null,
-            $depth
+            $depth,
         );
 
         $as_type_types = array_values($as_type->getAtomicTypes());

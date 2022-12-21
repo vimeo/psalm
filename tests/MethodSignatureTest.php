@@ -38,7 +38,7 @@ class MethodSignatureTest extends TestCase
                     ) {
                         return $_GET["foo"];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -60,7 +60,7 @@ class MethodSignatureTest extends TestCase
                     ) {
                         return $_GET["foo"];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -82,7 +82,7 @@ class MethodSignatureTest extends TestCase
                     ) {
                         return $_GET["foo"];
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -109,7 +109,7 @@ class MethodSignatureTest extends TestCase
                     }
                 }
                 class C {}
-                class D extends C {}'
+                class D extends C {}',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -133,7 +133,7 @@ class MethodSignatureTest extends TestCase
                     }
                 }
                 class C {}
-                class D extends C {}'
+                class D extends C {}',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -158,7 +158,7 @@ class MethodSignatureTest extends TestCase
                     function foo(): self {
                         return new B();
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -180,7 +180,7 @@ class MethodSignatureTest extends TestCase
                     function foo(): self {
                         return new B();
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -204,7 +204,7 @@ class MethodSignatureTest extends TestCase
                 }
 
                 class C {}
-                class D extends C {}'
+                class D extends C {}',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -225,7 +225,7 @@ class MethodSignatureTest extends TestCase
                 }
 
                 class C {}
-                class D extends C {}'
+                class D extends C {}',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -258,7 +258,7 @@ class MethodSignatureTest extends TestCase
                     ) {
 
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -283,15 +283,12 @@ class MethodSignatureTest extends TestCase
                     ) {
 
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -698,7 +695,7 @@ class MethodSignatureTest extends TestCase
                         public function a(self $b): self {
                             return $this;
                         }
-                    }'
+                    }',
             ],
             'allowMatchIn74' => [
                 'code' => '<?php
@@ -723,7 +720,7 @@ class MethodSignatureTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'allowOverridingThrowable' => [
                 'code' => '<?php
@@ -742,7 +739,7 @@ class MethodSignatureTest extends TestCase
                         public function getTrace(): array;
                         public function getPrevious(): ?\Throwable;
                         public function getTraceAsString(): string;
-                    }'
+                    }',
             ],
             'allowExecptionToStringWithNoType' => [
                 'code' => '<?php
@@ -750,7 +747,7 @@ class MethodSignatureTest extends TestCase
                         public function __toString() {
                             return "hello";
                         }
-                    }'
+                    }',
             ],
             'allowExecptionToStringIn71' => [
                 'code' => '<?php
@@ -761,7 +758,7 @@ class MethodSignatureTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.1'
+                'php_version' => '7.1',
             ],
             'consistentConstructor' => [
                 'code' => '<?php
@@ -776,7 +773,7 @@ class MethodSignatureTest extends TestCase
 
                     class AChild extends A {
                         public function __construct() {}
-                    }'
+                    }',
             ],
             'allowStaticInheritance' => [
                 'code' => '<?php
@@ -792,7 +789,7 @@ class MethodSignatureTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'suppressDocblockFinal' => [
                 'code' => '<?php
@@ -811,7 +808,7 @@ class MethodSignatureTest extends TestCase
                          * @psalm-suppress MethodSignatureMismatch
                          */
                         public function foo(): void {}
-                    }'
+                    }',
             ],
             'inheritParamTypeWhenSignatureReturnTypeChanged' => [
                 'code' => '<?php
@@ -833,7 +830,7 @@ class MethodSignatureTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'extendStaticReturnTypeInFinal' => [
                 'code' => '<?php
@@ -867,7 +864,7 @@ class MethodSignatureTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'notExtendedStaticReturntypeInFinal' => [
                 'code' => '<?php
@@ -877,7 +874,7 @@ class MethodSignatureTest extends TestCase
                         {
                             return new self();
                         }
-                    }'
+                    }',
             ],
             'callParentMethodFromTrait' => [
                 'code' => '<?php
@@ -901,7 +898,7 @@ class MethodSignatureTest extends TestCase
                     class MyChildClass extends MyParentClass
                     {
                         use MyTrait;
-                    }'
+                    }',
             ],
             'MixedParamInImplementation' => [
                 'code' => '<?php
@@ -917,14 +914,11 @@ class MethodSignatureTest extends TestCase
                     final class B implements I
                     {
                         public function a(mixed $a): void {}
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -1470,7 +1464,7 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch',
                 'ignored_issues' => [],
-                'php_version' => '7.3'
+                'php_version' => '7.3',
             ],
             'inconsistentConstructorExplicitParentConstructorArgCount' => [
                 'code' => '<?php
@@ -1565,7 +1559,7 @@ class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMismatch',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'noTypehintInNativeDescendant' => [
                 'code' => '<?php
@@ -1577,7 +1571,7 @@ class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMustProvideReturnType',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
         ];
     }

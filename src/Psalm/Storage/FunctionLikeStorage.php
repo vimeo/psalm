@@ -252,8 +252,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
                         ($newlines ? '    ' : '')
                         . ($param->type ? $param->type->getId(false) : 'mixed')
                         . ' $' . $param->name,
-                    $this->params
-                )
+                    $this->params,
+                ),
             )
             . ($newlines ? "\n" : '')
             . ') : '
@@ -281,7 +281,6 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
 
     /**
      * @internal
-     *
      * @param list<FunctionLikeParameter> $params
      */
     public function setParams(array $params): void

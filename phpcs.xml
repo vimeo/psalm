@@ -10,7 +10,7 @@
       *  Configuration                                                                                                *
       ************************************************************************************************************** -->
 
-    <config name="php_version" value="70100"/>
+    <config name="php_version" value="70400"/>
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
 
     <arg name="basepath" value="."/>
@@ -86,10 +86,10 @@
      -->
     <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
         <properties>
-            <property name="declareOnFirstLine" type="bool" value="false"/>
-            <property name="linesCountBeforeDeclare" type="int" value="1"/>
-            <property name="linesCountAfterDeclare" type="int" value="1"/>
-            <property name="spacesCountAroundEqualsSign" type="int" value="0"/>
+            <property name="declareOnFirstLine" value="false"/>
+            <property name="linesCountBeforeDeclare" value="1"/>
+            <property name="linesCountAfterDeclare" value="1"/>
+            <property name="spacesCountAroundEqualsSign" value="0"/>
         </properties>
 
         <exclude name="SlevomatCodingStandard.TypeHints.DeclareStrictTypes.DeclareStrictTypesMissing"/>
@@ -113,8 +113,8 @@
      -->
     <rule ref="SlevomatCodingStandard.Namespaces.NamespaceSpacing">
         <properties>
-            <property name="linesCountBeforeNamespace" type="int" value="1"/>
-            <property name="linesCountAfterNamespace" type="int" value="1"/>
+            <property name="linesCountBeforeNamespace" value="1"/>
+            <property name="linesCountAfterNamespace" value="1"/>
         </properties>
     </rule>
 
@@ -128,21 +128,21 @@
      -->
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
         <properties>
-            <property name="allowFullyQualifiedExceptions" type="bool" value="false"/>
-            <property name="allowFullyQualifiedGlobalFunctions" type="bool" value="false"/>
-            <property name="allowFullyQualifiedGlobalConstants" type="bool" value="false"/>
-            <property name="allowFullyQualifiedGlobalClasses" type="bool" value="false"/>
+            <property name="allowFullyQualifiedExceptions" value="false"/>
+            <property name="allowFullyQualifiedGlobalFunctions" value="false"/>
+            <property name="allowFullyQualifiedGlobalConstants" value="false"/>
+            <property name="allowFullyQualifiedGlobalClasses" value="false"/>
 
-			<property name="allowFullyQualifiedNameForCollidingClasses" type="bool" value="false"/>
-			<property name="allowFullyQualifiedNameForCollidingFunctions" type="bool" value="false"/>
-			<property name="allowFullyQualifiedNameForCollidingConstants" type="bool" value="false"/>
+            <property name="allowFullyQualifiedNameForCollidingClasses" value="false"/>
+            <property name="allowFullyQualifiedNameForCollidingFunctions" value="false"/>
+            <property name="allowFullyQualifiedNameForCollidingConstants" value="false"/>
 
-			<property name="allowFallbackGlobalFunctions" type="bool" value="false"/>
-			<property name="allowFallbackGlobalConstants" type="bool" value="false"/>
+            <property name="allowFallbackGlobalFunctions" value="false"/>
+            <property name="allowFallbackGlobalConstants" value="false"/>
 
-            <property name="allowPartialUses" type="bool" value="true"/>
+            <property name="allowPartialUses" value="true"/>
 
-			<property name="searchAnnotations" type="bool" value="true"/>
+            <property name="searchAnnotations" value="true"/>
         </properties>
     </rule>
 
@@ -162,7 +162,7 @@
      -->
     <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
         <properties>
-            <property name="psr12Compatible" type="bool" value="true"/>
+            <property name="psr12Compatible" value="true"/>
             <property name="caseSensitive" value="true"/>
         </properties>
     </rule>
@@ -182,13 +182,6 @@
         https://github.com/slevomat/coding-standard#slevomatcodingstandardtypehintsreturntypehint-
      -->
     <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint">
-        <properties>
-			<property name="enableObjectTypeHint" type="bool" value="false"/>
-			<property name="enableStaticTypeHint" type="bool" value="false"/>
-			<property name="enableMixedTypeHint" type="bool" value="false"/>
-			<property name="enableUnionTypeHint" type="bool" value="false"/>
-        </properties>
-
         <exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingTraversableTypeHintSpecification"/>
     </rule>
 
@@ -235,18 +228,10 @@
     -->
     <rule ref="SlevomatCodingStandard.PHP.ShortList"/>
 
-    <!-- 
-        Requires arrow functions.
-        https://github.com/slevomat/coding-standard/#slevomatcodingstandardfunctionsrequirearrowfunction-
-    -->
-    <rule ref="SlevomatCodingStandard.Functions.RequireArrowFunction">
-        <properties>
-            <property name="enabled" value="true"/>
-            <property name="allowNested" value="true"/>
-        </properties>
-    </rule>
+    <!-- https://github.com/slevomat/coding-standard/blob/master/doc/functions.md#slevomatcodingstandardfunctionsrequirearrowfunction- -->
+    <rule ref="SlevomatCodingStandard.Functions.RequireArrowFunction"/>
 
-    <!-- 
+    <!--
         Forces uniform arrow function style
         https://github.com/slevomat/coding-standard/blob/master/doc/functions.md#slevomatcodingstandardfunctionsarrowfunctiondeclaration-
     -->
@@ -258,4 +243,21 @@
             <property name="allowMultiLine" value="true"/>
         </properties>
     </rule>
+
+    <rule ref="SlevomatCodingStandard.Commenting.EmptyComment"/>
+    <rule ref="SlevomatCodingStandard.Commenting.DocCommentSpacing"/>
+    <rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHint">
+        <exclude name="SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingTraversableTypeHintSpecification"/>
+    </rule>
+    <rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint">
+        <exclude name="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingTraversableTypeHintSpecification"/>
+        <!-- TODO: Remove these include-patterns in Psalm v6.0.0 -->
+        <include-pattern>bin/*</include-pattern>
+        <include-pattern>src/Psalm/Internal/*</include-pattern>
+        <include-pattern>tests/*</include-pattern>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Arrays.TrailingArrayComma"/>
+    <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInCall"/>
+    <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInClosureUse"/>
+    <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInDeclaration"/>
 </ruleset>

@@ -92,8 +92,6 @@ class InstancePropertyAssignmentAnalyzer
     /**
      * @param   PropertyFetch|PropertyProperty  $stmt
      * @param   bool                            $direct_assignment whether the variable is assigned explicitly
-     *
-     * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -103,12 +101,12 @@ class InstancePropertyAssignmentAnalyzer
         Union $assignment_value_type,
         Context $context,
         bool $direct_assignment = true
-    ): ?bool {
+    ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt instanceof PropertyProperty) {
             if (!$context->self || !$stmt->default) {
-                return null;
+                return;
             }
 
             $property_id = $context->self . '::$' . $prop_name;
@@ -120,7 +118,7 @@ class InstancePropertyAssignmentAnalyzer
                     $property_id,
                     true,
                     $statements_analyzer,
-                    $context
+                    $context,
                 );
             } catch (UnexpectedValueException $e) {
                 // do nothing
@@ -133,7 +131,7 @@ class InstancePropertyAssignmentAnalyzer
                     $codebase,
                     $context->self,
                     $prop_name,
-                    $class_storage
+                    $class_storage,
                 );
             }
 
@@ -143,8 +141,8 @@ class InstancePropertyAssignmentAnalyzer
                 new AssignedProperty(
                     $class_property_type ?? Type::getMixed(),
                     $property_id,
-                    $assignment_value_type
-                )
+                    $assignment_value_type,
+                ),
             ];
         } else {
             $assigned_properties = self::analyzeRegularAssignment(
@@ -156,16 +154,16 @@ class InstancePropertyAssignmentAnalyzer
                 $codebase,
                 $assignment_value_type,
                 $prop_name,
-                $var_id
+                $var_id,
             );
         }
 
         if (!$assigned_properties) {
-            return null;
+            return;
         }
 
         if ($assignment_value_type->hasMixed()) {
-            return null;
+            return;
         }
 
         $invalid_assignment_value_types = [];
@@ -180,7 +178,7 @@ class InstancePropertyAssignmentAnalyzer
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                $assigned_properties[0]->property_type->getId()
+                $assigned_properties[0]->property_type->getId(),
             );
         }
 
@@ -200,7 +198,7 @@ class InstancePropertyAssignmentAnalyzer
                 $class_property_type,
                 true,
                 true,
-                $union_comparison_results
+                $union_comparison_results,
             );
 
             if ($type_match_found && $union_comparison_results->replacement_union_type) {
@@ -218,11 +216,11 @@ class InstancePropertyAssignmentAnalyzer
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?? $stmt,
-                                $context->include_location
+                                $context->include_location,
                             ),
-                            $assigned_property->id
+                            $assigned_property->id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
@@ -232,11 +230,11 @@ class InstancePropertyAssignmentAnalyzer
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?? $stmt,
-                                $context->include_location
+                                $context->include_location,
                             ),
-                            $assigned_property->id
+                            $assigned_property->id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -249,10 +247,10 @@ class InstancePropertyAssignmentAnalyzer
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?? $stmt,
-                            $context->include_location
-                        )
+                            $context->include_location,
+                        ),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -262,7 +260,7 @@ class InstancePropertyAssignmentAnalyzer
                     $assignment_type,
                     $class_property_type,
                     true,
-                    true
+                    true,
                 )) {
                     $has_valid_assignment_value_type = true;
                 }
@@ -284,13 +282,13 @@ class InstancePropertyAssignmentAnalyzer
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?? $stmt,
-                                $context->include_location
+                                $context->include_location,
                             ),
-                            $assigned_property->id
+                            $assigned_property->id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
-                        return false;
+                        return;
                     }
                 }
 
@@ -306,13 +304,13 @@ class InstancePropertyAssignmentAnalyzer
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?? $stmt,
-                                $context->include_location
+                                $context->include_location,
                             ),
-                            $assigned_property->id
+                            $assigned_property->id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
-                        return false;
+                        return;
                     }
                 }
             }
@@ -327,13 +325,13 @@ class InstancePropertyAssignmentAnalyzer
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?? $stmt,
-                            $context->include_location
+                            $context->include_location,
                         ),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 )) {
-                    return false;
+                    return;
                 }
             } else {
                 if (IssueBuffer::accepts(
@@ -344,18 +342,16 @@ class InstancePropertyAssignmentAnalyzer
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?? $stmt,
-                            $context->include_location
+                            $context->include_location,
                         ),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 )) {
-                    return false;
+                    return;
                 }
             }
         }
-
-        return null;
     }
 
     public static function trackPropertyImpurity(
@@ -376,7 +372,7 @@ class InstancePropertyAssignmentAnalyzer
 
         $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
             $property_id,
-            true
+            true,
         );
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
@@ -398,9 +394,9 @@ class InstancePropertyAssignmentAnalyzer
                     IssueBuffer::maybeAdd(
                         new InaccessibleProperty(
                             $property_id . ' is marked readonly',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } elseif (!$declaring_class_storage->mutation_free
                     && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation'])
@@ -425,24 +421,22 @@ class InstancePropertyAssignmentAnalyzer
                         new InvalidPropertyAssignment(
                             'Readonly property ' . $context->self . '::$' . $prop->name->name
                                 . ' cannot have a default',
-                            new CodeLocation($statements_analyzer->getSource(), $prop->default)
-                        )
+                            new CodeLocation($statements_analyzer->getSource(), $prop->default),
+                        ),
                     );
                 }
 
                 ExpressionAnalyzer::analyze($statements_analyzer, $prop->default, $context);
 
                 if ($prop_default_type = $statements_analyzer->node_data->getType($prop->default)) {
-                    if (self::analyze(
+                    self::analyze(
                         $statements_analyzer,
                         $prop,
                         $prop->name->name,
                         $prop->default,
                         $prop_default_type,
-                        $context
-                    ) === false) {
-                        // fall through
-                    }
+                        $context,
+                    );
                 }
             }
         }
@@ -468,13 +462,13 @@ class InstancePropertyAssignmentAnalyzer
             $var_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt->var,
                 null,
-                $statements_analyzer
+                $statements_analyzer,
             );
 
             $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
-                $statements_analyzer
+                $statements_analyzer,
             );
 
             if ($var_id) {
@@ -490,7 +484,7 @@ class InstancePropertyAssignmentAnalyzer
 
                 $var_node = DataFlowNode::getForAssignment(
                     $var_id,
-                    $var_location
+                    $var_location,
                 );
 
                 $data_flow_graph->addNode($var_node);
@@ -499,7 +493,7 @@ class InstancePropertyAssignmentAnalyzer
 
                 $property_node = DataFlowNode::getForAssignment(
                     $var_property_id ?: $var_id . '->$property',
-                    $property_location
+                    $property_location,
                 );
 
                 $data_flow_graph->addNode($property_node);
@@ -515,7 +509,7 @@ class InstancePropertyAssignmentAnalyzer
                     'property-assignment'
                         . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : ''),
                     $added_taints,
-                    $removed_taints
+                    $removed_taints,
                 );
 
                 if ($assignment_value_type->parent_nodes) {
@@ -524,17 +518,19 @@ class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
-                    [$var_node->id => $var_node]
-                );
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
+                        [$var_node->id => $var_node],
+                    );
 
-                if ($context->vars_in_scope[$var_id]->parent_nodes) {
-                    foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
-                        $data_flow_graph->addPath($parent_node, $var_node, '=', $added_taints, $removed_taints);
+                    if ($context->vars_in_scope[$var_id]->parent_nodes) {
+                        foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
+                            $data_flow_graph->addPath($parent_node, $var_node, '=', $added_taints, $removed_taints);
+                        }
                     }
-                }
 
-                $context->vars_in_scope[$var_id] = $stmt_var_type;
+                    $context->vars_in_scope[$var_id] = $stmt_var_type;
+                }
             }
         } else {
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
@@ -547,7 +543,7 @@ class InstancePropertyAssignmentAnalyzer
             $var_property_id = ExpressionIdentifier::getExtendedVarId(
                 $stmt,
                 null,
-                $statements_analyzer
+                $statements_analyzer,
             );
 
             self::taintUnspecializedProperty(
@@ -557,7 +553,7 @@ class InstancePropertyAssignmentAnalyzer
                 $class_storage,
                 $assignment_value_type,
                 $context,
-                $var_property_id
+                $var_property_id,
             );
         }
     }
@@ -583,7 +579,7 @@ class InstancePropertyAssignmentAnalyzer
 
         $localized_property_node = DataFlowNode::getForAssignment(
             $var_property_id ?: $property_id,
-            $property_location
+            $property_location,
         );
 
         $data_flow_graph->addNode($localized_property_node);
@@ -592,7 +588,7 @@ class InstancePropertyAssignmentAnalyzer
             $property_id,
             $property_id,
             null,
-            null
+            null,
         );
 
         $data_flow_graph->addNode($property_node);
@@ -607,7 +603,7 @@ class InstancePropertyAssignmentAnalyzer
             $property_node,
             'property-assignment',
             $added_taints,
-            $removed_taints
+            $removed_taints,
         );
 
         if ($assignment_value_type->parent_nodes) {
@@ -617,7 +613,7 @@ class InstancePropertyAssignmentAnalyzer
                     $localized_property_node,
                     '=',
                     $added_taints,
-                    $removed_taints
+                    $removed_taints,
                 );
             }
         }
@@ -625,7 +621,7 @@ class InstancePropertyAssignmentAnalyzer
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $property_id,
             false,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
@@ -639,7 +635,7 @@ class InstancePropertyAssignmentAnalyzer
                 $declaring_property_class . '::$' . $stmt->name,
                 $declaring_property_class . '::$' . $stmt->name,
                 null,
-                null
+                null,
             );
 
             $data_flow_graph->addNode($declaring_property_node);
@@ -649,7 +645,7 @@ class InstancePropertyAssignmentAnalyzer
                 $declaring_property_node,
                 'property-assignment',
                 $added_taints,
-                $removed_taints
+                $removed_taints,
             );
         }
     }
@@ -684,27 +680,26 @@ class InstancePropertyAssignmentAnalyzer
         $lhs_var_id = ExpressionIdentifier::getVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         $var_id = ExpressionIdentifier::getVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         if ($var_id) {
             $context->assigned_var_ids[$var_id] = (int)$stmt->var->getAttribute('startFilePos');
 
             if ($direct_assignment && isset($context->protected_var_ids[$var_id])) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new LoopInvalidation(
                         'Variable ' . $var_id . ' has already been assigned in a for/foreach loop',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                }
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
 
@@ -722,18 +717,17 @@ class InstancePropertyAssignmentAnalyzer
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
                     '$' . $stmt->name->name,
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
                 );
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MixedPropertyAssignment(
                     $lhs_var_id . ' of type mixed cannot be assigned to',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-            }
+                $statements_analyzer->getSuppressedIssues(),
+            );
 
             return [];
         }
@@ -749,27 +743,25 @@ class InstancePropertyAssignmentAnalyzer
         }
 
         if ($lhs_type->isNull()) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new NullPropertyAssignment(
                     $lhs_var_id . ' of type null cannot be assigned to',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-            }
+                $statements_analyzer->getSuppressedIssues(),
+            );
 
             return [];
         }
 
         if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new PossiblyNullPropertyAssignment(
                     $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-            }
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         $has_regular_setter = false;
@@ -790,7 +782,7 @@ class InstancePropertyAssignmentAnalyzer
             if ($lhs_type_part instanceof TTemplateParam) {
                 $lhs_atomic_types = array_merge(
                     $lhs_atomic_types,
-                    $lhs_type_part->as->getAtomicTypes()
+                    $lhs_type_part->as->getAtomicTypes(),
                 );
 
                 continue;
@@ -810,7 +802,7 @@ class InstancePropertyAssignmentAnalyzer
                 $assignment_value_type,
                 $lhs_var_id,
                 $has_valid_assignment_type,
-                $has_regular_setter
+                $has_regular_setter,
             );
 
             if ($assigned_property) {
@@ -820,7 +812,7 @@ class InstancePropertyAssignmentAnalyzer
                     $context_type = Type::combineUnionTypes(
                         $context_type,
                         $assigned_property->assignment_type,
-                        $codebase
+                        $codebase,
                     );
                 } else {
                     $context_type = $assigned_property->assignment_type;
@@ -832,25 +824,23 @@ class InstancePropertyAssignmentAnalyzer
             $invalid_assignment_type = $invalid_assignment_types[0];
 
             if (!$has_valid_assignment_type) {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidPropertyAssignment(
                         $lhs_var_id . ' with non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                }
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             } else {
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new PossiblyInvalidPropertyAssignment(
                         $lhs_var_id . ' with possible non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                }
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
 
@@ -876,7 +866,6 @@ class InstancePropertyAssignmentAnalyzer
 
     /**
      * @param list<string> $invalid_assignment_types
-     *
      * @psalm-suppress ComplexMethod Unavoidably complex method
      */
     private static function analyzeAtomicAssignment(
@@ -924,9 +913,9 @@ class InstancePropertyAssignmentAnalyzer
                 Config::getInstance()->getUniversalObjectCrates() + [
                     'dateinterval',
                     'domdocument',
-                    'domnode'
+                    'domnode',
                 ],
-                true
+                true,
             )
             )
         ) {
@@ -964,7 +953,7 @@ class InstancePropertyAssignmentAnalyzer
             if ($codebase->interfaceExists($lhs_type_part->value)) {
                 $interface_exists = true;
                 $interface_storage = $codebase->classlike_storage_provider->get(
-                    strtolower($lhs_type_part->value)
+                    strtolower($lhs_type_part->value),
                 );
 
                 $override_property_visibility = $interface_storage->override_property_visibility;
@@ -984,9 +973,9 @@ class InstancePropertyAssignmentAnalyzer
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $lhs_type_part->value
+                            $lhs_type_part->value,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
                         return null;
                     }
@@ -994,8 +983,8 @@ class InstancePropertyAssignmentAnalyzer
                     if (!$codebase->methods->methodExists(
                         new MethodIdentifier(
                             $fq_class_name,
-                            '__set'
-                        )
+                            '__set',
+                        ),
                     )) {
                         return null;
                     }
@@ -1007,9 +996,9 @@ class InstancePropertyAssignmentAnalyzer
                     new UndefinedClass(
                         'Cannot set properties of undefined class ' . $lhs_type_part->value,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $lhs_type_part->value
+                        $lhs_type_part->value,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 return null;
@@ -1033,7 +1022,7 @@ class InstancePropertyAssignmentAnalyzer
                         $statements_analyzer,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $statements_analyzer->getSuppressedIssues(),
-                        false
+                        false,
                     ) !== true)
             )
             && $codebase->methods->methodExists(
@@ -1046,7 +1035,7 @@ class InstancePropertyAssignmentAnalyzer
                 && !$context->collect_mutations
                     ? $statements_analyzer
                     : null,
-                $statements_analyzer->getFilePath()
+                $statements_analyzer->getFilePath(),
             )
         ) {
             $has_magic_setter = true;
@@ -1059,7 +1048,7 @@ class InstancePropertyAssignmentAnalyzer
                         $class_storage->pseudo_property_set_types['$' . $prop_name],
                         $fq_class_name,
                         $fq_class_name,
-                        $class_storage->parent_class
+                        $class_storage->parent_class,
                     );
 
                     $has_regular_setter = true;
@@ -1071,14 +1060,14 @@ class InstancePropertyAssignmentAnalyzer
                             $property_id,
                             $class_storage,
                             $assignment_value_type,
-                            $context
+                            $context,
                         );
                     }
 
                     return new AssignedProperty(
                         $class_property_type,
                         $property_id,
-                        $assignment_value_type
+                        $assignment_value_type,
                     );
                 }
             }
@@ -1090,7 +1079,7 @@ class InstancePropertyAssignmentAnalyzer
                     $statements_analyzer,
                     $stmt,
                     $prop_name,
-                    $assignment_value
+                    $assignment_value,
                 );
             }
 
@@ -1106,7 +1095,7 @@ class InstancePropertyAssignmentAnalyzer
                         $property_id,
                         $class_storage,
                         $assignment_value_type,
-                        $context
+                        $context,
                     );
                 }
 
@@ -1118,9 +1107,9 @@ class InstancePropertyAssignmentAnalyzer
                     new UndefinedMagicPropertyAssignment(
                         'Magic instance property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -1142,7 +1131,7 @@ class InstancePropertyAssignmentAnalyzer
                     $self_property_id,
                     false,
                     $statements_analyzer,
-                    $context
+                    $context,
                 )
             ) {
                 $property_id = $self_property_id;
@@ -1161,7 +1150,7 @@ class InstancePropertyAssignmentAnalyzer
                 $property_id,
                 $class_storage,
                 $assignment_value_type,
-                $context
+                $context,
             );
         }
 
@@ -1170,7 +1159,7 @@ class InstancePropertyAssignmentAnalyzer
             false,
             $statements_analyzer,
             $context,
-            new CodeLocation($statements_analyzer->getSource(), $stmt)
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
         )
         // when property existence is asserted by a plugin it doesn't necessarily has storage
         || ($codebase->properties->hasStorage($property_id)
@@ -1187,9 +1176,9 @@ class InstancePropertyAssignmentAnalyzer
                     new UndefinedThisPropertyAssignment(
                         'Instance property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
                 if ($has_magic_setter) {
@@ -1197,18 +1186,18 @@ class InstancePropertyAssignmentAnalyzer
                         new UndefinedMagicPropertyAssignment(
                             'Magic instance property ' . $property_id . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $property_id
+                            $property_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new UndefinedPropertyAssignment(
                             'Instance property ' . $property_id . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $property_id
+                            $property_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -1223,7 +1212,7 @@ class InstancePropertyAssignmentAnalyzer
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                $property_id
+                $property_id,
             );
         }
 
@@ -1234,7 +1223,7 @@ class InstancePropertyAssignmentAnalyzer
                     $context,
                     $statements_analyzer,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 ) === false) {
                     return null;
                 }
@@ -1245,7 +1234,7 @@ class InstancePropertyAssignmentAnalyzer
                     $statements_analyzer,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues(),
-                    false
+                    false,
                 ) !== true) {
                     return null;
                 }
@@ -1254,7 +1243,7 @@ class InstancePropertyAssignmentAnalyzer
 
         $declaring_property_class = (string)$codebase->properties->getDeclaringClassForProperty(
             $property_id,
-            false
+            false,
         );
 
         self::handlePropertyRenames(
@@ -1262,7 +1251,7 @@ class InstancePropertyAssignmentAnalyzer
             $declaring_property_class,
             $prop_name,
             $stmt,
-            $statements_analyzer->getFilePath()
+            $statements_analyzer->getFilePath(),
         );
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
@@ -1275,9 +1264,9 @@ class InstancePropertyAssignmentAnalyzer
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -1287,9 +1276,9 @@ class InstancePropertyAssignmentAnalyzer
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
                             . ' but called from ' . $context->self,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -1299,7 +1288,7 @@ class InstancePropertyAssignmentAnalyzer
                 $property_id,
                 $property_storage,
                 $declaring_class_storage,
-                $context
+                $context,
             );
 
             if (!$property_storage->readonly
@@ -1312,9 +1301,9 @@ class InstancePropertyAssignmentAnalyzer
                     IssueBuffer::maybeAdd(
                         new ImpurePropertyAssignment(
                             'Cannot assign to a property from a mutation-free context',
-                            new CodeLocation($statements_analyzer, $stmt)
+                            new CodeLocation($statements_analyzer, $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } elseif ($statements_analyzer->getSource()
                     instanceof FunctionLikeAnalyzer
@@ -1335,7 +1324,7 @@ class InstancePropertyAssignmentAnalyzer
             $property_id,
             true,
             $statements_analyzer,
-            $context
+            $context,
         );
 
         if (!$class_property_type
@@ -1353,7 +1342,7 @@ class InstancePropertyAssignmentAnalyzer
             ) {
                 $source_analyzer->inferred_property_types[$prop_name] = Type::combineUnionTypes(
                     $assignment_value_type,
-                    $source_analyzer->inferred_property_types[$prop_name] ?? null
+                    $source_analyzer->inferred_property_types[$prop_name] ?? null,
                 );
             }
         }
@@ -1369,14 +1358,14 @@ class InstancePropertyAssignmentAnalyzer
                 $declaring_class_storage->parent_class,
                 true,
                 false,
-                $class_storage->final
+                $class_storage->final,
             );
 
             $class_property_type = Methods::localizeType(
                 $codebase,
                 $class_property_type,
                 $fq_class_name,
-                $declaring_property_class
+                $declaring_property_class,
             );
 
             if ($lhs_type_part instanceof TGenericObject) {
@@ -1385,7 +1374,7 @@ class InstancePropertyAssignmentAnalyzer
                     $class_property_type,
                     $lhs_type_part,
                     $class_storage,
-                    $declaring_class_storage
+                    $declaring_class_storage,
                 );
             }
 
@@ -1393,7 +1382,7 @@ class InstancePropertyAssignmentAnalyzer
                 $codebase,
                 $assignment_value_type,
                 $fq_class_name,
-                $declaring_property_class
+                $declaring_property_class,
             );
 
             if (!$class_property_type->hasMixed() && $assignment_value_type->hasMixed()) {
@@ -1403,7 +1392,7 @@ class InstancePropertyAssignmentAnalyzer
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
                         $origin_locations = [
                             ...$origin_locations,
-                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node)
+                            ...$statements_analyzer->data_flow_graph->getOriginLocations($parent_node),
                         ];
                     }
                 }
@@ -1422,9 +1411,9 @@ class InstancePropertyAssignmentAnalyzer
                     new MixedAssignment(
                         $message,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $origin_location
+                        $origin_location,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -1432,7 +1421,7 @@ class InstancePropertyAssignmentAnalyzer
         return new AssignedProperty(
             $class_property_type,
             $property_id,
-            $assignment_value_type
+            $assignment_value_type,
         );
     }
 
@@ -1455,13 +1444,13 @@ class InstancePropertyAssignmentAnalyzer
                     new FileManipulation(
                         (int)$stmt->name->getAttribute('startFilePos'),
                         (int)$stmt->name->getAttribute('endFilePos') + 1,
-                        $new_property_name
-                    )
+                        $new_property_name,
+                    ),
                 ];
 
                 FileManipulationBuffer::add(
                     $file_path,
-                    $file_manipulations
+                    $file_manipulations,
                 );
             }
         }
@@ -1475,7 +1464,7 @@ class InstancePropertyAssignmentAnalyzer
     ): ?Union {
         $property_class_name = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $property_name,
-            true
+            true,
         );
 
         if ($property_class_name === null) {
@@ -1501,7 +1490,7 @@ class InstancePropertyAssignmentAnalyzer
                 $storage->parent_class,
                 true,
                 false,
-                $storage->final
+                $storage->final,
             )
             : $property_type;
 
@@ -1511,12 +1500,12 @@ class InstancePropertyAssignmentAnalyzer
             $storage,
             null,
             new TNamedObject($fq_class_name),
-            true
+            true,
         );
 
         $template_result = new TemplateResult(
             $class_template_params ?: [],
-            []
+            [],
         );
 
         if ($class_template_params) {
@@ -1526,7 +1515,7 @@ class InstancePropertyAssignmentAnalyzer
                 $codebase,
                 null,
                 null,
-                null
+                null,
             );
         }
 
@@ -1545,7 +1534,7 @@ class InstancePropertyAssignmentAnalyzer
             $context->removeVarFromConflictingClauses(
                 $var_id,
                 Type::getMixed(),
-                $statements_analyzer
+                $statements_analyzer,
             );
 
             $context->removePossibleReference($var_id);
@@ -1562,13 +1551,13 @@ class InstancePropertyAssignmentAnalyzer
                 new VirtualArg(
                     new VirtualString(
                         $prop_name,
-                        $stmt->name->getAttributes()
-                    )
+                        $stmt->name->getAttributes(),
+                    ),
                 ),
                 new VirtualArg(
-                    $assignment_value
-                )
-            ]
+                    $assignment_value,
+                ),
+            ],
         );
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -1581,7 +1570,7 @@ class InstancePropertyAssignmentAnalyzer
             $statements_analyzer,
             $fake_method_call,
             $context,
-            false
+            false,
         );
 
         if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {

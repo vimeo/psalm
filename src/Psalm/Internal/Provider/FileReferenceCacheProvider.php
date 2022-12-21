@@ -27,7 +27,6 @@ use const LOCK_EX;
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
- *
  * @internal
  */
 class FileReferenceCacheProvider
@@ -53,10 +52,7 @@ class FileReferenceCacheProvider
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
 
-    /**
-     * @var Config
-     */
-    protected $config;
+    protected Config $config;
 
     public function __construct(Config $config)
     {
@@ -945,12 +941,12 @@ class FileReferenceCacheProvider
             if ($this->config->use_igbinary) {
                 /** @var array<string, array{int, int}> */
                 $type_coverage_cache = igbinary_unserialize(
-                    Providers::safeFileGetContents($type_coverage_cache_location)
+                    Providers::safeFileGetContents($type_coverage_cache_location),
                 );
             } else {
                 /** @var array<string, array{int, int}> */
                 $type_coverage_cache = unserialize(
-                    Providers::safeFileGetContents($type_coverage_cache_location)
+                    Providers::safeFileGetContents($type_coverage_cache_location),
                 );
             }
 
@@ -1013,7 +1009,7 @@ class FileReferenceCacheProvider
                 if (mkdir($cache_directory, 0777, true) === false) {
                     // any other error than directory already exists/permissions issue
                     throw new RuntimeException(
-                        'Failed to create ' . $cache_directory . ' cache directory for unknown reasons'
+                        'Failed to create ' . $cache_directory . ' cache directory for unknown reasons',
                     );
                 }
             } catch (RuntimeException $e) {
@@ -1031,7 +1027,7 @@ class FileReferenceCacheProvider
         file_put_contents(
             $config_hash_cache_location,
             $hash,
-            LOCK_EX
+            LOCK_EX,
         );
     }
 }

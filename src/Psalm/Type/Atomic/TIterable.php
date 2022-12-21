@@ -15,6 +15,7 @@ use function substr;
 
 /**
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
+ *
  * @psalm-immutable
  */
 final class TIterable extends Atomic
@@ -134,15 +135,15 @@ final class TIterable extends Atomic
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
             $template_result,
-            $codebase
+            $codebase,
         );
         $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes(
             $template_result,
-            $codebase
+            $codebase,
         );
         return new static(
             $type_params ?? $this->type_params,
-            $intersection ?? $this->extra_types
+            $intersection ?? $this->extra_types,
         );
     }
 
@@ -171,7 +172,7 @@ final class TIterable extends Atomic
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         $intersection = $this->replaceIntersectionTemplateTypesWithStandins(
             $template_result,
@@ -183,14 +184,14 @@ final class TIterable extends Atomic
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         if (!$types && !$intersection) {
             return $this;
         }
         return new static(
             $types ?? $this->type_params,
-            $intersection ?? $this->extra_types
+            $intersection ?? $this->extra_types,
         );
     }
 }

@@ -15,8 +15,7 @@ use function strpos;
 
 class MethodMoveTest extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {
@@ -27,7 +26,6 @@ class MethodMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $methods_to_move
      */
     public function testValidCode(
@@ -46,8 +44,8 @@ class MethodMoveTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $context = new Context();
@@ -56,7 +54,7 @@ class MethodMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code
+            $input_code,
         );
 
         $codebase = $this->project_analyzer->getCodebase();

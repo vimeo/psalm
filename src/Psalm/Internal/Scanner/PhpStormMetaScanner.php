@@ -10,7 +10,6 @@ use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -59,7 +58,7 @@ class PhpStormMetaScanner
                         && strtolower($array_item->value->name->name)
                     ) {
                         $map[$array_item->key->value] = new Union([
-                            new TNamedObject(implode('\\', $array_item->value->class->parts))
+                            new TNamedObject(implode('\\', $array_item->value->class->parts)),
                         ]);
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$array_item->key->value] = $array_item->value->value;
@@ -89,21 +88,25 @@ class PhpStormMetaScanner
         if ($identifier instanceof PhpParser\Node\Expr\StaticCall
             && $identifier->class instanceof PhpParser\Node\Name\FullyQualified
             && $identifier->name instanceof PhpParser\Node\Identifier
-            && $identifier->getArgs()
-            && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && (
+                $identifier->getArgs() === []
+                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            )
         ) {
             $meta_fq_classlike_name = implode('\\', $identifier->class->parts);
 
             $meta_method_name = strtolower($identifier->name->name);
 
             if ($map) {
-                $offset = $identifier->getArgs()[0]->value->value;
+                $offset = 0;
+                if ($identifier->getArgs()
+                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                ) {
+                    $offset = $identifier->getArgs()[0]->value->value;
+                }
 
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
-                    /**
-                     * @param list<PhpParser\Node\Arg> $call_args
-                     */
                     static function (
                         MethodReturnTypeProviderEvent $event
                     ) use (
@@ -144,7 +147,7 @@ class PhpStormMetaScanner
 
                                     if (strpos($mapped_type, '.') === false) {
                                         return new Union([
-                                            new TNamedObject($mapped_type)
+                                            new TNamedObject($mapped_type),
                                         ]);
                                     }
                                 }
@@ -152,14 +155,11 @@ class PhpStormMetaScanner
                         }
 
                         return null;
-                    }
+                    },
                 );
             } elseif ($type_offset !== null) {
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
-                    /**
-                     * @param list<PhpParser\Node\Arg> $call_args
-                     */
                     static function (
                         MethodReturnTypeProviderEvent $event
                     ) use (
@@ -189,14 +189,11 @@ class PhpStormMetaScanner
                         }
 
                         return null;
-                    }
+                    },
                 );
             } elseif ($element_type_offset !== null) {
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
-                    /**
-                     * @param list<PhpParser\Node\Arg> $call_args
-                     */
                     static function (
                         MethodReturnTypeProviderEvent $event
                     ) use (
@@ -224,44 +221,42 @@ class PhpStormMetaScanner
                             && $call_arg_type->hasArray()
                         ) {
                             /**
-                             * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var TArray|TKeyedArray|TList
+                             * @var TArray|TKeyedArray
                              */
-                            $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
+                            $array_atomic_type = $call_arg_type->getArray();
 
                             if ($array_atomic_type instanceof TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
-                            }
-
-                            if ($array_atomic_type instanceof TList) {
-                                return $array_atomic_type->type_param;
                             }
 
                             return $array_atomic_type->type_params[1];
                         }
 
                         return null;
-                    }
+                    },
                 );
             }
         }
 
         if ($identifier instanceof PhpParser\Node\Expr\FuncCall
             && $identifier->name instanceof PhpParser\Node\Name\FullyQualified
-            && $identifier->getArgs()
-            && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && (
+                $identifier->getArgs() === []
+                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            )
         ) {
             $function_id = strtolower(implode('\\', $identifier->name->parts));
 
             if ($map) {
-                $offset = $identifier->getArgs()[0]->value->value;
+                $offset = 0;
+                if ($identifier->getArgs()
+                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                ) {
+                    $offset = $identifier->getArgs()[0]->value->value;
+                }
 
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
-                    /**
-                     * @param non-empty-string $function_id
-                     * @param list<PhpParser\Node\Arg> $call_args
-                     */
                     static function (
                         FunctionReturnTypeProviderEvent $event
                     ) use (
@@ -294,7 +289,7 @@ class PhpStormMetaScanner
 
                                     if (strpos($mapped_type, '.') === false) {
                                         return new Union([
-                                            new TNamedObject($mapped_type)
+                                            new TNamedObject($mapped_type),
                                         ]);
                                     }
                                 }
@@ -303,19 +298,15 @@ class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            strtolower($function_id)
+                            strtolower($function_id),
                         );
 
                         return $storage->return_type ?: Type::getMixed();
-                    }
+                    },
                 );
             } elseif ($type_offset !== null) {
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
-                    /**
-                     * @param non-empty-string $function_id
-                     * @param list<PhpParser\Node\Arg> $call_args
-                     */
                     static function (
                         FunctionReturnTypeProviderEvent $event
                     ) use (
@@ -337,19 +328,15 @@ class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            strtolower($function_id)
+                            strtolower($function_id),
                         );
 
                         return $storage->return_type ?: Type::getMixed();
-                    }
+                    },
                 );
             } elseif ($element_type_offset !== null) {
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
-                    /**
-                     * @param non-empty-string $function_id
-                     * @param list<PhpParser\Node\Arg> $call_args
-                     */
                     static function (
                         FunctionReturnTypeProviderEvent $event
                     ) use (
@@ -368,17 +355,12 @@ class PhpStormMetaScanner
                             && $call_arg_type->hasArray()
                         ) {
                             /**
-                             * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                             * @var TArray|TKeyedArray|TList
+                             * @var TArray|TKeyedArray
                              */
-                            $array_atomic_type = $call_arg_type->getAtomicTypes()['array'];
+                            $array_atomic_type = $call_arg_type->getArray();
 
                             if ($array_atomic_type instanceof TKeyedArray) {
                                 return $array_atomic_type->getGenericValueType();
-                            }
-
-                            if ($array_atomic_type instanceof TList) {
-                                return $array_atomic_type->type_param;
                             }
 
                             return $array_atomic_type->type_params[1];
@@ -386,11 +368,11 @@ class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            strtolower($function_id)
+                            strtolower($function_id),
                         );
 
                         return $storage->return_type ?: Type::getMixed();
-                    }
+                    },
                 );
             }
         }

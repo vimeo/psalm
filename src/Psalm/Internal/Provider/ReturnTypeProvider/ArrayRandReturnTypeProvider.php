@@ -2,14 +2,12 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 /**
@@ -39,10 +37,9 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $first_arg_array = $first_arg
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
             && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
+            && ($array_atomic_type = $first_arg_type->getArray())
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
         ? $array_atomic_type
         : null;
 
@@ -52,25 +49,25 @@ class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         if ($first_arg_array instanceof TArray) {
             $key_type = $first_arg_array->type_params[0];
-        } elseif ($first_arg_array instanceof TList) {
-            $key_type = Type::getInt();
         } else {
             $key_type = $first_arg_array->getGenericKeyType();
         }
 
-        if (!$second_arg
-            || ($second_arg instanceof PhpParser\Node\Scalar\LNumber && $second_arg->value === 1)
+        if (!$second_arg) {
+            return $key_type;
+        }
+
+        $second_arg_type = $statements_source->node_data->getType($second_arg);
+        if ($second_arg_type
+            && $second_arg_type->isSingleIntLiteral()
+            && $second_arg_type->getSingleIntLiteral()->value === 1
         ) {
             return $key_type;
         }
 
-        $arr_type = new Union([
-            new TList(
-                $key_type
-            ),
-        ]);
+        $arr_type = Type::getList($key_type);
 
-        if ($second_arg instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($second_arg_type && $second_arg_type->isSingleIntLiteral()) {
             return $arr_type;
         }
 

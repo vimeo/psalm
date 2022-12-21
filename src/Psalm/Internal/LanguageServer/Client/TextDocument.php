@@ -21,15 +21,9 @@ use function Amp\call;
  */
 class TextDocument
 {
-    /**
-     * @var ClientHandler
-     */
-    private $handler;
+    private ClientHandler $handler;
 
-    /**
-     * @var JsonMapper
-     */
-    private $mapper;
+    private JsonMapper $mapper;
 
     public function __construct(ClientHandler $handler, JsonMapper $mapper)
     {
@@ -55,9 +49,7 @@ class TextDocument
      * to request the current content of a text document identified by the URI
      *
      * @param TextDocumentIdentifier $textDocument The document to get the content for
-     *
      * @return Promise<TextDocumentItem> The document's current content
-     *
      * @psalm-suppress MixedReturnTypeCoercion due to Psalm bug
      */
     public function xcontent(TextDocumentIdentifier $textDocument): Promise
@@ -70,14 +62,14 @@ class TextDocument
                 /** @var Promise<object> */
                 $promise = $this->handler->request(
                     'textDocument/xcontent',
-                    ['textDocument' => $textDocument]
+                    ['textDocument' => $textDocument],
                 );
 
                 $result = yield $promise;
 
                 /** @var TextDocumentItem */
                 return $this->mapper->map($result, new TextDocumentItem);
-            }
+            },
         );
     }
 }

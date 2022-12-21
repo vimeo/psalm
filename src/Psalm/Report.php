@@ -29,6 +29,7 @@ abstract class Report
     public const TYPE_SARIF = 'sarif';
     public const TYPE_CODECLIMATE = 'codeclimate';
     public const TYPE_COUNT = 'count';
+    public const TYPE_BY_ISSUE_LEVEL = 'by-issue-level';
 
     /**
      * @var array<int, IssueData>
@@ -73,7 +74,7 @@ abstract class Report
         if (!$report_options->show_info) {
             $this->issues_data = array_filter(
                 $issues_data,
-                static fn(IssueData $issue_data): bool => $issue_data->severity !== Config::REPORT_INFO
+                static fn(IssueData $issue_data): bool => $issue_data->severity !== Config::REPORT_INFO,
             );
         } else {
             $this->issues_data = $issues_data;

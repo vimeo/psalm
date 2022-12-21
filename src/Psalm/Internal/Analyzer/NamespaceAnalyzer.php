@@ -31,24 +31,18 @@ class NamespaceAnalyzer extends SourceAnalyzer
      * @var FileAnalyzer
      * @psalm-suppress NonInvariantDocblockPropertyType
      */
-    protected $source;
+    protected SourceAnalyzer $source;
 
-    /**
-     * @var Namespace_
-     */
-    private $namespace;
+    private Namespace_ $namespace;
 
-    /**
-     * @var string
-     */
-    private $namespace_name;
+    private string $namespace_name;
 
     /**
      * A lookup table for public namespace constants
      *
      * @var array<string, array<string, Union>>
      */
-    protected static $public_namespace_constants = [];
+    protected static array $public_namespace_constants = [];
 
     public function __construct(Namespace_ $namespace, FileAnalyzer $source)
     {
@@ -112,12 +106,12 @@ class NamespaceAnalyzer extends SourceAnalyzer
         if ($stmt instanceof PhpParser\Node\Stmt\Class_ || $stmt instanceof PhpParser\Node\Stmt\Enum_) {
             $this->source->addNamespacedClassAnalyzer(
                 $fq_class_name,
-                new ClassAnalyzer($stmt, $this, $fq_class_name)
+                new ClassAnalyzer($stmt, $this, $fq_class_name),
             );
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
             $this->source->addNamespacedInterfaceAnalyzer(
                 $fq_class_name,
-                new InterfaceAnalyzer($stmt, $this, $fq_class_name)
+                new InterfaceAnalyzer($stmt, $this, $fq_class_name),
             );
         }
     }
@@ -159,7 +153,6 @@ class NamespaceAnalyzer extends SourceAnalyzer
      * case-insensitive comparison. Identifiers can be namespaces, classlikes, functions, or methods.
      *
      * @psalm-pure
-     *
      * @throws InvalidArgumentException if $identifier is not a valid identifier
      */
     public static function isWithin(string $calling_identifier, string $identifier): bool
@@ -193,9 +186,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
      * Identifiers can be namespaces, classlikes, functions, or methods.
      *
      * @psalm-pure
-     *
      * @psalm-assert-if-false !empty $identifiers
-     *
      * @param list<string> $identifiers
      */
     public static function isWithinAny(string $calling_identifier, array $identifiers): bool
@@ -214,10 +205,8 @@ class NamespaceAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param non-empty-string $fullyQualifiedClassName, e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
-     *
+     * @param non-empty-string $fullyQualifiedClassName e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
      * @return non-empty-string , e.g. 'Psalm'
-     *
      * @psalm-pure
      */
     public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
@@ -231,7 +220,6 @@ class NamespaceAnalyzer extends SourceAnalyzer
 
     /**
      * @return ($lowercase is true ? lowercase-string : string)
-     *
      * @psalm-pure
      */
     public static function normalizeIdentifier(string $identifier, bool $lowercase = true): string
@@ -248,7 +236,6 @@ class NamespaceAnalyzer extends SourceAnalyzer
      * Splits an identifier into parts, eg `Foo\Bar::baz` becomes ["Foo", "\\", "Bar", "::", "baz"].
      *
      * @return list<non-empty-string>
-     *
      * @psalm-pure
      */
     public static function getIdentifierParts(string $identifier): array

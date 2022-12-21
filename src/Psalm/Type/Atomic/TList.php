@@ -14,11 +14,16 @@ use Psalm\Type\Union;
 use function get_class;
 
 /**
+ * @deprecated Will be removed in Psalm v6, please use TKeyedArrays with is_list=true instead.
+ *
+ * You may also use the \Psalm\Type::getListAtomic shortcut, which creates unsealed list-like shaped arrays
+ * with all elements optional, semantically equivalent to a TList.
+ *
+ *
  * Represents an array that has some particularities:
  * - its keys are integers
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
- *
  * @psalm-immutable
  */
 class TList extends Atomic
@@ -53,6 +58,11 @@ class TList extends Atomic
         return $cloned;
     }
 
+    public function getKeyedArray(): TKeyedArray
+    {
+        return Type::getListAtomic($this->type_param);
+    }
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         return static::KEY . '<' . $this->type_param->getId($exact) . '>';
@@ -60,7 +70,6 @@ class TList extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -74,7 +83,7 @@ class TList extends Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    true
+                    true,
                 );
         }
 
@@ -84,7 +93,7 @@ class TList extends Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                false
+                false,
             )
             . '>';
     }
@@ -165,7 +174,7 @@ class TList extends Atomic
                 $replace,
                 $add_lower_bound,
                 null,
-                $depth + 1
+                $depth + 1,
             );
 
             if ($offset === 1 && ($cloned || $this->type_param !== $type_param)) {
@@ -187,7 +196,7 @@ class TList extends Atomic
         return $this->setTypeParam(TemplateInferredTypeReplacer::replace(
             $this->type_param,
             $template_result,
-            $codebase
+            $codebase,
         ));
     }
 

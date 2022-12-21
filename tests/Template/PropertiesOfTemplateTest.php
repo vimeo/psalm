@@ -11,9 +11,6 @@ class PropertiesOfTemplateTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -79,8 +76,8 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                 ',
                 'assertions' => [
-                    '$objAsArray===' => 'array{a: 42, b: bool, c: string, ...<string, mixed>}'
-                ]
+                    '$objAsArray===' => 'array{a: 42, b: bool, c: string, ...<string, mixed>}',
+                ],
             ],
             'privatePropertiesPicksPrivate' => [
                 'code' => '<?php
@@ -189,14 +186,11 @@ class PropertiesOfTemplateTest extends TestCase
                     $obj = new A();
                     $objAsArray = asArray([$obj]);
                     $b = $objAsArray["c"];
-                '
+                ',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -226,7 +220,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                     $d = $objAsArray["d"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'privatePropertiesPicksNoPublic' => [
                 'code' => '<?php
@@ -254,7 +248,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                     $b = $objAsArray["a"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'privatePropertiesPicksNoProtected' => [
                 'code' => '<?php
@@ -282,7 +276,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                     $b = $objAsArray["c"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'protectedPropertiesPicksNoPublic' => [
                 'code' => '<?php
@@ -310,7 +304,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                     $b = $objAsArray["a"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'protectedPropertiesPicksNoPrivate' => [
                 'code' => '<?php
@@ -338,7 +332,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                     $b = $objAsArray["b"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'publicPropertiesPicksNoPrivate' => [
                 'code' => '<?php
@@ -366,7 +360,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                     $a = $objAsArray["b"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'publicPropertiesPicksNoProtected' => [
                 'code' => '<?php
@@ -394,7 +388,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                     $a = $objAsArray["c"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
             'propertiesOfNestedTemplatesPickPublic' => [
                 'code' => '<?php
@@ -423,7 +417,7 @@ class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray([$obj]);
                     $b = $objAsArray["d"];
                 ',
-                'error_message' => 'InvalidArrayOffset'
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }

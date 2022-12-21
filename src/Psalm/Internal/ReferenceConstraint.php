@@ -12,8 +12,7 @@ use Psalm\Type\Union;
  */
 class ReferenceConstraint
 {
-    /** @var Union|null */
-    public $type;
+    public ?Union $type = null;
 
     public function __construct(?Union $type = null)
     {

@@ -90,7 +90,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $calling_method_class . '::__construct',
                 strtolower((string) $method_id),
-                false
+                false,
             );
         }
 
@@ -102,7 +102,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $codebase,
-                (string) $method_id
+                (string) $method_id,
             );
         }
 
@@ -112,13 +112,13 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $fake_function_call = new VirtualFuncCall(
                 $stmt->var,
                 $args,
-                $stmt->getAttributes()
+                $stmt->getAttributes(),
             );
 
             FunctionCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_function_call,
-                $context
+                $context,
             );
 
             return $statements_analyzer->node_data->getType($fake_function_call) ?? Type::getMixed();
@@ -133,7 +133,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
                 $stmt_name,
-                $method_id . '()'
+                $method_id . '()',
             );
         }
 
@@ -142,7 +142,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $calling_method_class . '::__construct',
                 strtolower((string) $method_id),
-                false
+                false,
             );
         }
 
@@ -166,7 +166,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $class_storage,
             $method_name_lc,
             $lhs_type_part,
-            $lhs_var_id === '$this'
+            $lhs_var_id === '$this',
         );
 
         if ($lhs_var_id === '$this' && $parent_source instanceof FunctionLikeAnalyzer) {
@@ -188,7 +188,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $class_storage,
                         $method_name_lc,
                         $lhs_type_part,
-                        true
+                        true,
                     );
                 }
             }
@@ -212,7 +212,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $method_template_result,
                 $codebase,
                 null,
-                new Union([$lhs_type_part])
+                new Union([$lhs_type_part]),
             );
 
             $method_template_params = $method_template_result->lower_bounds;
@@ -233,7 +233,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $codebase,
-                (string) $method_id
+                (string) $method_id,
             );
         }
 
@@ -245,7 +245,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result,
             $context,
             new CodeLocation($source, $stmt_name),
-            $statements_analyzer
+            $statements_analyzer,
         ) === false) {
             return Type::getMixed();
         }
@@ -263,7 +263,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $static_type,
             $args,
             $result,
-            $template_result
+            $template_result,
         );
 
         if ($is_first_class_callable) {
@@ -281,7 +281,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $method_id,
                 $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
                 $name_code_location,
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             $getter_return_type = self::getMagicGetterOrSetterProperty(
@@ -289,7 +289,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $stmt_name,
                 $context,
-                $fq_class_name
+                $fq_class_name,
             );
 
             if ($getter_return_type) {
@@ -303,7 +303,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $if_this_is_type = TemplateInferredTypeReplacer::replace(
                     $method_storage->if_this_is_type,
                     $template_result,
-                    $codebase
+                    $codebase,
                 );
 
                 if (!UnionTypeComparator::isContainedBy($codebase, $class_type, $if_this_is_type)) {
@@ -311,9 +311,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         new IfThisIsMismatch(
                             'Class type must be ' . $method_storage->if_this_is_type->getId()
                             . ' current type ' . $class_type->getId(),
-                            new CodeLocation($source, $stmt->name)
+                            new CodeLocation($source, $stmt->name),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -332,7 +332,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         false,
                         $static_type instanceof TNamedObject
                             && $codebase->classlike_storage_provider->get($static_type->value)->final,
-                        true
+                        true,
                     );
                 }
 
@@ -341,7 +341,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $template_result,
                     $method_id,
                     count($args),
-                    $codebase
+                    $codebase,
                 );
 
                 $self_out_candidate = TypeExpander::expandUnion(
@@ -354,7 +354,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     false,
                     $static_type instanceof TNamedObject
                         && $codebase->classlike_storage_provider->get($static_type->value)->final,
-                    true
+                    true,
                 );
 
                 $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
@@ -372,7 +372,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $class_storage,
                     $context,
                     $config,
-                    $result
+                    $result,
                 );
             }
 
@@ -415,7 +415,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $args,
                     $template_result,
                     $context,
-                    $statements_analyzer
+                    $statements_analyzer,
                 );
             }
 
@@ -426,10 +426,10 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                             $template_result,
                             $lhs_var_id,
-                            $codebase
+                            $codebase,
                         ),
-                        $method_storage->if_true_assertions
-                    )
+                        $method_storage->if_true_assertions,
+                    ),
                 );
             }
 
@@ -440,10 +440,10 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                             $template_result,
                             $lhs_var_id,
-                            $codebase
+                            $codebase,
                         ),
-                        $method_storage->if_false_assertions
-                    )
+                        $method_storage->if_false_assertions,
+                    ),
                 );
             }
         }
@@ -457,13 +457,13 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         new FileManipulation(
                             (int) $stmt_name->getAttribute('startFilePos'),
                             (int) $stmt_name->getAttribute('endFilePos') + 1,
-                            $new_method_name
-                        )
+                            $new_method_name,
+                        ),
                     ];
 
                     FileManipulationBuffer::add(
                         $statements_analyzer->getFilePath(),
-                        $file_manipulations
+                        $file_manipulations,
                     );
                 }
             }
@@ -485,7 +485,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $codebase,
                     $file_manipulations,
-                    $return_type_candidate
+                    $return_type_candidate,
                 );
 
                 $config->eventDispatcher->dispatchAfterMethodCallAnalysis($event);
@@ -537,7 +537,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $method_name === '__get',
             $statements_analyzer,
             $context,
-            new CodeLocation($statements_analyzer->getSource(), $stmt)
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
         );
 
         switch ($method_name) {
@@ -546,16 +546,15 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 // a `@property` annotation
                 if (($class_storage->sealed_properties || $codebase->config->seal_all_properties)
                     && !isset($class_storage->pseudo_property_set_types['$' . $prop_name])
-                    && IssueBuffer::accepts(
+                ) {
+                    IssueBuffer::maybeAdd(
                         new UndefinedThisPropertyAssignment(
                             'Instance property ' . $property_id . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $property_id
+                            $property_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )
-                ) {
-                    // fall through
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
                 }
 
                 // If a `@property` annotation is set, the type of the value passed to the
@@ -570,7 +569,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $class_storage->pseudo_property_set_types['$' . $prop_name],
                         $fq_class_name,
                         new TNamedObject($fq_class_name),
-                        $class_storage->parent_class
+                        $class_storage->parent_class,
                     );
 
                     $union_comparison_results = new TypeComparisonResult();
@@ -581,7 +580,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $pseudo_set_type,
                         $second_arg_type->ignore_nullable_issues,
                         $second_arg_type->ignore_falsable_issues,
-                        $union_comparison_results
+                        $union_comparison_results,
                     );
 
                     if ($union_comparison_results->type_coerced) {
@@ -591,9 +590,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                                     $prop_name . ' expects \'' . $pseudo_set_type->getId() . '\', '
                                         . ' parent type `' . $second_arg_type . '` provided',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $property_id
+                                    $property_id,
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         } else {
                             IssueBuffer::maybeAdd(
@@ -601,9 +600,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                                     $prop_name . ' expects \'' . $pseudo_set_type->getId() . '\', '
                                         . ' parent type `' . $second_arg_type . '` provided',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $property_id
+                                    $property_id,
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         }
                     }
@@ -612,7 +611,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         if (UnionTypeComparator::canBeContainedBy(
                             $codebase,
                             $second_arg_type,
-                            $pseudo_set_type
+                            $pseudo_set_type,
                         )) {
                             IssueBuffer::maybeAdd(
                                 new PossiblyInvalidPropertyAssignmentValue(
@@ -620,9 +619,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                                     . $pseudo_set_type
                                     . '\' cannot be assigned possibly different type \'' . $second_arg_type . '\'',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $property_id
+                                    $property_id,
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         } else {
                             IssueBuffer::maybeAdd(
@@ -631,9 +630,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                                     . $pseudo_set_type
                                     . '\' cannot be assigned type \'' . $second_arg_type . '\'',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $property_id
+                                    $property_id,
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         }
                     }
@@ -645,16 +644,15 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 // a `@property` annotation
                 if (($class_storage->sealed_properties || $codebase->config->seal_all_properties)
                     && !isset($class_storage->pseudo_property_get_types['$' . $prop_name])
-                    && IssueBuffer::accepts(
+                ) {
+                    IssueBuffer::maybeAdd(
                         new UndefinedThisPropertyFetch(
                             'Instance property ' . $property_id . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $property_id
+                            $property_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )
-                ) {
-                    // fall through
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
                 }
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {

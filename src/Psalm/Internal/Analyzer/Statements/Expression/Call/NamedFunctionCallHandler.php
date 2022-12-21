@@ -80,7 +80,7 @@ class NamedFunctionCallHandler
                 $stmt,
                 $real_stmt,
                 $function_id,
-                $context
+                $context,
             );
 
             return;
@@ -223,7 +223,7 @@ class NamedFunctionCallHandler
                 }
 
                 $mixed_type = new Union([new TMixed()], [
-                    'parent_nodes' => $context->vars_in_scope[$var_id]->parent_nodes
+                    'parent_nodes' => $context->vars_in_scope[$var_id]->parent_nodes,
                 ]);
 
                 $context->vars_in_scope[$var_id] = $mixed_type;
@@ -252,7 +252,7 @@ class NamedFunctionCallHandler
                     new VirtualVariable($var_name, $arg->value->getAttributes()),
                     new VirtualString($var_name, $arg->value->getAttributes()),
                     false,
-                    $arg->getAttributes()
+                    $arg->getAttributes(),
                 );
             }
 
@@ -284,7 +284,7 @@ class NamedFunctionCallHandler
                         $statements_analyzer->data_flow_graph->addPath(
                             $param_node,
                             new DataFlowNode('variable-use', 'variable use', null),
-                            'variable-use'
+                            'variable-use',
                         );
                     }
                 }
@@ -299,9 +299,9 @@ class NamedFunctionCallHandler
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'Unsafe ' . implode('', $function_name->parts),
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -309,9 +309,9 @@ class NamedFunctionCallHandler
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of ' . $function_name,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             return;
@@ -323,7 +323,7 @@ class NamedFunctionCallHandler
                     $first_arg->value,
                     $statements_analyzer->node_data,
                     $codebase,
-                    $statements_analyzer->getAliases()
+                    $statements_analyzer->getAliases(),
                 );
 
                 if ($fq_const_name !== null && isset($stmt->getArgs()[1])) {
@@ -337,7 +337,7 @@ class NamedFunctionCallHandler
                         $statements_analyzer,
                         $fq_const_name,
                         $statements_analyzer->node_data->getType($second_arg->value) ?? Type::getMixed(),
-                        $context
+                        $context,
                     );
                 }
             } else {
@@ -353,7 +353,7 @@ class NamedFunctionCallHandler
                     $first_arg->value,
                     $statements_analyzer->node_data,
                     $codebase,
-                    $statements_analyzer->getAliases()
+                    $statements_analyzer->getAliases(),
                 );
 
                 if ($fq_const_name !== null) {
@@ -361,7 +361,7 @@ class NamedFunctionCallHandler
                         $statements_analyzer,
                         $fq_const_name,
                         true,
-                        $context
+                        $context,
                     );
 
                     if ($const_type) {
@@ -386,7 +386,7 @@ class NamedFunctionCallHandler
                 $context->self,
                 $statements_analyzer,
                 $codebase,
-                $context->inside_negation
+                $context->inside_negation,
             );
 
             $changed_vars = [];
@@ -394,7 +394,7 @@ class NamedFunctionCallHandler
             foreach ($anded_assertions as $assertions) {
                 $referenced_var_ids = array_map(
                     static fn(array $_): bool => true,
-                    $assertions
+                    $assertions,
                 );
 
                 Reconciler::reconcileKeyedTypes(
@@ -407,7 +407,7 @@ class NamedFunctionCallHandler
                     $statements_analyzer,
                     [],
                     $context->inside_loop,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 );
             }
 
@@ -421,24 +421,24 @@ class NamedFunctionCallHandler
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $first_arg_type,
-                    Type::getList()
+                    Type::getList(),
                 )
             ) {
                 if ($first_arg_type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCallGivenDocblockType(
                             "The call to $function_id is unnecessary given the list docblock type $first_arg_type",
-                            new CodeLocation($statements_analyzer, $function_name)
+                            new CodeLocation($statements_analyzer, $function_name),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCall(
                             "The call to $function_id is unnecessary, $first_arg_type is already a list",
-                            new CodeLocation($statements_analyzer, $function_name)
+                            new CodeLocation($statements_analyzer, $function_name),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -450,24 +450,24 @@ class NamedFunctionCallHandler
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $first_arg_type,
-                    new Union([new TLowercaseString()])
+                    new Union([new TLowercaseString()]),
                 )
             ) {
                 if ($first_arg_type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCallGivenDocblockType(
                             'The call to strtolower is unnecessary given the docblock type',
-                            new CodeLocation($statements_analyzer, $function_name)
+                            new CodeLocation($statements_analyzer, $function_name),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCall(
                             'The call to strtolower is unnecessary',
-                            new CodeLocation($statements_analyzer, $function_name)
+                            new CodeLocation($statements_analyzer, $function_name),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -485,15 +485,15 @@ class NamedFunctionCallHandler
                     IssueBuffer::maybeAdd(
                         new RawObjectIteration(
                             'Possibly undesired iteration over object properties',
-                            new CodeLocation($statements_analyzer, $function_name)
-                        )
+                            new CodeLocation($statements_analyzer, $function_name),
+                        ),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new PossibleRawObjectIteration(
                             'Possibly undesired iteration over object properties',
-                            new CodeLocation($statements_analyzer, $function_name)
-                        )
+                            new CodeLocation($statements_analyzer, $function_name),
+                        ),
                     );
                 }
             }
@@ -524,7 +524,7 @@ class NamedFunctionCallHandler
                                 $var_id,
                                 $context->vars_in_scope[$var_id]->hasMixed()
                                     ? Type::getObject()
-                                    : $context->vars_in_scope[$var_id]
+                                    : $context->vars_in_scope[$var_id],
                             );
                         } elseif ($function_id === 'gettype') {
                             $atomic_type = new TDependentGetType($var_id);
@@ -559,14 +559,14 @@ class NamedFunctionCallHandler
                                 $class_type->param_name,
                                 'object',
                                 null,
-                                $class_type->defining_class
+                                $class_type->defining_class,
                             );
                         } elseif ($as_atomic_type instanceof TNamedObject) {
                             $class_string_types[] = new TTemplateParamClass(
                                 $class_type->param_name,
                                 $as_atomic_type->value,
                                 $as_atomic_type,
-                                $class_type->defining_class
+                                $class_type->defining_class,
                             );
                         }
                     } elseif ($function_id === 'get_class') {
@@ -602,9 +602,9 @@ class NamedFunctionCallHandler
                 new Union([
                     new TClassString(
                         $get_class_name,
-                        new TNamedObject($get_class_name)
-                    )
-                ])
+                        new TNamedObject($get_class_name),
+                    ),
+                ]),
             );
         }
     }

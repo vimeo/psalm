@@ -26,9 +26,7 @@ class Algebra
 {
     /**
      * @param array<string, non-empty-list<non-empty-list<Assertion>>>  $all_types
-     *
      * @return array<string, non-empty-list<non-empty-list<Assertion>>>
-     *
      * @psalm-pure
      */
     public static function negateTypes(array $all_types): array
@@ -74,9 +72,7 @@ class Algebra
      *     (!$a) && (!$b) && ($a || $b || $c) => $c
      *
      * @param list<Clause>  $clauses
-     *
      * @return list<Clause>
-     *
      * @psalm-pure
      */
     public static function simplifyCNF(array $clauses): array
@@ -207,7 +203,7 @@ class Algebra
                         } else {
                             $updated_clause = $clause_b->addPossibilities(
                                 $clause_var,
-                                $clause_var_possibilities
+                                $clause_var_possibilities,
                             );
 
                             $cloned_clauses[$updated_clause->hash] = $updated_clause;
@@ -255,7 +251,7 @@ class Algebra
                 for ($k = $i + 1; $k < $clause_count; $k++) {
                     $clause_b = $clauses[$k];
                     $common_keys = array_keys(
-                        array_intersect_key($clause_a->possibilities, $clause_b->possibilities)
+                        array_intersect_key($clause_a->possibilities, $clause_b->possibilities),
                     );
                     if ($common_keys) {
                         $common_negated_keys = [];
@@ -263,7 +259,7 @@ class Algebra
                             if (count($clause_a->possibilities[$common_key]) === 1
                                 && count($clause_b->possibilities[$common_key]) === 1
                                 && reset($clause_a->possibilities[$common_key])->isNegationOf(
-                                    reset($clause_b->possibilities[$common_key])
+                                    reset($clause_b->possibilities[$common_key]),
                                 )
                             ) {
                                 $common_negated_keys[] = $common_key;
@@ -311,7 +307,7 @@ class Algebra
                                 false,
                                 true,
                                 true,
-                                []
+                                [],
                             ));
 
                             unset($simplified_clauses[$conflict_clause->hash]);
@@ -330,7 +326,6 @@ class Algebra
      * @param  list<Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids
      * @param  array<string, array<int, array<int, Assertion>>> $active_truths
-     *
      * @return array<string, list<list<Assertion>>>
      */
     public static function getTruthsFromFormula(
@@ -403,9 +398,7 @@ class Algebra
 
     /**
      * @param non-empty-list<Clause>  $clauses
-     *
      * @return list<Clause>
-     *
      * @psalm-pure
      */
     public static function groupImpossibilities(array $clauses): array
@@ -426,7 +419,7 @@ class Algebra
                     $seed_clause = new Clause(
                         [$var => [(string)$impossible_type => $impossible_type]],
                         $clause->creating_conditional_id,
-                        $clause->creating_object_id
+                        $clause->creating_object_id,
                     );
 
                     $seed_clauses[] = $seed_clause;
@@ -499,7 +492,7 @@ class Algebra
                             false,
                             true,
                             true,
-                            []
+                            [],
                         );
 
                         $new_clauses[] = $new_clause;
@@ -522,9 +515,7 @@ class Algebra
     /**
      * @param list<Clause>  $left_clauses
      * @param list<Clause>  $right_clauses
-     *
      * @return list<Clause>
-     *
      * @psalm-pure
      */
     public static function combineOredClauses(
@@ -617,7 +608,7 @@ class Algebra
                         || $left_clause->generated
                         || count($left_clauses) > 1
                         || count($right_clauses) > 1,
-                    []
+                    [],
                 );
             }
         }
@@ -645,14 +636,13 @@ class Algebra
      *   (!$a || !$c || !$f)
      *
      * @param list<Clause>  $clauses
-     *
      * @return non-empty-list<Clause>
      */
     public static function negateFormula(array $clauses): array
     {
         $clauses = array_filter(
             $clauses,
-            static fn(Clause $clause): bool => $clause->reconcilable
+            static fn(Clause $clause): bool => $clause->reconcilable,
         );
 
         if (!$clauses) {

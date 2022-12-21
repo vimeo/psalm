@@ -119,9 +119,6 @@ class ClassLoadOrderTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

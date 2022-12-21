@@ -23,7 +23,7 @@ class PropertyExistenceProvider
      *   array<Closure(PropertyExistenceProviderEvent): ?bool>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {
@@ -73,7 +73,7 @@ class PropertyExistenceProvider
                 $read_mode,
                 $source,
                 $context,
-                $code_location
+                $code_location,
             );
             $property_exists = $property_handler($event);
 

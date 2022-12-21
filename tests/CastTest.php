@@ -40,5 +40,14 @@ class CastTest extends TestCase
                 '$int===' => '0|1|int<10, 20>',
             ],
         ];
+        yield 'castObjectWithPropertiesToArray' => [
+            'code' => '<?php
+                /** @var object{a:int,b:string} $o */
+                $a = (array) $o;
+            ',
+            'assertions' => [
+                '$a===' => 'array{a: int, b: string, ...<array-key, mixed>}',
+            ],
+        ];
     }
 }

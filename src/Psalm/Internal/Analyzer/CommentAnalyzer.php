@@ -39,9 +39,7 @@ class CommentAnalyzer
     /**
      * @param  array<string, array<string, Union>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
-     *
      * @return list<VarDocblockComment>
      */
     public static function getTypeFromComment(
@@ -59,16 +57,14 @@ class CommentAnalyzer
             $source,
             $aliases,
             $template_type_map,
-            $type_aliases
+            $type_aliases,
         );
     }
 
     /**
      * @param  array<string, array<string, Union>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     *
      * @return list<VarDocblockComment>
-     *
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function arrayToDocblocks(
@@ -107,7 +103,7 @@ class CommentAnalyzer
                     $comment_text,
                     "\n",
                     0,
-                    $offset - $comment->getStartFilePos()
+                    $offset - $comment->getStartFilePos(),
                 );
                 $description = $parsed_docblock->description;
 
@@ -129,7 +125,7 @@ class CommentAnalyzer
                             $line_parts[0],
                             $aliases,
                             $template_type_map,
-                            $type_aliases
+                            $type_aliases,
                         );
                     } catch (TypeParseTreeException $e) {
                         throw new DocblockParseException($line_parts[0] . ' is not a valid type');
@@ -160,7 +156,7 @@ class CommentAnalyzer
                         null,
                         $template_type_map ?: [],
                         $type_aliases ?: [],
-                        true
+                        true,
                     );
                 } catch (TypeParseTreeException $e) {
                     throw new DocblockParseException(
@@ -170,7 +166,7 @@ class CommentAnalyzer
                         $source->getFilePath() .
                         ':' .
                         $comment->getStartLine() .
-                        ')'
+                        ')',
                     );
                 }
 
@@ -260,9 +256,7 @@ class CommentAnalyzer
 
     /**
      * @throws DocblockParseException if an invalid string is found
-     *
      * @return non-empty-list<string>
-     *
      * @psalm-pure
      */
     public static function splitDocLine(string $return_block): array

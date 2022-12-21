@@ -12,9 +12,6 @@ class TraitTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -888,7 +885,7 @@ class TraitTest extends TestCase
                         public function bar() {
                             return $this;
                         }
-                    }'
+                    }',
             ],
             'classAliasedTrait' => [
                 'code' => '<?php
@@ -939,7 +936,7 @@ class TraitTest extends TestCase
 
                     class A {
                         use T;
-                    }'
+                    }',
             ],
             'propertyNotDefinedInTrait' => [
                 'code' => '<?php
@@ -959,7 +956,7 @@ class TraitTest extends TestCase
                                         : static::$titlefield;
                             return $sortfield;
                         }
-                    }'
+                    }',
             ],
             'staticNotBoundInFinal' => [
                 'code' => '<?php
@@ -975,7 +972,7 @@ class TraitTest extends TestCase
 
                     class A {
                         use Foo;
-                    }'
+                    }',
             ],
             'staticReturnWithFinal' => [
                 'code' => '<?php
@@ -988,7 +985,7 @@ class TraitTest extends TestCase
 
                     final class A {
                         use T;
-                    }'
+                    }',
             ],
             'suppressIssueOnTrait' => [
                 'code' => '<?php
@@ -996,12 +993,17 @@ class TraitTest extends TestCase
                     #[Attribute]
                     trait Foo {}',
             ],
+            'noCrashOnConditionalTrait' => [
+                'code' => '<?php
+                    namespace NS;
+                    if (rand(0, 1)) {
+                        trait T {}
+                    }
+                ',
+            ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

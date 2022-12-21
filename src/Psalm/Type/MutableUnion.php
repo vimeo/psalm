@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
@@ -35,7 +36,7 @@ final class MutableUnion implements TypeNode, Stringable
     /**
      * @var non-empty-array<string, Atomic>
      */
-    private $types;
+    private array $types;
 
     /**
      * Whether the type originated in a docblock
@@ -132,6 +133,15 @@ final class MutableUnion implements TypeNode, Stringable
     public $possibly_undefined_from_try = false;
 
     /**
+     * whether this type had never set explicitly
+     * since it's the bottom type, it's combined into everything else and lost
+     *
+     * @psalm-suppress PossiblyUnusedProperty used in setTypes and addType
+     * @var bool
+     */
+    public $explicit_never = false;
+
+    /**
      * Whether or not this union had a template, since replaced
      *
      * @var bool
@@ -148,22 +158,22 @@ final class MutableUnion implements TypeNode, Stringable
     /**
      * @var array<string, TLiteralString>
      */
-    private $literal_string_types = [];
+    private array $literal_string_types = [];
 
     /**
      * @var array<string, TClassString>
      */
-    private $typed_class_strings = [];
+    private array $typed_class_strings = [];
 
     /**
      * @var array<string, TLiteralInt>
      */
-    private $literal_int_types = [];
+    private array $literal_int_types = [];
 
     /**
      * @var array<string, TLiteralFloat>
      */
-    private $literal_float_types = [];
+    private array $literal_float_types = [];
 
     /**
      * True if the type was passed or returned by reference, or if the type refers to an object's
@@ -191,15 +201,13 @@ final class MutableUnion implements TypeNode, Stringable
 
     /**
      * This is a cache of getId on non-exact mode
-     * @var null|string
      */
-    private $id;
+    private ?string $id = null;
 
     /**
      * This is a cache of getId on exact mode
-     * @var null|string
      */
-    private $exact_id;
+    private ?string $exact_id = null;
 
 
     /**
@@ -244,6 +252,8 @@ final class MutableUnion implements TypeNode, Stringable
                 && ($type->as_type || $type instanceof TTemplateParamClass)
             ) {
                 $this->typed_class_strings[$key] = $type;
+            } elseif ($type instanceof TNever) {
+                $this->explicit_never = true;
             }
 
             $from_docblock = $from_docblock || $type->from_docblock;
@@ -291,6 +301,8 @@ final class MutableUnion implements TypeNode, Stringable
             foreach ($this->literal_float_types as $key => $_) {
                 unset($this->literal_float_types[$key], $this->types[$key]);
             }
+        } elseif ($type instanceof TNever) {
+            $this->explicit_never = true;
         }
 
         $this->bustCache();
@@ -310,7 +322,7 @@ final class MutableUnion implements TypeNode, Stringable
                 unset(
                     $this->literal_string_types[$type_string],
                     $this->literal_int_types[$type_string],
-                    $this->literal_float_types[$type_string]
+                    $this->literal_float_types[$type_string],
                 );
             }
 
@@ -477,6 +489,9 @@ final class MutableUnion implements TypeNode, Stringable
         return new Union($this->getAtomicTypes(), get_object_vars($this));
     }
 
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingAnyTypeHint
+     */
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         $result = true;

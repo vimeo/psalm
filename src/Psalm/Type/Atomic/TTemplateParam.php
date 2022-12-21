@@ -12,6 +12,7 @@ use function implode;
 
 /**
  * denotes a template parameter that has been previously specified in a `@template` tag.
+ *
  * @psalm-immutable
  */
 final class TTemplateParam extends Atomic
@@ -96,7 +97,6 @@ final class TTemplateParam extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      * @return null
      */
     public function toPhpString(
@@ -110,7 +110,6 @@ final class TTemplateParam extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -123,7 +122,7 @@ final class TTemplateParam extends Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                true
+                true,
             );
         }
 
@@ -131,7 +130,7 @@ final class TTemplateParam extends Atomic
             $namespace,
             $aliased_classes,
             $this_class,
-            false
+            false,
         );
 
         return $this->param_name . $intersection_types;

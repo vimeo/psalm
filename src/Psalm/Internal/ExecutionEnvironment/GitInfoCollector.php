@@ -19,17 +19,14 @@ use function trim;
  * Git repository info collector.
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
- *
  * @internal
  */
 class GitInfoCollector
 {
     /**
      * Git command.
-     *
-     * @var SystemCommandExecutor
      */
-    protected $executor;
+    protected SystemCommandExecutor $executor;
 
     /**
      * Constructor.
@@ -102,7 +99,6 @@ class GitInfoCollector
      * Collect remotes info.
      *
      * @throws RuntimeException
-     *
      * @return list<RemoteInfo>
      */
     protected function collectRemotes(): array

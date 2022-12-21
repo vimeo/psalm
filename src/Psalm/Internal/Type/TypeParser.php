@@ -44,7 +44,6 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -52,7 +51,6 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -109,7 +107,6 @@ class TypeParser
      * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     *
      */
     public static function parseTokens(
         array $type_tokens,
@@ -140,7 +137,7 @@ class TypeParser
                     0,
                     strlen($only_token[0]),
                     isset($only_token[2]) && $only_token[2] !== $only_token[0] ? $only_token[2] : null,
-                    $from_docblock
+                    $from_docblock,
                 );
 
                 return new Union([$atomic], ['from_docblock' => $from_docblock]);
@@ -155,7 +152,7 @@ class TypeParser
             $analysis_php_version_id,
             $template_type_map,
             $type_aliases,
-            $from_docblock
+            $from_docblock,
         );
 
         if (!($parsed_type instanceof Union)) {
@@ -168,7 +165,6 @@ class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias>            $type_aliases
-     *
      * @return  Atomic|Union
      */
     public static function getTypeFromTree(
@@ -185,7 +181,7 @@ class TypeParser
                 $codebase,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -195,7 +191,7 @@ class TypeParser
                 $codebase,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -205,7 +201,7 @@ class TypeParser
                 $codebase,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -215,7 +211,7 @@ class TypeParser
                 $codebase,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -226,7 +222,7 @@ class TypeParser
                 null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
 
             if (!$callable_type instanceof TCallable && !$callable_type instanceof TClosure) {
@@ -243,7 +239,7 @@ class TypeParser
                 null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
 
             $callable_type->return_type = $return_type instanceof Union
@@ -260,7 +256,7 @@ class TypeParser
                 $codebase,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -279,7 +275,7 @@ class TypeParser
                 null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -294,7 +290,7 @@ class TypeParser
                 null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
 
             if ($non_nullable_type instanceof Union) {
@@ -325,7 +321,7 @@ class TypeParser
                 new Union([new TNamedObject($parse_tree->as)]),
                 'class-string-map',
                 [],
-                $from_docblock
+                $from_docblock,
             );
             return $result;
         }
@@ -349,7 +345,7 @@ class TypeParser
                 null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
 
             $if_type = self::getTypeFromTree(
@@ -358,7 +354,7 @@ class TypeParser
                 null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
 
             $else_type = self::getTypeFromTree(
@@ -367,7 +363,7 @@ class TypeParser
                 null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
 
             if ($conditional_type instanceof Atomic) {
@@ -389,7 +385,7 @@ class TypeParser
                 $conditional_type,
                 $if_type,
                 $else_type,
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -411,7 +407,7 @@ class TypeParser
                     $fq_classlike_name,
                     $template_type_map[$fq_classlike_name][$first_class],
                     $first_class,
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
@@ -444,7 +440,7 @@ class TypeParser
             $parse_tree->offset_start,
             $parse_tree->offset_end,
             $parse_tree->text,
-            $from_docblock
+            $from_docblock,
         );
     }
 
@@ -460,13 +456,13 @@ class TypeParser
                 'object',
                 null,
                 $defining_class,
-                $from_docblock
+                $from_docblock,
             );
         }
 
         if (!$as->isSingle()) {
             throw new TypeParseTreeException(
-                'Invalid templated classname \'' . $as . '\''
+                'Invalid templated classname \'' . $as . '\'',
             );
         }
 
@@ -477,7 +473,7 @@ class TypeParser
                     'object',
                     null,
                     $defining_class,
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
@@ -488,7 +484,7 @@ class TypeParser
                     false,
                     false,
                     [],
-                    $from_docblock
+                    $from_docblock,
                 );
 
                 $as = $as->getBuilder()->substitute(new Union([$t]), new Union([$traversable]))->freeze();
@@ -498,7 +494,7 @@ class TypeParser
                     $traversable->value,
                     $traversable,
                     $defining_class,
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
@@ -514,13 +510,13 @@ class TypeParser
                     $t_atomic_type->value ?? 'object',
                     $t_atomic_type,
                     $t->defining_class,
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
             if (!$t instanceof TNamedObject) {
                 throw new TypeParseTreeException(
-                    'Invalid templated classname \'' . $t->getId() . '\''
+                    'Invalid templated classname \'' . $t->getId() . '\'',
                 );
             }
 
@@ -529,7 +525,7 @@ class TypeParser
                 $t->value,
                 $t,
                 $defining_class,
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -564,7 +560,7 @@ class TypeParser
 
         return array_map(
             static fn($int): TLiteralInt => new TLiteralInt($int, $from_docblock),
-            array_values($potential_values)
+            array_values($potential_values),
         );
     }
 
@@ -593,7 +589,7 @@ class TypeParser
                 null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
 
             if ($generic_type === 'class-string-map'
@@ -624,7 +620,7 @@ class TypeParser
             && in_array(
                 $generic_type_value,
                 ['iterable', 'Traversable', 'Iterator', 'IteratorAggregate', 'arraylike-object'],
-                true
+                true,
             )
         ) {
             array_unshift($generic_params, new Union([new TMixed(false, $from_docblock)]));
@@ -664,9 +660,9 @@ class TypeParser
                 false,
                 [
                     $array_acccess->getKey() => $array_acccess,
-                    $countable->getKey() => $countable
+                    $countable->getKey() => $countable,
                 ],
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -683,15 +679,18 @@ class TypeParser
         }
 
         if ($generic_type_value === 'iterable') {
+            if (count($generic_params) > 2) {
+                throw new TypeParseTreeException('Too many template parameters for iterable');
+            }
             return new TIterable($generic_params, [], $from_docblock);
         }
 
         if ($generic_type_value === 'list') {
-            return new TList($generic_params[0], $from_docblock);
+            return Type::getListAtomic($generic_params[0], $from_docblock);
         }
 
         if ($generic_type_value === 'non-empty-list') {
-            return new TNonEmptyList($generic_params[0], null, null, $from_docblock);
+            return Type::getNonEmptyListAtomic($generic_params[0], $from_docblock);
         }
 
         if ($generic_type_value === 'class-string'
@@ -707,28 +706,27 @@ class TypeParser
                     $class_name,
                     $template_type_map[$class_name][$first_class],
                     $first_class,
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
-            $param_union_types = array_values($generic_params[0]->getAtomicTypes());
+            $types = [];
+            foreach ($generic_params[0]->getAtomicTypes() as $type) {
+                if (!$type instanceof TNamedObject) {
+                    throw new TypeParseTreeException('Class string param should be a named object');
+                }
 
-            if (count($param_union_types) > 1) {
-                throw new TypeParseTreeException('Union types are not allowed in class string param');
+                $types []= new TClassString($type->value, $type, false, false, false, $from_docblock);
             }
 
-            if (!$param_union_types[0] instanceof TNamedObject) {
-                throw new TypeParseTreeException('Class string param should be a named object');
-            }
-
-            return new TClassString($class_name, $param_union_types[0], false, false, false, $from_docblock);
+            return new Union($types);
         }
 
         if ($generic_type_value === 'class-string-map') {
             if (count($generic_params) !== 2) {
                 throw new TypeParseTreeException(
                     'There should only be two params for class-string-map, '
-                    . count($generic_params) . ' provided'
+                    . count($generic_params) . ' provided',
                 );
             }
 
@@ -746,12 +744,12 @@ class TypeParser
 
                 if (!$template_as_type instanceof TNamedObject) {
                     throw new TypeParseTreeException(
-                        'Unrecognised as type'
+                        'Unrecognised as type',
                     );
                 }
             } else {
                 throw new TypeParseTreeException(
-                    'Unrecognised class-string-map templated param'
+                    'Unrecognised class-string-map templated param',
                 );
             }
 
@@ -759,7 +757,7 @@ class TypeParser
                 $template_param_name,
                 $template_as_type,
                 $generic_params[1],
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -776,13 +774,13 @@ class TypeParser
                 $template_param = $generic_params[0]->getSingleAtomic();
                 if (!$template_param instanceof TTemplateParam) {
                     throw new TypeParseTreeException(
-                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.'
+                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.',
                     );
                 }
                 if ($template_param->getIntersectionTypes()) {
                     throw new TypeParseTreeException(
                         $generic_type_value . '<' . $param_name . '> must be a TTemplateParam'
-                            . ' with no intersection types.'
+                            . ' with no intersection types.',
                     );
                 }
 
@@ -791,7 +789,7 @@ class TypeParser
                     $defining_class,
                     $template_param,
                     TPropertiesOf::filterForTokenName($generic_type_value),
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
@@ -808,7 +806,7 @@ class TypeParser
             return new TPropertiesOf(
                 $param_union_types[0],
                 TPropertiesOf::filterForTokenName($generic_type_value),
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -822,13 +820,13 @@ class TypeParser
                     $param_name,
                     $defining_class,
                     $generic_params[0],
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
             if (!TKeyOf::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated key-of param ' . $param_name . ' should be an array'
+                    'Untemplated key-of param ' . $param_name . ' should be an array',
                 );
             }
 
@@ -845,13 +843,13 @@ class TypeParser
                     $param_name,
                     $defining_class,
                     $generic_params[0],
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
             if (!TValueOf::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated value-of param ' . $param_name . ' should be an array'
+                    'Untemplated value-of param ' . $param_name . ' should be an array',
                 );
             }
 
@@ -864,7 +862,7 @@ class TypeParser
             foreach ($generic_params as $generic_param) {
                 if (!$generic_param->isSingle()) {
                     throw new TypeParseTreeException(
-                        'int-mask types must all be non-union'
+                        'int-mask types must all be non-union',
                     );
                 }
 
@@ -879,14 +877,14 @@ class TypeParser
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
-                                'int-mask types must all be integer values'
+                                'int-mask types must all be integer values',
                             );
                         }
 
                         $atomic_type = new TLiteralInt($constant_value, $from_docblock);
                     } else {
                         throw new TypeParseTreeException(
-                            'int-mask types must all be integer values'
+                            'int-mask types must all be integer values',
                         );
                     }
                 }
@@ -896,7 +894,7 @@ class TypeParser
                         && strpos($atomic_type->const_name, '*') === false)
                 ) {
                     throw new TypeParseTreeException(
-                        'int-mask types must all be integer values or scalar class constants'
+                        'int-mask types must all be integer values or scalar class constants',
                     );
                 }
 
@@ -930,13 +928,13 @@ class TypeParser
                 && !$param_type instanceof TKeyOf
             ) {
                 throw new TypeParseTreeException(
-                    'Invalid reference passed to int-mask-of'
+                    'Invalid reference passed to int-mask-of',
                 );
             } elseif ($param_type instanceof TClassConstant
                 && strpos($param_type->const_name, '*') === false
             ) {
                 throw new TypeParseTreeException(
-                    'Class constant passed to int-mask-of must be a wildcard type'
+                    'Class constant passed to int-mask-of must be a wildcard type',
                 );
             }
 
@@ -958,7 +956,7 @@ class TypeParser
                     )
                 ) {
                     throw new TypeParseTreeException(
-                        "Invalid type \"{$generic_param->getId()}\" as int $bound_name boundary"
+                        "Invalid type \"{$generic_param->getId()}\" as int $bound_name boundary",
                     );
                 }
 
@@ -975,13 +973,13 @@ class TypeParser
 
             if (is_int($min_bound) && is_int($max_bound) && $min_bound > $max_bound) {
                 throw new TypeParseTreeException(
-                    "Min bound can't be greater than max bound, int<$min_bound, $max_bound> given"
+                    "Min bound can't be greater than max bound, int<$min_bound, $max_bound> given",
                 );
             }
 
             if (is_int($min_bound) && is_int($max_bound) && $min_bound > $max_bound) {
                 throw new TypeParseTreeException(
-                    "Min bound can't be greater than max bound, int<$min_bound, $max_bound> given"
+                    "Min bound can't be greater than max bound, int<$min_bound, $max_bound> given",
                 );
             }
 
@@ -1026,7 +1024,7 @@ class TypeParser
                     null,
                     $template_type_map,
                     $type_aliases,
-                    $from_docblock
+                    $from_docblock,
                 );
                 $has_null = true;
             } else {
@@ -1036,7 +1034,7 @@ class TypeParser
                     null,
                     $template_type_map,
                     $type_aliases,
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
@@ -1057,7 +1055,7 @@ class TypeParser
 
         if (!$atomic_types) {
             throw new TypeParseTreeException(
-                'No atomic types found'
+                'No atomic types found',
             );
         }
 
@@ -1085,12 +1083,12 @@ class TypeParser
                 null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock
+                $from_docblock,
             );
 
             if (!$atomic_type instanceof Atomic) {
                 throw new TypeParseTreeException(
-                    'Intersection types cannot contain unions'
+                    'Intersection types cannot contain unions',
                 );
             }
 
@@ -1142,14 +1140,14 @@ class TypeParser
                     $new_type = Type::intersectUnionTypes(
                         $properties[$property],
                         $property_type,
-                        $codebase
+                        $codebase,
                     );
 
                     if ($new_type === null) {
                         throw new TypeParseTreeException(
                             'Incompatible intersection types for "' . $property . '", '
                             . $properties[$property] . ' and ' . $property_type
-                            . ' provided'
+                            . ' provided',
                         );
                     }
                     $properties[$property] = $new_type;
@@ -1176,7 +1174,7 @@ class TypeParser
                 null,
                 $fallback_params,
                 false,
-                $from_docblock
+                $from_docblock,
             );
         }
 
@@ -1187,7 +1185,7 @@ class TypeParser
                 if (!$intersection_type instanceof TTypeAlias) {
                     throw new TypeParseTreeException(
                         'Intersection types with a type alias can only be comprised of other type aliases, '
-                        . get_class($intersection_type) . ' provided'
+                        . get_class($intersection_type) . ' provided',
                     );
                 }
 
@@ -1208,7 +1206,7 @@ class TypeParser
                 ) {
                     throw new TypeParseTreeException(
                         'Intersection types must be all objects, '
-                        . get_class($intersection_type) . ' provided'
+                        . get_class($intersection_type) . ' provided',
                     );
                 }
 
@@ -1271,7 +1269,7 @@ class TypeParser
                         null,
                         $template_type_map,
                         $type_aliases,
-                        $from_docblock
+                        $from_docblock,
                     );
                 } else {
                     $tree_type = new TMixed(false, $from_docblock);
@@ -1290,7 +1288,7 @@ class TypeParser
                     null,
                     $template_type_map,
                     $type_aliases,
-                    $from_docblock
+                    $from_docblock,
                 );
             }
 
@@ -1303,7 +1301,7 @@ class TypeParser
                 null,
                 $is_optional,
                 false,
-                $is_variadic
+                $is_variadic,
             );
 
             $params[] = $param;
@@ -1369,7 +1367,7 @@ class TypeParser
             $array_param_name,
             $offset_param_name,
             $array_defining_class,
-            $from_docblock
+            $from_docblock,
         );
     }
 
@@ -1391,6 +1389,12 @@ class TypeParser
 
         $type = $parse_tree->value;
 
+        $had_optional = false;
+        $had_explicit = false;
+        $had_implicit = false;
+
+        $previous_property_key = -1;
+
         $is_list = true;
 
         $sealed = true;
@@ -1401,7 +1405,7 @@ class TypeParser
             if ($property_branch instanceof FieldEllipsis) {
                 if ($i !== count($parse_tree->children) - 1) {
                     throw new TypeParseTreeException(
-                        'Unexpected ...'
+                        'Unexpected ...',
                     );
                 }
 
@@ -1417,10 +1421,11 @@ class TypeParser
                     null,
                     $template_type_map,
                     $type_aliases,
-                    $from_docblock
+                    $from_docblock,
                 );
                 $property_maybe_undefined = false;
-                $property_key = (string)$i;
+                $property_key = $i;
+                $had_implicit = true;
             } elseif (count($property_branch->children) === 1) {
                 $property_type = self::getTypeFromTree(
                     $property_branch->children[0],
@@ -1428,7 +1433,7 @@ class TypeParser
                     null,
                     $template_type_map,
                     $type_aliases,
-                    $from_docblock
+                    $from_docblock,
                 );
                 $property_maybe_undefined = $property_branch->possibly_undefined;
                 if (strpos($property_branch->value, '::')) {
@@ -1442,15 +1447,26 @@ class TypeParser
                 } else {
                     $property_key = $property_branch->value;
                 }
-                $is_list = false;
+                if ($is_list && (
+                        !is_numeric($property_key)
+                        || ($had_optional && !$property_maybe_undefined)
+                        || $type === 'array'
+                        || $type === 'callable-array'
+                        || $previous_property_key != ($property_key-1)
+                    )
+                ) {
+                    $is_list = false;
+                }
+                $had_explicit = true;
+                $previous_property_key = $property_key;
+
+                if ($property_key[0] === '\'' || $property_key[0] === '"') {
+                    $property_key = stripslashes(substr($property_key, 1, -1));
+                }
             } else {
                 throw new TypeParseTreeException(
-                    'Missing property type'
+                    'Missing property type',
                 );
-            }
-
-            if ($property_key[0] === '\'' || $property_key[0] === '"') {
-                $property_key = stripslashes(substr($property_key, 1, -1));
             }
 
             if (!$property_type instanceof Union) {
@@ -1459,12 +1475,17 @@ class TypeParser
 
             if ($property_maybe_undefined) {
                 $property_type->possibly_undefined = true;
+                $had_optional = true;
             }
 
             $properties[$property_key] = $property_type;
             if ($class_string) {
                 $class_strings[$property_key] = true;
             }
+        }
+
+        if ($had_explicit && $had_implicit) {
+            throw new TypeParseTreeException('Cannot mix explicit and implicit keys!');
         }
 
         if ($type === 'object') {
@@ -1486,6 +1507,10 @@ class TypeParser
             throw new TypeParseTreeException('Unexpected brace character');
         }
 
+        if ($type === 'list' && !$is_list) {
+            throw new TypeParseTreeException('A list shape cannot describe a non-list!');
+        }
+
         if (!$properties) {
             return new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock);
         }
@@ -1497,7 +1522,7 @@ class TypeParser
                 ? null
                 : [$is_list ? Type::getInt() : Type::getArrayKey(), Type::getMixed()],
             $is_list,
-            $from_docblock
+            $from_docblock,
         );
     }
 }

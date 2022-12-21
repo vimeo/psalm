@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes a `scalar` type that is also empty.
+ *
  * @psalm-immutable
  */
 final class TEmptyScalar extends TScalar

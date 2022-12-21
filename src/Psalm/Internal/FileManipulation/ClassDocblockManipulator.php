@@ -22,22 +22,17 @@ class ClassDocblockManipulator
     /**
      * @var array<string, array<int, self>>
      */
-    private static $manipulators = [];
+    private static array $manipulators = [];
 
-    /** @var Class_ */
-    private $stmt;
+    private Class_ $stmt;
 
-    /** @var int */
-    private $docblock_start;
+    private int $docblock_start;
 
-    /** @var int */
-    private $docblock_end;
+    private int $docblock_end;
 
-    /** @var bool */
-    private $immutable = false;
+    private bool $immutable = false;
 
-    /** @var string */
-    private $indentation;
+    private string $indentation;
 
     public static function getForClass(
         ProjectAnalyzer $project_analyzer,
@@ -84,7 +79,6 @@ class ClassDocblockManipulator
     /**
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
-     *
      */
     private function getDocblock(): string
     {
@@ -126,7 +120,7 @@ class ClassDocblockManipulator
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
                     $manipulator->docblock_end,
-                    $manipulator->getDocblock()
+                    $manipulator->getDocblock(),
                 );
             }
         }

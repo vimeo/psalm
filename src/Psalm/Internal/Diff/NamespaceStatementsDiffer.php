@@ -15,9 +15,9 @@ class NamespaceStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
+     *
      * @param array<int, PhpParser\Node\Stmt> $a
      * @param array<int, PhpParser\Node\Stmt> $b
-     *
      * @return array{
      *      0: list<string>,
      *      1: list<string>,
@@ -72,7 +72,7 @@ class NamespaceStatementsDiffer extends AstDiffer
             $a,
             $b,
             $a_code,
-            $b_code
+            $b_code,
         );
 
         $diff = self::extractDiff($trace, $x, $y, $a, $b, $bc);
@@ -97,7 +97,7 @@ class NamespaceStatementsDiffer extends AstDiffer
                         $diff_elem->old->stmts,
                         $diff_elem->new->stmts,
                         $a_code,
-                        $b_code
+                        $b_code,
                     );
 
                     $keep = [...$keep, ...$class_keep[0]];

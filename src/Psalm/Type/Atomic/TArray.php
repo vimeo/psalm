@@ -13,6 +13,7 @@ use function get_class;
 
 /**
  * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
+ *
  * @psalm-immutable
  */
 class TArray extends Atomic
@@ -130,7 +131,7 @@ class TArray extends Atomic
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         if ($type_params) {
             $cloned = clone $this;
@@ -147,7 +148,7 @@ class TArray extends Atomic
     {
         $type_params = $this->replaceTypeParamsTemplateTypesWithArgTypes(
             $template_result,
-            $codebase
+            $codebase,
         );
         if ($type_params) {
             $cloned = clone $this;

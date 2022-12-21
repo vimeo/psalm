@@ -8,9 +8,7 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
@@ -42,10 +40,9 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
             && $first_arg_type->hasType('array')
             && !$first_arg_type->hasMixed()
-            && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
+            && ($array_atomic_type = $first_arg_type->getArray())
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
         ? $array_atomic_type
         : null;
 
@@ -65,20 +62,18 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if (!$first_arg_array instanceof TNonEmptyArray) {
                 $nullable = true;
             }
-        } elseif ($first_arg_array instanceof TList) {
-            $value_type = $first_arg_array->type_param;
-
-            if (!$first_arg_array instanceof TNonEmptyList) {
-                $nullable = true;
-            }
         } else {
             // special case where we know the type of the first element
             if ($function_id === 'array_shift' && $first_arg_array->is_list && isset($first_arg_array->properties[0])) {
                 $value_type = $first_arg_array->properties[0];
+                if ($value_type->possibly_undefined) {
+                    $value_type = $value_type->setPossiblyUndefined(false);
+                    $nullable = true;
+                }
             } else {
                 $value_type = $first_arg_array->getGenericValueType();
 
-                if ($first_arg_array->fallback_params === null) {
+                if (!$first_arg_array->isNonEmpty()) {
                     $nullable = true;
                 }
             }
@@ -92,7 +87,7 @@ class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($codebase->config->ignore_internal_nullable_issues) {
                 $value_type->ignore_nullable_issues = true;
             }
-            
+
             $value_type = $value_type->freeze();
         }
 

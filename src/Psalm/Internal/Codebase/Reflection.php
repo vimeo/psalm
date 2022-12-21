@@ -39,20 +39,14 @@ use function strtolower;
  */
 class Reflection
 {
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $storage_provider;
+    private ClassLikeStorageProvider $storage_provider;
 
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
     /**
      * @var array<string, FunctionStorage>
      */
-    private static $builtin_functions = [];
+    private static array $builtin_functions = [];
 
     public function __construct(ClassLikeStorageProvider $storage_provider, Codebase $codebase)
     {
@@ -103,7 +97,7 @@ class Reflection
 
             $storage->parent_classes = array_merge(
                 [$parent_class_name_lc => $parent_class_name],
-                $parent_storage->parent_classes
+                $parent_storage->parent_classes,
             );
 
             $storage->used_traits = $parent_storage->used_traits;
@@ -174,7 +168,7 @@ class Reflection
                 ClassLikeAnalyzer::getTypeFromValue($value),
                 new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($value)]),
                 ClassLikeAnalyzer::VISIBILITY_PUBLIC,
-                null
+                null,
             );
         }
 
@@ -187,7 +181,7 @@ class Reflection
         }
 
         $reflection_methods = $reflected_class->getMethods(
-            (ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED)
+            (ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED),
         );
 
         if ($class_name_lower === 'generator') {
@@ -227,14 +221,14 @@ class Reflection
                     $class_name,
                     $reflection_method_name,
                     $reflection_method_class,
-                    $reflection_method_name
+                    $reflection_method_name,
                 );
 
                 $this->codebase->methods->setAppearingMethodId(
                     $class_name,
                     $reflection_method_name,
                     $reflection_method_class,
-                    $reflection_method_name
+                    $reflection_method_name,
                 );
             }
         }
@@ -266,13 +260,13 @@ class Reflection
                 $fq_class_name,
                 '__construct',
                 $fq_class_name,
-                $method_name_lc
+                $method_name_lc,
             );
             $this->codebase->methods->setAppearingMethodId(
                 $fq_class_name,
                 '__construct',
                 $fq_class_name,
-                $method_name_lc
+                $method_name_lc,
             );
         }
 
@@ -285,7 +279,7 @@ class Reflection
 
         $class_storage->declaring_method_ids[$method_name_lc] = new MethodIdentifier(
             $declaring_class->name,
-            $method_name_lc
+            $method_name_lc,
         );
 
         $class_storage->inheritable_method_ids[$method_name_lc]
@@ -351,7 +345,7 @@ class Reflection
             null,
             $is_optional,
             $param_type->isNullable(),
-            $param->isVariadic()
+            $param->isVariadic(),
         );
 
         $parameter->signature_type = Type::getMixed();
@@ -361,7 +355,6 @@ class Reflection
 
     /**
      * @param  callable-string $function_id
-     *
      * @return false|null
      */
     public function registerFunction(string $function_id): ?bool
@@ -382,7 +375,7 @@ class Reflection
                     $this->codebase,
                     $function_id,
                     [],
-                    null
+                    null,
                 );
             }
 
@@ -438,8 +431,8 @@ class Reflection
                 '|',
                 array_map(
                     static fn(ReflectionNamedType $reflection): string => $reflection->getName(),
-                    $reflection_type->getTypes()
-                )
+                    $reflection_type->getTypes(),
+                ),
             );
         } else {
             throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
@@ -477,7 +470,6 @@ class Reflection
     /**
      * @param lowercase-string $fq_class_name
      * @param lowercase-string $parent_class
-     *
      */
     private function registerInheritedProperties(
         string $fq_class_name,

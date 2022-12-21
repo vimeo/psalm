@@ -11,12 +11,17 @@ class WhileTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
+            'whileTrue' => [
+                'code' => '<?php
+                    function ret(): int {
+                        do {
+                            return 1;
+                        } while (true);
+                    }',
+            ],
             'whileVar' => [
                 'code' => '<?php
                     $worked = false;
@@ -244,7 +249,7 @@ class WhileTest extends TestCase
                         } elseif ($a) {
                             $a = $a - 1;
                         }
-                    }'
+                    }',
             ],
             'additionSubtractionInc' => [
                 'code' => '<?php
@@ -354,7 +359,7 @@ class WhileTest extends TestCase
                             $depth--;
                         }
                         $position++;
-                    }'
+                    }',
             ],
             'variableDefinedInWhileConditional' => [
                 'code' => '<?php
@@ -364,7 +369,7 @@ class WhileTest extends TestCase
                         while (rand(0, 1) && -1 < ($parent = 0)) {
                             print $pointers[$parent];
                         }
-                    }'
+                    }',
             ],
             'assingnedConditionallyReassignedToMixedInLoop' => [
                 'code' => '<?php
@@ -408,7 +413,7 @@ class WhileTest extends TestCase
                         while (isset($x[$i]) && is_array($x[$i])) {
                             $i++;
                         }
-                    }'
+                    }',
             ],
             'possiblyUndefinedInWhile' => [
                 'code' => '<?php
@@ -420,7 +425,7 @@ class WhileTest extends TestCase
 
                     function getString(string $s) : ?string {
                         return rand(0, 1) ? $s : null;
-                    }'
+                    }',
             ],
             'thornyLoop' => [
                 'code' => '<?php
@@ -437,7 +442,7 @@ class WhileTest extends TestCase
                             $str .= "hello";
                             unset($parse);
                         }
-                    }'
+                    }',
             ],
             'assignToTKeyedArrayListPreserveListness' => [
                 'code' => '<?php
@@ -464,7 +469,7 @@ class WhileTest extends TestCase
                         } else {
                             $counter = $counter + 1;
                         }
-                    }'
+                    }',
             ],
             'nonEmptyListIterationChangeVarWithContinue' => [
                 'code' => '<?php
@@ -480,7 +485,7 @@ class WhileTest extends TestCase
 
                             echo "here";
                         }
-                    }'
+                    }',
             ],
             'nonEmptyListIterationChangeVarWithoutContinue' => [
                 'code' => '<?php
@@ -495,7 +500,7 @@ class WhileTest extends TestCase
 
                             echo "here";
                         }
-                    }'
+                    }',
             ],
             'ifNestedInsideLoop' => [
                 'code' => '<?php
@@ -515,7 +520,7 @@ class WhileTest extends TestCase
                         }
 
                         return $state;
-                    }'
+                    }',
             ],
             'ifNotNestedInsideLoop' => [
                 'code' => '<?php
@@ -533,7 +538,7 @@ class WhileTest extends TestCase
                         }
 
                         return $state;
-                    }'
+                    }',
             ],
             'continueShouldAddToContext' => [
                 'code' => '<?php
@@ -554,7 +559,7 @@ class WhileTest extends TestCase
                                 continue;
                             }
                         }
-                    }'
+                    }',
             ],
             'continue2Returns' => [
                 'code' => '<?php
@@ -570,7 +575,7 @@ class WhileTest extends TestCase
                         }
 
                         return [];
-                    }'
+                    }',
             ],
             'propertyTypeUpdatedInBranch' => [
                 'code' => '<?php
@@ -592,7 +597,7 @@ class WhileTest extends TestCase
                                 $a->setFoo();
                             } elseif ($a->foo !== null) {}
                         }
-                    }'
+                    }',
             ],
             'propertyTypeUpdatedInBranchWithBreak' => [
                 'code' => '<?php
@@ -618,7 +623,7 @@ class WhileTest extends TestCase
                         }
 
                         if ($a->foo !== null) {}
-                    }'
+                    }',
             ],
             'whileTrueDontHaveExitPathForReturn' => [
                 'code' => '<?php
@@ -627,7 +632,7 @@ class WhileTest extends TestCase
                         while (new stdClass) {
                             return "";
                         }
-                    }'
+                    }',
             ],
             'ComplexWhileTrueDontHaveExitPathForReturn' => [
                 'code' => '<?php
@@ -658,7 +663,7 @@ class WhileTest extends TestCase
                                 }
                             }
                         }
-                    }'
+                    }',
             ],
             'continuingEducation' => [
                 'code' => '<?php
@@ -674,14 +679,26 @@ class WhileTest extends TestCase
 
                             $b = true;
                         }
-                    }'
+                    }',
+            ],
+            'breakInWhileTrueIsNotInfiniteLoop' => [
+                'code' => '<?php
+                    /** @return Generator<array-key, mixed> */
+                    function f()
+                    {
+                        if (rand(0,1)) {
+                            throw new Exception;
+                        }
+
+                        while (true) {
+                            yield 1;
+                            break;
+                        }
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

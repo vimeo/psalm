@@ -76,7 +76,7 @@ class MethodCallReturnTypeFetcher
                     'Closure',
                     $method_storage->params,
                     $method_storage->return_type,
-                    $method_storage->pure
+                    $method_storage->pure,
                 )]);
             }
 
@@ -91,7 +91,7 @@ class MethodCallReturnTypeFetcher
                 $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null
+                $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
             );
 
             if ($return_type_candidate) {
@@ -125,7 +125,7 @@ class MethodCallReturnTypeFetcher
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                     $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
                     $fq_class_name,
-                    $method_name
+                    $method_name,
                 );
 
                 if ($return_type_candidate) {
@@ -146,7 +146,7 @@ class MethodCallReturnTypeFetcher
                     $template_result,
                     $method_id,
                     count($stmt->getArgs()),
-                    $codebase
+                    $codebase,
                 );
             } else {
                 $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $call_map_id);
@@ -160,7 +160,7 @@ class MethodCallReturnTypeFetcher
 
             if ($return_type_candidate->isFalsable()) {
                 $return_type_candidate = $return_type_candidate->setProperties([
-                    'ignore_falsable_issues' => true
+                    'ignore_falsable_issues' => true,
                 ]);
             }
 
@@ -173,7 +173,7 @@ class MethodCallReturnTypeFetcher
                 true,
                 false,
                 false,
-                true
+                true,
             );
         } else {
             $self_fq_class_name = $fq_class_name;
@@ -182,7 +182,7 @@ class MethodCallReturnTypeFetcher
                 $method_id,
                 $self_fq_class_name,
                 $statements_analyzer,
-                $args
+                $args,
             );
 
             if ($return_type_candidate) {
@@ -197,7 +197,7 @@ class MethodCallReturnTypeFetcher
                         false,
                         $static_type instanceof TNamedObject
                         && $codebase->classlike_storage_provider->get($static_type->value)->final,
-                        true
+                        true,
                     );
                 }
 
@@ -206,7 +206,7 @@ class MethodCallReturnTypeFetcher
                     $template_result,
                     $method_id,
                     count($stmt->getArgs()),
-                    $codebase
+                    $codebase,
                 );
 
                 $return_type_candidate = TypeExpander::expandUnion(
@@ -219,12 +219,12 @@ class MethodCallReturnTypeFetcher
                     false,
                     $static_type instanceof TNamedObject
                     && $codebase->classlike_storage_provider->get($static_type->value)->final,
-                    true
+                    true,
                 );
 
                 $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
                     $method_id,
-                    $secondary_return_type_location
+                    $secondary_return_type_location,
                 );
 
                 if ($secondary_return_type_location) {
@@ -244,7 +244,7 @@ class MethodCallReturnTypeFetcher
                         true,
                         false,
                         false,
-                        $context->calling_method_id
+                        $context->calling_method_id,
                     );
                 }
             } else {
@@ -267,7 +267,7 @@ class MethodCallReturnTypeFetcher
             $method_id,
             $declaring_method_id,
             $cased_method_id,
-            $context
+            $context,
         );
 
         return $return_type_candidate;
@@ -307,7 +307,7 @@ class MethodCallReturnTypeFetcher
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         $method_storage = $codebase->methods->getStorage(
-            $declaring_method_id
+            $declaring_method_id,
         );
 
         $node_location = new CodeLocation($statements_analyzer, $name_expr);
@@ -317,7 +317,7 @@ class MethodCallReturnTypeFetcher
         $var_id = ExpressionIdentifier::getExtendedVarId(
             $var_expr,
             null,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         if ($method_storage->specialize_call
@@ -330,23 +330,23 @@ class MethodCallReturnTypeFetcher
 
                 $unspecialized_parent_nodes = array_filter(
                     $parent_nodes,
-                    static fn(DataFlowNode $parent_node): bool => !$parent_node->specialization_key
+                    static fn(DataFlowNode $parent_node): bool => !$parent_node->specialization_key,
                 );
 
                 $specialized_parent_nodes = array_filter(
                     $parent_nodes,
-                    static fn(DataFlowNode $parent_node): bool => (bool) $parent_node->specialization_key
+                    static fn(DataFlowNode $parent_node): bool => (bool) $parent_node->specialization_key,
                 );
 
                 $var_node = DataFlowNode::getForAssignment(
                     $var_id,
-                    new CodeLocation($statements_analyzer, $var_expr)
+                    new CodeLocation($statements_analyzer, $var_expr),
                 );
 
                 if ($method_storage->location) {
                     $this_parent_node = DataFlowNode::getForAssignment(
                         '$this in ' . $method_id,
-                        $method_storage->location
+                        $method_storage->location,
                     );
 
                     foreach ($parent_nodes as $parent_node) {
@@ -355,7 +355,7 @@ class MethodCallReturnTypeFetcher
                             $this_parent_node,
                             '=',
                             $added_taints,
-                            $removed_taints
+                            $removed_taints,
                         );
                     }
                 }
@@ -370,7 +370,7 @@ class MethodCallReturnTypeFetcher
                         $cased_method_id,
                         $is_declaring ? ($method_storage->signature_return_type_location
                             ?: $method_storage->location) : null,
-                        $node_location
+                        $node_location,
                     );
 
                     $method_call_nodes[$method_call_node->id] = $method_call_node;
@@ -382,7 +382,7 @@ class MethodCallReturnTypeFetcher
                         $cased_method_id,
                         $is_declaring ? ($method_storage->signature_return_type_location
                             ?: $method_storage->location) : null,
-                        null
+                        null,
                     );
 
                     $method_call_node = new DataFlowNode(
@@ -390,7 +390,7 @@ class MethodCallReturnTypeFetcher
                         $cased_method_id,
                         $is_declaring ? ($method_storage->signature_return_type_location
                             ?: $method_storage->location) : null,
-                        $parent_node->specialization_key
+                        $parent_node->specialization_key,
                     );
 
                     $statements_analyzer->data_flow_graph->addPath(
@@ -398,7 +398,7 @@ class MethodCallReturnTypeFetcher
                         $method_call_node,
                         '=',
                         $added_taints,
-                        $removed_taints
+                        $removed_taints,
                     );
 
                     $method_call_nodes[$method_call_node->id] = $method_call_node;
@@ -419,7 +419,7 @@ class MethodCallReturnTypeFetcher
                             $var_node,
                             'method-call-' . $method_id->method_name,
                             $added_taints,
-                            $removed_taints
+                            $removed_taints,
                         );
                     }
 
@@ -430,7 +430,7 @@ class MethodCallReturnTypeFetcher
                             strtolower((string) $declaring_method_id),
                             $cased_declaring_method_id,
                             $method_storage->signature_return_type_location ?: $method_storage->location,
-                            $method_call_node->specialization_key
+                            $method_call_node->specialization_key,
                         );
 
                         $statements_analyzer->data_flow_graph->addNode($declaring_method_call_node);
@@ -439,7 +439,7 @@ class MethodCallReturnTypeFetcher
                             $method_call_node,
                             'parent',
                             $added_taints,
-                            $removed_taints
+                            $removed_taints,
                         );
                     }
                 }
@@ -447,7 +447,7 @@ class MethodCallReturnTypeFetcher
                 $return_type_candidate = $return_type_candidate->setParentNodes($method_call_nodes);
 
                 $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
-                    $var_nodes
+                    $var_nodes,
                 );
                 
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
@@ -458,7 +458,7 @@ class MethodCallReturnTypeFetcher
                     $is_declaring
                         ? ($method_storage->signature_return_type_location ?: $method_storage->location)
                         : null,
-                    $node_location
+                    $node_location,
                 );
 
                 if (!$is_declaring) {
@@ -468,7 +468,7 @@ class MethodCallReturnTypeFetcher
                         (string) $declaring_method_id,
                         $cased_declaring_method_id,
                         $method_storage->signature_return_type_location ?: $method_storage->location,
-                        $node_location
+                        $node_location,
                     );
 
                     $statements_analyzer->data_flow_graph->addNode($declaring_method_call_node);
@@ -477,14 +477,14 @@ class MethodCallReturnTypeFetcher
                         $method_call_node,
                         'parent',
                         $added_taints,
-                        $removed_taints
+                        $removed_taints,
                     );
                 }
 
                 $statements_analyzer->data_flow_graph->addNode($method_call_node);
 
                 $return_type_candidate = $return_type_candidate->setParentNodes([
-                    $method_call_node->id => $method_call_node
+                    $method_call_node->id => $method_call_node,
                 ]);
             }
         } else {
@@ -496,7 +496,7 @@ class MethodCallReturnTypeFetcher
                         ? ($method_storage->signature_return_type_location ?: $method_storage->location)
                         : ($method_storage->return_type_location ?: $method_storage->location))
                     : null,
-                null
+                null,
             );
 
             if (!$is_declaring) {
@@ -506,7 +506,7 @@ class MethodCallReturnTypeFetcher
                     (string) $declaring_method_id,
                     $cased_declaring_method_id,
                     $method_storage->signature_return_type_location ?: $method_storage->location,
-                    null
+                    null,
                 );
 
                 $statements_analyzer->data_flow_graph->addNode($declaring_method_call_node);
@@ -515,14 +515,14 @@ class MethodCallReturnTypeFetcher
                     $method_call_node,
                     'parent',
                     $added_taints,
-                    $removed_taints
+                    $removed_taints,
                 );
             }
 
             $statements_analyzer->data_flow_graph->addNode($method_call_node);
 
             $return_type_candidate = $return_type_candidate->setParentNodes([
-                $method_call_node->id => $method_call_node
+                $method_call_node->id => $method_call_node,
             ]);
         }
 
@@ -534,7 +534,7 @@ class MethodCallReturnTypeFetcher
             $method_node = TaintSource::getForMethodReturn(
                 (string) $method_id,
                 $cased_method_id,
-                $method_storage->signature_return_type_location ?: $method_storage->location
+                $method_storage->signature_return_type_location ?: $method_storage->location,
             );
 
             $method_node->taints = $method_storage->taint_source_types;
@@ -550,7 +550,7 @@ class MethodCallReturnTypeFetcher
             $args,
             $node_location,
             $method_call_node,
-            $method_storage->removed_taints
+            $method_storage->removed_taints,
         );
     }
 
@@ -569,24 +569,24 @@ class MethodCallReturnTypeFetcher
                     && !isset(
                         $template_result->lower_bounds
                             [$template_type->param_name]
-                            [$template_type->defining_class]
+                            [$template_type->defining_class],
                     )
                 ) {
                     if ($template_type->param_name === 'TFunctionArgCount') {
                         $template_result->lower_bounds[$template_type->param_name] = [
                             'fn-' . strtolower((string) $method_id) => [
                                 new TemplateBound(
-                                    Type::getInt(false, $arg_count)
-                                )
-                            ]
+                                    Type::getInt(false, $arg_count),
+                                ),
+                            ],
                         ];
                     } elseif ($template_type->param_name === 'TPhpMajorVersion') {
                         $template_result->lower_bounds[$template_type->param_name] = [
                             'fn-' . strtolower((string) $method_id) => [
                                 new TemplateBound(
-                                    Type::getInt(false, $codebase->getMajorAnalysisPhpVersion())
-                                )
-                            ]
+                                    Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
+                                ),
+                            ],
                         ];
                     } elseif ($template_type->param_name === 'TPhpVersionId') {
                         $template_result->lower_bounds[$template_type->param_name] = [
@@ -594,16 +594,16 @@ class MethodCallReturnTypeFetcher
                                 new TemplateBound(
                                     Type::getInt(
                                         false,
-                                        $codebase->analysis_php_version_id
-                                    )
-                                )
-                            ]
+                                        $codebase->analysis_php_version_id,
+                                    ),
+                                ),
+                            ],
                         ];
                     } else {
                         $template_result->lower_bounds[$template_type->param_name] = [
                             ($template_type->defining_class) => [
-                                new TemplateBound(Type::getNever())
-                            ]
+                                new TemplateBound(Type::getNever()),
+                            ],
                         ];
                     }
                 }
@@ -616,13 +616,13 @@ class MethodCallReturnTypeFetcher
                 $return_type_candidate,
                 null,
                 null,
-                null
+                null,
             );
 
             $return_type_candidate = TemplateInferredTypeReplacer::replace(
                 $return_type_candidate,
                 $template_result,
-                $codebase
+                $codebase,
             );
         }
 

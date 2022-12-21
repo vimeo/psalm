@@ -11,9 +11,6 @@ class NestedTemplateTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -47,7 +44,7 @@ class NestedTemplateTest extends TestCase
                     class StudentRepository extends BaseRepository {}
 
                     /** @extends BaseRepository<TeacherViewData, TeacherModel> */
-                    class TeacherRepository extends BaseRepository {}'
+                    class TeacherRepository extends BaseRepository {}',
             ],
             'unwrapIndirectGenericTemplated' => [
                 'code' => '<?php
@@ -77,7 +74,7 @@ class NestedTemplateTest extends TestCase
                      */
                     function unwrapGeneric(Wrapper $wrapper) {
                         return $wrapper->unwrap();
-                    }'
+                    }',
             ],
             'unwrapFromTemplatedClassString' => [
                 'code' => '<?php
@@ -110,7 +107,7 @@ class NestedTemplateTest extends TestCase
                         return $package->unwrap();
                     }
 
-                    $result = load(StringWrapper::class);'
+                    $result = load(StringWrapper::class);',
             ],
             'unwrapNestedTemplateWithReset' => [
                 'code' => '<?php
@@ -122,7 +119,7 @@ class NestedTemplateTest extends TestCase
                      */
                     function toList(array $arr): array {
                         return reset($arr);
-                    }'
+                    }',
             ],
             '3levelNestedTemplatesOfMixed' => [
                 'code' => '<?php
@@ -250,9 +247,6 @@ class NestedTemplateTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -284,7 +278,7 @@ class NestedTemplateTest extends TestCase
 
                     /** @extends BaseRepository<StudentViewData, TeacherModel> */
                     class StudentRepository extends BaseRepository {}',
-                'error_message' => 'InvalidTemplateParam'
+                'error_message' => 'InvalidTemplateParam',
             ],
         ];
     }

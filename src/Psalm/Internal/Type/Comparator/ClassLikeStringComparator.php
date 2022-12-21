@@ -68,7 +68,7 @@ class ClassLikeStringComparator
             : new TNamedObject(
                 $container_type_part instanceof TClassString
                     ? $container_type_part->as
-                    : $container_type_part->value
+                    : $container_type_part->value,
             );
 
         $fake_input_object = $input_type_part instanceof TClassString
@@ -77,7 +77,7 @@ class ClassLikeStringComparator
             : new TNamedObject(
                 $input_type_part instanceof TClassString
                     ? $input_type_part->as
-                    : $input_type_part->value
+                    : $input_type_part->value,
             );
 
         return AtomicTypeComparator::isContainedBy(
@@ -86,7 +86,7 @@ class ClassLikeStringComparator
             $fake_container_object,
             $allow_interface_equality,
             false,
-            $atomic_comparison_result
+            $atomic_comparison_result,
         );
     }
 }

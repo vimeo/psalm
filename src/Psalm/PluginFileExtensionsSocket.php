@@ -14,25 +14,22 @@ use function sprintf;
 
 final class PluginFileExtensionsSocket implements FileExtensionsInterface
 {
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
     /**
      * @var array<string, class-string<FileScanner>>
      */
-    private $additionalFileTypeScanners = [];
+    private array $additionalFileTypeScanners = [];
 
     /**
      * @var array<string, class-string<FileAnalyzer>>
      */
-    private $additionalFileTypeAnalyzers = [];
+    private array $additionalFileTypeAnalyzers = [];
 
     /**
      * @var list<string>
      */
-    private $additionalFileExtensions = [];
+    private array $additionalFileExtensions = [];
 
     /**
      * @internal
@@ -53,9 +50,9 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
                 sprintf(
                     'Class %s must be of type %s',
                     $className,
-                    FileScanner::class
+                    FileScanner::class,
                 ),
-                1_622_727_271
+                1_622_727_271,
             );
         }
         if (!empty($this->config->getFiletypeScanners()[$fileExtension])
@@ -63,7 +60,7 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
         ) {
             throw new LogicException(
                 sprintf('Cannot redeclare scanner for file-type %s', $fileExtension),
-                1_622_727_272
+                1_622_727_272,
             );
         }
         $this->additionalFileTypeScanners[$fileExtension] = $className;
@@ -89,9 +86,9 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
                 sprintf(
                     'Class %s must be of type %s',
                     $className,
-                    FileAnalyzer::class
+                    FileAnalyzer::class,
                 ),
-                1_622_727_281
+                1_622_727_281,
             );
         }
         if (!empty($this->config->getFiletypeAnalyzers()[$fileExtension])
@@ -99,7 +96,7 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
         ) {
             throw new LogicException(
                 sprintf('Cannot redeclare analyzer for file-type %s', $fileExtension),
-                1_622_727_282
+                1_622_727_282,
             );
         }
         $this->additionalFileTypeAnalyzers[$fileExtension] = $className;

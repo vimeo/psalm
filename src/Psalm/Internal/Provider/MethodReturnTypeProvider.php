@@ -31,7 +31,7 @@ class MethodReturnTypeProvider
      *   array<Closure(MethodReturnTypeProviderEvent): ?Union>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {
@@ -97,7 +97,7 @@ class MethodReturnTypeProvider
                 $code_location,
                 $template_type_parameters,
                 $called_fq_classlike_name,
-                $called_method_name ? strtolower($called_method_name) : null
+                $called_method_name ? strtolower($called_method_name) : null,
             );
             $result = $class_handler($event);
 

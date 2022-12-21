@@ -12,12 +12,60 @@ class ReturnTypeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
+            'arrayCombine' => [
+                'code' => '<?php
+                    class a {}
+
+                    /**
+                     * @return list{0, 0}|list<a>
+                     */
+                    function ret() {
+                        return [new a, new a, new a];
+                    }
+
+                    $result = ret();
+                ',
+                'assertions' => [
+                    '$result===' => 'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                ],
+            ],
+            'arrayCombineInv' => [
+                'code' => '<?php
+                    class a {}
+
+                    /**
+                     * @return list<a>|list{0, 0}
+                     */
+                    function ret() {
+                        return [new a, new a, new a];
+                    }
+
+                    $result = ret();
+                ',
+                'assertions' => [
+                    '$result===' => 'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                ],
+            ],
+            'arrayCombine2' => [
+                'code' => '<?php
+                    class a {}
+
+                    /**
+                     * @return array{test1: 0, test2: 0}|list<a>
+                     */
+                    function ret() {
+                        return [new a, new a, new a];
+                    }
+
+                    $result = ret();
+                ',
+                'assertions' => [
+                    '$result===' => 'array{0?: a, test1?: 0, test2?: 0, ...<int<0, max>, a>}',
+                ],
+            ],
             'returnTypeAfterUselessNullCheck' => [
                 'code' => '<?php
                     class One {}
@@ -769,7 +817,7 @@ class ReturnTypeTest extends TestCase
                     '$res' => 'Closure(int):bool',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'infersClosureReturnTypesWithPartialTypehinting' => [
                 'code' => '<?php
@@ -873,7 +921,7 @@ class ReturnTypeTest extends TestCase
 
                     foreach ($gen as $k => $_) {
                         echo "$k\n";
-                    }'
+                    }',
             ],
             'allowImplicitNever' => [
                 'code' => '<?php
@@ -902,7 +950,7 @@ class ReturnTypeTest extends TestCase
                         {
                             return ["foo"];
                         }
-                    }'
+                    }',
             ],
             'compareTKeyedArrayToPotentiallyUnfilledArray' => [
                 'code' => '<?php
@@ -941,7 +989,7 @@ class ReturnTypeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'returnsNullSometimes' => [
                 'code' => '<?php
@@ -952,7 +1000,7 @@ class ReturnTypeTest extends TestCase
                         }
                         throw new RuntimeException;
                     }
-                '
+                ',
             ],
             'scalarLiteralsInferredAfterUndefinedClass' => [
                 'code' => '<?php
@@ -966,7 +1014,7 @@ class ReturnTypeTest extends TestCase
 
                         return "b";
                     }
-                '
+                ',
             ],
             'docblockNeverReturn' => [
                 'code' => '<?php
@@ -982,7 +1030,7 @@ class ReturnTypeTest extends TestCase
                         }
 
                         returnsNever();
-                    }'
+                    }',
             ],
             'return0' => [
                 'code' => '<?php
@@ -991,7 +1039,7 @@ class ReturnTypeTest extends TestCase
                      */
                     function takesAnInt() {
                         return 0;
-                    }'
+                    }',
             ],
             'neverReturnClosure' => [
                 'code' => '<?php
@@ -999,7 +1047,7 @@ class ReturnTypeTest extends TestCase
                     function() {
                         print_r(func_get_args());
                         exit(1);
-                    });'
+                    });',
             ],
             'ExitInBothBranches' => [
                 'code' => '<?php
@@ -1010,7 +1058,7 @@ class ReturnTypeTest extends TestCase
                         } else {
                             exit(0);
                         }
-                    }'
+                    }',
             ],
             'NeverAndVoid' => [
                 'code' => '<?php
@@ -1021,7 +1069,7 @@ class ReturnTypeTest extends TestCase
                         }
 
                         throw new \Exception();
-                    }'
+                    }',
             ],
             'neverAndVoidOnConditional' => [
                 'code' => '<?php
@@ -1034,7 +1082,7 @@ class ReturnTypeTest extends TestCase
                         if($end){
                             die();
                         }
-                    }'
+                    }',
             ],
             'returnTypeOfAbstractAndConcreteMethodFromTemplatedTraits' => [
                 'code' => '<?php
@@ -1065,7 +1113,7 @@ class ReturnTypeTest extends TestCase
                         public function __construct() {
                             $this->value = 123;
                         }
-                    }'
+                    }',
             ],
             'returnTypeOfAbstractMethodFromTemplatedTraitAndImplementationFromNonTemplatedTrait' => [
                 'code' => '<?php
@@ -1093,7 +1141,7 @@ class ReturnTypeTest extends TestCase
                         public function __construct() {
                             $this->value = 123;
                         }
-                    }'
+                    }',
             ],
             'nestedArrayMapReturnTypeDoesntCrash' => [
                 'code' => '<?php
@@ -1154,12 +1202,34 @@ class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'newReturnTypesInPhp82' => [
+                'code' => '<?php
+                    function alwaysTrue(): true {
+                        return true;
+                    }
+
+                    function alwaysFalse(): false {
+                        return false;
+                    }
+
+                    function alwaysNull(): null {
+                        return null;
+                    }
+                    $true = alwaysTrue();
+                    $false = alwaysFalse();
+                    $null = alwaysNull();
+                ',
+                'assertions' => [
+                    '$true===' => 'true',
+                    '$false===' => 'false',
+                    '$null===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -1298,7 +1368,7 @@ class ReturnTypeTest extends TestCase
                       }
                       return $arr;
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'invalidVoidStatementWhenMixedInferred' => [
                 'code' => '<?php
@@ -1389,7 +1459,7 @@ class ReturnTypeTest extends TestCase
                     function foo() : array {
                         return rand(0, 1) ? ["a" => 1, "b" => 2] : ["a" => 2];
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'mixedReturnTypeCoercion' => [
                 'code' => '<?php
@@ -1559,7 +1629,7 @@ class ReturnTypeTest extends TestCase
                     function foo(array $a) : array {
                         return $a;
                     }',
-                'error_message' => 'LessSpecificReturnStatement',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'docblockishTypeMustReturn' => [
                 'code' => '<?php
@@ -1650,7 +1720,7 @@ class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidClass',
-            ]
+            ],
         ];
     }
 }

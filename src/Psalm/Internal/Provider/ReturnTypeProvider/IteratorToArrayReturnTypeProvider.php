@@ -11,7 +11,6 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIterable;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -65,7 +64,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                     && AtomicTypeComparator::isContainedBy(
                         $codebase,
                         $call_arg_atomic_type,
-                        new TIterable([Type::getMixed(), Type::getMixed()])
+                        new TIterable([Type::getMixed(), Type::getMixed()]),
                     )
                 ) {
                     $has_valid_iterator = true;
@@ -77,7 +76,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                         $context,
                         $key_type,
                         $value_type,
-                        $has_valid_iterator
+                        $has_valid_iterator,
                     );
                 }
             }
@@ -90,9 +89,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                 if ($second_arg_type
                     && ((string) $second_arg_type === 'false')
                 ) {
-                    return new Union([
-                        new TList($value_type),
-                    ]);
+                    return Type::getList($value_type);
                 }
 
                 $key_type = $key_type

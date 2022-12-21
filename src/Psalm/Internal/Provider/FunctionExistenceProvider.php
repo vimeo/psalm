@@ -21,7 +21,7 @@ class FunctionExistenceProvider
      *   array<Closure(FunctionExistenceProviderEvent): ?bool>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {
@@ -63,7 +63,7 @@ class FunctionExistenceProvider
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $function_handler) {
             $event = new FunctionExistenceProviderEvent(
                 $statements_source,
-                $function_id
+                $function_id,
             );
             $function_exists = $function_handler($event);
 

@@ -16,15 +16,12 @@ use function preg_replace;
  */
 class PsalmRestarter extends XdebugHandler
 {
-    /**
-     * @var bool
-     */
-    private $required = false;
+    private bool $required = false;
 
     /**
      * @var string[]
      */
-    private $disabledExtensions = [];
+    private array $disabledExtensions = [];
 
     public function disableExtension(string $disabledExtension): void
     {
@@ -33,7 +30,9 @@ class PsalmRestarter extends XdebugHandler
 
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
+     *
      * @param bool $default
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
     protected function requiresRestart($default): bool
     {
@@ -47,6 +46,7 @@ class PsalmRestarter extends XdebugHandler
 
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
+     *
      * @param string|string[] $command
      */
     protected function restart($command): void

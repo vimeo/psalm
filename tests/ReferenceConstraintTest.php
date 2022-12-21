@@ -10,9 +10,6 @@ class ReferenceConstraintTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -159,7 +156,7 @@ class ReferenceConstraintTest extends TestCase
 
                     $foo = [];
 
-                    addValue($foo["a"]);'
+                    addValue($foo["a"]);',
             ],
             'paramOutArrayDefaultNullWithThrow' => [
                 'code' => '<?php
@@ -172,7 +169,7 @@ class ReferenceConstraintTest extends TestCase
                         }
 
                         throw new \UnexpectedValueException();
-                    }'
+                    }',
             ],
             'specificArrayWalkBehavior' => [
                 'code' => '<?php
@@ -181,7 +178,7 @@ class ReferenceConstraintTest extends TestCase
                     }
                     function withArrayWalkRecursive(array &$val): void {
                         array_walk_recursive($val, /** @param mixed $arg */ function (&$arg): void {});
-                    }'
+                    }',
             ],
             'investigateByrefArg' => [
                 'code' => '<?php
@@ -199,9 +196,6 @@ class ReferenceConstraintTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

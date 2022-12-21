@@ -11,9 +11,6 @@ class EmptyTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -368,7 +365,7 @@ class EmptyTest extends TestCase
                             return false;
                         }
                         return true;
-                    }'
+                    }',
             ],
             'possiblyUndefinedArrayOffset' => [
                 'code' => '<?php
@@ -377,7 +374,7 @@ class EmptyTest extends TestCase
                         $d[0] = "a";
                     }
 
-                    if (empty($d[0])) {}'
+                    if (empty($d[0])) {}',
             ],
             'reconcileNonEmptyArrayKey' => [
                 'code' => '<?php
@@ -391,7 +388,7 @@ class EmptyTest extends TestCase
                         }
 
                         echo $arr["a"];
-                    }'
+                    }',
             ],
             'reconcileEmptyTwiceWithoutReturn' => [
                 'code' => '<?php
@@ -402,7 +399,7 @@ class EmptyTest extends TestCase
                         }
 
                         if (empty($arr["a"])) {}
-                    }'
+                    }',
             ],
             'reconcileEmptyTwiceWithReturn' => [
                 'code' => '<?php
@@ -415,7 +412,7 @@ class EmptyTest extends TestCase
                         }
 
                         if (empty($arr["a"])) {}
-                    }'
+                    }',
             ],
             'SKIPPED-countWithLiteralIntVariable' => [ // #8163
                 'code' => '<?php
@@ -449,9 +446,6 @@ class EmptyTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -490,7 +484,7 @@ class EmptyTest extends TestCase
                         if (!empty($r["a"])) {}
                         return $r;
                     }',
-                'error_message' => 'MixedReturnTypeCoercion'
+                'error_message' => 'MixedReturnTypeCoercion',
             ],
             'preventEmptyEquivalentCreatingArray' => [
                 'code' => '<?php
@@ -499,7 +493,7 @@ class EmptyTest extends TestCase
                         if (isset($r["a"]) && $r["a"]) {}
                         return $r;
                     }',
-                'error_message' => 'MixedReturnTypeCoercion'
+                'error_message' => 'MixedReturnTypeCoercion',
             ],
         ];
     }

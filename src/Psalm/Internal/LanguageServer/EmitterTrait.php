@@ -22,6 +22,7 @@ use const SORT_NUMERIC;
  * @copyright Copyright (C) fruux GmbH (https://fruux.com/)
  * @author Evert Pot (http://evertpot.com/)
  * @license http://sabre.io/license/ Modified BSD License
+ * @internal
  */
 trait EmitterTrait
 {
@@ -30,7 +31,7 @@ trait EmitterTrait
      *
      * @var array<string, array{0: bool, 1: int[], 2: callable[]}>
      */
-    protected $listeners = [];
+    protected array $listeners = [];
 
     /**
      * Subscribe to an event.

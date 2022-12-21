@@ -40,7 +40,7 @@ class BasenameReturnTypeProvider implements FunctionReturnTypeProviderInterface
             null,
             null,
             $statements_source->getFileName(),
-            $statements_source->getCodebase()->config
+            $statements_source->getCodebase()->config,
         );
 
         if ($evaled_path === null) {

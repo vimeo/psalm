@@ -7,30 +7,15 @@ namespace Psalm\Internal\Scanner;
  */
 class FunctionDocblockComment
 {
-    /**
-     * @var string|null
-     */
-    public $return_type;
+    public ?string $return_type = null;
 
-    /**
-     * @var string|null
-     */
-    public $return_type_description;
+    public ?string $return_type_description = null;
 
-    /**
-     * @var int|null
-     */
-    public $return_type_start;
+    public ?int $return_type_start = null;
 
-    /**
-     * @var int|null
-     */
-    public $return_type_end;
+    public ?int $return_type_end = null;
 
-    /**
-     * @var int|null
-     */
-    public $return_type_line_number;
+    public ?int $return_type_line_number = null;
 
     /**
      * @var array<
@@ -45,184 +30,148 @@ class FunctionDocblockComment
      *     }
      * >
      */
-    public $params = [];
+    public array $params = [];
 
     /**
      * @var array<int, array{name:string, type:string, line_number: int}>
      */
-    public $params_out = [];
+    public array $params_out = [];
 
     /**
      * @var array{type:string, line_number: int}|null
      */
-    public $self_out;
+    public ?array $self_out = null;
 
     /**
      * @var array{type:string, line_number: int}|null
      */
-    public $if_this_is;
+    public ?array $if_this_is = null;
 
     /**
      * @var array<int, array{name:string, type:string, line_number: int}>
      */
-    public $globals = [];
+    public array $globals = [];
 
     /**
      * Whether or not the function is deprecated
-     *
-     * @var bool
      */
-    public $deprecated = false;
+    public bool $deprecated = false;
 
     /**
      * If set, the function is internal to the given namespace.
      *
      * @var list<non-empty-string>
      */
-    public $psalm_internal = [];
+    public array $psalm_internal = [];
 
     /**
      * Whether or not the function is internal
-     *
-     * @var bool
      */
-    public $internal = false;
+    public bool $internal = false;
 
     /**
      * Whether or not the function uses get_args
-     *
-     * @var bool
      */
-    public $variadic = false;
+    public bool $variadic = false;
 
     /**
      * Whether or not the function is pure
-     *
-     * @var bool
      */
-    public $pure = false;
+    public bool $pure = false;
 
     /**
      * Whether or not to specialize a given call (useful for taint analysis)
-     *
-     * @var bool
      */
-    public $specialize_call = false;
+    public bool $specialize_call = false;
 
     /**
      * Represents the flow from function params to return type
      *
      * @var array<string>
      */
-    public $flows = [];
+    public array $flows = [];
 
     /**
      * @var array<string>
      */
-    public $added_taints = [];
+    public array $added_taints = [];
 
     /**
      * @var array<string>
      */
-    public $removed_taints = [];
+    public array $removed_taints = [];
 
     /**
      * @var array<int, array{name:string, taint: string}>
      */
-    public $taint_sink_params = [];
+    public array $taint_sink_params = [];
 
     /**
      * @var array<string>
      */
-    public $taint_source_types = [];
+    public array $taint_source_types = [];
 
     /**
      * @var array<int, array{name:string}>
      */
-    public $assert_untainted_params = [];
+    public array $assert_untainted_params = [];
 
     /**
      * Whether or not to ignore the nullability of this function's return type
-     *
-     * @var bool
      */
-    public $ignore_nullable_return = false;
+    public bool $ignore_nullable_return = false;
 
     /**
      * Whether or not to ignore the nullability of this function's return type
-     *
-     * @var bool
      */
-    public $ignore_falsable_return = false;
+    public bool $ignore_falsable_return = false;
 
     /**
      * @var array<int, string>
      */
-    public $suppressed_issues = [];
+    public array $suppressed_issues = [];
 
     /**
      * @var array<int, array{0: string, 1: int, 2: int}>
      */
-    public $throws = [];
+    public array $throws = [];
 
     /**
      * @var array<int, array{string, ?string, ?string, bool}>
      */
-    public $templates = [];
+    public array $templates = [];
 
     /**
      * @var array<int, array{type: string, param_name: string}>
      */
-    public $assertions = [];
+    public array $assertions = [];
 
     /**
      * @var array<int, array{type: string, param_name: string}>
      */
-    public $if_true_assertions = [];
+    public array $if_true_assertions = [];
 
     /**
      * @var array<int, array{type: string, param_name: string}>
      */
-    public $if_false_assertions = [];
+    public array $if_false_assertions = [];
 
-    /**
-     * @var bool
-     */
-    public $inheritdoc = false;
+    public bool $inheritdoc = false;
 
-    /**
-     * @var bool
-     */
-    public $mutation_free = false;
+    public bool $mutation_free = false;
 
-    /**
-     * @var bool
-     */
-    public $external_mutation_free = false;
+    public bool $external_mutation_free = false;
 
-    /**
-     * @var bool
-     */
-    public $no_named_args = false;
+    public bool $no_named_args = false;
 
-    /** @var bool */
-    public $stub_override = false;
+    public bool $stub_override = false;
 
-    /**
-     * @var int
-     */
-    public $since_php_major_version = 0;
+    public int $since_php_major_version = 0;
 
-    /**
-     * @var int
-     */
-    public $since_php_minor_version = 0;
+    public int $since_php_minor_version = 0;
 
-    /**
-     * @var ?string
-     */
-    public $description;
+    public ?string $description = null;
 
     /** @var array<string, array{lines:list<int>, suggested_replacement?:string}> */
-    public $unexpected_tags = [];
+    public array $unexpected_tags = [];
 }

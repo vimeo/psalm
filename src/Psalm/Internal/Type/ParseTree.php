@@ -10,17 +10,11 @@ class ParseTree
     /**
      * @var list<ParseTree>
      */
-    public $children = [];
+    public array $children = [];
 
-    /**
-     * @var null|ParseTree
-     */
-    public $parent;
+    public ?ParseTree $parent = null;
 
-    /**
-     * @var bool
-     */
-    public $possibly_undefined = false;
+    public bool $possibly_undefined = false;
 
     public function __construct(?ParseTree $parent = null)
     {

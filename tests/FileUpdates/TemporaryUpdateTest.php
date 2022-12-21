@@ -39,23 +39,21 @@ class TemporaryUpdateTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**
      * @dataProvider providerTestErrorFix
-     *
      * @param array<int, array<string, string>> $file_stages
      * @param array<int, array<int>> $error_positions
      * @param array<string, string> $ignored_issues
-     *
      */
     public function testErrorFix(
         array $file_stages,
@@ -111,7 +109,7 @@ class TemporaryUpdateTest extends TestCase
             foreach ($file_stage as $file_path => $contents) {
                 $codebase->addTemporaryFileChanges(
                     $file_path,
-                    $contents
+                    $contents,
                 );
             }
 
@@ -162,7 +160,7 @@ class TemporaryUpdateTest extends TestCase
     }
 
     /**
-     * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, ignored_issues?:array<string, string>, test_save?:bool, check_unused_code?: bool}>
+     * @return array<string,array{0: array<int, array<string, string>>,error_positions:array<int, array<int>>, ignored_issues?:array<string, string>, test_save?:bool, check_unused_code?: bool}>
      */
     public function providerTestErrorFix(): array
     {
@@ -1730,7 +1728,7 @@ class TemporaryUpdateTest extends TestCase
                 'error_positions' => [[84], [84]],
                 'ignored_issues' => [],
                 'test_save' => false,
-                'check_unused_code' => true
+                'check_unused_code' => true,
             ],
             'stillUnusedMethod' => [
                 [
@@ -1767,7 +1765,7 @@ class TemporaryUpdateTest extends TestCase
                 'error_positions' => [[201], [234]],
                 'ignored_issues' => [],
                 'test_save' => false,
-                'check_unused_code' => true
+                'check_unused_code' => true,
             ],
             'usedMethodWithNoAffectedConstantChanges' => [
                 [
@@ -1826,7 +1824,7 @@ class TemporaryUpdateTest extends TestCase
                 'error_positions' => [[], []],
                 'ignored_issues' => [],
                 'test_save' => false,
-                'check_unused_code' => true
+                'check_unused_code' => true,
             ],
             'syntaxErrorFixed' => [
                 [

@@ -10,9 +10,6 @@ class EnumTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -53,7 +50,7 @@ class EnumTest extends TestCase
                     Suit::Diamonds->shape();',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'enumValue' => [
                 'code' => '<?php
@@ -67,7 +64,7 @@ class EnumTest extends TestCase
                     if (Suit::Hearts->value === "h") {}',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'enumCases' => [
                 'code' => '<?php
@@ -86,7 +83,7 @@ class EnumTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'literalExpressionAsCaseValue' => [
                 'code' => '<?php
@@ -101,7 +98,7 @@ class EnumTest extends TestCase
                     '$z===' => '1|2',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'namePropertyFromOutside' => [
                 'code' => '<?php
@@ -117,7 +114,7 @@ class EnumTest extends TestCase
                     '$a===' => "'DRAFT'",
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'namePropertyFromInside' => [
                 'code' => '<?php
@@ -138,7 +135,7 @@ class EnumTest extends TestCase
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'valuePropertyFromInside' => [
                 'code' => '<?php
@@ -159,7 +156,7 @@ class EnumTest extends TestCase
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'wildcardEnumAsParam' => [
                 'code' => '<?php
@@ -459,9 +456,6 @@ class EnumTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -477,7 +471,7 @@ class EnumTest extends TestCase
                     if (Suit::Hearts->value === "a") {}',
                 'error_message' => 'TypeDoesNotContainType',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'enumValueNotBacked' => [
                 'code' => '<?php
@@ -491,7 +485,7 @@ class EnumTest extends TestCase
                     echo Suit::Hearts->value;',
                 'error_message' => 'UndefinedPropertyFetch',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'badSuit' => [
                 'code' => '<?php
@@ -507,7 +501,7 @@ class EnumTest extends TestCase
                     }',
                 'error_message' => 'UndefinedConstant',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'cantCompareToSuitTwice' => [
                 'code' => '<?php
@@ -527,7 +521,7 @@ class EnumTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'insufficientMatches' => [
                 'code' => '<?php
@@ -546,7 +540,7 @@ class EnumTest extends TestCase
                     }',
                 'error_message' => 'UnhandledMatchCondition',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'insufficientMatchesForCases' => [
                 'code' => '<?php
@@ -565,7 +559,7 @@ class EnumTest extends TestCase
                     }',
                 'error_message' => 'UnhandledMatchCondition',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'invalidBackingType' => [
                 'code' => '<?php
@@ -683,6 +677,17 @@ class EnumTest extends TestCase
                     Foo::B;
                     ',
                 'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenMethod' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public function __get() {}
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

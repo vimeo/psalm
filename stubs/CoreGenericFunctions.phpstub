@@ -336,6 +336,8 @@ function array_key_exists($key, array $array) : bool
 /**
  * @psalm-pure
  *
+ * @no-named-arguments
+ *
  * @psalm-template TKey as array-key
  * @psalm-template TValue
  *
@@ -344,6 +346,22 @@ function array_key_exists($key, array $array) : bool
  * @return array<TKey, TValue>
  */
 function array_merge_recursive(array ...$arrays)
+{
+}
+
+/**
+ * @psalm-pure
+ * 
+ * @no-named-arguments
+ *
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> ...$arrays
+ *
+ * @return array<TKey, TValue>
+ */
+function array_merge(array ...$arrays)
 {
 }
 
@@ -840,6 +858,15 @@ function htmlspecialchars_decode(string $string, ?int $flags = null) : string {}
 /**
  * @psalm-pure
  *
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-flow ($string) -> return
+ */
+function urlencode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
  * @psalm-return (
  *     $string is ''
  *     ? 0
@@ -1108,6 +1135,9 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
  * @psalm-pure
  *
  * @param string|int|float $values
+ * @return ($format is non-empty-string
+ *      ? ($values is non-empty-string|int|float ? non-empty-string : string)
+ *      : string)
  *
  * @psalm-flow ($format, $values) -> return
  */

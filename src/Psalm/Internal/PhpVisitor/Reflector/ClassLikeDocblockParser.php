@@ -93,7 +93,7 @@ class ClassLikeDocblockParser
                         $template_modifier,
                         implode(' ', $template_type),
                         false,
-                        $offset - $comment->getStartFilePos()
+                        $offset - $comment->getStartFilePos(),
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [
@@ -101,7 +101,7 @@ class ClassLikeDocblockParser
                         null,
                         null,
                         false,
-                        $offset - $comment->getStartFilePos()
+                        $offset - $comment->getStartFilePos(),
                     ];
                 }
             }
@@ -136,7 +136,7 @@ class ClassLikeDocblockParser
                         $template_modifier,
                         implode(' ', $template_type),
                         true,
-                        $offset - $comment->getStartFilePos()
+                        $offset - $comment->getStartFilePos(),
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [
@@ -144,7 +144,7 @@ class ClassLikeDocblockParser
                         null,
                         null,
                         true,
-                        $offset - $comment->getStartFilePos()
+                        $offset - $comment->getStartFilePos(),
                     ];
                 }
             }
@@ -172,7 +172,7 @@ class ClassLikeDocblockParser
             $info->extension_requirement = trim(preg_replace(
                 '@^[ \t]*\*@m',
                 '',
-                $extension_requirements[array_key_first($extension_requirements)]
+                $extension_requirements[array_key_first($extension_requirements)],
             ));
         }
 
@@ -181,7 +181,7 @@ class ClassLikeDocblockParser
                 $info->implementation_requirements[] = trim(preg_replace(
                     '@^[ \t]*\*@m',
                     '',
-                    $implementation_requirement
+                    $implementation_requirement,
                 ));
             }
         }
@@ -287,11 +287,11 @@ class ClassLikeDocblockParser
                     $comment->getText(),
                     "\n",
                     0,
-                    $offset - $comment->getStartFilePos()
+                    $offset - $comment->getStartFilePos(),
                 ),
                 'start_offset' => $offset,
                 'end_offset' => $offset + strlen($imported_type_entry),
-                'parts' => CommentAnalyzer::splitDocLine($imported_type_entry)
+                'parts' => CommentAnalyzer::splitDocLine($imported_type_entry),
             ];
         }
 
@@ -326,7 +326,7 @@ class ClassLikeDocblockParser
                 $method_entry = preg_replace(
                     '/array\(([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\)/',
                     '[]',
-                    $method_entry
+                    $method_entry,
                 );
 
                 $end_of_method_regex = '/(?<!array\()\) ?(\: ?(\??[\\\\a-zA-Z0-9_]+))?/';
@@ -350,8 +350,8 @@ class ClassLikeDocblockParser
                         TypeTokenizer::getFullyQualifiedTokens(
                             $method_entry,
                             $aliases,
-                            null
-                        )
+                            null,
+                        ),
                     );
 
                     $method_tree = $parse_tree_creator->create();
@@ -368,7 +368,7 @@ class ClassLikeDocblockParser
                     if (!$has_return) {
                         $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
                             $method_tree->children[1],
-                            $codebase
+                            $codebase,
                         )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
                     }
 
@@ -397,7 +397,7 @@ class ClassLikeDocblockParser
                             $param_type = TypeParser::getTypeFromTree($method_tree_child->children[0], $codebase);
                         } catch (Exception $e) {
                             throw new DocblockParseException(
-                                'Badly-formatted @method string ' . $method_entry . ' - ' . $e
+                                'Badly-formatted @method string ' . $method_entry . ' - ' . $e,
                             );
                         }
 
@@ -424,7 +424,7 @@ class ClassLikeDocblockParser
                     $statements = StatementsProvider::parseStatements(
                         $php_string,
                         $codebase->analysis_php_version_id,
-                        $has_errors
+                        $has_errors,
                     );
                 } catch (Exception $e) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
@@ -455,10 +455,10 @@ class ClassLikeDocblockParser
                                 $comment->getText(),
                                 "\n",
                                 0,
-                                $offset - $comment->getStartFilePos()
+                                $offset - $comment->getStartFilePos(),
                             ),
-                            $node_doc_comment->getStartFilePos()
-                        )
+                            $node_doc_comment->getStartFilePos(),
+                        ),
                     );
                 }
 
@@ -488,9 +488,7 @@ class ClassLikeDocblockParser
      * @param array<string, array<int, string>> $specials
      * @param 'property'|'psalm-property'|'property-read'|
      *     'psalm-property-read'|'property-write'|'psalm-property-write' $property_tag
-     *
      * @throws DocblockParseException
-     *
      */
     protected static function addMagicPropertyToInfo(
         Doc $comment,
@@ -539,7 +537,7 @@ class ClassLikeDocblockParser
                             $comment->getText(),
                             "\n",
                             0,
-                            $offset - $comment->getStartFilePos()
+                            $offset - $comment->getStartFilePos(),
                         ),
                         'tag' => $property_tag,
                         'start' => $offset,

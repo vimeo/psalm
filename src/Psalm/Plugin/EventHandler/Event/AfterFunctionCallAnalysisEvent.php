@@ -11,34 +11,19 @@ use Psalm\Type\Union;
 
 final class AfterFunctionCallAnalysisEvent
 {
-    /**
-     * @var FuncCall
-     */
-    private $expr;
+    private FuncCall $expr;
     /**
      * @var non-empty-string
      */
-    private $function_id;
-    /**
-     * @var Context
-     */
-    private $context;
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
-    /**
-     * @var Union
-     */
-    private $return_type_candidate;
+    private string $function_id;
+    private Context $context;
+    private StatementsSource $statements_source;
+    private Codebase $codebase;
+    private Union $return_type_candidate;
     /**
      * @var FileManipulation[]
      */
-    private $file_replacements;
+    private array $file_replacements;
 
     /**
      * @param non-empty-string $function_id

@@ -20,20 +20,11 @@ use function error_log;
  */
 class ClientHandler
 {
-    /**
-     * @var ProtocolReader
-     */
-    public $protocolReader;
+    public ProtocolReader $protocolReader;
 
-    /**
-     * @var ProtocolWriter
-     */
-    public $protocolWriter;
+    public ProtocolWriter $protocolWriter;
 
-    /**
-     * @var IdGenerator
-     */
-    public $idGenerator;
+    public IdGenerator $idGenerator;
 
     public function __construct(ProtocolReader $protocolReader, ProtocolWriter $protocolWriter)
     {
@@ -47,7 +38,6 @@ class ClientHandler
      *
      * @param string $method The method to call
      * @param array|object $params The method parameters
-     *
      * @return Promise<mixed> Resolved with the result of the request or rejected with an error
      */
     public function request(string $method, $params): Promise
@@ -61,8 +51,8 @@ class ClientHandler
             static function () use ($id, $method, $params): Generator {
                 yield $this->protocolWriter->write(
                     new Message(
-                        new Request($id, $method, (object) $params)
-                    )
+                        new Request($id, $method, (object) $params),
+                    ),
                 );
 
                 $deferred = new Deferred();
@@ -90,7 +80,7 @@ class ClientHandler
                 $this->protocolReader->on('message', $listener);
 
                 return $deferred->promise();
-            }
+            },
         );
     }
 
@@ -104,8 +94,8 @@ class ClientHandler
     {
         $this->protocolWriter->write(
             new Message(
-                new Notification($method, (object)$params)
-            )
+                new Notification($method, (object)$params),
+            ),
         );
     }
 }

@@ -13,8 +13,7 @@ use const DIRECTORY_SEPARATOR;
 
 class TestConfig extends Config
 {
-    /** @var ProjectFileFilter|null */
-    private static $cached_project_files = null;
+    private static ?ProjectFileFilter $cached_project_files = null;
 
     public function __construct()
     {
@@ -35,7 +34,7 @@ class TestConfig extends Config
             self::$cached_project_files = ProjectFileFilter::loadFromXMLElement(
                 new SimpleXMLElement($this->getContents()),
                 $this->base_dir,
-                true
+                true,
             );
         }
 

@@ -53,7 +53,7 @@ class EventDispatcher
      *
      * @var list<class-string<AfterMethodCallAnalysisInterface>>
      */
-    private $after_method_checks = [];
+    private array $after_method_checks = [];
 
     /**
      * Static methods to be called after project function checks have completed
@@ -64,7 +64,7 @@ class EventDispatcher
      *
      * @var list<class-string<AfterFunctionCallAnalysisInterface>>
      */
-    public $after_function_checks = [];
+    public array $after_function_checks = [];
 
     /**
      * Static methods to be called after every function call
@@ -75,63 +75,63 @@ class EventDispatcher
      *
      * @var list<class-string<AfterEveryFunctionCallAnalysisInterface>>
      */
-    public $after_every_function_checks = [];
+    public array $after_every_function_checks = [];
 
     /**
      * Static methods to be called after expression checks have completed
      *
      * @var list<class-string<AfterExpressionAnalysisInterface>>
      */
-    public $after_expression_checks = [];
+    public array $after_expression_checks = [];
 
     /**
      * Static methods to be called before statement checks are processed
      *
      * @var list<class-string<BeforeStatementAnalysisInterface>>
      */
-    public $before_statement_checks = [];
+    public array $before_statement_checks = [];
 
     /**
      * Static methods to be called after statement checks have completed
      *
      * @var list<class-string<AfterStatementAnalysisInterface>>
      */
-    public $after_statement_checks = [];
+    public array $after_statement_checks = [];
 
     /**
      * Static methods to be called after method checks have completed
      *
      * @var list<class-string<StringInterpreterInterface>>
      */
-    public $string_interpreters = [];
+    public array $string_interpreters = [];
 
     /**
      * Static methods to be called after classlike exists checks have completed
      *
      * @var list<class-string<AfterClassLikeExistenceCheckInterface>>
      */
-    public $after_classlike_exists_checks = [];
+    public array $after_classlike_exists_checks = [];
 
     /**
      * Static methods to be called after classlike checks have completed
      *
      * @var list<class-string<AfterClassLikeAnalysisInterface>>
      */
-    public $after_classlike_checks = [];
+    public array $after_classlike_checks = [];
 
     /**
      * Static methods to be called after classlikes have been scanned
      *
      * @var list<class-string<AfterClassLikeVisitInterface>>
      */
-    private $after_visit_classlikes = [];
+    private array $after_visit_classlikes = [];
 
     /**
      * Static methods to be called after codebase has been populated
      *
      * @var list<class-string<AfterCodebasePopulatedInterface>>
      */
-    public $after_codebase_populated = [];
+    public array $after_codebase_populated = [];
 
     /**
      * @var list<class-string<BeforeAddIssueInterface>>
@@ -143,42 +143,42 @@ class EventDispatcher
      *
      * @var list<class-string<AfterAnalysisInterface>>
      */
-    public $after_analysis = [];
+    public array $after_analysis = [];
 
     /**
      * Static methods to be called after a file has been analyzed
      *
      * @var list<class-string<AfterFileAnalysisInterface>>
      */
-    public $after_file_checks = [];
+    public array $after_file_checks = [];
 
     /**
      * Static methods to be called before a file is analyzed
      *
      * @var list<class-string<BeforeFileAnalysisInterface>>
      */
-    public $before_file_checks = [];
+    public array $before_file_checks = [];
 
     /**
      * Static methods to be called after functionlike checks have completed
      *
      * @var list<class-string<AfterFunctionLikeAnalysisInterface>>
      */
-    public $after_functionlike_checks = [];
+    public array $after_functionlike_checks = [];
 
     /**
      * Static methods to be called to see if taints should be added
      *
      * @var list<class-string<AddTaintsInterface>>
      */
-    public $add_taints_checks = [];
+    public array $add_taints_checks = [];
 
     /**
      * Static methods to be called to see if taints should be removed
      *
      * @var list<class-string<RemoveTaintsInterface>>
      */
-    public $remove_taints_checks = [];
+    public array $remove_taints_checks = [];
 
     /**
      * @param class-string $class

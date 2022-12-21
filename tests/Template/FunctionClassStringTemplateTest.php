@@ -11,9 +11,6 @@ class FunctionClassStringTemplateTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -666,7 +663,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     $b_or_c = test(B::class, C::class);',
                 'assertions' => [
                     '$b_or_c' => 'B|C',
-                ]
+                ],
             ],
             'allowComparisonWithoutCrash' => [
                 'code' => '<?php
@@ -698,7 +695,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         );
                     }
 
-                    interface Bar {}'
+                    interface Bar {}',
             ],
             'classStringSatisfiesTemplateWithConstraint' => [
                 'code' => '<?php
@@ -774,14 +771,11 @@ class FunctionClassStringTemplateTest extends TestCase
                         throw new RuntimeException("Invalid class!");
                     }
                     return $source;
-                }'
-            ]
+                }',
+            ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -886,7 +880,7 @@ class FunctionClassStringTemplateTest extends TestCase
                         /** @psalm-trace $i */
                         $i = createInitializer($className, $realInstance);
                     }',
-                'error_message' => 'Closure(object):void'
+                'error_message' => 'Closure(object):void',
             ],
             'preventClassStringInPlaceOfTemplatedClassString' => [
                 'code' => '<?php
@@ -908,7 +902,7 @@ class FunctionClassStringTemplateTest extends TestCase
                     function foo(FileManager $m) : void {
                         $m->create(MusicFile::class);
                     }',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

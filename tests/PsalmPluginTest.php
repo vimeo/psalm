@@ -29,8 +29,7 @@ class PsalmPluginTest extends TestCase
     /** @var PluginListFactory&MockInterface */
     private $plugin_list_factory;
 
-    /** @var Application */
-    private $app;
+    private Application $app;
 
     public function setUp(): void
     {
@@ -50,7 +49,7 @@ class PsalmPluginTest extends TestCase
         ]);
 
         $this->app->getDefinition()->addOption(
-            new InputOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file')
+            new InputOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file'),
         );
 
         $this->app->setDefaultCommand('show');

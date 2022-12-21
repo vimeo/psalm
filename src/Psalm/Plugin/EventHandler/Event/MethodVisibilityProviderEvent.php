@@ -8,26 +8,11 @@ use Psalm\StatementsSource;
 
 final class MethodVisibilityProviderEvent
 {
-    /**
-     * @var StatementsSource
-     */
-    private $source;
-    /**
-     * @var string
-     */
-    private $fq_classlike_name;
-    /**
-     * @var string
-     */
-    private $method_name_lowercase;
-    /**
-     * @var Context
-     */
-    private $context;
-    /**
-     * @var CodeLocation|null
-     */
-    private $code_location;
+    private StatementsSource $source;
+    private string $fq_classlike_name;
+    private string $method_name_lowercase;
+    private Context $context;
+    private ?CodeLocation $code_location;
 
     /** @internal */
     public function __construct(

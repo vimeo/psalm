@@ -17,7 +17,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEnumCase;
-use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
@@ -30,7 +29,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -46,7 +44,6 @@ use function strtolower;
 class NegatedAssertionReconciler extends Reconciler
 {
     /**
-     * @param  array<string, array<string, Union>> $template_type_map
      * @param  string[]   $suppressed_issues
      * @param  Reconciler::RECONCILIATION_*      $failed_reconciliation
      */
@@ -86,37 +83,28 @@ class NegatedAssertionReconciler extends Reconciler
                 $key,
                 $negated,
                 $code_location,
-                $suppressed_issues
+                $suppressed_issues,
             );
         }
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
         $existing_var_type = $existing_var_type->getBuilder();
 
-        if ($assertion_type instanceof TFalse && isset($existing_var_atomic_types['bool'])) {
-            $existing_var_type->removeType('bool');
-            $existing_var_type->addType(new TTrue);
-        } elseif ($assertion_type instanceof TTrue && isset($existing_var_atomic_types['bool'])) {
-            $existing_var_type = $existing_var_type->getBuilder();
-            $existing_var_type->removeType('bool');
-            $existing_var_type->addType(new TFalse);
-        } else {
-            $simple_negated_type = SimpleNegatedAssertionReconciler::reconcile(
-                $statements_analyzer->getCodebase(),
-                $assertion,
-                $existing_var_type->freeze(),
-                $key,
-                $negated,
-                $code_location,
-                $suppressed_issues,
-                $failed_reconciliation,
-                $is_equality,
-                $inside_loop
-            );
+        $simple_negated_type = SimpleNegatedAssertionReconciler::reconcile(
+            $statements_analyzer->getCodebase(),
+            $assertion,
+            $existing_var_type->freeze(),
+            $key,
+            $negated,
+            $code_location,
+            $suppressed_issues,
+            $failed_reconciliation,
+            $is_equality,
+            $inside_loop,
+        );
 
-            if ($simple_negated_type) {
-                return $simple_negated_type;
-            }
+        if ($simple_negated_type) {
+            return $simple_negated_type;
         }
 
         $assertion_type = $assertion->getAtomicType();
@@ -186,7 +174,7 @@ class NegatedAssertionReconciler extends Reconciler
                         ? Type::getArrayKey()
                         : $iterable->type_params[0],
                     $iterable->type_params[1],
-                ]
+                ],
             ));
         } elseif ($assertion_type !== null && get_class($assertion_type) === TInt::class
             && isset($existing_var_type->getAtomicTypes()['array-key'])
@@ -207,8 +195,8 @@ class NegatedAssertionReconciler extends Reconciler
             // fall through
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
-                || $assertion->getAtomicType() instanceof TList
-                || $assertion->getAtomicType() instanceof TKeyedArray)
+                || $assertion->getAtomicType() instanceof TKeyedArray
+                || $assertion->getAtomicType() instanceof TList)
         ) {
             //if both types are arrays, try to combine them
             $combined_type = TypeCombiner::combine(
@@ -236,7 +224,7 @@ class NegatedAssertionReconciler extends Reconciler
                                 $existing_var_type_part,
                                 $assertion_type,
                                 false,
-                                false
+                                false,
                             )) {
                             $existing_var_type->removeType($part_name);
                         } elseif (AtomicTypeComparator::isContainedBy(
@@ -244,7 +232,7 @@ class NegatedAssertionReconciler extends Reconciler
                             $assertion_type,
                             $existing_var_type_part,
                             false,
-                            false
+                            false,
                         )) {
                             $existing_var_type->different = true;
                         }
@@ -266,7 +254,7 @@ class NegatedAssertionReconciler extends Reconciler
                 && !UnionTypeComparator::canExpressionTypesBeIdentical(
                     $statements_analyzer->getCodebase(),
                     $existing_var_type,
-                    $assertion_type
+                    $assertion_type,
                 )
             ) {
                 self::triggerIssueForImpossible(
@@ -277,7 +265,7 @@ class NegatedAssertionReconciler extends Reconciler
                     true,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             }
         }
@@ -295,7 +283,7 @@ class NegatedAssertionReconciler extends Reconciler
                         false,
                         $negated,
                         $code_location,
-                        $suppressed_issues
+                        $suppressed_issues,
                     );
                 }
             }
@@ -313,7 +301,6 @@ class NegatedAssertionReconciler extends Reconciler
     /**
      * @param  TLiteralInt|TLiteralString|TLiteralFloat|TEnumCase $assertion_type
      * @param  string[]   $suppressed_issues
-     *
      */
     private static function handleLiteralNegatedEquality(
         StatementsAnalyzer $statements_analyzer,
@@ -356,7 +343,7 @@ class NegatedAssertionReconciler extends Reconciler
                             ) {
                                 $existing_var_type->addType(new Type\Atomic\TIntRange(
                                     $literal_type->min_bound,
-                                    $assertion_type->value - 1
+                                    $assertion_type->value - 1,
                                 ));
                             }
                             if ($literal_type->max_bound === null
@@ -364,7 +351,7 @@ class NegatedAssertionReconciler extends Reconciler
                             ) {
                                 $existing_var_type->addType(new Type\Atomic\TIntRange(
                                     $assertion_type->value + 1,
-                                    $literal_type->max_bound
+                                    $literal_type->max_bound,
                                 ));
                             }
                         }
@@ -462,7 +449,7 @@ class NegatedAssertionReconciler extends Reconciler
                     !$did_remove_type,
                     $negated,
                     $code_location,
-                    $suppressed_issues
+                    $suppressed_issues,
                 );
             } elseif ($scalar_var_type
                 && $assertion instanceof IsNotIdentical
@@ -472,7 +459,7 @@ class NegatedAssertionReconciler extends Reconciler
                 if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                     $statements_analyzer->getCodebase(),
                     $existing_var_type,
-                    new Union([$scalar_var_type])
+                    new Union([$scalar_var_type]),
                 )) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
@@ -482,7 +469,7 @@ class NegatedAssertionReconciler extends Reconciler
                         true,
                         $negated,
                         $code_location,
-                        $suppressed_issues
+                        $suppressed_issues,
                     );
                 }
             }

@@ -37,6 +37,14 @@ return [
     'str_starts_with' => ['bool', 'haystack'=>'string', 'needle'=>'string'],
   ],
   'changed' => [
+    'Collator::getStrength' => [
+      'old' => ['int|false'],
+      'new' => ['int'],
+    ],
+    'DateTime::diff' => [
+      'old' => ['DateInterval|false', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
+      'new' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
+    ],
     'DateTime::format' => [
       'old' => ['string|false', 'format'=>'string'],
       'new' => ['string', 'format'=>'string'],
@@ -44,6 +52,10 @@ return [
     'DateTime::getTimestamp' => [
       'old' => ['int|false'],
       'new' => ['int'],
+    ],
+    'DateTime::setTime' => [
+      'old' => ['static|false', 'hour'=>'int', 'minute'=>'int', 'second='=>'int', 'microseconds='=>'int'],
+      'new' => ['static', 'hour'=>'int', 'minute'=>'int', 'second='=>'int', 'microseconds='=>'int'],
     ],
     'DateTimeInterface::getTimestamp' => [
        'old' => ['int|false'],
@@ -285,13 +297,17 @@ return [
       'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
       'new' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int|null'],
     ],
+    'collator_get_strength' => [
+      'old' => ['int|false', 'object'=>'collator'],
+      'new' => ['int', 'object'=>'collator'],
+    ],
     'com_load_typelib' => [
       'old' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'bool'],
       'new' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'true'],
     ],
     'count' => [
-        'old' => ['int', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
-        'new' => ['int', 'value'=>'Countable|array', 'mode='=>'int'],
+        'old' => ['int<0, max>', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
+        'new' => ['int<0, max>', 'value'=>'Countable|array', 'mode='=>'int'],
     ],
     'count_chars' => [
       'old' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'0|1|2'],
@@ -417,9 +433,57 @@ return [
       'old' => ['string', 'format'=>'string', 'timestamp='=>'int'],
       'new' => ['string', 'format'=>'string', 'timestamp='=>'?int'],
     ],
+    'date_add' => [
+      'old' => ['DateTime|false', 'object'=>'DateTime', 'interval'=>'DateInterval'],
+      'new' => ['DateTime', 'object'=>'DateTime', 'interval'=>'DateInterval'],
+    ],
+    'date_date_set' => [
+      'old' => ['DateTime|false', 'object'=>'DateTime', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
+      'new' => ['DateTime', 'object'=>'DateTime', 'year'=>'int', 'month'=>'int', 'day'=>'int'],
+    ],
+    'date_diff' => [
+      'old' => ['DateInterval|false', 'baseObject'=>'DateTimeInterface', 'targetObject'=>'DateTimeInterface', 'absolute='=>'bool'],
+      'new' => ['DateInterval', 'baseObject'=>'DateTimeInterface', 'targetObject'=>'DateTimeInterface', 'absolute='=>'bool'],
+    ],
     'date_format' => [
       'old' => ['string|false', 'object'=>'DateTimeInterface', 'format'=>'string'],
       'new' => ['string', 'object'=>'DateTimeInterface', 'format'=>'string'],
+    ],
+    'date_offset_get' => [
+      'old' => ['int|false', 'object'=>'DateTimeInterface'],
+      'new' => ['int', 'object'=>'DateTimeInterface'],
+    ],
+    'date_parse' => [
+      'old' => ['array|false', 'datetime'=>'string'],
+      'new' => ['array', 'datetime'=>'string'],
+    ],
+    'date_sub' => [
+      'old' => ['DateTime|false', 'object'=>'DateTime', 'interval'=>'DateInterval'],
+      'new' => ['DateTime', 'object'=>'DateTime', 'interval'=>'DateInterval'],
+    ],
+    'date_sun_info' => [
+      'old' => ['array|false', 'timestamp'=>'int', 'latitude'=>'float', 'longitude'=>'float'],
+      'new' => ['array', 'timestamp'=>'int', 'latitude'=>'float', 'longitude'=>'float'],
+    ],
+    'date_sunrise' => [
+      'old' => ['mixed', 'timestamp'=>'int', 'returnFormat='=>'int', 'latitude='=>'float', 'longitude='=>'float', 'zenith='=>'float', 'utcOffset='=>'float'],
+      'new' => ['string|int|float|false', 'timestamp'=>'int', 'returnFormat='=>'int', 'latitude='=>'float', 'longitude='=>'float', 'zenith='=>'float', 'utcOffset='=>'float'],
+    ],
+    'date_sunset' => [
+      'old' => ['mixed', 'timestamp'=>'int', 'returnFormat='=>'int', 'latitude='=>'float', 'longitude='=>'float', 'zenith='=>'float', 'utcOffset='=>'float'],
+      'new' => ['string|int|float|false', 'timestamp'=>'int', 'returnFormat='=>'int', 'latitude='=>'float', 'longitude='=>'float', 'zenith='=>'float', 'utcOffset='=>'float'],
+    ],
+    'date_time_set' => [
+      'old' => ['DateTime|false', 'object'=>'', 'hour'=>'', 'minute'=>'', 'second='=>'', 'microsecond='=>''],
+      'new' => ['DateTime', 'object'=>'', 'hour'=>'', 'minute'=>'', 'second='=>'', 'microsecond='=>''],
+    ],
+    'date_timestamp_set' => [
+      'old' => ['DateTime|false', 'object'=>'DateTime', 'timestamp'=>'int'],
+      'new' => ['DateTime', 'object'=>'DateTime', 'timestamp'=>'int'],
+    ],
+    'date_timezone_set' => [
+      'old' => ['DateTime|false', 'object'=>'DateTime', 'timezone'=>'DateTimeZone'],
+      'new' => ['DateTime', 'object'=>'DateTime', 'timezone'=>'DateTimeZone'],
     ],
     'datefmt_create' => [
         'old' => ['?IntlDateFormatter', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'DateTimeZone|IntlTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'string'],
@@ -554,8 +618,8 @@ return [
       'new' => ['int|false', 'image'=>'GdImage', 'red'=>'int', 'green'=>'int', 'blue'=>'int', 'alpha'=>'int'],
     ],
     'imagecolorset' => [
-      'old' => ['void', 'image'=>'resource', 'color'=>'int', 'red'=>'int', 'green'=>'int', 'blue'=>'int', 'alpha='=>'int'],
-      'new' => ['void', 'image'=>'GdImage', 'color'=>'int', 'red'=>'int', 'green'=>'int', 'blue'=>'int', 'alpha='=>'int'],
+      'old' => ['false|null', 'image'=>'resource', 'color'=>'int', 'red'=>'int', 'green'=>'int', 'blue'=>'int', 'alpha='=>'int'],
+      'new' => ['false|null', 'image'=>'GdImage', 'color'=>'int', 'red'=>'int', 'green'=>'int', 'blue'=>'int', 'alpha='=>'int'],
     ],
     'imagecolorsforindex' => [
       'old' => ['array|false', 'image'=>'resource', 'color'=>'int'],
@@ -1749,6 +1813,18 @@ return [
       'old' => ['bool', 'writer'=>'resource', 'content'=>'string'],
       'new' => ['bool', 'writer'=>'XMLWriter', 'content'=>'string'],
     ],
+    'ZipArchive::addEmptyDir' => [
+      'old' => ['bool', 'dirname'=>'string'],
+      'new' => ['bool', 'dirname'=>'string', 'flags='=>'int'],
+    ],
+    'ZipArchive::addFile' => [
+      'old' => ['bool', 'filepath'=>'string', 'entryname='=>'string', 'start='=>'int', 'length='=>'int'],
+      'new' => ['bool', 'filepath'=>'string', 'entryname='=>'string', 'start='=>'int', 'length='=>'int', 'flags='=>'int'],
+    ],
+    'ZipArchive::addFromString' => [
+      'old' => ['bool', 'name'=>'string', 'content'=>'string'],
+      'new' => ['bool', 'name'=>'string', 'content'=>'string', 'flags='=>'int'],
+    ],
   ],
   'removed' => [
     'PDOStatement::setFetchMode\'1' => ['bool', 'fetch_column'=>'int', 'colno'=>'int'],
@@ -1768,6 +1844,17 @@ return [
     'number_format\'1' => ['string', 'num'=>'float|int', 'decimals'=>'int', 'decimal_separator'=>'?string', 'thousands_separator'=>'?string'],
     'png2wbmp' => ['bool', 'pngname'=>'string', 'wbmpname'=>'string', 'dest_height'=>'int', 'dest_width'=>'int', 'threshold'=>'int'],
     'read_exif_data' => ['array', 'filename'=>'string', 'sections_needed='=>'string', 'sub_arrays='=>'bool', 'read_thumbnail='=>'bool'],
+    'Reflection::export' => ['?string', 'r'=>'reflector', 'return='=>'bool'],
+    'ReflectionClass::export' => ['?string', 'argument'=>'string|object', 'return='=>'bool'],
+    'ReflectionClassConstant::export' => ['string', 'class'=>'mixed', 'name'=>'string', 'return='=>'bool'],
+    'ReflectionExtension::export' => ['?string', 'name'=>'string', 'return='=>'bool'],
+    'ReflectionFunction::export' => ['?string', 'name'=>'string', 'return='=>'bool'],
+    'ReflectionFunctionAbstract::export' => ['?string'],
+    'ReflectionMethod::export' => ['?string', 'class'=>'string', 'name'=>'string', 'return='=>'bool'],
+    'ReflectionObject::export' => ['?string', 'argument'=>'object', 'return='=>'bool'],
+    'ReflectionParameter::export' => ['?string', 'function'=>'string', 'parameter'=>'string', 'return='=>'bool'],
+    'ReflectionProperty::export' => ['?string', 'class'=>'mixed', 'name'=>'string', 'return='=>'bool'],
+    'ReflectionZendExtension::export' => ['?string', 'name'=>'string', 'return='=>'bool'],
     'SimpleXMLIterator::rewind' => ['void'],
     'SimpleXMLIterator::valid' => ['bool'],
     'SimpleXMLIterator::current' => ['?SimpleXMLIterator'],
@@ -1775,5 +1862,6 @@ return [
     'SimpleXMLIterator::next' => ['void'],
     'SimpleXMLIterator::hasChildren' => ['bool'],
     'SimpleXMLIterator::getChildren' => ['SimpleXMLIterator'],
+    'SplTempFileObject::fgetss' => ['string', 'allowable_tags='=>'string'],
   ],
 ];

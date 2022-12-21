@@ -1,15 +1,20 @@
 <?php
+
 namespace Psalm\Example\Plugin;
 
 use PhpParser;
-use Psalm\Checker;
-use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
+
+use function in_array;
+use function preg_match;
+use function preg_split;
+use function strpos;
+use function strtolower;
 
 class StringChecker implements AfterExpressionAnalysisInterface
 {
@@ -18,7 +23,8 @@ class StringChecker implements AfterExpressionAnalysisInterface
      *
      * @return null|false
      */
-    public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool {
+    public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
+    {
         $expr = $event->getExpr();
         $statements_source = $event->getStatementsSource();
         $codebase = $event->getCodebase();
@@ -30,17 +36,14 @@ class StringChecker implements AfterExpressionAnalysisInterface
                 && preg_match($class_or_class_method, $expr->value)
             ) {
                 $absolute_class = preg_split('/[:]/', $expr->value)[0];
-
-                if (IssueBuffer::accepts(
+                IssueBuffer::maybeAdd(
                     new InvalidClass(
                         'Use ::class constants when representing class names',
                         new CodeLocation($statements_source, $expr),
-                        $absolute_class
+                        $absolute_class,
                     ),
-                    $statements_source->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
+                    $statements_source->getSuppressedIssues(),
+                );
             }
         } elseif ($expr instanceof PhpParser\Node\Expr\BinaryOp\Concat
             && $expr->left instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -60,9 +63,9 @@ class StringChecker implements AfterExpressionAnalysisInterface
                     new UndefinedMethod(
                         'Method ' . $method_id . ' does not exist',
                         new CodeLocation($statements_source, $expr),
-                        $method_id
+                        $method_id,
                     ),
-                    $statements_source->getSuppressedIssues()
+                    $statements_source->getSuppressedIssues(),
                 )) {
                     return false;
                 }

@@ -264,6 +264,7 @@
             <xs:element name="InvalidDocblockParamName" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidEnumBackingType" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidEnumCaseValue" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidEnumMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidExtendClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidFalsableReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />

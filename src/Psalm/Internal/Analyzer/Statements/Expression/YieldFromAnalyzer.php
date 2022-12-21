@@ -47,7 +47,7 @@ class YieldFromAnalyzer
                 $context,
                 $key_type,
                 $value_type,
-                $always_non_empty_array
+                $always_non_empty_array,
             ) === false
             ) {
                 $context->inside_call = $was_inside_call;

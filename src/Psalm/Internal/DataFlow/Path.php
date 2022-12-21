@@ -6,20 +6,21 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class Path
 {
     use ImmutableNonCloneableTrait;
 
-    public $type;
+    public string $type;
 
-    public $unescaped_taints;
+    /** @var ?array<string> */
+    public ?array $unescaped_taints = null;
 
-    public $escaped_taints;
+    /** @var ?array<string> */
+    public ?array $escaped_taints = null;
 
-    public $length;
+    public int $length;
 
     /**
      * @param ?array<string> $unescaped_taints

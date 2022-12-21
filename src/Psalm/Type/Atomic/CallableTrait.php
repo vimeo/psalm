@@ -148,7 +148,7 @@ trait CallableTrait
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                false
+                false,
             ) . ($return_type_multiple ? ')' : '');
         }
 
@@ -247,7 +247,7 @@ trait CallableTrait
                     $replace,
                     !$add_lower_bound,
                     null,
-                    $depth
+                    $depth,
                 ));
                 $replaced = $replaced || $new_param !== $param;
                 $params[$offset] = $new_param;
@@ -268,7 +268,7 @@ trait CallableTrait
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_lower_bound
+                $add_lower_bound,
             );
             $replaced = $replaced || $this->return_type !== $return_type;
         }
@@ -296,7 +296,7 @@ trait CallableTrait
                     $new_param = $param->setType(TemplateInferredTypeReplacer::replace(
                         $param->type,
                         $template_result,
-                        $codebase
+                        $codebase,
                     ));
                     $replaced = $replaced || $new_param !== $param;
                     $params[$k] = $new_param;
@@ -309,7 +309,7 @@ trait CallableTrait
             $return_type = TemplateInferredTypeReplacer::replace(
                 $return_type,
                 $template_result,
-                $codebase
+                $codebase,
             );
             $replaced = $replaced || $return_type !== $this->return_type;
         }
