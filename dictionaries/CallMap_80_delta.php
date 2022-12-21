@@ -934,8 +934,8 @@ return [
       'new' => ['bool', 'value='=>'array|string|null', 'encoding='=>'string|null'],
     ],
     'mb_chr' => [
-      'old' => ['string|false', 'codepoint'=>'int', 'encoding='=>'string'],
-      'new' => ['string|false', 'codepoint'=>'int', 'encoding='=>'string|null'],
+      'old' => ['non-empty-string|false', 'codepoint'=>'int', 'encoding='=>'string'],
+      'new' => ['non-empty-string|false', 'codepoint'=>'int', 'encoding='=>'string|null'],
     ],
     'mb_convert_case' => [
       'old' => ['string', 'string'=>'string', 'mode'=>'int', 'encoding='=>'string'],

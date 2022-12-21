@@ -9930,7 +9930,7 @@ return [
     'chmod' => ['bool', 'filename'=>'string', 'permissions'=>'int'],
     'chop' => ['string', 'string'=>'string', 'characters='=>'string'],
     'chown' => ['bool', 'filename'=>'string', 'user'=>'string|int'],
-    'chr' => ['string', 'codepoint'=>'int'],
+    'chr' => ['non-empty-string', 'codepoint'=>'int'],
     'chroot' => ['bool', 'directory'=>'string'],
     'chunk_split' => ['string', 'string'=>'string', 'length='=>'int', 'separator='=>'string'],
     'classObj::__construct' => ['void', 'layer'=>'layerObj', 'class'=>'classObj'],
