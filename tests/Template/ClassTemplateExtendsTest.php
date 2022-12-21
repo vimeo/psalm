@@ -16,7 +16,7 @@ class ClassTemplateExtendsTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
-            'interface' => [
+            'SKIPPED-interface' => [
                 'code' => '<?php
                     /**
                      * Singleton interface
