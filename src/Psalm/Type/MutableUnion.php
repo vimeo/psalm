@@ -22,14 +22,13 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
-use Stringable;
 
 use function count;
 use function get_class;
 use function get_object_vars;
 use function strpos;
 
-final class MutableUnion implements TypeNode, Stringable
+final class MutableUnion implements TypeNode
 {
     use UnionTrait;
 

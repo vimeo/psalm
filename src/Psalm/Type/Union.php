@@ -9,7 +9,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Stringable;
 
 use function get_object_vars;
 
@@ -40,7 +39,7 @@ use function get_object_vars;
  *      parent_nodes?: array<string, DataFlowNode>
  * }
  */
-final class Union implements TypeNode, Stringable
+final class Union implements TypeNode
 {
     use ImmutableNonCloneableTrait;
     use UnionTrait;
