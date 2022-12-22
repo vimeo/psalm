@@ -1635,9 +1635,6 @@ class ClassTemplateExtendsTest extends TestCase
 
                         public function getIterator()
                         {
-                            /**
-                             * @psalm-suppress InvalidReturnStatement
-                             */
                             return new ArrayIterator($this->elements);
                         }
 
