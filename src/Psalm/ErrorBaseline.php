@@ -22,8 +22,8 @@ use function min;
 use function phpversion;
 use function preg_replace_callback;
 use function sort;
+use function sprintf;
 use function str_replace;
-use function strpos;
 use function trim;
 use function usort;
 
@@ -112,14 +112,18 @@ final class ErrorBaseline
 
                 $issueType = $issue->tagName;
 
-                $files[$fileName][$issueType] = [
-                    'o' => (int)$issue->getAttribute('occurrences'),
-                    's' => [],
-                ];
+                $files[$fileName][$issueType] = ['o' => 0, 's' => []];
                 $codeSamples = $issue->getElementsByTagName('code');
 
                 foreach ($codeSamples as $codeSample) {
+                    $files[$fileName][$issueType]['o'] += 1;
                     $files[$fileName][$issueType]['s'][] = trim($codeSample->textContent);
+                }
+
+                // TODO: Remove in Psalm 6
+                $occurrencesAttr = $issue->getAttribute('occurrences');
+                if ($occurrencesAttr !== '') {
+                    $files[$fileName][$issueType]['o'] = (int) $occurrencesAttr;
                 }
             }
         }
@@ -206,10 +210,7 @@ final class ErrorBaseline
                 }
 
                 ++$carry[$fileName][$issueType]['o'];
-
-                if (!strpos($issue->selected_text, "\n")) {
-                    $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
-                }
+                $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
 
                 return $carry;
             },
@@ -261,8 +262,6 @@ final class ErrorBaseline
             foreach ($issueTypes as $issueType => $existingIssueType) {
                 $issueNode = $baselineDoc->createElement($issueType);
 
-                $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
-
                 sort($existingIssueType['s']);
 
                 foreach ($existingIssueType['s'] as $selection) {
@@ -280,22 +279,16 @@ final class ErrorBaseline
         $baselineDoc->formatOutput = true;
 
         $xml = preg_replace_callback(
-            '/<files (psalm-version="[^"]+") (?:php-version="(.+)"(\/?>)\n)/',
+            '/<files (psalm-version="[^"]+") php-version="(.+)"(\/?>)\n/',
             /**
              * @param string[] $matches
              */
-            static fn(array $matches): string => '<files' .
-            "\n  " .
-            $matches[1] .
-            "\n" .
-            '  php-version="' .
-            "\n    " .
-            str_replace('&#10;&#9;', "\n    ", $matches[2]).
-            "\n" .
-            '  "' .
-            "\n" .
-            $matches[3] .
-            "\n",
+            static fn(array $matches): string => sprintf(
+                "<files\n  %s\n  php-version=\"\n    %s\n  \"\n%s\n",
+                $matches[1],
+                str_replace('&#10;&#9;', "\n    ", $matches[2]),
+                $matches[3],
+            ),
             $baselineDoc->saveXML(),
         );
 

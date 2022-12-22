@@ -27,6 +27,8 @@ return [
     'ZipArchive::clearError' => ['void'],
     'ZipArchive::getStreamIndex' => ['resource|false', 'index'=>'int', 'flags='=>'int'],
     'ZipArchive::getStreamName' => ['resource|false', 'name'=>'string', 'flags='=>'int'],
+    'DateTimeInterface::__serialize' => ['array'],
+    'DateTimeInterface::__unserialize' => ['void', 'data'=>'array'],
   ],
 
   'changed' => [

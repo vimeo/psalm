@@ -33,7 +33,7 @@ return [
     'ldap_exop_refresh' => ['int|false', 'ldap'=>'resource', 'dn'=>'string', 'ttl'=>'int'],
     'ldap_exop_whoami' => ['string|false', 'ldap'=>'resource'],
     'ldap_parse_exop' => ['bool', 'ldap'=>'resource', 'result'=>'resource', '&w_response_data='=>'string', '&w_response_oid='=>'string'],
-    'mb_chr' => ['string|false', 'codepoint'=>'int', 'encoding='=>'string'],
+    'mb_chr' => ['non-empty-string|false', 'codepoint'=>'int', 'encoding='=>'string'],
     'mb_convert_encoding\'1' => ['array', 'string'=>'array', 'to_encoding'=>'string', 'from_encoding='=>'mixed'],
     'mb_ord' => ['int|false', 'string'=>'string', 'encoding='=>'string'],
     'mb_scrub' => ['string', 'string'=>'string', 'encoding='=>'string'],
