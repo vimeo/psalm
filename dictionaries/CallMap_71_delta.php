@@ -58,10 +58,6 @@ return [
       'old' => ['array<array>', 'result'=>'resource'],
       'new' => ['array<array>', 'result'=>'resource', 'result_type='=>'int'],
     ],
-    'pg_last_error' => [
-      'old' => ['string', 'connection='=>'resource'],
-      'new' => ['string', 'connection='=>'resource', 'operation='=>'int'],
-    ],
     'pg_select' => [
       'old' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int'],
       'new' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int', 'result_type='=>'int'],
