@@ -681,6 +681,8 @@ class ClassLikeNodeScanner
             if ($docblock_info->description) {
                 $storage->description = $docblock_info->description;
             }
+
+            $storage->public_api = $docblock_info->public_api;
         }
 
         foreach ($node->stmts as $node_stmt) {

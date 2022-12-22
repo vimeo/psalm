@@ -101,4 +101,6 @@ class ClassLikeDocblockComment
     public array $implementation_requirements = [];
 
     public ?string $description = null;
+
+    public bool $public_api = false;
 }

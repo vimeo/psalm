@@ -60,6 +60,7 @@ use function chdir;
 use function class_exists;
 use function clearstatcache;
 use function count;
+use function defined;
 use function dirname;
 use function explode;
 use function extension_loaded;
@@ -69,6 +70,7 @@ use function file_get_contents;
 use function filetype;
 use function flock;
 use function fopen;
+use function fwrite;
 use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
@@ -122,6 +124,7 @@ use const PHP_EOL;
 use const PHP_VERSION_ID;
 use const PSALM_VERSION;
 use const SCANDIR_SORT_NONE;
+use const STDERR;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
@@ -441,6 +444,8 @@ class Config
     public $forbidden_functions = [];
 
     /**
+     * TODO: Psalm 6: Update default to be true and remove warning.
+     *
      * @var bool
      */
     public $find_unused_code = false;
@@ -1090,6 +1095,9 @@ class Config
             $attribute_text = (string) $config_xml['findUnusedCode'];
             $config->find_unused_code = $attribute_text === 'true' || $attribute_text === '1';
             $config->find_unused_variables = $config->find_unused_code;
+        } elseif (!defined('__IS_TEST_ENV__')) {
+            fwrite(STDERR, 'Warning: "findUnusedCode" will be defaulted to "true" in Psalm 6. You should explicitly'
+                . ' enable or disable this setting.' . PHP_EOL);
         }
 
         if (isset($config_xml['findUnusedVariablesAndParams'])) {

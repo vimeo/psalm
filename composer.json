@@ -117,7 +117,7 @@
             "phpunit"
         ],
         "verify-callmap": "phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
-        "psalm": "@php ./psalm --find-dead-code",
+        "psalm": "@php ./psalm",
         "tests": [
             "@lint",
             "@cs",
