@@ -36,6 +36,9 @@ class ObjectComparator
     ): bool {
         if ($container_type_part instanceof TTemplateParam
             && $input_type_part instanceof TTemplateParam
+            && $container_type_part->defining_class != $input_type_part->defining_class
+            && strpos($container_type_part->defining_class, 'fn-') !== 0
+            && strpos($input_type_part->defining_class, 'fn-') !== 0
             && 1 == count($container_type_part->as->getAtomicTypes())
             && 1 == count($input_type_part->as->getAtomicTypes())) {
             $containerAs = current($container_type_part->as->getAtomicTypes());
