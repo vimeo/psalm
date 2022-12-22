@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Codebase;
 
+use BackedEnum;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -14,8 +15,13 @@ use Psalm\Progress\Progress;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\PropertyStorage;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+use UnitEnum;
 
 use function array_filter;
 use function array_intersect_key;
@@ -688,6 +694,19 @@ class Populator
             $parent_interface_storage->parent_interfaces,
             $storage->parent_interfaces,
         );
+
+        if (isset($storage->parent_interfaces[strtolower(UnitEnum::class)])) {
+            $storage->declaring_property_ids['name'] = $storage->name;
+            $storage->appearing_property_ids['name'] = "{$storage->name}::\$name";
+            $storage->properties['name'] = new PropertyStorage();
+            $storage->properties['name']->type = new Union([new TNonEmptyString()]);
+        }
+        if (isset($storage->parent_interfaces[strtolower(BackedEnum::class)])) {
+            $storage->declaring_property_ids['value'] = $storage->name;
+            $storage->appearing_property_ids['value'] = "{$storage->name}::\$value";
+            $storage->properties['value'] = new PropertyStorage();
+            $storage->properties['value']->type = new Union([new TInt(), new TString()]);
+        }
     }
 
     private function populateDataFromImplementedInterface(
