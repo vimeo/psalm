@@ -1181,9 +1181,7 @@ class Config
         if (isset($config_xml->universalObjectCrates) && isset($config_xml->universalObjectCrates->class)) {
             /** @var SimpleXMLElement $universal_object_crate */
             foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
-                /** @var string $classString */
-                $classString = $universal_object_crate['name'];
-                $config->addUniversalObjectCrate($classString);
+                $config->addUniversalObjectCrate((string) $universal_object_crate['name']);
             }
         }
 

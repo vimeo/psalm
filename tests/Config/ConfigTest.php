@@ -502,14 +502,6 @@ class ConfigTest extends TestCase
         );
 
         $this->assertSame(
-            'error',
-            $config->getReportingLevelForFile(
-                'PossiblyInvalidArgument',
-                realpath('src/psalm.php'),
-            ),
-        );
-
-        $this->assertSame(
             'info',
             $config->getReportingLevelForFile(
                 'PossiblyInvalidArgument',
@@ -731,14 +723,6 @@ class ConfigTest extends TestCase
             $config->getReportingLevelForFile(
                 'MissingReturnType',
                 realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
-            ),
-        );
-
-        $this->assertSame(
-            'error',
-            $config->getReportingLevelForFile(
-                'PossiblyInvalidArgument',
-                realpath('src/psalm.php'),
             ),
         );
 

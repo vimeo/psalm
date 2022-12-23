@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@91081f77fdd47a35d12bd87b31291c95f98be8ae">
+<files psalm-version="dev-master@b809703e1c10687e80523a4838f5f058caf3bb7a">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
@@ -364,9 +364,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$since_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
-    <RedundantCondition>
-      <code>count($line_parts) &gt; 0</code>
-    </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
     <PossiblyInvalidArrayOffset>
@@ -380,6 +377,17 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$stmt-&gt;stmts[0]</code>
     </PossiblyUndefinedIntArrayOffset>
+    <RedundantCondition>
+      <code>$stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                &amp;&amp; $storage instanceof MethodStorage
+                &amp;&amp; $classlike_storage
+                &amp;&amp; !$classlike_storage-&gt;mutation_free
+                &amp;&amp; $stmt-&gt;stmts
+                &amp;&amp; count($stmt-&gt;stmts) === 1
+                &amp;&amp; !count($stmt-&gt;params)
+                &amp;&amp; $stmt-&gt;stmts[0] instanceof PhpParser\Node\Stmt\Return_
+                &amp;&amp; $stmt-&gt;stmts[0]-&gt;expr instanceof PhpParser\Node\Expr\PropertyFetch</code>
+    </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/SimpleNameResolver.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -691,6 +699,9 @@
     </PossiblyUnusedMethod>
   </file>
   <file src="tests/Internal/Codebase/InternalCallMapHandlerTest.php">
+    <MoreSpecificReturnType>
+      <code>iterable&lt;string, array{0: callable-string, 1: array&lt;int|string, string&gt;}&gt;</code>
+    </MoreSpecificReturnType>
     <UnusedPsalmSuppress>
       <code>UndefinedMethod</code>
     </UnusedPsalmSuppress>
