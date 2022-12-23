@@ -815,6 +815,11 @@ class ClassLikeNodeScanner
                 );
 
                 $converted_aliases[$key] = new ClassTypeAlias(array_values($union->getAtomicTypes()));
+            } catch (TypeParseTreeException $e) {
+                $classlike_storage->docblock_issues[] = new InvalidDocblock(
+                    '@psalm-type ' . $key . ' contains invalid reference: ' . $e->getMessage(),
+                    new CodeLocation($this->file_scanner, $node, null, true),
+                );
             } catch (Exception $e) {
                 $classlike_storage->docblock_issues[] = new InvalidDocblock(
                     '@psalm-type ' . $key . ' contains invalid references',
