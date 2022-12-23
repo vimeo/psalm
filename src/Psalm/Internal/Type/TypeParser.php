@@ -1095,6 +1095,7 @@ class TypeParser
             $intersection_types[$name] = $atomic_type;
         }
 
+        // TODO: Handle type aliases better
         $first_type = reset($intersection_types);
         $last_type = end($intersection_types);
 

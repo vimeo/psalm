@@ -653,6 +653,32 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'list<1|2>',
                 ],
             ],
+            'intersection with imported type' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-type psalmA = array{a: string}
+                     */
+                    class A {}
+                    /**
+                     * @psalm-type psalmB = array{b: string}
+                     * @psalm-import-type psalmA from A
+                     * @psalm-type psalmC = psalmB&psalmA
+                     */
+                    class B {
+                        /**
+                          * @return psalmC
+                          */
+                        public static function getC(): array {
+                            return ['a' => '', 'b' => ''];
+                        }
+                    }
+                    $c = B::getC();
+                    PHP,
+                'assertions' => [
+                    '$c===' => 'array{a: string, b: string}',
+                ],
+            ],
         ];
     }
 

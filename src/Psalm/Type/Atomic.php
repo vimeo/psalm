@@ -179,8 +179,7 @@ abstract class Atomic implements TypeNode
         string $value,
         ?int   $analysis_php_version_id = null,
         array  $template_type_map = [],
-        array  $type_aliases = [],
-        bool   $from_docblock = false
+        array  $type_aliases = []
     ): Atomic {
         switch ($value) {
             case 'int':
@@ -243,27 +242,27 @@ abstract class Atomic implements TypeNode
             case 'array':
             case 'associative-array':
                 return new TArray([
-                    new Union([new TArrayKey($from_docblock)]),
-                    new Union([new TMixed(false, $from_docblock)]),
+                    new Union([new TArrayKey(false)]),
+                    new Union([new TMixed(false, false)]),
                 ]);
 
             case 'non-empty-array':
                 return new TNonEmptyArray([
-                    new Union([new TArrayKey($from_docblock)]),
-                    new Union([new TMixed(false, $from_docblock)]),
+                    new Union([new TArrayKey(false)]),
+                    new Union([new TMixed(false, false)]),
                 ]);
 
             case 'callable-array':
                 return new TCallableArray([
-                    new Union([new TArrayKey($from_docblock)]),
-                    new Union([new TMixed(false, $from_docblock)]),
+                    new Union([new TArrayKey(false)]),
+                    new Union([new TMixed(false, false)]),
                 ]);
 
             case 'list':
-                return Type::getListAtomic(Type::getMixed(false, $from_docblock));
+                return Type::getListAtomic(Type::getMixed(false, false));
 
             case 'non-empty-list':
-                return Type::getNonEmptyListAtomic(Type::getMixed(false, $from_docblock));
+                return Type::getNonEmptyListAtomic(Type::getMixed(false, false));
 
             case 'non-empty-string':
                 return new TNonEmptyString();
