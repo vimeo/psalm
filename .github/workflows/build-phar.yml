@@ -43,6 +43,8 @@ jobs:
           coverage: none
 
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # required for composer to automatically detect root package version
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -62,8 +64,9 @@ jobs:
 
       - name: Run composer install
         run: composer install -o
-        env:
-          COMPOSER_ROOT_VERSION: dev-master
+          # DO NOT set this, we need composer to figure out the version itself
+          # env:
+          #   COMPOSER_ROOT_VERSION: dev-master
 
       - run: bin/build-phar.sh
         env:
