@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\CommandFunctions;
 
 use Psalm\Internal\CliUtils;

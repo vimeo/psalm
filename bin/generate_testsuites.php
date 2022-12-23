@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (count($argv) < 2) {
     fwrite(STDERR, 'Usage: ' . $argv[0] . ' <number_of_chunks>' . PHP_EOL);
     exit(1);
