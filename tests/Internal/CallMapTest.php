@@ -152,10 +152,10 @@ class CallMapTest extends TestCase
                 self::assertArrayValuesAreArrays($deltaFile[$section], "'" . $section . "' in delta file " . $name . " has non-array values");
             }
             foreach ($deltaFile['changed'] as $changedFunction => $diff) {
-                self::assertArrayKeysAreStrings($diff, "Changed function " . $changedFunction . "in delta file " . $name . " has non-string keys");
-                self::assertArrayValuesAreArrays($diff, "Changed function " . $changedFunction . "in delta file " . $name . " has non-array values");
+                self::assertArrayKeysAreStrings($diff, "Changed function " . $changedFunction . " in delta file " . $name . " has non-string keys");
+                self::assertArrayValuesAreArrays($diff, "Changed function " . $changedFunction . " in delta file " . $name . " has non-array values");
                 foreach (['old', 'new'] as $section) {
-                    self::assertArrayHasKey($section, $diff, "Changed function " . $changedFunction . "in delta file " . $name . " has no '" . $section . "' section");
+                    self::assertArrayHasKey($section, $diff, "Changed function " . $changedFunction . " in delta file " . $name . " has no '" . $section . "' section");
                 }
             }
         }

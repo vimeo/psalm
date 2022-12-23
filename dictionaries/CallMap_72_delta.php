@@ -28,7 +28,7 @@ return [
     'imageopenpolygon' => ['bool', 'image'=>'resource', 'points'=>'array', 'num_points'=>'int', 'color'=>'int'],
     'imageresolution' => ['array|bool', 'image'=>'resource', 'resolution_x='=>'int', 'resolution_y='=>'int'],
     'imagesetclip' => ['bool', 'image'=>'resource', 'x1'=>'int', 'y1'=>'int', 'x2'=>'int', 'y2'=>'int'],
-    'ldap_exop' => ['mixed', 'ldap'=>'resource', 'reqoid'=>'string', 'reqdata='=>'string', 'serverctrls='=>'array|null', '&w_response_data='=>'string', '&w_response_oid='=>'string'],
+    'ldap_exop' => ['resource|bool', 'ldap'=>'resource', 'request_oid'=>'string', 'request_data='=>'?string', 'controls='=>'array|null', '&w_response_data='=>'string', '&w_response_oid='=>'string'],
     'ldap_exop_passwd' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string'],
     'ldap_exop_refresh' => ['int|false', 'ldap'=>'resource', 'dn'=>'string', 'ttl'=>'int'],
     'ldap_exop_whoami' => ['string|false', 'ldap'=>'resource'],
@@ -132,6 +132,22 @@ return [
     'stream_isatty' => ['bool', 'stream'=>'resource'],
   ],
   'changed' => [
+    'ReflectionClass::getMethods' => [
+      'old' => ['list<ReflectionMethod>', 'filter='=>'int'],
+      'new' => ['list<ReflectionMethod>', 'filter='=>'?int'],
+    ],
+    'ReflectionClass::getProperties' => [
+      'old' => ['list<ReflectionProperty>', 'filter='=>'int'],
+      'new' => ['list<ReflectionProperty>', 'filter='=>'?int'],
+    ],
+    'ReflectionObject::getMethods' => [
+      'old' => ['ReflectionMethod[]', 'filter='=>'int'],
+      'new' => ['ReflectionMethod[]', 'filter='=>'?int'],
+    ],
+    'ReflectionObject::getProperties' => [
+      'old' => ['ReflectionProperty[]', 'filter='=>'int'],
+      'new' => ['ReflectionProperty[]', 'filter='=>'?int'],
+    ],
     'SQLite3::openBlob' => [
       'old' => ['resource|false', 'table'=>'string', 'column'=>'string', 'rowid'=>'int', 'dbname='=>'string'],
       'new' => ['resource|false', 'table'=>'string', 'column'=>'string', 'rowid'=>'int', 'database='=>'string', 'flags='=>'int'],
@@ -160,9 +176,17 @@ return [
       'old' => ['int', 'context'=>'resource', 'handle'=>'resource', 'length='=>'int'],
       'new' => ['int', 'context'=>'HashContext', 'stream'=>'resource', 'length='=>'int'],
     ],
+    'json_decode' => [
+      'old' => ['mixed', 'json'=>'string', 'associative='=>'bool', 'depth='=>'int', 'flags='=>'int'],
+      'new' => ['mixed', 'json'=>'string', 'associative='=>'?bool', 'depth='=>'int', 'flags='=>'int'],
+    ],
     'mb_check_encoding' => [
       'old' => ['bool', 'value='=>'string', 'encoding='=>'string'],
       'new' => ['bool', 'value='=>'array|string', 'encoding='=>'string'],
+    ],
+    'preg_quote' => [
+      'old' => ['string', 'str'=>'string', 'delimiter='=>'string'],
+      'new' => ['string', 'str'=>'string', 'delimiter='=>'?string'],
     ],
   ],
   'removed' => [

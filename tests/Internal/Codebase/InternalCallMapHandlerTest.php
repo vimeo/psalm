@@ -407,7 +407,6 @@ class InternalCallMapHandlerTest extends TestCase
         'jsonexception::__construct',
         'ldap_compare' => ['8.0'],
         'ldap_delete' => ['8.0'],
-        'ldap_exop' => ['8.0'],
         'ldap_get_option' => ['8.0'],
         'ldap_list' => ['8.0'],
         'ldap_mod_add' => ['8.0'],
@@ -429,7 +428,6 @@ class InternalCallMapHandlerTest extends TestCase
         'locale::getdisplayregion',
         'locale::getdisplayscript',
         'locale::getdisplayvariant',
-        'locale::lookup',
         'logicexception::__construct',
         'long2ip',
         'lzf_compress',
@@ -831,16 +829,6 @@ class InternalCallMapHandlerTest extends TestCase
         'sqlsrv_query',
         'sqlsrv_server_info',
         'ssh2_forward_accept',
-        'stomp_abort',
-        'stomp_ack',
-        'stomp_begin',
-        'stomp_commit',
-        'stomp_read_frame',
-        'stomp_send',
-        'stomp_set_read_timeout',
-        'stomp_subscribe',
-        'stomp_unsubscribe',
-        'stream_select' => ['8.0'],
         'substr_replace',
         'tidy_getopt',
         'transliterator::transliterate',
@@ -880,6 +868,7 @@ class InternalCallMapHandlerTest extends TestCase
         'xmlreader::next',
         'xmlreader::open',
         'xmlreader::xml',
+        'xmlrpc_encode_request',
         'xmlrpc_server_add_introspection_data',
         'xmlrpc_server_call_method',
         'xmlrpc_server_destroy',
@@ -1003,28 +992,13 @@ class InternalCallMapHandlerTest extends TestCase
         'imap_num_recent',
         'infiniteiterator::getinneriterator' => ['8.1', '8.2'],
         'inflate_init',
-        'intlbreakiterator::createcharacterinstance' => ['8.1', '8.2'],
-        'intlbreakiterator::createlineinstance' => ['8.1', '8.2'],
-        'intlbreakiterator::createsentenceinstance' => ['8.1', '8.2'],
-        'intlbreakiterator::createtitleinstance' => ['8.1', '8.2'],
-        'intlbreakiterator::createwordinstance' => ['8.1', '8.2'],
         'intlbreakiterator::gettext' => ['8.1', '8.2'],
         'intlbreakiterator::settext' => ['8.1', '8.2'],
         'intlcal_get',
         'intlcal_get_keyword_values_for_locale',
-        'intlcodepointbreakiterator::createcharacterinstance' => ['8.1', '8.2'],
-        'intlcodepointbreakiterator::createlineinstance' => ['8.1', '8.2'],
-        'intlcodepointbreakiterator::createsentenceinstance' => ['8.1', '8.2'],
-        'intlcodepointbreakiterator::createtitleinstance' => ['8.1', '8.2'],
-        'intlcodepointbreakiterator::createwordinstance' => ['8.1', '8.2'],
         'intlcodepointbreakiterator::gettext' => ['8.1', '8.2'],
         'intlcodepointbreakiterator::settext' => ['8.1', '8.2'],
         'intlgregcal_set_gregorian_change',
-        'intlrulebasedbreakiterator::createcharacterinstance' => ['8.1', '8.2'],
-        'intlrulebasedbreakiterator::createlineinstance' => ['8.1', '8.2'],
-        'intlrulebasedbreakiterator::createsentenceinstance' => ['8.1', '8.2'],
-        'intlrulebasedbreakiterator::createtitleinstance' => ['8.1', '8.2'],
-        'intlrulebasedbreakiterator::createwordinstance' => ['8.1', '8.2'],
         'intlrulebasedbreakiterator::gettext' => ['8.1', '8.2'],
         'intlrulebasedbreakiterator::settext' => ['8.1', '8.2'],
         'intltz_get_offset',
@@ -1033,7 +1007,6 @@ class InternalCallMapHandlerTest extends TestCase
         'jddayofweek',
         'jdtounix',
         'ldap_count_entries',
-        'ldap_exop' => ['8.1', '8.2'],
         'ldap_get_attributes',
         'lengthexception::getprevious',
         'limititerator::getinneriterator' => ['8.1', '8.2'],
@@ -1056,8 +1029,6 @@ class InternalCallMapHandlerTest extends TestCase
         'mysqli_stmt_get_warnings',
         'mysqli_stmt_insert_id',
         'norewinditerator::getinneriterator' => ['8.1', '8.2'],
-        'numberformatter::create' => ['8.1', '8.2'],
-        'numfmt_create',
         'ob_list_handlers',
         'openssl_random_pseudo_bytes',
         'openssl_spki_export',
@@ -1074,17 +1045,9 @@ class InternalCallMapHandlerTest extends TestCase
         'pcntl_exec',
         'pcntl_strerror',
         'pdo::getattribute',
-        'pg_port',
-        'phar::compress' => ['8.1', '8.2'],
-        'phar::converttodata' => ['8.1', '8.2'],
-        'phar::converttoexecutable' => ['8.1', '8.2'],
-        'phar::decompress' => ['8.1', '8.2'],
         'phar::getalias' => ['8.1', '8.2'],
         'phar::iscompressed' => ['8.1', '8.2'],
-        'phardata::compress' => ['8.1', '8.2'],
         'phardata::compressfiles' => ['8.1', '8.2'],
-        'phardata::converttodata' => ['8.1', '8.2'],
-        'phardata::converttoexecutable' => ['8.1', '8.2'],
         'phardata::decompress' => ['8.1', '8.2'],
         'phptoken::gettokenname',
         'pspell_config_create',
@@ -1106,7 +1069,6 @@ class InternalCallMapHandlerTest extends TestCase
         'recursiveiteratoriterator::beginiteration' => ['8.1', '8.2'],
         'recursiveiteratoriterator::callgetchildren' => ['8.1', '8.2'],
         'recursiveiteratoriterator::enditeration' => ['8.1', '8.2'],
-        'recursiveiteratoriterator::getsubiterator' => ['8.1', '8.2'],
         'recursiveregexiterator::current',
         'recursiveregexiterator::getinneriterator' => ['8.1', '8.2'],
         'recursiveregexiterator::key',
@@ -1115,7 +1077,6 @@ class InternalCallMapHandlerTest extends TestCase
         'recursiveregexiterator::valid',
         'recursivetreeiterator::beginiteration' => ['8.1', '8.2'],
         'recursivetreeiterator::callgetchildren' => ['8.1', '8.2'],
-        'recursivetreeiterator::getsubiterator' => ['8.1', '8.2'],
         'reflectionclass::getstaticproperties' => ['8.1', '8.2'],
         'reflectionclass::gettraitaliases' => ['8.1', '8.2'],
         'reflectionclass::gettraitnames' => ['8.1', '8.2'],
@@ -1124,7 +1085,6 @@ class InternalCallMapHandlerTest extends TestCase
         'reflectionfunction::getclosurescopeclass' => ['8.1', '8.2'],
         'reflectionfunction::getclosurethis' => ['8.1', '8.2'],
         'reflectionfunctionabstract::getextension' => ['8.1', '8.2'],
-        'reflectionmethod::getclosure' => ['8.1', '8.2'],
         'reflectionmethod::getclosurescopeclass' => ['8.1', '8.2'],
         'reflectionmethod::getclosurethis' => ['8.1', '8.2'],
         'reflectionmethod::getextension' => ['8.1', '8.2'],
@@ -1137,10 +1097,8 @@ class InternalCallMapHandlerTest extends TestCase
         'rewinddir',
         'runtimeexception::getprevious',
         'sessionhandler::create_sid' => ['8.1', '8.2'],
-        'shm_attach',
         'shmop_open',
         'simplexml_import_dom',
-        'simplexmlelement::savexml' => ['8.1', '8.2'],
         'sleep',
         'snmp_set_oid_numeric_print',
         'socket_import_stream',
@@ -1171,11 +1129,8 @@ class InternalCallMapHandlerTest extends TestCase
         'spltempfileobject::_bad_state_ex',
         'spltempfileobject::fpassthru' => ['8.1', '8.2'],
         'spltempfileobject::fscanf' => ['8.1', '8.2'],
-        'stomp::setreadtimeout',
         'stream_bucket_new',
         'stream_set_chunk_size',
-        'substr',
-        'substr_compare',
         'tidy::body' => ['8.1', '8.2'],
         'tidy::getopt' => ['8.1', '8.2'],
         'tidy::head' => ['8.1', '8.2'],
@@ -1202,7 +1157,6 @@ class InternalCallMapHandlerTest extends TestCase
         'xml_get_error_code',
         'xml_parser_get_option',
         'xmlrpc_encode',
-        'xmlrpc_encode_request',
         'xmlrpc_server_create',
         'xsltprocessor::transformtoxml' => ['8.1', '8.2'],
         'ziparchive::addglob' => ['8.1', '8.2'],
@@ -1570,14 +1524,31 @@ class InternalCallMapHandlerTest extends TestCase
                 $normalizedKey = substr($normalizedKey, 0, -1);
             }
 
+            //$this->assertTrue($this->hasParameter($function, $normalizedKey), "Calmap has extra param entry {$normalizedKey}");
+
             $normalizedEntry['name'] = $normalizedKey;
             $normalizedEntries[$normalizedKey] = $normalizedEntry;
         }
+
         foreach ($function->getParameters() as $parameter) {
             $this->assertArrayHasKey($parameter->getName(), $normalizedEntries, "Callmap is missing entry for param {$parameter->getName()} in {$function->getName()}: " . print_r($normalizedEntries, true));
             $this->assertParameter($normalizedEntries[$parameter->getName()], $parameter);
         }
     }
+
+    /* Used by above assert
+    private function hasParameter(ReflectionFunctionAbstract $function, string $name): bool
+    {
+        foreach ($function->getParameters() as $parameter)
+        {
+            if ($parameter->getName() === $name) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    */
 
     /**
      * @param array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
@@ -1592,7 +1563,7 @@ class InternalCallMapHandlerTest extends TestCase
         $expectedType = $param->getType();
 
         if (isset($expectedType) && !empty($normalizedEntry['type'])) {
-            $this->assertTypeValidity($expectedType, $normalizedEntry['type'], false, "Param '{$name}' has incorrect type");
+            $this->assertTypeValidity($expectedType, $normalizedEntry['type'], "Param '{$name}'");
         }
     }
 
@@ -1608,20 +1579,20 @@ class InternalCallMapHandlerTest extends TestCase
 
         $this->assertNotEmpty($entryReturnType, 'CallMap entry has empty return type');
         if ($expectedType !== null) {
-            $this->assertTypeValidity($expectedType, $entryReturnType, true, 'CallMap entry has incorrect return type, reflection returned: ' . $expectedType);
+            $this->assertTypeValidity($expectedType, $entryReturnType, 'Return');
         }
     }
 
     /**
      * Since string equality is too strict, we do some extra checking here
      */
-    private function assertTypeValidity(ReflectionType $reflected, string $specified, bool $checkNullable, string $message): void
+    private function assertTypeValidity(ReflectionType $reflected, string $specified, string $msgPrefix): void
     {
         $expectedType = Reflection::getPsalmTypeFromReflectionType($reflected);
         $callMapType = Type::parseString($specified);
 
         try {
-            $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $callMapType, $expectedType), $message);
+            $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $callMapType, $expectedType), "{$msgPrefix} type '{$specified}' should be contained by reflected type '{$reflected}'");
         } catch (InvalidArgumentException $e) {
             if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
                 && !class_exists($matches[1])
@@ -1631,8 +1602,8 @@ class InternalCallMapHandlerTest extends TestCase
         }
 
         // Reflection::getPsalmTypeFromReflectionType adds |null to mixed types so skip comparison
-        if ($checkNullable && !$expectedType->hasMixed()) {
-            $this->assertSame($expectedType->isNullable(), $callMapType->isNullable(), $message);
+        if (!$expectedType->hasMixed()) {
+            $this->assertSame($expectedType->isNullable(), $callMapType->isNullable(), "{$msgPrefix} type '{$specified}' should be nullable");
         }
     }
 }
