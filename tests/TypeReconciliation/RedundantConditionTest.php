@@ -1546,6 +1546,27 @@ class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'https://github.com/vimeo/psalm/issues/8932' => [
+                'code' => '<?php
+                    /**
+                     * @param array|null $value
+ *                   *
+ *                   * @return null
+                     */
+                    function reverseTransform($value)
+                    {
+                        if (null === $value) {
+                            return null;
+                        }
+
+                        if (!\is_array($value)) {
+                            throw new \Exception("array");
+                        }
+
+                        return null;
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
         ];
     }
 }
