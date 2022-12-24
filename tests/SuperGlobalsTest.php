@@ -12,7 +12,7 @@ class SuperGlobalsTest extends TestCase
     {
         yield 'http_response_headerIsList' => [
             'code' => '<?php
-                /** @return list<string> */
+                /** @return non-empty-list<non-falsy-string> */
                 function returnsList(): array {
                     return $http_response_header;
                 }

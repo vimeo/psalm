@@ -612,7 +612,7 @@ class VariableFetchAnalyzer
         }
 
         if ($var_id === '$http_response_header') {
-            return Type::getList(Type::getNonEmptyString());
+            return Type::getNonEmptyList(Type::getNonFalsyString());
         }
 
         if ($var_id === '$GLOBALS') {
