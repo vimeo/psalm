@@ -2257,17 +2257,11 @@ class Config
     public function collectPredefinedFunctions(): void
     {
         $defined_functions = get_defined_functions();
-
-        if (isset($defined_functions['user'])) {
-            foreach ($defined_functions['user'] as $function_name) {
-                $this->predefined_functions[$function_name] = true;
-            }
+        foreach ($defined_functions['user'] as $function_name) {
+            $this->predefined_functions[$function_name] = true;
         }
-
-        if (isset($defined_functions['internal'])) {
-            foreach ($defined_functions['internal'] as $function_name) {
-                $this->predefined_functions[$function_name] = true;
-            }
+        foreach ($defined_functions['internal'] as $function_name) {
+            $this->predefined_functions[$function_name] = true;
         }
     }
 
