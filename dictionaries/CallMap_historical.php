@@ -11124,7 +11124,7 @@ return [
     'get_declared_interfaces' => ['list<class-string>'],
     'get_declared_traits' => ['list<class-string>|null'],
     'get_defined_constants' => ['array<string,int|string|float|bool|null|array|resource>', 'categorize='=>'bool'],
-    'get_defined_functions' => ['array<string,list<callable-string>>', 'exclude_disabled='=>'bool'],
+    'get_defined_functions' => ['array{internal: list<callable-string>, user: list<callable-string>}', 'exclude_disabled='=>'bool'],
     'get_defined_vars' => ['array'],
     'get_extension_funcs' => ['list<callable-string>|false', 'extension'=>'string'],
     'get_headers' => ['array|false', 'url'=>'string', 'associative='=>'int'],
