@@ -2,11 +2,13 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class SuperGlobalsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     public function providerValidCodeParse(): iterable
     {
@@ -30,6 +32,19 @@ class SuperGlobalsTest extends TestCase
                     return $_ENV;
                 }
             '
+        ];
+    }
+
+    public function providerInvalidCodeParse(): iterable
+    {
+        yield 'undefined http_response_header' => [
+            'code' => '<?php
+                /** @return non-empty-list<non-falsy-string> */
+                function returnsList(): array {
+                    return $http_response_header;
+                }
+            ',
+            'error_message' => 'InvalidReturnStatement',
         ];
     }
 }
