@@ -234,7 +234,7 @@ final class MutableUnion implements TypeNode
         $this->typed_class_strings = [];
         $this->checked = false;
 
-        $from_docblock = $this->from_docblock;
+        $from_docblock = false;
         $keyed_types = [];
 
         foreach ($types as $type) {

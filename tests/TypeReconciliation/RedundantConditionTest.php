@@ -1085,7 +1085,7 @@ class RedundantConditionTest extends TestCase
                     /** @psalm-suppress PossiblyNullArgument */
                     takesA($a);
                     if ($a instanceof A) {}',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:15',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:15',
             ],
             'replaceFalseType' => [
                 'code' => '<?php
