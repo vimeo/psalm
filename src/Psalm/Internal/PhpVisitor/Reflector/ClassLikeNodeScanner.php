@@ -71,7 +71,6 @@ use function array_shift;
 use function array_values;
 use function assert;
 use function count;
-use function get_class;
 use function implode;
 use function is_int;
 use function is_string;
@@ -1309,7 +1308,7 @@ class ClassLikeNodeScanner
                 && !(
                     $const->value instanceof Concat
                     && $inferred_type->isSingle()
-                    && get_class($inferred_type->getSingleAtomic()) === TString::class
+                    && TString::isPlain($inferred_type->getSingleAtomic())
                 )
             ) {
                 $exists = true;

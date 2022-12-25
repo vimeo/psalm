@@ -44,7 +44,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
@@ -796,8 +795,10 @@ class AssertionReconciler extends Reconciler
         }
 
         // Lowercase-string and non-empty-string are compatible but none is contained into the other completely
-        if (($type_2_atomic instanceof TLowercaseString && $type_1_atomic instanceof TNonEmptyString) ||
-            ($type_2_atomic instanceof TNonEmptyString && $type_1_atomic instanceof TLowercaseString)
+        if ($type_1_atomic instanceof TString
+            && $type_2_atomic instanceof TString
+            && (($type_2_atomic->lowercase === true && $type_1_atomic instanceof TNonEmptyString)
+                || ($type_2_atomic instanceof TNonEmptyString && $type_1_atomic->lowercase === true))
         ) {
             $matching_atomic_type = new TNonEmptyLowercaseString();
         }

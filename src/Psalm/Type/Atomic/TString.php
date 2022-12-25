@@ -2,6 +2,10 @@
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
+use function get_class;
+
 /**
  * Denotes the `string` type, where the exact value is unknown.
  *
@@ -9,6 +13,23 @@ namespace Psalm\Type\Atomic;
  */
 class TString extends Scalar
 {
+    public ?bool $lowercase = null;
+
+    public function __construct(bool $from_docblock = false, ?bool $lowercase = null)
+    {
+        parent::__construct($from_docblock);
+        $this->lowercase = $lowercase;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function isPlain(Atomic $atomic): bool
+    {
+        return get_class($atomic) === self::class
+            && $atomic->lowercase === null;
+    }
+
     /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
@@ -24,5 +45,21 @@ class TString extends Scalar
     public function getKey(bool $include_extra = true): string
     {
         return 'string';
+    }
+
+    public function getId(bool $exact = true, bool $nested = false): string
+    {
+        if ($this->lowercase !== null) {
+            return $this->lowercase ? 'lowercase-string' : 'non-lowercase-string';
+        }
+        return parent::getId();
+    }
+
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
+    {
+        if ($this->lowercase !== null) {
+            return false;
+        }
+        return parent::canBeFullyExpressedInPhp($analysis_php_version_id);
     }
 }

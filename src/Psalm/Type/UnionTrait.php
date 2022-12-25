@@ -29,7 +29,6 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -260,7 +259,7 @@ trait UnionTrait
             } elseif ($type instanceof TLiteralString) {
                 $literal_strings[] = $type_string;
             } else {
-                if (get_class($type) === TString::class) {
+                if (TString::isPlain($type)) {
                     $has_non_literal_string = true;
                 } elseif (get_class($type) === TInt::class) {
                     $has_non_literal_int = true;
@@ -660,7 +659,8 @@ trait UnionTrait
     public function hasLowercaseString(): bool
     {
         return isset($this->types['string'])
-            && ($this->types['string'] instanceof TLowercaseString
+            && $this->types['string'] instanceof TString
+            && ($this->types['string']->lowercase === true
                 || $this->types['string'] instanceof TNonEmptyLowercaseString);
     }
 

@@ -50,7 +50,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -462,7 +461,7 @@ class SimpleAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion_type && get_class($assertion_type) === TString::class) {
+        if ($assertion_type && TString::isPlain($assertion_type)) {
             return self::reconcileString(
                 $assertion,
                 $existing_var_type,
@@ -996,7 +995,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TString) {
-                if (get_class($type) === TString::class) {
+                if (TString::isPlain($type)) {
                     $type = $type->setFromDocblock(false);
                 }
                 $string_types[] = $type;
@@ -2596,7 +2595,7 @@ class SimpleAssertionReconciler extends Reconciler
                 && $codebase->methodExists($type->value . '::__invoke')
             ) {
                 $callable_types[] = $type;
-            } elseif (get_class($type) === TString::class
+            } elseif (TString::isPlain($type)
                 || get_class($type) === TNonEmptyString::class
                 || get_class($type) === TNonFalsyString::class
             ) {
@@ -2792,10 +2791,10 @@ class SimpleAssertionReconciler extends Reconciler
         if (isset($types['string'])) {
             $string_atomic_type = $types['string'];
 
-            if (get_class($string_atomic_type) === TString::class) {
+            if (TString::isPlain($string_atomic_type)) {
                 unset($types['string']);
                 $types []= new TNonFalsyString();
-            } elseif (get_class($string_atomic_type) === TLowercaseString::class) {
+            } elseif ($string_atomic_type instanceof TString && $string_atomic_type->lowercase === true) {
                 unset($types['string']);
                 $types []= new TNonEmptyLowercaseString();
             } elseif (get_class($string_atomic_type) === TNonspecificLiteralString::class) {

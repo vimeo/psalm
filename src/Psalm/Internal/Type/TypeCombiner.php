@@ -31,7 +31,6 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -283,7 +282,7 @@ class TypeCombiner
             }
 
             $has_non_specific_string = isset($combination->value_types['string'])
-                && get_class($combination->value_types['string']) === TString::class;
+                && TString::isPlain($combination->value_types['string']);
 
             if (!$has_non_specific_string) {
                 $object_type = self::combine(
@@ -1013,7 +1012,8 @@ class TypeCombiner
                 ) {
                     // do nothing
                 } elseif (isset($combination->value_types['string'])
-                    && $combination->value_types['string'] instanceof TLowercaseString
+                    && $combination->value_types['string'] instanceof TString
+                    && $combination->value_types['string']->lowercase === true
                     && strtolower($type->value) === $type->value
                 ) {
                     // do nothing
@@ -1051,7 +1051,7 @@ class TypeCombiner
                         } else {
                             $combination->value_types['string'] = $type;
                         }
-                    } elseif ($type instanceof TLowercaseString) {
+                    } elseif ($type instanceof TString && $type->lowercase === true) {
                         $has_non_lowercase_string = false;
 
                         foreach ($combination->strings as $string_type) {
@@ -1089,8 +1089,8 @@ class TypeCombiner
                 } else {
                     $combination->value_types[$type_key] = $type;
                 }
-            } elseif (get_class($combination->value_types['string']) !== TString::class) {
-                if (get_class($type) === TString::class) {
+            } elseif (!TString::isPlain($combination->value_types['string'])) {
+                if (TString::isPlain($type)) {
                     $combination->value_types['string'] = $type;
                 } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
                     if (get_class($type) === TNonEmptyString::class
@@ -1121,11 +1121,13 @@ class TypeCombiner
                         && get_class($type) === TNonEmptyLowercaseString::class
                     ) {
                         $combination->value_types['string'] = new TNonEmptyString();
-                    } elseif (get_class($type) === TLowercaseString::class
+                    } elseif ($type instanceof TString
+                        && $type->lowercase === true
                         && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
                     ) {
                         $combination->value_types['string'] = $type;
-                    } elseif (get_class($combination->value_types['string']) === TLowercaseString::class
+                    } elseif ($combination->value_types['string'] instanceof TString
+                        && $combination->value_types['string']->lowercase === true
                         && get_class($type) === TNonEmptyLowercaseString::class
                     ) {
                         //no-change

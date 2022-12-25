@@ -344,7 +344,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion_type && get_class($assertion_type) === TString::class && !$existing_var_type->hasMixed()) {
+        if ($assertion_type && TString::isPlain($assertion_type) && !$existing_var_type->hasMixed()) {
             return self::reconcileString(
                 $assertion,
                 $existing_var_type,
@@ -979,7 +979,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         if ($existing_var_type->hasType('string')) {
             $string_atomic_type = $existing_var_type->getAtomicTypes()['string'];
 
-            if (get_class($string_atomic_type) === TString::class) {
+            if (TString::isPlain($string_atomic_type)) {
                 $existing_var_type->removeType('string');
                 $existing_var_type->addType(new TLiteralString(''));
                 $existing_var_type->addType(new TLiteralString('0'));
