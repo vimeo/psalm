@@ -210,6 +210,7 @@ class TypeCombiner
             $new_types = self::handleKeyedArrayEntries(
                 $combination,
                 $overwrite_empty_array,
+                $from_docblock,
             );
         }
 
@@ -225,6 +226,7 @@ class TypeCombiner
                 $allow_mixed_union,
                 $type,
                 $combination->array_type_params,
+                $from_docblock,
             );
         }
 
@@ -239,7 +241,7 @@ class TypeCombiner
         foreach ($combination->builtin_type_params as $generic_type => $generic_type_params) {
             if ($generic_type === 'iterable') {
                 assert(count($generic_type_params) <= 2);
-                $new_types[] = new TIterable($generic_type_params);
+                $new_types[] = new TIterable($generic_type_params, [], $from_docblock);
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
                 $generic_object = new TGenericObject(
@@ -248,6 +250,7 @@ class TypeCombiner
                     false,
                     false,
                     $combination->extra_types,
+                    $from_docblock,
                 );
                 $new_types[] = $generic_object;
 
@@ -267,6 +270,7 @@ class TypeCombiner
                 false,
                 $combination->object_static[$generic_type] ?? false,
                 $combination->extra_types,
+                $from_docblock,
             );
 
             $new_types[] = $generic_object;
@@ -293,9 +297,16 @@ class TypeCombiner
 
                 foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
                     if ($object_atomic_type instanceof TNamedObject) {
-                        $new_types[] = new TClassString($object_atomic_type->value, $object_atomic_type);
+                        $new_types[] = new TClassString(
+                            $object_atomic_type->value,
+                            $object_atomic_type,
+                            false,
+                            false,
+                            false,
+                            $from_docblock,
+                        );
                     } elseif ($object_atomic_type instanceof TObject) {
-                        $new_types[] = new TClassString();
+                        $new_types[] = new TClassString('object', null, false, false, false, $from_docblock);
                     }
                 }
             }
@@ -351,7 +362,7 @@ class TypeCombiner
                 continue;
             }
 
-            $new_types[] = $type;
+            $new_types[] = $type->setFromDocblock($from_docblock);
         }
 
         if (!$new_types && !$has_never) {
@@ -1321,7 +1332,8 @@ class TypeCombiner
      */
     private static function handleKeyedArrayEntries(
         TypeCombination $combination,
-        bool $overwrite_empty_array
+        bool $overwrite_empty_array,
+        bool $from_docblock
     ): array {
         $new_types = [];
 
@@ -1397,6 +1409,7 @@ class TypeCombiner
                             ? null
                             : [$fallback_key_type, $fallback_value_type],
                         (bool)$combination->all_arrays_lists,
+                        $from_docblock,
                     );
                 } else {
                     $objectlike = new TKeyedArray(
@@ -1406,6 +1419,7 @@ class TypeCombiner
                             ? null
                             : [$fallback_key_type, $fallback_value_type],
                         (bool)$combination->all_arrays_lists,
+                        $from_docblock,
                     );
                 }
 
@@ -1414,9 +1428,15 @@ class TypeCombiner
                 $key_type = $combination->objectlike_key_type ?? Type::getArrayKey();
                 $value_type = $combination->objectlike_value_type ?? Type::getMixed();
                 if ($combination->array_always_filled) {
-                    $new_types[] = new TNonEmptyArray([$key_type, $value_type]);
+                    $new_types[] = new TNonEmptyArray(
+                        [$key_type, $value_type],
+                        null,
+                        null,
+                        'non-empty-array',
+                        $from_docblock,
+                    );
                 } else {
-                    $new_types[] = new TArray([$key_type, $value_type]);
+                    $new_types[] = new TArray([$key_type, $value_type], $from_docblock);
                 }
             }
 
@@ -1436,7 +1456,8 @@ class TypeCombiner
         bool $overwrite_empty_array,
         bool $allow_mixed_union,
         Atomic $type,
-        array $generic_type_params
+        array $generic_type_params,
+        bool $from_docblock
     ): Atomic {
         if ($combination->objectlike_entries) {
             $objectlike_generic_type = null;
@@ -1455,11 +1476,11 @@ class TypeCombiner
                 );
 
                 if (is_int($property_name)) {
-                    $objectlike_keys[$property_name] = new TLiteralInt($property_name);
+                    $objectlike_keys[$property_name] = new TLiteralInt($property_name, $from_docblock);
                 } elseif ($type instanceof TKeyedArray && isset($type->class_strings[$property_name])) {
-                    $objectlike_keys[$property_name] = new TLiteralClassString($property_name);
+                    $objectlike_keys[$property_name] = new TLiteralClassString($property_name, $from_docblock);
                 } else {
-                    $objectlike_keys[$property_name] = new TLiteralString($property_name);
+                    $objectlike_keys[$property_name] = new TLiteralString($property_name, $from_docblock);
                 }
             }
 
@@ -1504,7 +1525,13 @@ class TypeCombiner
         }
 
         if ($combination->all_arrays_callable) {
-            $array_type = new TCallableArray($generic_type_params);
+            $array_type = new TCallableArray(
+                $generic_type_params,
+                null,
+                null,
+                'callable-array',
+                $from_docblock,
+            );
         } elseif ($combination->array_always_filled
             || ($combination->array_sometimes_filled && $overwrite_empty_array)
             || ($combination->objectlike_entries
@@ -1522,6 +1549,7 @@ class TypeCombiner
                         null,
                         [Type::getInt(), $combination->array_type_params[1]],
                         true,
+                        $from_docblock,
                     );
                 } elseif ($combination->array_counts && count($combination->array_counts) === 1) {
                     $cnt = array_keys($combination->array_counts)[0];
@@ -1535,6 +1563,7 @@ class TypeCombiner
                         null,
                         null,
                         true,
+                        $from_docblock,
                     );
                 } else {
                     $cnt = $combination->array_min_counts
@@ -1552,6 +1581,7 @@ class TypeCombiner
                         null,
                         [Type::getListKey(), $generic_type_params[1]],
                         true,
+                        $from_docblock,
                     );
                 }
             } else {
@@ -1561,6 +1591,9 @@ class TypeCombiner
                     $combination->array_min_counts
                         ? min(array_keys($combination->array_min_counts))
                         : null,
+                    null,
+                    'non-empty-array',
+                    $from_docblock,
                 );
             }
         } else {
@@ -1572,11 +1605,12 @@ class TypeCombiner
                     array_keys($combination->class_string_map_names)[0],
                     array_values($combination->class_string_map_as_types)[0],
                     $generic_type_params[1],
+                    $from_docblock,
                 );
             } elseif ($combination->all_arrays_lists) {
-                $array_type = Type::getListAtomic($generic_type_params[1]);
+                $array_type = Type::getListAtomic($generic_type_params[1], $from_docblock);
             } else {
-                $array_type = new TArray($generic_type_params);
+                $array_type = new TArray($generic_type_params, $from_docblock);
             }
         }
 

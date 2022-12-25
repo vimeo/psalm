@@ -1546,12 +1546,14 @@ class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'https://github.com/vimeo/psalm/issues/8932' => [
+            'from_docblock should be kept when removing types' => [
                 'code' => '<?php
                     /**
+                     * @see https://github.com/vimeo/psalm/issues/8932
+                     *
                      * @param array|null $value
- *                   *
- *                   * @return null
+                     *
+                     * @return null
                      */
                     function reverseTransform($value)
                     {
