@@ -614,7 +614,7 @@ class VariableFetchAnalyzer
         if ($var_id === '$http_response_header') {
             // $http_response_header exists only in the local scope after a successful network request
             return new Union([
-                Type::getNonEmptyList(Type::getNonFalsyString())
+                Type::getNonEmptyListAtomic(Type::getNonFalsyString())
             ], [
                 'possibly_undefined' => true,
             ]);
