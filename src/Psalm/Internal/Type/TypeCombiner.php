@@ -297,17 +297,14 @@ class TypeCombiner
 
                 foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
                     if ($object_atomic_type instanceof TNamedObject) {
-                        $new_types[] = new TClassString(
-                            $object_atomic_type->value,
-                            $object_atomic_type,
-                            false,
-                            false,
-                            false,
-                            $from_docblock,
-                        );
+                        $class_type = new TClassString($object_atomic_type->value, $object_atomic_type);
                     } elseif ($object_atomic_type instanceof TObject) {
-                        $new_types[] = new TClassString('object', null, false, false, false, $from_docblock);
+                        $class_type = new TClassString();
+                    } else {
+                        continue;
                     }
+
+                    $new_types[] = $class_type->setFromDocblock($from_docblock);
                 }
             }
         }
@@ -1428,16 +1425,12 @@ class TypeCombiner
                 $key_type = $combination->objectlike_key_type ?? Type::getArrayKey();
                 $value_type = $combination->objectlike_value_type ?? Type::getMixed();
                 if ($combination->array_always_filled) {
-                    $new_types[] = new TNonEmptyArray(
-                        [$key_type, $value_type],
-                        null,
-                        null,
-                        'non-empty-array',
-                        $from_docblock,
-                    );
+                    $array_type = new TNonEmptyArray([$key_type, $value_type]);
                 } else {
-                    $new_types[] = new TArray([$key_type, $value_type], $from_docblock);
+                    $array_type = new TArray([$key_type, $value_type]);
                 }
+
+                $new_types[] = $array_type->setFromDocblock($from_docblock);
             }
 
             // if we're merging an empty array with an object-like, clobber empty array
@@ -1525,13 +1518,7 @@ class TypeCombiner
         }
 
         if ($combination->all_arrays_callable) {
-            $array_type = new TCallableArray(
-                $generic_type_params,
-                null,
-                null,
-                'callable-array',
-                $from_docblock,
-            );
+            $array_type = new TCallableArray($generic_type_params);
         } elseif ($combination->array_always_filled
             || ($combination->array_sometimes_filled && $overwrite_empty_array)
             || ($combination->objectlike_entries
@@ -1549,7 +1536,6 @@ class TypeCombiner
                         null,
                         [Type::getInt(), $combination->array_type_params[1]],
                         true,
-                        $from_docblock,
                     );
                 } elseif ($combination->array_counts && count($combination->array_counts) === 1) {
                     $cnt = array_keys($combination->array_counts)[0];
@@ -1563,7 +1549,6 @@ class TypeCombiner
                         null,
                         null,
                         true,
-                        $from_docblock,
                     );
                 } else {
                     $cnt = $combination->array_min_counts
@@ -1581,7 +1566,6 @@ class TypeCombiner
                         null,
                         [Type::getListKey(), $generic_type_params[1]],
                         true,
-                        $from_docblock,
                     );
                 }
             } else {
@@ -1591,9 +1575,6 @@ class TypeCombiner
                     $combination->array_min_counts
                         ? min(array_keys($combination->array_min_counts))
                         : null,
-                    null,
-                    'non-empty-array',
-                    $from_docblock,
                 );
             }
         } else {
@@ -1605,15 +1586,14 @@ class TypeCombiner
                     array_keys($combination->class_string_map_names)[0],
                     array_values($combination->class_string_map_as_types)[0],
                     $generic_type_params[1],
-                    $from_docblock,
                 );
             } elseif ($combination->all_arrays_lists) {
-                $array_type = Type::getListAtomic($generic_type_params[1], $from_docblock);
+                $array_type = Type::getListAtomic($generic_type_params[1]);
             } else {
-                $array_type = new TArray($generic_type_params, $from_docblock);
+                $array_type = new TArray($generic_type_params);
             }
         }
 
-        return $array_type;
+        return $array_type->setFromDocblock($from_docblock);
     }
 }
