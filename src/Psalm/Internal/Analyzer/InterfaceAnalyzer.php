@@ -139,6 +139,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                 $actual_method_id = $method_analyzer->getMethodId();
 
                 if ($stmt->name->name !== '__construct'
+                    && $stmt->name->name !== '__destruct'
                     && $config->reportIssueInFile('InvalidReturnType', $this->getFilePath())
                 ) {
                     ClassAnalyzer::analyzeClassMethodReturnType(
