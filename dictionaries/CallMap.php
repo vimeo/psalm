@@ -6018,6 +6018,7 @@ return [
 'imap_header' => ['stdClass|false', 'stream_id'=>'resource', 'msg_no'=>'int', 'from_length='=>'int', 'subject_length='=>'int', 'default_host='=>'string'],
 'imap_headerinfo' => ['stdClass|false', 'imap'=>'IMAP\Connection', 'message_num'=>'int', 'from_length='=>'int', 'subject_length='=>'int'],
 'imap_headers' => ['array|false', 'imap'=>'IMAP\Connection'],
+'imap_is_open' => ['bool', 'imap'=>'IMAP\Connection'],
 'imap_last_error' => ['string|false'],
 'imap_list' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string'],
 'imap_listmailbox' => ['array|false', 'imap'=>'IMAP\Connection', 'reference'=>'string', 'pattern'=>'string'],
