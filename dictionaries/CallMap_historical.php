@@ -16383,6 +16383,7 @@ return [
     'xdebug_get_profiler_filename' => ['string|false'],
     'xdebug_get_stack_depth' => ['int'],
     'xdebug_get_tracefile_name' => ['string'],
+    'xdebug_info' => ['mixed', 'category='=>'string'],
     'xdebug_is_debugger_active' => ['bool'],
     'xdebug_is_enabled' => ['bool'],
     'xdebug_memory_usage' => ['int'],
