@@ -130,6 +130,7 @@ return [
     'sodium_pad' => ['string', 'string'=>'string', 'block_size'=>'int'],
     'sodium_unpad' => ['string', 'string'=>'string', 'block_size'=>'int'],
     'stream_isatty' => ['bool', 'stream'=>'resource'],
+    'xdebug_info' => ['mixed', 'category='=>'string'],
   ],
   'changed' => [
     'ReflectionClass::getMethods' => [
