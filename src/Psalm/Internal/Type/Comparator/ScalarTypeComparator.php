@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Type\Comparator;
 
+use Exception;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type\Atomic\Scalar;
@@ -12,10 +13,13 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
+use Psalm\Type\Atomic\TEmptyNumeric;
+use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -24,6 +28,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
+use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
@@ -40,6 +45,7 @@ use Psalm\Type\Atomic\TTrue;
 
 use function get_class;
 use function is_numeric;
+use function sprintf;
 use function strtolower;
 
 /**
@@ -55,6 +61,44 @@ class ScalarTypeComparator
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
     ): bool {
+        // TODO: Remove this if statement once all container types have been converted to use this pattern.
+        if ($container_type_part instanceof TArrayKey
+            || $container_type_part instanceof TNumeric
+            || $container_type_part instanceof TScalar
+            || $container_type_part instanceof TBool
+            || $container_type_part instanceof TFloat
+        ) {
+            if ($container_type_part instanceof TArrayKey) {
+                $result = self::isContainedByArrayKey($input_type_part, $container_type_part, $codebase);
+            } elseif ($container_type_part instanceof TNumeric) {
+                $result = self::isContainedByNumeric($input_type_part, $container_type_part);
+            } elseif ($container_type_part instanceof TScalar) {
+                $result = self::isContainedByScalar($input_type_part, $container_type_part);
+            } elseif ($container_type_part instanceof TBool) {
+                $result = self::isContainedByBool($input_type_part, $container_type_part);
+            } else {
+                $result = self::isContainedByFloat($input_type_part, $container_type_part, $allow_float_int_equality);
+            }
+            if ($result) {
+                return true;
+            } else {
+                if ($atomic_comparison_result) {
+                    // The type is coerced if the container type is contained by the input type (the opposite).
+                    $atomic_comparison_result->type_coerced = self::isContainedBy(
+                        $codebase,
+                        $container_type_part,
+                        $input_type_part,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                    );
+                    $atomic_comparison_result->type_coerced_from_scalar = $atomic_comparison_result->type_coerced
+                        && $input_type_part instanceof TScalar;
+                    $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
+                }
+                return false;
+            }
+        }
+
         if (get_class($container_type_part) === TString::class
             && $input_type_part instanceof TString
         ) {
@@ -63,12 +107,6 @@ class ScalarTypeComparator
 
         if (get_class($container_type_part) === TInt::class
             && $input_type_part instanceof TInt
-        ) {
-            return true;
-        }
-
-        if (get_class($container_type_part) === TFloat::class
-            && $input_type_part instanceof TFloat
         ) {
             return true;
         }
@@ -225,44 +263,6 @@ class ScalarTypeComparator
             }
         }
 
-        if ($input_type_part instanceof TFalse
-            && $container_type_part instanceof TBool
-            && !($container_type_part instanceof TTrue)
-        ) {
-            return true;
-        }
-
-        if ($input_type_part instanceof TTrue
-            && $container_type_part instanceof TBool
-            && !($container_type_part instanceof TFalse)
-        ) {
-            return true;
-        }
-
-        // from https://wiki.php.net/rfc/scalar_type_hints_v5:
-        //
-        // > int types can resolve a parameter type of float
-        if ($input_type_part instanceof TInt
-            && $container_type_part instanceof TFloat
-            && !$container_type_part instanceof TLiteralFloat
-            && $allow_float_int_equality
-        ) {
-            return true;
-        }
-
-        if ($container_type_part instanceof TArrayKey
-            && $input_type_part instanceof TNumeric
-        ) {
-            return true;
-        }
-
-        if ($container_type_part instanceof TArrayKey
-            && ($input_type_part instanceof TInt
-                || $input_type_part instanceof TString)
-        ) {
-            return true;
-        }
-
         if ($input_type_part instanceof TArrayKey &&
             ($container_type_part instanceof TInt || $container_type_part instanceof TString)
         ) {
@@ -273,14 +273,6 @@ class ScalarTypeComparator
             }
 
             return false;
-        }
-
-        if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
-            return true;
-        }
-
-        if (get_class($container_type_part) === TFloat::class && $input_type_part instanceof TLiteralFloat) {
-            return true;
         }
 
         if ((get_class($container_type_part) === TNonEmptyString::class
@@ -361,15 +353,6 @@ class ScalarTypeComparator
                     $atomic_comparison_result->type_coerced = true;
                     $atomic_comparison_result->type_coerced_from_scalar = true;
                 }
-            }
-
-            return false;
-        }
-
-        if (get_class($input_type_part) === TFloat::class && $container_type_part instanceof TLiteralFloat) {
-            if ($atomic_comparison_result) {
-                $atomic_comparison_result->type_coerced = true;
-                $atomic_comparison_result->type_coerced_from_scalar = true;
             }
 
             return false;
@@ -521,12 +504,6 @@ class ScalarTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof TNumeric
-            && $input_type_part->isNumericType()
-        ) {
-            return true;
-        }
-
         if ($input_type_part instanceof TNumeric) {
             if ($container_type_part->isNumericType()) {
                 if ($atomic_comparison_result) {
@@ -538,7 +515,6 @@ class ScalarTypeComparator
 
         if (!$container_type_part instanceof TLiteralInt
             && !$container_type_part instanceof TLiteralString
-            && !$container_type_part instanceof TLiteralFloat
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced
@@ -549,5 +525,116 @@ class ScalarTypeComparator
         }
 
         return false;
+    }
+
+    private static function isContainedByArrayKey(
+        Scalar $input_type,
+        TArrayKey $container_type,
+        Codebase $codebase
+    ): bool {
+        $container_type_class = get_class($container_type);
+        if ($container_type_class === TArrayKey::class) {
+            return $input_type instanceof TArrayKey
+                || $input_type instanceof TString
+                || $input_type instanceof TInt
+                || $input_type instanceof TNumeric;
+        }
+        if ($container_type instanceof TKeyOf) {
+            $key_types = TKeyOf::getArrayKeyType($container_type->type);
+            if ($key_types) {
+                foreach ($key_types->getAtomicTypes() as $key_type) {
+                    if (AtomicTypeComparator::isContainedBy($codebase, $input_type, $key_type)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        throw new Exception(sprintf('"%s" is not supported by "%s".', $container_type_class, __METHOD__));
+    }
+
+    private static function isContainedByNumeric(
+        Scalar $input_type,
+        TNumeric $container_type
+    ): bool {
+        $container_type_class = get_class($container_type);
+        if ($container_type_class === TNumeric::class) {
+            return $input_type instanceof TNumeric
+                || $input_type instanceof TInt
+                || $input_type instanceof TFloat
+                || $input_type instanceof TNumericString
+                || ($input_type instanceof TLiteralString && is_numeric($input_type->value));
+        }
+        if ($container_type instanceof TEmptyNumeric) {
+            return $input_type instanceof TEmptyNumeric
+                || ($input_type instanceof TLiteralInt && empty($input_type->value))
+                || ($input_type instanceof TLiteralFloat && empty($input_type->value))
+                || ($input_type instanceof TLiteralString
+                    && is_numeric($input_type->value)
+                    && empty($input_type->value));
+        }
+        throw new Exception(sprintf('"%s" is not supported by "%s".', $container_type_class, __METHOD__));
+    }
+
+    private static function isContainedByScalar(
+        Scalar $input_type,
+        TScalar $container_type
+    ): bool {
+        $container_type_class = get_class($container_type);
+        if ($container_type_class === TScalar::class) {
+            return true;
+        }
+        if ($container_type instanceof TEmptyScalar) {
+            return $input_type instanceof TEmptyScalar
+                || $input_type instanceof TFalse
+                || $input_type instanceof TEmptyNumeric
+                || ($input_type instanceof TLiteralInt && empty($input_type->value))
+                || ($input_type instanceof TLiteralFloat && empty($input_type->value))
+                || ($input_type instanceof TLiteralString && empty($input_type->value));
+        }
+        if ($container_type instanceof TNonEmptyScalar) {
+            return $input_type instanceof TNonEmptyScalar
+                || $input_type instanceof TTrue
+                || ($input_type instanceof TLiteralInt && !empty($input_type->value))
+                || ($input_type instanceof TLiteralFloat && !empty($input_type->value))
+                || ($input_type instanceof TLiteralString && !empty($input_type->value));
+        }
+        throw new Exception(sprintf('"%s" is not supported by "%s".', $container_type_class, __METHOD__));
+    }
+
+    private static function isContainedByBool(
+        Scalar $input_type,
+        TBool $container_type
+    ): bool {
+        $container_type_class = get_class($container_type);
+        if ($container_type_class === TBool::class) {
+            return $input_type instanceof TBool;
+        }
+        if ($container_type instanceof TFalse) {
+            return $input_type instanceof TFalse;
+        }
+        if ($container_type instanceof TTrue) {
+            return $input_type instanceof TTrue;
+        }
+        throw new Exception(sprintf('"%s" is not supported by "%s".', $container_type_class, __METHOD__));
+    }
+
+    private static function isContainedByFloat(
+        Scalar $input_type,
+        TFloat $container_type,
+        bool $allow_float_int_equality
+    ): bool {
+        $container_type_class = get_class($container_type);
+        if ($container_type_class === TFloat::class) {
+            return $input_type instanceof TFloat
+                || ($allow_float_int_equality && $input_type instanceof TInt);
+        }
+        if ($container_type instanceof TLiteralFloat) {
+            return ($input_type instanceof TLiteralFloat && $container_type->value === $input_type->value)
+                || ($allow_float_int_equality
+                    && $input_type instanceof TLiteralInt
+                    && $container_type->value === (float) $input_type->value);
+        }
+        throw new Exception(sprintf('"%s" is not supported by "%s".', $container_type_class, __METHOD__));
     }
 }

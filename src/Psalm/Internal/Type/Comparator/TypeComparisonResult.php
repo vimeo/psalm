@@ -39,6 +39,31 @@ class TypeComparisonResult
 
     public ?Atomic $replacement_atomic_type = null;
 
-    /** @var ?non-empty-list<int|string> */
+    /** @var non-empty-list<int|string>|null */
     public ?array $missing_shape_fields = null;
+
+    /**
+     * @param non-empty-list<int|string>|null $missing_shape_fields
+     */
+    public function __construct(
+        ?bool $scalar_type_match_found = null,
+        ?bool $type_coerced = null,
+        ?bool $type_coerced_from_mixed = null,
+        ?bool $type_coerced_from_as_mixed = null,
+        ?bool $to_string_cast = null,
+        ?bool $type_coerced_from_scalar = null,
+        ?Union $replacement_union_type = null,
+        ?Atomic $replacement_atomic_type = null,
+        ?array $missing_shape_fields = null
+    ) {
+        $this->scalar_type_match_found = $scalar_type_match_found;
+        $this->type_coerced = $type_coerced;
+        $this->type_coerced_from_mixed = $type_coerced_from_mixed;
+        $this->type_coerced_from_as_mixed = $type_coerced_from_as_mixed;
+        $this->to_string_cast = $to_string_cast;
+        $this->type_coerced_from_scalar = $type_coerced_from_scalar;
+        $this->replacement_union_type = $replacement_union_type;
+        $this->replacement_atomic_type = $replacement_atomic_type;
+        $this->missing_shape_fields = $missing_shape_fields;
+    }
 }

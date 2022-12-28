@@ -1664,7 +1664,7 @@ class TypeTest extends TestCase
                     /** @return true */
                     function returnsTrue() { return rand() % 2 > 0; }
                     ',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'notFalseTest' => [
                 'code' => '<?php
