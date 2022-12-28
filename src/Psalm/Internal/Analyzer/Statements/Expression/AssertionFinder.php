@@ -78,7 +78,6 @@ use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosedResource;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
