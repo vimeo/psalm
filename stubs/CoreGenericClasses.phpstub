@@ -514,6 +514,17 @@ class mysqli
     function real_escape_string($string) {}
 }
 
+class SQLite3
+{
+    /**
+     * @psalm-pure
+     *
+     * @psalm-taint-escape sql
+     * @psalm-flow ($string) -> return
+     */
+    static function escapeString($string) {}
+}
+
 
 #[Attribute(Attribute::TARGET_METHOD)]
 final class ReturnTypeWillChange

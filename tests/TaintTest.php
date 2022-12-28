@@ -2422,6 +2422,61 @@ class TaintTest extends TestCase
                     echo mysqli_real_escape_string($_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'assertDb2OnlyEscapesSqlTaints' => [
+                'code' => '<?php
+                    echo db2_escape_string($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertCubridOnlyEscapesSqlTaints' => [
+                'code' => '<?php
+                    echo cubrid_real_escape_string($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertSQLiteOnlyEscapesSqlTaints' => [
+                'code' => '<?php
+                    echo SQLite3::escapeString($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertPGOnlyEscapesSqlTaints1' => [
+                'code' => '<?php
+                    echo pg_escape_bytea($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertPGOnlyEscapesSqlTaints2' => [
+                'code' => '<?php
+                    echo pg_escape_bytea($conn, $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertPGOnlyEscapesSqlTaints3' => [
+                'code' => '<?php
+                    echo pg_escape_identifier($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertPGOnlyEscapesSqlTaints4' => [
+                'code' => '<?php
+                    echo pg_escape_identifier($conn, $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertPGOnlyEscapesSqlTaints5' => [
+                'code' => '<?php
+                    echo pg_escape_literal($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertPGOnlyEscapesSqlTaints6' => [
+                'code' => '<?php
+                    echo pg_escape_literal($conn, $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertPGOnlyEscapesSqlTaints7' => [
+                'code' => '<?php
+                    echo pg_escape_string($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertPGOnlyEscapesSqlTaints8' => [
+                'code' => '<?php
+                    echo pg_escape_string($conn, $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
         ];
     }
 
