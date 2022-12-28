@@ -1492,3 +1492,19 @@ function mb_convert_encoding(array|string $string, string $to_encoding, array|st
  * @psalm-suppress ReferenceConstraintViolation
  */
 function stream_select(null|array &$read, null|array &$write, null|array &$except, null|int $seconds, null|int $microseconds = null) : bool|int {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string) -> return
+ */
+function mysqli_escape_string($string) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string) -> return
+ */
+function mysqli_real_escape_string($string) {}

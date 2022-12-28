@@ -727,6 +727,17 @@ class TaintTest extends TestCase
                     echo urlencode($_GET["bad"]);
                 ',
             ],
+            'mysqliEscapeFunctions' => [
+                'code' => '<?php
+                    $mysqli = new mysqli();
+
+                    $a = $mysqli->escape_string($_GET["a"]);
+                    $b = mysqli_escape_string($_GET["b"]);
+                    $c = $mysqli->real_escape_string($_GET["c"]);
+                    $d = mysqli_real_escape_string($_GET["d"]);
+
+                    $mysqli->query("$a$b$c$d");',
+            ],
         ];
     }
 
@@ -2388,6 +2399,28 @@ class TaintTest extends TestCase
                     system(urlencode($_GET["bad"]));
                 ',
                 'error_message' => 'TaintedShell',
+            ],
+            'assertMysqliOnlyEscapesSqlTaints1' => [
+                'code' => '<?php
+                    $mysqli = new mysqli();
+                    echo $mysqli->escape_string($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertMysqliOnlyEscapesSqlTaints2' => [
+                'code' => '<?php
+                    $mysqli = new mysqli();
+                    echo $mysqli->real_escape_string($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertMysqliOnlyEscapesSqlTaints3' => [
+                'code' => '<?php
+                    echo mysqli_escape_string($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'assertMysqliOnlyEscapesSqlTaints4' => [
+                'code' => '<?php
+                    echo mysqli_real_escape_string($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
             ],
         ];
     }
