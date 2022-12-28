@@ -2657,6 +2657,7 @@ class FunctionCallTest extends TestCase
 
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
