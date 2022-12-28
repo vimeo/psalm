@@ -21,6 +21,7 @@ use Psalm\Storage\Assertion\Truthy;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -28,7 +29,9 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
@@ -176,6 +179,11 @@ class ReconcilerTest extends TestCase
             'SimpleXMLIteratorNotAlwaysTruthy2' => ['SimpleXMLIterator', new Falsy(), 'SimpleXMLIterator'],
             'stringWithAny' => ['string', new Any(), 'string'],
             'IsNotAClassReconciliation' => ['int', new Assertion\IsNotAClass(new TNamedObject('IDObject'), true), 'int|IDObject'],
+            'nonEmptyArray' => ['non-empty-array<array-key, mixed>', new IsType(new TNonEmptyArray([
+                new Union([new TArrayKey()]),
+                new Union([new TMixed()]),
+            ])), 'array'],
+            'nonEmptyList' => ['non-empty-list<mixed>', new IsType(Type::getNonEmptyListAtomic(Type::getMixed())), 'array'],
         ];
     }
 
