@@ -422,7 +422,7 @@ class FunctionCallTest extends TestCase
                     /** @var string $string */
                     $elements = explode(" ", $string, -5);',
                 'assertions' => [
-                    '$elements' => 'array<never, never>',
+                    '$elements' => 'list<never>',
                 ],
             ],
             'explodeWithDynamicLimit' => [
@@ -433,7 +433,7 @@ class FunctionCallTest extends TestCase
                      */
                     $elements = explode(" ", $string, $limit);',
                 'assertions' => [
-                    '$elements' => 'array{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
+                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
                 ],
             ],
             'explodeWithDynamicDelimiter' => [
@@ -455,7 +455,7 @@ class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, 2);',
                 'assertions' => [
-                    '$elements' => 'array{0: string, 1?: string}',
+                    '$elements' => 'list{0: string, 1?: string}',
                 ],
             ],
             'explodeWithDynamicDelimiterAndPositiveLimit' => [
@@ -477,7 +477,7 @@ class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, -5);',
                 'assertions' => [
-                    '$elements' => 'array<never, never>',
+                    '$elements' => 'list<never>',
                 ],
             ],
             'explodeWithDynamicDelimiterAndLimit' => [
@@ -489,7 +489,7 @@ class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, $limit);',
                 'assertions' => [
-                    '$elements' => 'array{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
+                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
                 ],
             ],
             'explodeWithDynamicNonEmptyDelimiter' => [

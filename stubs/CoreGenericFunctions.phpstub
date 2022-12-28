@@ -731,16 +731,16 @@ function join($separator, array $array = []): string
  *     $string is lowercase-string
  *         ? (
  *             $limit is int<min, -2>
- *                 ? array<empty, empty>
+ *                 ? list<empty>
  *                 : (
  *                     $limit is int<0, 1>
- *                         ? array{lowercase-string}
+ *                         ? list{lowercase-string}
  *                         : (
  *                             $limit is 2
- *                                 ? array{0: lowercase-string, 1?: lowercase-string}
+ *                                 ? list{0: lowercase-string, 1?: lowercase-string}
  *                                 : (
  *                                     $limit is 3
- *                                         ? array{0: lowercase-string, 1?: lowercase-string, 2?: lowercase-string}
+ *                                         ? list{0: lowercase-string, 1?: lowercase-string, 2?: lowercase-string}
  *                                         : non-empty-list<lowercase-string>
  *                                 )
  *                         )
@@ -748,16 +748,16 @@ function join($separator, array $array = []): string
  *         )
  *         : (
  *             $limit is int<min, -2>
- *                 ? array<empty, empty>
+ *                 ? list<empty>
  *                 : (
  *                     $limit is int<0, 1>
- *                         ? array{string}
+ *                         ? list{string}
  *                         : (
  *                             $limit is 2
- *                                 ? array{0: string, 1?: string}
+ *                                 ? list{0: string, 1?: string}
  *                                 : (
  *                                     $limit is 3
- *                                         ? array{0: string, 1?: string, 2?: string}
+ *                                         ? list{0: string, 1?: string, 2?: string}
  *                                         : non-empty-list<string>
  *                                 )
  *                         )
