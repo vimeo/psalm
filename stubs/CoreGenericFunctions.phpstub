@@ -725,6 +725,26 @@ function join($separator, array $array = []): string
 /**
  * @psalm-pure
  *
+ * @param non-empty-string $separator
+ *
+ * @return (
+ *     $limit is int<min, -2>
+ *         ? array<empty, empty>
+ *         : (
+ *             $limit is int<0, 1>
+ *                 ? array{string}
+ *                 : (
+ *                     $limit is 2
+ *                         ? array{0: string, 1?: string}
+ *                         : (
+ *                             $limit is 3
+ *                                 ? array{0: string, 1?: string, 2?: string}
+ *                                 : non-empty-list<string>
+ *                         )
+ *                 )
+ *         )
+ * )
+ *
  * @psalm-flow ($string) -(array-assignment)-> return
  */
 function explode(string $separator, string $string, int $limit = -1) : array {}
