@@ -422,7 +422,7 @@ class FunctionCallTest extends TestCase
                     /** @var string $string */
                     $elements = explode(" ", $string, -5);',
                 'assertions' => [
-                    '$elements' => 'list<string>',
+                    '$elements' => 'array<never, never>',
                 ],
             ],
             'explodeWithDynamicLimit' => [
@@ -433,52 +433,63 @@ class FunctionCallTest extends TestCase
                      */
                     $elements = explode(" ", $string, $limit);',
                 'assertions' => [
-                    '$elements' => 'list<string>',
+                    '$elements' => 'array{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
                 ],
             ],
             'explodeWithDynamicDelimiter' => [
                 'code' => '<?php
                     /**
-                     * @var string $delim
+                     * @var non-empty-string $delim
                      * @var string $string
                      */
                     $elements = explode($delim, $string);',
                 'assertions' => [
-                    '$elements' => 'false|non-empty-list<string>',
+                    '$elements' => 'non-empty-list<string>',
+                ],
+            ],
+            'explodeWithDynamicDelimiterAndSmallPositiveLimit' => [
+                'code' => '<?php
+                    /**
+                     * @var non-empty-string $delim
+                     * @var string $string
+                     */
+                    $elements = explode($delim, $string, 2);',
+                'assertions' => [
+                    '$elements' => 'array{0: string, 1?: string}',
                 ],
             ],
             'explodeWithDynamicDelimiterAndPositiveLimit' => [
                 'code' => '<?php
                     /**
-                     * @var string $delim
+                     * @var non-empty-string $delim
                      * @var string $string
                      */
                     $elements = explode($delim, $string, 5);',
                 'assertions' => [
-                    '$elements' => 'false|non-empty-list<string>',
+                    '$elements' => 'non-empty-list<string>',
                 ],
             ],
             'explodeWithDynamicDelimiterAndNegativeLimit' => [
                 'code' => '<?php
                     /**
-                     * @var string $delim
+                     * @var non-empty-string $delim
                      * @var string $string
                      */
                     $elements = explode($delim, $string, -5);',
                 'assertions' => [
-                    '$elements' => 'false|list<string>',
+                    '$elements' => 'array<never, never>',
                 ],
             ],
             'explodeWithDynamicDelimiterAndLimit' => [
                 'code' => '<?php
                     /**
-                     * @var string $delim
+                     * @var non-empty-string $delim
                      * @var string $string
                      * @var int $limit
                      */
                     $elements = explode($delim, $string, $limit);',
                 'assertions' => [
-                    '$elements' => 'false|list<string>',
+                    '$elements' => 'array{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
                 ],
             ],
             'explodeWithDynamicNonEmptyDelimiter' => [
@@ -502,19 +513,12 @@ class FunctionCallTest extends TestCase
                     '$elements' => 'non-empty-list<string>',
                 ],
             ],
-            'explodeWithLiteralEmptyDelimiter' => [
-                'code' => '<?php
-                    /**
-                     * @var string $string
-                     */
-                    $elements = explode("", $string);',
-                'assertions' => [
-                    '$elements' => 'false',
-                ],
-            ],
             'explodeWithPossiblyFalse' => [
                 'code' => '<?php
-                    /** @return non-empty-list<string> */
+                    /**
+                     * @param non-empty-string $d
+                     * @return non-empty-list<string>
+                     */
                     function exploder(string $d, string $s) : array {
                         return explode($d, $s);
                     }',
@@ -2232,7 +2236,7 @@ class FunctionCallTest extends TestCase
                     function exploder(string $s) : array {
                         return explode("", $s);
                     }',
-                'error_message' => 'FalsableReturnStatement',
+                'error_message' => 'InvalidArgument',
             ],
             'complainAboutArrayToIterable' => [
                 'code' => '<?php
