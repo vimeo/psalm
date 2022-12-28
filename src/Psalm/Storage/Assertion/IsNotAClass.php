@@ -31,6 +31,11 @@ final class IsNotAClass extends Assertion
         return new IsAClass($this->type, $this->allow_string);
     }
 
+    public function getAtomicType(): Atomic
+    {
+        return $this->type;
+    }
+
     public function __toString(): string
     {
         return 'isa-' . ($this->allow_string ? 'string-' : '') . $this->type;
