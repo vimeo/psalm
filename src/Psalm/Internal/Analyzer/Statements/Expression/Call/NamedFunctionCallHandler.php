@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -178,6 +179,22 @@ class NamedFunctionCallHandler
 
             if ($var_id) {
                 $context->phantom_files[$var_id] = true;
+                return;
+            }
+
+            // literal string or (magic) const in file path
+            $codebase = $statements_analyzer->getCodebase();
+            $config = $codebase->config;
+            $path_to_file = IncludeAnalyzer::getPathTo(
+                $first_arg->value,
+                $statements_analyzer->node_data,
+                $statements_analyzer,
+                $statements_analyzer->getFileName(),
+                $config,
+            );
+
+            if ($path_to_file) {
+                $context->phantom_files[$path_to_file] = true;
             }
 
             return;
