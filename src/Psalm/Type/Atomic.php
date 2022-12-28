@@ -384,6 +384,9 @@ abstract class Atomic implements TypeNode
 
             case 'non-empty-mixed':
                 return new TNonEmptyMixed();
+
+            case 'Closure':
+                return new TClosure('Closure');
         }
 
         if (strpos($value, '-') && strpos($value, 'OCI-') !== 0) {
