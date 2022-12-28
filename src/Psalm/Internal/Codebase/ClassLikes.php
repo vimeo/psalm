@@ -851,7 +851,12 @@ class ClassLikes
                 && !$classlike_storage->is_trait
             ) {
                 if ($find_unused_code) {
-                    if (!$this->file_reference_provider->isClassReferenced($fq_class_name_lc)) {
+                    if ($classlike_storage->public_api
+                        || $this->file_reference_provider->isClassReferenced($fq_class_name_lc)
+                    ) {
+                        $this->checkMethodReferences($classlike_storage, $methods);
+                        $this->checkPropertyReferences($classlike_storage);
+                    } else {
                         IssueBuffer::maybeAdd(
                             new UnusedClass(
                                 'Class ' . $classlike_storage->name . ' is never used',
@@ -860,10 +865,8 @@ class ClassLikes
                             ),
                             $classlike_storage->suppressed_issues,
                         );
-                    } else {
-                        $this->checkMethodReferences($classlike_storage, $methods);
-                        $this->checkPropertyReferences($classlike_storage);
                     }
+                    $this->checkMethodParamReferences($classlike_storage);
                 }
 
                 $this->findPossibleMethodParamTypes($classlike_storage);
@@ -1690,6 +1693,16 @@ class ClassLikes
                 $method_id = $declaring_method_id;
             }
 
+            if ($classlike_storage->public_api
+                && ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    || ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                        && !$classlike_storage->final
+                    )
+                )
+            ) {
+                continue;
+            }
+
             if ($method_storage->location
                 && !$project_analyzer->canReportIssues($method_storage->location->file_path)
                 && !$codebase->analyzer->canReportIssues($method_storage->location->file_path)
@@ -1715,7 +1728,7 @@ class ClassLikes
                     && $method_name !== '__unserialize'
                     && $method_name !== '__set_state'
                     && $method_name !== '__debuginfo'
-                    && $method_name !== '__tostring' // can be called in array_unique)
+                    && $method_name !== '__tostring' // can be called in array_unique
                 ) {
                     $method_location = $method_storage->location;
 
@@ -1900,36 +1913,68 @@ class ClassLikes
                         }
                     }
                 }
+            }
+        }
+    }
 
-                if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    && !$classlike_storage->is_interface
-                ) {
-                    foreach ($method_storage->params as $offset => $param_storage) {
-                        if (empty($classlike_storage->overridden_method_ids[$method_name])
-                            && $param_storage->location
-                            && !$param_storage->promoted_property
-                            && !$this->file_reference_provider->isMethodParamUsed(
-                                strtolower((string) $method_id),
-                                $offset,
-                            )
-                        ) {
-                            if ($method_storage->final) {
-                                IssueBuffer::maybeAdd(
-                                    new UnusedParam(
-                                        'Param #' . ($offset + 1) . ' is never referenced in this method',
-                                        $param_storage->location,
-                                    ),
-                                    $method_storage->suppressed_issues,
-                                );
-                            } else {
-                                IssueBuffer::maybeAdd(
-                                    new PossiblyUnusedParam(
-                                        'Param #' . ($offset + 1) . ' is never referenced in this method',
-                                        $param_storage->location,
-                                    ),
-                                    $method_storage->suppressed_issues,
-                                );
-                            }
+
+    private function checkMethodParamReferences(ClassLikeStorage $classlike_storage): void
+    {
+        foreach ($classlike_storage->appearing_method_ids as $method_name => $appearing_method_id) {
+            $appearing_fq_classlike_name = $appearing_method_id->fq_class_name;
+
+            if ($appearing_fq_classlike_name !== $classlike_storage->name) {
+                continue;
+            }
+
+            $method_id = $appearing_method_id;
+
+            if (isset($classlike_storage->methods[$method_name])) {
+                $method_storage = $classlike_storage->methods[$method_name];
+            } else {
+                $declaring_method_id = $classlike_storage->declaring_method_ids[$method_name];
+
+                $declaring_fq_classlike_name = $declaring_method_id->fq_class_name;
+                $declaring_method_name = $declaring_method_id->method_name;
+
+                try {
+                    $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
+                } catch (InvalidArgumentException $e) {
+                    continue;
+                }
+
+                $method_storage = $declaring_classlike_storage->methods[$declaring_method_name];
+                $method_id = $declaring_method_id;
+            }
+
+            if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && !$classlike_storage->is_interface
+            ) {
+                foreach ($method_storage->params as $offset => $param_storage) {
+                    if (empty($classlike_storage->overridden_method_ids[$method_name])
+                        && $param_storage->location
+                        && !$param_storage->promoted_property
+                        && !$this->file_reference_provider->isMethodParamUsed(
+                            strtolower((string) $method_id),
+                            $offset,
+                        )
+                    ) {
+                        if ($method_storage->final) {
+                            IssueBuffer::maybeAdd(
+                                new UnusedParam(
+                                    'Param #' . ($offset + 1) . ' is never referenced in this method',
+                                    $param_storage->location,
+                                ),
+                                $method_storage->suppressed_issues,
+                            );
+                        } else {
+                            IssueBuffer::maybeAdd(
+                                new PossiblyUnusedParam(
+                                    'Param #' . ($offset + 1) . ' is never referenced in this method',
+                                    $param_storage->location,
+                                ),
+                                $method_storage->suppressed_issues,
+                            );
                         }
                     }
                 }
@@ -2064,6 +2109,16 @@ class ClassLikes
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($classlike_storage->properties as $property_name => $property_storage) {
+            if ($classlike_storage->public_api
+                && ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    || ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                        && !$classlike_storage->final
+                    )
+                )
+            ) {
+                continue;
+            }
+
             $referenced_property_name = strtolower($classlike_storage->name) . '::$' . $property_name;
             $property_referenced = $this->file_reference_provider->isClassPropertyReferenced(
                 $referenced_property_name,

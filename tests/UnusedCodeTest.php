@@ -1229,6 +1229,33 @@ class UnusedCodeTest extends TestCase
                     $a->bar[$a->foo] = "bar";
                     print_r($a->bar);',
             ],
+            'psalm-api with unused class' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {}
+                    PHP,
+            ],
+            'psalm-api with unused public and protected property' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        public int $b = 0;
+                        protected int $c = 0;
+                    }
+                    PHP,
+            ],
+            'psalm-api with unused public and protected method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        public function b(): void {}
+                        protected function c(): void {}
+                    }
+                    PHP,
+            ],
         ];
     }
 
@@ -1748,6 +1775,66 @@ class UnusedCodeTest extends TestCase
                     }
                 ',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'psalm-api with unused private property' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        private int $b = 0;
+                    }
+                    PHP,
+                'error_message' => 'UnusedProperty',
+            ],
+            'psalm-api with final class and unused protected property' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class A {
+                        protected int $b = 0;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'psalm-api with unused private method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        private function b(): void {}
+                    }
+                    PHP,
+                'error_message' => 'UnusedMethod',
+            ],
+            'psalm-api with final class and unused protected method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class A {
+                        protected function b(): void {}
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'psalm-api with unused class and unused param' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        public function b(int $c): void {}
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUnusedParam',
+            ],
+            'unused param' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-suppress UnusedClass */
+                    class A {
+                        public function b(int $c): void {}
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUnusedParam',
             ],
         ];
     }
