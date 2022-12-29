@@ -25,7 +25,6 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayUniqueReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\BasenameReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DirnameReturnTypeProvider;
-use Psalm\Internal\Provider\ReturnTypeProvider\ExplodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FilterVarReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FirstArgStringReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\GetClassMethodsReturnTypeProvider;
@@ -94,7 +93,6 @@ class FunctionReturnTypeProvider
         $this->registerClass(MktimeReturnTypeProvider::class);
         $this->registerClass(BasenameReturnTypeProvider::class);
         $this->registerClass(DirnameReturnTypeProvider::class);
-        $this->registerClass(ExplodeReturnTypeProvider::class);
         $this->registerClass(GetObjectVarsReturnTypeProvider::class);
         $this->registerClass(GetClassMethodsReturnTypeProvider::class);
         $this->registerClass(FirstArgStringReturnTypeProvider::class);

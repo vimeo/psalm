@@ -725,6 +725,46 @@ function join($separator, array $array = []): string
 /**
  * @psalm-pure
  *
+ * @param non-empty-string $separator
+ *
+ * @return (
+ *     $string is lowercase-string
+ *         ? (
+ *             $limit is int<min, -2>
+ *                 ? list<empty>
+ *                 : (
+ *                     $limit is int<0, 1>
+ *                         ? list{lowercase-string}
+ *                         : (
+ *                             $limit is 2
+ *                                 ? list{0: lowercase-string, 1?: lowercase-string}
+ *                                 : (
+ *                                     $limit is 3
+ *                                         ? list{0: lowercase-string, 1?: lowercase-string, 2?: lowercase-string}
+ *                                         : non-empty-list<lowercase-string>
+ *                                 )
+ *                         )
+ *                 )
+ *         )
+ *         : (
+ *             $limit is int<min, -2>
+ *                 ? list<empty>
+ *                 : (
+ *                     $limit is int<0, 1>
+ *                         ? list{string}
+ *                         : (
+ *                             $limit is 2
+ *                                 ? list{0: string, 1?: string}
+ *                                 : (
+ *                                     $limit is 3
+ *                                         ? list{0: string, 1?: string, 2?: string}
+ *                                         : non-empty-list<string>
+ *                                 )
+ *                         )
+ *                 )
+ *         )
+ * )
+ *
  * @psalm-flow ($string) -(array-assignment)-> return
  */
 function explode(string $separator, string $string, int $limit = -1) : array {}
