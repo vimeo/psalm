@@ -548,10 +548,6 @@ class SimpleTypeInferer
         if ($array_creation_info->item_key_atomic_types) {
             $item_key_type = TypeCombiner::combine(
                 $array_creation_info->item_key_atomic_types,
-                null,
-                false,
-                true,
-                30,
             );
         }
 
@@ -559,10 +555,6 @@ class SimpleTypeInferer
         if ($array_creation_info->item_value_atomic_types) {
             $item_value_type = TypeCombiner::combine(
                 $array_creation_info->item_value_atomic_types,
-                null,
-                false,
-                true,
-                30,
             );
         }
 
