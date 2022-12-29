@@ -241,9 +241,8 @@ class ReturnTypeAnalyzer
         }
 
         $inferred_return_type_parts_with_never = $inferred_return_type_parts;
-        $number_of_types = count($inferred_return_type_parts);
         // we filter TNever that have no bearing on the return type
-        if ($number_of_types > 1) {
+        if (count($inferred_return_type_parts) > 1) {
             $inferred_return_type_parts = array_filter(
                 $inferred_return_type_parts,
                 static fn(Union $union_type): bool => !$union_type->isNever()
@@ -260,7 +259,7 @@ class ReturnTypeAnalyzer
         }
 
         // void + never = null, so we need to check this separately
-        if ($number_of_types > 1
+        if (count($inferred_return_type_parts_with_never) > 1
             && !$function_always_exits
             && $inferred_return_type_parts_with_never !== $inferred_return_type_parts) {
             $inferred_return_type_with_never = Type::combineUnionTypeArray(
@@ -614,8 +613,7 @@ class ReturnTypeAnalyzer
                             return false;
                         }
                     }
-                } elseif (
-                    ($declared_return_type->explicit_never === false || !$declared_return_type->isNull())
+                } elseif (($declared_return_type->explicit_never === false || !$declared_return_type->isNull())
                     && (
                         !$declared_return_type->isNullable()
                         || ($parent_class === null && $self_fq_class_name === $source->getFQCLN())
