@@ -614,7 +614,13 @@ class ReturnTypeAnalyzer
                             return false;
                         }
                     }
-                } elseif ($declared_return_type->explicit_never === false) {
+                } elseif (
+                    ($declared_return_type->explicit_never === false || !$declared_return_type->isNull())
+                    && (
+                        !$declared_return_type->isNullable()
+                        || ($parent_class === null && $self_fq_class_name === $source->getFQCLN())
+                    )
+                ) {
                     if ($codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
                         && !in_array('InvalidReturnType', $suppressed_issues)
