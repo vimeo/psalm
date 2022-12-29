@@ -279,7 +279,14 @@ class Reconciler
                     );
 
                     if ($result_type_candidate->isUnionEmpty()) {
-                        $result_type_candidate = $result_type_candidate->getBuilder()->addType(new TNever)->freeze();
+                        $builder = $result_type_candidate->getBuilder();
+                        if ($result_type_candidate->from_docblock) {
+                            //we assume the docblock was wrong or the user wants to check impossible inputs
+                            $builder->addType(new TMixed());
+                        } else {
+                            $builder->addType(new TNever());
+                        }
+                        $result_type_candidate = $builder->freeze();
                     }
 
                     $orred_type = Type::combineUnionTypes(
