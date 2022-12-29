@@ -52,6 +52,8 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function array_diff;
+use function array_filter;
+use function array_values;
 use function count;
 use function implode;
 use function in_array;
@@ -162,9 +164,9 @@ class ReturnTypeAnalyzer
             && count($inferred_return_type_parts)
             && !$did_explicitly_return
         ) {
-            // only add null if we have a return statement elsewhere and it wasn't void
+            // only add null if we have a return statement elsewhere and it wasn't void or never
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
-                if (!$inferred_return_type_part->isVoid()) {
+                if (!$inferred_return_type_part->isVoid() && !$inferred_return_type_part->isNever()) {
                     $atomic_null = new TNull(true);
                     $inferred_return_type_parts[] = new Union([$atomic_null]);
                     break;
@@ -233,12 +235,40 @@ class ReturnTypeAnalyzer
             return null;
         }
 
+        // only now after non-implicit things are checked
+        if ($function_returns_implicitly) {
+            $inferred_return_type_parts[] = Type::getVoid();
+        }
+
+        $inferred_return_type_parts_with_never = $inferred_return_type_parts;
+        $number_of_types = count($inferred_return_type_parts);
+        // we filter TNever that have no bearing on the return type
+        if ($number_of_types > 1) {
+            $inferred_return_type_parts = array_filter(
+                $inferred_return_type_parts,
+                static fn(Union $union_type): bool => !$union_type->isNever()
+            );
+        }
+        $inferred_return_type_parts = array_values($inferred_return_type_parts);
+
         $inferred_return_type = $inferred_return_type_parts
             ? Type::combineUnionTypeArray($inferred_return_type_parts, $codebase)
             : Type::getVoid();
 
         if ($function_always_exits) {
             $inferred_return_type = Type::getNever();
+        }
+
+        // void + never = null, so we need to check this separately
+        if ($number_of_types > 1
+            && !$function_always_exits
+            && $inferred_return_type_parts_with_never !== $inferred_return_type_parts) {
+            $inferred_return_type_with_never = Type::combineUnionTypeArray(
+                $inferred_return_type_parts_with_never,
+                $codebase,
+            );
+        } else {
+            $inferred_return_type_with_never = $inferred_return_type;
         }
 
         $inferred_yield_type = $inferred_yield_types
@@ -491,7 +521,8 @@ class ReturnTypeAnalyzer
 
             $union_comparison_results = new TypeComparisonResult();
 
-            if ($declared_return_type->explicit_never === true && $inferred_return_type->explicit_never === false) {
+            if ($declared_return_type->explicit_never === true &&
+                $inferred_return_type_with_never->explicit_never === false) {
                 if (IssueBuffer::accepts(
                     new MoreSpecificReturnType(
                         'The declared return type \'' . $declared_return_type->getId() . '|never\' for '
