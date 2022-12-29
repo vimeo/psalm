@@ -2239,8 +2239,13 @@ class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed()) {
+            if ($assertion->getAtomicType()) {
+                return new Union([$assertion->getAtomicType()]);
+            }
             return Type::getArray();
         }
+
+        $atomic_assertion_type = $assertion->getAtomicType();
 
         $array_types = [];
         $did_remove_type = false;
@@ -2249,7 +2254,21 @@ class SimpleAssertionReconciler extends Reconciler
             if ($type instanceof TList) {
                 $type = $type->getKeyedArray();
             }
-            if ($type instanceof TArray || $type instanceof TKeyedArray) {
+            if ($type instanceof TArray) {
+                if ($atomic_assertion_type instanceof TNonEmptyArray) {
+                    $array_types[] = new TNonEmptyArray(
+                        $type->type_params,
+                        $atomic_assertion_type->count,
+                        $atomic_assertion_type->min_count,
+                        'non-empty-array',
+                        $type->from_docblock,
+                    );
+                } else {
+                    $array_types[] = $type;
+                }
+            } elseif ($type instanceof TKeyedArray) {
+                //we don't currently have "definitely defined" shapes so we keep the one we have even if we have
+                //a non-empty-array assertion
                 $array_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableKeyedArray([
@@ -2365,7 +2384,7 @@ class SimpleAssertionReconciler extends Reconciler
                 if ($type->type_params[0]->hasArrayKey()
                     || $type->type_params[0]->hasInt()
                 ) {
-                    if ($type instanceof TNonEmptyArray) {
+                    if ($type instanceof TNonEmptyArray || $is_non_empty) {
                         $array_types[] = Type::getNonEmptyListAtomic($type->type_params[1]);
                     } else {
                         $array_types[] = Type::getListAtomic($type->type_params[1]);
