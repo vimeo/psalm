@@ -154,14 +154,14 @@ class TypeCombiner
             $from_docblock = true;
 
             if (!isset($combination->value_types['null'])) {
-                $combination->value_types['null'] = new TNull();
+                $combination->value_types['null'] = new TNull($from_docblock);
             }
         }
 
         if (isset($combination->value_types['true']) && isset($combination->value_types['false'])) {
             unset($combination->value_types['true'], $combination->value_types['false']);
 
-            $combination->value_types['bool'] = new TBool();
+            $combination->value_types['bool'] = new TBool($from_docblock);
         }
 
         if ($combination->array_type_params

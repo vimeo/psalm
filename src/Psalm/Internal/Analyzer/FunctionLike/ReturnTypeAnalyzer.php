@@ -614,7 +614,7 @@ class ReturnTypeAnalyzer
                             return false;
                         }
                     }
-                } else {
+                } elseif ($declared_return_type->explicit_never === false) {
                     if ($codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
                         && !in_array('InvalidReturnType', $suppressed_issues)
