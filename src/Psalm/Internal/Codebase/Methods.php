@@ -920,6 +920,12 @@ class Methods
 
         $storage = $this->getStorage($method_id);
 
+        // if function exists in stubs and in analyzed code
+        // use the return type location of the analyzed code instead of the stubbed location
+        if ($storage->stubbed) {
+            return null;
+        }
+
         if (!$storage->return_type_location) {
             $overridden_method_ids = $this->getOverriddenMethodIds($method_id);
 
