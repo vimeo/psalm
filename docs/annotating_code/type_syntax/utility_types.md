@@ -2,7 +2,7 @@
 
 Psalm supports some _magical_ utility types that brings superpower to the PHP type system.
 
-## `key-of<T>`
+## key-of&lt;T&gt;
 
 (Psalm 5.0+)
 
