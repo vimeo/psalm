@@ -76,6 +76,7 @@ use function fwrite;
 use function get_class;
 use function in_array;
 use function is_string;
+use function ltrim;
 use function preg_split;
 use function reset;
 use function round;
@@ -793,6 +794,7 @@ class StatementsAnalyzer extends SourceAnalyzer
 
         if (isset($comments->tags['psalm-scope-this'])) {
             $trimmed = trim(reset($comments->tags['psalm-scope-this']));
+            $trimmed = ltrim($trimmed, '\\');
 
             if (!$codebase->classExists($trimmed)) {
                 IssueBuffer::maybeAdd(
