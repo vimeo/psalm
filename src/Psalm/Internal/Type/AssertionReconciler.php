@@ -934,7 +934,7 @@ class AssertionReconciler extends Reconciler
             }
 
             $can_be_equal = false;
-            $did_remove_type = false;
+            $redundant = true;
 
             $existing_var_type = $existing_var_type->getBuilder();
             foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
@@ -942,12 +942,12 @@ class AssertionReconciler extends Reconciler
                     && $atomic_type->value === $fq_enum_name
                 ) {
                     $can_be_equal = true;
-                    $did_remove_type = true;
+                    $redundant = false;
                     $existing_var_type->removeType($atomic_key);
                     $existing_var_type->addType(new TEnumCase($fq_enum_name, $case_name));
                 } elseif ($atomic_key !== $assertion_type->getKey()) {
                     $existing_var_type->removeType($atomic_key);
-                    $did_remove_type = true;
+                    $redundant = false;
                 } else {
                     $can_be_equal = true;
                 }
@@ -956,7 +956,7 @@ class AssertionReconciler extends Reconciler
 
             if ($var_id
                 && $code_location
-                && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
+                && (!$can_be_equal || ($redundant && count($existing_var_atomic_types) === 1))
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,

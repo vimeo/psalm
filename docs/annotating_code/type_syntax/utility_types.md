@@ -36,7 +36,7 @@ function getKeys($array) {
 ```
 
 
-## `value-of<T>`
+## value-of&lt;T&gt;
 
 (Psalm 5.0+)
 
@@ -68,7 +68,7 @@ function getValues($array) {
 Currently `in_array($value, $t)` **does not** infer that `$value` is of `value-of<T>`.
 
 
-## `properties-of<T>`
+## properties-of&lt;T&gt;
 
 (Psalm 5.0+)
 
@@ -139,7 +139,7 @@ $b = asArray(new B);
 /** @psalm-trace $b */; // array{foo: string, bar: int, baz: float}
 ```
 
-## `class-string-map<T as Foo, T>`
+## class-string-map&lt;T as Foo, T&gt;
 
 Used to indicate an array where each value is equal an instance of the class string contained in the key:
 
