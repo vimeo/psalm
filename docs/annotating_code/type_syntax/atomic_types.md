@@ -28,7 +28,7 @@ Atomic types are the basic building block of all type information used in Psalm.
     * [Exception, Foo\MyClass and `Foo\MyClass<Bar>`](object_types.md#named-objectsmd)
     * [Generator](object_types.md#generators)
 * [Array types](array_types.md)
-    * [array&lt;int, string&gt; ](array_types.md#generic-arrays)
+    * [array&lt;int, string&gt;](array_types.md#generic-arrays)
     * [non-empty-array](array_types.md#non-empty-array)
     * [string\[\]](array_types.md#phpdoc-syntax)
     * [list & non-empty-list](array_types.md#lists)
