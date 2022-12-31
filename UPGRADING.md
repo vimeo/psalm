@@ -9,6 +9,8 @@
 
 - [BC] The `TDependentListKey` type was removed and replaced with an optional property of the `TIntRange` type.
 
+- [BC] Configuration: `findUnusedCode`'s default value changed from `false` to `true`.
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 
