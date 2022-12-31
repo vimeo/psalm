@@ -81,6 +81,10 @@ return [
       'old' => ['void', 'dir_handle='=>'resource'],
       'new' => ['void'],
     ],
+    'ErrorException::__construct' => [
+      'old' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'string', 'line='=>'int', 'previous='=>'?Throwable'],
+      'new' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'?string', 'line='=>'?int', 'previous='=>'?Throwable'],
+    ],
     'IntlDateFormatter::__construct' => [
       'old' => ['void', 'locale'=>'?string', 'datetype'=>'null|int', 'timetype'=>'null|int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
       'new' => ['void', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
@@ -374,12 +378,12 @@ return [
       'new' => ['int', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcdiv' => [
-      'old' => ['numeric-string|null', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
-      'new' => ['numeric-string|null', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
+      'old' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcmod' => [
-      'old' => ['numeric-string|null', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
-      'new' => ['numeric-string|null', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
+      'old' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcmul' => [
       'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
@@ -399,7 +403,7 @@ return [
     ],
     'bcsqrt' => [
       'old' => ['numeric-string', 'num'=>'numeric-string', 'scale='=>'int'],
-      'new' => ['numeric-string|null', 'num'=>'numeric-string', 'scale='=>'int|null'],
+      'new' => ['numeric-string', 'num'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcsub' => [
       'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
@@ -2410,7 +2414,7 @@ return [
     'SimpleXMLIterator::key' => ['string|false'],
     'SimpleXMLIterator::next' => ['void'],
     'SimpleXMLIterator::hasChildren' => ['bool'],
-    'SimpleXMLIterator::getChildren' => ['SimpleXMLIterator'],
+    'SimpleXMLIterator::getChildren' => ['?SimpleXMLIterator'],
     'SplTempFileObject::fgetss' => ['string', 'allowable_tags='=>'string'],
   ],
 ];
