@@ -741,7 +741,8 @@ class TaintTest extends TestCase
         ];
     }
 
-    private function getLastFunctionName($lines){
+    private function getLastFunctionName($lines)
+    {
         $i = count($lines);
         do{
             $i--;
@@ -866,7 +867,7 @@ class TaintTest extends TestCase
             'array_values([$_GET["a"]])',
         ]);
 
-        return array_merge($arrayFunctionTaintFlowDataSets, [
+        return array_merge([
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {
@@ -2597,7 +2598,7 @@ class TaintTest extends TestCase
                     echo pg_escape_string($conn, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
-        ]);
+        ], $arrayFunctionTaintFlowDataSets);
     }
 
     /**
