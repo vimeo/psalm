@@ -867,7 +867,7 @@ class TaintTest extends TestCase
             'array_values([$_GET["a"]])',
         ]);
 
-        return array_merge([
+        $otherDataSets = [
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {
@@ -2598,7 +2598,22 @@ class TaintTest extends TestCase
                     echo pg_escape_string($conn, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
-        ], $arrayFunctionTaintFlowDataSets);
+        ];
+
+        $dataSetsArrays = [
+            $otherDataSets,
+            $arrayFunctionTaintFlowDataSets
+        ];
+
+        $expectedCount = 0;
+        foreach($dataSetsArrays as $array){
+            $expectedCount += count($array);
+        }
+
+        $mergedDataSets = array_merge(...$dataSetsArrays);
+        $this->assertSame($expectedCount, count($mergedDataSets), "Please make sure none of the datasets have duplicate keys!");
+
+        return $mergedDataSets;
     }
 
     /**
