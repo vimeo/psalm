@@ -741,12 +741,132 @@ class TaintTest extends TestCase
         ];
     }
 
+    private function getLastFunctionName($lines){
+        $i = count($lines);
+        do{
+            $i--;
+            $parts = explode('(', $lines[$i]);
+        }while(count($parts) === 1);
+
+        $functionName = trim(str_replace('return ', '', $parts[0]));
+        if(empty($functionName)){
+            throw new \Exception("Function name detection failed for code: " . implode("\n", $lines));
+        }
+
+        return $functionName;
+    }
+
+    public function buildDataSets($dataSetNamePrefix, $taintType, $codeBlocks)
+    {
+        $dataSets = [];
+
+        foreach($codeBlocks as $code){
+            $lines = explode("\n", $code);
+            if(count($lines) > 1){
+                $code = "(function(){{$code}})()";
+            }
+
+            $functionName = $this->getLastFunctionName($lines);
+            $dataSetNumber = 0;
+            do{
+                $dataSetNumber++;
+                $dataSetName = "$dataSetNamePrefix-$functionName-$dataSetNumber";
+            }while(isset($items[$dataSetName]));
+
+            $dataSets[$dataSetName] = [
+                'code' => "<?php var_dump($code);",
+                'error_message' => $taintType,
+            ];
+        };
+
+        return $dataSets;
+    }
+
     /**
      * @return array<string, array{code: string, error_message: string}>
      */
     public function providerInvalidCodeParse(): array
     {
-        return [
+        $arrayFunctionTaintFlowDataSets = $this->buildDataSets('taintFlow', 'TaintedHtml', [
+            'array_change_key_case([$_GET["a"]])',
+            'array_chunk([$_GET["a"]], 1)',
+            'array_column([[$_GET["a"]]], 0)',
+            'array_combine([0], [$_GET["a"]])',
+            'array_combine([$_GET["a"]], [0])',
+            'array_count_values([$_GET["a"]])',
+            'array_diff([$_GET["a"]], [])',
+            'array_diff_assoc([$_GET["a"] => 0], [])',
+            'array_diff_key([$_GET["a"] => 0], [])',
+            'array_diff_uassoc([$_GET["a"]], [], function(){return false;})',
+            'array_diff_ukey([$_GET["a"]], [], function(){return false;})',
+            'array_fill(0, 1, $_GET["a"])',
+            'array_fill_keys([0], $_GET["a"])',
+            'array_filter([$_GET["a"]])',
+            'array_flip([$_GET["a"]])',
+            'array_intersect([$_GET["a"]], [$_GET["a"]])',
+            'array_intersect_assoc([$_GET["a"]], [$_GET["a"]])',
+            'array_intersect_key([$_GET["a"]], [0])',
+            'array_intersect_uassoc([0 => $_GET["a"]], [1 => $_GET["a"]], function(){return 0;})',
+            'array_intersect_ukey([0 => $_GET["a"]], [1 => 2], function(){return 0;})',
+            'array_keys([$_GET["a"] => 0])',
+            'array_key_first([$_GET["a"] => 0])',
+            'array_key_last([$_GET["a"] => 0])',
+            'array_map(function($a){return $a;}, [$_GET["a"]])',
+            'array_map(function($a, $b){return $b;}, [0], [$_GET["a"]])',
+            'array_merge([$_GET["a"]])',
+            'array_merge_recursive(["b" => ["c" => $_GET["a"]]], ["b" => ["c" => "d"]])',
+            'array_pad([$_GET["a"]], 2, 1)',
+            'array_pad([], 1, $_GET["a"])',
+            '
+                $a = [$_GET["a"]];
+                return array_pop($a);
+            ',
+            '
+                $a = [];
+                array_push($a, $_GET["a"]);
+                return $a;
+            ',
+            'array_rand([$_GET["a"] => 0])',
+            'array_reduce([$_GET["a"]], function($carry, $item){return $item;})',
+            'array_reduce([], function(){}, $_GET["a"])',
+            'array_replace([$_GET["a"]], [])',
+            'array_replace([], [$_GET["a"]])',
+            'array_replace_recursive([$_GET["a"]], [])',
+            'array_replace_recursive([], [$_GET["a"]])',
+            'array_reverse([$_GET["a"]])',
+            'array_search(0, [$_GET["a"] => 0])',
+            '
+                $a = [$_GET["a"]];
+                return array_shift($a);
+            ',
+            'array_slice([$_GET["a"]], 0)',
+            '
+                $a = [$_GET["a"]];
+                return array_splice($a, 0);
+            ',
+            // This dataset is currently broken, but mmcev106 plans to fix it in an upcoming PR.
+            // '
+            //     $a = [];
+            //     array_splice($a, 0, 0, [$_GET["a"]]);
+            //     return $a;
+            // ',
+            'array_udiff([$_GET["a"]], [], function(){return false;})',
+            'array_udiff_assoc([$_GET["a"]], [], function(){return false;})',
+            'array_udiff_uassoc([$_GET["a"]], [], function(){return false;}, function(){return false;})',
+            'array_uintersect([$_GET["a"]], [$_GET["a"]], function(){return 0;})',
+            'array_uintersect_assoc([$_GET["a"]], [$_GET["a"]], function(){return 0;})',
+            'array_uintersect_uassoc([$_GET["a"]], [$_GET["a"]], function(){return 0;}, function(){return 0;})',
+            'array_unique([$_GET["a"]])',
+            // This dataset is currently broken, but mmcev106 plans to fix it in an upcoming PR.
+            // '
+            //     $a = [];
+            //     array_unshift($a, $_GET["a"]);
+            //     return $a;
+            // ',
+            'array_values([$_GET["a"]])',
+        ]);
+
+        return array_merge($arrayFunctionTaintFlowDataSets, [
             'taintedInputFromMethodReturnTypeSimple' => [
                 'code' => '<?php
                     class A {
@@ -2477,7 +2597,7 @@ class TaintTest extends TestCase
                     echo pg_escape_string($conn, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
-        ];
+        ]);
     }
 
     /**
