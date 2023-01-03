@@ -65,7 +65,9 @@ class ScalarTypeComparator
         ?TypeComparisonResult $atomic_comparison_result = null
     ): bool {
         // TODO: Remove this if statement once all container types have been converted to use this pattern.
-        if (!$container_type_part instanceof TString) {
+        if (!$container_type_part instanceof TString
+            && !$container_type_part instanceof TInt
+        ) {
             if ($container_type_part instanceof TArrayKey) {
                 $result = self::isContainedByArrayKey($input_type_part, $container_type_part, $codebase);
             } elseif ($container_type_part instanceof TNumeric) {

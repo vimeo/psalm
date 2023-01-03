@@ -11,17 +11,22 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntMask;
+use Psalm\Type\Atomic\TIntMaskOf;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyScalar;
+use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TScalar;
@@ -82,6 +87,7 @@ class ScalarTypeComparatorTest extends TestCase
         yield from self::provideTTrueComparisons();
         yield from self::provideTFloatComparisons();
         yield from self::provideTLiteralFloatComparisons();
+        yield from self::provideTIntComparisons();
     }
 
     /**
@@ -911,6 +917,79 @@ class ScalarTypeComparatorTest extends TestCase
         ];
         foreach ($not_contained_inputs as $not_contained_input) {
             yield [$not_contained_input[0], new TLiteralFloat(3.14), false, $not_contained_input[1], false];
+        }
+    }
+
+    /**
+     * @psalm-return iterable<array-key, list{Scalar, TInt, bool, TypeComparisonResult|null}>
+     */
+    private static function provideTIntComparisons(): iterable
+    {
+        $contained_inputs = [
+            new TInt(),
+            //new TDependentListKey(),
+            new TLiteralInt(42),
+            new TIntRange(3, 9),
+            new TNonspecificLiteralInt(),
+            //new TIntMask(),
+            //new TIntMaskOf(),
+        ];
+        foreach ($contained_inputs as $contained_input) {
+            yield [$contained_input, new TInt(), true, null];
+        }
+
+        $not_contained_inputs = [
+            [new TScalar(), new TypeComparisonResult(
+                true,
+                true,
+                null,
+                null,
+                null,
+                true,
+            )],
+            [new TArrayKey(), new TypeComparisonResult(
+                true,
+                true,
+                true,
+                null,
+                null,
+                null,
+            )],
+            [new TString(), new TypeComparisonResult(
+                true,
+                false,
+                null,
+                null,
+                null,
+                false,
+            )],
+            [new TNumeric(), new TypeComparisonResult(
+                true,
+                false,
+                null,
+                null,
+                null,
+                false,
+            )],
+            [new TBool(), new TypeComparisonResult(
+                true,
+                false,
+                null,
+                null,
+                null,
+                false,
+            )],
+            [new TFloat(), new TypeComparisonResult(
+                true,
+                false,
+                null,
+                null,
+                null,
+                false,
+            )],
+        ];
+        foreach ($not_contained_inputs as $not_contained_input) {
+            yield [$not_contained_input[0], new TInt(), false, $not_contained_input[1]];
         }
     }
 }
