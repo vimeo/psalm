@@ -66,7 +66,7 @@ class ScalarTypeComparator
     ): bool {
         // TODO: Remove this if statement once all container types have been converted to use this pattern.
         if (!$container_type_part instanceof TString
-            && !$container_type_part instanceof TInt
+            //&& !$container_type_part instanceof TInt
         ) {
             if ($container_type_part instanceof TArrayKey) {
                 $result = self::isContainedByArrayKey($input_type_part, $container_type_part, $codebase);
@@ -100,6 +100,14 @@ class ScalarTypeComparator
                     $atomic_comparison_result->type_coerced_from_scalar = $atomic_comparison_result->type_coerced
                         && $input_type_part instanceof TScalar;
                     $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
+
+                    // Special cases :(
+                    if ($input_type_part instanceof TArrayKey && $container_type_part instanceof TInt) {
+                        $atomic_comparison_result->type_coerced_from_mixed = true;
+                        $atomic_comparison_result->type_coerced_from_scalar = null;
+                    } elseif ($input_type_part instanceof TNumeric && $container_type_part instanceof TInt) {
+                        $atomic_comparison_result->type_coerced = false;
+                    }
                 }
                 return false;
             }
