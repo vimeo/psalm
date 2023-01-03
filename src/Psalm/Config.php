@@ -1062,7 +1062,11 @@ class Config
         }
 
         if (isset($config_xml['autoloader'])) {
-            $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
+            if ( $config_xml['autoloader']->__toString()[0] === '/' ) {
+                $autoloader_path = $config_xml['autoloader'];
+            } else {
+                $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
+            }
 
             if (!file_exists($autoloader_path)) {
                 throw new ConfigException('Cannot locate autoloader');
