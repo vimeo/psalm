@@ -140,7 +140,7 @@ class ReflectionClass implements Reflector {
 
     /**
      * @param int-mask-of<ReflectionClassConstant::IS_*>|null $filter
-     * @return array<non-empty-string, mixed>
+     * @return list<ReflectionClassConstant>
      *
      * @psalm-pure
      */
