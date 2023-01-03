@@ -574,7 +574,7 @@ class ReflectionMethod extends ReflectionFunctionAbstract
      * @return int-mask-of<ReflectionMethod::IS_*>
      * @psalm-pure
      */
-    public function getModifiers(): bool {}
+    public function getModifiers(): int {}
 
     /** @psalm-pure */
     public function getDeclaringClass(): ReflectionClass {}
