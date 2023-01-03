@@ -56,7 +56,9 @@ class MagicMethodAnnotationTest extends TestCase
                 /** @template T */
                 class A {
                     /** @return ?T */
-                    public function find() {}
+                    public function find() {
+                        return null;
+                    }
                 }
 
                 /** @psalm-suppress MissingTemplateParam */
