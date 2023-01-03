@@ -1600,7 +1600,7 @@ class UnusedVariableTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param list<int> $keys
-                     * @param int<0, max> $key
+                     * @param int $key
                      */
                     function error2(array $keys, int $key): int
                     {

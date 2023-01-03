@@ -162,9 +162,6 @@ class ArrayKeyExistsTest extends TestCase
                             1 => [D::class => "bar"],
                         ];
 
-                        /**
-                         * @param key-of<self::FLAGS> $i
-                         */
                         private function foo(int $i) : void {
                             if (array_key_exists(C::class, self::FLAGS[$i])) {
                                 echo self::FLAGS[$i][C::class];

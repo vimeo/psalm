@@ -1668,7 +1668,7 @@ class ConstantTest extends TestCase
                     }
 
                     A::foo(4);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'valueOfBadValue' => [
                 'code' => '<?php
@@ -1703,7 +1703,7 @@ class ConstantTest extends TestCase
                     }
 
                     A::foo(A::D_4);',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'wildcardEnumAnyTemplateExtendConstantBadValue' => [
                 'code' => '<?php
@@ -1737,7 +1737,7 @@ class ConstantTest extends TestCase
                     $a = new A();
                     $a->foo(5);
                     ',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
             'correctMessage' => [
                 'code' => '<?php
