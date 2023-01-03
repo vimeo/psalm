@@ -346,11 +346,11 @@ abstract class ReflectionFunctionAbstract implements Reflector
     public function getExtension(): ?ReflectionExtension {}
 
     /**
-     * @return non-empty-string
+     * @return non-empty-string|false
      *
      * @psalm-pure
      */
-    public function getExtensionName(): string {}
+    public function getExtensionName() {}
 
     /**
      * @return non-empty-string|false
