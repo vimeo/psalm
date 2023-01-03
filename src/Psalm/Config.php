@@ -1062,14 +1062,17 @@ class Config
         }
 
         if (isset($config_xml['autoloader'])) {
-            if ($config_xml['autoloader']->__toString()[0] === '/') {
-                $autoloader_path = $config_xml['autoloader']->__toString();
-            } else {
-                $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
-            }
+            $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
 
             if (!file_exists($autoloader_path)) {
-                throw new ConfigException('Cannot locate autoloader');
+                // in here for legacy reasons where people put absolute paths but psalm resolved it relative
+                if ($config_xml['autoloader']->__toString()[0] === '/') {
+                    $autoloader_path = $config_xml['autoloader']->__toString();
+                }
+
+                if (!file_exists($autoloader_path)) {
+                    throw new ConfigException('Cannot locate autoloader');
+                }
             }
 
             $config->autoloader = realpath($autoloader_path);
