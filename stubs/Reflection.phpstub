@@ -188,7 +188,7 @@ class ReflectionClass implements Reflector {
      * @return int-mask-of<ReflectionClass::IS_*>
      * @psalm-pure
      */
-    public function getModifiers(): bool {}
+    public function getModifiers(): int {}
 
     /**
      * @template J as object
