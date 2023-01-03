@@ -169,7 +169,7 @@ class ReflectionClass implements Reflector {
     public function getTraits(): array {}
 
     /**
-     * @return list<non-empty-string, non-empty-string>
+     * @return array<non-empty-string, non-empty-string>
      *
      * @psalm-pure
      */
