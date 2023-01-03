@@ -2289,7 +2289,7 @@ class FunctionCallTest extends TestCase
                     foreach (range(1, 10, .3) as $x) {
                         foo($x);
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'rangeWithFloatStart' => [
                 'code' => '<?php
@@ -2301,7 +2301,7 @@ class FunctionCallTest extends TestCase
                     foreach (range(1.4, 10) as $x) {
                         foo($x);
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'duplicateFunction' => [
                 'code' => '<?php
@@ -2661,7 +2661,7 @@ class FunctionCallTest extends TestCase
 
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
         ];
     }
