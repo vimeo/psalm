@@ -280,8 +280,7 @@ class ReflectionClass implements Reflector {
     public function getShortName(): string {}
 
     /**
-     * @return ?list<trait-string>
-     * @psalm-ignore-nullable-return
+     * @return list<trait-string>
      * @psalm-pure
      */
     public function getTraitNames(): array {}
