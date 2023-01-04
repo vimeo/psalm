@@ -215,7 +215,6 @@ class ReturnTypeAnalyzer
             return null;
         }
 
-
         if ($return_type
             && $return_type->isNever()
             && !$inferred_yield_types
@@ -265,6 +264,7 @@ class ReturnTypeAnalyzer
 
             /**
              * see https://github.com/vimeo/psalm/issues/9045
+             *
              * @psalm-suppress InvalidArgument
              */
             $inferred_return_type_with_never = Type::combineUnionTypeArray(
@@ -451,10 +451,10 @@ class ReturnTypeAnalyzer
                 || ($classlike_storage && $classlike_storage->final),
         );
 
-        if (
-            (
-                !$inferred_return_type_parts
-                || ($inferred_return_type->isVoid() && $function_returns_implicitly && count($inferred_return_type_parts) === 1)
+        if ((!$inferred_return_type_parts
+                || ($inferred_return_type->isVoid()
+                    && $function_returns_implicitly
+                    && count($inferred_return_type_parts) === 1)
             )
             && !$inferred_return_type->isNever()
             && !$inferred_yield_types
