@@ -613,6 +613,39 @@ class Config
     ];
 
     /**
+     * A list of php extensions described in CallMap Psalm files
+     * as opposite to stub files loaded by condition (see stubs/extensions dir).
+     *
+     * @var list<non-empty-string>
+     * @readonly
+     */
+    public $php_extensions_supported_by_psalm_callmaps = [
+        'apache',
+        'bcmath',
+        'calendar',
+        'ctype',
+        'curl',
+        'dom',
+        'exif',
+        'filter',
+        'gd',
+        'hash',
+        'iconv',
+        'intl',
+        'json',
+        'libxml',
+        'mbstring',
+        'opcache',
+        'openssl',
+        'pcntl',
+        'PDO',
+        'pdo_mysql',
+        'redis',
+        'tokenizer',
+        'zip',
+    ];
+
+    /**
      * A list of php extensions required by the project that aren't fully supported by Psalm.
      *
      * @var array<string, true>
@@ -2151,7 +2184,7 @@ class Config
                 $this->internal_stubs[] = $ext_stub_path;
                 $progress->write("Deprecation: Psalm stubs for ext-$ext_name loaded using legacy way."
                     . " Instead, please declare ext-$ext_name as dependency in composer.json"
-                    . " or use <enableExtensions> directive in Psalm config.\n");
+                    . " or use <enableExtensions> and/or <disableExtensions> directives in Psalm config.\n");
             }
         }
 
