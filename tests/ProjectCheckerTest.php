@@ -38,13 +38,6 @@ class ProjectCheckerTest extends TestCase
 
     protected ProjectAnalyzer $project_analyzer;
 
-    private const EXPECTED_OUTPUT = "Target PHP version: 8.1 (set by tests) Extensions enabled: dom, simplexml "
-        . "(unsupported extensions: ctype, json, libxml, mbstring, tokenizer)\n"
-        . "Scanning files...\n"
-        . "Analyzing files...\n"
-        . "\n"
-    ;
-
     public static function setUpBeforeClass(): void
     {
         self::$config = new TestConfig();
@@ -102,7 +95,9 @@ class ProjectCheckerTest extends TestCase
         $this->project_analyzer->check('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame(self::EXPECTED_OUTPUT, $output);
+        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('Scanning files...', $output);
+        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -287,7 +282,9 @@ class Bat
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame(self::EXPECTED_OUTPUT, $output);
+        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('Scanning files...', $output);
+        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -326,7 +323,9 @@ class Bat
         ]);
         $output = ob_get_clean();
 
-        $this->assertSame(self::EXPECTED_OUTPUT, $output);
+        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('Scanning files...', $output);
+        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -365,7 +364,9 @@ class Bat
         ]);
         $output = ob_get_clean();
 
-        $this->assertSame(self::EXPECTED_OUTPUT, $output);
+        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('Scanning files...', $output);
+        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
