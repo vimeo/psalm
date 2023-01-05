@@ -5,10 +5,12 @@ namespace Psalm\Internal;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
 use function array_filter;
 use function array_intersect_key;
+use function array_key_last;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -378,12 +380,22 @@ class Algebra
                         }
                     }
 
+                    if (!$things_that_can_be_said) {
+                        continue;
+                    }
+
                     // if we have exactly 1 possible type, all others are negations
                     // the conditions are redundant, but we still need to get the correct type
-                    if ($things_that_can_be_said
-                        && ((count($things_that_can_be_said) === 1 && !(end($things_that_can_be_said) instanceof Falsy))
-                            || count($things_that_can_be_said) === count($possible_types))
-                    ) {
+                    $single_type = false;
+                    if (count($things_that_can_be_said) === 1) {
+                        $thing_that_can_be_said_last = $things_that_can_be_said[array_key_last($things_that_can_be_said)];
+                        $type = $thing_that_can_be_said_last->type ?? false;
+                        if (!($thing_that_can_be_said_last instanceof Falsy) && !($type instanceof TNamedObject)) {
+                            $single_type = true;
+                        }
+                    }
+
+                    if ($single_type || count($things_that_can_be_said) === count($possible_types)) {
                         if ($clause->generated && count($possible_types) > 1) {
                             unset($cond_referenced_var_ids[$var]);
                         }
