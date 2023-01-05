@@ -378,7 +378,12 @@ class Algebra
                         }
                     }
 
-                    if ($things_that_can_be_said && count($things_that_can_be_said) === count($possible_types)) {
+                    // if we have exactly 1 possible type, all others are negations
+                    // the conditions are redundant, but we still need to get the correct type
+                    if ($things_that_can_be_said
+                        && ((count($things_that_can_be_said) === 1 && !(end($things_that_can_be_said) instanceof Falsy))
+                            || count($things_that_can_be_said) === count($possible_types))
+                    ) {
                         if ($clause->generated && count($possible_types) > 1) {
                             unset($cond_referenced_var_ids[$var]);
                         }
