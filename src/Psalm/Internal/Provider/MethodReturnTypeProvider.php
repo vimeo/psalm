@@ -74,7 +74,7 @@ class MethodReturnTypeProvider
 
     /**
      * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
-     * @param  ?array<Union> $template_type_parameters
+     * @param non-empty-list<Union>|null $template_type_parameters
      */
     public function getReturnType(
         StatementsSource $statements_source,
