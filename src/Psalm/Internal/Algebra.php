@@ -344,6 +344,7 @@ class Algebra
             return [];
         }
 
+        $is_list = null;
         foreach ($clauses as $clause) {
             if (!$clause->reconcilable || count($clause->possibilities) !== 1) {
                 continue;
@@ -357,6 +358,18 @@ class Algebra
                 // if there's only one possible type, return it
                 if (count($possible_types) === 1) {
                     $possible_type = array_pop($possible_types);
+
+                    // if it's a list, any "not" assertions for array can be ignored to avoid false positives
+                    if ($is_list
+                        && $possible_type->isNegation()
+                        && isset($possible_type->type)
+                        && ($possible_type->type instanceof \Psalm\Type\Atomic\TArray || !isset($possible_type->type->is_list))) {
+                        continue;
+                    } elseif ($is_list !== false && isset($possible_type->type->is_list) && $possible_type->type->is_list) {
+                        $is_list = true;
+                    } else {
+                        $is_list = false;
+                    }
 
                     if (isset($truths[$var]) && !isset($clause->redefined_vars[$var])) {
                         $truths[$var][] = [$possible_type];
