@@ -389,12 +389,12 @@ class Algebra
                     // the conditions are redundant, but we still need to get the correct type
                     $single_type = false;
                     if (count($things_that_can_be_said) === 1) {
-                        $thing_that_can_be_said_last = $things_that_can_be_said[array_key_last($things_that_can_be_said)];
+                        $last_thing = $things_that_can_be_said[array_key_last($things_that_can_be_said)];
                         /** @psalm-suppress MixedAssignment */
-                        $type = $thing_that_can_be_said_last->type ?? false;
-                        if (!($thing_that_can_be_said_last instanceof Falsy)
+                        $type = $last_thing->type ?? false;
+                        if (!($last_thing instanceof Falsy)
                             && !($type instanceof TNamedObject)
-                            && !($thing_that_can_be_said_last instanceof IsClassEqual)
+                            && !($last_thing instanceof IsClassEqual)
                         ) {
                             $single_type = true;
                         }
