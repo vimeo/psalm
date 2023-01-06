@@ -5,6 +5,7 @@ namespace Psalm\Internal;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\IsClassEqual;
 use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
@@ -389,8 +390,12 @@ class Algebra
                     $single_type = false;
                     if (count($things_that_can_be_said) === 1) {
                         $thing_that_can_be_said_last = $things_that_can_be_said[array_key_last($things_that_can_be_said)];
+                        /** @psalm-suppress MixedAssignment */
                         $type = $thing_that_can_be_said_last->type ?? false;
-                        if (!($thing_that_can_be_said_last instanceof Falsy) && !($type instanceof TNamedObject)) {
+                        if (!($thing_that_can_be_said_last instanceof Falsy)
+                            && !($type instanceof TNamedObject)
+                            && !($thing_that_can_be_said_last instanceof IsClassEqual)
+                        ) {
                             $single_type = true;
                         }
                     }
