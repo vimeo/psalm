@@ -932,7 +932,7 @@ class Methods
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $this->getStorage($overridden_method_id);
 
-                if ($overridden_storage->return_type_location) {
+                if ($overridden_storage->return_type_location && !$overridden_storage->stubbed) {
                     $defined_location = $overridden_storage->return_type_location;
                     break;
                 }
