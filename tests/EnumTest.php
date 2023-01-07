@@ -453,6 +453,22 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'methodInheritanceByInterfaces' => [
+                'code' => '<?php
+                    interface I extends BackedEnum {}
+                    /** @var I $i */
+                    $a = $i::cases();
+                    $b = $i::from(1);
+                    $c = $i::tryFrom(2);
+                ',
+                'assertions' => [
+                    '$a===' => 'list<I>',
+                    '$b===' => 'I',
+                    '$c===' => 'I|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
