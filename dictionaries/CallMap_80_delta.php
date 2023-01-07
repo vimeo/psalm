@@ -673,6 +673,10 @@ return [
       'old' => ['list<string>|null', 'object_or_class'=>'mixed'],
       'new' => ['list<string>', 'object_or_class'=>'object|class-string'],
     ],
+    'get_headers' => [
+      'old' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'?resource'],
+      'new' => ['array|false', 'url'=>'string', 'associative='=>'bool', 'context='=>'?resource'],
+    ],
     'get_parent_class' => [
       'old' => ['class-string|false', 'object_or_class='=>'mixed'],
       'new' => ['class-string|false', 'object_or_class='=>'object|class-string'],
