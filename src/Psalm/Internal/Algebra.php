@@ -370,10 +370,11 @@ class Algebra
                         && ($possible_type->type instanceof TArray || !isset($possible_type->type->is_list))) {
                         continue;
                     } elseif ($is_list !== false
+                              && !$possible_type->isNegation()
                               && isset($possible_type->type->is_list)
                               && $possible_type->type->is_list) {
                         $is_list = true;
-                    } else {
+                    } elseif ( !$possible_type->isNegation() || !isset($possible_type->type->is_list) ) {
                         $is_list = false;
                     }
 
