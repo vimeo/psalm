@@ -6,7 +6,7 @@ use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsClassEqual;
-use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
@@ -358,23 +358,21 @@ class Algebra
 
                 // if there's only one possible type, return it
                 if (count($possible_types) === 1) {
-                    /**
-                     * @var Assertion
-                     */
                     $possible_type = array_pop($possible_types);
 
                     // if it's a list, any "not" assertions for array can be ignored to avoid false positives
                     if ($is_list
                         && $possible_type->isNegation()
                         && isset($possible_type->type)
-                        && ($possible_type->type instanceof TArray || !isset($possible_type->type->is_list))) {
+                        && (!$possible_type->type instanceof TKeyedArray || !$possible_type->type->is_list)) {
                         continue;
                     } elseif ($is_list !== false
                               && !$possible_type->isNegation()
-                              && isset($possible_type->type->is_list)
+                              && isset($possible_type->type)
+                              && $possible_type->type instanceof TKeyedArray
                               && $possible_type->type->is_list) {
                         $is_list = true;
-                    } elseif ( !$possible_type->isNegation() || !isset($possible_type->type->is_list) ) {
+                    } elseif (!$possible_type->isNegation()) {
                         $is_list = false;
                     }
 

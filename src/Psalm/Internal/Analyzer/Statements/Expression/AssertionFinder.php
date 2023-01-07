@@ -3034,8 +3034,7 @@ class AssertionFinder
 
         // @psalm-assert-if-true and @psalm-assert-if-false for same variable in same function, e.g. array/list cases
         // @todo optionally extend this to arbitrary number of assert-if cases of multiple variables in the function
-        if (!$if_types && count($notif_types) === 2) {
-            $if_types = [];
+        if ($if_types === [] && count($notif_types) === 2) {
             foreach ($notif_types as $notif_type) {
                 foreach ($notif_type as $var => $assertions) {
                     if (count($assertions) !== 1 || count($assertions[0]) !== 1) {
@@ -3052,6 +3051,7 @@ class AssertionFinder
 
                     // only if we have 1 IsType and 1 IsNotType assertion for same variable
                     if ($check_var !== $var
+                        || !isset($check_var_assertion)
                         || $check_var_assertion === $is_not_assertion) {
                         $if_types = [];
                         break 2;
