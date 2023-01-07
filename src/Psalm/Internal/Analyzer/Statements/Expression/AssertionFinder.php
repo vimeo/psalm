@@ -3032,6 +3032,36 @@ class AssertionFinder
 
         $if_types = $if_types ? [$if_types] : [];
 
+        // @psalm-assert-if-true and @psalm-assert-if-false for same variable in same function, e.g. array/list cases
+        // @todo optionally extend this to arbitrary number of assert-if cases of multiple variables in the function
+        if (!$if_types && count($notif_types) === 2) {
+            $if_types = [];
+            foreach ($notif_types as $notif_type) {
+                foreach ($notif_type as $var => $assertions) {
+                    if (count($assertions) !== 1 || count($assertions[0]) !== 1) {
+                        $if_types = [];
+                        break 2;
+                    }
+
+                    $is_not_assertion = $assertions[0][0] instanceof IsNotType ? true : false;
+                    if (!isset($check_var)) {
+                        $check_var_assertion = $is_not_assertion;
+                        $check_var = $var;
+                        continue;
+                    }
+
+                    // only if we have 1 IsType and 1 IsNotType assertion for same variable
+                    if ($check_var !== $var
+                        || $check_var_assertion === $is_not_assertion) {
+                        $if_types = [];
+                        break 2;
+                    }
+                }
+
+                $if_types[] = Algebra::negateTypes($notif_type);
+            }
+        }
+
         if ($codebase
             && $source instanceof StatementsAnalyzer
             && ($var_type = $source->node_data->getType($base_conditional))
