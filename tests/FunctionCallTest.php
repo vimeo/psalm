@@ -2033,6 +2033,17 @@ class FunctionCallTest extends TestCase
                     }
                 ',
             ],
+            'noInvalidReturnTypeVoidNeverExplicit' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if ( rand( 0, 10 ) > 5 ) {
+                            exit;
+                        }
+                    }
+                ',
             'getHeadersAssociativeIn8x' => [
                 'code' => '<?php
                     $a = get_headers("https://psalm.dev", true);',
