@@ -2044,6 +2044,7 @@ class FunctionCallTest extends TestCase
                         }
                     }
                 ',
+            ],
             'getHeadersAssociativeIn8x' => [
                 'code' => '<?php
                     $a = get_headers("https://psalm.dev", true);',
