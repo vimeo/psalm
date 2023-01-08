@@ -110,6 +110,13 @@ class ReflectionClass implements Reflector {
      * @psalm-pure
      */
     public function getExtensionName(): string|false {}
+
+    /**
+     * @param list<mixed>|array<string, mixed> $args
+     *
+     * @return T
+     */
+    public function newInstanceArgs(array $args): object {}
 }
 
 /** @psalm-immutable */
