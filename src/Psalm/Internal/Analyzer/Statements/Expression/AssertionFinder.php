@@ -2256,6 +2256,7 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
+     * @psalm-suppress MoreSpecificReturnType
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getTrueInequalityAssertions(
@@ -2402,6 +2403,7 @@ class AssertionFinder
             }
         }
 
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $if_types;
     }
 
@@ -2981,6 +2983,7 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
+     * @psalm-suppress MoreSpecificReturnType
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getFalseEqualityAssertions(
@@ -3126,6 +3129,7 @@ class AssertionFinder
             }
         }
 
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $if_types;
     }
 
