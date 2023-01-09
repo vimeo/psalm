@@ -2142,7 +2142,7 @@ class AssertAnnotationTest extends TestCase
                     function taskesAnArray($arg) {}
 
                     /**
-                     * @var array<string, string|int|float>|list<string>
+                     * @var array<string, string|int|float>|list<string> $foo
                      */
                     $foo;
 
@@ -2183,7 +2183,7 @@ class AssertAnnotationTest extends TestCase
                     function taskesAnArray($arg) {}
 
                     /**
-                     * @var array<string, string|int|float>|list<string>
+                     * @var array<string, string|int|float>|list<string> $foo
                      */
                     $foo;
 
@@ -2224,7 +2224,7 @@ class AssertAnnotationTest extends TestCase
                     function taskesAnArray($arg) {}
 
                     /**
-                     * @var array<string, string|int|float>|list<string>
+                     * @var array<string, string|int|float>|list<string> $foo
                      */
                     $foo;
 
@@ -2265,7 +2265,7 @@ class AssertAnnotationTest extends TestCase
                     function taskesAnArray($arg) {}
 
                     /**
-                     * @var array<string, string|int|float>|list<string>
+                     * @var array<string, string|int|float>|list<string> $foo
                      */
                     $foo;
 
@@ -2289,6 +2289,7 @@ class AssertAnnotationTest extends TestCase
 
                     $foo = rand() / 2;
 
+                    /** @psalm-suppress TypeDoesNotContainType */
                     if (is_int($foo) || !is_float($foo)) {
                         takesAnInt($foo);
                         exit;
