@@ -2045,6 +2045,24 @@ class FunctionCallTest extends TestCase
                     }
                 ',
             ],
+            'getHeadersAssociativeIn8x' => [
+                'code' => '<?php
+                    $a = get_headers("https://psalm.dev", true);',
+                'assertions' => [
+                    '$a' => 'array<string, list<string>|string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getHeadersAssociativeIn7x' => [
+                'code' => '<?php
+                    $a = get_headers("https://psalm.dev", 0);',
+                'assertions' => [
+                    '$a' => 'false|list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.0',
+            ],
         ];
     }
 
