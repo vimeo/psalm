@@ -615,6 +615,7 @@ class Config
     /**
      * A list of php extensions described in CallMap Psalm files
      * as opposite to stub files loaded by condition (see stubs/extensions dir).
+     * @see https://www.php.net/manual/en/extensions.membership.php
      *
      * @var list<non-empty-string>
      * @readonly
@@ -622,27 +623,60 @@ class Config
     public $php_extensions_supported_by_psalm_callmaps = [
         'apache',
         'bcmath',
+        'bzip2',
         'calendar',
         'ctype',
         'curl',
         'dom',
+        'enchant',
         'exif',
         'filter',
         'gd',
+        'gettext',
+        'gmp',
         'hash',
         'iconv',
+        'imap',
         'intl',
         'json',
+        'ldap',
         'libxml',
         'mbstring',
+        'mysqli',
+        'mysqlnd',
+        'mhash',
+        'oci8',
         'opcache',
         'openssl',
         'pcntl',
         'PDO',
         'pdo_mysql',
+        'pdo-sqlite',
+        'pdo-pgsql',
+        'pgsql',
+        'pspell',
+        'phar',
+        'phpdbg',
+        'posix',
         'redis',
+        'readline',
+        'session',
+        'sockets',
+        'sqlite3',
+        'snmp',
+        'soap',
+        'sodium',
+        'shmop',
+        'sysvsem',
+        'tidy',
         'tokenizer',
+        'uodbc',
+        'xml',
+        'xmlreader',
+        'xmlwriter',
+        'xsl',
         'zip',
+        'zlib',
     ];
 
     /**
