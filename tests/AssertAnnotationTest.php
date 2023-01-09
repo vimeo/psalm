@@ -2121,7 +2121,8 @@ class AssertAnnotationTest extends TestCase
                      * @psalm-assert-if-true list<string> $arg
                      */
                     function is_array_or_list($arg) {
-                        if (array_is_list($arg)) {
+                        // should be array_is_list($arg), but tests run in non-PHP 8 environment
+                        if (array_values($arg) === $arg) {
                             return true;
                         }
 
@@ -2162,7 +2163,7 @@ class AssertAnnotationTest extends TestCase
                      * @psalm-assert-if-true list<string> $arg
                      */
                     function is_array_or_list($arg) {
-                        if (array_is_list($arg)) {
+                        if (array_values($arg) === $arg) {
                             return true;
                         }
 
@@ -2203,7 +2204,7 @@ class AssertAnnotationTest extends TestCase
                      * @psalm-assert-if-true list<string> $arg
                      */
                     function is_array_or_list($arg) {
-                        if (array_is_list($arg)) {
+                        if (array_values($arg) === $arg) {
                             return true;
                         }
 
@@ -2244,7 +2245,7 @@ class AssertAnnotationTest extends TestCase
                      * @psalm-assert-if-true list<string> $arg
                      */
                     function is_array_or_list($arg) {
-                        if (array_is_list($arg)) {
+                        if (array_values($arg) === $arg) {
                             return true;
                         }
 
@@ -2286,10 +2287,7 @@ class AssertAnnotationTest extends TestCase
                      */
                     function takesAFloat(float $i) {}
 
-                    /**
-                     * @var int|float
-                     */
-                    $foo;
+                    $foo = rand() / 2;
 
                     if (is_int($foo) || !is_float($foo)) {
                         takesAnInt($foo);
