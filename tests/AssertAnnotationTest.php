@@ -2120,7 +2120,13 @@ class AssertAnnotationTest extends TestCase
                      * @psalm-assert-if-false array<string, string|int|float> $arg
                      * @psalm-assert-if-true list<string> $arg
                      */
-                    function is_array_or_list($arg) {}
+                    function is_array_or_list($arg) {
+                        if (array_is_list($arg)) {
+                            return true;
+                        }
+
+                        return false;
+                    }
 
                     /**
                      * @param list<string> $arg
@@ -2155,7 +2161,13 @@ class AssertAnnotationTest extends TestCase
                      * @psalm-assert-if-false array<string, string|int|float> $arg
                      * @psalm-assert-if-true list<string> $arg
                      */
-                    function is_array_or_list($arg) {}
+                    function is_array_or_list($arg) {
+                        if (array_is_list($arg)) {
+                            return true;
+                        }
+
+                        return false;
+                    }
 
                     /**
                      * @param list<string> $arg
@@ -2190,7 +2202,13 @@ class AssertAnnotationTest extends TestCase
                      * @psalm-assert-if-false array<string, string|int|float> $arg
                      * @psalm-assert-if-true list<string> $arg
                      */
-                    function is_array_or_list($arg) {}
+                    function is_array_or_list($arg) {
+                        if (array_is_list($arg)) {
+                            return true;
+                        }
+
+                        return false;
+                    }
 
                     /**
                      * @param list<string> $arg
@@ -2225,7 +2243,13 @@ class AssertAnnotationTest extends TestCase
                      * @psalm-assert-if-false array<string, string|int|float> $arg
                      * @psalm-assert-if-true list<string> $arg
                      */
-                    function is_array_or_list($arg) {}
+                    function is_array_or_list($arg) {
+                        if (array_is_list($arg)) {
+                            return true;
+                        }
+
+                        return false;
+                    }
 
                     /**
                      * @param list<string> $arg
