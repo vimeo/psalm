@@ -643,7 +643,7 @@ abstract class Type
                 $combined_type->ignore_falsable_issues = true;
             }
 
-            if ($type_1->explicit_never && $type_2->explicit_never) {
+            if ($type_1->explicit_never || $type_2->explicit_never) {
                 $combined_type->explicit_never = true;
             }
 

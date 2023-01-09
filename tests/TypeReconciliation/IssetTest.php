@@ -1065,15 +1065,6 @@ class IssetTest extends TestCase
                     }',
                 'error_message' => 'InvalidArrayOffset',
             ],
-            'listDestructuringErrorSuppress' => [
-                'code' => '<?php
-                    function foo(string $s) : string {
-                        /** @psalm-suppress PossiblyUndefinedArrayOffset */
-                        @list($port) = explode(":", $s, -1);
-                        return $port;
-                    }',
-                'error_message' => 'NullableReturnStatement',
-            ],
             'undefinedVarInNullCoalesce' => [
                 'code' => '<?php
                     function bar(): void {

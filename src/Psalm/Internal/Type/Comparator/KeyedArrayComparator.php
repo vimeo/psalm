@@ -75,7 +75,7 @@ class KeyedArrayComparator
             $property_type_comparison = new TypeComparisonResult();
 
             if (!$input_property_type->isNever()) {
-                if (!UnionTypeComparator::isContainedBy(
+                $is_input_containedby_container = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_property_type,
                     $container_property_type,
@@ -83,9 +83,8 @@ class KeyedArrayComparator
                     $input_property_type->ignore_falsable_issues,
                     $property_type_comparison,
                     $allow_interface_equality,
-                )
-                    && !$property_type_comparison->type_coerced_from_scalar
-                ) {
+                );
+                if (!$is_input_containedby_container && !$property_type_comparison->type_coerced_from_scalar) {
                     $inverse_property_type_comparison = new TypeComparisonResult();
 
                     if ($atomic_comparison_result) {
@@ -111,6 +110,9 @@ class KeyedArrayComparator
 
                     $all_types_contain = false;
                 } else {
+                    if (!$is_input_containedby_container) {
+                        $all_types_contain = false;
+                    }
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->to_string_cast
                             = $atomic_comparison_result->to_string_cast === true

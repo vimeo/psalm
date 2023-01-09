@@ -1256,7 +1256,9 @@ class StubTest extends TestCase
                      * @param ?int $lockVersion
                      * @return mixed
                      */
-                    public function find($id, $lockMode = null, $lockVersion = null) {}
+                    public function find($id, $lockMode = null, $lockVersion = null) {
+                        return null;
+                    }
                 }
 
                 /**

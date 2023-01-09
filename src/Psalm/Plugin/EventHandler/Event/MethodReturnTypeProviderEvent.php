@@ -22,9 +22,7 @@ final class MethodReturnTypeProviderEvent
      * @var PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
      */
     private $stmt;
-    /**
-     * @var Union[]|null
-     */
+    /** @var non-empty-list<Union>|null */
     private ?array $template_type_parameters;
     private ?string $called_fq_classlike_name;
     /**
@@ -38,7 +36,7 @@ final class MethodReturnTypeProviderEvent
      * something should be returned, but can't be more specific.
      *
      * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
-     * @param  ?array<Union> $template_type_parameters
+     * @param non-empty-list<Union>|null $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
      * @internal
@@ -102,7 +100,7 @@ final class MethodReturnTypeProviderEvent
     }
 
     /**
-     * @return Union[]|null
+     * @return non-empty-list<Union>|null
      */
     public function getTemplateTypeParameters(): ?array
     {

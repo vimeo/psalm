@@ -1006,7 +1006,7 @@ class AssertAnnotationTest extends TestCase
                         }
                     }
 
-                    $s = "";
+                    $s = "Hello World!";
 
                     $parts = explode(":", $s, 2);
 

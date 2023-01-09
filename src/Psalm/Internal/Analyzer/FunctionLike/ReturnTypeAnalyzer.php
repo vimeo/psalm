@@ -52,6 +52,8 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function array_diff;
+use function array_filter;
+use function array_values;
 use function count;
 use function implode;
 use function in_array;
@@ -162,9 +164,9 @@ class ReturnTypeAnalyzer
             && count($inferred_return_type_parts)
             && !$did_explicitly_return
         ) {
-            // only add null if we have a return statement elsewhere and it wasn't void
+            // only add null if we have a return statement elsewhere and it wasn't void or never
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
-                if (!$inferred_return_type_part->isVoid()) {
+                if (!$inferred_return_type_part->isVoid() && !$inferred_return_type_part->isNever()) {
                     $atomic_null = new TNull(true);
                     $inferred_return_type_parts[] = new Union([$atomic_null]);
                     break;
@@ -213,7 +215,6 @@ class ReturnTypeAnalyzer
             return null;
         }
 
-
         if ($return_type
             && $return_type->isNever()
             && !$inferred_yield_types
@@ -233,12 +234,45 @@ class ReturnTypeAnalyzer
             return null;
         }
 
+        // only now after non-implicit things are checked
+        if ($function_returns_implicitly) {
+            $inferred_return_type_parts[] = Type::getVoid();
+        }
+
+        $inferred_return_type_parts_with_never = $inferred_return_type_parts;
+        // we filter TNever that have no bearing on the return type
+        if (count($inferred_return_type_parts) > 1) {
+            $inferred_return_type_parts = array_filter(
+                $inferred_return_type_parts,
+                static fn(Union $union_type): bool => !$union_type->isNever()
+            );
+        }
+        $inferred_return_type_parts = array_values($inferred_return_type_parts);
+
         $inferred_return_type = $inferred_return_type_parts
             ? Type::combineUnionTypeArray($inferred_return_type_parts, $codebase)
             : Type::getVoid();
 
         if ($function_always_exits) {
             $inferred_return_type = Type::getNever();
+        }
+
+        // void + never = null, so we need to check this separately
+        if (count($inferred_return_type_parts_with_never) > 1
+            && !$function_always_exits
+            && $inferred_return_type_parts_with_never !== $inferred_return_type_parts) {
+
+            /**
+             * see https://github.com/vimeo/psalm/issues/9045
+             *
+             * @psalm-suppress InvalidArgument
+             */
+            $inferred_return_type_with_never = Type::combineUnionTypeArray(
+                $inferred_return_type_parts_with_never,
+                $codebase,
+            );
+        } else {
+            $inferred_return_type_with_never = $inferred_return_type;
         }
 
         $inferred_yield_type = $inferred_yield_types
@@ -417,7 +451,11 @@ class ReturnTypeAnalyzer
                 || ($classlike_storage && $classlike_storage->final),
         );
 
-        if (!$inferred_return_type_parts
+        if ((!$inferred_return_type_parts
+                || ($inferred_return_type->isVoid()
+                    && $function_returns_implicitly
+                    && count($inferred_return_type_parts) === 1)
+            )
             && !$inferred_return_type->isNever()
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
@@ -491,7 +529,8 @@ class ReturnTypeAnalyzer
 
             $union_comparison_results = new TypeComparisonResult();
 
-            if ($declared_return_type->explicit_never === true && $inferred_return_type->explicit_never === false) {
+            if ($declared_return_type->explicit_never === true &&
+                $inferred_return_type_with_never->explicit_never === false) {
                 if (IssueBuffer::accepts(
                     new MoreSpecificReturnType(
                         'The declared return type \'' . $declared_return_type->getId() . '|never\' for '
@@ -583,7 +622,12 @@ class ReturnTypeAnalyzer
                             return false;
                         }
                     }
-                } else {
+                } elseif (($declared_return_type->explicit_never === false || !$declared_return_type->isNull())
+                    && (
+                        !$declared_return_type->isNullable()
+                        || ($parent_class === null && $self_fq_class_name === $source->getFQCLN())
+                    )
+                ) {
                     if ($codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
                         && !in_array('InvalidReturnType', $suppressed_issues)

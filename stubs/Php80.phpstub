@@ -152,6 +152,13 @@ abstract class ReflectionFunctionAbstract implements Reflector
      * @psalm-pure
      */
     public function getFileName(): string|false {}
+
+    /**
+     * @return non-empty-string|false
+     *
+     * @psalm-pure
+     */
+    public function getExtensionName(): string|false {}
 }
 
 /** @psalm-immutable */

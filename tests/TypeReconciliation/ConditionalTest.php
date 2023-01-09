@@ -348,6 +348,8 @@ class ConditionalTest extends TestCase
                                 takesAandI($this);
                                 takesIandA($this);
                             }
+
+                            return null;
                         }
 
                         protected function bar(): void {}
