@@ -565,7 +565,8 @@ class ProjectAnalyzer
         );
 
         if (count($codebase->config->php_extensions) > 0) {
-            $message .= ' Enabled extensions: ' . implode(', ', array_keys(array_filter($codebase->config->php_extensions)));
+            $enabled_extensions_names = array_keys(array_filter($codebase->config->php_extensions));
+            $message .= ' Enabled extensions: ' . implode(', ', $enabled_extensions_names);
         }
 
         if (count($unsupported_php_extensions) > 0) {
