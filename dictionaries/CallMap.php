@@ -3699,7 +3699,7 @@ return [
 'get_defined_functions' => ['array{internal: list<callable-string>, user: list<callable-string>}', 'exclude_disabled='=>'bool'],
 'get_defined_vars' => ['array'],
 'get_extension_funcs' => ['list<callable-string>|false', 'extension'=>'string'],
-'get_headers' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'resource'],
+'get_headers' => ['array|false', 'url'=>'string', 'associative='=>'bool', 'context='=>'?resource'],
 'get_html_translation_table' => ['array', 'table='=>'int', 'flags='=>'int', 'encoding='=>'string'],
 'get_include_path' => ['string'],
 'get_included_files' => ['list<string>'],

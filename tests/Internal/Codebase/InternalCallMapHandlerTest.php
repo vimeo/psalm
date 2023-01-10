@@ -211,7 +211,6 @@ class InternalCallMapHandlerTest extends TestCase
         'finfo::file',
         'finfo::set_flags',
         'generator::throw',
-        'get_headers',
         'globiterator::__construct',
         'globiterator::getfileinfo',
         'globiterator::getpathinfo',

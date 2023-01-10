@@ -48,7 +48,7 @@ return [
     ],
     'get_headers' => [
       'old' => ['array|false', 'url'=>'string', 'associative='=>'int'],
-      'new' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'resource'],
+      'new' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'?resource'],
     ],
     'getopt' => [
       'old' => ['array<string,string|false|list<string|false>>|false', 'short_options'=>'string', 'long_options='=>'array'],
