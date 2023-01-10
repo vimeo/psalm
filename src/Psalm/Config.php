@@ -615,8 +615,8 @@ class Config
     /**
      * A list of php extensions described in CallMap Psalm files
      * as opposite to stub files loaded by condition (see stubs/extensions dir).
-     * @see https://www.php.net/manual/en/extensions.membership.php
      *
+     * @see https://www.php.net/manual/en/extensions.membership.php
      * @var list<non-empty-string>
      * @readonly
      */

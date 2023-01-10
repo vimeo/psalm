@@ -561,7 +561,7 @@ class ProjectAnalyzer
             "Target PHP version: %d.%d %s",
             $codebase->getMajorAnalysisPhpVersion(),
             $codebase->getMinorAnalysisPhpVersion(),
-            $source
+            $source,
         );
 
         if (count($codebase->config->php_extensions) > 0) {
