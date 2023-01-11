@@ -373,9 +373,7 @@ class Algebra
                     $things_that_can_be_said = [];
 
                     foreach ($possible_types as $assertion) {
-                        if ($assertion instanceof Falsy || !$assertion->isNegation()) {
-                            $things_that_can_be_said[(string)$assertion] = $assertion;
-                        }
+                        $things_that_can_be_said[(string)$assertion] = $assertion;
                     }
 
                     if ($things_that_can_be_said && count($things_that_can_be_said) === count($possible_types)) {
