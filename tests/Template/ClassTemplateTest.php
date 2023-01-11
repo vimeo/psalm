@@ -4029,6 +4029,28 @@ class ClassTemplateTest extends TestCase
                     $baz = new DoesNotExist();
                     foobar($baz);',
             ],
+            'promoted property with template' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class A {
+                        public function __construct(
+                            /** @var T */
+                            public mixed $t
+                        ) {}
+                    }
+
+                    $a = new A(5);
+                    $t = $a->t;
+                ',
+                'assertions' => [
+                    '$a' => 'A<int>',
+                    '$t' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

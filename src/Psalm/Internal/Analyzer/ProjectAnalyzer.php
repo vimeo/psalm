@@ -85,6 +85,7 @@ use function number_format;
 use function pcntl_fork;
 use function preg_match;
 use function rename;
+use function sprintf;
 use function stream_set_blocking;
 use function stream_socket_accept;
 use function stream_socket_client;
@@ -533,8 +534,6 @@ class ProjectAnalyzer
     {
         $codebase = $this->codebase;
 
-        $version = $codebase->getMajorAnalysisPhpVersion() . '.' . $codebase->getMinorAnalysisPhpVersion();
-
         switch ($codebase->php_version_source) {
             case 'cli':
                 $source = '(set by CLI argument)';
@@ -553,9 +552,28 @@ class ProjectAnalyzer
                 break;
         }
 
-        return "Target PHP version: $version $source Extensions enabled: "
-            . implode(", ", array_keys(array_filter($codebase->config->php_extensions))) . " (unsupported extensions: "
-            . implode(", ", array_keys($codebase->config->php_extensions_not_supported)) . ")\n";
+        $unsupported_php_extensions = array_diff(
+            array_keys($codebase->config->php_extensions_not_supported),
+            $codebase->config->php_extensions_supported_by_psalm_callmaps,
+        );
+
+        $message = sprintf(
+            "Target PHP version: %d.%d %s",
+            $codebase->getMajorAnalysisPhpVersion(),
+            $codebase->getMinorAnalysisPhpVersion(),
+            $source,
+        );
+
+        if (count($codebase->config->php_extensions) > 0) {
+            $enabled_extensions_names = array_keys(array_filter($codebase->config->php_extensions));
+            $message .= ' Enabled extensions: ' . implode(', ', $enabled_extensions_names);
+        }
+
+        if (count($unsupported_php_extensions) > 0) {
+            $message .= ' (unsupported extensions: ' . implode(', ', $unsupported_php_extensions) . ')';
+        }
+
+        return "$message.\n";
     }
 
     public function check(string $base_dir, bool $is_diff = false): void
