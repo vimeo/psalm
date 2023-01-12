@@ -2256,7 +2256,7 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
-     * @psalm-suppress MoreSpecificReturnType
+     * @psalm-suppress MoreSpecificReturnType list{0?: array<string, non-empty-list<non-empty-list<Psalm\Storage\Assertion>>>, ...<int<0, max>, array<string, non-empty-list<non-empty-list<Psalm\Storage\Assertion>>>>}
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getTrueInequalityAssertions(
@@ -2403,7 +2403,7 @@ class AssertionFinder
             }
         }
 
-        /** @psalm-suppress LessSpecificReturnStatement */
+        /** @psalm-suppress LessSpecificReturnStatement list{0?: array<string, non-empty-list<non-empty-list<Psalm\Storage\Assertion>>>, ...<int<0, max>, array<string, non-empty-list<non-empty-list<Psalm\Storage\Assertion>>>>} */
         return $if_types;
     }
 
@@ -2983,7 +2983,7 @@ class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
-     * @psalm-suppress MoreSpecificReturnType
+     * @psalm-suppress MoreSpecificReturnType list{0?: array<string, non-empty-list<non-empty-list<Psalm\Storage\Assertion>>>, ...<int<0, max>, array<string, non-empty-list<non-empty-list<Psalm\Storage\Assertion>>>>}
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getFalseEqualityAssertions(
@@ -3129,7 +3129,7 @@ class AssertionFinder
             }
         }
 
-        /** @psalm-suppress LessSpecificReturnStatement */
+        /** @psalm-suppress LessSpecificReturnStatement list{0?: array<string, non-empty-list<non-empty-list<Psalm\Storage\Assertion>>>, ...<int<0, max>, array<string, non-empty-list<non-empty-list<Psalm\Storage\Assertion>>>>} */
         return $if_types;
     }
 
