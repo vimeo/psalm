@@ -2207,6 +2207,7 @@ class Config
         if ($codebase->analysis_php_version_id >= 8_02_00) {
             $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php82.phpstub';
             $this->internal_stubs[] = $stringable_path;
+            $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
         }
 
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
