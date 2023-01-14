@@ -95,121 +95,108 @@ final class Shepherd implements AfterAnalysisInterface
             );
 
             // Submit the POST request
-            $return = curl_exec($ch);
+            $curl_result = curl_exec($ch);
 
-            if ($return !== '') {
-                fwrite(STDERR, 'Error with Psalm Shepherd:' . PHP_EOL);
-
-                if ($return === false) {
-                    fwrite(STDERR, self::getCurlErrorMessage($ch) . PHP_EOL);
-                } else {
-                    echo $return . PHP_EOL;
-                    echo 'Git args: '
-                        . var_export($source_control_data, true)
-                        . PHP_EOL;
-                    echo 'CI args: '
-                        . var_export($build_info, true)
-                        . PHP_EOL;
-                }
-            } else {
-                $shepherd_host = parse_url($codebase->config->shepherd_endpoint, PHP_URL_HOST);
-
-                fwrite(STDERR, "🐑 results sent to $shepherd_host 🐑" . PHP_EOL);
-            }
+            /** @var array{http_code: int, ssl_verify_result: int} $curl_info */
+            $curl_info = curl_getinfo($ch);
 
             // Close cURL session handle
             curl_close($ch);
+
+            $response_status_code = $curl_info['http_code'];
+            if ($response_status_code >= 200 && $response_status_code < 300) {
+                $shepherd_host = parse_url($codebase->config->shepherd_endpoint, PHP_URL_HOST);
+
+                fwrite(STDOUT, "🐑 results sent to $shepherd_host 🐑" . PHP_EOL);
+                return;
+            }
+
+            $is_ssl_error = $curl_info['ssl_verify_result'] > 1;
+            if ($is_ssl_error) {
+                fwrite(STDERR, self::getCurlSslErrorMessage($curl_info['ssl_verify_result']) . PHP_EOL);
+                return;
+            }
+
+            fwrite(STDERR, "Shepherd error: server responded with $response_status_code HTTP status code.\n");
+            $response_content = is_string($curl_result) ? strip_tags($curl_result) : 'n/a';
+            fwrite(STDERR, 'Shepherd response:' . PHP_EOL . $response_content);
         }
     }
 
     /**
-     * @param mixed $ch
      * @psalm-pure
      */
-    public static function getCurlErrorMessage($ch): string
+    public static function getCurlSslErrorMessage(int $ssl_verify_result): string
     {
-        /**
-         * @psalm-suppress MixedArgument
-         * @var array
-         */
-        $curl_info = curl_getinfo($ch);
-
-        if (isset($curl_info['ssl_verify_result'])
-            && $curl_info['ssl_verify_result'] !== 0
-        ) {
-            switch ($curl_info['ssl_verify_result']) {
-                case 2:
-                    return 'unable to get issuer certificate';
-                case 3:
-                    return 'unable to get certificate CRL';
-                case 4:
-                    return 'unable to decrypt certificate’s signature';
-                case 5:
-                    return 'unable to decrypt CRL’s signature';
-                case 6:
-                    return 'unable to decode issuer public key';
-                case 7:
-                    return 'certificate signature failure';
-                case 8:
-                    return 'CRL signature failure';
-                case 9:
-                    return 'certificate is not yet valid';
-                case 10:
-                    return 'certificate has expired';
-                case 11:
-                    return 'CRL is not yet valid';
-                case 12:
-                    return 'CRL has expired';
-                case 13:
-                    return 'format error in certificate’s notBefore field';
-                case 14:
-                    return 'format error in certificate’s notAfter field';
-                case 15:
-                    return 'format error in CRL’s lastUpdate field';
-                case 16:
-                    return 'format error in CRL’s nextUpdate field';
-                case 17:
-                    return 'out of memory';
-                case 18:
-                    return 'self signed certificate';
-                case 19:
-                    return 'self signed certificate in certificate chain';
-                case 20:
-                    return 'unable to get local issuer certificate';
-                case 21:
-                    return 'unable to verify the first certificate';
-                case 22:
-                    return 'certificate chain too long';
-                case 23:
-                    return 'certificate revoked';
-                case 24:
-                    return 'invalid CA certificate';
-                case 25:
-                    return 'path length constraint exceeded';
-                case 26:
-                    return 'unsupported certificate purpose';
-                case 27:
-                    return 'certificate not trusted';
-                case 28:
-                    return 'certificate rejected';
-                case 29:
-                    return 'subject issuer mismatch';
-                case 30:
-                    return 'authority and subject key identifier mismatch';
-                case 31:
-                    return 'authority and issuer serial number mismatch';
-                case 32:
-                    return 'key usage does not include certificate signing';
-                case 50:
-                    return 'application verification failure';
-            }
-
-            return '';
+        switch ($ssl_verify_result) {
+            case 1:
+                throw new \BadMethodCallException('code 1 means a successful SSL response, there is no error to parse');
+            case 2:
+                return 'unable to get issuer certificate';
+            case 3:
+                return 'unable to get certificate CRL';
+            case 4:
+                return 'unable to decrypt certificate’s signature';
+            case 5:
+                return 'unable to decrypt CRL’s signature';
+            case 6:
+                return 'unable to decode issuer public key';
+            case 7:
+                return 'certificate signature failure';
+            case 8:
+                return 'CRL signature failure';
+            case 9:
+                return 'certificate is not yet valid';
+            case 10:
+                return 'certificate has expired';
+            case 11:
+                return 'CRL is not yet valid';
+            case 12:
+                return 'CRL has expired';
+            case 13:
+                return 'format error in certificate’s notBefore field';
+            case 14:
+                return 'format error in certificate’s notAfter field';
+            case 15:
+                return 'format error in CRL’s lastUpdate field';
+            case 16:
+                return 'format error in CRL’s nextUpdate field';
+            case 17:
+                return 'out of memory';
+            case 18:
+                return 'self signed certificate';
+            case 19:
+                return 'self signed certificate in certificate chain';
+            case 20:
+                return 'unable to get local issuer certificate';
+            case 21:
+                return 'unable to verify the first certificate';
+            case 22:
+                return 'certificate chain too long';
+            case 23:
+                return 'certificate revoked';
+            case 24:
+                return 'invalid CA certificate';
+            case 25:
+                return 'path length constraint exceeded';
+            case 26:
+                return 'unsupported certificate purpose';
+            case 27:
+                return 'certificate not trusted';
+            case 28:
+                return 'certificate rejected';
+            case 29:
+                return 'subject issuer mismatch';
+            case 30:
+                return 'authority and subject key identifier mismatch';
+            case 31:
+                return 'authority and issuer serial number mismatch';
+            case 32:
+                return 'key usage does not include certificate signing';
+            case 50:
+                return 'application verification failure';
+            default:
+                return "unknown cURL SSL error $ssl_verify_result";
         }
-
-        /**
-         * @psalm-suppress MixedArgument
-         */
-        return var_export(curl_getinfo($ch), true);
     }
 }
