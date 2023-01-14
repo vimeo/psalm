@@ -79,6 +79,7 @@ final class Shepherd implements AfterAnalysisInterface
             // Prepare new cURL resource
             $ch = curl_init($codebase->config->shepherd_endpoint);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLINFO_HEADER_OUT, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
