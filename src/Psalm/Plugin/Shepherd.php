@@ -2,6 +2,7 @@
 
 namespace Psalm\Plugin;
 
+use BadMethodCallException;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
@@ -18,12 +19,14 @@ use function curl_setopt;
 use function function_exists;
 use function fwrite;
 use function is_array;
+use function is_string;
 use function json_encode;
 use function parse_url;
+use function strip_tags;
 use function strlen;
-use function var_export;
 
 use const CURLINFO_HEADER_OUT;
+use const CURLOPT_FOLLOWLOCATION;
 use const CURLOPT_HTTPHEADER;
 use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
@@ -32,6 +35,7 @@ use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
 use const STDERR;
+use const STDOUT;
 
 final class Shepherd implements AfterAnalysisInterface
 {
@@ -130,7 +134,7 @@ final class Shepherd implements AfterAnalysisInterface
     {
         switch ($ssl_verify_result) {
             case 1:
-                throw new \BadMethodCallException('code 1 means a successful SSL response, there is no error to parse');
+                throw new BadMethodCallException('code 1 means a successful SSL response, there is no error to parse');
             case 2:
                 return 'unable to get issuer certificate';
             case 3:
