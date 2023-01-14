@@ -286,10 +286,12 @@ final class Psalm
         $plugins = [];
 
         if (isset($options['plugin'])) {
-            $plugins = $options['plugin'];
+            $plugins_from_options = $options['plugin'];
 
-            if (!is_array($plugins)) {
-                $plugins = [$plugins];
+            if (is_array($plugins_from_options)) {
+                $plugins = $plugins_from_options;
+            } elseif (is_string($plugins_from_options)) {
+                $plugins = [$plugins_from_options];
             }
         }
 
