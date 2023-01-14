@@ -128,9 +128,31 @@ final class Shepherd implements AfterAnalysisInterface
     }
 
     /**
+     * @param mixed $ch
+     * @psalm-pure
+     * @deprecated Will be removed in Psalm 6
+     */
+    public static function getCurlErrorMessage($ch): string
+    {
+        /**
+         * @psalm-suppress MixedArgument
+         * @var array
+         */
+        $curl_info = curl_getinfo($ch);
+
+        /** @psalm-suppress MixedAssignment */
+        $ssl_verify_result = $curl_info['ssl_verify_result'] ?? null;
+        if (is_int($ssl_verify_result) && $ssl_verify_result > 1) {
+            return self::getCurlSslErrorMessage($ssl_verify_result);
+        }
+
+        return '';
+    }
+
+    /**
      * @psalm-pure
      */
-    public static function getCurlSslErrorMessage(int $ssl_verify_result): string
+    private static function getCurlSslErrorMessage(int $ssl_verify_result): string
     {
         switch ($ssl_verify_result) {
             case 1:
