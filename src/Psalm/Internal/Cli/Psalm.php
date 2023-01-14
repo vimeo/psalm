@@ -198,10 +198,9 @@ final class Psalm
         if (array_key_exists('h', $options)) {
             echo self::getHelpText();
             /*
-            --shepherd[=host]
-                Send data to Shepherd, Psalm's GitHub integration tool.
-                `host` is the location of the Shepherd server. It defaults to shepherd.dev
-                More information is available at https://psalm.dev/shepherd
+            --shepherd[=endpoint]
+                Send analysis statistics to Shepherd server.
+                `endpoint` is the URL to the Shepherd server. It defaults to shepherd.dev
             */
 
             exit;
@@ -1343,8 +1342,8 @@ final class Psalm
             --generate-stubs=PATH
                 Generate stubs for the project and dump the file in the given path
 
-            --shepherd[=host]
-                Send data to Shepherd, Psalm’s GitHub integration tool.
+            --shepherd[=endpoint]
+                Send analysis statistics to Shepherd (shepherd.dev) or your server.
 
             --alter
                 Run Psalter
