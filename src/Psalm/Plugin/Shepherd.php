@@ -20,7 +20,6 @@ use function fwrite;
 use function is_array;
 use function json_encode;
 use function parse_url;
-use function str_replace;
 use function strlen;
 use function var_export;
 
@@ -31,7 +30,7 @@ use const CURLOPT_POSTFIELDS;
 use const CURLOPT_RETURNTRANSFER;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
-use const PHP_URL_SCHEME;
+use const PHP_URL_HOST;
 use const STDERR;
 
 final class Shepherd implements AfterAnalysisInterface
@@ -77,14 +76,8 @@ final class Shepherd implements AfterAnalysisInterface
 
             $payload = json_encode($data, JSON_THROW_ON_ERROR);
 
-            $base_address = $codebase->config->shepherd_host;
-
-            if (parse_url($base_address, PHP_URL_SCHEME) === null) {
-                $base_address = 'https://' . $base_address;
-            }
-
             // Prepare new cURL resource
-            $ch = curl_init($base_address . '/hooks/psalm');
+            $ch = curl_init($codebase->config->shepherd_endpoint);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLINFO_HEADER_OUT, true);
             curl_setopt($ch, CURLOPT_POST, true);
@@ -118,9 +111,9 @@ final class Shepherd implements AfterAnalysisInterface
                         . PHP_EOL;
                 }
             } else {
-                $short_address = str_replace('https://', '', $base_address);
+                $shepherd_host = parse_url($codebase->config->shepherd_endpoint, PHP_URL_HOST);
 
-                fwrite(STDERR, "🐑 results sent to $short_address 🐑" . PHP_EOL);
+                fwrite(STDERR, "🐑 results sent to $shepherd_host 🐑" . PHP_EOL);
             }
 
             // Close cURL session handle

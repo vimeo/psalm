@@ -63,11 +63,13 @@ use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
+use function parse_url;
 use function preg_match;
 use function preg_replace;
 use function realpath;
 use function setlocale;
 use function str_repeat;
+use function strlen;
 use function strpos;
 use function substr;
 use function version_compare;
@@ -77,6 +79,7 @@ use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_OS;
+use const PHP_URL_SCHEME;
 use const PHP_VERSION;
 use const STDERR;
 
@@ -279,6 +282,7 @@ final class Psalm
             chdir($current_dir);
         }
 
+        /** @var list<string> $plugins List of paths to plugin files */
         $plugins = [];
 
         if (isset($options['plugin'])) {
@@ -301,23 +305,31 @@ final class Psalm
             ? $options['find-references-to']
             : null;
 
-        if (isset($options['shepherd']) || getenv('PSALM_SHEPHERD')) {
-            if (isset($options['shepherd'])) {
-                if (is_string($options['shepherd'])) {
-                    $config->shepherd_host = $options['shepherd'];
+        $is_shepherd_enabled = (bool) ($options['shepherd'] ?? getenv('PSALM_SHEPHERD'));
+        if ($is_shepherd_enabled) {
+            $plugins[] = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
+
+            $custom_shepherd_host = ($options['shepherd'] ?? getenv('PSALM_SHEPHERD')) ?: getenv('PSALM_SHEPHERD_HOST');
+
+            $is_valid_custom_shepherd_endpoint = is_string($custom_shepherd_host) && strlen($custom_shepherd_host) > 2;
+            if ($is_valid_custom_shepherd_endpoint) {
+                if (parse_url($custom_shepherd_host, PHP_URL_SCHEME) === null) {
+                    $custom_shepherd_host = 'https://' . $custom_shepherd_host;
                 }
-            } elseif (getenv('PSALM_SHEPHERD')) {
-                if (false !== ($shepherd_host = getenv('PSALM_SHEPHERD_HOST'))) {
-                    $config->shepherd_host = $shepherd_host;
+
+                $config->shepherd_host = $custom_shepherd_host;
+                $config->shepherd_endpoint = $custom_shepherd_host;
+
+                if (is_string(getenv('PSALM_SHEPHERD_HOST'))) {
+                    fwrite(
+                        STDERR,
+                        'PSALM_SHEPHERD_HOST env variable is deprecated and will be removed in Psalm 6.'
+                        .' Please use "--shepherd" cli option or PSALM_SHEPHERD env variable'
+                        .' to specify a custom Shepherd host/endpoint.'
+                        . PHP_EOL,
+                    );
                 }
             }
-            $shepherd_plugin = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
-
-            if (!file_exists($shepherd_plugin)) {
-                die('Could not find Shepherd plugin location ' . $shepherd_plugin . PHP_EOL);
-            }
-
-            $plugins[] = $shepherd_plugin;
         }
 
         if (isset($options['clear-cache'])) {
