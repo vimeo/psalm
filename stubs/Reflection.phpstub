@@ -642,6 +642,13 @@ class ReflectionParameter implements Reflector {
     * @since 8.0
     */
     public function isPromoted(): bool {}
+
+    /**
+     * @psalm-assert-if-true string $this->getDefaultValueConstantName()
+     */
+    public function isDefaultValueConstant(): bool {}
+
+    public function getDefaultValueConstantName(): ?string {}
 }
 
 /** @psalm-immutable */
