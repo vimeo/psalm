@@ -58,6 +58,14 @@ return [
   ],
 
   'changed' => [
+    'DOMDocument::createComment' => [
+      'old' => ['DOMComment|false', 'data'=>'string'],
+      'new' => ['DOMComment', 'data'=>'string'],
+    ],
+    'DOMDocument::createDocumentFragment' => [
+      'old' => ['DOMDocumentFragment|false'],
+      'new' => ['DOMDocumentFragment'],
+    ],
     'finfo_buffer' => [
        'old' => ['string|false', 'finfo'=>'resource', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
        'new' => ['string|false', 'finfo'=>'finfo', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
@@ -223,8 +231,8 @@ return [
       'new' => ['bool', 'ftp' => 'FTP\Connection', 'option' => 'int', 'value' => 'mixed'],
     ],
     'ftp_get_option' => [
-      'old' => ['mixed|false', 'ftp' => 'resource', 'option' => 'int'],
-      'new' => ['mixed|false', 'ftp' => 'FTP\Connection', 'option' => 'int'],
+      'old' => ['int|false', 'ftp' => 'resource', 'option' => 'int'],
+      'new' => ['int|false', 'ftp' => 'FTP\Connection', 'option' => 'int'],
     ],
     'hash' => [
       'old' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
