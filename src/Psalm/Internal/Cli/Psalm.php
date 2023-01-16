@@ -306,32 +306,7 @@ final class Psalm
             ? $options['find-references-to']
             : null;
 
-        $is_shepherd_enabled = (bool) ($options['shepherd'] ?? getenv('PSALM_SHEPHERD'));
-        if ($is_shepherd_enabled) {
-            $plugins[] = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
-
-            $custom_shepherd_host = ($options['shepherd'] ?? getenv('PSALM_SHEPHERD')) ?: getenv('PSALM_SHEPHERD_HOST');
-
-            $is_valid_custom_shepherd_endpoint = is_string($custom_shepherd_host) && strlen($custom_shepherd_host) > 2;
-            if ($is_valid_custom_shepherd_endpoint) {
-                if (parse_url($custom_shepherd_host, PHP_URL_SCHEME) === null) {
-                    $custom_shepherd_host = 'https://' . $custom_shepherd_host;
-                }
-
-                $config->shepherd_host = $custom_shepherd_host;
-                $config->shepherd_endpoint = $custom_shepherd_host;
-
-                if (is_string(getenv('PSALM_SHEPHERD_HOST'))) {
-                    fwrite(
-                        STDERR,
-                        'PSALM_SHEPHERD_HOST env variable is deprecated and will be removed in Psalm 6.'
-                        .' Please use "--shepherd" cli option or PSALM_SHEPHERD env variable'
-                        .' to specify a custom Shepherd host/endpoint.'
-                        . PHP_EOL,
-                    );
-                }
-            }
-        }
+        self::configureShepherd($options, $plugins);
 
         if (isset($options['clear-cache'])) {
             self::clearCache($config);
@@ -1167,6 +1142,51 @@ final class Psalm
 
         if ($config->find_unused_psalm_suppress || isset($options['find-unused-psalm-suppress'])) {
             $project_analyzer->trackUnusedSuppressions();
+        }
+    }
+
+    private static function configureShepherd(Config $config, array $options, array &$plugins): void
+    {
+        if (is_string(getenv('PSALM_SHEPHERD_HOST'))) { // remove this block in Psalm 6
+            fwrite(
+                STDERR,
+                'PSALM_SHEPHERD_HOST env variable is deprecated and will be removed in Psalm 6.'
+                .' Please use "--shepherd" cli option or PSALM_SHEPHERD env variable'
+                .' to specify a custom Shepherd host/endpoint.'
+                . PHP_EOL,
+            );
+        }
+
+        $is_shepherd_enabled = (bool) ($options['shepherd'] ?? getenv('PSALM_SHEPHERD'));
+        if (! $is_shepherd_enabled) {
+            return;
+        }
+
+        $plugins[] = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
+
+        $custom_shepherd_endpoint = $options['shepherd'] ?? getenv('PSALM_SHEPHERD');
+        if (is_string($custom_shepherd_endpoint) && strlen($custom_shepherd_endpoint) > 2) {
+            if (parse_url($custom_shepherd_endpoint, PHP_URL_SCHEME) === null) {
+                $custom_shepherd_endpoint = 'https://' . $custom_shepherd_endpoint;
+            }
+
+            $config->shepherd_endpoint = $custom_shepherd_endpoint;
+            $config->shepherd_host = str_replace('/hooks/psalm', '', $custom_shepherd_endpoint);
+
+            return;
+        }
+
+        // Legacy part, will be removed in Psalm 6
+        $custom_shepherd_host = getenv('PSALM_SHEPHERD_HOST');
+
+        $is_valid_custom_shepherd_endpoint = is_string($custom_shepherd_host);
+        if ($is_valid_custom_shepherd_endpoint) {
+            if (parse_url($custom_shepherd_host, PHP_URL_SCHEME) === null) {
+                $custom_shepherd_host = 'https://' . $custom_shepherd_host;
+            }
+
+            $config->shepherd_endpoint = $custom_shepherd_host . '/hooks/psalm';
+            $config->shepherd_host = $custom_shepherd_host;
         }
     }
 
