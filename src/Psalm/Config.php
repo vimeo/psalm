@@ -543,7 +543,7 @@ class Config
      * @var string
      * @deprecated Please use {@see self::$shepherd_endpoint} instead. Property will be removed in Psalm 6.
      */
-    public $shepherd_host = 'https://shepherd.dev/hooks/psalm/';
+    public $shepherd_host = 'shepherd.dev';
 
     /**
      * @var string

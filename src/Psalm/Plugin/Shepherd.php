@@ -81,7 +81,7 @@ final class Shepherd implements AfterAnalysisInterface
             $payload = json_encode($data, JSON_THROW_ON_ERROR);
 
             // Prepare new cURL resource
-            $ch = curl_init($codebase->config->shepherd_endpoint);
+            $ch = curl_init($base_address . '/hooks/psalm');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLINFO_HEADER_OUT, true);
