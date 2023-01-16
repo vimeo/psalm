@@ -80,6 +80,13 @@ final class Shepherd implements AfterAnalysisInterface
 
             $payload = json_encode($data, JSON_THROW_ON_ERROR);
 
+            /** @psalm-suppress DeprecatedProperty */
+            $base_address = $codebase->config->shepherd_host;
+
+            if (parse_url($base_address, PHP_URL_SCHEME) === null) {
+                $base_address = 'https://' . $base_address;
+            }
+
             // Prepare new cURL resource
             $ch = curl_init($base_address . '/hooks/psalm');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
