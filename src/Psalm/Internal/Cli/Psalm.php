@@ -306,7 +306,7 @@ final class Psalm
             ? $options['find-references-to']
             : null;
 
-        self::configureShepherd($options, $plugins);
+        self::configureShepherd($config, $options, $plugins);
 
         if (isset($options['clear-cache'])) {
             self::clearCache($config);
@@ -1164,14 +1164,16 @@ final class Psalm
 
         $plugins[] = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
 
-        $custom_shepherd_endpoint = $options['shepherd'] ?? getenv('PSALM_SHEPHERD');
+        /** @psalm-suppress MixedAssignment */
+        $custom_shepherd_endpoint = ($options['shepherd'] ?? getenv('PSALM_SHEPHERD'));
         if (is_string($custom_shepherd_endpoint) && strlen($custom_shepherd_endpoint) > 2) {
             if (parse_url($custom_shepherd_endpoint, PHP_URL_SCHEME) === null) {
                 $custom_shepherd_endpoint = 'https://' . $custom_shepherd_endpoint;
             }
 
-            $config->shepherd_endpoint = $custom_shepherd_endpoint;
+            /** @psalm-suppress DeprecatedProperty */
             $config->shepherd_host = str_replace('/hooks/psalm', '', $custom_shepherd_endpoint);
+            $config->shepherd_endpoint = $custom_shepherd_endpoint;
 
             return;
         }
@@ -1179,14 +1181,14 @@ final class Psalm
         // Legacy part, will be removed in Psalm 6
         $custom_shepherd_host = getenv('PSALM_SHEPHERD_HOST');
 
-        $is_valid_custom_shepherd_endpoint = is_string($custom_shepherd_host);
-        if ($is_valid_custom_shepherd_endpoint) {
+        if (is_string($custom_shepherd_host)) {
             if (parse_url($custom_shepherd_host, PHP_URL_SCHEME) === null) {
                 $custom_shepherd_host = 'https://' . $custom_shepherd_host;
             }
 
-            $config->shepherd_endpoint = $custom_shepherd_host . '/hooks/psalm';
+            /** @psalm-suppress DeprecatedProperty */
             $config->shepherd_host = $custom_shepherd_host;
+            $config->shepherd_endpoint = $custom_shepherd_host . '/hooks/psalm';
         }
     }
 
