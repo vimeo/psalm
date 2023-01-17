@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Codebase;
 
 use BackedEnum;
+use Exception;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -24,6 +25,7 @@ use Psalm\Type\Union;
 use UnitEnum;
 
 use function array_filter;
+use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
@@ -439,6 +441,7 @@ class Populator
 
         $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
 
+        $this->inheritConstantsFromTrait($storage, $trait_storage);
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
 
@@ -872,6 +875,42 @@ class Populator
         }
 
         $storage->populated = true;
+    }
+
+    private function inheritConstantsFromTrait(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $trait_storage
+    ): void {
+        if (!$trait_storage->is_trait) {
+            throw new Exception('Class like storage is not for a trait.');
+        }
+        foreach ($trait_storage->constants as $constant_name => $class_constant_storage) {
+            $trait_alias_map_cased = array_flip($storage->trait_alias_map_cased);
+            if (isset($trait_alias_map_cased[$constant_name])) {
+                $aliased_constant_name_lc = strtolower($trait_alias_map_cased[$constant_name]);
+                $aliased_constant_name = $trait_alias_map_cased[$constant_name];
+            } else {
+                $aliased_constant_name_lc = strtolower($constant_name);
+                $aliased_constant_name = $constant_name;
+            }
+            $visibility = $storage->trait_visibility_map[$aliased_constant_name_lc]
+                ?? $class_constant_storage->visibility;
+            $final = $storage->trait_final_map[$aliased_constant_name_lc] ?? $class_constant_storage->final;
+            $storage->constants[$aliased_constant_name] = new ClassConstantStorage(
+                $class_constant_storage->type,
+                $class_constant_storage->inferred_type,
+                $visibility,
+                $class_constant_storage->location,
+                $class_constant_storage->type_location,
+                $class_constant_storage->stmt_location,
+                $class_constant_storage->deprecated,
+                $final,
+                $class_constant_storage->unresolved_node,
+                $class_constant_storage->attributes,
+                $class_constant_storage->suppressed_issues,
+                $class_constant_storage->description,
+            );
+        }
     }
 
     protected function inheritMethodsFromParent(
