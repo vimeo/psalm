@@ -11,6 +11,7 @@
  - [ComplexMethod](issues/ComplexMethod.md)
  - [ConfigIssue](issues/ConfigIssue.md)
  - [ConflictingReferenceConstraint](issues/ConflictingReferenceConstraint.md)
+ - [ConstantDeclarationInTrait](issues/ConstantDeclarationInTrait.md)
  - [ConstructorSignatureMismatch](issues/ConstructorSignatureMismatch.md)
  - [ContinueOutsideLoop](issues/ContinueOutsideLoop.md)
  - [DeprecatedClass](issues/DeprecatedClass.md)

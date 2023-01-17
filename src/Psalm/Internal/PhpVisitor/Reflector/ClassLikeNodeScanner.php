@@ -38,6 +38,7 @@ use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
 use Psalm\Issue\DuplicateEnumCase;
@@ -843,10 +844,6 @@ class ClassLikeNodeScanner
             throw new UnexpectedValueException('bad');
         }
 
-        $method_map = $storage->trait_alias_map ?: [];
-        $visibility_map = $storage->trait_visibility_map ?: [];
-        $final_map = $storage->trait_final_map ?: [];
-
         foreach ($node->adaptations as $adaptation) {
             if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
                 $old_name = strtolower($adaptation->method->name);
@@ -856,35 +853,32 @@ class ClassLikeNodeScanner
                     $new_name = strtolower($adaptation->newName->name);
 
                     if ($new_name !== $old_name) {
-                        $method_map[$new_name] = $old_name;
+                        $storage->trait_alias_map[$new_name] = $old_name;
+                        $storage->trait_alias_map_cased[$adaptation->newName->name] = $adaptation->method->name;
                     }
                 }
 
                 if ($adaptation->newModifier) {
                     switch ($adaptation->newModifier) {
                         case 1:
-                            $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+                            $storage->trait_visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
                             break;
 
                         case 2:
-                            $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
+                            $storage->trait_visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
                             break;
 
                         case 4:
-                            $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+                            $storage->trait_visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
                             break;
 
                         case 32:
-                            $final_map[$new_name] = true;
+                            $storage->trait_final_map[$new_name] = true;
                             break;
                     }
                 }
             }
         }
-
-        $storage->trait_alias_map = $method_map;
-        $storage->trait_visibility_map = $visibility_map;
-        $storage->trait_final_map = $final_map;
 
         foreach ($node->traits as $trait) {
             $trait_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($trait, $this->aliases);
@@ -1210,6 +1204,14 @@ class ClassLikeNodeScanner
         ClassLikeStorage $storage,
         string $fq_classlike_name
     ): void {
+        if ($storage->is_trait && $this->codebase->analysis_php_version_id < 8_02_00) {
+            IssueBuffer::maybeAdd(new ConstantDeclarationInTrait(
+                'Traits cannot declare constants until PHP 8.2.0',
+                new CodeLocation($this->file_scanner, $stmt),
+            ));
+            return;
+        }
+
         $existing_constants = $storage->constants;
 
         $comment = $stmt->getDocComment();

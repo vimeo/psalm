@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -1001,6 +1002,40 @@ class TraitTest extends TestCase
                     }
                 ',
             ],
+            'constant in trait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait TraitA {
+                        public const PUBLIC_CONST = 'PUBLIC_CONST';
+                        protected const PROTECTED_CONST = 'PROTECTED_CONST';
+                        private const PRIVATE_CONST = 'PRIVATE_CONST';
+                    }
+                    class ClassB {
+                        use TraitA;
+                        public static function getPublicConst(): string { return self::PUBLIC_CONST; }
+                        public static function getProtectedConst(): string { return self::PROTECTED_CONST; }
+                        public static function getPrivateConst(): string { return self::PRIVATE_CONST; }
+                    }
+                    class ClassC extends ClassB {
+                        public static function getPublicConst(): string { return self::PUBLIC_CONST; }
+                        public static function getProtectedConst(): string { return self::PROTECTED_CONST; }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'constant in trait with alias' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
+                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
+                    $c = ClassB::PUBLIC_CONST;
+                    PHP,
+                'assertions' => ['$c' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
@@ -1192,6 +1227,15 @@ class TraitTest extends TestCase
                       public $hm;
                     }',
                 'error_message' => 'UndefinedDocblockClass',
+            ],
+            'constant declaration in trait, php <8.2.0' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait A { const B = 0; }
+                    PHP,
+                'error_message' => ConstantDeclarationInTrait::getIssueType(),
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

@@ -206,6 +206,7 @@
             <xs:element name="ComplexMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConfigIssue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConflictingReferenceConstraint" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ConstantDeclarationInTrait" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConstructorSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ContinueOutsideLoop" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedClass" type="ClassIssueHandlerType" minOccurs="0" />
