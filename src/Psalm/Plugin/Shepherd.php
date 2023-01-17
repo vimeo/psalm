@@ -19,6 +19,7 @@ use function curl_setopt;
 use function function_exists;
 use function fwrite;
 use function is_array;
+use function is_int;
 use function is_string;
 use function json_encode;
 use function parse_url;
@@ -34,6 +35,7 @@ use const CURLOPT_RETURNTRANSFER;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
+use const PHP_URL_SCHEME;
 use const STDERR;
 use const STDOUT;
 
