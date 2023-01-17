@@ -1370,7 +1370,7 @@ class ConditionalTest extends TestCase
                      * @psalm-suppress MixedInferredReturnType
                      */
                     function foo() : array {
-                        return filter_input_array(INPUT_POST) ?? [];
+                        return filter_input(INPUT_POST, "some_var") ?? [];
                     }',
             ],
             'noCrashOnWeirdArrayKeys' => [
