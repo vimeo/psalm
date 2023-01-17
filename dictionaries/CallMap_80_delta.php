@@ -18,7 +18,7 @@ return [
   'added' => [
     'DateTime::createFromInterface' => ['static', 'object'=>'DateTimeInterface'],
     'DateTimeImmutable::createFromInterface' => ['static', 'object'=>'DateTimeInterface'],
-    'PhpToken::getTokenName' => ['string'],
+    'PhpToken::getTokenName' => ['?string'],
     'PhpToken::is' => ['bool', 'kind'=>'string|int|string[]|int[]'],
     'PhpToken::isIgnorable' => ['bool'],
     'PhpToken::tokenize' => ['list<PhpToken>', 'code'=>'string', 'flags='=>'int'],
@@ -214,8 +214,8 @@ return [
       'new' => ['?Phar', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
     ],
     'PharData::decompress' => [
-      'old' => ['PharData', 'extension='=>'string'],
-      'new' => ['PharData', 'extension='=>'?string'],
+      'old' => ['?PharData', 'extension='=>'string'],
+      'new' => ['?PharData', 'extension='=>'?string'],
     ],
     'Phar::compress' => [
       'old' => ['?Phar', 'compression'=>'int', 'extension='=>'string'],
@@ -304,6 +304,14 @@ return [
     'SoapClient::__doRequest' => [
       'old' => ['?string', 'request'=>'string', 'location'=>'string', 'action'=>'string', 'version'=>'int', 'one_way='=>'int'],
       'new' => ['?string', 'request'=>'string', 'location'=>'string', 'action'=>'string', 'version'=>'int', 'one_way='=>'bool'],
+    ],
+    'SplFileObject::fgets' => [
+      'old' => ['string|false'],
+      'new' => ['string'],
+    ],
+    'SplFileObject::getCurrentLine' => [
+      'old' => ['string|false'],
+      'new' => ['string'],
     ],
     'XMLWriter::startAttributeNs' => [
       'old' => ['bool', 'prefix'=>'string', 'name'=>'string', 'namespace'=>'?string'],
@@ -1063,7 +1071,7 @@ return [
     ],
     'imageinterlace' => [
       'old' => ['int|false', 'image'=>'resource', 'enable='=>'int'],
-      'new' => ['int|bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
+      'new' => ['bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
     ],
     'imageistruecolor' => [
       'old' => ['bool', 'image'=>'resource'],
@@ -1158,12 +1166,12 @@ return [
       'new' => ['bool', 'image'=>'GdImage', 'font'=>'int', 'x'=>'int', 'y'=>'int', 'string'=>'string', 'color'=>'int'],
     ],
     'imagesx' => [
-      'old' => ['int|false', 'image'=>'resource'],
-      'new' => ['int|false', 'image'=>'GdImage'],
+      'old' => ['int', 'image'=>'resource'],
+      'new' => ['int', 'image'=>'GdImage'],
     ],
     'imagesy' => [
-      'old' => ['int|false', 'image'=>'resource'],
-      'new' => ['int|false', 'image'=>'GdImage'],
+      'old' => ['int', 'image'=>'resource'],
+      'new' => ['int', 'image'=>'GdImage'],
     ],
     'imagetruecolortopalette' => [
       'old' => ['bool', 'image'=>'resource', 'dither'=>'bool', 'num_colors'=>'int'],
@@ -1196,6 +1204,14 @@ return [
     'imap_mail' => [
       'old' => ['bool', 'to'=>'string', 'subject'=>'string', 'message'=>'string', 'additional_headers='=>'string', 'cc='=>'string', 'bcc='=>'string', 'return_path='=>'string'],
       'new' => ['bool', 'to'=>'string', 'subject'=>'string', 'message'=>'string', 'additional_headers='=>'?string', 'cc='=>'?string', 'bcc='=>'?string', 'return_path='=>'?string'],
+    ],
+    'inflate_init' => [
+      'old' => ['resource|false', 'encoding'=>'int', 'options='=>'array'],
+      'new' => ['InflateContext|false', 'encoding'=>'int', 'options='=>'array'],
+    ],
+    'jdtounix' => [
+      'old' => ['int|false', 'julian_day'=>'int'],
+      'new' => ['int', 'julian_day'=>'int'],
     ],
     'ldap_add' => [
       'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
@@ -1312,6 +1328,10 @@ return [
     'mb_encode_numericentity' => [
       'old' => ['string', 'string'=>'string', 'map'=>'array', 'encoding='=>'string', 'hex='=>'bool'],
       'new' => ['string', 'string'=>'string', 'map'=>'array', 'encoding='=>'string|null', 'hex='=>'bool'],
+    ],
+    'mb_encoding_aliases' => [
+      'old' => ['list<string>|false', 'encoding'=>'string'],
+      'new' => ['list<string>', 'encoding'=>'string'],
     ],
     'mb_ereg' => [
       'old' => ['int|false', 'pattern'=>'string', 'string'=>'string', '&w_matches='=>'array|null'],
@@ -1465,6 +1485,10 @@ return [
       'old' => ['int', 'haystack'=>'string', 'needle'=>'string', 'encoding='=>'string'],
       'new' => ['int', 'haystack'=>'string', 'needle'=>'string', 'encoding='=>'string|null'],
     ],
+    'metaphone' => [
+      'old' => ['string|false', 'string'=>'string', 'max_phonemes='=>'int'],
+      'new' => ['string', 'string'=>'string', 'max_phonemes='=>'int'],
+    ],
     'mhash' => [
       'old' => ['string', 'algo'=>'int', 'data'=>'string', 'key='=>'string'],
       'new' => ['string', 'algo'=>'int', 'data'=>'string', 'key='=>'?string'],
@@ -1472,6 +1496,10 @@ return [
     'mktime' => [
       'old' => ['int|false', 'hour='=>'int', 'minute='=>'int', 'second='=>'int', 'month='=>'int', 'day='=>'int', 'year='=>'int'],
       'new' => ['int|false', 'hour'=>'int', 'minute='=>'int|null', 'second='=>'int|null', 'month='=>'int|null', 'day='=>'int|null', 'year='=>'int|null'],
+    ],
+    'msg_get_queue' => [
+      'old' => ['resource|false', 'key'=>'int', 'permissions='=>'int'],
+      'new' => ['SysvMessageQueue|false', 'key'=>'int', 'permissions='=>'int'],
     ],
     'mysqli::__construct' => [
       'old' => ['void', 'hostname='=>'string', 'username='=>'string', 'password='=>'string', 'database='=>'string', 'port='=>'int', 'socket='=>'string'],
@@ -1705,6 +1733,10 @@ return [
       'old' => ['int', 'certificate'=>'string|resource', 'public_key'=>'string|array|resource'],
       'new' => ['int', 'certificate'=>'string|OpenSSLCertificate', 'public_key'=>'string|OpenSSLCertificate|OpenSSLAsymmetricKey|array'],
     ],
+    'pack' => [
+      'old' => ['string|false', 'format'=>'string', '...values='=>'mixed'],
+      'new' => ['string', 'format'=>'string', '...values='=>'mixed'],
+    ],
     'parse_str' => [
       'old' => ['void', 'string'=>'string', '&w_result='=>'array'],
       'new' => ['void', 'string'=>'string', '&w_result'=>'array'],
@@ -1716,6 +1748,10 @@ return [
     'pcntl_async_signals' => [
       'old' => ['bool', 'enable='=>'bool'],
       'new' => ['bool', 'enable='=>'?bool'],
+    ],
+    'pcntl_exec' => [
+      'old' => ['null|false', 'path'=>'string', 'args='=>'array', 'env_vars='=>'array'],
+      'new' => ['false', 'path'=>'string', 'args='=>'array', 'env_vars='=>'array'],
     ],
     'pcntl_getpriority' => [
       'old' => ['int', 'process_id='=>'int', 'mode='=>'int'],
@@ -2069,6 +2105,10 @@ return [
       'old' => ['string|false', 'stream'=>'resource', 'length='=>'int', 'offset='=>'int'],
       'new' => ['string|false', 'stream'=>'resource', 'length='=>'?int', 'offset='=>'int'],
     ],
+    'stream_set_chunk_size' => [
+      'old' => ['int|false', 'stream'=>'resource', 'size'=>'int'],
+      'new' => ['int', 'stream'=>'resource', 'size'=>'int'],
+    ],
     'stream_socket_accept' => [
       'old' => ['resource|false', 'socket'=>'resource', 'timeout='=>'float', '&w_peer_name='=>'string'],
       'new' => ['resource|false', 'socket'=>'resource', 'timeout='=>'?float', '&w_peer_name='=>'string'],
@@ -2175,19 +2215,19 @@ return [
     ],
     'xml_get_current_byte_index' => [
       'old' => ['int|false', 'parser'=>'resource'],
-      'new' => ['int|false', 'parser'=>'XMLParser'],
+      'new' => ['int', 'parser'=>'XMLParser'],
     ],
     'xml_get_current_column_number' => [
       'old' => ['int|false', 'parser'=>'resource'],
-      'new' => ['int|false', 'parser'=>'XMLParser'],
+      'new' => ['int', 'parser'=>'XMLParser'],
     ],
     'xml_get_current_line_number' => [
       'old' => ['int|false', 'parser'=>'resource'],
-      'new' => ['int|false', 'parser'=>'XMLParser'],
+      'new' => ['int', 'parser'=>'XMLParser'],
     ],
     'xml_get_error_code' => [
       'old' => ['int|false', 'parser'=>'resource'],
-      'new' => ['int|false', 'parser'=>'XMLParser'],
+      'new' => ['int', 'parser'=>'XMLParser'],
     ],
     'xml_parse' => [
       'old' => ['int', 'parser'=>'resource', 'data'=>'string', 'is_final='=>'bool'],
@@ -2210,8 +2250,8 @@ return [
       'new' => ['bool', 'parser'=>'XMLParser'],
     ],
     'xml_parser_get_option' => [
-      'old' => ['mixed|false', 'parser'=>'resource', 'option'=>'int'],
-      'new' => ['mixed|false', 'parser'=>'XMLParser', 'option'=>'int'],
+      'old' => ['string|false', 'parser'=>'resource', 'option'=>'int'],
+      'new' => ['string', 'parser'=>'XMLParser', 'option'=>'int'],
     ],
     'xml_parser_set_option' => [
       'old' => ['bool', 'parser'=>'resource', 'option'=>'int', 'value'=>'mixed'],

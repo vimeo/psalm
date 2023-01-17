@@ -246,9 +246,9 @@ return [
       'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
       'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array{seed:scalar}'],
     ],
-    'imageinterlace' => [
-      'old' => ['int|bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
-      'new' => ['bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
+    'imageloadfont' => [
+      'old' => ['int|false', 'filename'=>'string'],
+      'new' => ['GdFont|false', 'filename'=>'string'],
     ],
     'imap_append' => [
         'old' => ['bool', 'imap'=>'resource', 'folder'=>'string', 'message'=>'string', 'options='=>'?string', 'internal_date='=>'?string'],
@@ -379,20 +379,20 @@ return [
         'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'mailbox'=>'string', 'flags='=>'int'],
     ],
     'imap_mailboxmsginfo' => [
-        'old' => ['stdClass|false', 'imap'=>'resource'],
-        'new' => ['stdClass|false', 'imap'=>'IMAP\Connection'],
+        'old' => ['stdClass', 'imap'=>'resource'],
+        'new' => ['stdClass', 'imap'=>'IMAP\Connection'],
     ],
     'imap_msgno' => [
-        'old' => ['int|false', 'imap'=>'resource', 'message_uid'=>'int'],
-        'new' => ['int|false', 'imap'=>'IMAP\Connection', 'message_uid'=>'int'],
+        'old' => ['int', 'imap'=>'resource', 'message_uid'=>'int'],
+        'new' => ['int', 'imap'=>'IMAP\Connection', 'message_uid'=>'int'],
     ],
     'imap_num_msg' => [
         'old' => ['int|false', 'imap'=>'resource'],
         'new' => ['int|false', 'imap'=>'IMAP\Connection'],
     ],
     'imap_num_recent' => [
-        'old' => ['int|false', 'imap'=>'resource'],
-        'new' => ['int|false', 'imap'=>'IMAP\Connection'],
+        'old' => ['int', 'imap'=>'resource'],
+        'new' => ['int', 'imap'=>'IMAP\Connection'],
     ],
     'imap_open' => [
         'old' => ['resource|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'?array'],
@@ -515,8 +515,8 @@ return [
       'new' => ['LDAP\Connection|false', 'uri='=>'?string', 'port='=>'int', 'wallet='=>'string', 'password='=>'string', 'auth_mode='=>'int'],
     ],
     'ldap_count_entries' => [
-      'old' => ['int|false', 'ldap'=>'resource', 'result'=>'resource'],
-      'new' => ['int|false', 'ldap'=>'LDAP\Connection', 'result'=>'LDAP\Result'],
+      'old' => ['int', 'ldap'=>'resource', 'result'=>'resource'],
+      'new' => ['int', 'ldap'=>'LDAP\Connection', 'result'=>'LDAP\Result'],
     ],
     'ldap_delete' => [
       'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string'],
@@ -567,8 +567,8 @@ return [
       'new' => ['bool', 'result'=>'LDAP\Result'],
     ],
     'ldap_get_attributes' => [
-      'old' => ['array|false', 'ldap'=>'resource', 'entry'=>'resource'],
-      'new' => ['array|false', 'ldap'=>'LDAP\Connection', 'entry'=>'LDAP\ResultEntry'],
+      'old' => ['array', 'ldap'=>'resource', 'entry'=>'resource'],
+      'new' => ['array', 'ldap'=>'LDAP\Connection', 'entry'=>'LDAP\ResultEntry'],
     ],
     'ldap_get_dn' => [
       'old' => ['string|false', 'ldap'=>'resource', 'entry'=>'resource'],
@@ -1110,6 +1110,10 @@ return [
       'old' => ['bool', 'dictionary'=>'int'],
       'new' => ['bool', 'dictionary'=>'PSpell\Dictionary'],
     ],
+    'pspell_config_create' => [
+      'old' => ['int', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string'],
+      'new' => ['PSpell\Config', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string'],
+    ],
     'pspell_config_data_dir' => [
       'old' => ['bool', 'config'=>'int', 'directory'=>'string'],
       'new' => ['bool', 'config'=>'PSpell\Config', 'directory'=>'string'],
@@ -1142,9 +1146,17 @@ return [
       'old' => ['bool', 'config'=>'int', 'save'=>'bool'],
       'new' => ['bool', 'config'=>'PSpell\Config', 'save'=>'bool'],
     ],
+    'pspell_new' => [
+      'old' => ['int|false', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string', 'mode='=>'int'],
+      'new' => ['PSpell\Dictionary|false', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string', 'mode='=>'int'],
+    ],
     'pspell_new_config' => [
       'old' => ['int|false', 'config'=>'int'],
-      'new' => ['int|false', 'config'=>'PSpell\Config'],
+      'new' => ['PSpell\Dictionary|false', 'config'=>'PSpell\Config'],
+    ],
+    'pspell_new_personal' => [
+      'old' => ['int|false', 'filename'=>'string', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string', 'mode='=>'int'],
+      'new' => ['PSpell\Dictionary|false', 'filename'=>'string', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string', 'mode='=>'int'],
     ],
     'pspell_save_wordlist' => [
       'old' => ['bool', 'dictionary'=>'int'],

@@ -41,6 +41,10 @@ return [
       'old' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'string'],
       'new' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'?string'],
     ],
+    'openssl_random_pseudo_bytes' => [
+      'old' => ['string|false', 'length'=>'int', '&w_strong_result='=>'bool'],
+      'new' => ['string', 'length'=>'int', '&w_strong_result='=>'bool'],
+    ],
     'password_hash' => [
       'old' => ['string|false', 'password'=>'string', 'algo'=>'int', 'options='=>'array'],
       'new' => ['string|false', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
