@@ -491,6 +491,10 @@ class PremiumCar extends StandardCar {
 ```
 `ImplementedReturnTypeMismatch - The inherited return type 'list{'motor', 'brakes', 'wheels'}' for StandardCar::getSystems is different to the implemented return type for PremiumCar::getsystems 'list{'motor', 'brakes', 'wheels', 'rear parking sensor'}'`
 
+#### findUnusedBaselineEntry
+
+Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
+is not being used to suppress an issue.
 
 ## Project settings
 

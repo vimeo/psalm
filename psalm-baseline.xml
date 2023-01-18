@@ -701,11 +701,6 @@
       <code>hasLowercaseString</code>
     </PossiblyUnusedMethod>
   </file>
-  <file src="tests/Internal/Codebase/InternalCallMapHandlerTest.php">
-    <UnusedPsalmSuppress>
-      <code>UndefinedMethod</code>
-    </UnusedPsalmSuppress>
-  </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <PossiblyUndefinedStringArrayOffset>
       <code>$subNodes['expr']</code>

@@ -14,6 +14,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
+use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
@@ -609,6 +610,39 @@ final class IssueBuffer
                         }
 
                         $issues_data[$file_path][$key] = $issue_data;
+                    }
+                }
+
+                if ($codebase->config->find_unused_baseline_entry) {
+                    foreach ($issue_baseline as $file_path => $issues) {
+                        foreach ($issues as $issue_name => $issue) {
+                            if ($issue['o'] !== 0) {
+                                $issues_data[$file_path][] = new IssueData(
+                                    Config::REPORT_ERROR,
+                                    0,
+                                    0,
+                                    UnusedBaselineEntry::getIssueType(),
+                                    sprintf(
+                                        'Baseline for issue "%s" has %d extra %s.',
+                                        $issue_name,
+                                        $issue['o'],
+                                        $issue['o'] === 1 ? 'entry' : 'entries',
+                                    ),
+                                    $file_path,
+                                    '',
+                                    '',
+                                    '',
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    UnusedBaselineEntry::SHORTCODE,
+                                    UnusedBaselineEntry::ERROR_LEVEL,
+                                );
+                            }
+                        }
                     }
                 }
             }
