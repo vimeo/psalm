@@ -544,8 +544,17 @@ class Config
      */
     public $include_php_versions_in_error_baseline = false;
 
-    /** @var string */
+    /**
+     * @var string
+     * @deprecated Please use {@see self::$shepherd_endpoint} instead. Property will be removed in Psalm 6.
+     */
     public $shepherd_host = 'shepherd.dev';
+
+    /**
+     * @var string
+     * @internal
+     */
+    public $shepherd_endpoint = 'https://shepherd.dev/hooks/psalm/';
 
     /**
      * @var array<string, string>
