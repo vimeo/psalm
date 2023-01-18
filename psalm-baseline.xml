@@ -236,11 +236,6 @@
       <code>$options['tcp'] ?? null</code>
     </PossiblyInvalidArgument>
   </file>
-  <file src="src/Psalm/Internal/Cli/Psalm.php">
-    <DeprecatedProperty>
-      <code>$config-&gt;shepherd_host</code>
-    </DeprecatedProperty>
-  </file>
   <file src="src/Psalm/Internal/Cli/Refactor.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$identifier_name</code>
@@ -487,11 +482,6 @@
       <code>$type_tokens[$i - 1]</code>
       <code>$type_tokens[$i - 1]</code>
     </PossiblyInvalidArrayOffset>
-  </file>
-  <file src="src/Psalm/Plugin/Shepherd.php">
-    <DeprecatedProperty>
-      <code>$codebase-&gt;config-&gt;shepherd_host</code>
-    </DeprecatedProperty>
   </file>
   <file src="src/Psalm/Plugin/Shepherd.php">
     <DeprecatedProperty>
