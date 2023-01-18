@@ -132,7 +132,7 @@ final class Shepherd implements AfterAnalysisInterface
 
             fwrite(STDERR, "Shepherd error: server responded with $response_status_code HTTP status code.\n");
             $response_content = is_string($curl_result) ? strip_tags($curl_result) : 'n/a';
-            fwrite(STDERR, 'Shepherd response:' . PHP_EOL . $response_content);
+            fwrite(STDERR, "Shepherd response: $response_content\n");
         }
     }
 
