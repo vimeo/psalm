@@ -282,6 +282,7 @@
  - [UnsafeGenericInstantiation](issues/UnsafeGenericInstantiation.md)
  - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
  - [UnsupportedReferenceUsage](issues/UnsupportedReferenceUsage.md)
+ - [UnusedBaselineEntry](issues/UnusedBaselineEntry.md)
  - [UnusedClass](issues/UnusedClass.md)
  - [UnusedClosureParam](issues/UnusedClosureParam.md)
  - [UnusedConstructor](issues/UnusedConstructor.md)

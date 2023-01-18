@@ -461,6 +461,11 @@ class Config
     public $find_unused_psalm_suppress = false;
 
     /**
+     * TODO: Psalm 6: Update default to be true and remove warning.
+     */
+    public bool $find_unused_baseline_entry = false;
+
+    /**
      * @var bool
      */
     public $run_taint_analysis = false;
@@ -1061,6 +1066,7 @@ class Config
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
+            'findUnusedBaselineEntry' => 'find_unused_baseline_entry',
             'reportInfo' => 'report_info',
             'restrictReturnTypes' => 'restrict_return_types',
             'limitMethodComplexity' => 'limit_method_complexity',
@@ -1164,6 +1170,10 @@ class Config
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
+        if (!isset($config_xml['findUnusedBaselineEntry']) && !defined('__IS_TEST_ENV__')) {
+            fwrite(STDERR, 'Warning: "findUnusedBaselineEntry" will be defaulted to "true" in Psalm 6. You should'
+                         . ' explicitly enable or disable this setting.' . PHP_EOL);
+        }
 
         if (isset($config_xml['findUnusedCode'])) {
             $attribute_text = (string) $config_xml['findUnusedCode'];
