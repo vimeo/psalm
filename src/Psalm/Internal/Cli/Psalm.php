@@ -1158,7 +1158,7 @@ final class Psalm
             );
         }
 
-        $is_shepherd_enabled = (bool) (array_key_exists('shepherd', $options) ?? getenv('PSALM_SHEPHERD'));
+        $is_shepherd_enabled = isset($options['shepherd']) || getenv('PSALM_SHEPHERD');
         if (! $is_shepherd_enabled) {
             return;
         }
