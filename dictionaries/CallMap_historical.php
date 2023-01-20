@@ -6215,7 +6215,7 @@ return [
     'ReflectionObject::isTrait' => ['bool'],
     'ReflectionObject::isUserDefined' => ['bool'],
     'ReflectionObject::newInstance' => ['object', 'args='=>'mixed', '...args='=>'array'],
-    'ReflectionObject::newInstanceArgs' => ['object', 'args='=>'array'],
+    'ReflectionObject::newInstanceArgs' => ['object', 'args='=>'list<mixed>'],
     'ReflectionObject::newInstanceWithoutConstructor' => ['object'],
     'ReflectionObject::setStaticPropertyValue' => ['void', 'name'=>'string', 'value'=>'string'],
     'ReflectionParameter::__clone' => ['void'],

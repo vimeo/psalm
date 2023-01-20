@@ -196,7 +196,7 @@ class ReflectionClass implements Reflector {
     public function newInstance(...$args): object {}
 
     /**
-     * @param array<int, mixed> $args
+     * @param list<mixed> $args
      *
      * @return T
      */
