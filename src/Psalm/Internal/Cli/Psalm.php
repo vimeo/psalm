@@ -9,6 +9,7 @@ use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Cli\Commands\DisplayConfig;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
@@ -132,6 +133,7 @@ final class Psalm
         'report-show-info:',
         'root:',
         'set-baseline:',
+        'display-config',
         'show-info:',
         'show-snippet:',
         'stats',
@@ -374,6 +376,11 @@ final class Psalm
         /** @var string $plugin_path */
         foreach ($plugins as $plugin_path) {
             $config->addPluginPath($plugin_path);
+        }
+
+        if (array_key_exists('display-config', $options)) {
+            (new DisplayConfig($config, $project_analyzer, $current_dir))->debug();
+            exit;
         }
 
         if ($paths_to_check === null) {
