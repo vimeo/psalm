@@ -102,13 +102,9 @@ class LanguageServer extends Dispatcher
      */
     protected JsonMapper $mapper;
 
-    /**
-     * @var PathMapperInterface
-     */
-    private $path_mapper;
+    private PathMapperInterface $path_mapper;
 
-    /** @var ?string */
-    private $root_path = null;
+    private ?string $root_path = null;
 
     public function __construct(
         ProtocolReader $reader,

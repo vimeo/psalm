@@ -12,10 +12,10 @@ use function uksort;
 final class PrefixMapper implements PathMapperInterface
 {
     /** @var array<string, string> */
-    private $client_to_server = [];
+    private array $client_to_server = [];
 
     /** @var array<string, string> */
-    private $server_to_client = [];
+    private array $server_to_client = [];
 
     /**
      * @param array<string, string> $mapping
@@ -24,9 +24,7 @@ final class PrefixMapper implements PathMapperInterface
     {
         uksort(
             $mapping,
-            function (string $a, string $b): int {
-                return strlen($b) - strlen($a);
-            }
+            fn(string $a, string $b) => strlen($a) <=> strlen($b),
         );
         $this->client_to_server = $mapping;
         $this->server_to_client = array_flip($mapping);

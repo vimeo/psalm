@@ -706,7 +706,7 @@ class Config
     public array $config_warnings = [];
 
     /** @var array<string, string> */
-    private $lsp_path_mapping = [];
+    private array $lsp_path_mapping = [];
 
     /** @internal */
     protected function __construct()
