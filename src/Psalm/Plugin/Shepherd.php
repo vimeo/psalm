@@ -37,7 +37,6 @@ use const PHP_EOL;
 use const PHP_URL_HOST;
 use const PHP_URL_SCHEME;
 use const STDERR;
-use const STDOUT;
 
 final class Shepherd implements AfterAnalysisInterface
 {
@@ -120,7 +119,7 @@ final class Shepherd implements AfterAnalysisInterface
             if ($response_status_code >= 200 && $response_status_code < 300) {
                 $shepherd_host = parse_url($codebase->config->shepherd_endpoint, PHP_URL_HOST);
 
-                fwrite(STDOUT, "🐑 results sent to $shepherd_host 🐑" . PHP_EOL);
+                fwrite(STDERR, "🐑 results sent to $shepherd_host 🐑" . PHP_EOL);
                 return;
             }
 
