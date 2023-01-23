@@ -231,6 +231,19 @@ class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
     }
 
+    public function testPsalmWithNoProgressDoesNotProduceOutputOnStderr(): void
+    {
+        $this->runPsalmInit();
+
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = preg_replace('/findUnusedCode="(true|false)"/', '', $psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        $result = $this->runPsalm(['--no-progress'], self::$tmpDir);
+
+        $this->assertSame('', $result['STDERR']);
+    }
+
     /**
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
