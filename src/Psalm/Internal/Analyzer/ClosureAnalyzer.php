@@ -84,7 +84,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$statements_analyzer->isStatic()) {
+        if (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
             if ($context->collect_mutations &&
                 $context->self &&
                 $codebase->classExtends(

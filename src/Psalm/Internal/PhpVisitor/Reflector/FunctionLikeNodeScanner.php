@@ -1120,6 +1120,8 @@ class FunctionLikeNodeScanner
 
             $storage = $this->storage = $this->file_storage->functions[$function_id] = new FunctionStorage();
 
+            $storage->is_static = $stmt->static;
+
             if ($stmt instanceof PhpParser\Node\Expr\Closure) {
                 foreach ($stmt->uses as $closure_use) {
                     if ($closure_use->byRef && is_string($closure_use->var->name)) {
