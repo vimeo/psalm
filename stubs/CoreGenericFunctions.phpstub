@@ -813,6 +813,8 @@ function array_sum(array $array) {}
 function array_product(array $array) {}
 
 /**
+ * @psalm-pure
+ *
  * 257 is FILTER_VALIDATE_INT
  * @psalm-taint-escape ($filter is 257 ? 'html' : null)
  *
