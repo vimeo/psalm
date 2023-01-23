@@ -9,6 +9,7 @@ use function sapi_windows_cp_is_utf8;
 use function stripos;
 
 use const E_ERROR;
+use const PHP_EOL;
 use const PHP_OS;
 use const STDERR;
 
@@ -54,6 +55,11 @@ abstract class Progress
     public function write(string $message): void
     {
         fwrite(STDERR, $message);
+    }
+
+    public function warning(string $message): void
+    {
+        $this->write('Warning: ' . $message . PHP_EOL);
     }
 
     protected static function doesTerminalSupportUtf8(): bool
